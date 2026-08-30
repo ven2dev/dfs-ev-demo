@@ -1,4 +1,4 @@
-import type { Matchup, MatchupConfig } from "@/types";
+import type { MatchupConfig, Slate } from "@/types";
 import type { StateCreator } from "zustand";
 import type { AppState } from "../types";
 import { mockCoverageFilters, mockEnvironment, mockMatchup } from "../mockData";
@@ -6,8 +6,9 @@ import { mockCoverageFilters, mockEnvironment, mockMatchup } from "../mockData";
 export interface MatchupSlice {
   matchupConfig: MatchupConfig;
   setMatchupConfig: (config: MatchupConfig) => void;
-  currentMatchup: Matchup;
-  setCurrentMatchup: (matchup: Matchup) => void;
+  slate: Slate;
+  selectedMatchupId: string;
+  setSelectedMatchupId: (id: string) => void;
 }
 
 export const createMatchupSlice: StateCreator<
@@ -22,6 +23,7 @@ export const createMatchupSlice: StateCreator<
     coverageFilters: mockCoverageFilters,
   },
   setMatchupConfig: (config) => set({ matchupConfig: config }),
-  currentMatchup: mockMatchup,
-  setCurrentMatchup: (matchup) => set({ currentMatchup: matchup }),
+  slate: [mockMatchup],
+  selectedMatchupId: mockMatchup.id,
+  setSelectedMatchupId: (id) => set({ selectedMatchupId: id }),
 });

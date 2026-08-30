@@ -10,10 +10,15 @@ export const useMatchupConfig = () =>
 export const useSetMatchupConfig = () =>
   useAppStore((state) => state.setMatchupConfig);
 
+export const useSlate = () => useAppStore((state) => state.slate);
+export const useSelectedMatchupId = () =>
+  useAppStore((state) => state.selectedMatchupId);
+export const useSetSelectedMatchupId = () =>
+  useAppStore((state) => state.setSelectedMatchupId);
 export const useCurrentMatchup = () =>
-  useAppStore((state) => state.currentMatchup);
-export const useSetCurrentMatchup = () =>
-  useAppStore((state) => state.setCurrentMatchup);
+  useAppStore((state) =>
+    state.slate.find((matchup) => matchup.id === state.selectedMatchupId)
+  );
 
 export const useGoal = () => useAppStore((state) => state.goal);
 export const useSetGoal = () => useAppStore((state) => state.setGoal);

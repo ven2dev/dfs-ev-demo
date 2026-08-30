@@ -61,3 +61,5 @@ export type Matchup = {
   startTime: string;
   props: Prop[];
 };
+
+export type Slate = Matchup[];
