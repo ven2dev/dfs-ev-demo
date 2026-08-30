@@ -39,3 +39,9 @@ export type PickEmGoal = {
 };
 
 export type Goal = SalaryCapGoal | PickEmGoal;
+
+export type WatchedProp = {
+  propId: string;
+  evScore: EVScore;
+  evHistory: EVHistory;
+};
