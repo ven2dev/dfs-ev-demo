@@ -45,3 +45,19 @@ export type WatchedProp = {
   evScore: EVScore;
   evHistory: EVHistory;
 };
+
+export type Prop = {
+  propId: string;
+  playerName: string;
+  propType: string;
+  line: number;
+  recentGameStats: number[];
+};
+
+export type Matchup = {
+  id: string;
+  homeTeam: string;
+  awayTeam: string;
+  startTime: string;
+  props: Prop[];
+};

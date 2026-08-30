@@ -10,6 +10,11 @@ export const useMatchupConfig = () =>
 export const useSetMatchupConfig = () =>
   useAppStore((state) => state.setMatchupConfig);
 
+export const useCurrentMatchup = () =>
+  useAppStore((state) => state.currentMatchup);
+export const useSetCurrentMatchup = () =>
+  useAppStore((state) => state.setCurrentMatchup);
+
 export const useGoal = () => useAppStore((state) => state.goal);
 export const useSetGoal = () => useAppStore((state) => state.setGoal);
 
