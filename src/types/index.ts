@@ -50,7 +50,9 @@ export type Prop = {
   propId: string;
   playerName: string;
   propType: string;
+  marketKey: string;
   line: number;
+  salary: number;
   recentGameStats: number[];
 };
 
@@ -59,7 +61,15 @@ export type Matchup = {
   homeTeam: string;
   awayTeam: string;
   startTime: string;
+  sportKey: string;
+  eventId: string;
   props: Prop[];
 };
 
 export type Slate = Matchup[];
+
+export type EVPipelineStage =
+  | "baseRate"
+  | "environmentAdjustment"
+  | "coverageAdjustment"
+  | "finalEv";

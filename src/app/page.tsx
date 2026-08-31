@@ -1,69 +1,249 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { computeEV } from "@/lib/computeEV";
+import {
+  useConnectionStatus,
+  useCurrentMatchup,
+  useGoal,
+  useMatchupConfig,
+  useSetGoal,
+  useSetMatchupConfig,
+  useWatchlist,
+} from "@/store/hooks";
+import { useLiveOddsStream } from "@/store/useLiveOddsStream";
+
+const STAGES = [
+  { key: "baseRate", label: "Base rate" },
+  { key: "afterEnvironment", label: "Environment adjustment" },
+  { key: "afterCoverage", label: "Coverage adjustment (mocked)" },
+  { key: "final", label: "Final EV" },
+] as const;
+
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) {
+    return <div className="h-10 text-xs text-zinc-500">Collecting live data…</div>;
+  }
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const points = values
+    .map((value, i) => {
+      const x = (i / (values.length - 1)) * 100;
+      const y = 100 - ((value - min) / range) * 100;
+      return `${x},${y}`;
+    })
+    .join(" ");
+  return (
+    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-10 w-full text-blue-500">
+      <polyline
+        points={points}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
 
 export default function Home() {
+  useLiveOddsStream();
+
+  const connectionStatus = useConnectionStatus();
+  const matchupConfig = useMatchupConfig();
+  const setMatchupConfig = useSetMatchupConfig();
+  const currentMatchup = useCurrentMatchup();
+  const watchlist = useWatchlist();
+  const goal = useGoal();
+  const setGoal = useSetGoal();
+
+  const prop = currentMatchup?.props[0];
+  const watched = prop ? watchlist[prop.propId] : undefined;
+
+  useEffect(() => {
+    if (!goal) {
+      setGoal({
+        kind: "salaryCap",
+        salaryCap: 50000,
+        rosterSlots: 9,
+        progress: { slotsFilled: 3, capUsed: 18500 },
+      });
+    }
+  }, [goal, setGoal]);
+
+  const pipeline = useMemo(() => {
+    if (!prop || !watched) return null;
+    return computeEV({
+      recentGameStats: prop.recentGameStats,
+      // Live line when available, falling back to the seeded reference
+      // before the first tick — same source as windSpeedMph/precipitationMm
+      // below, so every input here is consistently from the latest tick.
+      line: (matchupConfig.environment.currentLine as number) ?? prop.line,
+      sampleWindow: matchupConfig.sampleWindow,
+      windSpeedMph: (matchupConfig.environment.windSpeedMph as number) ?? 0,
+      precipitationMm: (matchupConfig.environment.precipitationMm as number) ?? 0,
+      shadowCoverageRate:
+        (matchupConfig.coverageFilters.shadowCoverageRate as number) ?? 0,
+      impliedProb: watched.evScore.impliedProb,
+    });
+  }, [prop, watched, matchupConfig]);
+
+  // Projected fantasy points: independent of the EV/edge calculation
+  // (that's about betting value, not fantasy scoring) — a standard
+  // passing-yards-to-points baseline (1 pt / 25 yards) off the same
+  // (mocked) recent-game stat history used for the base rate.
+  const projectedPts = useMemo(() => {
+    if (!prop) return null;
+    const avg =
+      prop.recentGameStats.reduce((sum, v) => sum + v, 0) /
+      prop.recentGameStats.length;
+    return Math.round(avg / 25);
+  }, [prop]);
+
+  const [activeStageIndex, setActiveStageIndex] = useState(3);
+
+  useEffect(() => {
+    if (!watched) return;
+    // New tick arrived — visually step through the pipeline stages in
+    // sequence, mirroring the actual base -> environment -> coverage ->
+    // final order computeEV() applies them in, rather than a static
+    // highlight that never reflects an actual event.
+    const timers = [0, 1, 2, 3].map((stageIndex) =>
+      setTimeout(() => setActiveStageIndex(stageIndex), stageIndex * 350)
+    );
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only step on a genuinely new tick, not every watched object identity change
+  }, [watched?.evHistory.length]);
+
+  const statusColor =
+    connectionStatus === "live"
+      ? "bg-green-500"
+      : connectionStatus === "stale"
+        ? "bg-yellow-500"
+        : "bg-red-500";
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-25"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/6 px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/8">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-39.5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-3.5 w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/8 px-5 transition-colors hover:border-transparent hover:bg-black/4 dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-39.5"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="min-h-screen bg-zinc-50 p-8 dark:bg-black">
+      <div className="mx-auto flex max-w-3xl flex-col gap-8">
+        <header className="flex items-center justify-between">
+          <h1 className="text-2xl font-semibold">DFS Matchup EV Demo</h1>
+          <div className="flex items-center gap-2 text-sm">
+            <span className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
+            <span className="capitalize">{connectionStatus}</span>
+          </div>
+        </header>
+
+        {currentMatchup && prop && (
+          <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+            <h2 className="text-lg font-medium">
+              {currentMatchup.awayTeam} @ {currentMatchup.homeTeam}
+            </h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              {prop.playerName} — {prop.propType}, line{" "}
+              {(matchupConfig.environment.currentLine as number) ?? prop.line}{" "}
+              (real player-prop line, live Odds API)
+            </p>
+
+            <div className="mt-4 flex gap-2">
+              {([3, 5, 7] as const).map((window) => (
+                <button
+                  key={window}
+                  onClick={() =>
+                    setMatchupConfig({ ...matchupConfig, sampleWindow: window })
+                  }
+                  className={`rounded px-3 py-1 text-sm ${
+                    matchupConfig.sampleWindow === window
+                      ? "bg-black text-white dark:bg-white dark:text-black"
+                      : "bg-zinc-100 dark:bg-zinc-900"
+                  }`}
+                >
+                  Last {window}
+                </button>
+              ))}
+            </div>
+
+            {/* Active-node stepper — steps through base->env->coverage->final
+                on each new live tick; exactly one node active at a time. */}
+            <div className="mt-6 flex items-center gap-2 text-xs">
+              {STAGES.map((stage, i) => (
+                <div key={stage.key} className="flex items-center gap-2">
+                  <span
+                    className={`rounded-full px-2 py-1 transition-colors ${
+                      i === activeStageIndex
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900"
+                    }`}
+                  >
+                    {stage.label}
+                  </span>
+                  {i < STAGES.length - 1 && <span className="text-zinc-300">→</span>}
+                </div>
+              ))}
+            </div>
+
+            {pipeline && (
+              <div className="mt-6 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span>Base rate ({matchupConfig.sampleWindow}-game hit rate)</span>
+                  <span>{(pipeline.baseRate * 100).toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>After environment adjustment (real weather)</span>
+                  <span>{(pipeline.afterEnvironment * 100).toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>
+                    After coverage adjustment{" "}
+                    <em className="text-zinc-400">(sample data — mocked)</em>
+                  </span>
+                  <span>{(pipeline.afterCoverage * 100).toFixed(1)}%</span>
+                </div>
+                <div className="flex justify-between border-t border-zinc-200 pt-3 text-sm font-medium dark:border-zinc-800">
+                  <span>Final EV (edge, vs. real devigged Odds API line)</span>
+                  <span
+                    className={
+                      pipeline.evScore.edge > 0 ? "text-green-600" : "text-red-600"
+                    }
+                  >
+                    {(pipeline.evScore.edge * 100).toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {goal?.kind === "salaryCap" && projectedPts !== null && (
+              <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
+                +{projectedPts} projected pts · uses ${prop.salary.toLocaleString()}{" "}
+                of remaining cap{" "}
+                <em className="text-zinc-400">
+                  (sample data — mocked stat history & salary)
+                </em>
+              </p>
+            )}
+          </section>
+        )}
+
+        <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+          <h2 className="text-lg font-medium">Live Tracker</h2>
+          {watched && prop ? (
+            <div className="mt-4">
+              <div className="flex justify-between text-sm">
+                <span>{prop.playerName} — live edge</span>
+                <span>{(watched.evScore.edge * 100).toFixed(1)}%</span>
+              </div>
+              <div className="mt-2">
+                <Sparkline values={watched.evHistory.map((h) => h.evScore)} />
+              </div>
+              <p className="mt-1 text-xs text-zinc-400">
+                {watched.evHistory.length} live ticks recorded
+              </p>
+            </div>
+          ) : (
+            <p className="mt-2 text-sm text-zinc-500">Waiting for first live tick…</p>
+          )}
+        </section>
+      </div>
     </div>
   );
 }
