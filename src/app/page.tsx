@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { computeEV } from "@/lib/computeEV";
+import type { WatchedProp } from "@/types";
 import {
   useConnectionStatus,
   useCurrentMatchup,
@@ -11,6 +12,7 @@ import {
   useSetMatchupConfig,
   useWatchlist,
 } from "@/store/hooks";
+import { useAppStore } from "@/store";
 import { useLiveOddsStream } from "@/store/useLiveOddsStream";
 
 const STAGES = [
@@ -60,6 +62,71 @@ export default function Home() {
 
   const prop = currentMatchup?.props[0];
   const watched = prop ? watchlist[prop.propId] : undefined;
+
+  // Second seeded prop, deliberately not wired into live SSE tracking —
+  // this section exists purely to demonstrate the optimistic-update +
+  // rollback pattern in isolation, per the brief's call for ONE example.
+  const secondProp = currentMatchup?.props[1];
+  const isWatchingSecond = secondProp ? Boolean(watchlist[secondProp.propId]) : false;
+  const [watchPending, setWatchPending] = useState(false);
+  const [watchError, setWatchError] = useState<string | null>(null);
+
+  const handleWatchToggle = async () => {
+    if (!secondProp || watchPending) return;
+    setWatchError(null);
+    setWatchPending(true);
+
+    const propId = secondProp.propId;
+    // Snapshot only this ONE entry's prior value, not the whole watchlist —
+    // the live SSE hook concurrently updates a *different* key (the
+    // primary prop) on its own schedule, and a full-object revert would
+    // clobber whatever it wrote while this request was in flight.
+    const previousEntry: WatchedProp | undefined =
+      useAppStore.getState().watchlist[propId];
+    const wasWatching = Boolean(previousEntry);
+
+    // Always read the watchlist fresh at the moment of writing, and only
+    // ever touch this one key — safe regardless of what else has changed
+    // concurrently.
+    const applyEntry = (entry: WatchedProp | undefined) => {
+      const current = { ...useAppStore.getState().watchlist };
+      if (entry) {
+        current[propId] = entry;
+      } else {
+        delete current[propId];
+      }
+      useAppStore.getState().setWatchlist(current);
+    };
+
+    // Optimistic update, applied immediately, before the network call.
+    applyEntry(
+      wasWatching
+        ? undefined
+        : { propId, evScore: { modelProb: 0, impliedProb: 0, edge: 0 }, evHistory: [] }
+    );
+
+    try {
+      const res = await fetch("/api/watchlist", {
+        method: wasWatching ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ propId }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.reason ?? "Unknown failure");
+      }
+    } catch (err) {
+      // Revert only this entry to its pre-optimistic-update value.
+      applyEntry(wasWatching ? previousEntry : undefined);
+      setWatchError(
+        `Failed to ${wasWatching ? "unwatch" : "watch"} ${secondProp.playerName}: ${
+          (err as Error).message
+        } — reverted`
+      );
+    } finally {
+      setWatchPending(false);
+    }
+  };
 
   useEffect(() => {
     if (!goal) {
@@ -241,6 +308,38 @@ export default function Home() {
             </div>
           ) : (
             <p className="mt-2 text-sm text-zinc-500">Waiting for first live tick…</p>
+          )}
+
+          {secondProp && (
+            <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm">{secondProp.playerName} — {secondProp.propType}</p>
+                  <p className="text-xs text-zinc-400">
+                    Optimistic watch/unwatch demo — REST call has a simulated
+                    ~30% failure rate to demonstrate rollback
+                  </p>
+                </div>
+                <button
+                  onClick={handleWatchToggle}
+                  disabled={watchPending}
+                  className={`rounded px-3 py-1 text-sm disabled:opacity-50 ${
+                    isWatchingSecond
+                      ? "bg-zinc-100 dark:bg-zinc-900"
+                      : "bg-black text-white dark:bg-white dark:text-black"
+                  }`}
+                >
+                  {watchPending
+                    ? "…"
+                    : isWatchingSecond
+                      ? "Unwatch"
+                      : "Watch"}
+                </button>
+              </div>
+              {watchError && (
+                <p className="mt-2 text-xs text-red-600">{watchError}</p>
+              )}
+            </div>
           )}
         </section>
       </div>
