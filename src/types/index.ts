@@ -1,5 +1,7 @@
 export type ConnectionStatus = "live" | "stale" | "disconnected";
 
+export type AuthStatus = "loading" | "signed-in" | "signed-out";
+
 export type EVScore = {
   modelProb: number;
   impliedProb: number;

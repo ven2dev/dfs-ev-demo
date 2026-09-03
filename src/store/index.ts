@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
+import { createAuthSlice } from "./slices/authSlice";
 import { createConnectionSlice } from "./slices/connectionSlice";
 import { createGoalSlice } from "./slices/goalSlice";
 import { createMatchupSlice } from "./slices/matchupSlice";
@@ -10,6 +11,7 @@ export const useAppStore = create<AppState>()(
   devtools(
     persist(
       (...args) => ({
+        ...createAuthSlice(...args),
         ...createConnectionSlice(...args),
         ...createMatchupSlice(...args),
         ...createGoalSlice(...args),
@@ -17,6 +19,8 @@ export const useAppStore = create<AppState>()(
       }),
       {
         name: "dfs-ev-demo-storage",
+        // auth is deliberately excluded — Firebase already owns its own
+        // session, mirroring it into localStorage risks a stale uid.
         partialize: (state) => ({
           goal: state.goal,
           watchlist: state.watchlist,
