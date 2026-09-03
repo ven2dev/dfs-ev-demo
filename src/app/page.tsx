@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AuthStatus } from "@/components/AuthStatus";
+import { Sparkline } from "@/components/Sparkline";
 import { computeEV } from "@/lib/computeEV";
 import type { WatchedProp } from "@/types";
 import {
@@ -21,33 +23,6 @@ const STAGES = [
   { key: "afterCoverage", label: "Coverage adjustment (mocked)" },
   { key: "final", label: "Final EV" },
 ] as const;
-
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) {
-    return <div className="h-10 text-xs text-zinc-500">Collecting live data…</div>;
-  }
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const points = values
-    .map((value, i) => {
-      const x = (i / (values.length - 1)) * 100;
-      const y = 100 - ((value - min) / range) * 100;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-10 w-full text-blue-500">
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
 
 export default function Home() {
   useLiveOddsStream();
@@ -195,9 +170,12 @@ export default function Home() {
       <div className="mx-auto flex max-w-3xl flex-col gap-8">
         <header className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">DFS Matchup EV Demo</h1>
-          <div className="flex items-center gap-2 text-sm">
-            <span className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
-            <span className="capitalize">{connectionStatus}</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm">
+              <span className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
+              <span className="capitalize">{connectionStatus}</span>
+            </div>
+            <AuthStatus />
           </div>
         </header>
 
