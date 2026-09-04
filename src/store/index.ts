@@ -19,11 +19,16 @@ export const useAppStore = create<AppState>()(
       }),
       {
         name: "dfs-ev-demo-storage",
-        // auth is deliberately excluded — Firebase already owns its own
-        // session, mirroring it into localStorage risks a stale uid.
+        // Live auth fields (uid, displayName, authStatus) are deliberately
+        // excluded — Firebase already owns its own session, mirroring it
+        // into localStorage risks a stale uid. dataOwnerUid is the one
+        // exception: it's not a session mirror, it's a persisted tag
+        // recording which uid goal/watchlist currently belong to, so
+        // useInitAuth can detect a mismatch even on first load.
         partialize: (state) => ({
           goal: state.goal,
           watchlist: state.watchlist,
+          dataOwnerUid: state.dataOwnerUid,
         }),
       }
     ),

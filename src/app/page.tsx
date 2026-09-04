@@ -9,6 +9,7 @@ import {
   useAuthStatus,
   useConnectionStatus,
   useCurrentMatchup,
+  useDataVerified,
   useGoal,
   useMatchupConfig,
   useSetGoal,
@@ -29,6 +30,7 @@ export default function Home() {
   useLiveOddsStream();
 
   const authStatus = useAuthStatus();
+  const dataVerified = useDataVerified();
   const connectionStatus = useConnectionStatus();
   const matchupConfig = useMatchupConfig();
   const setMatchupConfig = useSetMatchupConfig();
@@ -111,6 +113,13 @@ export default function Home() {
     }
   };
 
+  // Deliberately NOT gated behind sign-in, unlike handleWatchToggle above.
+  // This is what lets a signed-out visitor see a working Goal-impact
+  // section on the demo matchup at all -- without it, the preview
+  // experience we designed around would just show an empty state. There's
+  // no real "build your own goal" UI yet (that's Phase 10, once a real
+  // slate exists to build one against), so today this is the only source
+  // of a goal for anyone, signed in or not.
   useEffect(() => {
     if (!goal) {
       setGoal({
@@ -165,6 +174,22 @@ export default function Home() {
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only step on a genuinely new tick, not every watched object identity change
   }, [watched?.evHistory.length]);
+
+  // Every hook above this line must always run, in the same order, on
+  // every render -- this early return has to come after all of them.
+  // Persisted goal/watchlist can't be trusted to render until useInitAuth
+  // has actually verified they belong to the current uid; otherwise a
+  // hydration render can briefly show a different account's data before
+  // the ownership check has had a chance to clear it.
+  if (!dataVerified) {
+    return (
+      <div className="min-h-screen bg-zinc-50 p-8 dark:bg-black">
+        <div className="mx-auto flex max-w-3xl flex-col gap-8">
+          <p className="text-sm text-zinc-500">Loading…</p>
+        </div>
+      </div>
+    );
+  }
 
   const statusColor =
     connectionStatus === "live"
