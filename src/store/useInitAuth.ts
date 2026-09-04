@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { getRedirectResult, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
 import { useAppStore } from "./index";
 import { useHasHydrated } from "./useHasHydrated";
-import { useSetUser } from "./hooks";
+import { useAuthStatus, useSetUser, useUid } from "./hooks";
 
 // goal/watchlist are tagged with the uid that owns them (dataOwnerUid,
 // itself persisted alongside them). Comparing against that persisted tag,
@@ -27,10 +27,8 @@ function syncDataOwnership(nextUid: string | null) {
 export function useInitAuth() {
   const setUser = useSetUser();
   const hasHydrated = useHasHydrated();
-  // undefined = Firebase hasn't reported an auth state yet. The ownership
-  // check is only meaningful once BOTH this and hydration are resolved --
-  // whichever of the two finishes second is what actually runs it.
-  const latestUid = useRef<string | null | undefined>(undefined);
+  const authStatus = useAuthStatus();
+  const uid = useUid();
 
   useEffect(() => {
     // onAuthStateChanged below also fires once a signInWithRedirect
@@ -45,23 +43,24 @@ export function useInitAuth() {
     });
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      const nextUid = user?.uid ?? null;
-      latestUid.current = nextUid;
       setUser(user ? { uid: user.uid, displayName: user.displayName } : null);
-      if (useAppStore.persist?.hasHydrated()) {
-        syncDataOwnership(nextUid);
-      }
     });
 
     return unsubscribe;
   }, [setUser]);
 
-  // Catches the reverse ordering: hydration finishing AFTER Firebase has
-  // already reported who's signed in. Runs once, right when hydration
-  // completes, using whatever the listener above has already recorded.
+  // Ownership verification is only meaningful once BOTH readiness signals
+  // are true: Firebase has reported who's signed in (authStatus flips off
+  // "loading" the instant setUser above runs) and Zustand has finished
+  // rehydrating persisted state. These are two independent async
+  // processes with no guaranteed order -- rather than manually threading
+  // a ref between two effects to catch "whichever resolves second", this
+  // single effect's dependency array does that coordination: it re-runs
+  // on every change to either signal, and only actually acts once both
+  // are true. The same effect also covers an in-session account switch,
+  // since uid changing re-runs it again after the initial verification.
   useEffect(() => {
-    if (hasHydrated && latestUid.current !== undefined) {
-      syncDataOwnership(latestUid.current);
-    }
-  }, [hasHydrated]);
+    if (authStatus === "loading" || !hasHydrated) return;
+    syncDataOwnership(uid);
+  }, [authStatus, uid, hasHydrated]);
 }

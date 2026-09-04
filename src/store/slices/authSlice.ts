@@ -32,10 +32,20 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
   dataOwnerUid: null,
   dataVerified: false,
   setUser: (user) =>
-    set(
-      user
-        ? { uid: user.uid, displayName: user.displayName, authStatus: "signed-in" }
-        : { uid: null, displayName: null, authStatus: "signed-out" }
-    ),
+    set((state) => {
+      const nextUid = user?.uid ?? null;
+      const identityFields = user
+        ? { uid: user.uid, displayName: user.displayName, authStatus: "signed-in" as const }
+        : { uid: null, displayName: null, authStatus: "signed-out" as const };
+      // uid changing must flip dataVerified false in this SAME update,
+      // not in a later effect -- otherwise a render can land between the
+      // two with the new uid already visible but the old uid's
+      // "verified" flag still true, painting the wrong account's data
+      // for a frame. The ownership-check effect in useInitAuth flips it
+      // back to true once it's actually re-verified against the new uid.
+      return state.uid === nextUid
+        ? identityFields
+        : { ...identityFields, dataVerified: false };
+    }),
   setAuthError: (error) => set({ authError: error }),
 });
