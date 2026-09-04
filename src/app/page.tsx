@@ -6,6 +6,7 @@ import { Sparkline } from "@/components/Sparkline";
 import { computeEV } from "@/lib/computeEV";
 import type { WatchedProp } from "@/types";
 import {
+  useAuthStatus,
   useConnectionStatus,
   useCurrentMatchup,
   useGoal,
@@ -27,6 +28,7 @@ const STAGES = [
 export default function Home() {
   useLiveOddsStream();
 
+  const authStatus = useAuthStatus();
   const connectionStatus = useConnectionStatus();
   const matchupConfig = useMatchupConfig();
   const setMatchupConfig = useSetMatchupConfig();
@@ -48,6 +50,12 @@ export default function Home() {
 
   const handleWatchToggle = async () => {
     if (!secondProp || watchPending) return;
+
+    if (authStatus !== "signed-in") {
+      setWatchError("Sign in to watch this prop.");
+      return;
+    }
+
     setWatchError(null);
     setWatchPending(true);
 
