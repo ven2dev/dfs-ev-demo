@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { getRedirectResult, onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebaseClient";
 import { useAppStore } from "./index";
 import { useHasHydrated } from "./useHasHydrated";
@@ -31,17 +31,10 @@ export function useInitAuth() {
   const uid = useUid();
 
   useEffect(() => {
-    // onAuthStateChanged below also fires once a signInWithRedirect
-    // completes, but only this call surfaces redirect-specific errors
-    // (e.g. account-exists-with-different-credential). This is the one
-    // path Firebase's own docs call out as needing explicit handling --
-    // signInWithRedirect itself just navigates away, it doesn't reject
-    // for a failed sign-in the way a popup flow would.
-    getRedirectResult(auth).catch((err) => {
-      useAppStore.getState().setAuthError("Sign-in failed. Try again.");
-      console.error("[useInitAuth] redirect sign-in failed:", err);
-    });
-
+    // signInWithPopup resolves/rejects directly from its own call site
+    // (handled in AuthStatus), unlike signInWithRedirect which needs a
+    // separate getRedirectResult() retrieval after the page reloads.
+    // onAuthStateChanged alone is sufficient here.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user ? { uid: user.uid, displayName: user.displayName } : null);
     });

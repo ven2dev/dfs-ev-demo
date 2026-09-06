@@ -1,6 +1,14 @@
 "use client";
 
-import { signInWithRedirect, signOut } from "firebase/auth";
+// signInWithPopup, not signInWithRedirect: the redirect flow depends on
+// storage persisting across a full top-level navigation to Google and
+// back, which is exactly what current Chrome's third-party storage
+// restrictions break -- confirmed via direct testing, in both a normal
+// and an Incognito window, after ruling out every config-level cause
+// (API key, project setup, JS origins, redirect URIs, consent screen
+// status). Popup avoids that dependency entirely: the original tab
+// stays alive and gets the result via postMessage instead.
+import { signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "@/lib/firebaseClient";
 import {
   useAuthError,
@@ -17,7 +25,7 @@ export function AuthStatus() {
 
   const handleSignIn = () => {
     setAuthError(null);
-    signInWithRedirect(auth, googleProvider).catch((err) => {
+    signInWithPopup(auth, googleProvider).catch((err) => {
       setAuthError("Sign-in failed. Try again.");
       console.error("[AuthStatus] sign-in failed:", err);
     });
