@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebaseClient";
+import { getFirebaseAuth } from "@/lib/firebaseClient";
 import { useAppStore } from "./index";
 import { useHasHydrated } from "./useHasHydrated";
 import { useAuthStatus, useSetUser, useUid } from "./hooks";
@@ -35,7 +35,7 @@ export function useInitAuth() {
     // (handled in AuthStatus), unlike signInWithRedirect which needs a
     // separate getRedirectResult() retrieval after the page reloads.
     // onAuthStateChanged alone is sufficient here.
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(getFirebaseAuth(), (user) => {
       setUser(user ? { uid: user.uid, displayName: user.displayName } : null);
     });
 
