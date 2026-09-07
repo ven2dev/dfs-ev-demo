@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AuthStatus } from "@/components/AuthStatus";
+import { Sparkline } from "@/components/Sparkline";
 import { computeEV } from "@/lib/computeEV";
 import type { WatchedProp } from "@/types";
 import {
+  useAuthStatus,
   useConnectionStatus,
   useCurrentMatchup,
+  useDataVerified,
   useGoal,
   useMatchupConfig,
   useSetGoal,
@@ -22,36 +26,11 @@ const STAGES = [
   { key: "final", label: "Final EV" },
 ] as const;
 
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) {
-    return <div className="h-10 text-xs text-zinc-500">Collecting live data…</div>;
-  }
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const points = values
-    .map((value, i) => {
-      const x = (i / (values.length - 1)) * 100;
-      const y = 100 - ((value - min) / range) * 100;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-10 w-full text-blue-500">
-      <polyline
-        points={points}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
-
 export default function Home() {
   useLiveOddsStream();
 
+  const authStatus = useAuthStatus();
+  const dataVerified = useDataVerified();
   const connectionStatus = useConnectionStatus();
   const matchupConfig = useMatchupConfig();
   const setMatchupConfig = useSetMatchupConfig();
@@ -73,6 +52,12 @@ export default function Home() {
 
   const handleWatchToggle = async () => {
     if (!secondProp || watchPending) return;
+
+    if (authStatus !== "signed-in") {
+      setWatchError("Sign in to watch this prop.");
+      return;
+    }
+
     setWatchError(null);
     setWatchPending(true);
 
@@ -128,6 +113,13 @@ export default function Home() {
     }
   };
 
+  // Deliberately NOT gated behind sign-in, unlike handleWatchToggle above.
+  // This is what lets a signed-out visitor see a working Goal-impact
+  // section on the demo matchup at all -- without it, the preview
+  // experience we designed around would just show an empty state. There's
+  // no real "build your own goal" UI yet (that's Phase 10, once a real
+  // slate exists to build one against), so today this is the only source
+  // of a goal for anyone, signed in or not.
   useEffect(() => {
     if (!goal) {
       setGoal({
@@ -183,6 +175,22 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only step on a genuinely new tick, not every watched object identity change
   }, [watched?.evHistory.length]);
 
+  // Every hook above this line must always run, in the same order, on
+  // every render -- this early return has to come after all of them.
+  // Persisted goal/watchlist can't be trusted to render until useInitAuth
+  // has actually verified they belong to the current uid; otherwise a
+  // hydration render can briefly show a different account's data before
+  // the ownership check has had a chance to clear it.
+  if (!dataVerified) {
+    return (
+      <div className="min-h-screen bg-zinc-50 p-8 dark:bg-black">
+        <div className="mx-auto flex max-w-3xl flex-col gap-8">
+          <p className="text-sm text-zinc-500">Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
   const statusColor =
     connectionStatus === "live"
       ? "bg-green-500"
@@ -195,9 +203,12 @@ export default function Home() {
       <div className="mx-auto flex max-w-3xl flex-col gap-8">
         <header className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">DFS Matchup EV Demo</h1>
-          <div className="flex items-center gap-2 text-sm">
-            <span className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
-            <span className="capitalize">{connectionStatus}</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm">
+              <span className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
+              <span className="capitalize">{connectionStatus}</span>
+            </div>
+            <AuthStatus />
           </div>
         </header>
 

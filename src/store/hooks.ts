@@ -1,5 +1,13 @@
 import { useAppStore } from "./index";
 
+export const useUid = () => useAppStore((state) => state.uid);
+export const useDisplayName = () => useAppStore((state) => state.displayName);
+export const useAuthStatus = () => useAppStore((state) => state.authStatus);
+export const useSetUser = () => useAppStore((state) => state.setUser);
+export const useAuthError = () => useAppStore((state) => state.authError);
+export const useSetAuthError = () => useAppStore((state) => state.setAuthError);
+export const useDataVerified = () => useAppStore((state) => state.dataVerified);
+
 export const useConnectionStatus = () =>
   useAppStore((state) => state.connectionStatus);
 export const useSetConnectionStatus = () =>
