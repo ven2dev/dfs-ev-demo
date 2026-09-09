@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebaseClient";
+import { getFirebaseAuth } from "@/lib/firebaseClient";
 import { useAppStore } from "./index";
 import { useHasHydrated } from "./useHasHydrated";
 import { useAuthStatus, useSetUser, useUid } from "./hooks";
@@ -31,11 +31,24 @@ export function useInitAuth() {
   const uid = useUid();
 
   useEffect(() => {
+    const authInstance = getFirebaseAuth();
+    if (!authInstance) {
+      // Config missing/invalid -- degrade instead of hanging: authStatus
+      // flipping off "loading" is what unblocks dataVerified and the
+      // rest of the app, including the signed-out demo preview, which
+      // should still work even if sign-in itself is broken.
+      useAppStore.setState({
+        authStatus: "unavailable",
+        authError: "Sign-in is currently unavailable.",
+      });
+      return;
+    }
+
     // signInWithPopup resolves/rejects directly from its own call site
     // (handled in AuthStatus), unlike signInWithRedirect which needs a
     // separate getRedirectResult() retrieval after the page reloads.
     // onAuthStateChanged alone is sufficient here.
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(authInstance, (user) => {
       setUser(user ? { uid: user.uid, displayName: user.displayName } : null);
     });
 

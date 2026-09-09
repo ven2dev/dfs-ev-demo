@@ -9,7 +9,7 @@
 // status). Popup avoids that dependency entirely: the original tab
 // stays alive and gets the result via postMessage instead.
 import { signInWithPopup, signOut } from "firebase/auth";
-import { auth, googleProvider } from "@/lib/firebaseClient";
+import { getFirebaseAuth, googleProvider } from "@/lib/firebaseClient";
 import {
   useAuthError,
   useAuthStatus,
@@ -25,7 +25,12 @@ export function AuthStatus() {
 
   const handleSignIn = () => {
     setAuthError(null);
-    signInWithPopup(auth, googleProvider).catch((err) => {
+    const authInstance = getFirebaseAuth();
+    if (!authInstance) {
+      setAuthError("Sign-in is currently unavailable.");
+      return;
+    }
+    signInWithPopup(authInstance, googleProvider).catch((err) => {
       setAuthError("Sign-in failed. Try again.");
       console.error("[AuthStatus] sign-in failed:", err);
     });
@@ -33,7 +38,12 @@ export function AuthStatus() {
 
   const handleSignOut = () => {
     setAuthError(null);
-    signOut(auth).catch((err) => {
+    const authInstance = getFirebaseAuth();
+    if (!authInstance) {
+      setAuthError("Sign-out is currently unavailable.");
+      return;
+    }
+    signOut(authInstance).catch((err) => {
       setAuthError("Sign-out failed. Try again.");
       console.error("[AuthStatus] sign-out failed:", err);
     });
@@ -41,6 +51,15 @@ export function AuthStatus() {
 
   if (authStatus === "loading") {
     return <span className="text-sm text-zinc-500">…</span>;
+  }
+
+  if (authStatus === "unavailable") {
+    return (
+      <div className="flex flex-col items-end gap-1">
+        <span className="text-sm text-zinc-500">Sign-in unavailable</span>
+        {authError && <p className="text-xs text-red-600">{authError}</p>}
+      </div>
+    );
   }
 
   if (authStatus === "signed-in") {
