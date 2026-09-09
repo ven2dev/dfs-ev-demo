@@ -1,6 +1,6 @@
 export type ConnectionStatus = "live" | "stale" | "disconnected";
 
-export type AuthStatus = "loading" | "signed-in" | "signed-out";
+export type AuthStatus = "loading" | "signed-in" | "signed-out" | "unavailable";
 
 export type EVScore = {
   modelProb: number;

@@ -12,7 +12,9 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-let cachedAuth: Auth | undefined;
+// undefined = not yet attempted, null = attempted and failed (don't
+// retry/re-log every call), Auth = succeeded.
+let cachedAuth: Auth | null | undefined;
 
 // Firebase Auth needs a real browser (window, IndexedDB) to do anything
 // useful -- there's no reason for it to initialize during Next.js's
@@ -20,13 +22,24 @@ let cachedAuth: Auth | undefined;
 // crashes the entire build instead of just the auth feature. Deferring
 // this to first real use in the browser sidesteps that class of failure
 // rather than trying to catch it after the fact.
-export function getFirebaseAuth(): Auth {
+//
+// Returns null (rather than throwing) if config is missing/invalid --
+// NEXT_PUBLIC_ values are baked into the bundle at build time, so this
+// can't be recovered by setting env vars on an already-built artifact,
+// only by rebuilding. Every caller needs to handle that possibility and
+// degrade accordingly; centralizing the try/catch here means each
+// caller just null-checks instead of duplicating that handling.
+export function getFirebaseAuth(): Auth | null {
   if (typeof window === "undefined") {
     throw new Error("getFirebaseAuth() called outside the browser");
   }
-  if (!cachedAuth) {
+  if (cachedAuth !== undefined) return cachedAuth;
+  try {
     const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     cachedAuth = getAuth(app);
+  } catch (err) {
+    console.error("[firebaseClient] Firebase Auth failed to initialize:", err);
+    cachedAuth = null;
   }
   return cachedAuth;
 }
