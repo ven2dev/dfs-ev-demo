@@ -12,7 +12,7 @@ import { getAuth, type Auth } from "firebase-admin/auth";
 // silent bad state.
 let cachedApp: App | undefined;
 
-function getAdminApp(): App {
+const getAdminApp = (): App => {
   if (cachedApp) return cachedApp;
   if (getApps().length) {
     cachedApp = getApp();
@@ -29,12 +29,8 @@ function getAdminApp(): App {
   const serviceAccount = JSON.parse(Buffer.from(encoded, "base64").toString("utf-8"));
   cachedApp = initializeApp({ credential: cert(serviceAccount) });
   return cachedApp;
-}
+};
 
-export function getFirestoreDb(): Firestore {
-  return getFirestore(getAdminApp());
-}
+export const getFirestoreDb = (): Firestore => getFirestore(getAdminApp());
 
-export function getAdminAuth(): Auth {
-  return getAuth(getAdminApp());
-}
+export const getAdminAuth = (): Auth => getAuth(getAdminApp());
