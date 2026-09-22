@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthStatus } from "@/components/AuthStatus";
 import { Sparkline } from "@/components/Sparkline";
 import { computeEV } from "@/lib/computeEV";
+import { getAuthHeaders } from "@/lib/authHeaders";
 import type { WatchedProp } from "@/types";
 import {
   useAuthStatus,
@@ -51,12 +52,7 @@ export default function Home() {
   const [watchError, setWatchError] = useState<string | null>(null);
 
   const handleWatchToggle = async () => {
-    if (!secondProp || watchPending) return;
-
-    if (authStatus !== "signed-in") {
-      setWatchError("Sign in to watch this prop.");
-      return;
-    }
+    if (!secondProp || watchPending || authStatus !== "signed-in") return;
 
     setWatchError(null);
     setWatchPending(true);
@@ -93,7 +89,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/watchlist", {
         method: wasWatching ? "DELETE" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
         body: JSON.stringify({ propId }),
       });
       const data = await res.json();
@@ -111,6 +107,30 @@ export default function Home() {
     } finally {
       setWatchPending(false);
     }
+  };
+
+  // A genuine user preference change, worth persisting -- unlike
+  // useLiveOddsStream's own setMatchupConfig calls (live weather/line
+  // refresh on every SSE tick), which stay local-only; persisting those
+  // would write to Firestore every few seconds for every connected user.
+  // No snapshot-and-revert on failure here, per the brief's call for ONE
+  // rollback example (the watchlist toggle above) rather than one per
+  // action -- a failed persist just means the choice doesn't survive a
+  // reload, not a wrong or lost app state.
+  const handleSampleWindowChange = (window: 3 | 5 | 7) => {
+    const nextConfig = { ...matchupConfig, sampleWindow: window };
+    setMatchupConfig(nextConfig);
+
+    if (authStatus !== "signed-in") return;
+    getAuthHeaders()
+      .then((headers) =>
+        fetch("/api/matchup-config", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...headers },
+          body: JSON.stringify(nextConfig),
+        })
+      )
+      .catch((err) => console.error("[matchup-config] persist failed:", err));
   };
 
   // Deliberately NOT gated behind sign-in, unlike handleWatchToggle above.
@@ -227,9 +247,7 @@ export default function Home() {
               {([3, 5, 7] as const).map((window) => (
                 <button
                   key={window}
-                  onClick={() =>
-                    setMatchupConfig({ ...matchupConfig, sampleWindow: window })
-                  }
+                  onClick={() => handleSampleWindowChange(window)}
                   className={`rounded px-3 py-1 text-sm ${
                     matchupConfig.sampleWindow === window
                       ? "bg-black text-white dark:bg-white dark:text-black"
@@ -347,8 +365,14 @@ export default function Home() {
                       : "Watch"}
                 </button>
               </div>
-              {watchError && (
-                <p className="mt-2 text-xs text-red-600">{watchError}</p>
+              {authStatus !== "signed-in" ? (
+                // Derived directly from live authStatus, not stored state --
+                // storing this as a one-time "you clicked while signed out"
+                // message left it stuck on screen after actually signing
+                // in, since nothing re-ran to clear it until the next click.
+                <p className="mt-2 text-xs text-zinc-400">Sign in to watch this prop.</p>
+              ) : (
+                watchError && <p className="mt-2 text-xs text-red-600">{watchError}</p>
               )}
             </div>
           )}

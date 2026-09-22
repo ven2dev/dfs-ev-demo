@@ -7,12 +7,12 @@ import type { Goal } from "@/types";
 // changes as one complete object on the client (setGoal), never as a
 // partial patch, so the write here mirrors that.
 export const PUT = async (request: NextRequest) => {
-  const uid = await requireUid(request);
-  if (!uid) {
-    return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const uid = await requireUid(request);
+    if (!uid) {
+      return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
+    }
+
     const goal: Goal | null = await request.json();
     await getFirestoreDb().collection("users").doc(uid).set({ goal }, { merge: true });
     return NextResponse.json({ success: true });

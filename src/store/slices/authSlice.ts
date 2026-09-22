@@ -7,16 +7,12 @@ export interface AuthSlice {
   displayName: string | null;
   authStatus: AuthStatus;
   authError: string | null;
-  // Persisted (unlike the rest of this slice): tags which uid the
-  // currently-persisted goal/watchlist belong to, so a mismatch can be
-  // detected even on the very first load of a new session, not just an
-  // in-session account switch. See useInitAuth.ts.
-  dataOwnerUid: string | null;
-  // False until useInitAuth has actually compared dataOwnerUid against
-  // the real current uid at least once. Components reading goal/
-  // watchlist must wait for this -- otherwise a hydration render can
-  // briefly show another account's persisted data before the mismatch
-  // check has had a chance to run and clear it.
+  // False until useInitAuth has resolved this uid's real data from
+  // Firestore (or confirmed there's no uid to resolve for). Components
+  // reading goal/watchlist must wait for this -- nothing is persisted
+  // locally anymore, so there's no stale data to leak, but there IS a
+  // brief window where the previous account's in-memory state hasn't
+  // been cleared yet.
   dataVerified: boolean;
   setUser: (user: { uid: string; displayName: string | null } | null) => void;
   setAuthError: (error: string | null) => void;
@@ -29,7 +25,6 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
   displayName: null,
   authStatus: "loading",
   authError: null,
-  dataOwnerUid: null,
   dataVerified: false,
   setUser: (user) =>
     set((state) => {
@@ -41,8 +36,8 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
       // not in a later effect -- otherwise a render can land between the
       // two with the new uid already visible but the old uid's
       // "verified" flag still true, painting the wrong account's data
-      // for a frame. The ownership-check effect in useInitAuth flips it
-      // back to true once it's actually re-verified against the new uid.
+      // for a frame. useInitAuth flips it back to true once it's actually
+      // fetched (or confirmed empty) this new uid's real data.
       return state.uid === nextUid
         ? identityFields
         : { ...identityFields, dataVerified: false };

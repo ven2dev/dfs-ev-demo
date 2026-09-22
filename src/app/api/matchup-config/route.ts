@@ -7,12 +7,12 @@ import type { MatchupConfig } from "@/types";
 // set as one complete object client-side (setMatchupConfig), never
 // patched field-by-field.
 export const PUT = async (request: NextRequest) => {
-  const uid = await requireUid(request);
-  if (!uid) {
-    return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const uid = await requireUid(request);
+    if (!uid) {
+      return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
+    }
+
     const matchupConfig: MatchupConfig = await request.json();
     await getFirestoreDb().collection("users").doc(uid).set({ matchupConfig }, { merge: true });
     return NextResponse.json({ success: true });

@@ -14,12 +14,12 @@ import type { WatchedProp } from "@/types";
 // here would clobber whatever they wrote in between.
 
 export const POST = async (request: NextRequest) => {
-  const uid = await requireUid(request);
-  if (!uid) {
-    return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const uid = await requireUid(request);
+    if (!uid) {
+      return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
+    }
+
     const { propId } = await request.json();
     // Matches the client's own optimistic placeholder exactly -- the real
     // evScore/evHistory arrive moments later via the live SSE stream, not
@@ -44,13 +44,13 @@ export const POST = async (request: NextRequest) => {
 };
 
 export const DELETE = async (request: NextRequest) => {
-  const uid = await requireUid(request);
-  if (!uid) {
-    return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
-  }
-
   let propId: string | undefined;
   try {
+    const uid = await requireUid(request);
+    if (!uid) {
+      return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
+    }
+
     ({ propId } = await request.json());
     // merge can't remove a key by omission -- an explicit dotted path +
     // FieldValue.delete() is the correct way to remove one nested map key

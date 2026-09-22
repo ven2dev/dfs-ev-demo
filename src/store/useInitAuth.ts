@@ -3,40 +3,118 @@
 import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebaseClient";
+import { getAuthHeaders } from "@/lib/authHeaders";
+import type { WatchedProp } from "@/types";
 import { useAppStore } from "./index";
-import { useHasHydrated } from "./useHasHydrated";
 import { useAuthStatus, useSetUser, useUid } from "./hooks";
 
-// goal/watchlist are tagged with the uid that owns them (dataOwnerUid,
-// itself persisted alongside them). Comparing against that persisted tag,
-// rather than only an in-memory "uid seen earlier this session", is what
-// catches stale data left behind by a PRIOR browser session -- not just
-// an account switch that happens while the app is running.
-function syncDataOwnership(nextUid: string | null) {
-  const mismatch = useAppStore.getState().dataOwnerUid !== nextUid;
-  // One atomic update: clearing goal/watchlist, recording the new owner,
-  // and marking verification done all land in a single render rather
-  // than a clear-then-verify sequence that itself has a gap.
-  useAppStore.setState({
-    ...(mismatch ? { goal: null, watchlist: {} } : {}),
-    dataOwnerUid: nextUid,
-    dataVerified: true,
-  });
-}
+// The old persist middleware wrote here before this ticket removed it.
+// Only watchlist is worth migrating -- goal has never had any real
+// per-user content (its only writer is page.tsx's demo auto-seed effect,
+// the same canned value for everyone), so a "migrated" goal would just be
+// that same placeholder copied into Firestore for no benefit.
+const LEGACY_STORAGE_KEY = "dfs-ev-demo-storage";
 
-export function useInitAuth() {
+const readLegacyWatchlistPropIds = (): string[] => {
+  const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Object.keys(parsed?.state?.watchlist ?? {});
+  } catch {
+    return [];
+  }
+};
+
+const fetchUserData = async (uid: string) => {
+  const authInstance = getFirebaseAuth();
+  // Defends against a real race, not a hypothetical one: if the signed-in
+  // user changed between syncDataFromServer capturing this uid and this
+  // call running, auth.currentUser would silently be a DIFFERENT user's
+  // token than the one this fetch is supposed to be for.
+  if (authInstance?.currentUser?.uid !== uid) return null;
+  const idToken = await authInstance.currentUser.getIdToken();
+  if (!idToken) return null;
+
+  const res = await fetch("/api/user-data", {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  if (!res.ok) return null;
+  const body = await res.json();
+  return body.success ? body : null;
+};
+
+// Seeds Firestore from whatever's left in the old localStorage key, one
+// POST per previously-watched propId (reusing the real route rather than
+// writing to Firestore directly -- it already knows how to construct a
+// fresh placeholder entry, the same shape a brand-new watch produces).
+// Stale evScore/evHistory values aren't worth preserving verbatim: the
+// live SSE stream overwrites them within moments of the page loading
+// anyway, so only the *set of watched propIds* is real data worth saving.
+const migrateLegacyWatchlist = async (): Promise<Record<string, WatchedProp>> => {
+  const propIds = readLegacyWatchlistPropIds();
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
+  if (propIds.length === 0) return {};
+
+  const headers = { "Content-Type": "application/json", ...(await getAuthHeaders()) };
+  const migrated: Record<string, WatchedProp> = {};
+  for (const propId of propIds) {
+    const res = await fetch("/api/watchlist", {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ propId }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      migrated[propId] = { propId, evScore: { modelProb: 0, impliedProb: 0, edge: 0 }, evHistory: [] };
+    }
+  }
+  return migrated;
+};
+
+// Firestore's per-uid document path is the ownership boundary now -- no
+// local heuristic needed, unlike the old dataOwnerUid comparison. Every
+// uid change (including to/from signed-out) resets goal/watchlist to a
+// blank slate first, since nothing is persisted locally anymore; a
+// signed-in uid then gets its real data hydrated from its own Firestore
+// document, if one exists yet.
+const syncDataFromServer = async (uid: string | null) => {
+  if (!uid) {
+    useAppStore.setState({ goal: null, watchlist: {}, dataVerified: true });
+    return;
+  }
+
+  useAppStore.setState({ goal: null, watchlist: {}, dataVerified: false });
+
+  const result = await fetchUserData(uid);
+  // Ignore a stale response if the signed-in user changed again while
+  // this fetch was in flight -- the newer uid's own call is the one that
+  // should win.
+  if (useAppStore.getState().uid !== uid) return;
+
+  if (result?.exists) {
+    useAppStore.setState({
+      goal: result.data.goal ?? null,
+      watchlist: result.data.watchlist ?? {},
+      ...(result.data.matchupConfig ? { matchupConfig: result.data.matchupConfig } : {}),
+    });
+  } else {
+    const migratedWatchlist = await migrateLegacyWatchlist();
+    if (useAppStore.getState().uid !== uid) return;
+    useAppStore.setState({ watchlist: migratedWatchlist });
+  }
+
+  useAppStore.setState({ dataVerified: true });
+};
+
+export const useInitAuth = () => {
   const setUser = useSetUser();
-  const hasHydrated = useHasHydrated();
   const authStatus = useAuthStatus();
   const uid = useUid();
 
   useEffect(() => {
     const authInstance = getFirebaseAuth();
     if (!authInstance) {
-      // Config missing/invalid -- degrade instead of hanging: authStatus
-      // flipping off "loading" is what unblocks dataVerified and the
-      // rest of the app, including the signed-out demo preview, which
-      // should still work even if sign-in itself is broken.
       useAppStore.setState({
         authStatus: "unavailable",
         authError: "Sign-in is currently unavailable.",
@@ -55,18 +133,8 @@ export function useInitAuth() {
     return unsubscribe;
   }, [setUser]);
 
-  // Ownership verification is only meaningful once BOTH readiness signals
-  // are true: Firebase has reported who's signed in (authStatus flips off
-  // "loading" the instant setUser above runs) and Zustand has finished
-  // rehydrating persisted state. These are two independent async
-  // processes with no guaranteed order -- rather than manually threading
-  // a ref between two effects to catch "whichever resolves second", this
-  // single effect's dependency array does that coordination: it re-runs
-  // on every change to either signal, and only actually acts once both
-  // are true. The same effect also covers an in-session account switch,
-  // since uid changing re-runs it again after the initial verification.
   useEffect(() => {
-    if (authStatus === "loading" || !hasHydrated) return;
-    syncDataOwnership(uid);
-  }, [authStatus, uid, hasHydrated]);
-}
+    if (authStatus === "loading") return;
+    syncDataFromServer(uid);
+  }, [authStatus, uid]);
+};

@@ -3,12 +3,12 @@ import { getFirestoreDb } from "@/lib/firebaseAdmin";
 import { requireUid } from "@/lib/apiAuth";
 
 export const GET = async (request: NextRequest) => {
-  const uid = await requireUid(request);
-  if (!uid) {
-    return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
-  }
-
   try {
+    const uid = await requireUid(request);
+    if (!uid) {
+      return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
+    }
+
     const snap = await getFirestoreDb().collection("users").doc(uid).get();
     if (!snap.exists) {
       // Brand-new user, no document yet -- the client keeps its own
