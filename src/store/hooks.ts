@@ -7,6 +7,7 @@ export const useSetUser = () => useAppStore((state) => state.setUser);
 export const useAuthError = () => useAppStore((state) => state.authError);
 export const useSetAuthError = () => useAppStore((state) => state.setAuthError);
 export const useDataVerified = () => useAppStore((state) => state.dataVerified);
+export const useDataLoadError = () => useAppStore((state) => state.dataLoadError);
 
 export const useConnectionStatus = () =>
   useAppStore((state) => state.connectionStatus);

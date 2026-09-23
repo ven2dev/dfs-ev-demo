@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthStatus } from "@/components/AuthStatus";
 import { Sparkline } from "@/components/Sparkline";
 import { computeEV } from "@/lib/computeEV";
+import { getAuthHeaders } from "@/lib/authHeaders";
+import { mockGoal } from "@/store/mockData";
 import type { WatchedProp } from "@/types";
 import {
   useAuthStatus,
   useConnectionStatus,
   useCurrentMatchup,
+  useDataLoadError,
   useDataVerified,
   useGoal,
   useMatchupConfig,
@@ -31,6 +34,7 @@ export default function Home() {
 
   const authStatus = useAuthStatus();
   const dataVerified = useDataVerified();
+  const dataLoadError = useDataLoadError();
   const connectionStatus = useConnectionStatus();
   const matchupConfig = useMatchupConfig();
   const setMatchupConfig = useSetMatchupConfig();
@@ -51,12 +55,15 @@ export default function Home() {
   const [watchError, setWatchError] = useState<string | null>(null);
 
   const handleWatchToggle = async () => {
-    if (!secondProp || watchPending) return;
+    if (!secondProp || watchPending || authStatus !== "signed-in") return;
 
-    if (authStatus !== "signed-in") {
-      setWatchError("Sign in to watch this prop.");
-      return;
-    }
+    // Captured once, at the start -- if the signed-in uid changes while
+    // this request is in flight (sign-out, or a different account signs
+    // in), useInitAuth's own sync effect has already taken over that
+    // account's watchlist by the time any callback below runs. Without
+    // this, a stale optimistic apply or rollback meant for the OLD
+    // account could land on the NEW account's data instead.
+    const uidForThisAction = useAppStore.getState().uid;
 
     setWatchError(null);
     setWatchPending(true);
@@ -72,8 +79,11 @@ export default function Home() {
 
     // Always read the watchlist fresh at the moment of writing, and only
     // ever touch this one key — safe regardless of what else has changed
-    // concurrently.
+    // concurrently. Also the single choke point for the uid guard above:
+    // both the optimistic apply and the failure rollback go through
+    // this, so one check covers both.
     const applyEntry = (entry: WatchedProp | undefined) => {
+      if (useAppStore.getState().uid !== uidForThisAction) return;
       const current = { ...useAppStore.getState().watchlist };
       if (entry) {
         current[propId] = entry;
@@ -93,7 +103,7 @@ export default function Home() {
     try {
       const res = await fetch("/api/watchlist", {
         method: wasWatching ? "DELETE" : "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
         body: JSON.stringify({ propId }),
       });
       const data = await res.json();
@@ -103,14 +113,52 @@ export default function Home() {
     } catch (err) {
       // Revert only this entry to its pre-optimistic-update value.
       applyEntry(wasWatching ? previousEntry : undefined);
-      setWatchError(
-        `Failed to ${wasWatching ? "unwatch" : "watch"} ${secondProp.playerName}: ${
-          (err as Error).message
-        } — reverted`
-      );
+      // An error about a different account's stale watch attempt would
+      // be confusing to show here -- only surface it if we're still
+      // looking at the account this action was actually for.
+      if (useAppStore.getState().uid === uidForThisAction) {
+        setWatchError(
+          `Failed to ${wasWatching ? "unwatch" : "watch"} ${secondProp.playerName}: ${
+            (err as Error).message
+          } — reverted`
+        );
+      }
     } finally {
       setWatchPending(false);
     }
+  };
+
+  // A genuine user preference change, worth persisting -- unlike
+  // useLiveOddsStream's own setMatchupConfig calls (live weather/line
+  // refresh on every SSE tick), which stay local-only; persisting those
+  // would write to Firestore every few seconds for every connected user.
+  // No snapshot-and-revert on failure here, per the brief's call for ONE
+  // rollback example (the watchlist toggle above) rather than one per
+  // action -- a failed persist just means the choice doesn't survive a
+  // reload, not a wrong or lost app state.
+  const handleSampleWindowChange = (window: 3 | 5 | 7) => {
+    const nextConfig = { ...matchupConfig, sampleWindow: window };
+    setMatchupConfig(nextConfig);
+
+    if (authStatus !== "signed-in") return;
+    getAuthHeaders()
+      .then((headers) =>
+        fetch("/api/matchup-config", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...headers },
+          body: JSON.stringify(nextConfig),
+        })
+      )
+      // fetch() only rejects on a network-level failure -- a 401 or 500
+      // response resolves normally and would silently look like success
+      // if nothing here actually inspects it.
+      .then(async (res) => {
+        const data = await res.json();
+        if (!data.success) {
+          console.error("[matchup-config] persist failed:", data.reason);
+        }
+      })
+      .catch((err) => console.error("[matchup-config] persist failed:", err));
   };
 
   // Deliberately NOT gated behind sign-in, unlike handleWatchToggle above.
@@ -120,15 +168,15 @@ export default function Home() {
   // no real "build your own goal" UI yet (that's Phase 10, once a real
   // slate exists to build one against), so today this is the only source
   // of a goal for anyone, signed in or not.
+  //
+  // For a signed-in user, useInitAuth separately persists this SAME
+  // mockGoal value to Firestore the first time it resolves no real goal
+  // exists yet (see syncDataFromServer) -- issue #21's AC requires a
+  // user's goal to survive a device switch, which this local-only seed
+  // can't provide on its own, even though the content is still just the
+  // shared placeholder either way.
   useEffect(() => {
-    if (!goal) {
-      setGoal({
-        kind: "salaryCap",
-        salaryCap: 50000,
-        rosterSlots: 9,
-        progress: { slotsFilled: 3, capUsed: 18500 },
-      });
-    }
+    if (!goal) setGoal(mockGoal);
   }, [goal, setGoal]);
 
   const pipeline = useMemo(() => {
@@ -185,7 +233,23 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-zinc-50 p-8 dark:bg-black">
         <div className="mx-auto flex max-w-3xl flex-col gap-8">
-          <p className="text-sm text-zinc-500">Loading…</p>
+          {dataLoadError ? (
+            // A genuine fetch failure, not just "still loading" -- shown
+            // distinctly rather than an indefinite spinner, since we
+            // genuinely don't know this account's real state yet.
+            <div className="text-sm text-red-600">
+              {dataLoadError}{" "}
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="underline"
+              >
+                Reload
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500">Loading…</p>
+          )}
         </div>
       </div>
     );
@@ -227,9 +291,7 @@ export default function Home() {
               {([3, 5, 7] as const).map((window) => (
                 <button
                   key={window}
-                  onClick={() =>
-                    setMatchupConfig({ ...matchupConfig, sampleWindow: window })
-                  }
+                  onClick={() => handleSampleWindowChange(window)}
                   className={`rounded px-3 py-1 text-sm ${
                     matchupConfig.sampleWindow === window
                       ? "bg-black text-white dark:bg-white dark:text-black"
@@ -347,8 +409,14 @@ export default function Home() {
                       : "Watch"}
                 </button>
               </div>
-              {watchError && (
-                <p className="mt-2 text-xs text-red-600">{watchError}</p>
+              {authStatus !== "signed-in" ? (
+                // Derived directly from live authStatus, not stored state --
+                // storing this as a one-time "you clicked while signed out"
+                // message left it stuck on screen after actually signing
+                // in, since nothing re-ran to clear it until the next click.
+                <p className="mt-2 text-xs text-zinc-400">Sign in to watch this prop.</p>
+              ) : (
+                watchError && <p className="mt-2 text-xs text-red-600">{watchError}</p>
               )}
             </div>
           )}

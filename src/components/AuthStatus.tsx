@@ -8,6 +8,7 @@
 // (API key, project setup, JS origins, redirect URIs, consent screen
 // status). Popup avoids that dependency entirely: the original tab
 // stays alive and gets the result via postMessage instead.
+import { useEffect } from "react";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { getFirebaseAuth, googleProvider } from "@/lib/firebaseClient";
 import {
@@ -22,6 +23,23 @@ export function AuthStatus() {
   const displayName = useDisplayName();
   const authError = useAuthError();
   const setAuthError = useSetAuthError();
+
+  // handleSignIn clears authError at the START of each attempt, but a
+  // real Firebase quirk means the popup's own promise can still reject
+  // (setting a "Sign-in failed" error) even though the separate
+  // onAuthStateChanged listener reports success moments later -- these
+  // are two independent async paths with no guaranteed ordering. This is
+  // a genuine effect (reconciling this component with authStatus, which
+  // lives in an external store, not local state) -- not the "derive one
+  // piece of local state from another" anti-pattern the set-state-in-
+  // effect lint rule warns about. An earlier attempt at this used
+  // React's "adjust state during render" pattern instead, which is only
+  // safe for a component's OWN useState/useReducer -- calling into an
+  // external store's setter mid-render risks tearing/inconsistent
+  // snapshots for other components rendering concurrently.
+  useEffect(() => {
+    if (authStatus === "signed-in") setAuthError(null);
+  }, [authStatus, setAuthError]);
 
   const handleSignIn = () => {
     setAuthError(null);
