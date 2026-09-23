@@ -40,6 +40,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local dev-preview config (per-machine, deliberately left untracked)
+.claude/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
