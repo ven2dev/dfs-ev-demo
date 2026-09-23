@@ -57,6 +57,14 @@ export default function Home() {
   const handleWatchToggle = async () => {
     if (!secondProp || watchPending || authStatus !== "signed-in") return;
 
+    // Captured once, at the start -- if the signed-in uid changes while
+    // this request is in flight (sign-out, or a different account signs
+    // in), useInitAuth's own sync effect has already taken over that
+    // account's watchlist by the time any callback below runs. Without
+    // this, a stale optimistic apply or rollback meant for the OLD
+    // account could land on the NEW account's data instead.
+    const uidForThisAction = useAppStore.getState().uid;
+
     setWatchError(null);
     setWatchPending(true);
 
@@ -71,8 +79,11 @@ export default function Home() {
 
     // Always read the watchlist fresh at the moment of writing, and only
     // ever touch this one key — safe regardless of what else has changed
-    // concurrently.
+    // concurrently. Also the single choke point for the uid guard above:
+    // both the optimistic apply and the failure rollback go through
+    // this, so one check covers both.
     const applyEntry = (entry: WatchedProp | undefined) => {
+      if (useAppStore.getState().uid !== uidForThisAction) return;
       const current = { ...useAppStore.getState().watchlist };
       if (entry) {
         current[propId] = entry;
@@ -102,11 +113,16 @@ export default function Home() {
     } catch (err) {
       // Revert only this entry to its pre-optimistic-update value.
       applyEntry(wasWatching ? previousEntry : undefined);
-      setWatchError(
-        `Failed to ${wasWatching ? "unwatch" : "watch"} ${secondProp.playerName}: ${
-          (err as Error).message
-        } — reverted`
-      );
+      // An error about a different account's stale watch attempt would
+      // be confusing to show here -- only surface it if we're still
+      // looking at the account this action was actually for.
+      if (useAppStore.getState().uid === uidForThisAction) {
+        setWatchError(
+          `Failed to ${wasWatching ? "unwatch" : "watch"} ${secondProp.playerName}: ${
+            (err as Error).message
+          } — reverted`
+        );
+      }
     } finally {
       setWatchPending(false);
     }

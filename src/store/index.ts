@@ -13,6 +13,11 @@ import type { AppState } from "./types";
 // this data would just reintroduce the cross-account leak risk #20 spent
 // real effort eliminating -- Firestore's per-uid document path is the
 // only place this data should live.
+//
+// Any pre-existing "dfs-ev-demo-storage" key from before this ticket is
+// dead weight now, not migrated -- see useInitAuth.ts's one-line cleanup
+// of it, and issue #21's amended AC for why (disposable dev/demo data
+// only, no real user data existed to lose).
 export const useAppStore = create<AppState>()(
   devtools(
     (...args) => ({
