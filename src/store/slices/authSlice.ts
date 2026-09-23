@@ -14,6 +14,11 @@ export interface AuthSlice {
   // brief window where the previous account's in-memory state hasn't
   // been cleared yet.
   dataVerified: boolean;
+  // Set when useInitAuth's Firestore fetch genuinely fails (network/
+  // server error) -- distinct from dataVerified staying false while a
+  // fetch is merely in flight. Lets the loading shell show a real error
+  // instead of an indefinite spinner when something's actually wrong.
+  dataLoadError: string | null;
   setUser: (user: { uid: string; displayName: string | null } | null) => void;
   setAuthError: (error: string | null) => void;
 }
@@ -26,6 +31,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
   authStatus: "loading",
   authError: null,
   dataVerified: false,
+  dataLoadError: null,
   setUser: (user) =>
     set((state) => {
       const nextUid = user?.uid ?? null;

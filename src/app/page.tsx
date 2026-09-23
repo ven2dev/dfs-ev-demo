@@ -5,11 +5,13 @@ import { AuthStatus } from "@/components/AuthStatus";
 import { Sparkline } from "@/components/Sparkline";
 import { computeEV } from "@/lib/computeEV";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { mockGoal } from "@/store/mockData";
 import type { WatchedProp } from "@/types";
 import {
   useAuthStatus,
   useConnectionStatus,
   useCurrentMatchup,
+  useDataLoadError,
   useDataVerified,
   useGoal,
   useMatchupConfig,
@@ -32,6 +34,7 @@ export default function Home() {
 
   const authStatus = useAuthStatus();
   const dataVerified = useDataVerified();
+  const dataLoadError = useDataLoadError();
   const connectionStatus = useConnectionStatus();
   const matchupConfig = useMatchupConfig();
   const setMatchupConfig = useSetMatchupConfig();
@@ -130,6 +133,15 @@ export default function Home() {
           body: JSON.stringify(nextConfig),
         })
       )
+      // fetch() only rejects on a network-level failure -- a 401 or 500
+      // response resolves normally and would silently look like success
+      // if nothing here actually inspects it.
+      .then(async (res) => {
+        const data = await res.json();
+        if (!data.success) {
+          console.error("[matchup-config] persist failed:", data.reason);
+        }
+      })
       .catch((err) => console.error("[matchup-config] persist failed:", err));
   };
 
@@ -140,15 +152,15 @@ export default function Home() {
   // no real "build your own goal" UI yet (that's Phase 10, once a real
   // slate exists to build one against), so today this is the only source
   // of a goal for anyone, signed in or not.
+  //
+  // For a signed-in user, useInitAuth separately persists this SAME
+  // mockGoal value to Firestore the first time it resolves no real goal
+  // exists yet (see syncDataFromServer) -- issue #21's AC requires a
+  // user's goal to survive a device switch, which this local-only seed
+  // can't provide on its own, even though the content is still just the
+  // shared placeholder either way.
   useEffect(() => {
-    if (!goal) {
-      setGoal({
-        kind: "salaryCap",
-        salaryCap: 50000,
-        rosterSlots: 9,
-        progress: { slotsFilled: 3, capUsed: 18500 },
-      });
-    }
+    if (!goal) setGoal(mockGoal);
   }, [goal, setGoal]);
 
   const pipeline = useMemo(() => {
@@ -205,7 +217,23 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-zinc-50 p-8 dark:bg-black">
         <div className="mx-auto flex max-w-3xl flex-col gap-8">
-          <p className="text-sm text-zinc-500">Loading…</p>
+          {dataLoadError ? (
+            // A genuine fetch failure, not just "still loading" -- shown
+            // distinctly rather than an indefinite spinner, since we
+            // genuinely don't know this account's real state yet.
+            <div className="text-sm text-red-600">
+              {dataLoadError}{" "}
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="underline"
+              >
+                Reload
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-500">Loading…</p>
+          )}
         </div>
       </div>
     );

@@ -4,72 +4,40 @@ import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { getFirebaseAuth } from "@/lib/firebaseClient";
 import { getAuthHeaders } from "@/lib/authHeaders";
-import type { WatchedProp } from "@/types";
+import type { MatchupConfig, WatchedProp } from "@/types";
+import { mockGoal } from "./mockData";
 import { useAppStore } from "./index";
 import { useAuthStatus, useSetUser, useUid } from "./hooks";
 
-// The old persist middleware wrote here before this ticket removed it.
-// Only watchlist is worth migrating -- goal has never had any real
-// per-user content (its only writer is page.tsx's demo auto-seed effect,
-// the same canned value for everyone), so a "migrated" goal would just be
-// that same placeholder copied into Firestore for no benefit.
-const LEGACY_STORAGE_KEY = "dfs-ev-demo-storage";
+type UserDataFetchResult =
+  | { status: "found"; data: { goal?: unknown; watchlist?: unknown; matchupConfig?: unknown } }
+  | { status: "not-found" }
+  // Genuinely unknown state -- a network/server failure, not a confirmed
+  // answer. Must never be treated the same as "not-found": this uid might
+  // have real saved data that a transient failure just couldn't fetch.
+  | { status: "error" };
 
-const readLegacyWatchlistPropIds = (): string[] => {
-  const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
-  if (!raw) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Object.keys(parsed?.state?.watchlist ?? {});
-  } catch {
-    return [];
-  }
-};
-
-const fetchUserData = async (uid: string) => {
+const fetchUserData = async (uid: string): Promise<UserDataFetchResult> => {
   const authInstance = getFirebaseAuth();
   // Defends against a real race, not a hypothetical one: if the signed-in
   // user changed between syncDataFromServer capturing this uid and this
   // call running, auth.currentUser would silently be a DIFFERENT user's
   // token than the one this fetch is supposed to be for.
-  if (authInstance?.currentUser?.uid !== uid) return null;
-  const idToken = await authInstance.currentUser.getIdToken();
-  if (!idToken) return null;
+  if (authInstance?.currentUser?.uid !== uid) return { status: "error" };
 
-  const res = await fetch("/api/user-data", {
-    headers: { Authorization: `Bearer ${idToken}` },
-  });
-  if (!res.ok) return null;
-  const body = await res.json();
-  return body.success ? body : null;
-};
-
-// Seeds Firestore from whatever's left in the old localStorage key, one
-// POST per previously-watched propId (reusing the real route rather than
-// writing to Firestore directly -- it already knows how to construct a
-// fresh placeholder entry, the same shape a brand-new watch produces).
-// Stale evScore/evHistory values aren't worth preserving verbatim: the
-// live SSE stream overwrites them within moments of the page loading
-// anyway, so only the *set of watched propIds* is real data worth saving.
-const migrateLegacyWatchlist = async (): Promise<Record<string, WatchedProp>> => {
-  const propIds = readLegacyWatchlistPropIds();
-  localStorage.removeItem(LEGACY_STORAGE_KEY);
-  if (propIds.length === 0) return {};
-
-  const headers = { "Content-Type": "application/json", ...(await getAuthHeaders()) };
-  const migrated: Record<string, WatchedProp> = {};
-  for (const propId of propIds) {
-    const res = await fetch("/api/watchlist", {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ propId }),
+  try {
+    const idToken = await authInstance.currentUser.getIdToken();
+    const res = await fetch("/api/user-data", {
+      headers: { Authorization: `Bearer ${idToken}` },
     });
-    const data = await res.json();
-    if (data.success) {
-      migrated[propId] = { propId, evScore: { modelProb: 0, impliedProb: 0, edge: 0 }, evHistory: [] };
-    }
+    if (!res.ok) return { status: "error" };
+
+    const body = await res.json();
+    if (!body.success) return { status: "error" };
+    return body.exists ? { status: "found", data: body.data } : { status: "not-found" };
+  } catch {
+    return { status: "error" };
   }
-  return migrated;
 };
 
 // Firestore's per-uid document path is the ownership boundary now -- no
@@ -80,11 +48,11 @@ const migrateLegacyWatchlist = async (): Promise<Record<string, WatchedProp>> =>
 // document, if one exists yet.
 const syncDataFromServer = async (uid: string | null) => {
   if (!uid) {
-    useAppStore.setState({ goal: null, watchlist: {}, dataVerified: true });
+    useAppStore.setState({ goal: null, watchlist: {}, dataVerified: true, dataLoadError: null });
     return;
   }
 
-  useAppStore.setState({ goal: null, watchlist: {}, dataVerified: false });
+  useAppStore.setState({ goal: null, watchlist: {}, dataVerified: false, dataLoadError: null });
 
   const result = await fetchUserData(uid);
   // Ignore a stale response if the signed-in user changed again while
@@ -92,19 +60,49 @@ const syncDataFromServer = async (uid: string | null) => {
   // should win.
   if (useAppStore.getState().uid !== uid) return;
 
-  if (result?.exists) {
+  if (result.status === "error") {
+    // We genuinely don't know this user's real state. dataVerified stays
+    // false on purpose -- the loading shell stays up, now showing this
+    // error, rather than the app silently presenting an unverified empty
+    // account as if it were confirmed fact.
     useAppStore.setState({
-      goal: result.data.goal ?? null,
-      watchlist: result.data.watchlist ?? {},
-      ...(result.data.matchupConfig ? { matchupConfig: result.data.matchupConfig } : {}),
+      dataLoadError: "Couldn't load your saved data. Check your connection and reload.",
     });
-  } else {
-    const migratedWatchlist = await migrateLegacyWatchlist();
-    if (useAppStore.getState().uid !== uid) return;
-    useAppStore.setState({ watchlist: migratedWatchlist });
+    return;
   }
 
-  useAppStore.setState({ dataVerified: true });
+  if (result.status === "found") {
+    const matchupConfig = result.data.matchupConfig as MatchupConfig | undefined;
+    useAppStore.setState({
+      goal: (result.data.goal as typeof mockGoal | null) ?? null,
+      watchlist: (result.data.watchlist as Record<string, WatchedProp>) ?? {},
+      ...(matchupConfig ? { matchupConfig } : {}),
+      dataVerified: true,
+    });
+    return;
+  }
+
+  // result.status === "not-found": genuinely confirmed brand-new user.
+  // Issue #21's AC requires a user's goal to survive a device switch --
+  // even though the content is still just the shared demo placeholder
+  // (no real goal-editing UI exists yet), it has to actually be written
+  // to and read from Firestore, not independently re-seeded fresh on
+  // every device. Seed it once, here, rather than leaving it to
+  // page.tsx's local-only effect, which can't make it durable.
+  const headers = { "Content-Type": "application/json", ...(await getAuthHeaders()) };
+  const goalRes = await fetch("/api/goal", {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(mockGoal),
+  });
+  if (useAppStore.getState().uid !== uid) return;
+
+  const goalData = await goalRes.json();
+  useAppStore.setState({
+    goal: goalData.success ? mockGoal : null,
+    watchlist: {},
+    dataVerified: true,
+  });
 };
 
 export const useInitAuth = () => {

@@ -1,4 +1,4 @@
-import type { Matchup } from "@/types";
+import type { Matchup, SalaryCapGoal } from "@/types";
 
 // Real upcoming NFL game and real player-prop market, confirmed available
 // on The Odds API's free tier (americanfootball_nfl, player_pass_yds).
@@ -49,4 +49,16 @@ export const mockCoverageFilters: Record<string, unknown> = {
   primaryDefender: "J. Smith",
   shadowCoverageRate: 0.35,
   avgSeparationYards: 2.3,
+};
+
+// The only goal value anyone gets today, signed in or not -- no real
+// goal-building UI exists yet (Phase 10). Shared between page.tsx's
+// signed-out demo-preview seed and useInitAuth's signed-in Firestore
+// seed so a signed-in user's first-ever goal is the SAME value in both
+// places, not two independently-defined "defaults" that could drift.
+export const mockGoal: SalaryCapGoal = {
+  kind: "salaryCap",
+  salaryCap: 50000,
+  rosterSlots: 9,
+  progress: { slotsFilled: 3, capUsed: 18500 },
 };

@@ -8,6 +8,7 @@
 // (API key, project setup, JS origins, redirect URIs, consent screen
 // status). Popup avoids that dependency entirely: the original tab
 // stays alive and gets the result via postMessage instead.
+import { useState } from "react";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { getFirebaseAuth, googleProvider } from "@/lib/firebaseClient";
 import {
@@ -22,6 +23,22 @@ export function AuthStatus() {
   const displayName = useDisplayName();
   const authError = useAuthError();
   const setAuthError = useSetAuthError();
+
+  // handleSignIn clears authError at the START of each attempt, but a
+  // real Firebase quirk means the popup's own promise can still reject
+  // (setting a "Sign-in failed" error) even though the separate
+  // onAuthStateChanged listener reports success moments later -- these
+  // are two independent async paths with no guaranteed ordering. Adjust
+  // state directly during render (React's documented pattern for this,
+  // not a useEffect) the instant authStatus is OBSERVED to become
+  // "signed-in": that transition means any earlier sign-in-attempt error
+  // is now stale by definition. A sign-out failure is unaffected, since
+  // it happens while already signed-in -- no such transition occurs.
+  const [clearedForStatus, setClearedForStatus] = useState(authStatus);
+  if (authStatus !== clearedForStatus) {
+    setClearedForStatus(authStatus);
+    if (authStatus === "signed-in") setAuthError(null);
+  }
 
   const handleSignIn = () => {
     setAuthError(null);
