@@ -10,7 +10,7 @@
 // stays alive and gets the result via postMessage instead.
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { signInWithPopup, signOut } from "firebase/auth";
+import { signInWithPopup } from "firebase/auth";
 import { getFirebaseAuth, googleProvider } from "@/lib/firebaseClient";
 import {
   useAuthError,
@@ -18,6 +18,7 @@ import {
   useDisplayName,
   useSetAuthError,
 } from "@/store/hooks";
+import { useSignOut } from "@/store/useSignOut";
 
 // Generic, same for every user -- not a fetched Google profile photo.
 // Deliberate choice: see #22's triage discussion.
@@ -93,18 +94,10 @@ export const AuthStatus = () => {
     });
   };
 
+  const signOut = useSignOut();
   const handleSignOut = () => {
-    setAuthError(null);
     setMenuOpen(false);
-    const authInstance = getFirebaseAuth();
-    if (!authInstance) {
-      setAuthError("Sign-out is currently unavailable.");
-      return;
-    }
-    signOut(authInstance).catch((err) => {
-      setAuthError("Sign-out failed. Try again.");
-      console.error("[AuthStatus] sign-out failed:", err);
-    });
+    signOut();
   };
 
   if (authStatus === "loading") {
