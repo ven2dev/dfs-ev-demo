@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { AuthStatus } from "@/components/AuthStatus";
 import { Sparkline } from "@/components/Sparkline";
 import { computeEV } from "@/lib/computeEV";
 import { getAuthHeaders } from "@/lib/authHeaders";
@@ -230,28 +229,24 @@ export default function Home() {
   // hydration render can briefly show a different account's data before
   // the ownership check has had a chance to clear it.
   if (!dataVerified) {
-    return (
-      <div className="min-h-screen bg-zinc-50 p-8 dark:bg-black">
-        <div className="mx-auto flex max-w-3xl flex-col gap-8">
-          {dataLoadError ? (
-            // A genuine fetch failure, not just "still loading" -- shown
-            // distinctly rather than an indefinite spinner, since we
-            // genuinely don't know this account's real state yet.
-            <div className="text-sm text-red-600">
-              {dataLoadError}{" "}
-              <button
-                type="button"
-                onClick={() => window.location.reload()}
-                className="underline"
-              >
-                Reload
-              </button>
-            </div>
-          ) : (
-            <p className="text-sm text-zinc-500">Loading…</p>
-          )}
-        </div>
+    // Layout now owns the header/shell -- this only needs to render its
+    // own content, not a full-screen wrapper duplicating layout's.
+    return dataLoadError ? (
+      // A genuine fetch failure, not just "still loading" -- shown
+      // distinctly rather than an indefinite spinner, since we
+      // genuinely don't know this account's real state yet.
+      <div className="text-sm text-red-600">
+        {dataLoadError}{" "}
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="underline"
+        >
+          Reload
+        </button>
       </div>
+    ) : (
+      <p className="text-sm text-zinc-500">Loading…</p>
     );
   }
 
@@ -263,165 +258,158 @@ export default function Home() {
         : "bg-red-500";
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-8 dark:bg-black">
-      <div className="mx-auto flex max-w-3xl flex-col gap-8">
-        <header className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">DFS Matchup EV Demo</h1>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <span className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
-              <span className="capitalize">{connectionStatus}</span>
-            </div>
-            <AuthStatus />
+    <>
+      {currentMatchup && prop && (
+        <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+          <h2 className="text-lg font-medium">
+            {currentMatchup.awayTeam} @ {currentMatchup.homeTeam}
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            {prop.playerName} — {prop.propType}, line{" "}
+            {(matchupConfig.environment.currentLine as number) ?? prop.line}{" "}
+            (real player-prop line, live Odds API)
+          </p>
+
+          <div className="mt-4 flex gap-2">
+            {([3, 5, 7] as const).map((window) => (
+              <button
+                key={window}
+                onClick={() => handleSampleWindowChange(window)}
+                className={`rounded px-3 py-1 text-sm ${
+                  matchupConfig.sampleWindow === window
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "bg-zinc-100 dark:bg-zinc-900"
+                }`}
+              >
+                Last {window}
+              </button>
+            ))}
           </div>
-        </header>
 
-        {currentMatchup && prop && (
-          <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
-            <h2 className="text-lg font-medium">
-              {currentMatchup.awayTeam} @ {currentMatchup.homeTeam}
-            </h2>
-            <p className="mt-1 text-sm text-zinc-500">
-              {prop.playerName} — {prop.propType}, line{" "}
-              {(matchupConfig.environment.currentLine as number) ?? prop.line}{" "}
-              (real player-prop line, live Odds API)
-            </p>
-
-            <div className="mt-4 flex gap-2">
-              {([3, 5, 7] as const).map((window) => (
-                <button
-                  key={window}
-                  onClick={() => handleSampleWindowChange(window)}
-                  className={`rounded px-3 py-1 text-sm ${
-                    matchupConfig.sampleWindow === window
+          {/* Active-node stepper — steps through base->env->coverage->final
+              on each new live tick; exactly one node active at a time. */}
+          <div className="mt-6 flex items-center gap-2 text-xs">
+            {STAGES.map((stage, i) => (
+              <div key={stage.key} className="flex items-center gap-2">
+                <span
+                  className={`rounded-full px-2 py-1 transition-colors ${
+                    i === activeStageIndex
                       ? "bg-black text-white dark:bg-white dark:text-black"
-                      : "bg-zinc-100 dark:bg-zinc-900"
+                      : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900"
                   }`}
                 >
-                  Last {window}
-                </button>
-              ))}
-            </div>
-
-            {/* Active-node stepper — steps through base->env->coverage->final
-                on each new live tick; exactly one node active at a time. */}
-            <div className="mt-6 flex items-center gap-2 text-xs">
-              {STAGES.map((stage, i) => (
-                <div key={stage.key} className="flex items-center gap-2">
-                  <span
-                    className={`rounded-full px-2 py-1 transition-colors ${
-                      i === activeStageIndex
-                        ? "bg-black text-white dark:bg-white dark:text-black"
-                        : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900"
-                    }`}
-                  >
-                    {stage.label}
-                  </span>
-                  {i < STAGES.length - 1 && <span className="text-zinc-300">→</span>}
-                </div>
-              ))}
-            </div>
-
-            {pipeline && (
-              <div className="mt-6 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span>Base rate ({matchupConfig.sampleWindow}-game hit rate)</span>
-                  <span>{(pipeline.baseRate * 100).toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>After environment adjustment (real weather)</span>
-                  <span>{(pipeline.afterEnvironment * 100).toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>
-                    After coverage adjustment{" "}
-                    <em className="text-zinc-400">(sample data — mocked)</em>
-                  </span>
-                  <span>{(pipeline.afterCoverage * 100).toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between border-t border-zinc-200 pt-3 text-sm font-medium dark:border-zinc-800">
-                  <span>Final EV (edge, vs. real devigged Odds API line)</span>
-                  <span
-                    className={
-                      pipeline.evScore.edge > 0 ? "text-green-600" : "text-red-600"
-                    }
-                  >
-                    {(pipeline.evScore.edge * 100).toFixed(1)}%
-                  </span>
-                </div>
+                  {stage.label}
+                </span>
+                {i < STAGES.length - 1 && <span className="text-zinc-300">→</span>}
               </div>
-            )}
+            ))}
+          </div>
 
-            {goal?.kind === "salaryCap" && projectedPts !== null && (
-              <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-                +{projectedPts} projected pts · uses ${prop.salary.toLocaleString()}{" "}
-                of remaining cap{" "}
-                <em className="text-zinc-400">
-                  (sample data — mocked stat history & salary)
-                </em>
-              </p>
-            )}
-          </section>
-        )}
-
-        <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
-          <h2 className="text-lg font-medium">Live Tracker</h2>
-          {watched && prop ? (
-            <div className="mt-4">
+          {pipeline && (
+            <div className="mt-6 space-y-3">
               <div className="flex justify-between text-sm">
-                <span>{prop.playerName} — live edge</span>
-                <span>{(watched.evScore.edge * 100).toFixed(1)}%</span>
+                <span>Base rate ({matchupConfig.sampleWindow}-game hit rate)</span>
+                <span>{(pipeline.baseRate * 100).toFixed(1)}%</span>
               </div>
-              <div className="mt-2">
-                <Sparkline values={watched.evHistory.map((h) => h.evScore)} />
+              <div className="flex justify-between text-sm">
+                <span>After environment adjustment (real weather)</span>
+                <span>{(pipeline.afterEnvironment * 100).toFixed(1)}%</span>
               </div>
-              <p className="mt-1 text-xs text-zinc-400">
-                {watched.evHistory.length} live ticks recorded
-              </p>
+              <div className="flex justify-between text-sm">
+                <span>
+                  After coverage adjustment{" "}
+                  <em className="text-zinc-400">(sample data — mocked)</em>
+                </span>
+                <span>{(pipeline.afterCoverage * 100).toFixed(1)}%</span>
+              </div>
+              <div className="flex justify-between border-t border-zinc-200 pt-3 text-sm font-medium dark:border-zinc-800">
+                <span>Final EV (edge, vs. real devigged Odds API line)</span>
+                <span
+                  className={
+                    pipeline.evScore.edge > 0 ? "text-green-600" : "text-red-600"
+                  }
+                >
+                  {(pipeline.evScore.edge * 100).toFixed(1)}%
+                </span>
+              </div>
             </div>
-          ) : (
-            <p className="mt-2 text-sm text-zinc-500">Waiting for first live tick…</p>
           )}
 
-          {secondProp && (
-            <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm">{secondProp.playerName} — {secondProp.propType}</p>
-                  <p className="text-xs text-zinc-400">
-                    Optimistic watch/unwatch demo — REST call has a simulated
-                    ~30% failure rate to demonstrate rollback
-                  </p>
-                </div>
-                <button
-                  onClick={handleWatchToggle}
-                  disabled={watchPending}
-                  className={`rounded px-3 py-1 text-sm disabled:opacity-50 ${
-                    isWatchingSecond
-                      ? "bg-zinc-100 dark:bg-zinc-900"
-                      : "bg-black text-white dark:bg-white dark:text-black"
-                  }`}
-                >
-                  {watchPending
-                    ? "…"
-                    : isWatchingSecond
-                      ? "Unwatch"
-                      : "Watch"}
-                </button>
-              </div>
-              {authStatus !== "signed-in" ? (
-                // Derived directly from live authStatus, not stored state --
-                // storing this as a one-time "you clicked while signed out"
-                // message left it stuck on screen after actually signing
-                // in, since nothing re-ran to clear it until the next click.
-                <p className="mt-2 text-xs text-zinc-400">Sign in to watch this prop.</p>
-              ) : (
-                watchError && <p className="mt-2 text-xs text-red-600">{watchError}</p>
-              )}
-            </div>
+          {goal?.kind === "salaryCap" && projectedPts !== null && (
+            <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
+              +{projectedPts} projected pts · uses ${prop.salary.toLocaleString()}{" "}
+              of remaining cap{" "}
+              <em className="text-zinc-400">
+                (sample data — mocked stat history & salary)
+              </em>
+            </p>
           )}
         </section>
-      </div>
-    </div>
+      )}
+
+      <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-medium">Live Tracker</h2>
+          <div className="flex items-center gap-2 text-sm">
+            <span className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
+            <span className="capitalize">{connectionStatus}</span>
+          </div>
+        </div>
+        {watched && prop ? (
+          <div className="mt-4">
+            <div className="flex justify-between text-sm">
+              <span>{prop.playerName} — live edge</span>
+              <span>{(watched.evScore.edge * 100).toFixed(1)}%</span>
+            </div>
+            <div className="mt-2">
+              <Sparkline values={watched.evHistory.map((h) => h.evScore)} />
+            </div>
+            <p className="mt-1 text-xs text-zinc-400">
+              {watched.evHistory.length} live ticks recorded
+            </p>
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-zinc-500">Waiting for first live tick…</p>
+        )}
+
+        {secondProp && (
+          <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm">{secondProp.playerName} — {secondProp.propType}</p>
+                <p className="text-xs text-zinc-400">
+                  Optimistic watch/unwatch demo — REST call has a simulated
+                  ~30% failure rate to demonstrate rollback
+                </p>
+              </div>
+              <button
+                onClick={handleWatchToggle}
+                disabled={watchPending}
+                className={`rounded px-3 py-1 text-sm disabled:opacity-50 ${
+                  isWatchingSecond
+                    ? "bg-zinc-100 dark:bg-zinc-900"
+                    : "bg-black text-white dark:bg-white dark:text-black"
+                }`}
+              >
+                {watchPending
+                  ? "…"
+                  : isWatchingSecond
+                    ? "Unwatch"
+                    : "Watch"}
+              </button>
+            </div>
+            {authStatus !== "signed-in" ? (
+              // Derived directly from live authStatus, not stored state --
+              // storing this as a one-time "you clicked while signed out"
+              // message left it stuck on screen after actually signing
+              // in, since nothing re-ran to clear it until the next click.
+              <p className="mt-2 text-xs text-zinc-400">Sign in to watch this prop.</p>
+            ) : (
+              watchError && <p className="mt-2 text-xs text-red-600">{watchError}</p>
+            )}
+          </div>
+        )}
+      </section>
+    </>
   );
 }
