@@ -5,6 +5,11 @@ import type { AppState } from "../types";
 export interface AuthSlice {
   uid: string | null;
   displayName: string | null;
+  // e.g. "google.com" -- Firebase's own provider id format. Google-only
+  // for now, but stored as whatever Firebase reports rather than a
+  // hardcoded "Google" literal, so this doesn't need revisiting the day
+  // a second provider is added.
+  providerId: string | null;
   authStatus: AuthStatus;
   authError: string | null;
   // False until useInitAuth has resolved this uid's real data from
@@ -19,7 +24,9 @@ export interface AuthSlice {
   // fetch is merely in flight. Lets the loading shell show a real error
   // instead of an indefinite spinner when something's actually wrong.
   dataLoadError: string | null;
-  setUser: (user: { uid: string; displayName: string | null } | null) => void;
+  setUser: (
+    user: { uid: string; displayName: string | null; providerId: string | null } | null
+  ) => void;
   setAuthError: (error: string | null) => void;
 }
 
@@ -28,6 +35,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
 ) => ({
   uid: null,
   displayName: null,
+  providerId: null,
   authStatus: "loading",
   authError: null,
   dataVerified: false,
@@ -36,8 +44,18 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
     set((state) => {
       const nextUid = user?.uid ?? null;
       const identityFields = user
-        ? { uid: user.uid, displayName: user.displayName, authStatus: "signed-in" as const }
-        : { uid: null, displayName: null, authStatus: "signed-out" as const };
+        ? {
+            uid: user.uid,
+            displayName: user.displayName,
+            providerId: user.providerId,
+            authStatus: "signed-in" as const,
+          }
+        : {
+            uid: null,
+            displayName: null,
+            providerId: null,
+            authStatus: "signed-out" as const,
+          };
       // uid changing must flip dataVerified false in this SAME update,
       // not in a later effect -- otherwise a render can land between the
       // two with the new uid already visible but the old uid's
