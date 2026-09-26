@@ -37,3 +37,33 @@ export const requireUid = async (request: NextRequest): Promise<string | null> =
     return null;
   }
 };
+
+// Used only by DELETE /api/account, as a fallback after requireUid
+// already returned null. Distinguishes "this token is genuinely
+// invalid" from "this token is fine, but the account it names has
+// already been deleted" -- the latter is what a retry of an
+// already-completed deletion looks like (the first attempt's response
+// was lost, so the client retried, but by then requireUid's own
+// checkRevoked lookup fails since there's no account left to check).
+// Deliberately does NOT loosen requireUid itself: every other route
+// must keep treating a deleted account's token as unauthorized, which
+// is the entire point of the revocation check above.
+export const uidOfAlreadyDeletedAccount = async (
+  request: NextRequest
+): Promise<string | null> => {
+  const token = parseBearerToken(request);
+  if (!token) return null;
+
+  const auth = getAdminAuth();
+  try {
+    // No checkRevoked here -- the caller only reaches this after
+    // requireUid's own checkRevoked-enabled verification already
+    // failed. This re-verifies signature and expiry only (still a real
+    // cryptographic check, not trusting the payload blindly), just to
+    // recover which uid an otherwise-valid token names.
+    const decoded = await auth.verifyIdToken(token, false);
+    return decoded.uid;
+  } catch {
+    return null;
+  }
+};
