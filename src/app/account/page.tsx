@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { useAuthStatus, useDisplayName, useProviderId } from "@/store/hooks";
 import { useSignOut } from "@/store/useSignOut";
@@ -20,7 +19,6 @@ export default function AccountPage() {
   const displayName = useDisplayName();
   const providerId = useProviderId();
   const signOut = useSignOut();
-  const router = useRouter();
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -47,14 +45,9 @@ export default function AccountPage() {
       if (!data.success) {
         throw new Error(data.reason ?? "Unknown failure");
       }
-      // signOut() drives the exact same onAuthStateChanged -> setUser(null)
-      // -> syncDataFromServer(null) chain a normal sign-out already goes
-      // through elsewhere in the app -- that already resets goal/
-      // watchlist/matchupConfig cleanly, so a client-side route push is
-      // enough here; no need for a full reload just because this sign-out
-      // happens to follow a deletion.
+      // useSignOut() already redirects home on its own -- no need to
+      // duplicate that here.
       signOut();
-      router.push("/");
     } catch (err) {
       setDeleteError(`Failed to delete account: ${(err as Error).message}`);
       setDeleting(false);
