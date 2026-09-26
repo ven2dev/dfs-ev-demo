@@ -1,35 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFirestoreDb, getAdminAuth } from "@/lib/firebaseAdmin";
-import { requireUid, uidOfAlreadyDeletedAccount } from "@/lib/apiAuth";
+import { checkUidForDeletion } from "@/lib/apiAuth";
 
 export const DELETE = async (request: NextRequest) => {
   try {
-    const uid = await requireUid(request);
-    if (!uid) {
-      // requireUid's own checkRevoked lookup fails for an account that
-      // no longer exists at all -- which is exactly what a RETRY of an
-      // already-completed deletion looks like (the first attempt's
-      // response was lost, so the client retried, but by then there's
-      // no account left to verify against). If the token is otherwise
-      // genuinely valid and simply names an already-deleted account,
-      // the desired end state already holds: report success, not a
-      // fresh 401 for an operation that's already finished. A token
-      // that's invalid for any OTHER reason still gets a real 401.
-      const deletedUid = await uidOfAlreadyDeletedAccount(request);
-      if (deletedUid) {
-        return NextResponse.json({ success: true });
-      }
+    const result = await checkUidForDeletion(request);
+    if (result.status === "unauthorized") {
       return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
     }
+    const uid = result.uid;
 
-    // Firestore document deleted BEFORE the Auth record, not after: if
-    // Auth deleted first and Firestore then failed, the user's data
-    // would be permanently orphaned with no uid that could ever map
-    // back to it again -- a silent, unrecoverable leak. This ordering
-    // fails cleanly instead: Firestore's delete() is idempotent (a
-    // no-op on an already-deleted or never-existed document), which is
-    // what makes the whole route safely retryable end to end.
+    // Runs regardless of whether the Auth record is still "active" or
+    // was already confirmed "already-deleted" above -- Firestore's
+    // delete() is idempotent (a no-op on an already-deleted or
+    // never-existed document), so this is always safe, and it's the
+    // only way to guarantee cleanup regardless of HOW the Auth record
+    // came to be gone. A fully-completed prior run of this exact route
+    // is the common case, but not the only possible one (e.g. the Auth
+    // user being removed some other way, with the Firestore document
+    // never touched at all).
     await getFirestoreDb().collection("users").doc(uid).delete();
+
+    if (result.status === "already-deleted") {
+      return NextResponse.json({ success: true });
+    }
 
     try {
       await getAdminAuth().deleteUser(uid);
