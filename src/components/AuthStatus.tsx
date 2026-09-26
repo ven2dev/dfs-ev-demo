@@ -121,6 +121,7 @@ export const AuthStatus = () => {
           onClick={() => setMenuOpen((open) => !open)}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
+          aria-label="Account menu"
           className="h-8 w-8 overflow-hidden rounded-full border border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
         >
           <AvatarIcon />

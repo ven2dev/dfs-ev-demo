@@ -20,7 +20,18 @@ export const requireUid = async (request: NextRequest): Promise<string | null> =
   // "Unauthorized" for a perfectly valid signed-in user.
   const auth = getAdminAuth();
   try {
-    const decoded = await auth.verifyIdToken(token);
+    // The `true` (checkRevoked) argument matters: a Firebase ID token
+    // stays cryptographically valid for up to an hour regardless of
+    // what happens to the account server-side. Without this, a stale
+    // token from an account deleted moments ago would still verify
+    // successfully -- decoded.uid would resolve to a uid with no
+    // corresponding Auth record, and a write route would happily
+    // create a fresh Firestore document for it, orphaned data no
+    // future sign-in could ever reach again. This internally looks the
+    // user up to check revocation status, which itself fails for a
+    // fully-deleted user -- catching both "token revoked" and "account
+    // deleted entirely" in one check.
+    const decoded = await auth.verifyIdToken(token, true);
     return decoded.uid;
   } catch {
     return null;
