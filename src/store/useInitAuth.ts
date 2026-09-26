@@ -166,7 +166,15 @@ export const useInitAuth = () => {
     // separate getRedirectResult() retrieval after the page reloads.
     // onAuthStateChanged alone is sufficient here.
     const unsubscribe = onAuthStateChanged(authInstance, (user) => {
-      setUser(user ? { uid: user.uid, displayName: user.displayName } : null);
+      setUser(
+        user
+          ? {
+              uid: user.uid,
+              displayName: user.displayName,
+              providerId: user.providerData[0]?.providerId ?? null,
+            }
+          : null
+      );
     });
 
     return unsubscribe;

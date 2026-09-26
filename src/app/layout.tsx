@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthStatus } from "@/components/AuthStatus";
 import { StoreBootstrap } from "@/store/StoreBootstrap";
 import "./globals.css";
 
@@ -26,7 +27,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <StoreBootstrap />
-        {children}
+        <div className="min-h-screen bg-zinc-50 dark:bg-black">
+          <div className="mx-auto flex max-w-3xl flex-col gap-8 p-8">
+            {/* Shared across every page -- #22 is the first second page
+                this app has, so this is the first real chrome that needs
+                to be consistent across routes rather than living inside
+                one page's own return. */}
+            <header className="flex items-center justify-between">
+              <h1 className="text-2xl font-semibold">DFS Matchup EV Demo</h1>
+              <AuthStatus />
+            </header>
+            {children}
+          </div>
+        </div>
       </body>
     </html>
   );
