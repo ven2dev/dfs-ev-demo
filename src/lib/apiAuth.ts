@@ -3,6 +3,7 @@ import "server-only";
 import type { NextRequest } from "next/server";
 import { getAdminAuth } from "./firebaseAdmin";
 import { parseBearerToken } from "./parseBearerToken";
+import type { DeletionUidCheck } from "./accountDeletion";
 
 type RevocationCheckResult =
   | { status: "ok"; uid: string }
@@ -56,11 +57,6 @@ export const requireUid = async (request: NextRequest): Promise<string | null> =
   const result = await verifyWithRevocationCheck(token);
   return result.status === "ok" ? result.uid : null;
 };
-
-export type DeletionUidCheck =
-  | { status: "active"; uid: string }
-  | { status: "already-deleted"; uid: string }
-  | { status: "unauthorized" };
 
 // Used only by DELETE /api/account. A retry of an already-completed
 // deletion looks exactly like this: the first attempt's response was
