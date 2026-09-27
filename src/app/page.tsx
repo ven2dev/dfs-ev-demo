@@ -5,7 +5,6 @@ import { Sparkline } from "@/components/Sparkline";
 import { computeEV } from "@/lib/computeEV";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { mockGoal } from "@/store/mockData";
-import type { WatchedProp } from "@/types";
 import {
   useAuthStatus,
   useConnectionStatus,
@@ -20,6 +19,7 @@ import {
 } from "@/store/hooks";
 import { useAppStore } from "@/store";
 import { useLiveOddsStream } from "@/store/useLiveOddsStream";
+import { toggleWatchedProp } from "@/store/watchlistToggle";
 
 const STAGES = [
   { key: "baseRate", label: "Base rate" },
@@ -56,75 +56,48 @@ export default function Home() {
   const handleWatchToggle = async () => {
     if (!secondProp || watchPending || authStatus !== "signed-in") return;
 
-    // Captured once, at the start -- if the signed-in uid changes while
-    // this request is in flight (sign-out, or a different account signs
-    // in), useInitAuth's own sync effect has already taken over that
-    // account's watchlist by the time any callback below runs. Without
-    // this, a stale optimistic apply or rollback meant for the OLD
-    // account could land on the NEW account's data instead.
-    const uidForThisAction = useAppStore.getState().uid;
-
     setWatchError(null);
     setWatchPending(true);
 
     const propId = secondProp.propId;
-    // Snapshot only this ONE entry's prior value, not the whole watchlist —
-    // the live SSE hook concurrently updates a *different* key (the
-    // primary prop) on its own schedule, and a full-object revert would
-    // clobber whatever it wrote while this request was in flight.
-    const previousEntry: WatchedProp | undefined =
-      useAppStore.getState().watchlist[propId];
-    const wasWatching = Boolean(previousEntry);
-
-    // Always read the watchlist fresh at the moment of writing, and only
-    // ever touch this one key — safe regardless of what else has changed
-    // concurrently. Also the single choke point for the uid guard above:
-    // both the optimistic apply and the failure rollback go through
-    // this, so one check covers both.
-    const applyEntry = (entry: WatchedProp | undefined) => {
-      if (useAppStore.getState().uid !== uidForThisAction) return;
-      const current = { ...useAppStore.getState().watchlist };
-      if (entry) {
-        current[propId] = entry;
-      } else {
-        delete current[propId];
+    const result = await toggleWatchedProp(
+      propId,
+      { propId, evScore: { modelProb: 0, impliedProb: 0, edge: 0 }, evHistory: [] },
+      {
+        getUid: () => useAppStore.getState().uid,
+        getWatchlistEntry: (id) => useAppStore.getState().watchlist[id],
+        // Only ever touches this one key -- the live SSE hook
+        // concurrently updates a *different* key (the primary prop) on
+        // its own schedule, and a full-object write would clobber
+        // whatever it wrote while this request was in flight.
+        setWatchlistEntry: (id, entry) => {
+          const current = { ...useAppStore.getState().watchlist };
+          if (entry) {
+            current[id] = entry;
+          } else {
+            delete current[id];
+          }
+          useAppStore.getState().setWatchlist(current);
+        },
+        submit: async (id, wasWatching) => {
+          const res = await fetch("/api/watchlist", {
+            method: wasWatching ? "DELETE" : "POST",
+            headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
+            body: JSON.stringify({ propId: id }),
+          });
+          return res.json();
+        },
       }
-      useAppStore.getState().setWatchlist(current);
-    };
-
-    // Optimistic update, applied immediately, before the network call.
-    applyEntry(
-      wasWatching
-        ? undefined
-        : { propId, evScore: { modelProb: 0, impliedProb: 0, edge: 0 }, evHistory: [] }
     );
 
-    try {
-      const res = await fetch("/api/watchlist", {
-        method: wasWatching ? "DELETE" : "POST",
-        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
-        body: JSON.stringify({ propId }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        throw new Error(data.reason ?? "Unknown failure");
-      }
-    } catch (err) {
-      // Revert only this entry to its pre-optimistic-update value.
-      applyEntry(wasWatching ? previousEntry : undefined);
-      // An error about a different account's stale watch attempt would
-      // be confusing to show here -- only surface it if we're still
-      // looking at the account this action was actually for.
-      if (useAppStore.getState().uid === uidForThisAction) {
-        setWatchError(
-          `Failed to ${wasWatching ? "unwatch" : "watch"} ${secondProp.playerName}: ${
-            (err as Error).message
-          } — reverted`
-        );
-      }
-    } finally {
-      setWatchPending(false);
+    if (result.status === "reverted") {
+      setWatchError(
+        `Failed to ${result.wasWatching ? "unwatch" : "watch"} ${secondProp.playerName}: ${
+          (result.cause as Error).message
+        } — reverted`
+      );
     }
+    setWatchPending(false);
   };
 
   // A genuine user preference change, worth persisting -- unlike
