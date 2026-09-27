@@ -1,83 +1,84 @@
-import assert from "node:assert/strict";
-import { test } from "node:test";
+import { describe, it, expect } from "vitest";
 import { computeEV } from "./computeEV.ts";
 
-test("computeEV: base rate is the sample-window hit rate with no adjustments", () => {
-  const result = computeEV({
-    recentGameStats: [100, 200, 100, 200, 200],
-    line: 150,
-    sampleWindow: 5,
-    windSpeedMph: 5,
-    precipitationMm: 0,
-    shadowCoverageRate: 0,
-    impliedProb: 0.5,
+describe("computeEV", () => {
+  it("base rate is the sample-window hit rate with no adjustments", () => {
+    const result = computeEV({
+      recentGameStats: [100, 200, 100, 200, 200],
+      line: 150,
+      sampleWindow: 5,
+      windSpeedMph: 5,
+      precipitationMm: 0,
+      shadowCoverageRate: 0,
+      impliedProb: 0.5,
+    });
+
+    expect(result.baseRate).toBe(0.6);
+    expect(result.afterEnvironment).toBe(0.6);
+    expect(result.afterCoverage).toBe(0.6);
+    expect(result.evScore.edge).toBeCloseTo(0.1, 9);
   });
 
-  assert.equal(result.baseRate, 0.6);
-  assert.equal(result.afterEnvironment, 0.6);
-  assert.equal(result.afterCoverage, 0.6);
-  assert.ok(Math.abs(result.evScore.edge - 0.1) < 1e-9);
-});
+  it("only the most recent sampleWindow games count", () => {
+    const result = computeEV({
+      recentGameStats: [999, 999, 100, 100, 100, 100, 100],
+      line: 150,
+      sampleWindow: 3,
+      windSpeedMph: 0,
+      precipitationMm: 0,
+      shadowCoverageRate: 0,
+      impliedProb: 0,
+    });
 
-test("computeEV: only the most recent sampleWindow games count", () => {
-  const result = computeEV({
-    recentGameStats: [999, 999, 100, 100, 100, 100, 100],
-    line: 150,
-    sampleWindow: 3,
-    windSpeedMph: 0,
-    precipitationMm: 0,
-    shadowCoverageRate: 0,
-    impliedProb: 0,
+    expect(result.baseRate).toBe(0);
   });
 
-  assert.equal(result.baseRate, 0);
-});
+  it("high wind suppresses the environment-adjusted probability", () => {
+    const input = {
+      recentGameStats: [200, 200, 200, 200, 200] as number[],
+      line: 100,
+      sampleWindow: 5 as const,
+      precipitationMm: 0,
+      shadowCoverageRate: 0,
+      impliedProb: 0.5,
+    };
 
-test("computeEV: high wind suppresses the environment-adjusted probability", () => {
-  const input = {
-    recentGameStats: [200, 200, 200, 200, 200] as number[],
-    line: 100,
-    sampleWindow: 5 as const,
-    precipitationMm: 0,
-    shadowCoverageRate: 0,
-    impliedProb: 0.5,
-  };
+    const calm = computeEV({ ...input, windSpeedMph: 5 });
+    const windy = computeEV({ ...input, windSpeedMph: 25 });
 
-  const calm = computeEV({ ...input, windSpeedMph: 5 });
-  const windy = computeEV({ ...input, windSpeedMph: 25 });
-
-  assert.equal(calm.afterEnvironment, 1);
-  assert.ok(windy.afterEnvironment < calm.afterEnvironment);
-});
-
-test("computeEV: coverage adjustment scales with shadowCoverageRate", () => {
-  const input = {
-    recentGameStats: [200, 200, 200, 200, 200] as number[],
-    line: 100,
-    sampleWindow: 5 as const,
-    windSpeedMph: 0,
-    precipitationMm: 0,
-    impliedProb: 0.5,
-  };
-
-  const noCoverage = computeEV({ ...input, shadowCoverageRate: 0 });
-  const heavyCoverage = computeEV({ ...input, shadowCoverageRate: 1 });
-
-  assert.equal(noCoverage.afterCoverage, 1);
-  assert.ok(heavyCoverage.afterCoverage < noCoverage.afterCoverage);
-});
-
-test("computeEV: result never goes negative even with extreme penalties", () => {
-  const result = computeEV({
-    recentGameStats: [0, 0, 0, 0, 0],
-    line: 100,
-    sampleWindow: 5,
-    windSpeedMph: 100,
-    precipitationMm: 10,
-    shadowCoverageRate: 1,
-    impliedProb: 0,
+    expect(calm.afterEnvironment).toBe(1);
+    expect(windy.afterEnvironment).toBeLessThan(calm.afterEnvironment);
   });
 
-  assert.equal(result.baseRate, 0);
-  assert.equal(result.afterCoverage, 0);
+  it("coverage adjustment scales with shadowCoverageRate", () => {
+    const input = {
+      recentGameStats: [200, 200, 200, 200, 200] as number[],
+      line: 100,
+      sampleWindow: 5 as const,
+      windSpeedMph: 0,
+      precipitationMm: 0,
+      impliedProb: 0.5,
+    };
+
+    const noCoverage = computeEV({ ...input, shadowCoverageRate: 0 });
+    const heavyCoverage = computeEV({ ...input, shadowCoverageRate: 1 });
+
+    expect(noCoverage.afterCoverage).toBe(1);
+    expect(heavyCoverage.afterCoverage).toBeLessThan(noCoverage.afterCoverage);
+  });
+
+  it("result never goes negative even with extreme penalties", () => {
+    const result = computeEV({
+      recentGameStats: [0, 0, 0, 0, 0],
+      line: 100,
+      sampleWindow: 5,
+      windSpeedMph: 100,
+      precipitationMm: 10,
+      shadowCoverageRate: 1,
+      impliedProb: 0,
+    });
+
+    expect(result.baseRate).toBe(0);
+    expect(result.afterCoverage).toBe(0);
+  });
 });

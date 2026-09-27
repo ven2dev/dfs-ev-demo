@@ -1,5 +1,4 @@
-import { test } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, expect } from "vitest";
 import type { NextRequest } from "next/server";
 import { parseBearerToken } from "./parseBearerToken.ts";
 
@@ -8,17 +7,18 @@ const fakeRequest = (headers: Record<string, string>): NextRequest =>
     headers: { get: (key: string) => headers[key.toLowerCase()] ?? null },
   }) as unknown as NextRequest;
 
-test("parseBearerToken: no Authorization header returns null", () => {
-  assert.equal(parseBearerToken(fakeRequest({})), null);
-});
+describe("parseBearerToken", () => {
+  it("no Authorization header returns null", () => {
+    expect(parseBearerToken(fakeRequest({}))).toBe(null);
+  });
 
-test("parseBearerToken: Authorization header without Bearer prefix returns null", () => {
-  assert.equal(parseBearerToken(fakeRequest({ authorization: "Basic abc123" })), null);
-});
+  it("Authorization header without Bearer prefix returns null", () => {
+    expect(parseBearerToken(fakeRequest({ authorization: "Basic abc123" }))).toBe(null);
+  });
 
-test("parseBearerToken: extracts the token from a well-formed Bearer header", () => {
-  assert.equal(
-    parseBearerToken(fakeRequest({ authorization: "Bearer my-real-token" })),
-    "my-real-token"
-  );
+  it("extracts the token from a well-formed Bearer header", () => {
+    expect(parseBearerToken(fakeRequest({ authorization: "Bearer my-real-token" }))).toBe(
+      "my-real-token"
+    );
+  });
 });
