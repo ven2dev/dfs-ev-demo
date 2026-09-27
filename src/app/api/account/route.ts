@@ -30,8 +30,10 @@ export const DELETE = async (request: NextRequest) => {
       // A genuine partial state: Firestore data is already gone, but
       // the Auth record isn't. A generic "Internal error" would
       // wrongly suggest nothing happened, so this says so explicitly
-      // -- retrying is safe regardless of which branch it takes next
-      // time, since both success and already-deleted are handled above.
+      // -- retrying is safe regardless of which outcome it hits next
+      // time, since the only other possibilities are unauthorized
+      // (handled above) or success (performAccountDeletion already
+      // treats a retried, already-deleted account as success).
       console.error(
         "[api/account] Auth user deletion failed after Firestore data was already deleted:",
         result.cause

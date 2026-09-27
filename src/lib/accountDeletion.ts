@@ -47,6 +47,13 @@ export const performAccountDeletion = async (
   try {
     await deps.deleteAuthUser(uidCheck.uid);
   } catch (err) {
+    // auth/user-not-found here doesn't mean this call failed -- it
+    // means the desired end state (no Auth record for this uid) already
+    // holds, most likely because an earlier attempt's Auth deletion
+    // actually succeeded server-side but its response never reached the
+    // client (a network blip), so the caller reported failure and got
+    // retried. Treating that as a retryable failure again would tell
+    // the user to keep retrying an already-finished deletion forever.
     if (isUserNotFoundError(err)) {
       return { status: "success" };
     }
