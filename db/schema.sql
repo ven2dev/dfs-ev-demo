@@ -18,14 +18,18 @@ CREATE TABLE IF NOT EXISTS player_game_stats (
   player_name TEXT NOT NULL,
   team TEXT NOT NULL,
   opponent TEXT NOT NULL,
-  -- Nullable: not yet confirmed whether nflverse's weekly file encodes
-  -- home/away directly or it needs deriving from game_id at ingestion
-  -- time. Not consumed by computeEV today either way -- captured because
-  -- it's realistically a free column off the same source row we're
-  -- already reading, not because anything needs it yet.
-  is_home BOOLEAN,
+  -- Derived at ingestion time, not sourced directly: nflverse's weekly
+  -- stats file has no is_home/game_date columns at all, only game_id
+  -- (format "{season}_{week}_{away}_{home}"). Both come from joining
+  -- against nflverse's separate schedules release via that same
+  -- game_id. Not consumed by computeEV today either way -- captured
+  -- because it's a free column off data we're already joining in, not
+  -- because anything needs it yet.
+  is_home BOOLEAN NOT NULL,
   season INTEGER NOT NULL,
   week INTEGER NOT NULL,
+  -- Also from the schedules join -- nflverse's weekly stats file has no
+  -- calendar date of its own, only a season/week pair.
   game_date DATE NOT NULL,
   stat_type TEXT NOT NULL,
   stat_value NUMERIC NOT NULL,
