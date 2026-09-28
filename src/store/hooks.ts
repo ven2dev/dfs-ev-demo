@@ -17,6 +17,12 @@ export const useSetConnectionStatus = () =>
 
 export const useMatchupConfig = () =>
   useAppStore((state) => state.matchupConfig);
+// Granular on purpose, not just `useMatchupConfig().sampleWindow`: this
+// selects only the primitive, so a component/effect depending on it
+// (useLiveOddsStream's reconnect) doesn't re-run on every environment
+// update a live tick writes into the same matchupConfig object.
+export const useSampleWindow = () =>
+  useAppStore((state) => state.matchupConfig.sampleWindow);
 export const useSetMatchupConfig = () =>
   useAppStore((state) => state.setMatchupConfig);
 

@@ -3,13 +3,18 @@
 import { useEffect } from "react";
 import { STALE_TIMEOUT_MS } from "@/lib/streamConfig";
 import { useAppStore } from "./index";
-import { useSetConnectionStatus } from "./hooks";
+import { useSetConnectionStatus, useSampleWindow } from "./hooks";
 
 const INITIAL_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 
 export function useLiveOddsStream() {
   const setConnectionStatus = useSetConnectionStatus();
+  // Selected via its own granular hook (not the whole matchupConfig
+  // object) specifically so this effect only reconnects when the user
+  // actually changes the sample window -- not on every tick's
+  // environment/line update, which writes into that same object.
+  const sampleWindow = useSampleWindow();
 
   useEffect(() => {
     let eventSource: EventSource | undefined;
@@ -24,7 +29,7 @@ export function useLiveOddsStream() {
     };
 
     const connect = () => {
-      eventSource = new EventSource("/api/stream");
+      eventSource = new EventSource(`/api/stream?sampleWindow=${sampleWindow}`);
 
       eventSource.onopen = () => {
         setConnectionStatus("live");
@@ -75,7 +80,7 @@ export function useLiveOddsStream() {
             // carried through as-is rather than recomputed client-side
             // against stale data, which is what page.tsx used to do.
             stages: data.stages,
-            projectedPts: data.projectedPts,
+            recentStatAverage: data.recentStatAverage,
           },
         });
 
@@ -116,5 +121,5 @@ export function useLiveOddsStream() {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (staleTimer) clearTimeout(staleTimer);
     };
-  }, [setConnectionStatus]);
+  }, [setConnectionStatus, sampleWindow]);
 }

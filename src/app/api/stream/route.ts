@@ -1,7 +1,8 @@
+import { NextRequest } from "next/server";
 import { computeEV } from "@/lib/computeEV";
 import { devigTwoWay } from "@/lib/devig";
 import { fetchPlayerPropOdds } from "@/lib/oddsApi";
-import { MAX_TICKS, POLL_INTERVAL_MS } from "@/lib/streamConfig";
+import { MAX_TICKS, POLL_INTERVAL_MS, parseSampleWindow } from "@/lib/streamConfig";
 import { fetchGameWeather } from "@/lib/weather";
 import { mockCoverageFilters, mockMatchup } from "@/store/mockData";
 import { ODDS_MARKET_TO_STAT_TYPE } from "@/lib/playerStatsSync";
@@ -10,12 +11,12 @@ import { getRealRecentGameStats } from "@/lib/playerStatsRepo";
 // SSE endpoint. Real Odds API + real weather calls happen here,
 // server-side only — the API key never reaches the client.
 //
-// Scope note: each connection polls independently on its own interval,
+// Known gap: each connection polls independently on its own interval,
 // rather than one shared server-side poller fanning out to all clients.
 // A true single-poller-broadcasts-to-many architecture needs a
-// persistent process or a pub/sub layer (Redis, etc.) — non-trivial on
-// serverless in the time available. Still real: real API calls, never
-// client-side, just not shared across concurrent connections tonight.
+// persistent process or a pub/sub layer (Redis, etc.) — doesn't fit
+// Vercel's serverless functions as-is. Still real: real API calls, never
+// client-side, just not shared across concurrent connections yet.
 //
 // Quota safety: The Odds API's free tier is 500 requests/MONTH. A
 // forgotten open tab must not be able to burn through that in minutes.
@@ -34,37 +35,55 @@ import { getRealRecentGameStats } from "@/lib/playerStatsRepo";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const encoder = new TextEncoder();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let tickCount = 0;
   let cancelled = false;
 
+  const sampleWindow = parseSampleWindow(request.nextUrl.searchParams.get("sampleWindow"));
   const prop = mockMatchup.props[0];
 
   // Fetched once per connection, not per tick, unlike odds/weather --
   // historical game stats only change weekly (as games complete), so
   // re-querying Postgres on every poll interval would be pure waste.
-  // Falls back to the seeded mock array if the player isn't in the
-  // crosswalk yet or the market isn't stat-type-mapped, so a demo never
-  // just breaks -- logged, since that fallback masks a real gap.
-  const statType = ODDS_MARKET_TO_STAT_TYPE[prop.marketKey];
-  const [realRecentGameStats, realFantasyPointsHistory] = await Promise.all([
-    statType ? getRealRecentGameStats(prop.playerName, statType) : Promise.resolve(null),
-    getRealRecentGameStats(prop.playerName, "fantasy_points"),
-  ]);
-  if (!realRecentGameStats) {
+  // Falls back to the seeded mock array on ANY failure to get real
+  // data -- an unmapped player, but also DATABASE_URL missing entirely
+  // (a fresh checkout with Postgres not yet provisioned) or the DB
+  // being unreachable. Without this catch, a missing DATABASE_URL would
+  // throw inside getSql() before the stream even starts, crashing the
+  // whole route instead of degrading to the documented mock fallback.
+  let recentGameStats = prop.recentGameStats;
+  try {
+    const statType = ODDS_MARKET_TO_STAT_TYPE[prop.marketKey];
+    const realRecentGameStats = statType
+      ? await getRealRecentGameStats(prop.playerName, statType)
+      : null;
+    if (!realRecentGameStats) {
+      console.warn(
+        `[api/stream] no real historical stats for "${prop.playerName}" (marketKey "${prop.marketKey}") -- falling back to seeded mock data`
+      );
+    } else {
+      recentGameStats = realRecentGameStats;
+    }
+  } catch (err) {
     console.warn(
-      `[api/stream] no real historical stats for "${prop.playerName}" (marketKey "${prop.marketKey}") -- falling back to seeded mock data`
+      "[api/stream] real historical-stats lookup failed (Postgres not configured/reachable?) -- falling back to seeded mock data:",
+      err
     );
   }
-  const recentGameStats = realRecentGameStats ?? prop.recentGameStats;
-  // undefined (not 0) when there's genuinely no real fantasy-points
-  // history yet (unmapped player, or no games recorded so far this
-  // season) -- the client only renders this when it's actually present.
-  const projectedPts =
-    realFantasyPointsHistory && realFantasyPointsHistory.length > 0
-      ? realFantasyPointsHistory.reduce((sum, v) => sum + v, 0) / realFantasyPointsHistory.length
+
+  // Average of the prop's OWN stat (same stat as the line, e.g. passing
+  // yards) over the same sampleWindow used for the EV hit-rate calc --
+  // deliberately just a historical average, not a "projection." No
+  // predictive algo model exists in this codebase; labeling this as a
+  // projection (the old `projectedPts`, averaging an unrelated stat --
+  // fantasy points -- over ALL games regardless of sampleWindow) was the
+  // root of Codex's #4 finding.
+  const recentStatWindow = recentGameStats.slice(-sampleWindow);
+  const recentStatAverage =
+    recentStatWindow.length > 0
+      ? recentStatWindow.reduce((sum, v) => sum + v, 0) / recentStatWindow.length
       : undefined;
 
   const stream = new ReadableStream({
@@ -110,7 +129,7 @@ export async function GET() {
           const result = computeEV({
             recentGameStats,
             line: oddsLine.point,
-            sampleWindow: 5,
+            sampleWindow,
             windSpeedMph: weather.windSpeedMph,
             precipitationMm: weather.precipitationMm,
             shadowCoverageRate: mockCoverageFilters.shadowCoverageRate as number,
@@ -131,7 +150,7 @@ export async function GET() {
               afterEnvironment: result.afterEnvironment,
               afterCoverage: result.afterCoverage,
             },
-            projectedPts,
+            recentStatAverage,
           });
         } catch (err) {
           send({ type: "error", message: String(err) });

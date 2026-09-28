@@ -56,7 +56,10 @@ export type WatchedProp = {
   // optimistic watch/unwatch placeholder (watchlistToggle.ts) has
   // neither, same as it's always had a zeroed-out evScore.
   stages?: EVPipelineStages;
-  projectedPts?: number;
+  // Average of the prop's OWN stat (same stat as the line itself, e.g.
+  // passing yards) over the currently-selected sampleWindow -- not a
+  // fantasy-points projection.
+  recentStatAverage?: number;
 };
 
 export type Prop = {

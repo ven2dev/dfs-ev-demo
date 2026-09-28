@@ -16,6 +16,8 @@ const statRow = (overrides: Partial<NflverseStatsRow> = {}): NflverseStatsRow =>
   season: "2026",
   week: "1",
   game_id: "2026_01_ATL_PIT",
+  position: "QB",
+  position_group: "QB",
   passing_yards: "245",
   ...overrides,
 });
@@ -107,6 +109,8 @@ describe("syncPlayerStats", () => {
         statRow({
           player_id: "00-0099999",
           player_name: "R.Back",
+          position: "RB",
+          position_group: "RB",
           passing_yards: "",
           carries: "18",
           rushing_yards: "112",
@@ -167,7 +171,7 @@ describe("syncPlayerStats", () => {
   it("does not produce an anytime_td row when neither rushing nor receiving TDs apply (e.g. a kicker)", async () => {
     const deps = makeDeps({
       fetchStatsRows: vi.fn().mockResolvedValue([
-        statRow({ passing_yards: "", fg_made: "2" }),
+        statRow({ position: "K", position_group: "SPEC", passing_yards: "", fg_made: "2" }),
       ]),
     });
 
@@ -197,7 +201,13 @@ describe("syncPlayerStats", () => {
   it("derives kicking_points as 3x FG made + 1x XP made", async () => {
     const deps = makeDeps({
       fetchStatsRows: vi.fn().mockResolvedValue([
-        statRow({ passing_yards: "", fg_made: "2", pat_made: "3" }),
+        statRow({
+          position: "K",
+          position_group: "SPEC",
+          passing_yards: "",
+          fg_made: "2",
+          pat_made: "3",
+        }),
       ]),
     });
 
@@ -213,7 +223,13 @@ describe("syncPlayerStats", () => {
   it("derives tackles_plus_assists for a defensive player, and skips it for an offensive one", async () => {
     const defenderDeps = makeDeps({
       fetchStatsRows: vi.fn().mockResolvedValue([
-        statRow({ passing_yards: "", def_tackles_solo: "6", def_tackle_assists: "2" }),
+        statRow({
+          position: "LB",
+          position_group: "LB",
+          passing_yards: "",
+          def_tackles_solo: "6",
+          def_tackle_assists: "2",
+        }),
       ]),
     });
     await syncPlayerStats(defenderDeps);
@@ -229,6 +245,77 @@ describe("syncPlayerStats", () => {
     expect(
       receiverRows.some((r: { stat_type: string }) => r.stat_type === "tackles_plus_assists")
     ).toBe(false);
+  });
+
+  it("does not store position-inapplicable stats even when nflverse fills them with a literal zero (not blank)", async () => {
+    // Reproduces a real bug found via live verification: nflverse's CSV
+    // gives a kicker literal "0" values for passing/rushing/receiving
+    // columns (not blank), which numberOrUndefined alone would treat as
+    // a genuine present value -- confirmed live against N.Folk, a real
+    // kicker, who had exactly this happen for anytime_td/attempts/
+    // carries/completions before the position gate existed.
+    const deps = makeDeps({
+      fetchStatsRows: vi.fn().mockResolvedValue([
+        statRow({
+          player_id: "00-0011111",
+          player_name: "N.Folk",
+          position: "K",
+          position_group: "SPEC",
+          passing_yards: "0",
+          attempts: "0",
+          completions: "0",
+          carries: "0",
+          rushing_tds: "0",
+          receiving_tds: "0",
+          fg_made: "2",
+          pat_made: "3",
+        }),
+      ]),
+    });
+
+    await syncPlayerStats(deps);
+
+    const [rows] = (deps.upsertStats as ReturnType<typeof vi.fn>).mock.calls[0];
+    const statTypes = rows.map((r: { stat_type: string }) => r.stat_type);
+    expect(statTypes).not.toEqual(
+      expect.arrayContaining([
+        "passing_yards",
+        "attempts",
+        "completions",
+        "carries",
+        "anytime_td",
+      ])
+    );
+    expect(statTypes).toEqual(
+      expect.arrayContaining(["field_goals_made", "extra_points_made", "kicking_points"])
+    );
+  });
+
+  it("stores fantasy_points and fantasy_points_ppr for every position, unlike the position-gated stats", async () => {
+    // The one branch of isApplicableToPosition that always returns true --
+    // nflverse computes fantasy scoring for every player regardless of
+    // position, so a kicker's fantasy_points row is a real fact, not
+    // pollution to gate out like its passing/rushing/receiving columns.
+    const deps = makeDeps({
+      fetchStatsRows: vi.fn().mockResolvedValue([
+        statRow({
+          position: "K",
+          position_group: "SPEC",
+          passing_yards: "0",
+          fantasy_points: "9",
+          fantasy_points_ppr: "9",
+        }),
+      ]),
+    });
+
+    await syncPlayerStats(deps);
+
+    const [rows] = (deps.upsertStats as ReturnType<typeof vi.fn>).mock.calls[0];
+    const byType = Object.fromEntries(
+      rows.map((r: { stat_type: string; stat_value: number }) => [r.stat_type, r.stat_value])
+    );
+    expect(byType.fantasy_points).toBe(9);
+    expect(byType.fantasy_points_ppr).toBe(9);
   });
 
   it("derives is_home false for the away team", async () => {

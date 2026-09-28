@@ -133,6 +133,12 @@ export type NflverseStatsRow = {
   season: string;
   week: string;
   game_id: string;
+  // Coarse category (QB/RB/WR/TE/OL/DL/LB/DB/SPEC) and the finer
+  // position within it (SPEC covers K/LS/P, which is why kicking stats
+  // below gate on `position`, not `position_group`) -- both confirmed
+  // against the live nflverse CSV, can be blank for some rows.
+  position: string;
+  position_group: string;
 } & Record<string, string | undefined>;
 
 export type NflverseScheduleRow = {
@@ -169,6 +175,65 @@ export type SyncPlayerStatsDeps = {
 export type SyncPlayerStatsResult =
   | { status: "up-to-date" }
   | { status: "synced"; rowsUpserted: number };
+
+const OFFENSE_SKILL_GROUPS = new Set(["QB", "RB", "WR", "TE"]);
+const DEFENSE_GROUPS = new Set(["DB", "DL", "LB"]);
+
+// nflverse fills a position-inapplicable column with a literal "0", not
+// a blank -- e.g. a kicker's row has passing_yards: "0", not "". Without
+// this gate, numberOrUndefined/sumColumns treat that "0" as a genuine
+// present value, storing a meaningless "this kicker has 0 passing
+// yards" row (confirmed live: N.Folk, a real kicker, had exactly this
+// happen for anytime_td/attempts/carries/completions before this fix).
+// Gates on the actual applicability of the stat to the position, not on
+// whether this particular row's value happens to be zero.
+const isApplicableToPosition = (statType: SupportedStatType, row: NflverseStatsRow): boolean => {
+  switch (statType) {
+    case "passing_yards":
+    case "passing_tds":
+    case "completions":
+    case "attempts":
+    case "passing_interceptions":
+    case "passing_first_downs":
+      return row.position_group === "QB";
+    case "rushing_yards":
+    case "rushing_tds":
+    case "carries":
+    case "receiving_yards":
+    case "receiving_tds":
+    case "receptions":
+    case "targets":
+    case "total_fumbles":
+    case "fumbles_lost":
+    case "anytime_td":
+    case "total_tds":
+    case "rush_rec_first_downs":
+      return OFFENSE_SKILL_GROUPS.has(row.position_group);
+    // SPEC also covers punters/long-snappers, who never have real FG/XP
+    // stats -- the finer `position` field is required here, not
+    // position_group.
+    case "field_goals_made":
+    case "extra_points_made":
+    case "kicking_points":
+      return row.position === "K";
+    case "solo_tackles":
+    case "tackle_assists":
+    case "tackles_plus_assists":
+    case "sacks":
+    case "tackles_for_loss":
+      return DEFENSE_GROUPS.has(row.position_group);
+    // nflverse computes these for every player regardless of position --
+    // no gate needed; a kicker's real fantasy_points is a real fact,
+    // not injected noise.
+    case "fantasy_points":
+    case "fantasy_points_ppr":
+      return true;
+    default: {
+      const exhaustiveCheck: never = statType;
+      throw new Error(`isApplicableToPosition: unhandled stat type ${exhaustiveCheck}`);
+    }
+  }
+};
 
 export const syncPlayerStats = async (
   deps: SyncPlayerStatsDeps
@@ -215,6 +280,8 @@ export const syncPlayerStats = async (
       SupportedStatType,
       StatSource,
     ][]) {
+      if (!isApplicableToPosition(statType, statRow)) continue;
+
       const statValue =
         typeof source === "string" ? numberOrUndefined(statRow[source]) : source(statRow);
       if (statValue === undefined) continue;
