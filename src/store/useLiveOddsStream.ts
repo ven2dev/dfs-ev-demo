@@ -3,13 +3,18 @@
 import { useEffect } from "react";
 import { STALE_TIMEOUT_MS } from "@/lib/streamConfig";
 import { useAppStore } from "./index";
-import { useSetConnectionStatus } from "./hooks";
+import { useSetConnectionStatus, useSampleWindow } from "./hooks";
 
 const INITIAL_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
 
 export function useLiveOddsStream() {
   const setConnectionStatus = useSetConnectionStatus();
+  // Selected via its own granular hook (not the whole matchupConfig
+  // object) specifically so this effect only reconnects when the user
+  // actually changes the sample window -- not on every tick's
+  // environment/line update, which writes into that same object.
+  const sampleWindow = useSampleWindow();
 
   useEffect(() => {
     let eventSource: EventSource | undefined;
@@ -18,13 +23,35 @@ export function useLiveOddsStream() {
     let staleTimer: ReturnType<typeof setTimeout> | undefined;
     let cancelled = false;
 
+    // Every previously-recorded window-dependent value -- stages,
+    // evHistory, evScore, AND recentStatAverage -- was computed under
+    // whatever sampleWindow was active AT THE TIME. On a reconnect (this
+    // effect re-running because sampleWindow changed), all four are
+    // stale relative to the label now showing the NEW window, until the
+    // first fresh tick lands. A prior version of this only cleared
+    // stages/evHistory, missing evScore/recentStatAverage -- those two
+    // aren't gated on `stages` in the UI, so the live edge, sparkline,
+    // recent-stat-average line, and PickEm entry-impact number all kept
+    // showing OLD-window values under the NEW window's label (caught in
+    // review). A no-op on initial mount (nothing to clear yet); real on
+    // every window change.
+    const currentWatchlist = useAppStore.getState().watchlist;
+    useAppStore.getState().setWatchlist(
+      Object.fromEntries(
+        Object.entries(currentWatchlist).map(([id, entry]) => [
+          id,
+          { ...entry, stages: undefined, evHistory: [], evScore: undefined, recentStatAverage: undefined },
+        ])
+      )
+    );
+
     const resetStaleTimer = () => {
       if (staleTimer) clearTimeout(staleTimer);
       staleTimer = setTimeout(() => setConnectionStatus("stale"), STALE_TIMEOUT_MS);
     };
 
     const connect = () => {
-      eventSource = new EventSource("/api/stream");
+      eventSource = new EventSource(`/api/stream?sampleWindow=${sampleWindow}`);
 
       eventSource.onopen = () => {
         setConnectionStatus("live");
@@ -71,6 +98,11 @@ export function useLiveOddsStream() {
               ...(existing?.evHistory ?? []),
               { timestamp: data.timestamp, evScore: data.evScore.edge },
             ],
+            // Computed server-side (real odds/weather) on every tick --
+            // carried through as-is rather than recomputed client-side
+            // against stale data, which is what page.tsx used to do.
+            stages: data.stages,
+            recentStatAverage: data.recentStatAverage,
           },
         });
 
@@ -111,5 +143,5 @@ export function useLiveOddsStream() {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (staleTimer) clearTimeout(staleTimer);
     };
-  }, [setConnectionStatus]);
+  }, [setConnectionStatus, sampleWindow]);
 }

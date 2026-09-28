@@ -42,10 +42,32 @@ export type PickEmGoal = {
 
 export type Goal = SalaryCapGoal | PickEmGoal;
 
+export type EVPipelineStages = {
+  baseRate: number;
+  afterEnvironment: number;
+  afterCoverage: number;
+};
+
 export type WatchedProp = {
   propId: string;
-  evScore: EVScore;
+  // Optional, not a zeroed placeholder: undefined means "no fresh tick
+  // yet under the CURRENT sampleWindow" (either never watched live, or
+  // just reconnected after a window change) -- a zeroed EVScore would
+  // be indistinguishable from a real "0% edge" result. The optimistic
+  // watch/unwatch placeholder (watchlistToggle.ts) still seeds a
+  // zeroed value for its own narrower purpose (that flow never reads
+  // evScore back), but every evScore-dependent UI element must treat
+  // undefined as "nothing to show yet," not "edge is zero."
+  evScore?: EVScore;
   evHistory: EVHistory;
+  // Optional: only present once a real SSE tick has landed under the
+  // CURRENT sampleWindow.
+  stages?: EVPipelineStages;
+  // Average of the prop's OWN stat (same stat as the line itself, e.g.
+  // passing yards) over the currently-selected sampleWindow -- not a
+  // fantasy-points projection. Same "undefined until a fresh tick
+  // lands" rule as evScore/stages.
+  recentStatAverage?: number;
 };
 
 export type Prop = {
@@ -65,6 +87,11 @@ export type Matchup = {
   startTime: string;
   sportKey: string;
   eventId: string;
+  // The home team's actual stadium -- weather must be fetched for THIS
+  // location, not a hardcoded one. Two different matchups have two
+  // different venues; there is no valid default.
+  venueLat: number;
+  venueLon: number;
   props: Prop[];
 };
 
