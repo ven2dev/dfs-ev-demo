@@ -39,6 +39,27 @@ const verifyWithRevocationCheck = async (
   }
 };
 
+// Gates the internal creator-submission tool (#34) to a single hardcoded
+// owner account -- there's no broader admin/role system in this app, and
+// building one isn't warranted for a solo-operator internal tool. Same
+// call-site shape as requireUid (string uid or null) so routes can reuse
+// the existing "if (!uid) return 401/403" pattern.
+//
+// A missing ADMIN_UID throws rather than returning null: that's a
+// deploy misconfiguration, not "this caller isn't the admin" -- the
+// same distinction requireUid's own callers already have to make for
+// getAdminAuth() failures, just one level up. Swallowing it into a
+// plain null would surface as a misleading "Unauthorized" instead of
+// the real 500 a broken deploy should produce.
+export const requireAdminUid = async (request: NextRequest): Promise<string | null> => {
+  const adminUid = process.env.ADMIN_UID;
+  if (!adminUid) {
+    throw new Error("ADMIN_UID is not set");
+  }
+  const uid = await requireUid(request);
+  return uid === adminUid ? uid : null;
+};
+
 // Never trust a client-supplied uid in a request body -- this is the one
 // place a uid is allowed to enter the system, and it only ever comes from
 // a verified ID token.
