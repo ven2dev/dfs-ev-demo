@@ -42,10 +42,21 @@ export type PickEmGoal = {
 
 export type Goal = SalaryCapGoal | PickEmGoal;
 
+export type EVPipelineStages = {
+  baseRate: number;
+  afterEnvironment: number;
+  afterCoverage: number;
+};
+
 export type WatchedProp = {
   propId: string;
   evScore: EVScore;
   evHistory: EVHistory;
+  // Optional: only present once a real SSE tick has landed -- the
+  // optimistic watch/unwatch placeholder (watchlistToggle.ts) has
+  // neither, same as it's always had a zeroed-out evScore.
+  stages?: EVPipelineStages;
+  projectedPts?: number;
 };
 
 export type Prop = {

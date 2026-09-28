@@ -71,6 +71,11 @@ export function useLiveOddsStream() {
               ...(existing?.evHistory ?? []),
               { timestamp: data.timestamp, evScore: data.evScore.edge },
             ],
+            // Computed server-side (real odds/weather) on every tick --
+            // carried through as-is rather than recomputed client-side
+            // against stale data, which is what page.tsx used to do.
+            stages: data.stages,
+            projectedPts: data.projectedPts,
           },
         });
 

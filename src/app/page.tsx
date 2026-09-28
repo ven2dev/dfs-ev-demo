@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Sparkline } from "@/components/Sparkline";
-import { computeEV } from "@/lib/computeEV";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { mockGoal } from "@/store/mockData";
 import {
@@ -151,35 +150,6 @@ export default function Home() {
     if (!goal) setGoal(mockGoal);
   }, [goal, setGoal]);
 
-  const pipeline = useMemo(() => {
-    if (!prop || !watched) return null;
-    return computeEV({
-      recentGameStats: prop.recentGameStats,
-      // Live line when available, falling back to the seeded reference
-      // before the first tick — same source as windSpeedMph/precipitationMm
-      // below, so every input here is consistently from the latest tick.
-      line: (matchupConfig.environment.currentLine as number) ?? prop.line,
-      sampleWindow: matchupConfig.sampleWindow,
-      windSpeedMph: (matchupConfig.environment.windSpeedMph as number) ?? 0,
-      precipitationMm: (matchupConfig.environment.precipitationMm as number) ?? 0,
-      shadowCoverageRate:
-        (matchupConfig.coverageFilters.shadowCoverageRate as number) ?? 0,
-      impliedProb: watched.evScore.impliedProb,
-    });
-  }, [prop, watched, matchupConfig]);
-
-  // Projected fantasy points: independent of the EV/edge calculation
-  // (that's about betting value, not fantasy scoring) — a standard
-  // passing-yards-to-points baseline (1 pt / 25 yards) off the same
-  // (mocked) recent-game stat history used for the base rate.
-  const projectedPts = useMemo(() => {
-    if (!prop) return null;
-    const avg =
-      prop.recentGameStats.reduce((sum, v) => sum + v, 0) /
-      prop.recentGameStats.length;
-    return Math.round(avg / 25);
-  }, [prop]);
-
   const [activeStageIndex, setActiveStageIndex] = useState(3);
 
   useEffect(() => {
@@ -278,43 +248,41 @@ export default function Home() {
             ))}
           </div>
 
-          {pipeline && (
+          {watched?.stages && (
             <div className="mt-6 space-y-3">
               <div className="flex justify-between text-sm">
                 <span>Base rate ({matchupConfig.sampleWindow}-game hit rate)</span>
-                <span>{(pipeline.baseRate * 100).toFixed(1)}%</span>
+                <span>{(watched.stages.baseRate * 100).toFixed(1)}%</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>After environment adjustment (real weather)</span>
-                <span>{(pipeline.afterEnvironment * 100).toFixed(1)}%</span>
+                <span>{(watched.stages.afterEnvironment * 100).toFixed(1)}%</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>
                   After coverage adjustment{" "}
                   <em className="text-zinc-400">(sample data — mocked)</em>
                 </span>
-                <span>{(pipeline.afterCoverage * 100).toFixed(1)}%</span>
+                <span>{(watched.stages.afterCoverage * 100).toFixed(1)}%</span>
               </div>
               <div className="flex justify-between border-t border-zinc-200 pt-3 text-sm font-medium dark:border-zinc-800">
                 <span>Final EV (edge, vs. real devigged Odds API line)</span>
                 <span
                   className={
-                    pipeline.evScore.edge > 0 ? "text-green-600" : "text-red-600"
+                    watched.evScore.edge > 0 ? "text-green-600" : "text-red-600"
                   }
                 >
-                  {(pipeline.evScore.edge * 100).toFixed(1)}%
+                  {(watched.evScore.edge * 100).toFixed(1)}%
                 </span>
               </div>
             </div>
           )}
 
-          {goal?.kind === "salaryCap" && projectedPts !== null && (
+          {goal?.kind === "salaryCap" && watched?.projectedPts !== undefined && (
             <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-              +{projectedPts} projected pts · uses ${prop.salary.toLocaleString()}{" "}
-              of remaining cap{" "}
-              <em className="text-zinc-400">
-                (sample data — mocked stat history & salary)
-              </em>
+              +{Math.round(watched.projectedPts)} projected pts · uses $
+              {prop.salary.toLocaleString()} of remaining cap{" "}
+              <em className="text-zinc-400">(salary is sample data — mocked)</em>
             </p>
           )}
         </section>

@@ -1,7 +1,53 @@
 import "server-only";
 
 import { getSql } from "./db";
-import type { PlayerGameStatRow } from "./playerStatsSync";
+import type { PlayerGameStatRow, SupportedStatType } from "./playerStatsSync";
+
+// The Odds API's prop outcomes key off a plain player-name string (its
+// `description` field); nflverse keys off its own internal player_id.
+// Returns null (not an error) for an unmapped player -- callers decide
+// how to degrade, e.g. falling back to seeded/mock data.
+export const getNflversePlayerId = async (oddsApiName: string): Promise<string | null> => {
+  const sql = getSql();
+  const rows = (await sql.query(
+    "SELECT nflverse_player_id FROM player_crosswalk WHERE odds_api_name = $1",
+    [oddsApiName]
+  )) as { nflverse_player_id: string }[];
+  return rows[0]?.nflverse_player_id ?? null;
+};
+
+// Oldest-first, matching computeEV's recentGameStats.slice(-sampleWindow)
+// convention -- the DB query itself is most-recent-first (for LIMIT to
+// mean anything), reversed here.
+export const getRecentStatValues = async (
+  nflversePlayerId: string,
+  statType: SupportedStatType,
+  limit: number
+): Promise<number[]> => {
+  const sql = getSql();
+  const rows = (await sql.query(
+    `SELECT stat_value FROM player_game_stats
+     WHERE player_id = $1 AND stat_type = $2
+     ORDER BY game_date DESC
+     LIMIT $3`,
+    [nflversePlayerId, statType, limit]
+  )) as { stat_value: string }[];
+  return rows.map((row) => Number(row.stat_value)).reverse();
+};
+
+// Convenience wrapper combining the crosswalk lookup with the stat
+// fetch, since every real caller needs both. Null means "not resolvable
+// yet" (unmapped player) -- distinct from an empty array, which means
+// "resolved, but no games recorded so far" (e.g. week 1 of a season).
+export const getRealRecentGameStats = async (
+  oddsApiName: string,
+  statType: SupportedStatType,
+  limit = 10
+): Promise<number[] | null> => {
+  const playerId = await getNflversePlayerId(oddsApiName);
+  if (!playerId) return null;
+  return getRecentStatValues(playerId, statType, limit);
+};
 
 export const readSyncState = async (sourceName: string): Promise<string | null> => {
   const sql = getSql();
