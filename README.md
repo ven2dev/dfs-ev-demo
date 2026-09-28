@@ -29,8 +29,13 @@ into a Neon Postgres database.
 
 ### Provider notes (nflverse)
 
-- **Cost:** free, no API key, no rate limit (static file downloads from GitHub
-  Releases, not a metered API).
+- **Cost:** free, no API key. The actual CSV downloads (GitHub Releases
+  assets) are unmetered static files. The idempotency check before that
+  (asking GitHub's REST API for a release's `updated_at`) does hit a real,
+  rate-limited endpoint — 60 requests/hour, unauthenticated (see
+  [GitHub's rate-limit docs](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api)).
+  The sync job makes 2 of those calls per run, once daily — comfortably
+  under the limit, but it isn't literally unlimited.
 - **Coverage:** current season, current rosters only (see `db/schema.sql`'s
   header comment) — not a multi-season historical archive.
 - **Freshness:** updated nightly after each game day during the season, plus

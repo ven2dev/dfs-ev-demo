@@ -5,10 +5,14 @@ import type { Matchup, PickEmGoal } from "@/types";
 // player_pass_yds + player_rush_yds). Rotates weekly to the current
 // notable matchup until live slate ingestion (CLAUDE.md's near-term
 // priorities) replaces this manual step entirely -- each rotation:
-// 1. Confirm the real game (kickoff, teams, Odds API eventId + a
-//    current line) and each player's nflverse `player_id` -- verify
-//    live, don't guess (both change season to season, sometimes week
-//    to week).
+// 1. Confirm the real game (kickoff, teams, Odds API eventId, home
+//    team's stadium coordinates, and a current line) and each player's
+//    nflverse `player_id` -- verify live, don't guess (all of these
+//    change season to season, sometimes week to week). A hardcoded
+//    venue was the exact bug the LAST rotation shipped: weather.ts once
+//    hardcoded Seattle's coordinates, so this game's "real weather" was
+//    silently Seattle's forecast, not Chicago's -- venueLat/venueLon
+//    below is what fetchGameWeather actually uses now.
 // 2. Update this file's `mockMatchup`/`mockGoal`.
 // 3. Re-run db/seed_crosswalk.sql against the live DB (replaces the
 //    old rotation's crosswalk rows, not additive).
@@ -38,6 +42,10 @@ export const mockMatchup: Matchup = {
   startTime: "2026-09-29T00:15:00.000Z",
   sportKey: "americanfootball_nfl",
   eventId: "47dc7baa254659f3beb2ed2b38c207b6",
+  // Soldier Field, Chicago (home team's stadium) -- verified live, not
+  // estimated: 41.8623 N, 87.6167 W.
+  venueLat: 41.8623,
+  venueLon: -87.6167,
   props: [
     {
       propId: "prop-jalen-hurts-pass-yds",

@@ -9,23 +9,25 @@ export type WeatherSnapshot = {
   precipitationMm: number;
 };
 
-// Lumen Field, Seattle WA — the real seeded matchup is AT Seattle
-// (home_team per the Odds API response), not New England.
-const LUMEN_FIELD_LAT = 47.5952;
-const LUMEN_FIELD_LON = -122.3316;
-
 // Fetches the FORECAST for the game's actual kickoff time, not "current"
 // conditions — the game may be days away, and today's weather has no
-// bearing on conditions during the game itself.
+// bearing on conditions during the game itself. Venue coordinates are
+// caller-supplied (the matchup's own venueLat/venueLon), not hardcoded
+// here -- a hardcoded venue silently mislabels every OTHER matchup's
+// weather as "real" when it's actually a different city's forecast
+// (a real bug found in review after the seeded matchup rotated from
+// Seattle to Chicago and this function kept fetching Seattle's).
 export async function fetchGameWeather(
-  gameTimeIso: string
+  gameTimeIso: string,
+  venueLat: number,
+  venueLon: number
 ): Promise<WeatherSnapshot | null> {
   const gameDate = new Date(gameTimeIso);
   const dateStr = gameDate.toISOString().slice(0, 10);
 
   const url =
-    `https://api.open-meteo.com/v1/forecast?latitude=${LUMEN_FIELD_LAT}` +
-    `&longitude=${LUMEN_FIELD_LON}&hourly=temperature_2m,wind_speed_10m,precipitation` +
+    `https://api.open-meteo.com/v1/forecast?latitude=${venueLat}` +
+    `&longitude=${venueLon}&hourly=temperature_2m,wind_speed_10m,precipitation` +
     `&temperature_unit=fahrenheit&wind_speed_unit=mph` +
     `&start_date=${dateStr}&end_date=${dateStr}`;
 

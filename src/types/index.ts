@@ -79,6 +79,11 @@ export type Matchup = {
   startTime: string;
   sportKey: string;
   eventId: string;
+  // The home team's actual stadium -- weather must be fetched for THIS
+  // location, not a hardcoded one. Two different matchups have two
+  // different venues; there is no valid default.
+  venueLat: number;
+  venueLon: number;
   props: Prop[];
 };
 

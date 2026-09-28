@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
               prop.marketKey,
               prop.playerName
             ),
-            fetchGameWeather(mockMatchup.startTime),
+            fetchGameWeather(mockMatchup.startTime, mockMatchup.venueLat, mockMatchup.venueLon),
           ]);
 
           if (!oddsLine || !weather) {

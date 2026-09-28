@@ -301,7 +301,9 @@ export default function Home() {
               ).toFixed(1)}%{" "}
               joint hit probability{" "}
               <em className="text-zinc-400">
-                (uses our model&rsquo;s probability for this pick, not the market&rsquo;s)
+                (independence-assumption estimate, using our model&rsquo;s probability
+                for this pick, not the market&rsquo;s — legs from the same game can be
+                correlated, which this doesn&rsquo;t account for)
               </em>
             </p>
           )}

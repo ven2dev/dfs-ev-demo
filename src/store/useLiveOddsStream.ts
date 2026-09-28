@@ -23,6 +23,22 @@ export function useLiveOddsStream() {
     let staleTimer: ReturnType<typeof setTimeout> | undefined;
     let cancelled = false;
 
+    // Every previously-recorded stages/evHistory value was computed
+    // under whatever sampleWindow was active AT THE TIME -- on a
+    // reconnect (this effect re-running because sampleWindow changed),
+    // those numbers are stale relative to the label now showing the NEW
+    // window, until the first fresh tick lands. A no-op on initial
+    // mount (nothing to clear yet); real on every window change.
+    const currentWatchlist = useAppStore.getState().watchlist;
+    useAppStore.getState().setWatchlist(
+      Object.fromEntries(
+        Object.entries(currentWatchlist).map(([id, entry]) => [
+          id,
+          { ...entry, stages: undefined, evHistory: [] },
+        ])
+      )
+    );
+
     const resetStaleTimer = () => {
       if (staleTimer) clearTimeout(staleTimer);
       staleTimer = setTimeout(() => setConnectionStatus("stale"), STALE_TIMEOUT_MS);
