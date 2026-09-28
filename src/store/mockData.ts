@@ -1,14 +1,13 @@
-import type { Matchup, SalaryCapGoal } from "@/types";
+import type { Matchup, PickEmGoal } from "@/types";
 
 // Real upcoming NFL game and real player-prop market, confirmed available
 // on The Odds API's free tier (americanfootball_nfl, player_pass_yds).
-// The game/player/line are real. recentGameStats AND salary are mocked —
-// no free historical game-log API or DFS-platform salary API exists in
-// the time available. The Goal-impact display (projected pts, salary
-// used) is therefore internally consistent (correctly derived from its
-// stated inputs, not misusing the edge percentage) but still ultimately
-// rests on invented historical/salary numbers, not real DFS platform
-// data — same category of limitation as the mocked coverage filters.
+// The game/player/line are real. `recentGameStats` here is a fallback
+// only — /api/stream overwrites it with real nflverse-backed history per
+// player when available (see playerStatsRepo.ts). `salary` is mocked (no
+// free DFS-platform salary API exists) and currently unused by the UI —
+// kept on the type/seed for the still-deferred SalaryCapGoal display,
+// same category of limitation as the mocked coverage filters.
 export const mockMatchup: Matchup = {
   id: "matchup-1",
   homeTeam: "Seattle Seahawks",
@@ -56,9 +55,15 @@ export const mockCoverageFilters: Record<string, unknown> = {
 // signed-out demo-preview seed and useInitAuth's signed-in Firestore
 // seed so a signed-in user's first-ever goal is the SAME value in both
 // places, not two independently-defined "defaults" that could drift.
-export const mockGoal: SalaryCapGoal = {
-  kind: "salaryCap",
-  salaryCap: 50000,
-  rosterSlots: 9,
-  progress: { slotsFilled: 3, capUsed: 18500 },
+//
+// PickEmGoal, not SalaryCapGoal -- this is a player-props product
+// (CLAUDE.md, 2026-09-27). The one seeded pick (Sam Darnold) uses an
+// illustrative devigged-market probability, not a live one -- only the
+// FIRST seeded prop (Drake Maye) is actually wired into the live SSE
+// stream (see route.ts), so this leg has no live number to draw from
+// yet. Real once live slate ingestion replaces the hardcoded matchup.
+export const mockGoal: PickEmGoal = {
+  kind: "pickEm",
+  pickCount: 2,
+  picks: [{ propId: "prop-sam-darnold-pass-yds", direction: "over", impliedProb: 0.53 }],
 };

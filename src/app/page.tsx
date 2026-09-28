@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Sparkline } from "@/components/Sparkline";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { computeEntryHitProbability } from "@/lib/pickEm";
 import { mockGoal } from "@/store/mockData";
 import {
   useAuthStatus,
@@ -278,11 +279,30 @@ export default function Home() {
             </div>
           )}
 
-          {goal?.kind === "salaryCap" && watched?.projectedPts !== undefined && (
+          {watched?.recentStatAverage !== undefined && (
             <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-              +{Math.round(watched.projectedPts)} projected pts · uses $
-              {prop.salary.toLocaleString()} of remaining cap{" "}
-              <em className="text-zinc-400">(salary is sample data — mocked)</em>
+              Avg last {matchupConfig.sampleWindow} games:{" "}
+              {watched.recentStatAverage.toFixed(1)} {prop.propType.toLowerCase()}{" "}
+              <em className="text-zinc-400">
+                (historical average, not a projection — no predictive model yet)
+              </em>
+            </p>
+          )}
+
+          {goal?.kind === "pickEm" && watched?.evScore !== undefined && (
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              Adding this pick to your {goal.pickCount}-pick entry:{" "}
+              {(computeEntryHitProbability(goal.picks) * 100).toFixed(1)}% →{" "}
+              {(
+                computeEntryHitProbability([
+                  ...goal.picks,
+                  { propId: prop.propId, direction: "over", impliedProb: watched.evScore.modelProb },
+                ]) * 100
+              ).toFixed(1)}%{" "}
+              joint hit probability{" "}
+              <em className="text-zinc-400">
+                (uses our model&rsquo;s probability for this pick, not the market&rsquo;s)
+              </em>
             </p>
           )}
         </section>
