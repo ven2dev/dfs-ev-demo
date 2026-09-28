@@ -52,6 +52,21 @@ describe("syncPlayerStats", () => {
     expect(deps.upsertStats).not.toHaveBeenCalled();
   });
 
+  it("is still a safe no-op when the stored timestamp round-trips through a different (but equal-instant) string format", async () => {
+    // Reproduces a real bug found via live verification against Postgres:
+    // GitHub's raw format ("...T00:00:00Z") and a value that's been
+    // round-tripped through Date.toISOString() ("...T00:00:00.000Z")
+    // are the identical instant but never string-equal.
+    const deps = makeDeps({
+      readSyncState: vi.fn().mockResolvedValue("2026-09-27T00:00:00.000Z"),
+    });
+
+    const result = await syncPlayerStats(deps);
+
+    expect(result).toEqual({ status: "up-to-date" });
+    expect(deps.fetchStatsRows).not.toHaveBeenCalled();
+  });
+
   it("re-syncs when only the schedules source changed, even if stats didn't", async () => {
     const readSyncState = vi.fn((source: string) =>
       Promise.resolve(source === NFLVERSE_SCHEDULES_SOURCE ? "2026-09-20T00:00:00Z" : "2026-09-27T00:00:00Z")

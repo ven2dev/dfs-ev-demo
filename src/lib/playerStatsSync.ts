@@ -175,10 +175,19 @@ export const syncPlayerStats = async (
     deps.readSyncState(NFLVERSE_SCHEDULES_SOURCE),
   ]);
 
+  // Compared as parsed instants, not raw strings: confirmed live against
+  // the real Postgres round-trip that GitHub's raw timestamp format
+  // ("...T00:38:02Z") and Postgres's stored/returned format don't share
+  // a single string representation, even for the identical instant --
+  // a naive string comparison here is always false, silently defeating
+  // the whole idempotency check on every run.
+  const sameInstant = (a: string | null, b: string) =>
+    a !== null && new Date(a).getTime() === new Date(b).getTime();
+
   // Either source moving is enough to re-sync: a schedules-only change
   // (e.g. a corrected game date) still needs re-joining against the
   // stats we already have.
-  if (lastStats === statsUpdatedAt && lastSchedules === schedulesUpdatedAt) {
+  if (sameInstant(lastStats, statsUpdatedAt) && sameInstant(lastSchedules, schedulesUpdatedAt)) {
     return { status: "up-to-date" };
   }
 
