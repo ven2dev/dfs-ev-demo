@@ -93,11 +93,13 @@ describe("useLiveOddsStream: sampleWindow in the connection URL", () => {
     unmount();
   });
 
-  it("clears stale stages/evHistory on reconnect, since they were computed under the OLD window", () => {
-    // Reproduces a real review finding: without this, the base-rate
-    // label immediately shows the new window (e.g. "3-game hit rate")
-    // while the number next to it is still the OLD window's stale
-    // value, until the first fresh tick lands under the new window.
+  it("clears ALL window-dependent values on reconnect, since they were computed under the OLD window", () => {
+    // Reproduces a real review finding, twice over: an earlier fix only
+    // cleared stages/evHistory, missing evScore and recentStatAverage --
+    // neither is gated behind `stages` in the UI, so the live edge, the
+    // sparkline, "Avg last N games," and the PickEm entry-impact number
+    // all kept showing OLD-window values under the NEW window's label
+    // until the first fresh tick landed.
     vi.stubGlobal("EventSource", FakeEventSource);
     useAppStore.setState({
       matchupConfig: { ...useAppStore.getState().matchupConfig, sampleWindow: 5 },
@@ -107,6 +109,7 @@ describe("useLiveOddsStream: sampleWindow in the connection URL", () => {
           evScore: { modelProb: 0.6, impliedProb: 0.5, edge: 0.1 },
           evHistory: [{ timestamp: 1, evScore: 0.1 }],
           stages: { baseRate: 0.6, afterEnvironment: 0.6, afterCoverage: 0.5 },
+          recentStatAverage: 233.5,
         },
       },
     });
@@ -122,8 +125,10 @@ describe("useLiveOddsStream: sampleWindow in the connection URL", () => {
     const entry = useAppStore.getState().watchlist["prop-1"];
     expect(entry.stages).toBeUndefined();
     expect(entry.evHistory).toEqual([]);
-    // The entry itself (propId, evScore) survives -- only the
-    // window-dependent fields are cleared.
+    expect(entry.evScore).toBeUndefined();
+    expect(entry.recentStatAverage).toBeUndefined();
+    // The entry's identity (propId) survives -- only the window-
+    // dependent fields are cleared.
     expect(entry.propId).toBe("prop-1");
     unmount();
   });

@@ -23,18 +23,24 @@ export function useLiveOddsStream() {
     let staleTimer: ReturnType<typeof setTimeout> | undefined;
     let cancelled = false;
 
-    // Every previously-recorded stages/evHistory value was computed
-    // under whatever sampleWindow was active AT THE TIME -- on a
-    // reconnect (this effect re-running because sampleWindow changed),
-    // those numbers are stale relative to the label now showing the NEW
-    // window, until the first fresh tick lands. A no-op on initial
-    // mount (nothing to clear yet); real on every window change.
+    // Every previously-recorded window-dependent value -- stages,
+    // evHistory, evScore, AND recentStatAverage -- was computed under
+    // whatever sampleWindow was active AT THE TIME. On a reconnect (this
+    // effect re-running because sampleWindow changed), all four are
+    // stale relative to the label now showing the NEW window, until the
+    // first fresh tick lands. A prior version of this only cleared
+    // stages/evHistory, missing evScore/recentStatAverage -- those two
+    // aren't gated on `stages` in the UI, so the live edge, sparkline,
+    // recent-stat-average line, and PickEm entry-impact number all kept
+    // showing OLD-window values under the NEW window's label (caught in
+    // review). A no-op on initial mount (nothing to clear yet); real on
+    // every window change.
     const currentWatchlist = useAppStore.getState().watchlist;
     useAppStore.getState().setWatchlist(
       Object.fromEntries(
         Object.entries(currentWatchlist).map(([id, entry]) => [
           id,
-          { ...entry, stages: undefined, evHistory: [] },
+          { ...entry, stages: undefined, evHistory: [], evScore: undefined, recentStatAverage: undefined },
         ])
       )
     );

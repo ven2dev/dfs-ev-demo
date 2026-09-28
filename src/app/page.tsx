@@ -249,7 +249,7 @@ export default function Home() {
             ))}
           </div>
 
-          {watched?.stages && (
+          {watched?.stages && watched.evScore && (
             <div className="mt-6 space-y-3">
               <div className="flex justify-between text-sm">
                 <span>Base rate ({matchupConfig.sampleWindow}-game hit rate)</span>
@@ -318,7 +318,7 @@ export default function Home() {
             <span className="capitalize">{connectionStatus}</span>
           </div>
         </div>
-        {watched && prop ? (
+        {watched?.evScore && prop ? (
           <div className="mt-4">
             <div className="flex justify-between text-sm">
               <span>{prop.playerName} — live edge</span>
