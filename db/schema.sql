@@ -69,3 +69,33 @@ CREATE TABLE IF NOT EXISTS player_crosswalk (
   nflverse_player_name TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- #34: creator-content confidence layer, transcript submission form.
+-- Manual sourcing only (no scraper -- see the issue for why) -- these
+-- tables just persist what's pasted through the internal submission
+-- form, for #35's extraction pipeline to consume later. transcript_text
+-- is stored as ONE raw blob per video; segmenting/parsing it into
+-- structured picks is #35's job, not this one.
+CREATE TABLE IF NOT EXISTS creators (
+  id BIGSERIAL PRIMARY KEY,
+  channel_name TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS creator_video_submissions (
+  id BIGSERIAL PRIMARY KEY,
+  creator_id BIGINT NOT NULL REFERENCES creators(id),
+  -- Both nullable -- real submissions so far have often had a blank
+  -- title, sometimes a blank URL too (copied before the page's own
+  -- metadata was in hand). UNIQUE still works correctly with NULLs:
+  -- Postgres treats each NULL as distinct, so any number of
+  -- unknown-URL submissions are allowed, while two submissions of the
+  -- SAME real URL are still correctly rejected as duplicates.
+  video_url TEXT UNIQUE,
+  video_title TEXT,
+  transcript_text TEXT NOT NULL,
+  submitted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_creator_video_submissions_creator
+  ON creator_video_submissions (creator_id, submitted_at DESC);
