@@ -1,38 +1,61 @@
 import type { Matchup, PickEmGoal } from "@/types";
 
-// Real upcoming NFL game and real player-prop market, confirmed available
-// on The Odds API's free tier (americanfootball_nfl, player_pass_yds).
-// The game/player/line are real. `recentGameStats` here is a fallback
-// only — /api/stream overwrites it with real nflverse-backed history per
-// player when available (see playerStatsRepo.ts). `salary` is mocked (no
-// free DFS-platform salary API exists) and currently unused by the UI —
+// Real upcoming NFL game and real player-prop markets, confirmed live
+// on The Odds API's free tier as of 2026-09-27 (americanfootball_nfl,
+// player_pass_yds + player_rush_yds). Rotates weekly to the current
+// notable matchup until live slate ingestion (CLAUDE.md's near-term
+// priorities) replaces this manual step entirely -- each rotation:
+// 1. Confirm the real game (kickoff, teams, Odds API eventId + a
+//    current line) and each player's nflverse `player_id` -- verify
+//    live, don't guess (both change season to season, sometimes week
+//    to week).
+// 2. Update this file's `mockMatchup`/`mockGoal`.
+// 3. Re-run db/seed_crosswalk.sql against the live DB (replaces the
+//    old rotation's crosswalk rows, not additive).
+// 4. Trigger a manual sync (see README's "Keeping it in sync") so real
+//    historical stats exist for the new players immediately, rather
+//    than waiting for the next scheduled cron run.
+//
+// Current rotation (2026-09-27): Eagles @ Bears, Monday Night
+// Football, 2026-09-28 8:15pm ET / Soldier Field -- verified via
+// nfl.com's schedule and confirmed live on the Odds API. Next
+// rotations, per the plan: that week's Thursday Night Football game,
+// then whichever Sunday game has the highest combined-score/marquee
+// billing.
+//
+// `recentGameStats` here is a fallback only — /api/stream overwrites it
+// with real nflverse-backed history per player when available (see
+// playerStatsRepo.ts); the two values below are each player's actual
+// weeks 1-2 stat lines (real, not fabricated), since week 3 wasn't
+// posted yet as of this rotation. `salary` is mocked (no free
+// DFS-platform salary API exists) and currently unused by the UI —
 // kept on the type/seed for the still-deferred SalaryCapGoal display,
 // same category of limitation as the mocked coverage filters.
 export const mockMatchup: Matchup = {
   id: "matchup-1",
-  homeTeam: "Seattle Seahawks",
-  awayTeam: "New England Patriots",
-  startTime: "2026-09-10T00:15:00.000Z",
+  homeTeam: "Chicago Bears",
+  awayTeam: "Philadelphia Eagles",
+  startTime: "2026-09-29T00:15:00.000Z",
   sportKey: "americanfootball_nfl",
-  eventId: "8c94552d022acec4a0458d70c19d3da9",
+  eventId: "47dc7baa254659f3beb2ed2b38c207b6",
   props: [
     {
-      propId: "prop-drake-maye-pass-yds",
-      playerName: "Drake Maye",
+      propId: "prop-jalen-hurts-pass-yds",
+      playerName: "Jalen Hurts",
       propType: "Passing Yards",
       marketKey: "player_pass_yds",
-      line: 229.5,
-      salary: 7200,
-      recentGameStats: [245, 198, 261, 210, 233, 189, 254],
+      line: 214.5,
+      salary: 7600,
+      recentGameStats: [203, 264],
     },
     {
-      propId: "prop-sam-darnold-pass-yds",
-      playerName: "Sam Darnold",
-      propType: "Passing Yards",
-      marketKey: "player_pass_yds",
-      line: 233.5,
-      salary: 6800,
-      recentGameStats: [268, 241, 219, 255, 230, 248, 201],
+      propId: "prop-saquon-barkley-rush-yds",
+      playerName: "Saquon Barkley",
+      propType: "Rushing Yards",
+      marketKey: "player_rush_yds",
+      line: 71.5,
+      salary: 8200,
+      recentGameStats: [83, 9],
     },
   ],
 };
@@ -57,13 +80,19 @@ export const mockCoverageFilters: Record<string, unknown> = {
 // places, not two independently-defined "defaults" that could drift.
 //
 // PickEmGoal, not SalaryCapGoal -- this is a player-props product
-// (CLAUDE.md, 2026-09-27). The one seeded pick (Sam Darnold) uses an
-// illustrative devigged-market probability, not a live one -- only the
-// FIRST seeded prop (Drake Maye) is actually wired into the live SSE
-// stream (see route.ts), so this leg has no live number to draw from
-// yet. Real once live slate ingestion replaces the hardcoded matchup.
+// (CLAUDE.md, 2026-09-27). The one seeded pick (Saquon Barkley, Over
+// 71.5 rushing yards) uses a real devigged-market probability (~0.504,
+// from DraftKings' Over/Under 1.88/1.91 as of 2026-09-27) -- only the
+// FIRST seeded prop (Jalen Hurts) is actually wired into the live SSE
+// stream (see route.ts), so this leg has no LIVE number to draw from,
+// but the seed itself isn't fabricated. Re-devig from a fresh odds pull
+// each rotation (see mockMatchup's header comment) rather than leaving
+// this stale -- a two-game-old market snapshot is a worse look than an
+// honestly-labeled mock, for a number that IS meant to be real.
 export const mockGoal: PickEmGoal = {
   kind: "pickEm",
   pickCount: 2,
-  picks: [{ propId: "prop-sam-darnold-pass-yds", direction: "over", impliedProb: 0.53 }],
+  picks: [
+    { propId: "prop-saquon-barkley-rush-yds", direction: "over", impliedProb: 0.504 },
+  ],
 };

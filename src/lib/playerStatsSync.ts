@@ -121,6 +121,7 @@ export const STAT_TYPE_SOURCE: Record<SupportedStatType, StatSource> = {
 // same right-sizing as the crosswalk table.
 export const ODDS_MARKET_TO_STAT_TYPE: Record<string, SupportedStatType> = {
   player_pass_yds: "passing_yards",
+  player_rush_yds: "rushing_yards",
 };
 
 // Raw CSV rows arrive as strings -- numeric coercion happens in the
