@@ -5,6 +5,11 @@ import "server-only";
 
 const ODDS_API_BASE = "https://api.the-odds-api.com/v4";
 
+// This app is NFL-only for now (see CLAUDE.md's Stack section) -- one
+// shared constant instead of the literal repeated across callers, so
+// adding a second sport later is a one-place change, not a find/replace.
+export const DEFAULT_SPORT_KEY = "americanfootball_nfl";
+
 export type OddsOutcome = {
   name: string;
   description?: string;
