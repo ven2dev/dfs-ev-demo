@@ -80,8 +80,29 @@ export const insertSubmission = async (
     return { status: "inserted", id: rows[0].id };
   }
 
-  // Lost the race -- some concurrent request's insert won. Fetch the
-  // real winning row rather than assuming anything about it.
+  // Lost the race -- some concurrent request's insert won, using ITS
+  // OWN creator_id, not this one. This request's own getOrCreateCreatorId
+  // call above may have just created a brand-new creator row that will
+  // now never get a submission (caught in review). A real transactional
+  // rollback isn't available here -- this project's Postgres client
+  // (@neondatabase/serverless's `neon()`) only runs a fixed, predetermined
+  // batch of queries as one atomic unit; it has no interactive session to
+  // conditionally ROLLBACK mid-flight, and switching to the stateful
+  // Pool/Client class just for this one edge case is a real architecture
+  // change, not a proportionate fix here. Deleting the row afterward
+  // reaches the same end state (no orphan survives) instead: the
+  // NOT EXISTS guard makes this safe to run unconditionally -- a creator
+  // that already had OTHER submissions (an existing channel, not a
+  // brand-new one) is protected and never touched, and this is itself a
+  // single atomic statement, race-safe on its own.
+  await sql.query(
+    `DELETE FROM creators
+     WHERE id = $1 AND NOT EXISTS (
+       SELECT 1 FROM creator_video_submissions WHERE creator_id = $1
+     )`,
+    [creatorId]
+  );
+
   const winner = (await sql.query(
     "SELECT id FROM creator_video_submissions WHERE video_url = $1",
     [input.videoUrl]

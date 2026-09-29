@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { useAppStore } from "@/store";
 import { useAuthStatus, useUid } from "@/store/hooks";
 import type { CreatorSubmissionSummary } from "@/lib/creatorSubmissionsRepo";
 
@@ -108,7 +109,17 @@ export default function CreatorSubmissionsPage() {
           : "Submitted."
       );
       setForm(emptyForm);
-      if (uid) applyFetchResult(uid, await fetchSubmissions());
+      // Guard against a stale completion overwriting a NEWER identity's
+      // already-loaded state (caught in review): if the account changed
+      // while this POST was in flight, `uid` here is this closure's
+      // now-stale snapshot -- comparing it against the LIVE value read
+      // directly from the store (not the reactive `uid` binding, which
+      // would just be this same stale snapshot again) detects that and
+      // skips applying it, leaving whatever the new identity's own
+      // effect already correctly set untouched.
+      if (uid && useAppStore.getState().uid === uid) {
+        applyFetchResult(uid, await fetchSubmissions());
+      }
     } catch (err) {
       setSubmitMessage(`Failed: ${(err as Error).message}`);
     } finally {
