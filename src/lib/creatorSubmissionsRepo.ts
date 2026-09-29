@@ -23,91 +23,69 @@ export type InsertSubmissionResult =
   | { status: "inserted"; id: number }
   | { status: "already-submitted"; id: number };
 
-// "DO UPDATE SET channel_name = EXCLUDED.channel_name" (a no-op update)
-// rather than "DO NOTHING" -- RETURNING only yields rows an INSERT or
-// UPDATE actually touched, and DO NOTHING touches zero rows on a
-// conflict. This is the standard Postgres idiom for "insert-or-get,
-// always get the row back" in one round trip.
-const getOrCreateCreatorId = async (channelName: string): Promise<number> => {
-  const sql = getSql();
-  const rows = (await sql.query(
-    `INSERT INTO creators (channel_name)
-     VALUES ($1)
-     ON CONFLICT (channel_name) DO UPDATE SET channel_name = EXCLUDED.channel_name
-     RETURNING id`,
-    [channelName]
-  )) as { id: number }[];
-  return rows[0].id;
-};
-
+// Second review pass caught a deeper race the first fix (create then
+// clean up afterward) didn't close: a THIRD, unrelated request can grab
+// the same channel's creator id in the gap between the losing request
+// creating it and that same request's own cleanup DELETE running --
+// NOT EXISTS only sees submissions already committed at that instant,
+// never one a concurrent request is still in flight to insert. Bundling
+// creator-creation and the submission insert into one transaction isn't
+// enough by itself either: under Read Committed, two concurrent
+// transactions' OWN "does this URL exist yet" checks can both still see
+// "no" before either commits.
+//
+// What actually closes it: a per-URL Postgres advisory lock, held for
+// the whole transaction (auto-released at commit/rollback), serializing
+// every attempt for the SAME url completely. A second concurrent
+// attempt for that url can't even run ITS OWN existence check until the
+// first has fully committed or rolled back -- at which point it
+// correctly sees the committed row and creates nothing (no creator, no
+// submission), rather than racing to create one and having to undo it
+// after the fact. This needs no application-side conditional logic --
+// every statement below is fixed in advance, which is exactly what this
+// driver's non-interactive transaction batch can run atomically as one
+// real Postgres transaction.
+//
+// hashtext() is only a 32-bit hash, so two DIFFERENT urls could in
+// theory collide onto the same lock key -- harmless (they'd just
+// briefly serialize against each other for no reason), and irrelevant
+// at this tool's real scale.
 export const insertSubmission = async (
   input: CreatorSubmissionInput
 ): Promise<InsertSubmissionResult> => {
   const sql = getSql();
 
-  // First-pass check, not what makes this race-safe by itself -- it
-  // just avoids creating a creator row for the COMMON case of an
-  // obvious duplicate (caught in review: creating the creator before
-  // this check meant re-submitting a known URL under a brand-new
-  // channel name silently created an orphaned creator with zero
-  // submissions). The actual race-safety comes from the ON CONFLICT
-  // below.
-  const existing = (await sql.query(
-    "SELECT id FROM creator_video_submissions WHERE video_url = $1",
-    [input.videoUrl]
-  )) as { id: number }[];
-  if (existing[0]) {
-    return { status: "already-submitted", id: existing[0].id };
+  const results = await sql.transaction((txn) => [
+    txn.query("SELECT pg_advisory_xact_lock(hashtext($1)::bigint)", [input.videoUrl]),
+    // No RETURNING needed here -- the submission insert below re-derives
+    // the creator id itself, inside the SAME guarded query, rather than
+    // trusting a value handed across from this step.
+    txn.query(
+      `INSERT INTO creators (channel_name)
+       SELECT $1
+       WHERE NOT EXISTS (SELECT 1 FROM creator_video_submissions WHERE video_url = $2)
+       ON CONFLICT (channel_name) DO UPDATE SET channel_name = EXCLUDED.channel_name`,
+      [input.channelName, input.videoUrl]
+    ),
+    txn.query(
+      `INSERT INTO creator_video_submissions (creator_id, video_url, video_title, transcript_text)
+       SELECT c.id, $2, $3, $4
+       FROM creators c
+       WHERE c.channel_name = $1
+         AND NOT EXISTS (SELECT 1 FROM creator_video_submissions WHERE video_url = $2)
+       RETURNING id`,
+      [input.channelName, input.videoUrl, input.videoTitle ?? null, input.transcriptText]
+    ),
+    txn.query("SELECT id FROM creator_video_submissions WHERE video_url = $1", [input.videoUrl]),
+  ]);
+
+  const insertedRows = results[2] as { id: number }[];
+  if (insertedRows[0]) {
+    return { status: "inserted", id: insertedRows[0].id };
   }
 
-  const creatorId = await getOrCreateCreatorId(input.channelName);
-
-  // ON CONFLICT DO NOTHING makes the insert itself atomic against a
-  // genuinely concurrent duplicate submission -- two requests can both
-  // pass the check above before either has inserted (a real race the
-  // check alone can't close), and without this the second one would
-  // throw on the UNIQUE constraint and surface as a raw 500 instead of
-  // the same clean "already-submitted" result.
-  const rows = (await sql.query(
-    `INSERT INTO creator_video_submissions (creator_id, video_url, video_title, transcript_text)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (video_url) DO NOTHING
-     RETURNING id`,
-    [creatorId, input.videoUrl, input.videoTitle ?? null, input.transcriptText]
-  )) as { id: number }[];
-
-  if (rows[0]) {
-    return { status: "inserted", id: rows[0].id };
-  }
-
-  // Lost the race -- some concurrent request's insert won, using ITS
-  // OWN creator_id, not this one. This request's own getOrCreateCreatorId
-  // call above may have just created a brand-new creator row that will
-  // now never get a submission (caught in review). A real transactional
-  // rollback isn't available here -- this project's Postgres client
-  // (@neondatabase/serverless's `neon()`) only runs a fixed, predetermined
-  // batch of queries as one atomic unit; it has no interactive session to
-  // conditionally ROLLBACK mid-flight, and switching to the stateful
-  // Pool/Client class just for this one edge case is a real architecture
-  // change, not a proportionate fix here. Deleting the row afterward
-  // reaches the same end state (no orphan survives) instead: the
-  // NOT EXISTS guard makes this safe to run unconditionally -- a creator
-  // that already had OTHER submissions (an existing channel, not a
-  // brand-new one) is protected and never touched, and this is itself a
-  // single atomic statement, race-safe on its own.
-  await sql.query(
-    `DELETE FROM creators
-     WHERE id = $1 AND NOT EXISTS (
-       SELECT 1 FROM creator_video_submissions WHERE creator_id = $1
-     )`,
-    [creatorId]
-  );
-
-  const winner = (await sql.query(
-    "SELECT id FROM creator_video_submissions WHERE video_url = $1",
-    [input.videoUrl]
-  )) as { id: number }[];
-  return { status: "already-submitted", id: winner[0].id };
+  const finalRows = results[3] as { id: number }[];
+  return { status: "already-submitted", id: finalRows[0].id };
 };
 
 // Deliberately excludes transcript_text -- this is a lightweight "what's

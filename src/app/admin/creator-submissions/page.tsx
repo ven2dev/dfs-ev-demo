@@ -110,15 +110,18 @@ export default function CreatorSubmissionsPage() {
       );
       setForm(emptyForm);
       // Guard against a stale completion overwriting a NEWER identity's
-      // already-loaded state (caught in review): if the account changed
-      // while this POST was in flight, `uid` here is this closure's
-      // now-stale snapshot -- comparing it against the LIVE value read
-      // directly from the store (not the reactive `uid` binding, which
-      // would just be this same stale snapshot again) detects that and
-      // skips applying it, leaving whatever the new identity's own
-      // effect already correctly set untouched.
+      // already-loaded state (caught in review, twice): checked AFTER
+      // awaiting fetchSubmissions(), not before it -- the account can
+      // change during THIS await too, not just during the POST above,
+      // and a check made before starting the fetch can't see a change
+      // that happens while it's still in flight. `uid` here is this
+      // closure's snapshot from render time; comparing it against the
+      // LIVE value read directly from the store is what actually
+      // detects a change, at the one point that matters: immediately
+      // before applying the result.
+      const refreshResult = await fetchSubmissions();
       if (uid && useAppStore.getState().uid === uid) {
-        applyFetchResult(uid, await fetchSubmissions());
+        applyFetchResult(uid, refreshResult);
       }
     } catch (err) {
       setSubmitMessage(`Failed: ${(err as Error).message}`);
