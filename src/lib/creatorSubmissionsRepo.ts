@@ -4,7 +4,9 @@ import { getSql } from "./db";
 
 export type CreatorSubmissionInput = {
   channelName: string;
-  videoUrl?: string;
+  // Required (2026-09-29 revision) -- it's the only real dedup key, and
+  // #35/#36 need a real source link. videoTitle stays optional.
+  videoUrl: string;
   videoTitle?: string;
   transcriptText: string;
 };
@@ -12,7 +14,7 @@ export type CreatorSubmissionInput = {
 export type CreatorSubmissionSummary = {
   id: number;
   channelName: string;
-  videoUrl: string | null;
+  videoUrl: string;
   videoTitle: string | null;
   submittedAt: string;
 };
@@ -42,34 +44,49 @@ export const insertSubmission = async (
   input: CreatorSubmissionInput
 ): Promise<InsertSubmissionResult> => {
   const sql = getSql();
-  const creatorId = await getOrCreateCreatorId(input.channelName);
 
-  // A real video_url re-submitted is a harmless no-op, reported back
-  // distinctly, not an error -- checked explicitly rather than left to
-  // the UNIQUE constraint, so the caller gets a clean "already-
-  // submitted" result with the EXISTING row's id instead of a raw
-  // constraint-violation exception. Skipped entirely when the URL isn't
-  // known (undefined) -- a null video_url never conflicts with another
-  // null (Postgres treats each NULL as distinct), so there's nothing to
-  // check.
-  if (input.videoUrl) {
-    const existing = (await sql.query(
-      "SELECT id FROM creator_video_submissions WHERE video_url = $1",
-      [input.videoUrl]
-    )) as { id: number }[];
-    if (existing[0]) {
-      return { status: "already-submitted", id: existing[0].id };
-    }
+  // First-pass check, not what makes this race-safe by itself -- it
+  // just avoids creating a creator row for the COMMON case of an
+  // obvious duplicate (caught in review: creating the creator before
+  // this check meant re-submitting a known URL under a brand-new
+  // channel name silently created an orphaned creator with zero
+  // submissions). The actual race-safety comes from the ON CONFLICT
+  // below.
+  const existing = (await sql.query(
+    "SELECT id FROM creator_video_submissions WHERE video_url = $1",
+    [input.videoUrl]
+  )) as { id: number }[];
+  if (existing[0]) {
+    return { status: "already-submitted", id: existing[0].id };
   }
 
+  const creatorId = await getOrCreateCreatorId(input.channelName);
+
+  // ON CONFLICT DO NOTHING makes the insert itself atomic against a
+  // genuinely concurrent duplicate submission -- two requests can both
+  // pass the check above before either has inserted (a real race the
+  // check alone can't close), and without this the second one would
+  // throw on the UNIQUE constraint and surface as a raw 500 instead of
+  // the same clean "already-submitted" result.
   const rows = (await sql.query(
     `INSERT INTO creator_video_submissions (creator_id, video_url, video_title, transcript_text)
      VALUES ($1, $2, $3, $4)
+     ON CONFLICT (video_url) DO NOTHING
      RETURNING id`,
-    [creatorId, input.videoUrl ?? null, input.videoTitle ?? null, input.transcriptText]
+    [creatorId, input.videoUrl, input.videoTitle ?? null, input.transcriptText]
   )) as { id: number }[];
 
-  return { status: "inserted", id: rows[0].id };
+  if (rows[0]) {
+    return { status: "inserted", id: rows[0].id };
+  }
+
+  // Lost the race -- some concurrent request's insert won. Fetch the
+  // real winning row rather than assuming anything about it.
+  const winner = (await sql.query(
+    "SELECT id FROM creator_video_submissions WHERE video_url = $1",
+    [input.videoUrl]
+  )) as { id: number }[];
+  return { status: "already-submitted", id: winner[0].id };
 };
 
 // Deliberately excludes transcript_text -- this is a lightweight "what's
@@ -86,7 +103,7 @@ export const listSubmissions = async (limit = 50): Promise<CreatorSubmissionSumm
   )) as {
     id: number;
     channel_name: string;
-    video_url: string | null;
+    video_url: string;
     video_title: string | null;
     submitted_at: string;
   }[];

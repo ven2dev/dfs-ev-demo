@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getAuthHeaders } from "@/lib/authHeaders";
-import { useAuthStatus } from "@/store/hooks";
+import { useAuthStatus, useUid } from "@/store/hooks";
 import type { CreatorSubmissionSummary } from "@/lib/creatorSubmissionsRepo";
 
 // Internal-only tool (#34) -- no nav link anywhere. Not gated by an
@@ -11,14 +11,32 @@ import type { CreatorSubmissionSummary } from "@/lib/creatorSubmissionsRepo";
 // page just attempts the authenticated GET and lets that call's actual
 // 403 (vs. 200) decide what renders. Two sources of truth for the same
 // decision would only risk drifting out of sync with each other.
-type LoadState = "loading" | "forbidden" | "error" | "ready";
+// Keyed to the uid it was loaded FOR, not just fetched at some point --
+// caught in review: authSlice's setUser sets authStatus: "signed-in"
+// regardless of whether the uid actually changed, so switching directly
+// from one signed-in account to another (no intermediate signed-out
+// state) never changes authStatus at all. An effect keyed only on
+// authStatus would never re-fetch, and the PREVIOUS admin's cached
+// submissions/form would keep rendering under the new account. Render
+// logic below only trusts `loaded` when `loaded.uid` matches the
+// CURRENT uid -- a stale object for a different uid is treated as "not
+// loaded yet" (null), not cleared out via a separate effect-triggered
+// setState (which would itself trip this project's
+// react-hooks/set-state-in-effect rule). There's no "loading" member
+// here on purpose -- `loaded === null` (or stale-for-this-uid) already
+// means "loading," so this only ever represents a call that resolved.
+type Loaded = {
+  uid: string;
+  status: "forbidden" | "error" | "ready";
+  submissions: CreatorSubmissionSummary[];
+};
 
 const emptyForm = { channelName: "", videoUrl: "", videoTitle: "", transcriptText: "" };
 
 export default function CreatorSubmissionsPage() {
   const authStatus = useAuthStatus();
-  const [loadState, setLoadState] = useState<LoadState>("loading");
-  const [submissions, setSubmissions] = useState<CreatorSubmissionSummary[]>([]);
+  const uid = useUid();
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState<string | null>(null);
@@ -45,26 +63,28 @@ export default function CreatorSubmissionsPage() {
     }
   };
 
-  const applyFetchResult = (result: FetchResult) => {
-    if (result.status === "forbidden") setLoadState("forbidden");
-    else if (result.status === "error") setLoadState("error");
-    else {
-      setSubmissions(result.submissions);
-      setLoadState("ready");
-    }
+  const applyFetchResult = (forUid: string, result: FetchResult) => {
+    if (result.status === "forbidden") setLoaded({ uid: forUid, status: "forbidden", submissions: [] });
+    else if (result.status === "error") setLoaded({ uid: forUid, status: "error", submissions: [] });
+    else setLoaded({ uid: forUid, status: "ready", submissions: result.submissions });
   };
 
   useEffect(() => {
-    if (authStatus !== "signed-in") return;
+    if (authStatus !== "signed-in" || !uid) return;
     let ignore = false;
     fetchSubmissions().then((result) => {
-      if (!ignore) applyFetchResult(result);
+      if (!ignore) applyFetchResult(uid, result);
     });
     return () => {
       ignore = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchSubmissions/applyFetchResult are recreated every render but stable in behavior; only a genuine sign-in transition should re-trigger this fetch
-  }, [authStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchSubmissions/applyFetchResult are recreated every render but stable in behavior; only a genuine identity transition should re-trigger this fetch
+  }, [authStatus, uid]);
+
+  // The data actually loaded for the CURRENT identity -- a stale object
+  // left over from a previous uid renders as "not loaded yet" (the
+  // loading state below), never as that previous account's content.
+  const current = loaded?.uid === uid ? loaded : null;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -88,7 +108,7 @@ export default function CreatorSubmissionsPage() {
           : "Submitted."
       );
       setForm(emptyForm);
-      applyFetchResult(await fetchSubmissions());
+      if (uid) applyFetchResult(uid, await fetchSubmissions());
     } catch (err) {
       setSubmitMessage(`Failed: ${(err as Error).message}`);
     } finally {
@@ -105,13 +125,16 @@ export default function CreatorSubmissionsPage() {
   if (authStatus !== "signed-in") {
     return <p className="text-sm text-zinc-600 dark:text-zinc-400">Sign in to view this page.</p>;
   }
-  if (loadState === "loading") {
+  // `current` is null both on a genuine first load AND right after an
+  // identity transition, before the new uid's own fetch has resolved.
+  // Either way, nothing loaded for THIS uid yet -- render as "loading."
+  if (!current) {
     return <p className="text-sm text-zinc-500">…</p>;
   }
-  if (loadState === "forbidden") {
+  if (current.status === "forbidden") {
     return <p className="text-sm text-zinc-600 dark:text-zinc-400">Not authorized.</p>;
   }
-  if (loadState === "error") {
+  if (current.status === "error") {
     return <p className="text-sm text-red-600">Failed to load. Refresh to retry.</p>;
   }
 
@@ -130,7 +153,8 @@ export default function CreatorSubmissionsPage() {
           />
           <input
             type="text"
-            placeholder="Video URL (optional)"
+            required
+            placeholder="Video URL"
             value={form.videoUrl}
             onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
             className="w-full rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
@@ -163,11 +187,11 @@ export default function CreatorSubmissionsPage() {
 
       <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
         <h2 className="text-lg font-medium">Past submissions</h2>
-        {submissions.length === 0 ? (
+        {current.submissions.length === 0 ? (
           <p className="mt-2 text-sm text-zinc-500">None yet.</p>
         ) : (
           <ul className="mt-4 space-y-2 text-sm">
-            {submissions.map((s) => (
+            {current.submissions.map((s) => (
               <li key={s.id} className="flex justify-between border-b border-zinc-100 pb-2 dark:border-zinc-800">
                 <span>
                   {s.channelName} —{" "}

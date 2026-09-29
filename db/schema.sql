@@ -85,17 +85,22 @@ CREATE TABLE IF NOT EXISTS creators (
 CREATE TABLE IF NOT EXISTS creator_video_submissions (
   id BIGSERIAL PRIMARY KEY,
   creator_id BIGINT NOT NULL REFERENCES creators(id),
-  -- Both nullable -- real submissions so far have often had a blank
-  -- title, sometimes a blank URL too (copied before the page's own
-  -- metadata was in hand). UNIQUE still works correctly with NULLs:
-  -- Postgres treats each NULL as distinct, so any number of
-  -- unknown-URL submissions are allowed, while two submissions of the
-  -- SAME real URL are still correctly rejected as duplicates.
-  video_url TEXT UNIQUE,
+  -- Required (2026-09-29 revision) -- it's the only real dedup key
+  -- (matches on video_title alone would be far too fragile) and #35/
+  -- #36 need a real source link for evidence/traceability. video_title
+  -- stays nullable -- real submissions have often had a blank one.
+  video_url TEXT NOT NULL UNIQUE,
   video_title TEXT,
   transcript_text TEXT NOT NULL,
   submitted_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Follow-up correction to the original (nullable) column definition
+-- above -- ALTER COLUMN ... SET NOT NULL is itself idempotent (a
+-- harmless no-op if already NOT NULL), so this stays safe to re-run
+-- alongside the CREATE TABLE IF NOT EXISTS statements on an existing
+-- database that predates this revision.
+ALTER TABLE creator_video_submissions ALTER COLUMN video_url SET NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_creator_video_submissions_creator
   ON creator_video_submissions (creator_id, submitted_at DESC);

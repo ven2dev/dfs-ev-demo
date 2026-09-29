@@ -18,16 +18,15 @@ export const POST = async (request: NextRequest) => {
     const channelName = typeof body.channelName === "string" ? body.channelName.trim() : "";
     const transcriptText =
       typeof body.transcriptText === "string" ? body.transcriptText.trim() : "";
-    const videoUrl =
-      typeof body.videoUrl === "string" && body.videoUrl.trim() ? body.videoUrl.trim() : undefined;
+    const videoUrl = typeof body.videoUrl === "string" ? body.videoUrl.trim() : "";
     const videoTitle =
       typeof body.videoTitle === "string" && body.videoTitle.trim()
         ? body.videoTitle.trim()
         : undefined;
 
-    if (!channelName || !transcriptText) {
+    if (!channelName || !transcriptText || !videoUrl) {
       return NextResponse.json(
-        { success: false, reason: "channelName and transcriptText are required" },
+        { success: false, reason: "channelName, videoUrl, and transcriptText are required" },
         { status: 400 }
       );
     }
