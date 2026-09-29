@@ -12,8 +12,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+// Goes through the real setUser action, not a raw setState -- that's
+// what actually bumps identityGeneration (authSlice.ts), matching what
+// Firebase's onAuthStateChanged really does in the app.
 const signIn = (uid: string) => {
-  useAppStore.setState({ authStatus: "signed-in", uid });
+  useAppStore.getState().setUser({ uid, displayName: null, providerId: null });
 };
 
 const adminSubmissionsResponse = {
@@ -137,5 +140,87 @@ describe("CreatorSubmissionsPage", () => {
 
     expect(screen.getByText("Not authorized.")).toBeInTheDocument();
     expect(screen.queryByText(/STALE TITLE/)).not.toBeInTheDocument();
+  });
+
+  // Reproduces a third review finding: plain uid equality has an ABA
+  // blind spot the previous fix didn't cover. A starts a submit, B signs
+  // in (so the in-flight refresh actually authenticates AS B by the time
+  // it fires -- getAuthHeaders() reads the live signed-in state), then A
+  // signs back in before that refresh resolves. uid ends up equal to
+  // where it started even though a completely different account's
+  // request happened in between -- only a generation counter that bumps
+  // on every real transition (not just comparing endpoints) can tell
+  // "never changed" apart from "changed away and back."
+  it("does not apply a stale refresh even when the account ends up back where it started (ABA)", async () => {
+    let resolveStaleRefresh: (value: unknown) => void = () => {};
+    const deferredStaleRefresh = new Promise((resolve) => {
+      resolveStaleRefresh = resolve;
+    });
+
+    const freshARefetchResponse = {
+      status: 200,
+      json: async () => ({
+        success: true,
+        submissions: [
+          {
+            id: 2,
+            channelName: "Creator A2",
+            videoUrl: null,
+            videoTitle: "Fresh A data after switching back",
+            submittedAt: "2026-09-29T00:00:00.000Z",
+          },
+        ],
+      }),
+    };
+
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(adminSubmissionsResponse) // 1: mount as admin-uid
+      .mockResolvedValueOnce({
+        status: 200,
+        json: async () => ({ success: true, result: { status: "inserted", id: 99 } }),
+      }) // 2: the POST itself
+      .mockImplementationOnce(() => deferredStaleRefresh) // 3: post-submit refresh -- ends up authenticating as B, held open
+      .mockResolvedValueOnce(forbiddenResponse) // 4: B's own mount effect after switching to B
+      .mockResolvedValueOnce(freshARefetchResponse); // 5: A's own mount effect after switching back to A
+    vi.stubGlobal("fetch", fetchMock);
+
+    signIn("admin-uid");
+    render(<CreatorSubmissionsPage />);
+    await waitFor(() => expect(screen.getByText(/Admin-only title/)).toBeInTheDocument());
+
+    fireEvent.change(screen.getByPlaceholderText("Channel name"), {
+      target: { value: "New Creator" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Video URL"), {
+      target: { value: "https://example.com/new" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Transcript text"), {
+      target: { value: "some transcript" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+
+    // POST resolved, the refresh (call 3) started and is held open --
+    // switch to B while it's still pending.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    act(() => signIn("someone-else-uid"));
+    await waitFor(() => expect(screen.getByText("Not authorized.")).toBeInTheDocument());
+
+    // Switch BACK to admin-uid -- uid now equals where this whole flow
+    // started, but two real transitions happened in between.
+    act(() => signIn("admin-uid"));
+    await waitFor(() =>
+      expect(screen.getByText(/Fresh A data after switching back/)).toBeInTheDocument()
+    );
+
+    // Only now does the stale (B-authenticated) refresh resolve.
+    await act(async () => {
+      resolveStaleRefresh(forbiddenResponse);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText(/Fresh A data after switching back/)).toBeInTheDocument();
+    expect(screen.queryByText("Not authorized.")).not.toBeInTheDocument();
   });
 });

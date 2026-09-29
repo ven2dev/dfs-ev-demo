@@ -89,6 +89,11 @@ export default function CreatorSubmissionsPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    // Read fresh at invocation time, not via the reactive uid/authStatus
+    // bindings -- this is the START of a multi-await flow, so it must be
+    // the true current value, not whatever this render's closure happened
+    // to capture.
+    const startingGeneration = useAppStore.getState().identityGeneration;
     setSubmitting(true);
     setSubmitMessage(null);
 
@@ -109,19 +114,22 @@ export default function CreatorSubmissionsPage() {
           : "Submitted."
       );
       setForm(emptyForm);
-      // Guard against a stale completion overwriting a NEWER identity's
-      // already-loaded state (caught in review, twice): checked AFTER
-      // awaiting fetchSubmissions(), not before it -- the account can
-      // change during THIS await too, not just during the POST above,
-      // and a check made before starting the fetch can't see a change
-      // that happens while it's still in flight. `uid` here is this
-      // closure's snapshot from render time; comparing it against the
-      // LIVE value read directly from the store is what actually
-      // detects a change, at the one point that matters: immediately
-      // before applying the result.
       const refreshResult = await fetchSubmissions();
-      if (uid && useAppStore.getState().uid === uid) {
-        applyFetchResult(uid, refreshResult);
+
+      // Guard against a stale completion overwriting a NEWER identity's
+      // already-loaded state (caught in review, three times over). uid
+      // equality alone has an ABA gap it can't see: A starts this submit,
+      // switches to B (whose OWN getAuthHeaders() call means this
+      // refresh actually authenticates as B by the time it fires), then
+      // switches back to A before the refresh resolves -- uid ends up
+      // equal to where it started even though a completely different
+      // account's request happened in between and this refreshResult
+      // reflects B's authorization, not A's. Comparing identityGeneration
+      // (bumped on every REAL identity transition, not just uid endpoints)
+      // catches that: it moved, even though uid didn't end up different.
+      const state = useAppStore.getState();
+      if (state.identityGeneration === startingGeneration && state.uid) {
+        applyFetchResult(state.uid, refreshResult);
       }
     } catch (err) {
       setSubmitMessage(`Failed: ${(err as Error).message}`);
