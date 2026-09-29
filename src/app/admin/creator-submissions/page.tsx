@@ -1,0 +1,238 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { getAuthHeaders } from "@/lib/authHeaders";
+import { useAppStore } from "@/store";
+import { useAuthStatus, useUid } from "@/store/hooks";
+import type { CreatorSubmissionSummary } from "@/lib/creatorSubmissionsRepo";
+
+// Internal-only tool (#34) -- no nav link anywhere. Not gated by an
+// independently-duplicated admin-uid check on the client: the real
+// authorization boundary is the API route's requireAdminUid, so this
+// page just attempts the authenticated GET and lets that call's actual
+// 403 (vs. 200) decide what renders. Two sources of truth for the same
+// decision would only risk drifting out of sync with each other.
+// Keyed to the uid it was loaded FOR, not just fetched at some point --
+// caught in review: authSlice's setUser sets authStatus: "signed-in"
+// regardless of whether the uid actually changed, so switching directly
+// from one signed-in account to another (no intermediate signed-out
+// state) never changes authStatus at all. An effect keyed only on
+// authStatus would never re-fetch, and the PREVIOUS admin's cached
+// submissions/form would keep rendering under the new account. Render
+// logic below only trusts `loaded` when `loaded.uid` matches the
+// CURRENT uid -- a stale object for a different uid is treated as "not
+// loaded yet" (null), not cleared out via a separate effect-triggered
+// setState (which would itself trip this project's
+// react-hooks/set-state-in-effect rule). There's no "loading" member
+// here on purpose -- `loaded === null` (or stale-for-this-uid) already
+// means "loading," so this only ever represents a call that resolved.
+type Loaded = {
+  uid: string;
+  status: "forbidden" | "error" | "ready";
+  submissions: CreatorSubmissionSummary[];
+};
+
+const emptyForm = { channelName: "", videoUrl: "", videoTitle: "", transcriptText: "" };
+
+export default function CreatorSubmissionsPage() {
+  const authStatus = useAuthStatus();
+  const uid = useUid();
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [form, setForm] = useState(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
+
+  // Pure fetch, no setState -- kept separate from applyFetchResult below
+  // so the same fetch logic can be reused both by the mount effect
+  // (which needs the ignore-flag race-guard pattern) and by
+  // handleSubmit's post-submit refresh (a plain event handler, no
+  // race-guard needed there).
+  type FetchResult =
+    | { status: "forbidden" }
+    | { status: "error" }
+    | { status: "ok"; submissions: CreatorSubmissionSummary[] };
+
+  const fetchSubmissions = async (): Promise<FetchResult> => {
+    try {
+      const res = await fetch("/api/creator-submissions", { headers: await getAuthHeaders() });
+      if (res.status === 403 || res.status === 401) return { status: "forbidden" };
+      const data = await res.json();
+      if (!data.success) return { status: "error" };
+      return { status: "ok", submissions: data.submissions };
+    } catch {
+      return { status: "error" };
+    }
+  };
+
+  const applyFetchResult = (forUid: string, result: FetchResult) => {
+    if (result.status === "forbidden") setLoaded({ uid: forUid, status: "forbidden", submissions: [] });
+    else if (result.status === "error") setLoaded({ uid: forUid, status: "error", submissions: [] });
+    else setLoaded({ uid: forUid, status: "ready", submissions: result.submissions });
+  };
+
+  useEffect(() => {
+    if (authStatus !== "signed-in" || !uid) return;
+    let ignore = false;
+    fetchSubmissions().then((result) => {
+      if (!ignore) applyFetchResult(uid, result);
+    });
+    return () => {
+      ignore = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchSubmissions/applyFetchResult are recreated every render but stable in behavior; only a genuine identity transition should re-trigger this fetch
+  }, [authStatus, uid]);
+
+  // The data actually loaded for the CURRENT identity -- a stale object
+  // left over from a previous uid renders as "not loaded yet" (the
+  // loading state below), never as that previous account's content.
+  const current = loaded?.uid === uid ? loaded : null;
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    // Read fresh at invocation time, not via the reactive uid/authStatus
+    // bindings -- this is the START of a multi-await flow, so it must be
+    // the true current value, not whatever this render's closure happened
+    // to capture.
+    const startingGeneration = useAppStore.getState().identityGeneration;
+    setSubmitting(true);
+    setSubmitMessage(null);
+
+    try {
+      const res = await fetch("/api/creator-submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(await getAuthHeaders()) },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setSubmitMessage(`Failed: ${data.reason ?? "unknown error"}`);
+        return;
+      }
+      setSubmitMessage(
+        data.result.status === "already-submitted"
+          ? "Already had this video (matched by URL) — no duplicate created."
+          : "Submitted."
+      );
+      setForm(emptyForm);
+      const refreshResult = await fetchSubmissions();
+
+      // Guard against a stale completion overwriting a NEWER identity's
+      // already-loaded state (caught in review, three times over). uid
+      // equality alone has an ABA gap it can't see: A starts this submit,
+      // switches to B (whose OWN getAuthHeaders() call means this
+      // refresh actually authenticates as B by the time it fires), then
+      // switches back to A before the refresh resolves -- uid ends up
+      // equal to where it started even though a completely different
+      // account's request happened in between and this refreshResult
+      // reflects B's authorization, not A's. Comparing identityGeneration
+      // (bumped on every REAL identity transition, not just uid endpoints)
+      // catches that: it moved, even though uid didn't end up different.
+      const state = useAppStore.getState();
+      if (state.identityGeneration === startingGeneration && state.uid) {
+        applyFetchResult(state.uid, refreshResult);
+      }
+    } catch (err) {
+      setSubmitMessage(`Failed: ${(err as Error).message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (authStatus === "loading") {
+    return <p className="text-sm text-zinc-500">…</p>;
+  }
+  if (authStatus === "unavailable") {
+    return <p className="text-sm text-zinc-500">Sign-in is currently unavailable.</p>;
+  }
+  if (authStatus !== "signed-in") {
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">Sign in to view this page.</p>;
+  }
+  // `current` is null both on a genuine first load AND right after an
+  // identity transition, before the new uid's own fetch has resolved.
+  // Either way, nothing loaded for THIS uid yet -- render as "loading."
+  if (!current) {
+    return <p className="text-sm text-zinc-500">…</p>;
+  }
+  if (current.status === "forbidden") {
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">Not authorized.</p>;
+  }
+  if (current.status === "error") {
+    return <p className="text-sm text-red-600">Failed to load. Refresh to retry.</p>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+        <h2 className="text-lg font-medium">Submit a creator transcript</h2>
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+          <input
+            type="text"
+            required
+            placeholder="Channel name"
+            value={form.channelName}
+            onChange={(e) => setForm({ ...form, channelName: e.target.value })}
+            className="w-full rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+          <input
+            type="text"
+            required
+            placeholder="Video URL"
+            value={form.videoUrl}
+            onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
+            className="w-full rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+          <input
+            type="text"
+            placeholder="Video title (optional)"
+            value={form.videoTitle}
+            onChange={(e) => setForm({ ...form, videoTitle: e.target.value })}
+            className="w-full rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+          <textarea
+            required
+            placeholder="Transcript text"
+            rows={10}
+            value={form.transcriptText}
+            onChange={(e) => setForm({ ...form, transcriptText: e.target.value })}
+            className="w-full rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+          />
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded bg-black px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          >
+            {submitting ? "Submitting…" : "Submit"}
+          </button>
+          {submitMessage && <p className="text-sm text-zinc-600 dark:text-zinc-400">{submitMessage}</p>}
+        </form>
+      </section>
+
+      <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+        <h2 className="text-lg font-medium">Past submissions</h2>
+        {current.submissions.length === 0 ? (
+          <p className="mt-2 text-sm text-zinc-500">None yet.</p>
+        ) : (
+          <ul className="mt-4 space-y-2 text-sm">
+            {current.submissions.map((s) => (
+              <li key={s.id} className="flex justify-between border-b border-zinc-100 pb-2 dark:border-zinc-800">
+                <span>
+                  {s.channelName} —{" "}
+                  {s.videoUrl ? (
+                    <a href={s.videoUrl} target="_blank" rel="noreferrer" className="underline">
+                      {s.videoTitle || s.videoUrl}
+                    </a>
+                  ) : (
+                    s.videoTitle || "(untitled)"
+                  )}
+                </span>
+                <span className="text-zinc-400">
+                  {new Date(s.submittedAt).toLocaleDateString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}

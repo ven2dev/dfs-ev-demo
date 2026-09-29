@@ -56,3 +56,41 @@ describe("authSlice: setUser", () => {
     expect(state.dataVerified).toBe(false);
   });
 });
+
+describe("authSlice: identityGeneration", () => {
+  it("bumps on a real uid transition", () => {
+    resetStore();
+    const before = useAppStore.getState().identityGeneration;
+
+    useAppStore.getState().setUser({ uid: "uid-1", displayName: "A", providerId: "google.com" });
+
+    expect(useAppStore.getState().identityGeneration).toBe(before + 1);
+  });
+
+  it("does NOT bump when the same uid is re-reported (e.g. a token refresh)", () => {
+    resetStore();
+    useAppStore.getState().setUser({ uid: "uid-1", displayName: "A", providerId: "google.com" });
+    const afterFirst = useAppStore.getState().identityGeneration;
+
+    useAppStore.getState().setUser({ uid: "uid-1", displayName: "A", providerId: "google.com" });
+
+    expect(useAppStore.getState().identityGeneration).toBe(afterFirst);
+  });
+
+  // The actual ABA case this field exists to catch: a caller comparing
+  // uid alone ("did it end up different from where it started?") would
+  // see uid-1 === uid-1 here and wrongly conclude nothing happened.
+  it("ends up at a DIFFERENT generation after switching away and back to the same uid (the ABA case)", () => {
+    resetStore();
+    useAppStore.getState().setUser({ uid: "uid-1", displayName: "A", providerId: "google.com" });
+    const startingGeneration = useAppStore.getState().identityGeneration;
+    const startingUid = useAppStore.getState().uid;
+
+    useAppStore.getState().setUser({ uid: "uid-2", displayName: "B", providerId: "google.com" });
+    useAppStore.getState().setUser({ uid: "uid-1", displayName: "A", providerId: "google.com" });
+
+    const finalState = useAppStore.getState();
+    expect(finalState.uid).toBe(startingUid);
+    expect(finalState.identityGeneration).not.toBe(startingGeneration);
+  });
+});

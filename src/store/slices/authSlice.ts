@@ -24,6 +24,18 @@ export interface AuthSlice {
   // fetch is merely in flight. Lets the loading shell show a real error
   // instead of an indefinite spinner when something's actually wrong.
   dataLoadError: string | null;
+  // Monotonic counter, bumped on every REAL identity transition (only
+  // when uid actually changes). Closes an ABA gap plain uid-equality
+  // can't see: a caller comparing "current uid === uid captured at the
+  // start of some async flow" can't tell "identity never changed" apart
+  // from "changed away and changed back to the same uid" -- e.g. a
+  // multi-admin-account setup where account A starts a write, account B
+  // signs in and its own request resolves using B's credentials, then A
+  // signs back in before that resolves. Comparing generation numbers
+  // instead of uids catches that: it moved, even though the endpoints
+  // match. Any admin-gated page with an async write + refresh should
+  // capture this at the start and re-check it before applying a result.
+  identityGeneration: number;
   setUser: (
     user: { uid: string; displayName: string | null; providerId: string | null } | null
   ) => void;
@@ -40,6 +52,7 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
   authError: null,
   dataVerified: false,
   dataLoadError: null,
+  identityGeneration: 0,
   setUser: (user) =>
     set((state) => {
       const nextUid = user?.uid ?? null;
@@ -61,10 +74,13 @@ export const createAuthSlice: StateCreator<AppState, [], [], AuthSlice> = (
       // two with the new uid already visible but the old uid's
       // "verified" flag still true, painting the wrong account's data
       // for a frame. useInitAuth flips it back to true once it's actually
-      // fetched (or confirmed empty) this new uid's real data.
+      // fetched (or confirmed empty) this new uid's real data. Same
+      // update also bumps identityGeneration -- guarded the same way
+      // (only on a REAL transition), so a redundant setUser call with
+      // the same uid doesn't spuriously invalidate an in-flight check.
       return state.uid === nextUid
         ? identityFields
-        : { ...identityFields, dataVerified: false };
+        : { ...identityFields, dataVerified: false, identityGeneration: state.identityGeneration + 1 };
     }),
   setAuthError: (error) => set({ authError: error }),
 });

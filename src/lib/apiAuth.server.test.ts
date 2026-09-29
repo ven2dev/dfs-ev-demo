@@ -5,6 +5,7 @@ const verifyIdToken = vi.fn();
 
 afterEach(() => {
   verifyIdToken.mockReset();
+  vi.unstubAllEnvs();
 });
 
 vi.mock("./firebaseAdmin", () => ({
@@ -14,7 +15,7 @@ vi.mock("./firebaseAdmin", () => ({
 // Import after the mock so requireUid/checkUidForDeletion resolve
 // getAdminAuth to the fake above, not the real server-only-guarded
 // firebaseAdmin.ts (which would require real Firebase credentials).
-const { requireUid, checkUidForDeletion } = await import("./apiAuth.ts");
+const { requireUid, requireAdminUid, checkUidForDeletion } = await import("./apiAuth.ts");
 
 const fakeRequest = (headers: Record<string, string>): NextRequest =>
   ({
@@ -50,6 +51,36 @@ describe("requireUid", () => {
     verifyIdToken.mockRejectedValueOnce({ code: "auth/user-not-found" });
 
     expect(await requireUid(authedRequest())).toBe(null);
+  });
+});
+
+describe("requireAdminUid", () => {
+  it("throws when ADMIN_UID is not configured -- a deploy misconfiguration, not an auth failure", async () => {
+    vi.stubEnv("ADMIN_UID", "");
+
+    await expect(requireAdminUid(authedRequest())).rejects.toThrow("ADMIN_UID is not set");
+    expect(verifyIdToken).not.toHaveBeenCalled();
+  });
+
+  it("returns the uid when the caller's verified uid matches ADMIN_UID", async () => {
+    vi.stubEnv("ADMIN_UID", "owner-uid");
+    verifyIdToken.mockResolvedValueOnce({ uid: "owner-uid" });
+
+    expect(await requireAdminUid(authedRequest())).toBe("owner-uid");
+  });
+
+  it("returns null for a validly signed-in user who just isn't the admin", async () => {
+    vi.stubEnv("ADMIN_UID", "owner-uid");
+    verifyIdToken.mockResolvedValueOnce({ uid: "someone-else" });
+
+    expect(await requireAdminUid(authedRequest())).toBe(null);
+  });
+
+  it("returns null with no Authorization header at all", async () => {
+    vi.stubEnv("ADMIN_UID", "owner-uid");
+
+    expect(await requireAdminUid(fakeRequest({}))).toBe(null);
+    expect(verifyIdToken).not.toHaveBeenCalled();
   });
 });
 

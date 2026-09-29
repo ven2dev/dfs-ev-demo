@@ -69,3 +69,38 @@ CREATE TABLE IF NOT EXISTS player_crosswalk (
   nflverse_player_name TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- #34: creator-content confidence layer, transcript submission form.
+-- Manual sourcing only (no scraper -- see the issue for why) -- these
+-- tables just persist what's pasted through the internal submission
+-- form, for #35's extraction pipeline to consume later. transcript_text
+-- is stored as ONE raw blob per video; segmenting/parsing it into
+-- structured picks is #35's job, not this one.
+CREATE TABLE IF NOT EXISTS creators (
+  id BIGSERIAL PRIMARY KEY,
+  channel_name TEXT NOT NULL UNIQUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS creator_video_submissions (
+  id BIGSERIAL PRIMARY KEY,
+  creator_id BIGINT NOT NULL REFERENCES creators(id),
+  -- Required (2026-09-29 revision) -- it's the only real dedup key
+  -- (matches on video_title alone would be far too fragile) and #35/
+  -- #36 need a real source link for evidence/traceability. video_title
+  -- stays nullable -- real submissions have often had a blank one.
+  video_url TEXT NOT NULL UNIQUE,
+  video_title TEXT,
+  transcript_text TEXT NOT NULL,
+  submitted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Follow-up correction to the original (nullable) column definition
+-- above -- ALTER COLUMN ... SET NOT NULL is itself idempotent (a
+-- harmless no-op if already NOT NULL), so this stays safe to re-run
+-- alongside the CREATE TABLE IF NOT EXISTS statements on an existing
+-- database that predates this revision.
+ALTER TABLE creator_video_submissions ALTER COLUMN video_url SET NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_creator_video_submissions_creator
+  ON creator_video_submissions (creator_id, submitted_at DESC);
