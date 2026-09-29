@@ -33,6 +33,50 @@ export type PlayerPropLine = {
   point: number;
 };
 
+type RawSlateEvent = {
+  id: string;
+  sport_key: string;
+  home_team: string;
+  away_team: string;
+  commence_time: string;
+};
+
+// The bare game list for a sport -- no bookmakers/markets, so this costs
+// ZERO credits on The Odds API's free tier (confirmed against their own
+// docs: only /odds-suffixed endpoints are metered, at
+// [markets] x [regions] credits each; plain /events is free). This is
+// what makes "browse the whole slate for free, only pay credits once a
+// user drills into a specific game" possible.
+export type SlateEvent = {
+  id: string;
+  sportKey: string;
+  homeTeam: string;
+  awayTeam: string;
+  commenceTime: string;
+};
+
+export const fetchSlateEvents = async (sportKey: string): Promise<SlateEvent[]> => {
+  const apiKey = process.env.ODDS_API_KEY;
+  if (!apiKey) {
+    throw new Error("ODDS_API_KEY is not set");
+  }
+
+  const url = `${ODDS_API_BASE}/sports/${sportKey}/events?apiKey=${apiKey}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Odds API events fetch failed: ${res.status}`);
+  }
+
+  const data: RawSlateEvent[] = await res.json();
+  return data.map((event) => ({
+    id: event.id,
+    sportKey: event.sport_key,
+    homeTeam: event.home_team,
+    awayTeam: event.away_team,
+    commenceTime: event.commence_time,
+  }));
+};
+
 export async function fetchPlayerPropOdds(
   sportKey: string,
   eventId: string,
