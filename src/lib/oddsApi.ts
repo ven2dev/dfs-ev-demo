@@ -5,24 +5,24 @@ import "server-only";
 
 const ODDS_API_BASE = "https://api.the-odds-api.com/v4";
 
-type OddsOutcome = {
+export type OddsOutcome = {
   name: string;
   description?: string;
   price: number;
   point?: number;
 };
 
-type OddsMarket = {
+export type OddsMarket = {
   key: string;
   outcomes: OddsOutcome[];
 };
 
-type OddsBookmaker = {
+export type OddsBookmaker = {
   key: string;
   markets: OddsMarket[];
 };
 
-type EventOddsResponse = {
+export type EventOddsResponse = {
   id: string;
   bookmakers: OddsBookmaker[];
 };
@@ -53,6 +53,37 @@ export type SlateEvent = {
   homeTeam: string;
   awayTeam: string;
   commenceTime: string;
+};
+
+// Batches however many market keys the caller still needs into ONE
+// request -- The Odds API bills [markets] x [regions] regardless of
+// whether they're requested together or as separate calls, so batching
+// costs nothing extra and saves round trips. Returns the raw
+// multi-bookmaker response; slicing it down to one market's data (for
+// the per-market cache) is oddsCacheRepo.ts's job, not this function's
+// -- this stays a thin, cache-agnostic API wrapper like the rest of this
+// file.
+export const fetchEventOdds = async (
+  sportKey: string,
+  eventId: string,
+  marketKeys: string[]
+): Promise<EventOddsResponse> => {
+  if (marketKeys.length === 0) {
+    throw new Error("fetchEventOdds requires at least one market key");
+  }
+
+  const apiKey = process.env.ODDS_API_KEY;
+  if (!apiKey) {
+    throw new Error("ODDS_API_KEY is not set");
+  }
+
+  const url = `${ODDS_API_BASE}/sports/${sportKey}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketKeys.join(",")}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Odds API event-odds fetch failed: ${res.status}`);
+  }
+
+  return res.json();
 };
 
 export const fetchSlateEvents = async (sportKey: string): Promise<SlateEvent[]> => {
