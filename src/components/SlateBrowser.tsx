@@ -11,19 +11,24 @@ import {
   useDiscoveredProps,
   useDiscoveryError,
   useDiscoveryStatus,
+  usePrimaryWatch,
   useRealSlate,
   useRealSlateError,
   useRealSlateStatus,
+  useSecondaryWatch,
   useSelectedEventId,
   useSetDiscoveredProps,
   useSetDiscoveryError,
   useSetDiscoveryStatus,
+  useSetPrimaryWatch,
   useSetRealSlate,
   useSetRealSlateError,
   useSetRealSlateStatus,
+  useSetSecondaryWatch,
   useSetSelectedEventId,
   useToggleMarketKey,
 } from "@/store/hooks";
+import type { WatchSelection } from "@/store/slices/matchupSlice";
 
 const MAX_COMPARISON_BOOKMAKERS = 3;
 
@@ -62,15 +67,29 @@ export const SlateBrowser = () => {
   const setDiscoveryStatus = useSetDiscoveryStatus();
   const setDiscoveryError = useSetDiscoveryError();
 
+  const primaryWatch = usePrimaryWatch();
+  const setPrimaryWatch = useSetPrimaryWatch();
+  const secondaryWatch = useSecondaryWatch();
+  const setSecondaryWatch = useSetSecondaryWatch();
+
   // Presentation-only, not app state -- which book is currently shown,
   // whether compare mode is active, which books it's comparing, and
   // which single prop's "see all" sheet is open. None of this needs to
   // survive a re-selection of the event/markets, so it stays local
   // rather than in the store.
   const [selectedBookmakerKey, setSelectedBookmakerKey] = useState<string | null>(null);
+  // true: every row shows its own best-priced book independently (see
+  // getBestBookmakerKey). false: the stepper has forced one specific
+  // book across every row -- a manual override, not the default.
+  const [smartDefault, setSmartDefault] = useState(true);
   const [comparisonMode, setComparisonMode] = useState(false);
   const [comparisonBookmakerKeys, setComparisonBookmakerKeys] = useState<string[]>([]);
   const [seeAllTarget, setSeeAllTarget] = useState<SeeAllTarget | null>(null);
+  // Which slot the next "Watch" click assigns to -- primary drives the
+  // live EV pipeline, secondary exists only to demo optimistic
+  // watch/unwatch + rollback with a second real (but not live-tracked)
+  // prop.
+  const [watchAssignTarget, setWatchAssignTarget] = useState<"primary" | "secondary">("primary");
 
   const allBookmakerKeys = useMemo(() => getAllBookmakerKeys(discoveredProps), [discoveredProps]);
 
@@ -85,6 +104,7 @@ export const SlateBrowser = () => {
   const [prevAllBookmakerKeys, setPrevAllBookmakerKeys] = useState(allBookmakerKeys);
   if (allBookmakerKeys !== prevAllBookmakerKeys) {
     setPrevAllBookmakerKeys(allBookmakerKeys);
+    setSmartDefault(true); // a fresh discovery result starts back at smart defaults, not a stale manual override
     if (allBookmakerKeys.length === 0) {
       setSelectedBookmakerKey(null);
     } else if (!selectedBookmakerKey || !allBookmakerKeys.includes(selectedBookmakerKey)) {
@@ -151,6 +171,7 @@ export const SlateBrowser = () => {
 
   const cycleBookmaker = (direction: 1 | -1) => {
     if (allBookmakerKeys.length === 0 || !selectedBookmakerKey) return;
+    setSmartDefault(false); // cycling is a manual override -- it always wins over per-row smart defaults
     const currentIndex = allBookmakerKeys.indexOf(selectedBookmakerKey);
     const nextIndex =
       (currentIndex + direction + allBookmakerKeys.length) % allBookmakerKeys.length;
@@ -165,6 +186,34 @@ export const SlateBrowser = () => {
           ? [...current, bookmakerKey]
           : current
     );
+  };
+
+  const handleWatch = (
+    playerName: string,
+    params: { marketKey: string; bookmakerKey: string }
+  ) => {
+    const event = realSlate.find((e) => e.id === selectedEventId);
+    if (!event) return; // selectedEventId always comes from realSlate itself -- defensive, not expected
+
+    const selection: WatchSelection = {
+      eventId: event.id,
+      sportKey: event.sportKey,
+      homeTeam: event.homeTeam,
+      awayTeam: event.awayTeam,
+      startTime: event.commenceTime,
+      marketKey: params.marketKey,
+      propType:
+        PLAYER_PROP_MARKETS.find((market) => market.key === params.marketKey)?.label ??
+        params.marketKey,
+      playerName,
+      bookmakerKey: params.bookmakerKey,
+    };
+
+    if (watchAssignTarget === "primary") {
+      setPrimaryWatch(selection);
+    } else {
+      setSecondaryWatch(selection);
+    }
   };
 
   const sortedSlate = [...realSlate].sort(
@@ -253,8 +302,11 @@ export const SlateBrowser = () => {
                         >
                           ‹
                         </button>
-                        <span className="min-w-24 text-center font-medium">
-                          {selectedBookmakerKey}
+                        <span
+                          data-testid="bookmaker-stepper-label"
+                          className="min-w-24 text-center font-medium"
+                        >
+                          {smartDefault ? "Best price" : selectedBookmakerKey}
                         </span>
                         <button
                           type="button"
@@ -264,6 +316,15 @@ export const SlateBrowser = () => {
                         >
                           ›
                         </button>
+                        {!smartDefault && (
+                          <button
+                            type="button"
+                            onClick={() => setSmartDefault(true)}
+                            className="rounded px-2 py-1.5 text-xs text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                          >
+                            Reset to best
+                          </button>
+                        )}
                       </div>
                     )}
                     <button
@@ -278,6 +339,69 @@ export const SlateBrowser = () => {
                       Compare books
                     </button>
                   </div>
+
+                  {!comparisonMode && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+                      <span className="text-zinc-500">Watch button assigns:</span>
+                      {(["primary", "secondary"] as const).map((target) => (
+                        <button
+                          key={target}
+                          type="button"
+                          onClick={() => setWatchAssignTarget(target)}
+                          className={`rounded px-3 py-1.5 ${
+                            watchAssignTarget === target
+                              ? "bg-black text-white dark:bg-white dark:text-black"
+                              : "border border-zinc-300 dark:border-zinc-700"
+                          }`}
+                        >
+                          {target === "primary" ? "Primary" : "Secondary (demo)"}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {(primaryWatch || secondaryWatch) && (
+                    <div className="mt-3 space-y-1 text-sm">
+                      {primaryWatch && (
+                        <div
+                          data-testid="primary-watch-status"
+                          className="flex items-center justify-between gap-2 rounded bg-zinc-50 px-3 py-2 dark:bg-zinc-900"
+                        >
+                          <span>
+                            <span className="text-zinc-400">Primary: </span>
+                            {primaryWatch.playerName} — {primaryWatch.propType} (
+                            {primaryWatch.bookmakerKey})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPrimaryWatch(null)}
+                            className="text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      )}
+                      {secondaryWatch && (
+                        <div
+                          data-testid="secondary-watch-status"
+                          className="flex items-center justify-between gap-2 rounded bg-zinc-50 px-3 py-2 dark:bg-zinc-900"
+                        >
+                          <span>
+                            <span className="text-zinc-400">Secondary: </span>
+                            {secondaryWatch.playerName} — {secondaryWatch.propType} (
+                            {secondaryWatch.bookmakerKey})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setSecondaryWatch(null)}
+                            className="text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {comparisonMode && (
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -316,11 +440,13 @@ export const SlateBrowser = () => {
                         key={player.playerName}
                         player={player}
                         mode={comparisonMode ? "compare" : "single"}
+                        smartDefault={smartDefault}
                         selectedBookmakerKey={selectedBookmakerKey}
                         comparisonBookmakerKeys={comparisonBookmakerKeys}
                         onSeeAll={(marketKey) =>
                           setSeeAllTarget({ playerName: player.playerName, marketKey })
                         }
+                        onWatch={(params) => handleWatch(player.playerName, params)}
                       />
                     ))}
                   </div>

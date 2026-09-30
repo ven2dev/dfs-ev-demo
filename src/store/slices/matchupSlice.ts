@@ -9,6 +9,24 @@ import type { PlayerPropMarketKey } from "@/lib/playerPropMarkets";
 export type RealSlateStatus = "idle" | "loading" | "loaded" | "error";
 export type DiscoveryStatus = "idle" | "loading" | "loaded" | "error";
 
+// Captured at the moment a user clicks "Watch" on a real discovered
+// prop -- everything /api/stream and the header need to drive the live
+// EV pipeline off a real selection instead of mockMatchup. Display
+// fields (propType/homeTeam/awayTeam) are captured here rather than
+// re-derived later so page.tsx doesn't need to cross-reference
+// realSlate/PLAYER_PROP_MARKETS just to render a label.
+export type WatchSelection = {
+  eventId: string;
+  sportKey: string;
+  homeTeam: string;
+  awayTeam: string;
+  startTime: string;
+  marketKey: string;
+  propType: string;
+  playerName: string;
+  bookmakerKey: string;
+};
+
 export interface MatchupSlice {
   matchupConfig: MatchupConfig;
   setMatchupConfig: (config: MatchupConfig) => void;
@@ -45,6 +63,16 @@ export interface MatchupSlice {
   setDiscoveredProps: (players: DiscoveredPlayer[]) => void;
   setDiscoveryStatus: (status: DiscoveryStatus) => void;
   setDiscoveryError: (error: string | null) => void;
+
+  // The real selection driving /api/stream + the EV-breakdown header.
+  primaryWatch: WatchSelection | null;
+  setPrimaryWatch: (selection: WatchSelection | null) => void;
+  // A second, independent real selection -- NOT live-tracked over SSE,
+  // used only to demonstrate the optimistic watch/unwatch + rollback
+  // pattern the brief calls for. Real prop data, just not the one
+  // driving the live pipeline.
+  secondaryWatch: WatchSelection | null;
+  setSecondaryWatch: (selection: WatchSelection | null) => void;
 }
 
 export const createMatchupSlice: StateCreator<
@@ -100,4 +128,9 @@ export const createMatchupSlice: StateCreator<
   setDiscoveredProps: (players) => set({ discoveredProps: players }),
   setDiscoveryStatus: (status) => set({ discoveryStatus: status }),
   setDiscoveryError: (error) => set({ discoveryError: error }),
+
+  primaryWatch: null,
+  setPrimaryWatch: (selection) => set({ primaryWatch: selection }),
+  secondaryWatch: null,
+  setSecondaryWatch: (selection) => set({ secondaryWatch: selection }),
 });

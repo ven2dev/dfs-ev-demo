@@ -160,24 +160,31 @@ describe("SlateBrowser", () => {
     await screen.findByText("Jalen Hurts");
   };
 
-  it("defaults the bookmaker stepper to the first book alphabetically, and cycles through all of them, wrapping around", async () => {
+  it("starts on the smart 'Best price' default, and cycling switches to a manual override starting from the first book alphabetically, wrapping around", async () => {
     await showPropsWithFourBooks();
+    const stepperLabel = () => screen.getByTestId("bookmaker-stepper-label");
 
-    expect(screen.getByText("betmgm")).toBeInTheDocument();
+    expect(stepperLabel()).toHaveTextContent("Best price");
+    expect(screen.queryByText("Reset to best")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("Next bookmaker"));
-    expect(screen.getByText("bovada")).toBeInTheDocument();
+    expect(stepperLabel()).toHaveTextContent("bovada"); // one past "betmgm", the alphabetically-first book
+    expect(screen.getByText("Reset to best")).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("Next bookmaker"));
-    expect(screen.getByText("draftkings")).toBeInTheDocument();
+    expect(stepperLabel()).toHaveTextContent("draftkings");
 
     fireEvent.click(screen.getByLabelText("Previous bookmaker"));
-    expect(screen.getByText("bovada")).toBeInTheDocument();
+    expect(stepperLabel()).toHaveTextContent("bovada");
 
     // Wrap backward from the first book to the last.
     fireEvent.click(screen.getByLabelText("Previous bookmaker"));
     fireEvent.click(screen.getByLabelText("Previous bookmaker"));
-    expect(screen.getByText("fanduel")).toBeInTheDocument();
+    expect(stepperLabel()).toHaveTextContent("fanduel");
+
+    fireEvent.click(screen.getByText("Reset to best"));
+    expect(stepperLabel()).toHaveTextContent("Best price");
+    expect(screen.queryByText("Reset to best")).not.toBeInTheDocument();
   });
 
   it("compare mode's book picker allows at most 3 selections, disabling the rest", async () => {
@@ -190,6 +197,44 @@ describe("SlateBrowser", () => {
 
     expect(screen.getByLabelText("fanduel")).toBeDisabled();
     expect(screen.getByLabelText("betmgm")).not.toBeDisabled(); // already-checked ones stay toggleable
+  });
+
+  it("Watch assigns to the primary slot by default, using the currently-effective book", async () => {
+    await showPropsWithFourBooks();
+    fireEvent.click(screen.getByLabelText("Next bookmaker")); // manual override -> "bovada"
+
+    fireEvent.click(screen.getByText("Watch"));
+
+    expect(screen.getByTestId("primary-watch-status")).toHaveTextContent(
+      "Jalen Hurts — Passing Yards (bovada)"
+    );
+    expect(screen.queryByTestId("secondary-watch-status")).not.toBeInTheDocument();
+  });
+
+  it("switching the assign target to Secondary watches a second real prop without disturbing the primary one", async () => {
+    await showPropsWithFourBooks();
+    fireEvent.click(screen.getByLabelText("Next bookmaker")); // -> "bovada"
+    fireEvent.click(screen.getByText("Watch"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Secondary (demo)" }));
+    fireEvent.click(screen.getByLabelText("Next bookmaker")); // -> "draftkings"
+    fireEvent.click(screen.getByText("Watch"));
+
+    expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("bovada");
+    expect(screen.getByTestId("secondary-watch-status")).toHaveTextContent("draftkings");
+  });
+
+  it("Clear removes one watch selection independently of the other", async () => {
+    await showPropsWithFourBooks();
+    fireEvent.click(screen.getByLabelText("Next bookmaker"));
+    fireEvent.click(screen.getByText("Watch"));
+    fireEvent.click(screen.getByRole("button", { name: "Secondary (demo)" }));
+    fireEvent.click(screen.getByText("Watch"));
+
+    fireEvent.click(screen.getAllByText("Clear")[0]);
+
+    expect(screen.queryByTestId("primary-watch-status")).not.toBeInTheDocument();
+    expect(screen.getByTestId("secondary-watch-status")).toBeInTheDocument();
   });
 
   it("shows a Refresh odds button only after props have been shown, and it requests with refresh=true", async () => {

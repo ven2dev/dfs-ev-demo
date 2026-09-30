@@ -98,6 +98,65 @@ export const groupLinesByBookmaker = (lines: DiscoveredLine[]): BookmakerRow[] =
   return Array.from(rowsByBookmaker.values());
 };
 
+// The default bookmaker shown for ONE prop row when no manual override
+// is active. Two well-defined, mechanical notions of "best," each
+// restricted to what's actually computable from cached data alone:
+// - "yes"-only markets (anytime/1st/last TD): highest price, full stop
+//   -- there's no line to shop, so it's a single dimension.
+// - Two-way markets: restricted to whichever POINT value the most books
+//   agree on (the modal line), then the lowest combined overround
+//   (1/overPrice + 1/underPrice) among those -- the least-vig book at
+//   the standard number, without arbitrarily preferring Over or Under.
+// Deliberately does NOT compare across DIFFERENT points (e.g. 211.5 vs
+// 215.5) -- deciding which point is "better" needs a real predictive
+// probability model over the stat, which this app doesn't have (see
+// #39's non-goals). Faking that comparison would invent precision the
+// data doesn't support.
+export const getBestBookmakerKey = (lines: DiscoveredLine[]): string | null => {
+  const rows = groupLinesByBookmaker(lines);
+  if (rows.length === 0) return null;
+
+  if (lines[0]?.side === "yes") {
+    let best = rows[0];
+    for (const row of rows) {
+      if ((row.yesPrice ?? -Infinity) > (best.yesPrice ?? -Infinity)) best = row;
+    }
+    return best.bookmakerKey;
+  }
+
+  const pointCounts = new Map<number, number>();
+  for (const row of rows) {
+    if (row.point === undefined) continue;
+    pointCounts.set(row.point, (pointCounts.get(row.point) ?? 0) + 1);
+  }
+
+  let modalPoint: number | undefined;
+  let modalCount = 0;
+  for (const [point, count] of pointCounts) {
+    if (count > modalCount) {
+      modalCount = count;
+      modalPoint = point;
+    }
+  }
+
+  const candidates = rows.filter(
+    (row): row is BookmakerRow & { point: number; overPrice: number; underPrice: number } =>
+      row.point === modalPoint && row.overPrice !== undefined && row.underPrice !== undefined
+  );
+  if (candidates.length === 0) return null;
+
+  let best = candidates[0];
+  let bestOverround = 1 / best.overPrice + 1 / best.underPrice;
+  for (const row of candidates) {
+    const overround = 1 / row.overPrice + 1 / row.underPrice;
+    if (overround < bestOverround) {
+      best = row;
+      bestOverround = overround;
+    }
+  }
+  return best.bookmakerKey;
+};
+
 // Every bookmaker key that appears anywhere across a discovered-props
 // result, sorted for a stable, predictable cycle order -- drives the
 // single-book stepper and the compare-mode picker, both of which need

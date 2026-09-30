@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { getAllBookmakerKeys, groupLinesByBookmaker, groupOddsByPlayer } from "./discoveredProps.ts";
+import {
+  getAllBookmakerKeys,
+  getBestBookmakerKey,
+  groupLinesByBookmaker,
+  groupOddsByPlayer,
+} from "./discoveredProps.ts";
 import type { EventOddsResponse } from "./oddsApi.ts";
 import type { DiscoveredLine } from "./discoveredProps.ts";
 
@@ -281,5 +286,46 @@ describe("getAllBookmakerKeys", () => {
 
   it("returns an empty array when there are no players", () => {
     expect(getAllBookmakerKeys([])).toEqual([]);
+  });
+});
+
+describe("getBestBookmakerKey", () => {
+  it("for a two-way market, picks the lowest-overround book among those at the MODAL line, ignoring an off-modal book even if its own overround looks better", () => {
+    const lines = [
+      { bookmakerKey: "bookA", side: "over" as const, price: 1.91, point: 214.5 },
+      { bookmakerKey: "bookA", side: "under" as const, price: 1.91, point: 214.5 },
+      { bookmakerKey: "bookB", side: "over" as const, price: 2.0, point: 214.5 },
+      { bookmakerKey: "bookB", side: "under" as const, price: 1.83, point: 214.5 },
+      // Off-modal line (only one book here vs two at 214.5) -- a
+      // perfectly no-vig 2.0/2.0 price, which would win if this weren't
+      // correctly excluded from consideration.
+      { bookmakerKey: "bookC", side: "over" as const, price: 2.0, point: 220.5 },
+      { bookmakerKey: "bookC", side: "under" as const, price: 2.0, point: 220.5 },
+    ];
+
+    expect(getBestBookmakerKey(lines)).toBe("bookB");
+  });
+
+  it("for a single-sided ('yes') market, picks the highest price -- no line to shop", () => {
+    const lines = [
+      { bookmakerKey: "bookA", side: "yes" as const, price: 3.5 },
+      { bookmakerKey: "bookB", side: "yes" as const, price: 4.2 },
+      { bookmakerKey: "bookC", side: "yes" as const, price: 2.1 },
+    ];
+
+    expect(getBestBookmakerKey(lines)).toBe("bookB");
+  });
+
+  it("returns the only book when there's just one, rather than treating it as a degenerate case", () => {
+    const lines = [
+      { bookmakerKey: "bookA", side: "over" as const, price: 1.91, point: 214.5 },
+      { bookmakerKey: "bookA", side: "under" as const, price: 1.91, point: 214.5 },
+    ];
+
+    expect(getBestBookmakerKey(lines)).toBe("bookA");
+  });
+
+  it("returns null for no lines", () => {
+    expect(getBestBookmakerKey([])).toBeNull();
   });
 });

@@ -1,6 +1,10 @@
 "use client";
 
-import { groupLinesByBookmaker, type DiscoveredPlayer } from "@/lib/discoveredProps";
+import {
+  getBestBookmakerKey,
+  groupLinesByBookmaker,
+  type DiscoveredPlayer,
+} from "@/lib/discoveredProps";
 import { PLAYER_PROP_MARKETS, type PlayerPropMarketKey } from "@/lib/playerPropMarkets";
 
 export type PlayerPropsCardMode = "single" | "compare";
@@ -8,9 +12,20 @@ export type PlayerPropsCardMode = "single" | "compare";
 type PlayerPropsCardProps = {
   player: DiscoveredPlayer;
   mode: PlayerPropsCardMode;
+  // Single mode only. true: each row independently shows its own
+  // best-priced book (see getBestBookmakerKey) -- rows can legitimately
+  // show DIFFERENT books. false: every row is forced to
+  // selectedBookmakerKey (the manual global stepper override).
+  smartDefault: boolean;
   selectedBookmakerKey: string | null;
   comparisonBookmakerKeys: string[];
   onSeeAll: (marketKey: string) => void;
+  // Single mode only -- compare mode has no ONE effective book per row
+  // to watch. Reports the market's currently-effective book (whichever
+  // is actually on screen, smart-picked or manually forced), not a
+  // caller-supplied one, so what gets watched always matches what the
+  // user is looking at.
+  onWatch: (params: { marketKey: string; bookmakerKey: string }) => void;
 };
 
 const marketLabel = (key: string) =>
@@ -34,9 +49,11 @@ const JerseyPlacardIcon = () => (
 export const PlayerPropsCard = ({
   player,
   mode,
+  smartDefault,
   selectedBookmakerKey,
   comparisonBookmakerKeys,
   onSeeAll,
+  onWatch,
 }: PlayerPropsCardProps) => {
   return (
     <div className="rounded border border-zinc-200 p-3 dark:border-zinc-800">
@@ -54,6 +71,7 @@ export const PlayerPropsCard = ({
               <th className="py-1 pr-4 font-normal">Prop</th>
               {mode === "single" ? (
                 <>
+                  <th className="py-1 pr-4 font-normal">Book</th>
                   <th className="py-1 pr-4 font-normal">Line</th>
                   <th className="py-1 pr-4 font-normal">Over / Under</th>
                 </>
@@ -71,7 +89,10 @@ export const PlayerPropsCard = ({
             {player.markets.map((market) => {
               const rows = groupLinesByBookmaker(market.lines);
               const isYesMarket = market.lines[0]?.side === "yes";
-              const selectedRow = rows.find((row) => row.bookmakerKey === selectedBookmakerKey);
+              const effectiveBookmakerKey = smartDefault
+                ? getBestBookmakerKey(market.lines)
+                : selectedBookmakerKey;
+              const selectedRow = rows.find((row) => row.bookmakerKey === effectiveBookmakerKey);
 
               return (
                 <tr key={market.marketKey} className="border-t border-zinc-100 dark:border-zinc-900">
@@ -81,6 +102,7 @@ export const PlayerPropsCard = ({
 
                   {mode === "single" ? (
                     <>
+                      <td className="py-2 pr-4 whitespace-nowrap">{effectiveBookmakerKey ?? "—"}</td>
                       <td className="py-2 pr-4">{isYesMarket ? "—" : (selectedRow?.point ?? "—")}</td>
                       <td className="py-2 pr-4 whitespace-nowrap">
                         {selectedRow
@@ -109,7 +131,26 @@ export const PlayerPropsCard = ({
                     })
                   )}
 
-                  <td className="py-2 text-right">
+                  <td className="py-2 text-right whitespace-nowrap">
+                    {mode === "single" && (
+                      <button
+                        type="button"
+                        // Checked against selectedRow, not just whether
+                        // effectiveBookmakerKey is a non-null string --
+                        // a manually-forced book can still be a real
+                        // key with no matching row for THIS market
+                        // (that book just doesn't cover this prop).
+                        disabled={!selectedRow}
+                        onClick={() =>
+                          effectiveBookmakerKey &&
+                          selectedRow &&
+                          onWatch({ marketKey: market.marketKey, bookmakerKey: effectiveBookmakerKey })
+                        }
+                        className="rounded px-2 py-1.5 text-zinc-500 underline hover:text-zinc-900 disabled:opacity-40 disabled:no-underline dark:hover:text-zinc-100"
+                      >
+                        Watch
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => onSeeAll(market.marketKey)}

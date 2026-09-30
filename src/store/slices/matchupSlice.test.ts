@@ -111,3 +111,42 @@ describe("matchupSlice: discovered props state", () => {
     expect(state.discoveryError).toBe("Odds API events fetch failed: 500");
   });
 });
+
+describe("matchupSlice: primaryWatch/secondaryWatch", () => {
+  const sampleSelection = {
+    eventId: "evt-1",
+    sportKey: "americanfootball_nfl",
+    homeTeam: "Chicago Bears",
+    awayTeam: "Philadelphia Eagles",
+    startTime: "2026-10-05T17:00:00Z",
+    marketKey: "player_pass_yds",
+    propType: "Passing Yards",
+    playerName: "Jalen Hurts",
+    bookmakerKey: "draftkings",
+  };
+
+  it("setPrimaryWatch and setSecondaryWatch are independent of each other", () => {
+    resetStore();
+
+    useAppStore.getState().setPrimaryWatch(sampleSelection);
+
+    expect(useAppStore.getState().primaryWatch).toEqual(sampleSelection);
+    expect(useAppStore.getState().secondaryWatch).toBe(null);
+
+    const secondSelection = { ...sampleSelection, playerName: "Saquon Barkley" };
+    useAppStore.getState().setSecondaryWatch(secondSelection);
+
+    expect(useAppStore.getState().primaryWatch).toEqual(sampleSelection); // untouched
+    expect(useAppStore.getState().secondaryWatch).toEqual(secondSelection);
+  });
+
+  it("either selection can be cleared back to null independently", () => {
+    resetStore();
+    useAppStore.setState({ primaryWatch: sampleSelection, secondaryWatch: sampleSelection });
+
+    useAppStore.getState().setPrimaryWatch(null);
+
+    expect(useAppStore.getState().primaryWatch).toBe(null);
+    expect(useAppStore.getState().secondaryWatch).toEqual(sampleSelection);
+  });
+});

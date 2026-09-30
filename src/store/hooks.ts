@@ -66,6 +66,11 @@ export const useSetDiscoveryStatus = () =>
 export const useSetDiscoveryError = () =>
   useAppStore((state) => state.setDiscoveryError);
 
+export const usePrimaryWatch = () => useAppStore((state) => state.primaryWatch);
+export const useSetPrimaryWatch = () => useAppStore((state) => state.setPrimaryWatch);
+export const useSecondaryWatch = () => useAppStore((state) => state.secondaryWatch);
+export const useSetSecondaryWatch = () => useAppStore((state) => state.setSecondaryWatch);
+
 export const useGoal = () => useAppStore((state) => state.goal);
 export const useSetGoal = () => useAppStore((state) => state.setGoal);
 
