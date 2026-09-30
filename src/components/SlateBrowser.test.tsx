@@ -8,6 +8,7 @@ const initialState = useAppStore.getState();
 afterEach(() => {
   useAppStore.setState(initialState, true);
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 const fetchMock = () => global.fetch as ReturnType<typeof vi.fn>;
@@ -34,6 +35,20 @@ const sampleEvents = [
 ];
 
 describe("SlateBrowser", () => {
+  it("titles the section with the real current NFL week, not a static label", async () => {
+    // shouldAdvanceTime: pins Date.now() while still letting RTL's own
+    // internal setTimeout-based polling (findByText, waitFor) actually
+    // tick -- plain useFakeTimers() freezes those too and hangs forever.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    vi.setSystemTime(new Date("2026-09-29T12:00:00Z")); // verified real Week 4 (see nflWeek.test.ts)
+    global.fetch = vi.fn();
+    mockFetchOnce({ success: true, events: [] });
+
+    render(<SlateBrowser />);
+
+    expect(await screen.findByText("Browse the Week 4 slate")).toBeInTheDocument();
+  });
+
   it("loads the real slate on mount and lists games sorted by kickoff time, not arrival order", async () => {
     global.fetch = vi.fn();
     mockFetchOnce({ success: true, events: sampleEvents });
@@ -109,6 +124,72 @@ describe("SlateBrowser", () => {
       "/api/slate/evt-1/props?markets=player_pass_yds%2Cplayer_rush_yds"
     );
     expect(requestedUrl).not.toContain("refresh=true");
+  });
+
+  const showPropsWithFourBooks = async () => {
+    global.fetch = vi.fn();
+    mockFetchOnce({ success: true, events: sampleEvents });
+
+    render(<SlateBrowser />);
+    fireEvent.change(await screen.findByLabelText("Select a game"), {
+      target: { value: "evt-1" },
+    });
+    fireEvent.click(await screen.findByLabelText("Passing Yards"));
+
+    mockFetchOnce({
+      success: true,
+      eventId: "evt-1",
+      players: [
+        {
+          playerName: "Jalen Hurts",
+          markets: [
+            {
+              marketKey: "player_pass_yds",
+              lines: [
+                { bookmakerKey: "fanduel", side: "over", price: 1.87, point: 213.5 },
+                { bookmakerKey: "draftkings", side: "over", price: 1.91, point: 214.5 },
+                { bookmakerKey: "betmgm", side: "over", price: 1.9, point: 214.5 },
+                { bookmakerKey: "bovada", side: "over", price: 1.88, point: 214.5 },
+              ],
+            },
+          ],
+        },
+      ],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+    await screen.findByText("Jalen Hurts");
+  };
+
+  it("defaults the bookmaker stepper to the first book alphabetically, and cycles through all of them, wrapping around", async () => {
+    await showPropsWithFourBooks();
+
+    expect(screen.getByText("betmgm")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Next bookmaker"));
+    expect(screen.getByText("bovada")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Next bookmaker"));
+    expect(screen.getByText("draftkings")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Previous bookmaker"));
+    expect(screen.getByText("bovada")).toBeInTheDocument();
+
+    // Wrap backward from the first book to the last.
+    fireEvent.click(screen.getByLabelText("Previous bookmaker"));
+    fireEvent.click(screen.getByLabelText("Previous bookmaker"));
+    expect(screen.getByText("fanduel")).toBeInTheDocument();
+  });
+
+  it("compare mode's book picker allows at most 3 selections, disabling the rest", async () => {
+    await showPropsWithFourBooks();
+
+    fireEvent.click(screen.getByRole("button", { name: "Compare books" }));
+    fireEvent.click(screen.getByLabelText("betmgm"));
+    fireEvent.click(screen.getByLabelText("bovada"));
+    fireEvent.click(screen.getByLabelText("draftkings"));
+
+    expect(screen.getByLabelText("fanduel")).toBeDisabled();
+    expect(screen.getByLabelText("betmgm")).not.toBeDisabled(); // already-checked ones stay toggleable
   });
 
   it("shows a Refresh odds button only after props have been shown, and it requests with refresh=true", async () => {

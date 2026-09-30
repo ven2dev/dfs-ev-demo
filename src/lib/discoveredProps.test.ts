@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupLinesByBookmaker, groupOddsByPlayer } from "./discoveredProps.ts";
+import { getAllBookmakerKeys, groupLinesByBookmaker, groupOddsByPlayer } from "./discoveredProps.ts";
 import type { EventOddsResponse } from "./oddsApi.ts";
 import type { DiscoveredLine } from "./discoveredProps.ts";
 
@@ -222,5 +222,64 @@ describe("groupLinesByBookmaker", () => {
 
   it("returns an empty array for no lines", () => {
     expect(groupLinesByBookmaker([])).toEqual([]);
+  });
+});
+
+describe("getAllBookmakerKeys", () => {
+  it("returns the union of bookmaker keys across every player and market, sorted", () => {
+    const players = [
+      {
+        playerName: "Jalen Hurts",
+        markets: [
+          {
+            marketKey: "player_pass_yds",
+            lines: [
+              { bookmakerKey: "fanduel", side: "over" as const, price: 1.91, point: 214.5 },
+              { bookmakerKey: "draftkings", side: "over" as const, price: 1.9, point: 214.5 },
+            ],
+          },
+        ],
+      },
+      {
+        playerName: "Saquon Barkley",
+        markets: [
+          {
+            marketKey: "player_rush_yds",
+            lines: [{ bookmakerKey: "betmgm", side: "over" as const, price: 1.87, point: 71.5 }],
+          },
+        ],
+      },
+    ];
+
+    expect(getAllBookmakerKeys(players)).toEqual(["betmgm", "draftkings", "fanduel"]);
+  });
+
+  it("de-duplicates a bookmaker that appears in multiple players/markets", () => {
+    const players = [
+      {
+        playerName: "Jalen Hurts",
+        markets: [
+          {
+            marketKey: "player_pass_yds",
+            lines: [{ bookmakerKey: "draftkings", side: "over" as const, price: 1.91, point: 214.5 }],
+          },
+        ],
+      },
+      {
+        playerName: "Saquon Barkley",
+        markets: [
+          {
+            marketKey: "player_rush_yds",
+            lines: [{ bookmakerKey: "draftkings", side: "over" as const, price: 1.87, point: 71.5 }],
+          },
+        ],
+      },
+    ];
+
+    expect(getAllBookmakerKeys(players)).toEqual(["draftkings"]);
+  });
+
+  it("returns an empty array when there are no players", () => {
+    expect(getAllBookmakerKeys([])).toEqual([]);
   });
 });

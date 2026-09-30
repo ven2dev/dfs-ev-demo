@@ -1,8 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
-import { PLAYER_PROP_MARKETS, type PlayerPropMarketKey } from "@/lib/playerPropMarkets";
-import { groupLinesByBookmaker } from "@/lib/discoveredProps";
+import { useEffect, useMemo, useState } from "react";
+import { PLAYER_PROP_MARKETS } from "@/lib/playerPropMarkets";
+import { getAllBookmakerKeys } from "@/lib/discoveredProps";
+import { getCurrentNflWeekLabel } from "@/lib/nflWeek";
+import { PlayerPropsCard } from "@/components/PlayerPropsCard";
+import { BookmakerLinesSheet, type SeeAllTarget } from "@/components/BookmakerLinesSheet";
 import {
   useCheckedMarketKeys,
   useDiscoveredProps,
@@ -22,8 +25,7 @@ import {
   useToggleMarketKey,
 } from "@/store/hooks";
 
-const marketLabel = (key: PlayerPropMarketKey) =>
-  PLAYER_PROP_MARKETS.find((market) => market.key === key)?.label ?? key;
+const MAX_COMPARISON_BOOKMAKERS = 3;
 
 const formatKickoff = (iso: string) =>
   new Date(iso).toLocaleString(undefined, {
@@ -59,6 +61,36 @@ export const SlateBrowser = () => {
   const setDiscoveredProps = useSetDiscoveredProps();
   const setDiscoveryStatus = useSetDiscoveryStatus();
   const setDiscoveryError = useSetDiscoveryError();
+
+  // Presentation-only, not app state -- which book is currently shown,
+  // whether compare mode is active, which books it's comparing, and
+  // which single prop's "see all" sheet is open. None of this needs to
+  // survive a re-selection of the event/markets, so it stays local
+  // rather than in the store.
+  const [selectedBookmakerKey, setSelectedBookmakerKey] = useState<string | null>(null);
+  const [comparisonMode, setComparisonMode] = useState(false);
+  const [comparisonBookmakerKeys, setComparisonBookmakerKeys] = useState<string[]>([]);
+  const [seeAllTarget, setSeeAllTarget] = useState<SeeAllTarget | null>(null);
+
+  const allBookmakerKeys = useMemo(() => getAllBookmakerKeys(discoveredProps), [discoveredProps]);
+
+  // Adjust state during render, not in an effect (React's own documented
+  // pattern for "reset some state when a computed value changes") -- the
+  // useMemo above keeps allBookmakerKeys referentially stable unless
+  // discoveredProps itself changes, so this only fires on a REAL change,
+  // not every render. A fresh discovery result can drop the book that
+  // was selected (a different market set may not include it) or arrive
+  // with none selected yet -- default to the first real book rather than
+  // show a stale/invalid one.
+  const [prevAllBookmakerKeys, setPrevAllBookmakerKeys] = useState(allBookmakerKeys);
+  if (allBookmakerKeys !== prevAllBookmakerKeys) {
+    setPrevAllBookmakerKeys(allBookmakerKeys);
+    if (allBookmakerKeys.length === 0) {
+      setSelectedBookmakerKey(null);
+    } else if (!selectedBookmakerKey || !allBookmakerKeys.includes(selectedBookmakerKey)) {
+      setSelectedBookmakerKey(allBookmakerKeys[0]);
+    }
+  }
 
   // Free call, safe to run on every mount -- fetches once, not on a
   // timer; the picker just needs today's real game list, not a live feed.
@@ -117,13 +149,31 @@ export const SlateBrowser = () => {
       });
   };
 
+  const cycleBookmaker = (direction: 1 | -1) => {
+    if (allBookmakerKeys.length === 0 || !selectedBookmakerKey) return;
+    const currentIndex = allBookmakerKeys.indexOf(selectedBookmakerKey);
+    const nextIndex =
+      (currentIndex + direction + allBookmakerKeys.length) % allBookmakerKeys.length;
+    setSelectedBookmakerKey(allBookmakerKeys[nextIndex]);
+  };
+
+  const toggleComparisonBookmaker = (bookmakerKey: string) => {
+    setComparisonBookmakerKeys((current) =>
+      current.includes(bookmakerKey)
+        ? current.filter((key) => key !== bookmakerKey)
+        : current.length < MAX_COMPARISON_BOOKMAKERS
+          ? [...current, bookmakerKey]
+          : current
+    );
+  };
+
   const sortedSlate = [...realSlate].sort(
     (a, b) => new Date(a.commenceTime).getTime() - new Date(b.commenceTime).getTime()
   );
 
   return (
     <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
-      <h2 className="text-lg font-medium">Browse the real slate</h2>
+      <h2 className="text-lg font-medium">Browse the {getCurrentNflWeekLabel()} slate</h2>
 
       {realSlateStatus === "loading" && (
         <p className="mt-2 text-sm text-zinc-500">Loading this week&rsquo;s games…</p>
@@ -165,12 +215,12 @@ export const SlateBrowser = () => {
                 ))}
               </div>
 
-              <div className="mt-4 flex gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => fetchDiscoveredProps(false)}
                   disabled={checkedMarketKeys.length === 0 || discoveryStatus === "loading"}
-                  className="rounded bg-black px-3 py-1 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
+                  className="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
                 >
                   {discoveryStatus === "loading" ? "Loading…" : "Show props"}
                 </button>
@@ -179,7 +229,7 @@ export const SlateBrowser = () => {
                     type="button"
                     onClick={() => fetchDiscoveredProps(true)}
                     disabled={discoveryStatus === "loading"}
-                    className="rounded border border-zinc-300 px-3 py-1 text-sm disabled:opacity-50 dark:border-zinc-700"
+                    className="rounded border border-zinc-300 px-3 py-2 text-sm disabled:opacity-50 dark:border-zinc-700"
                   >
                     Refresh odds
                   </button>
@@ -191,56 +241,101 @@ export const SlateBrowser = () => {
               )}
 
               {discoveredProps.length > 0 && (
-                <div className="mt-4 space-y-4">
-                  {discoveredProps.map((player) => (
-                    <div
-                      key={player.playerName}
-                      className="rounded border border-zinc-200 p-3 dark:border-zinc-800"
+                <div className="mt-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    {!comparisonMode && selectedBookmakerKey && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <button
+                          type="button"
+                          aria-label="Previous bookmaker"
+                          onClick={() => cycleBookmaker(-1)}
+                          className="rounded px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                        >
+                          ‹
+                        </button>
+                        <span className="min-w-24 text-center font-medium">
+                          {selectedBookmakerKey}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label="Next bookmaker"
+                          onClick={() => cycleBookmaker(1)}
+                          className="rounded px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                        >
+                          ›
+                        </button>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setComparisonMode((current) => !current)}
+                      className={`rounded px-3 py-2 text-sm ${
+                        comparisonMode
+                          ? "bg-black text-white dark:bg-white dark:text-black"
+                          : "border border-zinc-300 dark:border-zinc-700"
+                      }`}
                     >
-                      <p className="text-sm font-medium">{player.playerName}</p>
-                      {player.markets.map((market) => {
-                        const rows = groupLinesByBookmaker(market.lines);
-                        const isYesMarket = market.lines[0]?.side === "yes";
+                      Compare books
+                    </button>
+                  </div>
+
+                  {comparisonMode && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {allBookmakerKeys.map((bookmakerKey) => {
+                        const checked = comparisonBookmakerKeys.includes(bookmakerKey);
+                        const atLimit =
+                          !checked && comparisonBookmakerKeys.length >= MAX_COMPARISON_BOOKMAKERS;
                         return (
-                          <div key={market.marketKey} className="mt-2">
-                            <p className="text-xs text-zinc-500">
-                              {marketLabel(market.marketKey as PlayerPropMarketKey)}
-                            </p>
-                            <table className="mt-1 w-full text-xs">
-                              <thead>
-                                <tr className="text-left text-zinc-400">
-                                  <th className="font-normal">Bookmaker</th>
-                                  {!isYesMarket && <th className="font-normal">Line</th>}
-                                  <th className="font-normal">
-                                    {isYesMarket ? "Price" : "Over / Under"}
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {rows.map((row) => (
-                                  <tr key={row.bookmakerKey}>
-                                    <td>{row.bookmakerKey}</td>
-                                    {!isYesMarket && <td>{row.point ?? "—"}</td>}
-                                    <td>
-                                      {isYesMarket
-                                        ? (row.yesPrice ?? "—")
-                                        : `${row.overPrice ?? "—"} / ${row.underPrice ?? "—"}`}
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
+                          <label
+                            key={bookmakerKey}
+                            className={`flex items-center gap-1.5 rounded border px-2 py-1.5 text-sm ${
+                              atLimit
+                                ? "border-zinc-100 text-zinc-400 dark:border-zinc-900"
+                                : "border-zinc-300 dark:border-zinc-700"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              disabled={atLimit}
+                              onChange={() => toggleComparisonBookmaker(bookmakerKey)}
+                            />
+                            {bookmakerKey}
+                          </label>
                         );
                       })}
+                      <p className="w-full text-xs text-zinc-400">
+                        Up to {MAX_COMPARISON_BOOKMAKERS} bookmakers, space permitting.
+                      </p>
                     </div>
-                  ))}
+                  )}
+
+                  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    {discoveredProps.map((player) => (
+                      <PlayerPropsCard
+                        key={player.playerName}
+                        player={player}
+                        mode={comparisonMode ? "compare" : "single"}
+                        selectedBookmakerKey={selectedBookmakerKey}
+                        comparisonBookmakerKeys={comparisonBookmakerKeys}
+                        onSeeAll={(marketKey) =>
+                          setSeeAllTarget({ playerName: player.playerName, marketKey })
+                        }
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
           )}
         </>
       )}
+
+      <BookmakerLinesSheet
+        target={seeAllTarget}
+        players={discoveredProps}
+        onClose={() => setSeeAllTarget(null)}
+      />
     </section>
   );
 };

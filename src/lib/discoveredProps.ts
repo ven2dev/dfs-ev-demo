@@ -97,3 +97,20 @@ export const groupLinesByBookmaker = (lines: DiscoveredLine[]): BookmakerRow[] =
 
   return Array.from(rowsByBookmaker.values());
 };
+
+// Every bookmaker key that appears anywhere across a discovered-props
+// result, sorted for a stable, predictable cycle order -- drives the
+// single-book stepper and the compare-mode picker, both of which need
+// one shared list of "which books are actually available right now"
+// rather than each player card discovering its own subset.
+export const getAllBookmakerKeys = (players: DiscoveredPlayer[]): string[] => {
+  const keys = new Set<string>();
+  for (const player of players) {
+    for (const market of player.markets) {
+      for (const line of market.lines) {
+        keys.add(line.bookmakerKey);
+      }
+    }
+  }
+  return Array.from(keys).sort();
+};

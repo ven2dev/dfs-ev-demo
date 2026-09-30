@@ -28,7 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <StoreBootstrap />
         <div className="min-h-screen bg-zinc-50 dark:bg-black">
-          <div className="mx-auto flex max-w-3xl flex-col gap-8 p-8">
+          <div className="mx-auto flex max-w-6xl flex-col gap-8 p-8">
             {/* Shared across every page -- #22 is the first second page
                 this app has, so this is the first real chrome that needs
                 to be consistent across routes rather than living inside
