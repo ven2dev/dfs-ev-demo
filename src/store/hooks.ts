@@ -26,16 +26,6 @@ export const useSampleWindow = () =>
 export const useSetMatchupConfig = () =>
   useAppStore((state) => state.setMatchupConfig);
 
-export const useSlate = () => useAppStore((state) => state.slate);
-export const useSelectedMatchupId = () =>
-  useAppStore((state) => state.selectedMatchupId);
-export const useSetSelectedMatchupId = () =>
-  useAppStore((state) => state.setSelectedMatchupId);
-export const useCurrentMatchup = () =>
-  useAppStore((state) =>
-    state.slate.find((matchup) => matchup.id === state.selectedMatchupId)
-  );
-
 export const useRealSlate = () => useAppStore((state) => state.realSlate);
 export const useRealSlateStatus = () => useAppStore((state) => state.realSlateStatus);
 export const useRealSlateError = () => useAppStore((state) => state.realSlateError);

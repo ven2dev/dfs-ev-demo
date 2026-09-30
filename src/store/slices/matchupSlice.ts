@@ -1,7 +1,7 @@
-import type { MatchupConfig, Slate } from "@/types";
+import type { MatchupConfig } from "@/types";
 import type { StateCreator } from "zustand";
 import type { AppState } from "../types";
-import { mockCoverageFilters, mockEnvironment, mockMatchup } from "../mockData";
+import { mockCoverageFilters } from "../mockData";
 import type { SlateEvent } from "@/lib/oddsApi";
 import type { DiscoveredPlayer } from "@/lib/discoveredProps";
 import type { PlayerPropMarketKey } from "@/lib/playerPropMarkets";
@@ -30,13 +30,6 @@ export type WatchSelection = {
 export interface MatchupSlice {
   matchupConfig: MatchupConfig;
   setMatchupConfig: (config: MatchupConfig) => void;
-
-  // Mock-seeded, single-game state -- kept until #27 steps 6-7 replace
-  // page.tsx's hardcoded header and /api/stream's hardcoded prop with
-  // the real ingestion state below.
-  slate: Slate;
-  selectedMatchupId: string;
-  setSelectedMatchupId: (id: string) => void;
 
   // Real slate ingestion (#27). Populated by whichever hook/effect calls
   // /api/slate and /api/slate/[eventId]/props (step 6) -- slices in this
@@ -83,13 +76,15 @@ export const createMatchupSlice: StateCreator<
 > = (set) => ({
   matchupConfig: {
     sampleWindow: 5,
-    environment: mockEnvironment,
+    // Empty, not a mock seed -- nothing reads any environment field
+    // before a real live tick lands except `currentLine` (page.tsx
+    // falls back to "—" for that), so there's nothing honest to
+    // pre-fill here. useLiveOddsStream overwrites this with real
+    // weather/line data on every tick once something is watched.
+    environment: {},
     coverageFilters: mockCoverageFilters,
   },
   setMatchupConfig: (config) => set({ matchupConfig: config }),
-  slate: [mockMatchup],
-  selectedMatchupId: mockMatchup.id,
-  setSelectedMatchupId: (id) => set({ selectedMatchupId: id }),
 
   realSlate: [],
   realSlateStatus: "idle",
