@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { STALE_TIMEOUT_MS } from "@/lib/streamConfig";
 import { useAppStore } from "./index";
-import { useSetConnectionStatus, useSampleWindow } from "./hooks";
+import { usePrimaryWatch, useSetConnectionStatus, useSampleWindow } from "./hooks";
 
 const INITIAL_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
@@ -15,8 +15,17 @@ export function useLiveOddsStream() {
   // actually changes the sample window -- not on every tick's
   // environment/line update, which writes into that same object.
   const sampleWindow = useSampleWindow();
+  const primaryWatch = usePrimaryWatch();
 
   useEffect(() => {
+    // Nothing to track yet -- no real selection has been watched. Make
+    // sure a PREVIOUS connection (from before the user cleared it) is
+    // reflected as disconnected, not left showing a stale "live" status.
+    if (!primaryWatch) {
+      setConnectionStatus("disconnected");
+      return;
+    }
+
     let eventSource: EventSource | undefined;
     let reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
     let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
@@ -51,7 +60,15 @@ export function useLiveOddsStream() {
     };
 
     const connect = () => {
-      eventSource = new EventSource(`/api/stream?sampleWindow=${sampleWindow}`);
+      const params = new URLSearchParams({
+        eventId: primaryWatch.eventId,
+        sportKey: primaryWatch.sportKey,
+        marketKey: primaryWatch.marketKey,
+        playerName: primaryWatch.playerName,
+        bookmakerKey: primaryWatch.bookmakerKey,
+        sampleWindow: String(sampleWindow),
+      });
+      eventSource = new EventSource(`/api/stream?${params.toString()}`);
 
       eventSource.onopen = () => {
         setConnectionStatus("live");
@@ -143,5 +160,5 @@ export function useLiveOddsStream() {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (staleTimer) clearTimeout(staleTimer);
     };
-  }, [setConnectionStatus, sampleWindow]);
+  }, [setConnectionStatus, sampleWindow, primaryWatch]);
 }

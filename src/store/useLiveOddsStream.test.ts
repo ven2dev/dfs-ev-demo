@@ -29,17 +29,74 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("useLiveOddsStream: sampleWindow in the connection URL", () => {
-  it("opens the initial connection with the current sampleWindow", () => {
+const samplePrimaryWatch = {
+  eventId: "evt-1",
+  sportKey: "americanfootball_nfl",
+  homeTeam: "Chicago Bears",
+  awayTeam: "Philadelphia Eagles",
+  startTime: "2026-10-05T17:00:00Z",
+  marketKey: "player_pass_yds",
+  propType: "Passing Yards",
+  playerName: "Jalen Hurts",
+  bookmakerKey: "draftkings",
+};
+
+const expectedUrl = (sampleWindow: number, overrides: Partial<typeof samplePrimaryWatch> = {}) => {
+  const selection = { ...samplePrimaryWatch, ...overrides };
+  const params = new URLSearchParams({
+    eventId: selection.eventId,
+    sportKey: selection.sportKey,
+    marketKey: selection.marketKey,
+    playerName: selection.playerName,
+    bookmakerKey: selection.bookmakerKey,
+    sampleWindow: String(sampleWindow),
+  });
+  return `/api/stream?${params.toString()}`;
+};
+
+describe("useLiveOddsStream: no watched selection yet", () => {
+  it("does not open a connection, and reports disconnected, when nothing is being watched", () => {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    useAppStore.setState({ connectionStatus: "live" }); // simulate a stale prior status
+
+    const { unmount } = renderHook(() => useLiveOddsStream());
+
+    expect(FakeEventSource.instances).toHaveLength(0);
+    expect(useAppStore.getState().connectionStatus).toBe("disconnected");
+    unmount();
+  });
+
+  it("connects once a real selection is watched, without needing a remount", () => {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    useAppStore.setState({
+      matchupConfig: { ...useAppStore.getState().matchupConfig, sampleWindow: 5 },
+    });
+
+    const { unmount } = renderHook(() => useLiveOddsStream());
+    expect(FakeEventSource.instances).toHaveLength(0);
+
+    act(() => {
+      useAppStore.getState().setPrimaryWatch(samplePrimaryWatch);
+    });
+
+    expect(FakeEventSource.instances).toHaveLength(1);
+    expect(FakeEventSource.instances[0].url).toBe(expectedUrl(5));
+    unmount();
+  });
+});
+
+describe("useLiveOddsStream: connection URL", () => {
+  it("opens the initial connection with the watched selection and current sampleWindow", () => {
     vi.stubGlobal("EventSource", FakeEventSource);
     useAppStore.setState({
       matchupConfig: { ...useAppStore.getState().matchupConfig, sampleWindow: 7 },
+      primaryWatch: samplePrimaryWatch,
     });
 
     const { unmount } = renderHook(() => useLiveOddsStream());
 
     expect(FakeEventSource.instances).toHaveLength(1);
-    expect(FakeEventSource.instances[0].url).toBe("/api/stream?sampleWindow=7");
+    expect(FakeEventSource.instances[0].url).toBe(expectedUrl(7));
     unmount();
   });
 
@@ -47,11 +104,12 @@ describe("useLiveOddsStream: sampleWindow in the connection URL", () => {
     vi.stubGlobal("EventSource", FakeEventSource);
     useAppStore.setState({
       matchupConfig: { ...useAppStore.getState().matchupConfig, sampleWindow: 5 },
+      primaryWatch: samplePrimaryWatch,
     });
 
     const { unmount } = renderHook(() => useLiveOddsStream());
     const first = FakeEventSource.instances[0];
-    expect(first.url).toBe("/api/stream?sampleWindow=5");
+    expect(first.url).toBe(expectedUrl(5));
 
     act(() => {
       useAppStore.setState({
@@ -61,11 +119,31 @@ describe("useLiveOddsStream: sampleWindow in the connection URL", () => {
 
     expect(first.closed).toBe(true);
     expect(FakeEventSource.instances).toHaveLength(2);
-    expect(FakeEventSource.instances[1].url).toBe("/api/stream?sampleWindow=3");
+    expect(FakeEventSource.instances[1].url).toBe(expectedUrl(3));
     unmount();
   });
 
-  it("does NOT reconnect on an environment-only update from a live tick (same sampleWindow)", () => {
+  it("reconnects to the new selection when the user watches a DIFFERENT prop, not just on a sampleWindow change", () => {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    useAppStore.setState({
+      matchupConfig: { ...useAppStore.getState().matchupConfig, sampleWindow: 5 },
+      primaryWatch: samplePrimaryWatch,
+    });
+
+    const { unmount } = renderHook(() => useLiveOddsStream());
+    const first = FakeEventSource.instances[0];
+
+    act(() => {
+      useAppStore.getState().setPrimaryWatch({ ...samplePrimaryWatch, playerName: "Sam Darnold" });
+    });
+
+    expect(first.closed).toBe(true);
+    expect(FakeEventSource.instances).toHaveLength(2);
+    expect(FakeEventSource.instances[1].url).toBe(expectedUrl(5, { playerName: "Sam Darnold" }));
+    unmount();
+  });
+
+  it("does NOT reconnect on an environment-only update from a live tick (same selection, same sampleWindow)", () => {
     // This is the exact regression useSampleWindow's granular selector
     // guards against: a tick's setMatchupConfig call updates
     // environment/currentLine on the same matchupConfig object every
@@ -73,6 +151,7 @@ describe("useLiveOddsStream: sampleWindow in the connection URL", () => {
     vi.stubGlobal("EventSource", FakeEventSource);
     useAppStore.setState({
       matchupConfig: { ...useAppStore.getState().matchupConfig, sampleWindow: 5 },
+      primaryWatch: samplePrimaryWatch,
     });
 
     const { unmount } = renderHook(() => useLiveOddsStream());
@@ -103,6 +182,7 @@ describe("useLiveOddsStream: sampleWindow in the connection URL", () => {
     vi.stubGlobal("EventSource", FakeEventSource);
     useAppStore.setState({
       matchupConfig: { ...useAppStore.getState().matchupConfig, sampleWindow: 5 },
+      primaryWatch: samplePrimaryWatch,
       watchlist: {
         "prop-1": {
           propId: "prop-1",

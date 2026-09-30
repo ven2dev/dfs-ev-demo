@@ -113,12 +113,20 @@ export const fetchSlateEvents = async (sportKey: string): Promise<SlateEvent[]> 
   }));
 };
 
-export async function fetchPlayerPropOdds(
+// Real-time, uncached, deliberately NOT reusing the discovery cache
+// (see #27 step 7's decision) -- a live tracker showing a value frozen
+// for several ticks between real refreshes would defeat its own
+// purpose. Requires a SPECIFIC bookmakerKey (the one the user was
+// actually looking at when they clicked "Watch") rather than "first
+// match" -- picking whichever bookmaker happened to load first would
+// silently show different numbers than what the user chose to track.
+export const fetchPlayerPropOdds = async (
   sportKey: string,
   eventId: string,
   marketKey: string,
-  playerName: string
-): Promise<PlayerPropLine | null> {
+  playerName: string,
+  bookmakerKey: string
+): Promise<PlayerPropLine | null> => {
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
     throw new Error("ODDS_API_KEY is not set");
@@ -131,18 +139,14 @@ export async function fetchPlayerPropOdds(
   }
   const data: EventOddsResponse = await res.json();
 
-  for (const bookmaker of data.bookmakers) {
-    const market = bookmaker.markets.find((m) => m.key === marketKey);
-    if (!market) continue;
-    const over = market.outcomes.find(
-      (o) => o.name === "Over" && o.description === playerName
-    );
-    const under = market.outcomes.find(
-      (o) => o.name === "Under" && o.description === playerName
-    );
-    if (over && under && over.point !== undefined) {
-      return { overPrice: over.price, underPrice: under.price, point: over.point };
-    }
+  const bookmaker = data.bookmakers.find((b) => b.key === bookmakerKey);
+  const market = bookmaker?.markets.find((m) => m.key === marketKey);
+  if (!market) return null;
+
+  const over = market.outcomes.find((o) => o.name === "Over" && o.description === playerName);
+  const under = market.outcomes.find((o) => o.name === "Under" && o.description === playerName);
+  if (over && under && over.point !== undefined) {
+    return { overPrice: over.price, underPrice: under.price, point: over.point };
   }
   return null;
-}
+};

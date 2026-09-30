@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { fetchSlateEvents } from "./oddsApi.ts";
+import { fetchPlayerPropOdds, fetchSlateEvents } from "./oddsApi.ts";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -71,5 +71,91 @@ describe("fetchSlateEvents", () => {
     await expect(fetchSlateEvents("americanfootball_nfl")).rejects.toThrow(
       "Odds API events fetch failed: 500"
     );
+  });
+});
+
+describe("fetchPlayerPropOdds", () => {
+  const twoBookResponse = jsonResponse({
+    id: "evt-1",
+    bookmakers: [
+      {
+        key: "draftkings",
+        markets: [
+          {
+            key: "player_pass_yds",
+            outcomes: [
+              { name: "Over", description: "Jalen Hurts", price: 1.91, point: 214.5 },
+              { name: "Under", description: "Jalen Hurts", price: 1.89, point: 214.5 },
+            ],
+          },
+        ],
+      },
+      {
+        key: "fanduel",
+        markets: [
+          {
+            key: "player_pass_yds",
+            outcomes: [
+              { name: "Over", description: "Jalen Hurts", price: 1.87, point: 213.5 },
+              { name: "Under", description: "Jalen Hurts", price: 1.95, point: 213.5 },
+            ],
+          },
+        ],
+      },
+    ],
+  });
+
+  it("returns the SPECIFIED bookmaker's line, not just the first one that matches", async () => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+    fetchMock.mockResolvedValueOnce(twoBookResponse);
+
+    const result = await fetchPlayerPropOdds(
+      "americanfootball_nfl",
+      "evt-1",
+      "player_pass_yds",
+      "Jalen Hurts",
+      "fanduel"
+    );
+
+    expect(result).toEqual({ overPrice: 1.87, underPrice: 1.95, point: 213.5 });
+  });
+
+  it("returns null when the specified bookmaker doesn't have this market, even if another bookmaker does", async () => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+    fetchMock.mockResolvedValueOnce(twoBookResponse);
+
+    const result = await fetchPlayerPropOdds(
+      "americanfootball_nfl",
+      "evt-1",
+      "player_pass_yds",
+      "Jalen Hurts",
+      "betmgm"
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null on a non-ok response rather than throwing", async () => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+    fetchMock.mockResolvedValueOnce(jsonResponse(null, false, 500));
+
+    const result = await fetchPlayerPropOdds(
+      "americanfootball_nfl",
+      "evt-1",
+      "player_pass_yds",
+      "Jalen Hurts",
+      "draftkings"
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it("throws when ODDS_API_KEY is not set, without making a request", async () => {
+    vi.stubEnv("ODDS_API_KEY", "");
+
+    await expect(
+      fetchPlayerPropOdds("americanfootball_nfl", "evt-1", "player_pass_yds", "Jalen Hurts", "draftkings")
+    ).rejects.toThrow("ODDS_API_KEY is not set");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

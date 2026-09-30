@@ -1,12 +1,14 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { computeEV } from "@/lib/computeEV";
 import { devigTwoWay } from "@/lib/devig";
-import { fetchPlayerPropOdds } from "@/lib/oddsApi";
+import { DEFAULT_SPORT_KEY, fetchPlayerPropOdds, fetchSlateEvents } from "@/lib/oddsApi";
+import { getVenueForTeam } from "@/lib/nflStadiums";
 import { MAX_TICKS, POLL_INTERVAL_MS, parseSampleWindow } from "@/lib/streamConfig";
 import { fetchGameWeather } from "@/lib/weather";
-import { mockCoverageFilters, mockMatchup } from "@/store/mockData";
+import { mockCoverageFilters } from "@/store/mockData";
 import { ODDS_MARKET_TO_STAT_TYPE } from "@/lib/playerStatsSync";
 import { getRealRecentGameStats } from "@/lib/playerStatsRepo";
+import { buildWatchPropId } from "@/lib/watchPropId";
 
 // SSE endpoint. Real Odds API + real weather calls happen here,
 // server-side only — the API key never reaches the client.
@@ -32,43 +34,94 @@ import { getRealRecentGameStats } from "@/lib/playerStatsRepo";
 // cap stop being absolute. Scheduling the next tick only after the
 // current one has fully resolved makes overlap impossible by
 // construction, not just unlikely.
+//
+// Deliberately always-fresh per tick, not reusing the discovery cache
+// (#27 step 7 decision) -- a live tracker showing a value frozen for
+// several ticks between real refreshes defeats its own purpose. The
+// existing MAX_TICKS cap already bounds worst-case cost the same way it
+// always has.
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
-  const encoder = new TextEncoder();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  let tickCount = 0;
-  let cancelled = false;
+  const params = request.nextUrl.searchParams;
+  const eventId = params.get("eventId");
+  const marketKey = params.get("marketKey");
+  const playerName = params.get("playerName");
+  const bookmakerKey = params.get("bookmakerKey");
+  const sportKey = params.get("sportKey") || DEFAULT_SPORT_KEY;
+  const sampleWindow = parseSampleWindow(params.get("sampleWindow"));
 
-  const sampleWindow = parseSampleWindow(request.nextUrl.searchParams.get("sampleWindow"));
-  const prop = mockMatchup.props[0];
+  if (!eventId || !marketKey || !playerName || !bookmakerKey) {
+    return NextResponse.json(
+      { success: false, reason: "eventId, marketKey, playerName, and bookmakerKey are required" },
+      { status: 400 }
+    );
+  }
+
+  // The event's real home team/kickoff time are re-resolved here, never
+  // trusted from client query params -- weather (and therefore the EV
+  // calc) depends on getting the right venue, and this is a free call
+  // regardless (see fetchSlateEvents), so there's no cost reason to
+  // trust the client instead.
+  let venueLat: number;
+  let venueLon: number;
+  let startTime: string;
+  try {
+    const slateEvents = await fetchSlateEvents(sportKey);
+    const event = slateEvents.find((e) => e.id === eventId);
+    if (!event) {
+      return NextResponse.json(
+        { success: false, reason: `Event "${eventId}" is not in the current ${sportKey} slate` },
+        { status: 404 }
+      );
+    }
+    const venue = getVenueForTeam(event.homeTeam);
+    if (!venue) {
+      return NextResponse.json(
+        { success: false, reason: `No known venue for home team "${event.homeTeam}"` },
+        { status: 400 }
+      );
+    }
+    venueLat = venue.lat;
+    venueLon = venue.lon;
+    startTime = event.commenceTime;
+  } catch (err) {
+    console.error("[api/stream] failed to resolve the selected event:", err);
+    return NextResponse.json(
+      { success: false, reason: "Failed to resolve the selected event" },
+      { status: 502 }
+    );
+  }
+
+  const propId = buildWatchPropId({ eventId, marketKey, playerName });
 
   // Fetched once per connection, not per tick, unlike odds/weather --
   // historical game stats only change weekly (as games complete), so
   // re-querying Postgres on every poll interval would be pure waste.
-  // Falls back to the seeded mock array on ANY failure to get real
-  // data -- an unmapped player, but also DATABASE_URL missing entirely
-  // (a fresh checkout with Postgres not yet provisioned) or the DB
-  // being unreachable. Without this catch, a missing DATABASE_URL would
-  // throw inside getSql() before the stream even starts, crashing the
-  // whole route instead of degrading to the documented mock fallback.
-  let recentGameStats = prop.recentGameStats;
+  // Falls back to an empty array on ANY failure to get real data -- an
+  // unmapped player, but also DATABASE_URL missing entirely (a fresh
+  // checkout with Postgres not yet provisioned) or the DB being
+  // unreachable. Without this catch, a missing DATABASE_URL would throw
+  // inside getSql() before the stream even starts, crashing the whole
+  // route instead of degrading (an empty sample just means no
+  // base-rate/recent-stat-average tick data, not a crash).
+  let recentGameStats: number[] = [];
   try {
-    const statType = ODDS_MARKET_TO_STAT_TYPE[prop.marketKey];
+    const statType = ODDS_MARKET_TO_STAT_TYPE[marketKey];
     const realRecentGameStats = statType
-      ? await getRealRecentGameStats(prop.playerName, statType)
+      ? await getRealRecentGameStats(playerName, statType)
       : null;
     if (!realRecentGameStats) {
       console.warn(
-        `[api/stream] no real historical stats for "${prop.playerName}" (marketKey "${prop.marketKey}") -- falling back to seeded mock data`
+        `[api/stream] no real historical stats for "${playerName}" (marketKey "${marketKey}")`
       );
     } else {
       recentGameStats = realRecentGameStats;
     }
   } catch (err) {
     console.warn(
-      "[api/stream] real historical-stats lookup failed (Postgres not configured/reachable?) -- falling back to seeded mock data:",
+      "[api/stream] real historical-stats lookup failed (Postgres not configured/reachable?):",
       err
     );
   }
@@ -76,15 +129,17 @@ export async function GET(request: NextRequest) {
   // Average of the prop's OWN stat (same stat as the line, e.g. passing
   // yards) over the same sampleWindow used for the EV hit-rate calc --
   // deliberately just a historical average, not a "projection." No
-  // predictive algo model exists in this codebase; labeling this as a
-  // projection (the old `projectedPts`, averaging an unrelated stat --
-  // fantasy points -- over ALL games regardless of sampleWindow) was the
-  // root of Codex's #4 finding.
+  // predictive algo model exists in this codebase.
   const recentStatWindow = recentGameStats.slice(-sampleWindow);
   const recentStatAverage =
     recentStatWindow.length > 0
       ? recentStatWindow.reduce((sum, v) => sum + v, 0) / recentStatWindow.length
       : undefined;
+
+  const encoder = new TextEncoder();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let tickCount = 0;
+  let cancelled = false;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -107,13 +162,8 @@ export async function GET(request: NextRequest) {
 
         try {
           const [oddsLine, weather] = await Promise.all([
-            fetchPlayerPropOdds(
-              mockMatchup.sportKey,
-              mockMatchup.eventId,
-              prop.marketKey,
-              prop.playerName
-            ),
-            fetchGameWeather(mockMatchup.startTime, mockMatchup.venueLat, mockMatchup.venueLon),
+            fetchPlayerPropOdds(sportKey, eventId, marketKey, playerName, bookmakerKey),
+            fetchGameWeather(startTime, venueLat, venueLon),
           ]);
 
           if (!oddsLine || !weather) {
@@ -138,9 +188,7 @@ export async function GET(request: NextRequest) {
 
           send({
             type: "tick",
-            propId: prop.propId,
-            playerName: prop.playerName,
-            propType: prop.propType,
+            propId,
             timestamp: Date.now(),
             line: oddsLine.point,
             weather,
