@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Sparkline } from "@/components/Sparkline";
+import { SlateBrowser } from "@/components/SlateBrowser";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { computeEntryHitProbability } from "@/lib/pickEm";
 import { mockGoal } from "@/store/mockData";
@@ -203,6 +204,8 @@ export default function Home() {
 
   return (
     <>
+      <SlateBrowser />
+
       {currentMatchup && prop && (
         <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
           <h2 className="text-lg font-medium">

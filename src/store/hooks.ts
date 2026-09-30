@@ -36,6 +36,36 @@ export const useCurrentMatchup = () =>
     state.slate.find((matchup) => matchup.id === state.selectedMatchupId)
   );
 
+export const useRealSlate = () => useAppStore((state) => state.realSlate);
+export const useRealSlateStatus = () => useAppStore((state) => state.realSlateStatus);
+export const useRealSlateError = () => useAppStore((state) => state.realSlateError);
+export const useSetRealSlate = () => useAppStore((state) => state.setRealSlate);
+export const useSetRealSlateStatus = () =>
+  useAppStore((state) => state.setRealSlateStatus);
+export const useSetRealSlateError = () =>
+  useAppStore((state) => state.setRealSlateError);
+
+export const useSelectedEventId = () =>
+  useAppStore((state) => state.selectedEventId);
+export const useSetSelectedEventId = () =>
+  useAppStore((state) => state.setSelectedEventId);
+
+export const useCheckedMarketKeys = () =>
+  useAppStore((state) => state.checkedMarketKeys);
+export const useToggleMarketKey = () =>
+  useAppStore((state) => state.toggleMarketKey);
+
+export const useDiscoveredProps = () =>
+  useAppStore((state) => state.discoveredProps);
+export const useDiscoveryStatus = () => useAppStore((state) => state.discoveryStatus);
+export const useDiscoveryError = () => useAppStore((state) => state.discoveryError);
+export const useSetDiscoveredProps = () =>
+  useAppStore((state) => state.setDiscoveredProps);
+export const useSetDiscoveryStatus = () =>
+  useAppStore((state) => state.setDiscoveryStatus);
+export const useSetDiscoveryError = () =>
+  useAppStore((state) => state.setDiscoveryError);
+
 export const useGoal = () => useAppStore((state) => state.goal);
 export const useSetGoal = () => useAppStore((state) => state.setGoal);
 

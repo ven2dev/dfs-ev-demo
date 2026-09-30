@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { groupOddsByPlayer } from "./discoveredProps.ts";
+import { groupLinesByBookmaker, groupOddsByPlayer } from "./discoveredProps.ts";
 import type { EventOddsResponse } from "./oddsApi.ts";
+import type { DiscoveredLine } from "./discoveredProps.ts";
 
 describe("groupOddsByPlayer", () => {
   it("groups a two-way Over/Under market's outcomes under the same player and market", () => {
@@ -182,5 +183,44 @@ describe("groupOddsByPlayer", () => {
 
   it("returns an empty array for a response with no bookmakers", () => {
     expect(groupOddsByPlayer({ id: "evt-1", bookmakers: [] })).toEqual([]);
+  });
+});
+
+describe("groupLinesByBookmaker", () => {
+  it("pairs a bookmaker's Over and Under lines into one row", () => {
+    const lines: DiscoveredLine[] = [
+      { bookmakerKey: "draftkings", side: "over", price: 1.91, point: 214.5 },
+      { bookmakerKey: "draftkings", side: "under", price: 1.91, point: 214.5 },
+    ];
+
+    expect(groupLinesByBookmaker(lines)).toEqual([
+      { bookmakerKey: "draftkings", point: 214.5, overPrice: 1.91, underPrice: 1.91 },
+    ]);
+  });
+
+  it("keeps different bookmakers as separate rows", () => {
+    const lines: DiscoveredLine[] = [
+      { bookmakerKey: "draftkings", side: "over", price: 1.91, point: 214.5 },
+      { bookmakerKey: "draftkings", side: "under", price: 1.91, point: 214.5 },
+      { bookmakerKey: "fanduel", side: "over", price: 1.87, point: 213.5 },
+      { bookmakerKey: "fanduel", side: "under", price: 1.95, point: 213.5 },
+    ];
+
+    const rows = groupLinesByBookmaker(lines);
+
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.bookmakerKey).sort()).toEqual(["draftkings", "fanduel"]);
+  });
+
+  it("leaves a single-sided 'yes' line as its own row, not paired with anything", () => {
+    const lines: DiscoveredLine[] = [{ bookmakerKey: "draftkings", side: "yes", price: 1.91 }];
+
+    expect(groupLinesByBookmaker(lines)).toEqual([
+      { bookmakerKey: "draftkings", yesPrice: 1.91 },
+    ]);
+  });
+
+  it("returns an empty array for no lines", () => {
+    expect(groupLinesByBookmaker([])).toEqual([]);
   });
 });

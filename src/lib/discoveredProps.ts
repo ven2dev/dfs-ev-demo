@@ -69,3 +69,31 @@ export const groupOddsByPlayer = (response: EventOddsResponse): DiscoveredPlayer
     })),
   }));
 };
+
+export type BookmakerRow = {
+  bookmakerKey: string;
+  point?: number;
+  overPrice?: number;
+  underPrice?: number;
+  yesPrice?: number;
+};
+
+// A market's lines come in as one flat list (one entry per bookmaker
+// PER SIDE) -- this pairs a bookmaker's Over and Under back into a
+// single row for display, so a table shows one row per book instead of
+// two. A "Yes"-only market's lines already have one entry per
+// bookmaker, so this is a no-op shape change for those, not a merge.
+export const groupLinesByBookmaker = (lines: DiscoveredLine[]): BookmakerRow[] => {
+  const rowsByBookmaker = new Map<string, BookmakerRow>();
+
+  for (const line of lines) {
+    const row = rowsByBookmaker.get(line.bookmakerKey) ?? { bookmakerKey: line.bookmakerKey };
+    if (line.point !== undefined) row.point = line.point;
+    if (line.side === "over") row.overPrice = line.price;
+    else if (line.side === "under") row.underPrice = line.price;
+    else row.yesPrice = line.price;
+    rowsByBookmaker.set(line.bookmakerKey, row);
+  }
+
+  return Array.from(rowsByBookmaker.values());
+};
