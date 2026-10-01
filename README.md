@@ -83,10 +83,27 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/sync
 
 ### Fallback behavior
 
-If `DATABASE_URL` isn't set, or Postgres is unreachable, or the watched
-player isn't yet in `player_crosswalk`, `/api/stream` falls back to an empty
-`recentGameStats` array (logging a warning) rather than failing — a fresh
-checkout without Postgres configured, or watching a player who hasn't been
-crosswalked yet, still runs; the base-rate/recent-stat-average parts of the
-EV calc are just honestly empty (0%, not a fabricated number) until that
-player is added to the crosswalk.
+The live model never represents unavailable history as a valid 0% result. An
+unmapped player returns `422`; a missing or unreachable Postgres database
+returns `503`. Issue #32 will replace the manual crosswalk with conservative,
+on-demand matching.
+
+## Shared live odds/weather cache
+
+`/api/stream` connections schedule independently, but their cost-bearing
+inputs are shared across processes through `live_prop_inputs_cache`. The key
+is `(sport_key, event_id, market_key, player_name)`: bookmaker and direction
+are intentionally excluded because one Odds API response contains every book
+and both Over/Under outcomes for that player prop.
+
+The cache TTL matches the 90-second live polling interval. A 30-second
+Postgres refresh lease ensures concurrent viewers—including viewers handled
+by different serverless instances—produce one Odds API call and one
+Open-Meteo call for that key per interval. An active holder renews that lease
+every 10 seconds. Both upstream requests share one cancellation scope and a
+20-second deadline, so a failed or hung request cannot keep running after the
+lease is released. Followers wait for and reuse the lease holder's
+observation; a crashed holder can still be replaced after the lease expires.
+
+Run `psql "$DATABASE_URL" -f db/schema.sql` after pulling schema changes and
+before deploying the stream route. The schema command is idempotent.

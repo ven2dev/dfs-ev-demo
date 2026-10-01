@@ -127,3 +127,27 @@ CREATE TABLE IF NOT EXISTS event_market_odds_cache (
   fetched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (event_id, market_key)
 );
+
+-- #28: distributed live odds/weather cache. The serving key is one
+-- player prop within a sport/event/market; bookmaker and direction are
+-- intentionally absent because one upstream market response contains
+-- every book and both Over/Under sides. All watchers of that prop share
+-- one refreshed payload, even when they run on different serverless
+-- instances or select different books/sides.
+--
+-- refresh_owner/refresh_lease_until form a short database-backed lease.
+-- A crashed refresher cannot hold the key forever; another instance may
+-- take over after the lease expires. payload/fetched_at are nullable only
+-- while the first refresh for a new key is in flight.
+CREATE TABLE IF NOT EXISTS live_prop_inputs_cache (
+  sport_key TEXT NOT NULL,
+  event_id TEXT NOT NULL,
+  market_key TEXT NOT NULL,
+  player_name TEXT NOT NULL,
+  payload JSONB,
+  fetched_at TIMESTAMPTZ,
+  refresh_owner TEXT,
+  refresh_lease_until TIMESTAMPTZ,
+  PRIMARY KEY (sport_key, event_id, market_key, player_name),
+  CHECK ((payload IS NULL) = (fetched_at IS NULL))
+);

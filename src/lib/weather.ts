@@ -20,7 +20,8 @@ export type WeatherSnapshot = {
 export async function fetchGameWeather(
   gameTimeIso: string,
   venueLat: number,
-  venueLon: number
+  venueLon: number,
+  signal?: AbortSignal
 ): Promise<WeatherSnapshot | null> {
   const gameDate = new Date(gameTimeIso);
   const dateStr = gameDate.toISOString().slice(0, 10);
@@ -31,7 +32,7 @@ export async function fetchGameWeather(
     `&temperature_unit=fahrenheit&wind_speed_unit=mph` +
     `&start_date=${dateStr}&end_date=${dateStr}`;
 
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store", signal });
   if (!res.ok) {
     return null;
   }

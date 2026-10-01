@@ -39,6 +39,10 @@ export type PlayerPropLine = {
   point: number;
 };
 
+export type PlayerPropBookmakerLine = PlayerPropLine & {
+  bookmakerKey: string;
+};
+
 type RawSlateEvent = {
   id: string;
   sport_key: string;
@@ -127,6 +131,47 @@ export const fetchSlateEvents = async (
 // actually looking at when they clicked "Watch") rather than "first
 // match" -- picking whichever bookmaker happened to load first would
 // silently show different numbers than what the user chose to track.
+export const fetchPlayerPropMarketOdds = async (
+  sportKey: string,
+  eventId: string,
+  marketKey: string,
+  playerName: string,
+  signal?: AbortSignal
+): Promise<PlayerPropBookmakerLine[]> => {
+  const apiKey = process.env.ODDS_API_KEY;
+  if (!apiKey) {
+    throw new Error("ODDS_API_KEY is not set");
+  }
+
+  const url = `${ODDS_API_BASE}/sports/${sportKey}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketKey}`;
+  const res = await fetch(url, { cache: "no-store", signal });
+  if (!res.ok) {
+    return [];
+  }
+  const data: EventOddsResponse = await res.json();
+
+  const lines: PlayerPropBookmakerLine[] = [];
+  for (const bookmaker of data.bookmakers) {
+    const market = bookmaker.markets.find((candidate) => candidate.key === marketKey);
+    if (!market) continue;
+    const over = market.outcomes.find(
+      (outcome) => outcome.name === "Over" && outcome.description === playerName
+    );
+    const under = market.outcomes.find(
+      (outcome) => outcome.name === "Under" && outcome.description === playerName
+    );
+    if (over && under && over.point !== undefined) {
+      lines.push({
+        bookmakerKey: bookmaker.key,
+        overPrice: over.price,
+        underPrice: under.price,
+        point: over.point,
+      });
+    }
+  }
+  return lines;
+};
+
 export const fetchPlayerPropOdds = async (
   sportKey: string,
   eventId: string,
@@ -134,26 +179,9 @@ export const fetchPlayerPropOdds = async (
   playerName: string,
   bookmakerKey: string
 ): Promise<PlayerPropLine | null> => {
-  const apiKey = process.env.ODDS_API_KEY;
-  if (!apiKey) {
-    throw new Error("ODDS_API_KEY is not set");
-  }
-
-  const url = `${ODDS_API_BASE}/sports/${sportKey}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketKey}`;
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) {
-    return null;
-  }
-  const data: EventOddsResponse = await res.json();
-
-  const bookmaker = data.bookmakers.find((b) => b.key === bookmakerKey);
-  const market = bookmaker?.markets.find((m) => m.key === marketKey);
-  if (!market) return null;
-
-  const over = market.outcomes.find((o) => o.name === "Over" && o.description === playerName);
-  const under = market.outcomes.find((o) => o.name === "Under" && o.description === playerName);
-  if (over && under && over.point !== undefined) {
-    return { overPrice: over.price, underPrice: under.price, point: over.point };
-  }
-  return null;
+  const lines = await fetchPlayerPropMarketOdds(sportKey, eventId, marketKey, playerName);
+  const line = lines.find((candidate) => candidate.bookmakerKey === bookmakerKey);
+  return line
+    ? { overPrice: line.overPrice, underPrice: line.underPrice, point: line.point }
+    : null;
 };

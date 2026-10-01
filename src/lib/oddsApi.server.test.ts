@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { fetchPlayerPropOdds, fetchSlateEvents } from "./oddsApi.ts";
+import {
+  fetchPlayerPropMarketOdds,
+  fetchPlayerPropOdds,
+  fetchSlateEvents,
+} from "./oddsApi.ts";
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -150,6 +154,37 @@ describe("fetchPlayerPropOdds", () => {
     );
 
     expect(result).toEqual({ overPrice: 1.87, underPrice: 1.95, point: 213.5 });
+  });
+
+  it("returns every bookmaker line for the shared prop cache in one upstream call", async () => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+    fetchMock.mockResolvedValueOnce(twoBookResponse);
+    const controller = new AbortController();
+
+    const result = await fetchPlayerPropMarketOdds(
+      "americanfootball_nfl",
+      "evt-1",
+      "player_pass_yds",
+      "Jalen Hurts",
+      controller.signal
+    );
+
+    expect(result).toEqual([
+      {
+        bookmakerKey: "draftkings",
+        overPrice: 1.91,
+        underPrice: 1.89,
+        point: 214.5,
+      },
+      {
+        bookmakerKey: "fanduel",
+        overPrice: 1.87,
+        underPrice: 1.95,
+        point: 213.5,
+      },
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
   });
 
   it("returns null when the specified bookmaker doesn't have this market, even if another bookmaker does", async () => {

@@ -27,15 +27,14 @@ const FORCE_REFRESH_COOLDOWN_MS = 20 * 1000;
 // written to the Postgres cache yet, would otherwise each independently
 // decide "missing" and each fire their own real, credit-costing API
 // call. Deduping in-process (rather than a DB-level lock) is a
-// deliberate, bounded choice: the neon serverless driver is stateless
+// deliberate, bounded choice for DISCOVERY: the neon serverless driver is stateless
 // (one query = one HTTP request, no persistent session), so a lock
 // can't be held across the external fetch() call the way
 // creatorSubmissionsRepo.ts's transaction-scoped advisory lock holds
 // across pure-SQL statements. This only dedupes requests hitting the
-// SAME instance -- the same accepted tradeoff already documented on
-// /api/stream's poller -- not a true cross-instance guarantee, but it
-// covers the realistic case (a burst of users opening the same
-// just-posted event) at this app's current scale.
+// SAME instance. Unlike the live stream's database-backed refresh lease,
+// this discovery cache does not make a cross-instance guarantee; it
+// covers the realistic burst case at this app's current internal scale.
 const inFlightFetches = new Map<string, Promise<EventOddsResponse>>();
 
 const dedupedFetchEventOdds = (
