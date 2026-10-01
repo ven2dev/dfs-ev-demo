@@ -19,9 +19,9 @@ describe("player crosswalk persistence", () => {
   it("matches from the newest team-scoped roster snapshot and persists once", async () => {
     queryMock
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([{ source_updated_at: "2026-10-01T07:00:00Z" }])
       .mockResolvedValueOnce([
         {
+          source_updated_at: "2026-10-01T07:00:00Z",
           player_id: "00-0036389",
           full_name: "Jalen Hurts",
           first_name: "Jalen",
@@ -50,15 +50,13 @@ describe("player crosswalk persistence", () => {
       playerName: "Jalen Hurts",
     });
 
-    expect(queryMock).toHaveBeenCalledTimes(5);
-    expect(queryMock.mock.calls[2][0]).toContain("team = ANY($3::text[])");
+    expect(queryMock).toHaveBeenCalledTimes(4);
+    expect(queryMock.mock.calls[1][0]).toContain("WITH latest_snapshot AS");
+    expect(queryMock.mock.calls[1][0]).toContain("LEFT JOIN nflverse_roster_players");
+    expect(queryMock.mock.calls[1][0]).toContain("team = ANY($2::text[])");
+    expect(queryMock.mock.calls[1][1]).toEqual([2026, ["PHI", "DAL"]]);
+    expect(queryMock.mock.calls[2][0]).toContain("ON CONFLICT (odds_api_name) DO NOTHING");
     expect(queryMock.mock.calls[2][1]).toEqual([
-      2026,
-      "2026-10-01T07:00:00Z",
-      ["PHI", "DAL"],
-    ]);
-    expect(queryMock.mock.calls[3][0]).toContain("ON CONFLICT (odds_api_name) DO NOTHING");
-    expect(queryMock.mock.calls[3][1]).toEqual([
       "J. Hurts",
       "00-0036389",
       "Jalen Hurts",
@@ -67,7 +65,16 @@ describe("player crosswalk persistence", () => {
 
   it("fails as unavailable when no synchronized roster snapshot exists", async () => {
     queryMock.mockResolvedValueOnce([]).mockResolvedValueOnce([
-      { source_updated_at: null },
+      {
+        source_updated_at: null,
+        player_id: null,
+        full_name: null,
+        first_name: null,
+        last_name: null,
+        football_name: null,
+        team: null,
+        position: null,
+      },
     ]);
 
     await expect(
@@ -77,6 +84,33 @@ describe("player crosswalk persistence", () => {
         marketKey: "player_pass_yds",
       })
     ).rejects.toBeInstanceOf(RosterSnapshotUnavailableError);
+  });
+
+  it("keeps an available snapshot with no team candidates distinct from no snapshot", async () => {
+    queryMock.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        source_updated_at: "2026-10-01T07:00:00Z",
+        player_id: null,
+        full_name: null,
+        first_name: null,
+        last_name: null,
+        football_name: null,
+        team: null,
+        position: null,
+      },
+    ]);
+
+    await expect(
+      getOrCreatePlayerCrosswalk("Jalen Hurts", {
+        season: 2026,
+        eventTeams: ["PHI", "DAL"],
+        marketKey: "player_pass_yds",
+      })
+    ).resolves.toBeNull();
+    expect(queryMock).toHaveBeenCalledTimes(2);
+    expect(queryMock.mock.calls.some(([sql]) => String(sql).includes("INSERT INTO"))).toBe(
+      false
+    );
   });
 });
 

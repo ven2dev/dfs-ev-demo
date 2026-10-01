@@ -73,40 +73,64 @@ export const getLatestRosterCandidates = async (
   season: number,
   teams: readonly string[]
 ): Promise<PlayerIdentityCandidate[]> => {
-  const sql = getSql();
-  const snapshotRows = (await sql.query(
-    `SELECT MAX(source_updated_at) AS source_updated_at
-     FROM nflverse_roster_players
-     WHERE season = $1`,
-    [season]
-  )) as { source_updated_at: string | null }[];
-  const sourceUpdatedAt = snapshotRows[0]?.source_updated_at;
-  if (!sourceUpdatedAt) throw new RosterSnapshotUnavailableError(season);
-
-  const rows = (await sql.query(
-    `SELECT player_id, full_name, first_name, last_name, football_name, team, position
-     FROM nflverse_roster_players
-     WHERE season = $1
-       AND source_updated_at = $2
-       AND team = ANY($3::text[])`,
-    [season, sourceUpdatedAt, [...teams]]
+  // Resolve the latest timestamp and its candidates in one statement.
+  // Under Postgres READ COMMITTED, one statement observes one snapshot;
+  // a concurrent roster upsert therefore cannot move every row from the
+  // timestamp read in one round trip before a second round trip uses it.
+  // The LEFT JOIN retains the snapshot marker even when there are no
+  // candidates for these teams, preserving "no roster" (503) versus
+  // "roster exists, no match" (422).
+  const rows = (await getSql().query(
+    `WITH latest_snapshot AS (
+       SELECT MAX(source_updated_at) AS source_updated_at
+       FROM nflverse_roster_players
+       WHERE season = $1
+     )
+     SELECT
+       latest_snapshot.source_updated_at,
+       roster.player_id,
+       roster.full_name,
+       roster.first_name,
+       roster.last_name,
+       roster.football_name,
+       roster.team,
+       roster.position
+     FROM latest_snapshot
+     LEFT JOIN nflverse_roster_players AS roster
+       ON roster.season = $1
+      AND roster.source_updated_at = latest_snapshot.source_updated_at
+      AND roster.team = ANY($2::text[])`,
+    [season, [...teams]]
   )) as {
-    player_id: string;
-    full_name: string;
-    first_name: string;
-    last_name: string;
+    source_updated_at: string | null;
+    player_id: string | null;
+    full_name: string | null;
+    first_name: string | null;
+    last_name: string | null;
     football_name: string | null;
-    team: string;
-    position: string;
+    team: string | null;
+    position: string | null;
   }[];
+  if (!rows[0]?.source_updated_at) throw new RosterSnapshotUnavailableError(season);
 
-  return rows.map((row) => ({
-    playerId: row.player_id,
-    fullName: row.full_name,
-    firstName: row.first_name,
-    lastName: row.last_name,
-    footballName: row.football_name,
-    team: row.team,
-    position: row.position,
-  }));
+  return rows.flatMap((row) =>
+    row.player_id &&
+    row.full_name &&
+    row.first_name &&
+    row.last_name &&
+    row.team &&
+    row.position
+      ? [
+          {
+            playerId: row.player_id,
+            fullName: row.full_name,
+            firstName: row.first_name,
+            lastName: row.last_name,
+            footballName: row.football_name,
+            team: row.team,
+            position: row.position,
+          },
+        ]
+      : []
+  );
 };
