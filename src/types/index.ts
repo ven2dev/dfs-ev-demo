@@ -48,6 +48,12 @@ export type EVPipelineStages = {
   afterCoverage: number;
 };
 
+export type MarketConsensus = {
+  method: "exact-line-median";
+  version: 1;
+  contributingBookCount: number;
+};
+
 export type WatchedProp = {
   propId: string;
   // Optional, not a zeroed placeholder: undefined means "no fresh tick
@@ -72,6 +78,7 @@ export type WatchedProp = {
   // EV values above. Keeping them here prevents a newly-selected prop
   // from rendering another selection's last global line or weather.
   line?: number;
+  marketConsensus?: MarketConsensus;
   weather?: {
     temperatureF: number;
     windSpeedMph: number;

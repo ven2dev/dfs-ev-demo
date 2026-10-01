@@ -52,6 +52,7 @@ export function useLiveOddsStream() {
         evScore: undefined,
         recentStatAverage: undefined,
         line: undefined,
+        marketConsensus: undefined,
         weather: undefined,
       },
     });
@@ -125,6 +126,7 @@ export function useLiveOddsStream() {
             stages: data.stages,
             recentStatAverage: data.recentStatAverage,
             line: data.line,
+            marketConsensus: data.marketConsensus,
             weather: data.weather,
           },
         });

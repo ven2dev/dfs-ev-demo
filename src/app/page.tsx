@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Sparkline } from "@/components/Sparkline";
+import { MarketConsensusSummary } from "@/components/MarketConsensusSummary";
 import { SlateBrowser } from "@/components/SlateBrowser";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { computeEntryHitProbability } from "@/lib/pickEm";
@@ -283,8 +284,16 @@ export default function Home() {
                 </span>
                 <span>{(watched.stages.afterCoverage * 100).toFixed(1)}%</span>
               </div>
+              {watched.marketConsensus && watched.line !== undefined && (
+                <MarketConsensusSummary
+                  probability={watched.evScore.impliedProb}
+                  direction={primaryWatch.direction}
+                  line={watched.line}
+                  consensus={watched.marketConsensus}
+                />
+              )}
               <div className="flex justify-between border-t border-zinc-200 pt-3 text-sm font-medium dark:border-zinc-800">
-                <span>Final EV (edge, vs. real devigged Odds API line)</span>
+                <span>Final EV (edge, vs. same-line market consensus)</span>
                 <span
                   className={
                     watched.evScore.edge > 0 ? "text-green-600" : "text-red-600"

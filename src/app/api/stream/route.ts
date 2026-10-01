@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { consensusDevigAtLine } from "@/lib/consensusDevig";
 import { computeEV } from "@/lib/computeEV";
-import { devigTwoWay } from "@/lib/devig";
 import { DEFAULT_SPORT_KEY, fetchSlateEvents } from "@/lib/oddsApi";
 import {
   getNflverseTeamAbbreviation,
@@ -220,10 +220,25 @@ export async function GET(request: NextRequest) {
             return;
           }
 
-          const { impliedProbOver, impliedProbUnder } = devigTwoWay(
-            oddsLine.overPrice,
-            oddsLine.underPrice
-          );
+          // The selected sportsbook is the product-visible anchor for
+          // this line. Do not silently build a consensus around an
+          // invalid anchor even if another book still has valid prices.
+          if (!consensusDevigAtLine([oddsLine], oddsLine.point)) {
+            send({
+              type: "error",
+              message: `Bookmaker "${bookmakerKey}" no longer offers a valid two-way quote for this prop`,
+            });
+            return;
+          }
+
+          const consensus = consensusDevigAtLine(inputs.oddsByBookmaker, oddsLine.point);
+          if (!consensus) {
+            send({
+              type: "error",
+              message: `No valid two-way market quotes remain at line ${oddsLine.point}`,
+            });
+            return;
+          }
 
           const result = computeEV({
             recentGameStats,
@@ -233,7 +248,9 @@ export async function GET(request: NextRequest) {
             precipitationMm: weather.precipitationMm,
             shadowCoverageRate: mockCoverageFilters.shadowCoverageRate as number,
             impliedProb:
-              selectedDirection === "over" ? impliedProbOver : impliedProbUnder,
+              selectedDirection === "over"
+                ? consensus.impliedProbOver
+                : consensus.impliedProbUnder,
             direction: selectedDirection,
           });
 
@@ -243,6 +260,11 @@ export async function GET(request: NextRequest) {
             timestamp: Date.now(),
             line: oddsLine.point,
             direction: selectedDirection,
+            marketConsensus: {
+              method: consensus.method,
+              version: consensus.version,
+              contributingBookCount: consensus.contributingBookCount,
+            },
             weather,
             evScore: result.evScore,
             stages: {

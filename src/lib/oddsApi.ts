@@ -160,7 +160,13 @@ export const fetchPlayerPropMarketOdds = async (
     const under = market.outcomes.find(
       (outcome) => outcome.name === "Under" && outcome.description === playerName
     );
-    if (over && under && over.point !== undefined) {
+    if (
+      over &&
+      under &&
+      over.point !== undefined &&
+      under.point !== undefined &&
+      over.point === under.point
+    ) {
       lines.push({
         bookmakerKey: bookmaker.key,
         overPrice: over.price,

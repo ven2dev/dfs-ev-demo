@@ -187,6 +187,38 @@ describe("fetchPlayerPropOdds", () => {
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
   });
 
+  it("excludes a bookmaker whose Over and Under outcomes do not share one point", async () => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        id: "evt-1",
+        bookmakers: [
+          {
+            key: "draftkings",
+            markets: [
+              {
+                key: "player_pass_yds",
+                outcomes: [
+                  { name: "Over", description: "Jalen Hurts", price: 1.91, point: 214.5 },
+                  { name: "Under", description: "Jalen Hurts", price: 1.89, point: 215.5 },
+                ],
+              },
+            ],
+          },
+        ],
+      })
+    );
+
+    await expect(
+      fetchPlayerPropMarketOdds(
+        "americanfootball_nfl",
+        "evt-1",
+        "player_pass_yds",
+        "Jalen Hurts"
+      )
+    ).resolves.toEqual([]);
+  });
+
   it("returns null when the specified bookmaker doesn't have this market, even if another bookmaker does", async () => {
     vi.stubEnv("ODDS_API_KEY", "test-key");
     fetchMock.mockResolvedValueOnce(twoBookResponse);

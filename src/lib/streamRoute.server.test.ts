@@ -5,6 +5,7 @@ const fetchSlateEventsMock = vi.fn();
 const getVenueForTeamMock = vi.fn();
 const getNflverseTeamAbbreviationMock = vi.fn();
 const getRealRecentGameStatsMock = vi.fn();
+const getSharedLivePropInputsMock = vi.fn();
 
 vi.mock("./oddsApi", () => ({
   DEFAULT_SPORT_KEY: "americanfootball_nfl",
@@ -21,7 +22,7 @@ vi.mock("./playerStatsRepo", () => ({
 }));
 
 vi.mock("./livePropCacheRepo", () => ({
-  getSharedLivePropInputs: vi.fn(),
+  getSharedLivePropInputs: getSharedLivePropInputsMock,
 }));
 
 const { GET } = await import("@/app/api/stream/route");
@@ -129,5 +130,106 @@ describe("GET /api/stream market capability validation", () => {
       reason: "Historical stats are temporarily unavailable",
     });
     expect(consoleError).toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/stream consensus devig ticks", () => {
+  const openStream = async (direction: "over" | "under" = "over") => {
+    const response = await GET(
+      requestFor({
+        eventId: "evt-1",
+        marketKey: "player_pass_yds",
+        playerName: "Jalen Hurts",
+        bookmakerKey: "draftkings",
+        direction,
+        sampleWindow: "3",
+      })
+    );
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Expected an SSE response body");
+    const { value } = await reader.read();
+    await reader.cancel();
+    const event = new TextDecoder().decode(value);
+    return JSON.parse(event.replace(/^data: /, "").trim());
+  };
+
+  beforeEach(() => {
+    getRealRecentGameStatsMock.mockResolvedValue([240, 260, 280]);
+    getSharedLivePropInputsMock.mockResolvedValue({
+      oddsByBookmaker: [
+        {
+          bookmakerKey: "draftkings",
+          overPrice: 1.8,
+          underPrice: 2,
+          point: 250.5,
+        },
+        {
+          bookmakerKey: "fanduel",
+          overPrice: 2,
+          underPrice: 1.8,
+          point: 250.5,
+        },
+        {
+          bookmakerKey: "betmgm",
+          overPrice: 1.91,
+          underPrice: 1.91,
+          point: 250.5,
+        },
+        {
+          bookmakerKey: "other-line",
+          overPrice: 1.2,
+          underPrice: 5,
+          point: 251.5,
+        },
+      ],
+      weather: { temperatureF: 65, windSpeedMph: 5, precipitationMm: 0 },
+    });
+  });
+
+  it("uses exact-line multi-book median probability and exposes its provenance", async () => {
+    const tick = await openStream("over");
+
+    expect(tick.type).toBe("tick");
+    expect(tick.line).toBe(250.5);
+    expect(tick.evScore.impliedProb).toBeCloseTo(0.5, 12);
+    expect(tick.marketConsensus).toEqual({
+      method: "exact-line-median",
+      version: 1,
+      contributingBookCount: 3,
+    });
+  });
+
+  it("derives the Under consensus as the complement of Over", async () => {
+    const tick = await openStream("under");
+
+    expect(tick.type).toBe("tick");
+    expect(tick.evScore.impliedProb).toBeCloseTo(0.5, 12);
+    expect(tick.marketConsensus.contributingBookCount).toBe(3);
+  });
+
+  it("reuses the existing per-tick error shape when the selected quote is invalid", async () => {
+    getSharedLivePropInputsMock.mockResolvedValue({
+      oddsByBookmaker: [
+        {
+          bookmakerKey: "draftkings",
+          overPrice: 1,
+          underPrice: 2,
+          point: 250.5,
+        },
+        {
+          bookmakerKey: "fanduel",
+          overPrice: 1.9,
+          underPrice: 1.9,
+          point: 250.5,
+        },
+      ],
+      weather: { temperatureF: 65, windSpeedMph: 5, precipitationMm: 0 },
+    });
+
+    await expect(openStream()).resolves.toEqual({
+      type: "error",
+      message:
+        'Bookmaker "draftkings" no longer offers a valid two-way quote for this prop',
+    });
   });
 });
