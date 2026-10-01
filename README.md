@@ -58,9 +58,11 @@ into a Neon Postgres database.
    ```bash
    psql "$DATABASE_URL" -f db/schema.sql
    ```
-3. **Seed the player crosswalk** (maps the app's seeded mock props to real
-   nflverse player IDs — see the file's own header comment for why this is a
-   small manual table, not an automatic matcher):
+3. **Seed the player crosswalk** (maps a real player's Odds API name to their
+   nflverse player ID — see the file's own header comment for why this is
+   still a small manual table, not an automatic matcher; only players listed
+   here get real historical stats behind the EV calc, see Fallback behavior
+   below):
    ```bash
    psql "$DATABASE_URL" -f db/seed_crosswalk.sql
    ```
@@ -81,8 +83,10 @@ curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/sync
 
 ### Fallback behavior
 
-If `DATABASE_URL` isn't set, or Postgres is unreachable, or a specific
-player/prop isn't yet in `player_crosswalk`, `/api/stream` falls back to the
-seeded mock `recentGameStats` array (logging a warning) rather than failing —
-a fresh checkout without Postgres configured still runs, just without real
-historical stats behind the EV calculation.
+If `DATABASE_URL` isn't set, or Postgres is unreachable, or the watched
+player isn't yet in `player_crosswalk`, `/api/stream` falls back to an empty
+`recentGameStats` array (logging a warning) rather than failing — a fresh
+checkout without Postgres configured, or watching a player who hasn't been
+crosswalked yet, still runs; the base-rate/recent-stat-average parts of the
+EV calc are just honestly empty (0%, not a fabricated number) until that
+player is added to the crosswalk.

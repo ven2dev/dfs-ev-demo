@@ -1,4 +1,4 @@
-export type ConnectionStatus = "live" | "stale" | "disconnected";
+export type ConnectionStatus = "connecting" | "live" | "stale" | "disconnected";
 
 export type AuthStatus = "loading" | "signed-in" | "signed-out" | "unavailable";
 
@@ -68,34 +68,16 @@ export type WatchedProp = {
   // fantasy-points projection. Same "undefined until a fresh tick
   // lands" rule as evScore/stages.
   recentStatAverage?: number;
+  // The live line and weather belong to the same prop identity as the
+  // EV values above. Keeping them here prevents a newly-selected prop
+  // from rendering another selection's last global line or weather.
+  line?: number;
+  weather?: {
+    temperatureF: number;
+    windSpeedMph: number;
+    precipitationMm: number;
+  };
 };
-
-export type Prop = {
-  propId: string;
-  playerName: string;
-  propType: string;
-  marketKey: string;
-  line: number;
-  salary: number;
-  recentGameStats: number[];
-};
-
-export type Matchup = {
-  id: string;
-  homeTeam: string;
-  awayTeam: string;
-  startTime: string;
-  sportKey: string;
-  eventId: string;
-  // The home team's actual stadium -- weather must be fetched for THIS
-  // location, not a hardcoded one. Two different matchups have two
-  // different venues; there is no valid default.
-  venueLat: number;
-  venueLon: number;
-  props: Prop[];
-};
-
-export type Slate = Matchup[];
 
 export type EVPipelineStage =
   | "baseRate"

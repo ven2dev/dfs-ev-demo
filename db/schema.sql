@@ -104,3 +104,26 @@ ALTER TABLE creator_video_submissions ALTER COLUMN video_url SET NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_creator_video_submissions_creator
   ON creator_video_submissions (creator_id, submitted_at DESC);
+
+-- #27: per-(event, market) odds cache. Discovering a game's available
+-- player props costs real API credits (1 per market requested), so
+-- caching at whole-event or per-player granularity would either
+-- re-charge for markets already fetched moments ago, or fail to share
+-- one market's data across every player who has a line in it. Keying
+-- on (event_id, market_key) means the FIRST check of e.g. "Passing
+-- Yards" for a game pays once, and every other request for that same
+-- market on that same game -- regardless of which player it's for --
+-- reuses it until fetched_at ages past the app's TTL (oddsCacheRepo.ts
+-- owns that TTL, not this table).
+CREATE TABLE IF NOT EXISTS event_market_odds_cache (
+  event_id TEXT NOT NULL,
+  market_key TEXT NOT NULL,
+  -- Raw-ish bookmakers/markets/outcomes slice for just this one market,
+  -- as returned by the Odds API -- not reshaped into an app-level prop
+  -- type. Keeps this table a pure cache of what the API said, so a
+  -- future change to how props are grouped/displayed doesn't require a
+  -- cache-schema migration.
+  payload JSONB NOT NULL,
+  fetched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (event_id, market_key)
+);

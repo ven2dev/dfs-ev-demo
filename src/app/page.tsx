@@ -2,17 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { Sparkline } from "@/components/Sparkline";
+import { SlateBrowser } from "@/components/SlateBrowser";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { computeEntryHitProbability } from "@/lib/pickEm";
+import { buildWatchPropId } from "@/lib/watchPropId";
 import { mockGoal } from "@/store/mockData";
 import {
   useAuthStatus,
   useConnectionStatus,
-  useCurrentMatchup,
   useDataLoadError,
   useDataVerified,
   useGoal,
   useMatchupConfig,
+  usePrimaryWatch,
+  useSecondaryWatch,
   useSetGoal,
   useSetMatchupConfig,
   useWatchlist,
@@ -37,29 +40,32 @@ export default function Home() {
   const connectionStatus = useConnectionStatus();
   const matchupConfig = useMatchupConfig();
   const setMatchupConfig = useSetMatchupConfig();
-  const currentMatchup = useCurrentMatchup();
+  const primaryWatch = usePrimaryWatch();
+  const secondaryWatch = useSecondaryWatch();
   const watchlist = useWatchlist();
   const goal = useGoal();
   const setGoal = useSetGoal();
 
-  const prop = currentMatchup?.props[0];
-  const watched = prop ? watchlist[prop.propId] : undefined;
+  const watched = primaryWatch ? watchlist[buildWatchPropId(primaryWatch)] : undefined;
 
-  // Second seeded prop, deliberately not wired into live SSE tracking —
-  // this section exists purely to demonstrate the optimistic-update +
-  // rollback pattern in isolation, per the brief's call for ONE example.
-  const secondProp = currentMatchup?.props[1];
-  const isWatchingSecond = secondProp ? Boolean(watchlist[secondProp.propId]) : false;
+  // A second, independently-watched real prop (#27 step 7) -- NOT wired
+  // into live SSE tracking, same as before. This section exists purely
+  // to demonstrate the optimistic-update + rollback pattern in
+  // isolation, per the brief's call for ONE example; it just uses a
+  // second real selection now instead of a hardcoded mock one.
+  const isWatchingSecond = secondaryWatch
+    ? Boolean(watchlist[buildWatchPropId(secondaryWatch)])
+    : false;
   const [watchPending, setWatchPending] = useState(false);
   const [watchError, setWatchError] = useState<string | null>(null);
 
   const handleWatchToggle = async () => {
-    if (!secondProp || watchPending || authStatus !== "signed-in") return;
+    if (!secondaryWatch || watchPending || authStatus !== "signed-in") return;
 
     setWatchError(null);
     setWatchPending(true);
 
-    const propId = secondProp.propId;
+    const propId = buildWatchPropId(secondaryWatch);
     const result = await toggleWatchedProp(
       propId,
       { propId, evScore: { modelProb: 0, impliedProb: 0, edge: 0 }, evHistory: [] },
@@ -92,7 +98,7 @@ export default function Home() {
 
     if (result.status === "reverted") {
       setWatchError(
-        `Failed to ${result.wasWatching ? "unwatch" : "watch"} ${secondProp.playerName}: ${
+        `Failed to ${result.wasWatching ? "unwatch" : "watch"} ${secondaryWatch.playerName}: ${
           (result.cause as Error).message
         } — reverted`
       );
@@ -199,19 +205,30 @@ export default function Home() {
       ? "bg-green-500"
       : connectionStatus === "stale"
         ? "bg-yellow-500"
-        : "bg-red-500";
+        : connectionStatus === "connecting"
+          ? "bg-blue-500"
+          : "bg-red-500";
 
   return (
     <>
-      {currentMatchup && prop && (
+      <SlateBrowser />
+
+      {!primaryWatch && (
+        <section className="rounded-lg border border-zinc-200 p-6 text-sm text-zinc-500 dark:border-zinc-800">
+          Select a game and a prop above, then click <strong>Watch</strong> to start
+          tracking its live EV here.
+        </section>
+      )}
+
+      {primaryWatch && (
         <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
           <h2 className="text-lg font-medium">
-            {currentMatchup.awayTeam} @ {currentMatchup.homeTeam}
+            {primaryWatch.awayTeam} @ {primaryWatch.homeTeam}
           </h2>
           <p className="mt-1 text-sm text-zinc-500">
-            {prop.playerName} — {prop.propType}, line{" "}
-            {(matchupConfig.environment.currentLine as number) ?? prop.line}{" "}
-            (real player-prop line, live Odds API)
+            {primaryWatch.playerName} — {primaryWatch.propType}, line{" "}
+            {watched?.line ?? "—"} ({primaryWatch.direction}, {primaryWatch.bookmakerKey}; real
+            player-prop line, live Odds API)
           </p>
 
           <div className="mt-4 flex gap-2">
@@ -282,7 +299,7 @@ export default function Home() {
           {watched?.recentStatAverage !== undefined && (
             <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
               Avg last {matchupConfig.sampleWindow} games:{" "}
-              {watched.recentStatAverage.toFixed(1)} {prop.propType.toLowerCase()}{" "}
+              {watched.recentStatAverage.toFixed(1)} {primaryWatch.propType.toLowerCase()}{" "}
               <em className="text-zinc-400">
                 (historical average, not a projection — no predictive model yet)
               </em>
@@ -296,7 +313,11 @@ export default function Home() {
               {(
                 computeEntryHitProbability([
                   ...goal.picks,
-                  { propId: prop.propId, direction: "over", impliedProb: watched.evScore.modelProb },
+                  {
+                    propId: buildWatchPropId(primaryWatch),
+                    direction: primaryWatch.direction,
+                    impliedProb: watched.evScore.modelProb,
+                  },
                 ]) * 100
               ).toFixed(1)}%{" "}
               joint hit probability{" "}
@@ -318,10 +339,10 @@ export default function Home() {
             <span className="capitalize">{connectionStatus}</span>
           </div>
         </div>
-        {watched?.evScore && prop ? (
+        {watched?.evScore && primaryWatch ? (
           <div className="mt-4">
             <div className="flex justify-between text-sm">
-              <span>{prop.playerName} — live edge</span>
+              <span>{primaryWatch.playerName} — live edge</span>
               <span>{(watched.evScore.edge * 100).toFixed(1)}%</span>
             </div>
             <div className="mt-2">
@@ -332,14 +353,18 @@ export default function Home() {
             </p>
           </div>
         ) : (
-          <p className="mt-2 text-sm text-zinc-500">Waiting for first live tick…</p>
+          <p className="mt-2 text-sm text-zinc-500">
+            {primaryWatch ? "Waiting for first live tick…" : "Nothing watched yet."}
+          </p>
         )}
 
-        {secondProp && (
+        {secondaryWatch && (
           <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm">{secondProp.playerName} — {secondProp.propType}</p>
+                <p className="text-sm">
+                  {secondaryWatch.playerName} — {secondaryWatch.propType}
+                </p>
                 <p className="text-xs text-zinc-400">
                   Optimistic watch/unwatch demo — REST call has a simulated
                   ~30% failure rate to demonstrate rollback

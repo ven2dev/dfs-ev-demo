@@ -26,15 +26,45 @@ export const useSampleWindow = () =>
 export const useSetMatchupConfig = () =>
   useAppStore((state) => state.setMatchupConfig);
 
-export const useSlate = () => useAppStore((state) => state.slate);
-export const useSelectedMatchupId = () =>
-  useAppStore((state) => state.selectedMatchupId);
-export const useSetSelectedMatchupId = () =>
-  useAppStore((state) => state.setSelectedMatchupId);
-export const useCurrentMatchup = () =>
-  useAppStore((state) =>
-    state.slate.find((matchup) => matchup.id === state.selectedMatchupId)
-  );
+export const useRealSlate = () => useAppStore((state) => state.realSlate);
+export const useRealSlateWindow = () => useAppStore((state) => state.realSlateWindow);
+export const useRealSlateStatus = () => useAppStore((state) => state.realSlateStatus);
+export const useRealSlateError = () => useAppStore((state) => state.realSlateError);
+export const useSetRealSlate = () => useAppStore((state) => state.setRealSlate);
+export const useSetRealSlateStatus = () =>
+  useAppStore((state) => state.setRealSlateStatus);
+export const useSetRealSlateError = () =>
+  useAppStore((state) => state.setRealSlateError);
+
+export const useSelectedEventId = () =>
+  useAppStore((state) => state.selectedEventId);
+export const useSetSelectedEventId = () =>
+  useAppStore((state) => state.setSelectedEventId);
+
+export const useCheckedMarketKeys = () =>
+  useAppStore((state) => state.checkedMarketKeys);
+export const useToggleMarketKey = () =>
+  useAppStore((state) => state.toggleMarketKey);
+
+export const useDiscoveredProps = () =>
+  useAppStore((state) => state.discoveredProps);
+export const useDiscoveredPropsEventId = () =>
+  useAppStore((state) => state.discoveredPropsEventId);
+export const useDiscoveredPropsMarketKeys = () =>
+  useAppStore((state) => state.discoveredPropsMarketKeys);
+export const useDiscoveryStatus = () => useAppStore((state) => state.discoveryStatus);
+export const useDiscoveryError = () => useAppStore((state) => state.discoveryError);
+export const useSetDiscoveredProps = () =>
+  useAppStore((state) => state.setDiscoveredProps);
+export const useSetDiscoveryStatus = () =>
+  useAppStore((state) => state.setDiscoveryStatus);
+export const useSetDiscoveryError = () =>
+  useAppStore((state) => state.setDiscoveryError);
+
+export const usePrimaryWatch = () => useAppStore((state) => state.primaryWatch);
+export const useSetPrimaryWatch = () => useAppStore((state) => state.setPrimaryWatch);
+export const useSecondaryWatch = () => useAppStore((state) => state.secondaryWatch);
+export const useSetSecondaryWatch = () => useAppStore((state) => state.setSecondaryWatch);
 
 export const useGoal = () => useAppStore((state) => state.goal);
 export const useSetGoal = () => useAppStore((state) => state.setGoal);

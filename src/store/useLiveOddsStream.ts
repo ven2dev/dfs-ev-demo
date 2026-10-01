@@ -2,8 +2,9 @@
 
 import { useEffect } from "react";
 import { STALE_TIMEOUT_MS } from "@/lib/streamConfig";
+import { buildWatchPropId } from "@/lib/watchPropId";
 import { useAppStore } from "./index";
-import { useSetConnectionStatus, useSampleWindow } from "./hooks";
+import { usePrimaryWatch, useSetConnectionStatus, useSampleWindow } from "./hooks";
 
 const INITIAL_RECONNECT_DELAY_MS = 1000;
 const MAX_RECONNECT_DELAY_MS = 30000;
@@ -15,35 +16,45 @@ export function useLiveOddsStream() {
   // actually changes the sample window -- not on every tick's
   // environment/line update, which writes into that same object.
   const sampleWindow = useSampleWindow();
+  const primaryWatch = usePrimaryWatch();
 
   useEffect(() => {
+    // Nothing to track yet -- no real selection has been watched. Make
+    // sure a PREVIOUS connection (from before the user cleared it) is
+    // reflected as disconnected, not left showing a stale "live" status.
+    if (!primaryWatch) {
+      setConnectionStatus("disconnected");
+      return;
+    }
+
     let eventSource: EventSource | undefined;
     let reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
     let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
     let staleTimer: ReturnType<typeof setTimeout> | undefined;
     let cancelled = false;
+    const expectedPropId = buildWatchPropId(primaryWatch);
 
-    // Every previously-recorded window-dependent value -- stages,
-    // evHistory, evScore, AND recentStatAverage -- was computed under
-    // whatever sampleWindow was active AT THE TIME. On a reconnect (this
-    // effect re-running because sampleWindow changed), all four are
-    // stale relative to the label now showing the NEW window, until the
-    // first fresh tick lands. A prior version of this only cleared
-    // stages/evHistory, missing evScore/recentStatAverage -- those two
-    // aren't gated on `stages` in the UI, so the live edge, sparkline,
-    // recent-stat-average line, and PickEm entry-impact number all kept
-    // showing OLD-window values under the NEW window's label (caught in
-    // review). A no-op on initial mount (nothing to clear yet); real on
-    // every window change.
+    setConnectionStatus("connecting");
+
+    // Clear the selected prop's complete snapshot before connecting.
+    // This covers both sample-window changes and a new watched identity,
+    // so no line, weather, EV, or history can render under a selection
+    // that did not produce it.
     const currentWatchlist = useAppStore.getState().watchlist;
-    useAppStore.getState().setWatchlist(
-      Object.fromEntries(
-        Object.entries(currentWatchlist).map(([id, entry]) => [
-          id,
-          { ...entry, stages: undefined, evHistory: [], evScore: undefined, recentStatAverage: undefined },
-        ])
-      )
-    );
+    const existingSnapshot = currentWatchlist[expectedPropId];
+    useAppStore.getState().setWatchlist({
+      ...currentWatchlist,
+      [expectedPropId]: {
+        ...existingSnapshot,
+        propId: expectedPropId,
+        stages: undefined,
+        evHistory: [],
+        evScore: undefined,
+        recentStatAverage: undefined,
+        line: undefined,
+        weather: undefined,
+      },
+    });
 
     const resetStaleTimer = () => {
       if (staleTimer) clearTimeout(staleTimer);
@@ -51,7 +62,16 @@ export function useLiveOddsStream() {
     };
 
     const connect = () => {
-      eventSource = new EventSource(`/api/stream?sampleWindow=${sampleWindow}`);
+      const params = new URLSearchParams({
+        eventId: primaryWatch.eventId,
+        sportKey: primaryWatch.sportKey,
+        marketKey: primaryWatch.marketKey,
+        playerName: primaryWatch.playerName,
+        bookmakerKey: primaryWatch.bookmakerKey,
+        direction: primaryWatch.direction,
+        sampleWindow: String(sampleWindow),
+      });
+      eventSource = new EventSource(`/api/stream?${params.toString()}`);
 
       eventSource.onopen = () => {
         setConnectionStatus("live");
@@ -83,6 +103,7 @@ export function useLiveOddsStream() {
         }
 
         if (data.type !== "tick") return;
+        if (data.propId !== expectedPropId) return;
 
         setConnectionStatus("live");
         resetStaleTimer();
@@ -103,25 +124,10 @@ export function useLiveOddsStream() {
             // against stale data, which is what page.tsx used to do.
             stages: data.stages,
             recentStatAverage: data.recentStatAverage,
+            line: data.line,
+            weather: data.weather,
           },
         });
-
-        if (data.weather) {
-          const currentConfig = useAppStore.getState().matchupConfig;
-          useAppStore.getState().setMatchupConfig({
-            ...currentConfig,
-            environment: {
-              ...currentConfig.environment,
-              windSpeedMph: data.weather.windSpeedMph,
-              precipitationMm: data.weather.precipitationMm,
-              temperatureF: data.weather.temperatureF,
-              // Live line, kept alongside environment so every input to a
-              // client-side recompute is consistently sourced from the
-              // same latest tick, rather than mixing live and seeded values.
-              currentLine: data.line,
-            },
-          });
-        }
       };
 
       eventSource.onerror = () => {
@@ -143,5 +149,5 @@ export function useLiveOddsStream() {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (staleTimer) clearTimeout(staleTimer);
     };
-  }, [setConnectionStatus, sampleWindow]);
+  }, [setConnectionStatus, sampleWindow, primaryWatch]);
 }
