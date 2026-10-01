@@ -220,6 +220,15 @@ export async function GET(request: NextRequest) {
             return;
           }
 
+          const consensus = consensusDevigAtLine(inputs.oddsByBookmaker, oddsLine.point);
+          if (!consensus) {
+            send({
+              type: "error",
+              message: `No valid two-way market quotes remain at line ${oddsLine.point}`,
+            });
+            return;
+          }
+
           // The selected sportsbook is the product-visible anchor for
           // this line. Do not silently build a consensus around an
           // invalid anchor even if another book still has valid prices.
@@ -227,15 +236,6 @@ export async function GET(request: NextRequest) {
             send({
               type: "error",
               message: `Bookmaker "${bookmakerKey}" no longer offers a valid two-way quote for this prop`,
-            });
-            return;
-          }
-
-          const consensus = consensusDevigAtLine(inputs.oddsByBookmaker, oddsLine.point);
-          if (!consensus) {
-            send({
-              type: "error",
-              message: `No valid two-way market quotes remain at line ${oddsLine.point}`,
             });
             return;
           }

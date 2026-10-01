@@ -232,4 +232,29 @@ describe("GET /api/stream consensus devig ticks", () => {
         'Bookmaker "draftkings" no longer offers a valid two-way quote for this prop',
     });
   });
+
+  it("reuses the existing per-tick error shape when no valid cohort quote remains", async () => {
+    getSharedLivePropInputsMock.mockResolvedValue({
+      oddsByBookmaker: [
+        {
+          bookmakerKey: "draftkings",
+          overPrice: 1,
+          underPrice: 2,
+          point: 250.5,
+        },
+        {
+          bookmakerKey: "fanduel",
+          overPrice: Number.NaN,
+          underPrice: 1.9,
+          point: 250.5,
+        },
+      ],
+      weather: { temperatureF: 65, windSpeedMph: 5, precipitationMm: 0 },
+    });
+
+    await expect(openStream()).resolves.toEqual({
+      type: "error",
+      message: "No valid two-way market quotes remain at line 250.5",
+    });
+  });
 });
