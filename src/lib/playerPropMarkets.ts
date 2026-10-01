@@ -21,6 +21,7 @@ type PlayerPropMarketDefinition = {
   label: string;
   outcomeShape: PlayerPropOutcomeShape;
   historicalStatType: SupportedStatType | null;
+  compatibleRosterPositions: readonly string[] | null;
   trackable: boolean;
 };
 
@@ -35,6 +36,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "Passing Yards",
     outcomeShape: "over-under",
     historicalStatType: "passing_yards",
+    compatibleRosterPositions: ["QB"],
     trackable: true,
   },
   {
@@ -42,6 +44,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "Passing Touchdowns",
     outcomeShape: "over-under",
     historicalStatType: "passing_tds",
+    compatibleRosterPositions: ["QB"],
     trackable: true,
   },
   {
@@ -49,6 +52,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "Pass Completions",
     outcomeShape: "over-under",
     historicalStatType: "completions",
+    compatibleRosterPositions: ["QB"],
     trackable: true,
   },
   {
@@ -56,6 +60,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "Pass Attempts",
     outcomeShape: "over-under",
     historicalStatType: "attempts",
+    compatibleRosterPositions: ["QB"],
     trackable: true,
   },
   {
@@ -63,6 +68,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "Interceptions Thrown",
     outcomeShape: "over-under",
     historicalStatType: "passing_interceptions",
+    compatibleRosterPositions: ["QB"],
     trackable: true,
   },
   {
@@ -70,6 +76,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "Rushing Yards",
     outcomeShape: "over-under",
     historicalStatType: "rushing_yards",
+    compatibleRosterPositions: ["QB", "RB", "FB", "WR", "TE"],
     trackable: true,
   },
   {
@@ -77,6 +84,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "Rush Attempts",
     outcomeShape: "over-under",
     historicalStatType: "carries",
+    compatibleRosterPositions: ["QB", "RB", "FB", "WR", "TE"],
     trackable: true,
   },
   {
@@ -84,6 +92,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "Receiving Yards",
     outcomeShape: "over-under",
     historicalStatType: "receiving_yards",
+    compatibleRosterPositions: ["RB", "FB", "WR", "TE"],
     trackable: true,
   },
   {
@@ -91,6 +100,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "Receptions",
     outcomeShape: "over-under",
     historicalStatType: "receptions",
+    compatibleRosterPositions: ["RB", "FB", "WR", "TE"],
     trackable: true,
   },
   {
@@ -98,6 +108,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "Anytime Touchdown",
     outcomeShape: "yes-only",
     historicalStatType: "anytime_td",
+    compatibleRosterPositions: null,
     trackable: false,
   },
   {
@@ -105,6 +116,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "First Touchdown",
     outcomeShape: "yes-only",
     historicalStatType: null,
+    compatibleRosterPositions: null,
     trackable: false,
   },
   {
@@ -112,6 +124,7 @@ export const PLAYER_PROP_MARKETS = [
     label: "Last Touchdown",
     outcomeShape: "yes-only",
     historicalStatType: null,
+    compatibleRosterPositions: null,
     trackable: false,
   },
 ] as const satisfies readonly PlayerPropMarketDefinition[];

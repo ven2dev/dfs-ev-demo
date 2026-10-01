@@ -1,20 +1,11 @@
 import "server-only";
 
 import { getSql } from "./db";
+import {
+  getOrCreatePlayerCrosswalk,
+} from "./playerCrosswalkRepo";
+import type { PlayerResolutionContext } from "./playerCrosswalk";
 import type { PlayerGameStatRow, SupportedStatType } from "./playerStatsSync";
-
-// The Odds API's prop outcomes key off a plain player-name string (its
-// `description` field); nflverse keys off its own internal player_id.
-// Returns null (not an error) for an unmapped player -- callers decide
-// how to degrade, e.g. falling back to seeded/mock data.
-export const getNflversePlayerId = async (oddsApiName: string): Promise<string | null> => {
-  const sql = getSql();
-  const rows = (await sql.query(
-    "SELECT nflverse_player_id FROM player_crosswalk WHERE odds_api_name = $1",
-    [oddsApiName]
-  )) as { nflverse_player_id: string }[];
-  return rows[0]?.nflverse_player_id ?? null;
-};
 
 // Oldest-first, matching computeEV's recentGameStats.slice(-sampleWindow)
 // convention -- the DB query itself is most-recent-first (for LIMIT to
@@ -35,18 +26,19 @@ export const getRecentStatValues = async (
   return rows.map((row) => Number(row.stat_value)).reverse();
 };
 
-// Convenience wrapper combining the crosswalk lookup with the stat
-// fetch, since every real caller needs both. Null means "not resolvable
-// yet" (unmapped player) -- distinct from an empty array, which means
-// "resolved, but no games recorded so far" (e.g. week 1 of a season).
+// Convenience wrapper combining conservative, event-scoped identity
+// resolution with the stat fetch. Null means the identity could not be
+// resolved uniquely and safely; an empty array means it resolved but no
+// matching games are recorded yet (for example, week 1 of a season).
 export const getRealRecentGameStats = async (
   oddsApiName: string,
   statType: SupportedStatType,
+  resolutionContext: PlayerResolutionContext,
   limit = 10
 ): Promise<number[] | null> => {
-  const playerId = await getNflversePlayerId(oddsApiName);
-  if (!playerId) return null;
-  return getRecentStatValues(playerId, statType, limit);
+  const crosswalk = await getOrCreatePlayerCrosswalk(oddsApiName, resolutionContext);
+  if (!crosswalk) return null;
+  return getRecentStatValues(crosswalk.playerId, statType, limit);
 };
 
 export const readSyncState = async (sourceName: string): Promise<string | null> => {

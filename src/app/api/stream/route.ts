@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { computeEV } from "@/lib/computeEV";
 import { devigTwoWay } from "@/lib/devig";
 import { DEFAULT_SPORT_KEY, fetchSlateEvents } from "@/lib/oddsApi";
-import { getVenueForTeam } from "@/lib/nflStadiums";
+import {
+  getNflverseTeamAbbreviation,
+  getVenueForTeam,
+} from "@/lib/nflStadiums";
+import { getCurrentSeason } from "@/lib/nflverseClient";
 import { MAX_TICKS, POLL_INTERVAL_MS, parseSampleWindow } from "@/lib/streamConfig";
 import { mockCoverageFilters } from "@/store/mockData";
 import { getRealRecentGameStats } from "@/lib/playerStatsRepo";
@@ -86,6 +90,7 @@ export async function GET(request: NextRequest) {
   let venueLat: number;
   let venueLon: number;
   let startTime: string;
+  let eventTeams: [string, string];
   try {
     const slateEvents = await fetchSlateEvents(sportKey);
     const event = slateEvents.find((e) => e.id === eventId);
@@ -105,6 +110,15 @@ export async function GET(request: NextRequest) {
     venueLat = venue.lat;
     venueLon = venue.lon;
     startTime = event.commenceTime;
+    const homeTeam = getNflverseTeamAbbreviation(event.homeTeam);
+    const awayTeam = getNflverseTeamAbbreviation(event.awayTeam);
+    if (!homeTeam || !awayTeam) {
+      return NextResponse.json(
+        { success: false, reason: "Failed to map the selected event's teams" },
+        { status: 502 }
+      );
+    }
+    eventTeams = [homeTeam, awayTeam];
   } catch (err) {
     console.error("[api/stream] failed to resolve the selected event:", err);
     return NextResponse.json(
@@ -129,7 +143,12 @@ export async function GET(request: NextRequest) {
   try {
     const realRecentGameStats = await getRealRecentGameStats(
       playerName,
-      marketCapability.historicalStatType
+      marketCapability.historicalStatType,
+      {
+        season: getCurrentSeason(new Date(startTime)),
+        eventTeams,
+        marketKey,
+      }
     );
     if (!realRecentGameStats || realRecentGameStats.length === 0) {
       return NextResponse.json(

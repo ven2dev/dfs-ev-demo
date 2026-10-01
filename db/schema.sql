@@ -58,17 +58,43 @@ CREATE TABLE IF NOT EXISTS sync_state (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Manual mapping, not a fuzzy-matcher: The Odds API's prop outcomes key
--- off a plain player-name string (its `description` field), nflverse
--- keys off its own internal player_id. Right-sized for the single
--- player currently seeded -- automatic name-matching at roster scale is
--- real, separate work for #27, once many players need resolving at once.
+-- Durable identity cache: The Odds API's prop outcomes key off a plain
+-- player-name string (its `description` field), while nflverse keys off
+-- a GSIS player id. A cache miss is resolved conservatively against the
+-- current event's two teams and market-compatible roster positions;
+-- ambiguous or low-confidence names are never inserted.
 CREATE TABLE IF NOT EXISTS player_crosswalk (
   odds_api_name TEXT PRIMARY KEY,
   nflverse_player_id TEXT NOT NULL,
   nflverse_player_name TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- #32: current-season identity source for conservative on-demand
+-- crosswalk matching. This stays separate from player_game_stats:
+-- stats contain abbreviated display names and omit players who have
+-- not recorded a supported stat, while the roster supplies full names,
+-- current team, position, and the same GSIS id used by the stats rows.
+-- source_updated_at identifies one complete upstream roster snapshot;
+-- reads use only the newest snapshot for a season, so a player removed
+-- from a later source file cannot remain an active matching candidate.
+CREATE TABLE IF NOT EXISTS nflverse_roster_players (
+  season INTEGER NOT NULL,
+  player_id TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  football_name TEXT,
+  team TEXT NOT NULL,
+  position TEXT NOT NULL,
+  status TEXT NOT NULL,
+  source_updated_at TIMESTAMPTZ NOT NULL,
+  synced_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (season, player_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_nflverse_roster_match_candidates
+  ON nflverse_roster_players (season, source_updated_at DESC, team);
 
 -- #34: creator-content confidence layer, transcript submission form.
 -- Manual sourcing only (no scraper -- see the issue for why) -- these
