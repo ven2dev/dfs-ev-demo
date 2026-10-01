@@ -1,32 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { computeEV } from "@/lib/computeEV";
 import { devigTwoWay } from "@/lib/devig";
-import { DEFAULT_SPORT_KEY, fetchPlayerPropOdds, fetchSlateEvents } from "@/lib/oddsApi";
+import { DEFAULT_SPORT_KEY, fetchSlateEvents } from "@/lib/oddsApi";
 import { getVenueForTeam } from "@/lib/nflStadiums";
 import { MAX_TICKS, POLL_INTERVAL_MS, parseSampleWindow } from "@/lib/streamConfig";
-import { fetchGameWeather } from "@/lib/weather";
 import { mockCoverageFilters } from "@/store/mockData";
 import { getRealRecentGameStats } from "@/lib/playerStatsRepo";
 import { buildWatchPropId } from "@/lib/watchPropId";
 import { getPlayerPropMarket, type PlayerPropDirection } from "@/lib/playerPropMarkets";
+import { getSharedLivePropInputs } from "@/lib/livePropCacheRepo";
 
 // SSE endpoint. Real Odds API + real weather calls happen here,
 // server-side only — the API key never reaches the client.
 //
-// Known gap: each connection polls independently on its own interval,
-// rather than one shared server-side poller fanning out to all clients.
-// A true single-poller-broadcasts-to-many architecture needs a
-// persistent process or a pub/sub layer (Redis, etc.) — doesn't fit
-// Vercel's serverless functions as-is. Still real: real API calls, never
-// client-side, just not shared across concurrent connections yet.
+// Connections still schedule their own ticks and receive independent
+// SSE responses, but their cost-bearing odds/weather refresh is shared
+// through a Postgres-backed cache + refresh lease keyed by
+// sport/event/market/player. A full single-poller broadcast transport is
+// separate future work; it is no longer required for quota deduplication.
 //
 // Quota safety: The Odds API's free tier is 500 requests/MONTH. A
 // forgotten open tab must not be able to burn through that in minutes.
-// POLL_INTERVAL_MS is deliberately conservative, and MAX_TICKS hard-caps
-// total requests any single connection can make, bounding worst-case
-// cost regardless of how long a tab is left open. A real multi-user
-// production deployment would still need the shared-poller architecture
-// noted above for safety across many simultaneous connections.
+// POLL_INTERVAL_MS is deliberately conservative, MAX_TICKS hard-caps
+// each connection, and the distributed lease makes overlapping viewers
+// reuse one upstream refresh per prop/poll window.
 //
 // Self-scheduling setTimeout, not setInterval: setInterval fires on a
 // fixed clock regardless of whether the previous async callback has
@@ -35,11 +32,9 @@ import { getPlayerPropMarket, type PlayerPropDirection } from "@/lib/playerPropM
 // current one has fully resolved makes overlap impossible by
 // construction, not just unlikely.
 //
-// Deliberately always-fresh per tick, not reusing the discovery cache
-// (#27 step 7 decision) -- a live tracker showing a value frozen for
-// several ticks between real refreshes defeats its own purpose. The
-// existing MAX_TICKS cap already bounds worst-case cost the same way it
-// always has.
+// This does not reuse the five-minute discovery cache. The live cache's
+// TTL matches POLL_INTERVAL_MS, retaining live cadence while sharing the
+// refresh across connections and instances.
 
 export const dynamic = "force-dynamic";
 
@@ -189,13 +184,20 @@ export async function GET(request: NextRequest) {
         tickCount += 1;
 
         try {
-          const [oddsLine, weather] = await Promise.all([
-            fetchPlayerPropOdds(sportKey, eventId, marketKey, playerName, bookmakerKey),
-            fetchGameWeather(startTime, venueLat, venueLon),
-          ]);
+          const inputs = await getSharedLivePropInputs(
+            { sportKey, eventId, marketKey, playerName },
+            { startTime, venueLat, venueLon }
+          );
+          const oddsLine = inputs.oddsByBookmaker.find(
+            (line) => line.bookmakerKey === bookmakerKey
+          );
+          const weather = inputs.weather;
 
-          if (!oddsLine || !weather) {
-            send({ type: "error", message: "Failed to fetch real odds/weather" });
+          if (!oddsLine) {
+            send({
+              type: "error",
+              message: `Bookmaker "${bookmakerKey}" no longer offers this prop`,
+            });
             return;
           }
 
