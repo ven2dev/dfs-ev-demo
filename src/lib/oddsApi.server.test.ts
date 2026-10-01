@@ -159,12 +159,14 @@ describe("fetchPlayerPropOdds", () => {
   it("returns every bookmaker line for the shared prop cache in one upstream call", async () => {
     vi.stubEnv("ODDS_API_KEY", "test-key");
     fetchMock.mockResolvedValueOnce(twoBookResponse);
+    const controller = new AbortController();
 
     const result = await fetchPlayerPropMarketOdds(
       "americanfootball_nfl",
       "evt-1",
       "player_pass_yds",
-      "Jalen Hurts"
+      "Jalen Hurts",
+      controller.signal
     );
 
     expect(result).toEqual([
@@ -182,6 +184,7 @@ describe("fetchPlayerPropOdds", () => {
       },
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
   });
 
   it("returns null when the specified bookmaker doesn't have this market, even if another bookmaker does", async () => {

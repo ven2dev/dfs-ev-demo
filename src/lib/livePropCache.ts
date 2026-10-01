@@ -26,13 +26,21 @@ export type LivePropCacheDeps = {
     freshAfterMs: number,
     leaseMs: number
   ) => Promise<boolean>;
+  renew: (
+    key: LivePropCacheKey,
+    ownerId: string,
+    leaseMs: number
+  ) => Promise<boolean>;
   write: (
     key: LivePropCacheKey,
     ownerId: string,
     payload: LivePropInputs
   ) => Promise<void>;
   release: (key: LivePropCacheKey, ownerId: string) => Promise<void>;
-  fetchFresh: (key: LivePropCacheKey) => Promise<LivePropInputs>;
+  fetchFresh: (
+    key: LivePropCacheKey,
+    signal: AbortSignal
+  ) => Promise<LivePropInputs>;
   makeOwnerId: () => string;
   now: () => number;
   wait: (ms: number) => Promise<void>;
@@ -42,11 +50,15 @@ export type LivePropCacheDeps = {
 export type LivePropCacheOptions = {
   ttlMs: number;
   leaseMs?: number;
+  renewIntervalMs?: number;
+  refreshTimeoutMs?: number;
   waitIntervalMs?: number;
   maxWaitMs?: number;
 };
 
 const DEFAULT_LEASE_MS = 30_000;
+const DEFAULT_RENEW_INTERVAL_MS = 10_000;
+const DEFAULT_REFRESH_TIMEOUT_MS = 20_000;
 const DEFAULT_WAIT_INTERVAL_MS = 250;
 const DEFAULT_MAX_WAIT_MS = 45_000;
 
@@ -67,8 +79,17 @@ export const getOrRefreshLivePropInputs = async (
   const startedAtMs = deps.now();
   const freshAfterMs = startedAtMs - options.ttlMs;
   const leaseMs = options.leaseMs ?? DEFAULT_LEASE_MS;
+  const renewIntervalMs = options.renewIntervalMs ?? DEFAULT_RENEW_INTERVAL_MS;
+  const refreshTimeoutMs = options.refreshTimeoutMs ?? DEFAULT_REFRESH_TIMEOUT_MS;
   const waitIntervalMs = options.waitIntervalMs ?? DEFAULT_WAIT_INTERVAL_MS;
   const maxWaitMs = options.maxWaitMs ?? DEFAULT_MAX_WAIT_MS;
+
+  if (refreshTimeoutMs >= leaseMs) {
+    throw new Error("Live-prop refresh timeout must be shorter than its lease");
+  }
+  if (renewIntervalMs >= leaseMs) {
+    throw new Error("Live-prop lease renewal interval must be shorter than its lease");
+  }
 
   const cached = await deps.read(key);
   if (isFresh(cached, freshAfterMs)) return cached.payload;
@@ -88,8 +109,46 @@ export const getOrRefreshLivePropInputs = async (
     acquired = await deps.tryAcquireRefresh(key, ownerId, freshAfterMs, leaseMs);
   }
 
+  const controller = new AbortController();
+  let renewalInFlight = false;
+  const abortRefresh = (error: Error) => {
+    if (!controller.signal.aborted) controller.abort(error);
+  };
+  const timeout = setTimeout(
+    () => abortRefresh(new Error("Shared live-prop refresh timed out")),
+    refreshTimeoutMs
+  );
+  const renewal = setInterval(async () => {
+    if (renewalInFlight || controller.signal.aborted) return;
+    renewalInFlight = true;
+    try {
+      const renewed = await deps.renew(key, ownerId, leaseMs);
+      if (!renewed) {
+        abortRefresh(new Error("Shared live-prop refresh lease was lost"));
+      }
+    } catch {
+      abortRefresh(new Error("Failed to renew shared live-prop refresh lease"));
+    } finally {
+      renewalInFlight = false;
+    }
+  }, renewIntervalMs);
+
   try {
-    const fresh = await deps.fetchFresh(key);
+    let fresh: LivePropInputs;
+    try {
+      fresh = await deps.fetchFresh(key, controller.signal);
+    } catch (error) {
+      if (controller.signal.aborted && controller.signal.reason instanceof Error) {
+        throw controller.signal.reason;
+      }
+      throw error;
+    }
+    if (controller.signal.aborted && controller.signal.reason instanceof Error) {
+      throw controller.signal.reason;
+    }
+    // The deadline bounds only the external requests. Keep renewing through
+    // the owner-guarded cache write, which may itself be delayed by Postgres.
+    clearTimeout(timeout);
     try {
       await deps.write(key, ownerId, fresh);
     } catch (error) {
@@ -100,5 +159,8 @@ export const getOrRefreshLivePropInputs = async (
   } catch (error) {
     await deps.release(key, ownerId).catch(() => undefined);
     throw error;
+  } finally {
+    clearTimeout(timeout);
+    clearInterval(renewal);
   }
 };

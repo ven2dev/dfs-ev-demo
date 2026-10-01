@@ -73,6 +73,22 @@ const tryAcquireRefresh = async (
   return rows.length > 0;
 };
 
+const renew = async (
+  key: LivePropCacheKey,
+  ownerId: string,
+  leaseMs: number
+): Promise<boolean> => {
+  const rows = await getSql().query(
+    `UPDATE live_prop_inputs_cache
+     SET refresh_lease_until = now() + ($6 * interval '1 millisecond')
+     WHERE sport_key = $1 AND event_id = $2 AND market_key = $3 AND player_name = $4
+       AND refresh_owner = $5
+     RETURNING refresh_owner`,
+    [...keyParams(key), ownerId, leaseMs]
+  );
+  return rows.length > 0;
+};
+
 const write = async (
   key: LivePropCacheKey,
   ownerId: string,
@@ -108,22 +124,44 @@ export const getSharedLivePropInputs = async (
     {
       read,
       tryAcquireRefresh,
+      renew,
       write,
       release,
-      fetchFresh: async () => {
-        const [oddsByBookmaker, weather] = await Promise.all([
-          fetchPlayerPropMarketOdds(
-            key.sportKey,
-            key.eventId,
-            key.marketKey,
-            key.playerName
-          ),
-          fetchGameWeather(context.startTime, context.venueLat, context.venueLon),
-        ]);
-        if (oddsByBookmaker.length === 0 || !weather) {
-          throw new Error("Failed to fetch real odds/weather");
+      fetchFresh: async (_key, ownerSignal) => {
+        const siblingController = new AbortController();
+        const abortFromOwner = () => siblingController.abort(ownerSignal.reason);
+        if (ownerSignal.aborted) {
+          abortFromOwner();
+        } else {
+          ownerSignal.addEventListener("abort", abortFromOwner, { once: true });
         }
-        return { oddsByBookmaker, weather };
+
+        try {
+          const [oddsByBookmaker, weather] = await Promise.all([
+            fetchPlayerPropMarketOdds(
+              key.sportKey,
+              key.eventId,
+              key.marketKey,
+              key.playerName,
+              siblingController.signal
+            ),
+            fetchGameWeather(
+              context.startTime,
+              context.venueLat,
+              context.venueLon,
+              siblingController.signal
+            ),
+          ]);
+          if (oddsByBookmaker.length === 0 || !weather) {
+            throw new Error("Failed to fetch real odds/weather");
+          }
+          return { oddsByBookmaker, weather };
+        } catch (error) {
+          siblingController.abort(error);
+          throw error;
+        } finally {
+          ownerSignal.removeEventListener("abort", abortFromOwner);
+        }
       },
       makeOwnerId: randomUUID,
       now: Date.now,

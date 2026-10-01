@@ -47,6 +47,7 @@ afterEach(() => {
   fetchOddsMock.mockReset();
   fetchWeatherMock.mockReset();
   vi.restoreAllMocks();
+  vi.useRealTimers();
 });
 
 describe("getSharedLivePropInputs", () => {
@@ -68,12 +69,14 @@ describe("getSharedLivePropInputs", () => {
       key.sportKey,
       key.eventId,
       key.marketKey,
-      key.playerName
+      key.playerName,
+      expect.any(AbortSignal)
     );
     expect(fetchWeatherMock).toHaveBeenCalledWith(
       context.startTime,
       context.venueLat,
-      context.venueLon
+      context.venueLon,
+      expect.any(AbortSignal)
     );
     expect(queryMock).toHaveBeenCalledTimes(3);
     expect(queryMock.mock.calls[1][0]).toContain("ON CONFLICT");
@@ -117,5 +120,64 @@ describe("getSharedLivePropInputs", () => {
       writeError
     );
     expect(queryMock.mock.calls[3][0]).toContain("refresh_owner = NULL");
+  });
+
+  it("renews a slow refresh with an owner-guarded database update", async () => {
+    vi.useFakeTimers();
+    let resolveOdds!: (value: typeof oddsByBookmaker) => void;
+    queryMock
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ refresh_owner: "owner" }])
+      .mockResolvedValueOnce([{ refresh_owner: "owner" }])
+      .mockResolvedValueOnce([{ event_id: "evt-1" }]);
+    fetchOddsMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveOdds = resolve;
+        })
+    );
+    fetchWeatherMock.mockResolvedValueOnce(weather);
+
+    const refresh = getSharedLivePropInputs(key, context);
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(10_001);
+
+    expect(queryMock).toHaveBeenCalledTimes(3);
+    expect(queryMock.mock.calls[2][0]).toContain("SET refresh_lease_until");
+    expect(queryMock.mock.calls[2][0]).toContain("refresh_owner = $5");
+    expect(queryMock.mock.calls[2][1][4]).toBe(queryMock.mock.calls[1][1][4]);
+
+    resolveOdds(oddsByBookmaker);
+    await expect(refresh).resolves.toEqual({ oddsByBookmaker, weather });
+    expect(queryMock).toHaveBeenCalledTimes(4);
+  });
+
+  it("cancels the sibling upstream request before releasing a failed refresh", async () => {
+    let oddsSignal: AbortSignal | undefined;
+    queryMock
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ refresh_owner: "owner" }])
+      .mockResolvedValueOnce([]);
+    fetchOddsMock.mockImplementationOnce(
+      (
+        _sportKey: string,
+        _eventId: string,
+        _marketKey: string,
+        _playerName: string,
+        signal: AbortSignal
+      ) => {
+        oddsSignal = signal;
+        return new Promise((_resolve, reject) => {
+          signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+        });
+      }
+    );
+    fetchWeatherMock.mockRejectedValueOnce(new Error("weather unavailable"));
+
+    await expect(getSharedLivePropInputs(key, context)).rejects.toThrow(
+      "weather unavailable"
+    );
+    expect(oddsSignal?.aborted).toBe(true);
+    expect(queryMock.mock.calls[2][0]).toContain("refresh_owner = NULL");
   });
 });

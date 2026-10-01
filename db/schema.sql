@@ -151,7 +151,3 @@ CREATE TABLE IF NOT EXISTS live_prop_inputs_cache (
   PRIMARY KEY (sport_key, event_id, market_key, player_name),
   CHECK ((payload IS NULL) = (fetched_at IS NULL))
 );
-
-CREATE INDEX IF NOT EXISTS idx_live_prop_inputs_cache_expiry
-  ON live_prop_inputs_cache (refresh_lease_until)
-  WHERE refresh_lease_until IS NOT NULL;

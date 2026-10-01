@@ -135,7 +135,8 @@ export const fetchPlayerPropMarketOdds = async (
   sportKey: string,
   eventId: string,
   marketKey: string,
-  playerName: string
+  playerName: string,
+  signal?: AbortSignal
 ): Promise<PlayerPropBookmakerLine[]> => {
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
@@ -143,7 +144,7 @@ export const fetchPlayerPropMarketOdds = async (
   }
 
   const url = `${ODDS_API_BASE}/sports/${sportKey}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketKey}`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store", signal });
   if (!res.ok) {
     return [];
   }

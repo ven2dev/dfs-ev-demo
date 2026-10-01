@@ -96,12 +96,14 @@ is `(sport_key, event_id, market_key, player_name)`: bookmaker and direction
 are intentionally excluded because one Odds API response contains every book
 and both Over/Under outcomes for that player prop.
 
-The cache TTL matches the 90-second live polling interval. A short Postgres
-refresh lease ensures concurrent viewers—including viewers handled by
-different serverless instances—produce one Odds API call and one Open-Meteo
-call for that key per interval. Followers wait for and reuse the lease
-holder's observation. A crashed holder can be replaced after the lease
-expires.
+The cache TTL matches the 90-second live polling interval. A 30-second
+Postgres refresh lease ensures concurrent viewers—including viewers handled
+by different serverless instances—produce one Odds API call and one
+Open-Meteo call for that key per interval. An active holder renews that lease
+every 10 seconds. Both upstream requests share one cancellation scope and a
+20-second deadline, so a failed or hung request cannot keep running after the
+lease is released. Followers wait for and reuse the lease holder's
+observation; a crashed holder can still be replaced after the lease expires.
 
 Run `psql "$DATABASE_URL" -f db/schema.sql` after pulling schema changes and
 before deploying the stream route. The schema command is idempotent.
