@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { syncPlayerStats } from "@/lib/playerStatsSync";
+import { syncNflverseRoster } from "@/lib/nflverseRosterSync";
 import {
+  fetchRosterReleaseUpdatedAt,
+  fetchRosterRows,
   fetchStatsReleaseUpdatedAt,
   fetchSchedulesReleaseUpdatedAt,
   fetchStatsRows,
   fetchScheduleRows,
 } from "@/lib/nflverseClient";
 import { readSyncState, writeSyncState, upsertStats } from "@/lib/playerStatsRepo";
+import { upsertRosterPlayers } from "@/lib/playerRosterRepo";
 
 export const dynamic = "force-dynamic";
 
@@ -25,17 +29,26 @@ export const GET = async (request: NextRequest) => {
   }
 
   try {
-    const result = await syncPlayerStats({
-      fetchStatsReleaseUpdatedAt,
-      fetchSchedulesReleaseUpdatedAt,
-      fetchStatsRows,
-      fetchScheduleRows,
-      readSyncState,
-      writeSyncState,
-      upsertStats,
-    });
+    const [playerStats, roster] = await Promise.all([
+      syncPlayerStats({
+        fetchStatsReleaseUpdatedAt,
+        fetchSchedulesReleaseUpdatedAt,
+        fetchStatsRows,
+        fetchScheduleRows,
+        readSyncState,
+        writeSyncState,
+        upsertStats,
+      }),
+      syncNflverseRoster({
+        fetchRosterReleaseUpdatedAt,
+        fetchRosterRows,
+        readSyncState,
+        writeSyncState,
+        upsertRosterPlayers,
+      }),
+    ]);
 
-    return NextResponse.json({ success: true, result });
+    return NextResponse.json({ success: true, result: { playerStats, roster } });
   } catch (err) {
     console.error("[api/cron/sync-player-stats] sync failed:", err);
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });

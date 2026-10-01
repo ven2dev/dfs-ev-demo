@@ -58,9 +58,51 @@ export const NFL_TEAM_VENUES: Record<string, { lat: number; lon: number }> = {
   "Seattle Seahawks": { lat: 47.5952, lon: -122.3316 }, // Lumen Field
 };
 
+// The Odds API identifies event teams by full display name, while
+// nflverse roster rows use these abbreviations. Keep this provider
+// boundary explicit instead of attempting to derive abbreviations from
+// city/nickname strings (notably LA/LAC, NYG/NYJ, and JAX).
+export const NFL_TEAM_ABBREVIATIONS: Record<string, string> = {
+  "Arizona Cardinals": "ARI",
+  "Atlanta Falcons": "ATL",
+  "Baltimore Ravens": "BAL",
+  "Buffalo Bills": "BUF",
+  "Carolina Panthers": "CAR",
+  "Chicago Bears": "CHI",
+  "Cincinnati Bengals": "CIN",
+  "Cleveland Browns": "CLE",
+  "Dallas Cowboys": "DAL",
+  "Denver Broncos": "DEN",
+  "Detroit Lions": "DET",
+  "Green Bay Packers": "GB",
+  "Houston Texans": "HOU",
+  "Indianapolis Colts": "IND",
+  "Jacksonville Jaguars": "JAX",
+  "Kansas City Chiefs": "KC",
+  "Las Vegas Raiders": "LV",
+  "Los Angeles Chargers": "LAC",
+  "Los Angeles Rams": "LA",
+  "Miami Dolphins": "MIA",
+  "Minnesota Vikings": "MIN",
+  "New England Patriots": "NE",
+  "New Orleans Saints": "NO",
+  "New York Giants": "NYG",
+  "New York Jets": "NYJ",
+  "Philadelphia Eagles": "PHI",
+  "Pittsburgh Steelers": "PIT",
+  "San Francisco 49ers": "SF",
+  "Seattle Seahawks": "SEA",
+  "Tampa Bay Buccaneers": "TB",
+  "Tennessee Titans": "TEN",
+  "Washington Commanders": "WAS",
+};
+
 // Returns null for an unrecognized team name rather than throwing --
 // callers decide how to degrade (e.g. fall back to a default location
 // rather than fail the whole request) since this table can go stale
 // (a relocation, a new team) without warning.
 export const getVenueForTeam = (teamName: string): { lat: number; lon: number } | null =>
   NFL_TEAM_VENUES[teamName] ?? null;
+
+export const getNflverseTeamAbbreviation = (teamName: string): string | null =>
+  NFL_TEAM_ABBREVIATIONS[teamName] ?? null;

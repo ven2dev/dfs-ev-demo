@@ -2,6 +2,7 @@ import "server-only";
 
 import { parse } from "csv-parse/sync";
 import type { NflverseStatsRow, NflverseScheduleRow } from "./playerStatsSync";
+import type { NflverseRosterRow } from "./nflverseRosterSync";
 
 const NFLVERSE_REPO = "nflverse/nflverse-data";
 
@@ -47,6 +48,7 @@ const fetchCsvRows = async <T>(tag: string, assetName: string): Promise<T[]> => 
 };
 
 const currentStatsAssetName = () => `stats_player_week_${getCurrentSeason()}.csv`;
+const currentRosterAssetName = () => `roster_${getCurrentSeason()}.csv`;
 
 export const fetchStatsReleaseUpdatedAt = (): Promise<string> =>
   fetchReleaseAssetUpdatedAt("stats_player", currentStatsAssetName());
@@ -54,8 +56,14 @@ export const fetchStatsReleaseUpdatedAt = (): Promise<string> =>
 export const fetchSchedulesReleaseUpdatedAt = (): Promise<string> =>
   fetchReleaseAssetUpdatedAt("schedules", "games.csv");
 
+export const fetchRosterReleaseUpdatedAt = (): Promise<string> =>
+  fetchReleaseAssetUpdatedAt("rosters", currentRosterAssetName());
+
 export const fetchStatsRows = (): Promise<NflverseStatsRow[]> =>
   fetchCsvRows<NflverseStatsRow>("stats_player", currentStatsAssetName());
+
+export const fetchRosterRows = (): Promise<NflverseRosterRow[]> =>
+  fetchCsvRows<NflverseRosterRow>("rosters", currentRosterAssetName());
 
 // The full schedules file spans every season since 1999 -- not filtered
 // down here since playerStatsSync's join only ever looks up game_ids

@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { NFL_TEAM_VENUES, getVenueForTeam } from "./nflStadiums.ts";
+import {
+  NFL_TEAM_ABBREVIATIONS,
+  NFL_TEAM_VENUES,
+  getNflverseTeamAbbreviation,
+  getVenueForTeam,
+} from "./nflStadiums.ts";
 
 const ALL_32_TEAMS = [
   "Buffalo Bills",
@@ -58,6 +63,24 @@ describe("NFL_TEAM_VENUES", () => {
   it("shares identical coordinates for teams that share a real stadium", () => {
     expect(NFL_TEAM_VENUES["New York Jets"]).toEqual(NFL_TEAM_VENUES["New York Giants"]);
     expect(NFL_TEAM_VENUES["Los Angeles Chargers"]).toEqual(NFL_TEAM_VENUES["Los Angeles Rams"]);
+  });
+});
+
+describe("NFL_TEAM_ABBREVIATIONS", () => {
+  it("covers the same 32 Odds API team names as the venue registry", () => {
+    expect(Object.keys(NFL_TEAM_ABBREVIATIONS).sort()).toEqual(
+      Object.keys(NFL_TEAM_VENUES).sort()
+    );
+  });
+
+  it("uses nflverse provider-specific abbreviations", () => {
+    expect(getNflverseTeamAbbreviation("Los Angeles Rams")).toBe("LA");
+    expect(getNflverseTeamAbbreviation("Los Angeles Chargers")).toBe("LAC");
+    expect(getNflverseTeamAbbreviation("Jacksonville Jaguars")).toBe("JAX");
+  });
+
+  it("returns null for an unknown provider team", () => {
+    expect(getNflverseTeamAbbreviation("Unknown Team")).toBeNull();
   });
 });
 

@@ -34,7 +34,7 @@ into a Neon Postgres database.
   (asking GitHub's REST API for a release's `updated_at`) does hit a real,
   rate-limited endpoint — 60 requests/hour, unauthenticated (see
   [GitHub's rate-limit docs](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api)).
-  The sync job makes 2 of those calls per run, once daily — comfortably
+  The sync job makes 3 of those calls per run, once daily — comfortably
   under the limit, but it isn't literally unlimited.
 - **Coverage:** current season, current rosters only (see `db/schema.sql`'s
   header comment) — not a multi-season historical archive.
@@ -58,15 +58,7 @@ into a Neon Postgres database.
    ```bash
    psql "$DATABASE_URL" -f db/schema.sql
    ```
-3. **Seed the player crosswalk** (maps a real player's Odds API name to their
-   nflverse player ID — see the file's own header comment for why this is
-   still a small manual table, not an automatic matcher; only players listed
-   here get real historical stats behind the EV calc, see Fallback behavior
-   below):
-   ```bash
-   psql "$DATABASE_URL" -f db/seed_crosswalk.sql
-   ```
-4. **Set `CRON_SECRET`** (any random value, e.g. `openssl rand -hex 32`) in
+3. **Set `CRON_SECRET`** (any random value, e.g. `openssl rand -hex 32`) in
    both `.env.local` and the Vercel project's env vars (Production only —
    that's the only environment Vercel Cron actually triggers).
 
@@ -81,12 +73,19 @@ or to backfill immediately after setup) hit the route with that same header:
 curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/sync-player-stats
 ```
 
-### Fallback behavior
+The first successful run synchronizes both current-season game stats and the
+current roster. Run it once after creating the schema so unseen Odds API player
+names can be resolved without any manual seed data.
+
+### Identity safety behavior
 
 The live model never represents unavailable history as a valid 0% result. An
-unmapped player returns `422`; a missing or unreachable Postgres database
-returns `503`. Issue #32 will replace the manual crosswalk with conservative,
-on-demand matching.
+unseen Odds API player name is matched only within the selected event's two
+teams and only against positions compatible with that prop market. A unique,
+high-confidence match is cached in `player_crosswalk`; an ambiguous or
+low-confidence identity returns `422` without inserting anything. A missing
+roster snapshot or an unreachable Postgres database returns `503`. The app
+never substitutes mock history or fabricates an EV result.
 
 ## Shared live odds/weather cache
 
