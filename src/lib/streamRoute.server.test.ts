@@ -165,8 +165,8 @@ describe("GET /api/stream consensus devig ticks", () => {
         },
         {
           bookmakerKey: "fanduel",
-          overPrice: 2,
-          underPrice: 1.8,
+          overPrice: 1.9,
+          underPrice: 2.1,
           point: 250.5,
         },
         {
@@ -191,7 +191,7 @@ describe("GET /api/stream consensus devig ticks", () => {
 
     expect(tick.type).toBe("tick");
     expect(tick.line).toBe(250.5);
-    expect(tick.evScore.impliedProb).toBeCloseTo(0.5, 12);
+    expect(tick.evScore.impliedProb).toBeCloseTo(0.525, 12);
     expect(tick.marketConsensus).toEqual({
       method: "exact-line-median",
       version: 1,
@@ -203,7 +203,7 @@ describe("GET /api/stream consensus devig ticks", () => {
     const tick = await openStream("under");
 
     expect(tick.type).toBe("tick");
-    expect(tick.evScore.impliedProb).toBeCloseTo(0.5, 12);
+    expect(tick.evScore.impliedProb).toBeCloseTo(0.475, 12);
     expect(tick.marketConsensus.contributingBookCount).toBe(3);
   });
 
