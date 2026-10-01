@@ -6,5 +6,9 @@ import type { WatchSelection } from "@/store/slices/matchupSlice";
 // client-oriented Zustand code) avoids the server route depending on
 // store code just for a string format both sides need to agree on.
 export const buildWatchPropId = (
-  selection: Pick<WatchSelection, "eventId" | "marketKey" | "playerName">
-): string => `${selection.eventId}:${selection.marketKey}:${selection.playerName}`;
+  selection: Pick<
+    WatchSelection,
+    "eventId" | "marketKey" | "playerName" | "direction" | "bookmakerKey"
+  >
+): string =>
+  `${selection.eventId}:${selection.marketKey}:${selection.playerName}:${selection.direction}:${selection.bookmakerKey}`;

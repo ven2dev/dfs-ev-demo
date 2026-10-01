@@ -1,4 +1,5 @@
 import type { EVScore } from "@/types";
+import type { PlayerPropDirection } from "./playerPropMarkets";
 
 export type EVPipelineInput = {
   recentGameStats: number[];
@@ -8,6 +9,7 @@ export type EVPipelineInput = {
   precipitationMm: number;
   shadowCoverageRate: number;
   impliedProb: number; // already devigged from the real Odds API line
+  direction: PlayerPropDirection;
 };
 
 export type EVPipelineResult = {
@@ -26,19 +28,33 @@ function clamp01(value: number): number {
 // fetched values, so it's trivially testable without network access.
 export function computeEV(input: EVPipelineInput): EVPipelineResult {
   const window = input.recentGameStats.slice(-input.sampleWindow);
-  const hits = window.filter((stat) => stat > input.line).length;
-  const baseRate = window.length > 0 ? hits / window.length : 0;
+  if (window.length === 0) {
+    throw new Error("computeEV requires historical stats");
+  }
+  const hits = window.filter((stat) =>
+    input.direction === "over" ? stat > input.line : stat < input.line
+  ).length;
+  const baseRate = hits / window.length;
 
   // Environment adjustment: illustrative, not a real predictive model —
   // wind and precipitation modestly suppress passing-yardage outcomes.
   const windPenalty = Math.max(0, input.windSpeedMph - 10) * 0.004;
   const precipPenalty = input.precipitationMm > 0 ? 0.03 : 0;
-  const afterEnvironment = clamp01(baseRate - windPenalty - precipPenalty);
+  const environmentAdjustment = windPenalty + precipPenalty;
+  const afterEnvironment = clamp01(
+    input.direction === "over"
+      ? baseRate - environmentAdjustment
+      : baseRate + environmentAdjustment
+  );
 
   // Coverage adjustment: mocked (no free alignment/coverage data source
   // exists) — visibly labeled "sample data" in the UI, per the brief.
   const coveragePenalty = input.shadowCoverageRate * 0.1;
-  const afterCoverage = clamp01(afterEnvironment - coveragePenalty);
+  const afterCoverage = clamp01(
+    input.direction === "over"
+      ? afterEnvironment - coveragePenalty
+      : afterEnvironment + coveragePenalty
+  );
 
   const modelProb = afterCoverage;
   const edge = modelProb - input.impliedProb;

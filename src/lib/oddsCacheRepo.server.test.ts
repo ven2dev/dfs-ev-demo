@@ -20,6 +20,7 @@ const { getOrFetchMarketOdds } = await import("./oddsCacheRepo.ts");
 afterEach(() => {
   queryMock.mockReset();
   fetchEventOddsMock.mockReset();
+  vi.restoreAllMocks();
 });
 
 const freshRow = (marketKey: string, bookmakerKey: string, secondsAgo = 30) => ({
@@ -213,5 +214,35 @@ describe("getOrFetchMarketOdds", () => {
     expect(result).toEqual({ id: "evt-1", bookmakers: [] });
     expect(queryMock).not.toHaveBeenCalled();
     expect(fetchEventOddsMock).not.toHaveBeenCalled();
+  });
+
+  it("returns fresh odds when one cache upsert fails and logs the failed market", async () => {
+    const cacheError = new Error("database unavailable");
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    queryMock.mockResolvedValueOnce([]);
+    fetchEventOddsMock.mockResolvedValueOnce({
+      id: "evt-1",
+      bookmakers: [
+        {
+          key: "draftkings",
+          markets: [
+            { key: "player_pass_yds", outcomes: [] },
+            { key: "player_rush_yds", outcomes: [] },
+          ],
+        },
+      ],
+    });
+    queryMock.mockRejectedValueOnce(cacheError).mockResolvedValueOnce([]);
+
+    const result = await getOrFetchMarketOdds("americanfootball_nfl", "evt-1", [
+      "player_pass_yds",
+      "player_rush_yds",
+    ]);
+
+    expect(result.bookmakers[0].markets).toHaveLength(2);
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining('market "player_pass_yds"'),
+      cacheError
+    );
   });
 });

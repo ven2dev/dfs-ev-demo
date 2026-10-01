@@ -5,7 +5,12 @@ import {
   groupLinesByBookmaker,
   type DiscoveredPlayer,
 } from "@/lib/discoveredProps";
-import { PLAYER_PROP_MARKETS, type PlayerPropMarketKey } from "@/lib/playerPropMarkets";
+import {
+  getPlayerPropMarket,
+  PLAYER_PROP_MARKETS,
+  type PlayerPropDirection,
+  type PlayerPropMarketKey,
+} from "@/lib/playerPropMarkets";
 
 export type PlayerPropsCardMode = "single" | "compare";
 
@@ -19,13 +24,18 @@ type PlayerPropsCardProps = {
   smartDefault: boolean;
   selectedBookmakerKey: string | null;
   comparisonBookmakerKeys: string[];
+  watchDirection: PlayerPropDirection;
   onSeeAll: (marketKey: string) => void;
   // Single mode only -- compare mode has no ONE effective book per row
   // to watch. Reports the market's currently-effective book (whichever
   // is actually on screen, smart-picked or manually forced), not a
   // caller-supplied one, so what gets watched always matches what the
   // user is looking at.
-  onWatch: (params: { marketKey: string; bookmakerKey: string }) => void;
+  onWatch: (params: {
+    marketKey: string;
+    bookmakerKey: string;
+    direction: PlayerPropDirection;
+  }) => void;
 };
 
 const marketLabel = (key: string) =>
@@ -52,6 +62,7 @@ export const PlayerPropsCard = ({
   smartDefault,
   selectedBookmakerKey,
   comparisonBookmakerKeys,
+  watchDirection,
   onSeeAll,
   onWatch,
 }: PlayerPropsCardProps) => {
@@ -89,10 +100,17 @@ export const PlayerPropsCard = ({
             {player.markets.map((market) => {
               const rows = groupLinesByBookmaker(market.lines);
               const isYesMarket = market.lines[0]?.side === "yes";
+              const capability = getPlayerPropMarket(market.marketKey);
               const effectiveBookmakerKey = smartDefault
-                ? getBestBookmakerKey(market.lines)
+                ? getBestBookmakerKey(market.lines, watchDirection)
                 : selectedBookmakerKey;
               const selectedRow = rows.find((row) => row.bookmakerKey === effectiveBookmakerKey);
+              const canWatchSelectedRow = Boolean(
+                capability?.trackable &&
+                  selectedRow?.point !== undefined &&
+                  selectedRow.overPrice !== undefined &&
+                  selectedRow.underPrice !== undefined
+              );
 
               return (
                 <tr key={market.marketKey} className="border-t border-zinc-100 dark:border-zinc-900">
@@ -132,7 +150,7 @@ export const PlayerPropsCard = ({
                   )}
 
                   <td className="py-2 text-right whitespace-nowrap">
-                    {mode === "single" && (
+                    {mode === "single" && capability?.trackable && (
                       <button
                         type="button"
                         // Checked against selectedRow, not just whether
@@ -140,16 +158,23 @@ export const PlayerPropsCard = ({
                         // a manually-forced book can still be a real
                         // key with no matching row for THIS market
                         // (that book just doesn't cover this prop).
-                        disabled={!selectedRow}
+                        disabled={!canWatchSelectedRow}
                         onClick={() =>
                           effectiveBookmakerKey &&
-                          selectedRow &&
-                          onWatch({ marketKey: market.marketKey, bookmakerKey: effectiveBookmakerKey })
+                          canWatchSelectedRow &&
+                          onWatch({
+                            marketKey: market.marketKey,
+                            bookmakerKey: effectiveBookmakerKey,
+                            direction: watchDirection,
+                          })
                         }
                         className="rounded px-2 py-1.5 text-zinc-500 underline hover:text-zinc-900 disabled:opacity-40 disabled:no-underline dark:hover:text-zinc-100"
                       >
-                        Watch
+                        Watch {watchDirection === "over" ? "Over" : "Under"}
                       </button>
+                    )}
+                    {mode === "single" && capability && !capability.trackable && (
+                      <span className="px-2 py-1.5 text-zinc-400">Browse only</span>
                     )}
                     <button
                       type="button"

@@ -5,6 +5,8 @@ import { mockCoverageFilters } from "../mockData";
 import type { SlateEvent } from "@/lib/oddsApi";
 import type { DiscoveredPlayer } from "@/lib/discoveredProps";
 import type { PlayerPropMarketKey } from "@/lib/playerPropMarkets";
+import type { PlayerPropDirection } from "@/lib/playerPropMarkets";
+import type { NflSlateWindow } from "@/lib/nflWeek";
 
 export type RealSlateStatus = "idle" | "loading" | "loaded" | "error";
 export type DiscoveryStatus = "idle" | "loading" | "loaded" | "error";
@@ -25,6 +27,7 @@ export type WatchSelection = {
   propType: string;
   playerName: string;
   bookmakerKey: string;
+  direction: PlayerPropDirection;
 };
 
 export interface MatchupSlice {
@@ -37,9 +40,10 @@ export interface MatchupSlice {
   // every other slice here (see useInitAuth.ts for where fetching
   // actually lives).
   realSlate: SlateEvent[];
+  realSlateWindow: NflSlateWindow | null;
   realSlateStatus: RealSlateStatus;
   realSlateError: string | null;
-  setRealSlate: (events: SlateEvent[]) => void;
+  setRealSlate: (events: SlateEvent[], window: NflSlateWindow) => void;
   setRealSlateStatus: (status: RealSlateStatus) => void;
   setRealSlateError: (error: string | null) => void;
 
@@ -51,9 +55,15 @@ export interface MatchupSlice {
   setCheckedMarketKeys: (keys: PlayerPropMarketKey[]) => void;
 
   discoveredProps: DiscoveredPlayer[];
+  discoveredPropsEventId: string | null;
+  discoveredPropsMarketKeys: PlayerPropMarketKey[];
   discoveryStatus: DiscoveryStatus;
   discoveryError: string | null;
-  setDiscoveredProps: (players: DiscoveredPlayer[]) => void;
+  setDiscoveredProps: (
+    players: DiscoveredPlayer[],
+    eventId: string,
+    marketKeys: PlayerPropMarketKey[]
+  ) => void;
   setDiscoveryStatus: (status: DiscoveryStatus) => void;
   setDiscoveryError: (error: string | null) => void;
 
@@ -76,20 +86,37 @@ export const createMatchupSlice: StateCreator<
 > = (set) => ({
   matchupConfig: {
     sampleWindow: 5,
-    // Empty, not a mock seed -- nothing reads any environment field
-    // before a real live tick lands except `currentLine` (page.tsx
-    // falls back to "—" for that), so there's nothing honest to
-    // pre-fill here. useLiveOddsStream overwrites this with real
-    // weather/line data on every tick once something is watched.
+    // Empty, not a mock seed. Live line/weather values are stored in the
+    // watched prop's keyed snapshot rather than this global config.
     environment: {},
     coverageFilters: mockCoverageFilters,
   },
   setMatchupConfig: (config) => set({ matchupConfig: config }),
 
   realSlate: [],
+  realSlateWindow: null,
   realSlateStatus: "idle",
   realSlateError: null,
-  setRealSlate: (events) => set({ realSlate: events }),
+  setRealSlate: (events, window) =>
+    set((state) => {
+      const selectedEventStillExists =
+        state.selectedEventId === null || events.some((event) => event.id === state.selectedEventId);
+      return {
+        realSlate: events,
+        realSlateWindow: window,
+        ...(selectedEventStillExists
+          ? {}
+          : {
+              selectedEventId: null,
+              checkedMarketKeys: [],
+              discoveredProps: [],
+              discoveredPropsEventId: null,
+              discoveredPropsMarketKeys: [],
+              discoveryStatus: "idle" as const,
+              discoveryError: null,
+            }),
+      };
+    }),
   setRealSlateStatus: (status) => set({ realSlateStatus: status }),
   setRealSlateError: (error) => set({ realSlateError: error }),
 
@@ -104,6 +131,8 @@ export const createMatchupSlice: StateCreator<
       // reset on a uid change.
       checkedMarketKeys: [],
       discoveredProps: [],
+      discoveredPropsEventId: null,
+      discoveredPropsMarketKeys: [],
       discoveryStatus: "idle",
       discoveryError: null,
     }),
@@ -114,13 +143,33 @@ export const createMatchupSlice: StateCreator<
       checkedMarketKeys: state.checkedMarketKeys.includes(key)
         ? state.checkedMarketKeys.filter((existing) => existing !== key)
         : [...state.checkedMarketKeys, key],
+      discoveredProps: [],
+      discoveredPropsEventId: null,
+      discoveredPropsMarketKeys: [],
+      discoveryStatus: "idle",
+      discoveryError: null,
     })),
-  setCheckedMarketKeys: (keys) => set({ checkedMarketKeys: keys }),
+  setCheckedMarketKeys: (keys) =>
+    set({
+      checkedMarketKeys: keys,
+      discoveredProps: [],
+      discoveredPropsEventId: null,
+      discoveredPropsMarketKeys: [],
+      discoveryStatus: "idle",
+      discoveryError: null,
+    }),
 
   discoveredProps: [],
+  discoveredPropsEventId: null,
+  discoveredPropsMarketKeys: [],
   discoveryStatus: "idle",
   discoveryError: null,
-  setDiscoveredProps: (players) => set({ discoveredProps: players }),
+  setDiscoveredProps: (players, eventId, marketKeys) =>
+    set({
+      discoveredProps: players,
+      discoveredPropsEventId: eventId,
+      discoveredPropsMarketKeys: [...marketKeys].sort(),
+    }),
   setDiscoveryStatus: (status) => set({ discoveryStatus: status }),
   setDiscoveryError: (error) => set({ discoveryError: error }),
 

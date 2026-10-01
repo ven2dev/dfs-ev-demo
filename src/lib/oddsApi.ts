@@ -1,4 +1,5 @@
 import "server-only";
+import { getCurrentNflSlateWindow, isEventInNflSlateWindow } from "./nflWeek";
 // Enforced, not just documented: importing this from a "use client"
 // component now fails the build, since it reads ODDS_API_KEY, which must
 // never reach the browser bundle.
@@ -91,7 +92,10 @@ export const fetchEventOdds = async (
   return res.json();
 };
 
-export const fetchSlateEvents = async (sportKey: string): Promise<SlateEvent[]> => {
+export const fetchSlateEvents = async (
+  sportKey: string,
+  now: Date = new Date()
+): Promise<SlateEvent[]> => {
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
     throw new Error("ODDS_API_KEY is not set");
@@ -104,13 +108,16 @@ export const fetchSlateEvents = async (sportKey: string): Promise<SlateEvent[]> 
   }
 
   const data: RawSlateEvent[] = await res.json();
-  return data.map((event) => ({
-    id: event.id,
-    sportKey: event.sport_key,
-    homeTeam: event.home_team,
-    awayTeam: event.away_team,
-    commenceTime: event.commence_time,
-  }));
+  const window = getCurrentNflSlateWindow(now);
+  return data
+    .map((event) => ({
+      id: event.id,
+      sportKey: event.sport_key,
+      homeTeam: event.home_team,
+      awayTeam: event.away_team,
+      commenceTime: event.commence_time,
+    }))
+    .filter((event) => isEventInNflSlateWindow(event.commenceTime, window));
 };
 
 // Real-time, uncached, deliberately NOT reusing the discovery cache

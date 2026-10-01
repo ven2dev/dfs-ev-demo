@@ -5,25 +5,59 @@ const initialState = useAppStore.getState();
 
 const resetStore = () => useAppStore.setState(initialState, true);
 
+const sampleWindow = {
+  label: "Week 4",
+  week: 4,
+  phase: "regular-season" as const,
+  startTime: "2026-09-29T04:00:00.000Z",
+  endTime: "2026-10-06T04:00:00.000Z",
+  timeZone: "America/New_York" as const,
+};
+
 describe("matchupSlice: real slate state", () => {
   it("setRealSlate/setRealSlateStatus/setRealSlateError set independently", () => {
     resetStore();
 
-    useAppStore.getState().setRealSlate([
-      {
-        id: "evt-1",
-        sportKey: "americanfootball_nfl",
-        homeTeam: "Chicago Bears",
-        awayTeam: "Seattle Seahawks",
-        commenceTime: "2026-10-05T17:00:00Z",
-      },
-    ]);
+    useAppStore.getState().setRealSlate(
+      [
+        {
+          id: "evt-1",
+          sportKey: "americanfootball_nfl",
+          homeTeam: "Chicago Bears",
+          awayTeam: "Seattle Seahawks",
+          commenceTime: "2026-10-05T17:00:00Z",
+        },
+      ],
+      sampleWindow
+    );
     useAppStore.getState().setRealSlateStatus("loaded");
 
     const state = useAppStore.getState();
     expect(state.realSlate).toHaveLength(1);
+    expect(state.realSlateWindow).toEqual(sampleWindow);
     expect(state.realSlateStatus).toBe("loaded");
     expect(state.realSlateError).toBe(null);
+  });
+
+  it("clears a selection and discovery data when a refreshed slate no longer contains the event", () => {
+    resetStore();
+    useAppStore.setState({
+      selectedEventId: "old-event",
+      checkedMarketKeys: ["player_pass_yds"],
+      discoveredProps: [{ playerName: "Jalen Hurts", markets: [] }],
+      discoveredPropsEventId: "old-event",
+      discoveredPropsMarketKeys: ["player_pass_yds"],
+      discoveryStatus: "loaded",
+    });
+
+    useAppStore.getState().setRealSlate([], sampleWindow);
+
+    const state = useAppStore.getState();
+    expect(state.selectedEventId).toBeNull();
+    expect(state.checkedMarketKeys).toEqual([]);
+    expect(state.discoveredProps).toEqual([]);
+    expect(state.discoveredPropsEventId).toBeNull();
+    expect(state.discoveryStatus).toBe("idle");
   });
 });
 
@@ -101,12 +135,19 @@ describe("matchupSlice: discovered props state", () => {
   it("setDiscoveredProps/setDiscoveryStatus/setDiscoveryError set independently", () => {
     resetStore();
 
-    useAppStore.getState().setDiscoveredProps([{ playerName: "Jalen Hurts", markets: [] }]);
+    useAppStore
+      .getState()
+      .setDiscoveredProps(
+        [{ playerName: "Jalen Hurts", markets: [] }],
+        "evt-1",
+        ["player_pass_yds"]
+      );
     useAppStore.getState().setDiscoveryStatus("error");
     useAppStore.getState().setDiscoveryError("Odds API events fetch failed: 500");
 
     const state = useAppStore.getState();
     expect(state.discoveredProps).toHaveLength(1);
+    expect(state.discoveredPropsEventId).toBe("evt-1");
     expect(state.discoveryStatus).toBe("error");
     expect(state.discoveryError).toBe("Odds API events fetch failed: 500");
   });
@@ -123,6 +164,7 @@ describe("matchupSlice: primaryWatch/secondaryWatch", () => {
     propType: "Passing Yards",
     playerName: "Jalen Hurts",
     bookmakerKey: "draftkings",
+    direction: "over" as const,
   };
 
   it("setPrimaryWatch and setSecondaryWatch are independent of each other", () => {

@@ -163,8 +163,9 @@ export const getOrFetchMarketOdds = async (
     // Cache writes are independent per market -- one failing must not
     // block the others from being persisted, and none of them block
     // returning the already-fetched data to the caller either way.
-    await Promise.all(
-      Array.from(freshlyFetchedSlices.entries()).map(([marketKey, slice]) =>
+    const cacheWrites = Array.from(freshlyFetchedSlices.entries());
+    const writeResults = await Promise.allSettled(
+      cacheWrites.map(([marketKey, slice]) =>
         sql.query(
           `INSERT INTO event_market_odds_cache (event_id, market_key, payload, fetched_at)
            VALUES ($1, $2, $3, now())
@@ -174,6 +175,15 @@ export const getOrFetchMarketOdds = async (
         )
       )
     );
+
+    writeResults.forEach((result, index) => {
+      if (result.status === "rejected") {
+        console.error(
+          `[oddsCacheRepo] failed to cache event "${eventId}" market "${cacheWrites[index][0]}":`,
+          result.reason
+        );
+      }
+    });
   }
 
   return mergeSlices(eventId, [

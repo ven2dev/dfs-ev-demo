@@ -6,9 +6,9 @@ import { getVenueForTeam } from "@/lib/nflStadiums";
 import { MAX_TICKS, POLL_INTERVAL_MS, parseSampleWindow } from "@/lib/streamConfig";
 import { fetchGameWeather } from "@/lib/weather";
 import { mockCoverageFilters } from "@/store/mockData";
-import { ODDS_MARKET_TO_STAT_TYPE } from "@/lib/playerStatsSync";
 import { getRealRecentGameStats } from "@/lib/playerStatsRepo";
 import { buildWatchPropId } from "@/lib/watchPropId";
+import { getPlayerPropMarket, type PlayerPropDirection } from "@/lib/playerPropMarkets";
 
 // SSE endpoint. Real Odds API + real weather calls happen here,
 // server-side only — the API key never reaches the client.
@@ -49,12 +49,36 @@ export async function GET(request: NextRequest) {
   const marketKey = params.get("marketKey");
   const playerName = params.get("playerName");
   const bookmakerKey = params.get("bookmakerKey");
+  const direction = params.get("direction");
   const sportKey = params.get("sportKey") || DEFAULT_SPORT_KEY;
   const sampleWindow = parseSampleWindow(params.get("sampleWindow"));
 
-  if (!eventId || !marketKey || !playerName || !bookmakerKey) {
+  if (!eventId || !marketKey || !playerName || !bookmakerKey || !direction) {
     return NextResponse.json(
-      { success: false, reason: "eventId, marketKey, playerName, and bookmakerKey are required" },
+      {
+        success: false,
+        reason: "eventId, marketKey, playerName, bookmakerKey, and direction are required",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (direction !== "over" && direction !== "under") {
+    return NextResponse.json(
+      { success: false, reason: 'direction must be either "over" or "under"' },
+      { status: 400 }
+    );
+  }
+
+  const marketCapability = getPlayerPropMarket(marketKey);
+  if (
+    !marketCapability ||
+    !marketCapability.trackable ||
+    marketCapability.outcomeShape !== "over-under" ||
+    !marketCapability.historicalStatType
+  ) {
+    return NextResponse.json(
+      { success: false, reason: `Market "${marketKey}" is browse-only and cannot be watched` },
       { status: 400 }
     );
   }
@@ -94,35 +118,39 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const propId = buildWatchPropId({ eventId, marketKey, playerName });
+  const selectedDirection: PlayerPropDirection = direction;
+  const propId = buildWatchPropId({
+    eventId,
+    marketKey,
+    playerName,
+    bookmakerKey,
+    direction: selectedDirection,
+  });
 
   // Fetched once per connection, not per tick, unlike odds/weather --
   // historical game stats only change weekly (as games complete), so
   // re-querying Postgres on every poll interval would be pure waste.
-  // Falls back to an empty array on ANY failure to get real data -- an
-  // unmapped player, but also DATABASE_URL missing entirely (a fresh
-  // checkout with Postgres not yet provisioned) or the DB being
-  // unreachable. Without this catch, a missing DATABASE_URL would throw
-  // inside getSql() before the stream even starts, crashing the whole
-  // route instead of degrading (an empty sample just means no
-  // base-rate/recent-stat-average tick data, not a crash).
-  let recentGameStats: number[] = [];
+  let recentGameStats: number[];
   try {
-    const statType = ODDS_MARKET_TO_STAT_TYPE[marketKey];
-    const realRecentGameStats = statType
-      ? await getRealRecentGameStats(playerName, statType)
-      : null;
-    if (!realRecentGameStats) {
-      console.warn(
-        `[api/stream] no real historical stats for "${playerName}" (marketKey "${marketKey}")`
+    const realRecentGameStats = await getRealRecentGameStats(
+      playerName,
+      marketCapability.historicalStatType
+    );
+    if (!realRecentGameStats || realRecentGameStats.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          reason: `No historical data is available for "${playerName}" in market "${marketKey}"`,
+        },
+        { status: 422 }
       );
-    } else {
-      recentGameStats = realRecentGameStats;
     }
+    recentGameStats = realRecentGameStats;
   } catch (err) {
-    console.warn(
-      "[api/stream] real historical-stats lookup failed (Postgres not configured/reachable?):",
-      err
+    console.error("[api/stream] real historical-stats lookup failed:", err);
+    return NextResponse.json(
+      { success: false, reason: "Historical stats are temporarily unavailable" },
+      { status: 503 }
     );
   }
 
@@ -171,7 +199,7 @@ export async function GET(request: NextRequest) {
             return;
           }
 
-          const { impliedProbOver } = devigTwoWay(
+          const { impliedProbOver, impliedProbUnder } = devigTwoWay(
             oddsLine.overPrice,
             oddsLine.underPrice
           );
@@ -183,7 +211,9 @@ export async function GET(request: NextRequest) {
             windSpeedMph: weather.windSpeedMph,
             precipitationMm: weather.precipitationMm,
             shadowCoverageRate: mockCoverageFilters.shadowCoverageRate as number,
-            impliedProb: impliedProbOver,
+            impliedProb:
+              selectedDirection === "over" ? impliedProbOver : impliedProbUnder,
+            direction: selectedDirection,
           });
 
           send({
@@ -191,6 +221,7 @@ export async function GET(request: NextRequest) {
             propId,
             timestamp: Date.now(),
             line: oddsLine.point,
+            direction: selectedDirection,
             weather,
             evScore: result.evScore,
             stages: {

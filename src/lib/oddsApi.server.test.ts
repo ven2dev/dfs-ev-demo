@@ -51,7 +51,10 @@ describe("fetchSlateEvents", () => {
       ])
     );
 
-    const events = await fetchSlateEvents("americanfootball_nfl");
+    const events = await fetchSlateEvents(
+      "americanfootball_nfl",
+      new Date("2026-09-30T12:00:00Z")
+    );
 
     expect(events).toEqual([
       {
@@ -62,6 +65,35 @@ describe("fetchSlateEvents", () => {
         commenceTime: "2026-10-05T17:00:00Z",
       },
     ]);
+  });
+
+  it("filters the upstream event list to the server-defined current NFL week", async () => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse([
+        {
+          id: "week-4",
+          sport_key: "americanfootball_nfl",
+          home_team: "Chicago Bears",
+          away_team: "Seattle Seahawks",
+          commence_time: "2026-10-05T17:00:00Z",
+        },
+        {
+          id: "week-5",
+          sport_key: "americanfootball_nfl",
+          home_team: "Denver Broncos",
+          away_team: "Las Vegas Raiders",
+          commence_time: "2026-10-08T00:15:00Z",
+        },
+      ])
+    );
+
+    const events = await fetchSlateEvents(
+      "americanfootball_nfl",
+      new Date("2026-09-30T12:00:00Z")
+    );
+
+    expect(events.map((event) => event.id)).toEqual(["week-4"]);
   });
 
   it("throws on a non-ok response instead of silently returning an empty slate", async () => {

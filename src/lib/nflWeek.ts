@@ -1,23 +1,81 @@
-// Verified live 2026-09-29 (web search, not guessed): the 2026 NFL
-// regular season's Week 1 opened Wednesday 2026-09-09 (Seahawks @
-// Patriots), with the bulk of Week 1 on Sun 9-13/Mon 9-14. NFL weeks
-// reset every Tuesday regardless of which days that week's games fall
-// on (true even in a Thursday-heavy week like Thanksgiving) -- so the
-// anchor here is the Tuesday immediately before Week 1's first game.
-//
-// Display-only precision: this is a UTC calendar-week bucket for a text
-// label ("Browse the Week 4 slate"), not an input to any EV
-// calculation -- exact timezone-boundary correctness at the Monday
-// night into Tuesday transition isn't worth the complexity it'd add.
-const WEEK_1_TUESDAY_ANCHOR_MS = Date.parse("2026-09-08T00:00:00Z");
-const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+const NFL_TIME_ZONE = "America/New_York";
 const REGULAR_SEASON_WEEKS = 18;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+// The NFL week containing the 2026 opener begins at midnight Tuesday
+// in the league's Eastern-time calendar. Using a local calendar anchor
+// instead of a fixed UTC instant keeps Monday night in the old week and
+// continues to roll over correctly after daylight-saving time changes.
+const WEEK_1_START_LOCAL = { year: 2026, month: 9, day: 8 } as const;
+
+export type NflSlateWindow = {
+  label: string;
+  week: number;
+  phase: "preseason" | "regular-season" | "playoffs";
+  startTime: string;
+  endTime: string;
+  timeZone: typeof NFL_TIME_ZONE;
+};
+
+type CalendarDate = { year: number; month: number; day: number };
+
+const easternDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: NFL_TIME_ZONE,
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+});
+
+const offsetFormatter = new Intl.DateTimeFormat("en-US", {
+  timeZone: NFL_TIME_ZONE,
+  timeZoneName: "longOffset",
+});
+
+const getEasternCalendarDate = (instant: Date): CalendarDate => {
+  const parts = easternDateFormatter.formatToParts(instant);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value);
+  return { year: value("year"), month: value("month"), day: value("day") };
+};
+
+const calendarDateToDayNumber = ({ year, month, day }: CalendarDate) =>
+  Math.floor(Date.UTC(year, month - 1, day) / MS_PER_DAY);
+
+const dayNumberToCalendarDate = (dayNumber: number): CalendarDate => {
+  const date = new Date(dayNumber * MS_PER_DAY);
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+  };
+};
+
+const getTimeZoneOffsetMs = (instant: Date): number => {
+  const name = offsetFormatter
+    .formatToParts(instant)
+    .find((part) => part.type === "timeZoneName")?.value;
+  const match = name?.match(/^GMT([+-])(\d{2}):(\d{2})$/);
+  if (!match) throw new Error(`Unable to resolve ${NFL_TIME_ZONE} offset`);
+  const sign = match[1] === "+" ? 1 : -1;
+  return sign * (Number(match[2]) * 60 + Number(match[3])) * 60 * 1000;
+};
+
+const easternMidnightToInstant = ({ year, month, day }: CalendarDate): Date => {
+  const wallClockAsUtc = Date.UTC(year, month - 1, day);
+  let result = new Date(wallClockAsUtc - getTimeZoneOffsetMs(new Date(wallClockAsUtc)));
+  result = new Date(wallClockAsUtc - getTimeZoneOffsetMs(result));
+  return result;
+};
+
+const weekOneDayNumber = calendarDateToDayNumber(WEEK_1_START_LOCAL);
 
 // Not clamped to 1 -- a date before the season start legitimately
 // produces 0 or negative, which is what lets getCurrentNflWeekLabel
 // tell "before the season" apart from "Week 1" instead of conflating them.
-export const getCurrentNflWeek = (now: Date = new Date()): number =>
-  Math.floor((now.getTime() - WEEK_1_TUESDAY_ANCHOR_MS) / MS_PER_WEEK) + 1;
+export const getCurrentNflWeek = (now: Date = new Date()): number => {
+  const currentDayNumber = calendarDateToDayNumber(getEasternCalendarDate(now));
+  return Math.floor((currentDayNumber - weekOneDayNumber) / 7) + 1;
+};
 
 // A plain week number doesn't mean anything before the season starts or
 // after the regular season ends -- those get their own honest label
@@ -27,4 +85,29 @@ export const getCurrentNflWeekLabel = (now: Date = new Date()): string => {
   if (week < 1) return "preseason";
   if (week > REGULAR_SEASON_WEEKS) return "playoffs";
   return `Week ${week}`;
+};
+
+export const getCurrentNflSlateWindow = (now: Date = new Date()): NflSlateWindow => {
+  const week = getCurrentNflWeek(now);
+  const startDayNumber = weekOneDayNumber + (week - 1) * 7;
+  const startTime = easternMidnightToInstant(dayNumberToCalendarDate(startDayNumber));
+  const endTime = easternMidnightToInstant(dayNumberToCalendarDate(startDayNumber + 7));
+
+  return {
+    label: getCurrentNflWeekLabel(now),
+    week,
+    phase:
+      week < 1 ? "preseason" : week > REGULAR_SEASON_WEEKS ? "playoffs" : "regular-season",
+    startTime: startTime.toISOString(),
+    endTime: endTime.toISOString(),
+    timeZone: NFL_TIME_ZONE,
+  };
+};
+
+export const isEventInNflSlateWindow = (
+  commenceTime: string,
+  window: Pick<NflSlateWindow, "startTime" | "endTime">
+): boolean => {
+  const eventTime = Date.parse(commenceTime);
+  return eventTime >= Date.parse(window.startTime) && eventTime < Date.parse(window.endTime);
 };

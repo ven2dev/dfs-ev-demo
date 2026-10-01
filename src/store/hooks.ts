@@ -27,6 +27,7 @@ export const useSetMatchupConfig = () =>
   useAppStore((state) => state.setMatchupConfig);
 
 export const useRealSlate = () => useAppStore((state) => state.realSlate);
+export const useRealSlateWindow = () => useAppStore((state) => state.realSlateWindow);
 export const useRealSlateStatus = () => useAppStore((state) => state.realSlateStatus);
 export const useRealSlateError = () => useAppStore((state) => state.realSlateError);
 export const useSetRealSlate = () => useAppStore((state) => state.setRealSlate);
@@ -47,6 +48,10 @@ export const useToggleMarketKey = () =>
 
 export const useDiscoveredProps = () =>
   useAppStore((state) => state.discoveredProps);
+export const useDiscoveredPropsEventId = () =>
+  useAppStore((state) => state.discoveredPropsEventId);
+export const useDiscoveredPropsMarketKeys = () =>
+  useAppStore((state) => state.discoveredPropsMarketKeys);
 export const useDiscoveryStatus = () => useAppStore((state) => state.discoveryStatus);
 export const useDiscoveryError = () => useAppStore((state) => state.discoveryError);
 export const useSetDiscoveredProps = () =>

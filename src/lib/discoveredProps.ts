@@ -4,6 +4,7 @@
 // migration); this file owns turning that raw bookmaker/market shape
 // into the player-grouped view the discovery UI actually wants.
 import type { EventOddsResponse } from "./oddsApi";
+import type { PlayerPropDirection } from "./playerPropMarkets";
 
 export type DiscoveredLine = {
   bookmakerKey: string;
@@ -104,15 +105,17 @@ export const groupLinesByBookmaker = (lines: DiscoveredLine[]): BookmakerRow[] =
 // - "yes"-only markets (anytime/1st/last TD): highest price, full stop
 //   -- there's no line to shop, so it's a single dimension.
 // - Two-way markets: restricted to whichever POINT value the most books
-//   agree on (the modal line), then the lowest combined overround
-//   (1/overPrice + 1/underPrice) among those -- the least-vig book at
-//   the standard number, without arbitrarily preferring Over or Under.
+//   agree on (the modal line), then the highest decimal price for the
+//   direction the user explicitly chose.
 // Deliberately does NOT compare across DIFFERENT points (e.g. 211.5 vs
 // 215.5) -- deciding which point is "better" needs a real predictive
 // probability model over the stat, which this app doesn't have (see
 // #39's non-goals). Faking that comparison would invent precision the
 // data doesn't support.
-export const getBestBookmakerKey = (lines: DiscoveredLine[]): string | null => {
+export const getBestBookmakerKey = (
+  lines: DiscoveredLine[],
+  direction: PlayerPropDirection
+): string | null => {
   const rows = groupLinesByBookmaker(lines);
   if (rows.length === 0) return null;
 
@@ -146,12 +149,11 @@ export const getBestBookmakerKey = (lines: DiscoveredLine[]): string | null => {
   if (candidates.length === 0) return null;
 
   let best = candidates[0];
-  let bestOverround = 1 / best.overPrice + 1 / best.underPrice;
   for (const row of candidates) {
-    const overround = 1 / row.overPrice + 1 / row.underPrice;
-    if (overround < bestOverround) {
+    const price = direction === "over" ? row.overPrice : row.underPrice;
+    const bestPrice = direction === "over" ? best.overPrice : best.underPrice;
+    if (price > bestPrice) {
       best = row;
-      bestOverround = overround;
     }
   }
   return best.bookmakerKey;

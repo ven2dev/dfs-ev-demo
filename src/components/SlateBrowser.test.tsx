@@ -13,8 +13,21 @@ afterEach(() => {
 
 const fetchMock = () => global.fetch as ReturnType<typeof vi.fn>;
 
+const sampleWindow = {
+  label: "Week 4",
+  week: 4,
+  phase: "regular-season",
+  startTime: "2026-09-29T04:00:00.000Z",
+  endTime: "2026-10-06T04:00:00.000Z",
+  timeZone: "America/New_York",
+};
+
 const mockFetchOnce = (data: unknown) => {
-  fetchMock().mockResolvedValueOnce({ json: () => Promise.resolve(data) });
+  const response =
+    typeof data === "object" && data !== null && "events" in data && !("window" in data)
+      ? { ...data, window: sampleWindow }
+      : data;
+  fetchMock().mockResolvedValueOnce({ json: () => Promise.resolve(response) });
 };
 
 const sampleEvents = [
@@ -59,6 +72,19 @@ describe("SlateBrowser", () => {
     const options = Array.from(select.querySelectorAll("option")).map((o) => o.textContent);
     expect(options[1]).toContain("Pittsburgh Steelers @ Cleveland Browns");
     expect(options[2]).toContain("Green Bay Packers @ Chicago Bears");
+  });
+
+  it("refreshes the server-owned slate when the tab regains focus", async () => {
+    global.fetch = vi.fn();
+    mockFetchOnce({ success: true, events: sampleEvents });
+
+    render(<SlateBrowser />);
+    await screen.findByLabelText("Select a game");
+
+    mockFetchOnce({ success: true, events: [sampleEvents[0]] });
+    window.dispatchEvent(new Event("focus"));
+
+    await waitFor(() => expect(fetchMock()).toHaveBeenCalledTimes(2));
   });
 
   it("shows an error message if the real slate fails to load", async () => {
@@ -126,6 +152,40 @@ describe("SlateBrowser", () => {
     expect(requestedUrl).not.toContain("refresh=true");
   });
 
+  it("ignores a discovery response after the selected event changes", async () => {
+    global.fetch = vi.fn();
+    mockFetchOnce({ success: true, events: sampleEvents });
+
+    render(<SlateBrowser />);
+    const select = await screen.findByLabelText("Select a game");
+    fireEvent.change(select, { target: { value: "evt-1" } });
+    fireEvent.click(await screen.findByLabelText("Passing Yards"));
+
+    let resolveDiscovery!: (value: { json: () => Promise<unknown> }) => void;
+    fetchMock().mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveDiscovery = resolve;
+      })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+
+    fireEvent.change(select, { target: { value: "evt-2" } });
+    resolveDiscovery({
+      json: () =>
+        Promise.resolve({
+          success: true,
+          eventId: "evt-1",
+          players: [{ playerName: "Stale Player", markets: [] }],
+        }),
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("Stale Player")).not.toBeInTheDocument();
+      expect(useAppStore.getState().discoveredProps).toEqual([]);
+      expect(useAppStore.getState().discoveredPropsEventId).toBeNull();
+    });
+  });
+
   const showPropsWithFourBooks = async () => {
     global.fetch = vi.fn();
     mockFetchOnce({ success: true, events: sampleEvents });
@@ -147,9 +207,13 @@ describe("SlateBrowser", () => {
               marketKey: "player_pass_yds",
               lines: [
                 { bookmakerKey: "fanduel", side: "over", price: 1.87, point: 213.5 },
+                { bookmakerKey: "fanduel", side: "under", price: 1.95, point: 213.5 },
                 { bookmakerKey: "draftkings", side: "over", price: 1.91, point: 214.5 },
+                { bookmakerKey: "draftkings", side: "under", price: 1.89, point: 214.5 },
                 { bookmakerKey: "betmgm", side: "over", price: 1.9, point: 214.5 },
+                { bookmakerKey: "betmgm", side: "under", price: 1.9, point: 214.5 },
                 { bookmakerKey: "bovada", side: "over", price: 1.88, point: 214.5 },
+                { bookmakerKey: "bovada", side: "under", price: 1.92, point: 214.5 },
               ],
             },
           ],
@@ -160,11 +224,11 @@ describe("SlateBrowser", () => {
     await screen.findByText("Jalen Hurts");
   };
 
-  it("starts on the smart 'Best price' default, and cycling switches to a manual override starting from the first book alphabetically, wrapping around", async () => {
+  it("starts on the direction-aware smart price default, and cycling switches to a manual override starting from the first book alphabetically, wrapping around", async () => {
     await showPropsWithFourBooks();
     const stepperLabel = () => screen.getByTestId("bookmaker-stepper-label");
 
-    expect(stepperLabel()).toHaveTextContent("Best price");
+    expect(stepperLabel()).toHaveTextContent("Best Over price");
     expect(screen.queryByText("Reset to best")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("Next bookmaker"));
@@ -183,7 +247,7 @@ describe("SlateBrowser", () => {
     expect(stepperLabel()).toHaveTextContent("fanduel");
 
     fireEvent.click(screen.getByText("Reset to best"));
-    expect(stepperLabel()).toHaveTextContent("Best price");
+    expect(stepperLabel()).toHaveTextContent("Best Over price");
     expect(screen.queryByText("Reset to best")).not.toBeInTheDocument();
   });
 
@@ -203,22 +267,32 @@ describe("SlateBrowser", () => {
     await showPropsWithFourBooks();
     fireEvent.click(screen.getByLabelText("Next bookmaker")); // manual override -> "bovada"
 
-    fireEvent.click(screen.getByText("Watch"));
+    fireEvent.click(screen.getByText("Watch Over"));
 
     expect(screen.getByTestId("primary-watch-status")).toHaveTextContent(
-      "Jalen Hurts — Passing Yards (bovada)"
+      "Jalen Hurts — Passing Yards (over, bovada)"
     );
     expect(screen.queryByTestId("secondary-watch-status")).not.toBeInTheDocument();
+  });
+
+  it("lets the user explicitly watch Under and records that direction", async () => {
+    await showPropsWithFourBooks();
+    fireEvent.click(screen.getByRole("button", { name: "under" }));
+    fireEvent.click(screen.getByText("Watch Under"));
+
+    expect(useAppStore.getState().primaryWatch?.direction).toBe("under");
+    expect(useAppStore.getState().primaryWatch?.bookmakerKey).toBe("bovada");
+    expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("under");
   });
 
   it("switching the assign target to Secondary watches a second real prop without disturbing the primary one", async () => {
     await showPropsWithFourBooks();
     fireEvent.click(screen.getByLabelText("Next bookmaker")); // -> "bovada"
-    fireEvent.click(screen.getByText("Watch"));
+    fireEvent.click(screen.getByText("Watch Over"));
 
     fireEvent.click(screen.getByRole("button", { name: "Secondary (demo)" }));
     fireEvent.click(screen.getByLabelText("Next bookmaker")); // -> "draftkings"
-    fireEvent.click(screen.getByText("Watch"));
+    fireEvent.click(screen.getByText("Watch Over"));
 
     expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("bovada");
     expect(screen.getByTestId("secondary-watch-status")).toHaveTextContent("draftkings");
@@ -227,9 +301,9 @@ describe("SlateBrowser", () => {
   it("Clear removes one watch selection independently of the other", async () => {
     await showPropsWithFourBooks();
     fireEvent.click(screen.getByLabelText("Next bookmaker"));
-    fireEvent.click(screen.getByText("Watch"));
+    fireEvent.click(screen.getByText("Watch Over"));
     fireEvent.click(screen.getByRole("button", { name: "Secondary (demo)" }));
-    fireEvent.click(screen.getByText("Watch"));
+    fireEvent.click(screen.getByText("Watch Over"));
 
     fireEvent.click(screen.getAllByText("Clear")[0]);
 

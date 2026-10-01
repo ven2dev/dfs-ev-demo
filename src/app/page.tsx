@@ -205,7 +205,9 @@ export default function Home() {
       ? "bg-green-500"
       : connectionStatus === "stale"
         ? "bg-yellow-500"
-        : "bg-red-500";
+        : connectionStatus === "connecting"
+          ? "bg-blue-500"
+          : "bg-red-500";
 
   return (
     <>
@@ -225,8 +227,8 @@ export default function Home() {
           </h2>
           <p className="mt-1 text-sm text-zinc-500">
             {primaryWatch.playerName} — {primaryWatch.propType}, line{" "}
-            {(matchupConfig.environment.currentLine as number | undefined) ?? "—"}{" "}
-            (real player-prop line, live Odds API)
+            {watched?.line ?? "—"} ({primaryWatch.direction}, {primaryWatch.bookmakerKey}; real
+            player-prop line, live Odds API)
           </p>
 
           <div className="mt-4 flex gap-2">
@@ -313,7 +315,7 @@ export default function Home() {
                   ...goal.picks,
                   {
                     propId: buildWatchPropId(primaryWatch),
-                    direction: "over",
+                    direction: primaryWatch.direction,
                     impliedProb: watched.evScore.modelProb,
                   },
                 ]) * 100

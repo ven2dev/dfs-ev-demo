@@ -43,6 +43,9 @@ yarn-error.log*
 # local dev-preview config (per-machine, deliberately left untracked)
 .claude/
 
+# local discovery notes
+/docs/discover/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

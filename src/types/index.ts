@@ -1,4 +1,4 @@
-export type ConnectionStatus = "live" | "stale" | "disconnected";
+export type ConnectionStatus = "connecting" | "live" | "stale" | "disconnected";
 
 export type AuthStatus = "loading" | "signed-in" | "signed-out" | "unavailable";
 
@@ -68,6 +68,15 @@ export type WatchedProp = {
   // fantasy-points projection. Same "undefined until a fresh tick
   // lands" rule as evScore/stages.
   recentStatAverage?: number;
+  // The live line and weather belong to the same prop identity as the
+  // EV values above. Keeping them here prevents a newly-selected prop
+  // from rendering another selection's last global line or weather.
+  line?: number;
+  weather?: {
+    temperatureF: number;
+    windSpeedMph: number;
+    precipitationMm: number;
+  };
 };
 
 export type EVPipelineStage =

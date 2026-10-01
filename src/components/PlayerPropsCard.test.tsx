@@ -34,6 +34,7 @@ describe("PlayerPropsCard", () => {
         smartDefault={false}
         selectedBookmakerKey="fanduel"
         comparisonBookmakerKeys={[]}
+        watchDirection="over"
         onSeeAll={vi.fn()}
         onWatch={vi.fn()}
       />
@@ -53,6 +54,7 @@ describe("PlayerPropsCard", () => {
         smartDefault={false}
         selectedBookmakerKey="draftkings"
         comparisonBookmakerKeys={[]}
+        watchDirection="over"
         onSeeAll={vi.fn()}
         onWatch={vi.fn()}
       />
@@ -72,6 +74,7 @@ describe("PlayerPropsCard", () => {
         smartDefault={false}
         selectedBookmakerKey="betmgm"
         comparisonBookmakerKeys={[]}
+        watchDirection="over"
         onSeeAll={vi.fn()}
         onWatch={vi.fn()}
       />
@@ -88,6 +91,7 @@ describe("PlayerPropsCard", () => {
         smartDefault={false}
         selectedBookmakerKey={null}
         comparisonBookmakerKeys={["draftkings", "fanduel"]}
+        watchDirection="over"
         onSeeAll={vi.fn()}
         onWatch={vi.fn()}
       />
@@ -104,7 +108,7 @@ describe("PlayerPropsCard", () => {
       playerName: "Jalen Hurts",
       markets: [
         {
-          // fanduel has the lower overround at this shared line -> best.
+          // fanduel has the highest Over price at this shared line.
           marketKey: "player_pass_yds",
           lines: [
             { bookmakerKey: "draftkings", side: "over", price: 1.91, point: 214.5 },
@@ -114,7 +118,7 @@ describe("PlayerPropsCard", () => {
           ],
         },
         {
-          // Reversed -- draftkings has the lower overround here.
+          // Reversed -- draftkings has the highest Over price here.
           marketKey: "player_rush_yds",
           lines: [
             { bookmakerKey: "draftkings", side: "over", price: 2.0, point: 71.5 },
@@ -133,6 +137,7 @@ describe("PlayerPropsCard", () => {
         smartDefault
         selectedBookmakerKey={null}
         comparisonBookmakerKeys={[]}
+        watchDirection="over"
         onSeeAll={vi.fn()}
         onWatch={vi.fn()}
       />
@@ -154,6 +159,7 @@ describe("PlayerPropsCard", () => {
         smartDefault
         selectedBookmakerKey="betmgm" // a book that covers nothing for this player
         comparisonBookmakerKeys={[]}
+        watchDirection="over"
         onSeeAll={vi.fn()}
         onWatch={vi.fn()}
       />
@@ -179,6 +185,7 @@ describe("PlayerPropsCard", () => {
         smartDefault={false}
         selectedBookmakerKey="draftkings"
         comparisonBookmakerKeys={[]}
+        watchDirection="over"
         onSeeAll={onSeeAll}
         onWatch={vi.fn()}
       />
@@ -198,16 +205,18 @@ describe("PlayerPropsCard", () => {
         smartDefault={false}
         selectedBookmakerKey="draftkings"
         comparisonBookmakerKeys={[]}
+        watchDirection="over"
         onSeeAll={vi.fn()}
         onWatch={onWatch}
       />
     );
 
-    fireEvent.click(screen.getAllByText("Watch")[0]);
+    fireEvent.click(screen.getAllByText("Watch Over")[0]);
 
     expect(onWatch).toHaveBeenCalledWith({
       marketKey: "player_pass_yds",
       bookmakerKey: "draftkings",
+      direction: "over",
     });
   });
 
@@ -219,12 +228,13 @@ describe("PlayerPropsCard", () => {
         smartDefault={false}
         selectedBookmakerKey="betmgm" // covers nothing for this player
         comparisonBookmakerKeys={[]}
+        watchDirection="over"
         onSeeAll={vi.fn()}
         onWatch={vi.fn()}
       />
     );
 
-    const watchButtons = screen.getAllByText("Watch");
+    const watchButtons = screen.getAllByText("Watch Over");
     expect(watchButtons.length).toBeGreaterThan(0);
     for (const button of watchButtons) {
       expect(button).toBeDisabled();
@@ -239,11 +249,32 @@ describe("PlayerPropsCard", () => {
         smartDefault={false}
         selectedBookmakerKey={null}
         comparisonBookmakerKeys={["draftkings", "fanduel"]}
+        watchDirection="over"
         onSeeAll={vi.fn()}
         onWatch={vi.fn()}
       />
     );
 
-    expect(screen.queryByText("Watch")).not.toBeInTheDocument();
+    expect(screen.queryByText("Watch Over")).not.toBeInTheDocument();
+  });
+
+  it("keeps unsupported yes-only markets browse-only", () => {
+    render(
+      <PlayerPropsCard
+        player={player}
+        mode="single"
+        smartDefault={false}
+        selectedBookmakerKey="draftkings"
+        comparisonBookmakerKeys={[]}
+        watchDirection="over"
+        onSeeAll={vi.fn()}
+        onWatch={vi.fn()}
+      />
+    );
+
+    const rows = screen.getAllByRole("row");
+    const tdRow = rows.find((row) => row.textContent?.includes("Anytime Touchdown"));
+    expect(tdRow).toHaveTextContent("Browse only");
+    expect(tdRow).not.toHaveTextContent("Watch Over");
   });
 });

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { useAppStore } from "@/store";
+import { buildWatchPropId } from "@/lib/watchPropId";
 import { useLiveOddsStream } from "./useLiveOddsStream";
 
 class FakeEventSource {
@@ -39,7 +40,10 @@ const samplePrimaryWatch = {
   propType: "Passing Yards",
   playerName: "Jalen Hurts",
   bookmakerKey: "draftkings",
+  direction: "over" as const,
 };
+
+const samplePropId = buildWatchPropId(samplePrimaryWatch);
 
 const expectedUrl = (sampleWindow: number, overrides: Partial<typeof samplePrimaryWatch> = {}) => {
   const selection = { ...samplePrimaryWatch, ...overrides };
@@ -49,6 +53,7 @@ const expectedUrl = (sampleWindow: number, overrides: Partial<typeof samplePrima
     marketKey: selection.marketKey,
     playerName: selection.playerName,
     bookmakerKey: selection.bookmakerKey,
+    direction: selection.direction,
     sampleWindow: String(sampleWindow),
   });
   return `/api/stream?${params.toString()}`;
@@ -143,11 +148,9 @@ describe("useLiveOddsStream: connection URL", () => {
     unmount();
   });
 
-  it("does NOT reconnect on an environment-only update from a live tick (same selection, same sampleWindow)", () => {
-    // This is the exact regression useSampleWindow's granular selector
-    // guards against: a tick's setMatchupConfig call updates
-    // environment/currentLine on the same matchupConfig object every
-    // ~90s -- that must never tear down and reopen the SSE connection.
+  it("does NOT reconnect on a non-window matchup-config update", () => {
+    // useSampleWindow's granular selector ensures unrelated config
+    // updates do not tear down and reopen the SSE connection.
     vi.stubGlobal("EventSource", FakeEventSource);
     useAppStore.setState({
       matchupConfig: { ...useAppStore.getState().matchupConfig, sampleWindow: 5 },
@@ -172,7 +175,7 @@ describe("useLiveOddsStream: connection URL", () => {
     unmount();
   });
 
-  it("clears ALL window-dependent values on reconnect, since they were computed under the OLD window", () => {
+  it("clears the selected prop's complete live snapshot on reconnect", () => {
     // Reproduces a real review finding, twice over: an earlier fix only
     // cleared stages/evHistory, missing evScore and recentStatAverage --
     // neither is gated behind `stages` in the UI, so the live edge, the
@@ -184,12 +187,14 @@ describe("useLiveOddsStream: connection URL", () => {
       matchupConfig: { ...useAppStore.getState().matchupConfig, sampleWindow: 5 },
       primaryWatch: samplePrimaryWatch,
       watchlist: {
-        "prop-1": {
-          propId: "prop-1",
+        [samplePropId]: {
+          propId: samplePropId,
           evScore: { modelProb: 0.6, impliedProb: 0.5, edge: 0.1 },
           evHistory: [{ timestamp: 1, evScore: 0.1 }],
           stages: { baseRate: 0.6, afterEnvironment: 0.6, afterCoverage: 0.5 },
           recentStatAverage: 233.5,
+          line: 214.5,
+          weather: { temperatureF: 60, windSpeedMph: 8, precipitationMm: 0 },
         },
       },
     });
@@ -202,14 +207,42 @@ describe("useLiveOddsStream: connection URL", () => {
       });
     });
 
-    const entry = useAppStore.getState().watchlist["prop-1"];
+    const entry = useAppStore.getState().watchlist[samplePropId];
     expect(entry.stages).toBeUndefined();
     expect(entry.evHistory).toEqual([]);
     expect(entry.evScore).toBeUndefined();
     expect(entry.recentStatAverage).toBeUndefined();
+    expect(entry.line).toBeUndefined();
+    expect(entry.weather).toBeUndefined();
     // The entry's identity (propId) survives -- only the window-
     // dependent fields are cleared.
-    expect(entry.propId).toBe("prop-1");
+    expect(entry.propId).toBe(samplePropId);
+    unmount();
+  });
+
+  it("creates a blank keyed snapshot immediately when switching watches", () => {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    useAppStore.setState({
+      primaryWatch: samplePrimaryWatch,
+      watchlist: {
+        [samplePropId]: {
+          propId: samplePropId,
+          evHistory: [],
+          line: 214.5,
+          weather: { temperatureF: 60, windSpeedMph: 8, precipitationMm: 0 },
+        },
+      },
+    });
+
+    const { unmount } = renderHook(() => useLiveOddsStream());
+    const nextWatch = { ...samplePrimaryWatch, playerName: "Sam Darnold" };
+
+    act(() => useAppStore.getState().setPrimaryWatch(nextWatch));
+
+    const nextSnapshot = useAppStore.getState().watchlist[buildWatchPropId(nextWatch)];
+    expect(nextSnapshot.line).toBeUndefined();
+    expect(nextSnapshot.weather).toBeUndefined();
+    expect(useAppStore.getState().connectionStatus).toBe("connecting");
     unmount();
   });
 });

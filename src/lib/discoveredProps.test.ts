@@ -290,7 +290,7 @@ describe("getAllBookmakerKeys", () => {
 });
 
 describe("getBestBookmakerKey", () => {
-  it("for a two-way market, picks the lowest-overround book among those at the MODAL line, ignoring an off-modal book even if its own overround looks better", () => {
+  it("for a two-way market, picks the highest selected-side price at the MODAL line and ignores an off-modal book", () => {
     const lines = [
       { bookmakerKey: "bookA", side: "over" as const, price: 1.91, point: 214.5 },
       { bookmakerKey: "bookA", side: "under" as const, price: 1.91, point: 214.5 },
@@ -303,7 +303,7 @@ describe("getBestBookmakerKey", () => {
       { bookmakerKey: "bookC", side: "under" as const, price: 2.0, point: 220.5 },
     ];
 
-    expect(getBestBookmakerKey(lines)).toBe("bookB");
+    expect(getBestBookmakerKey(lines, "over")).toBe("bookB");
   });
 
   it("for a single-sided ('yes') market, picks the highest price -- no line to shop", () => {
@@ -313,7 +313,7 @@ describe("getBestBookmakerKey", () => {
       { bookmakerKey: "bookC", side: "yes" as const, price: 2.1 },
     ];
 
-    expect(getBestBookmakerKey(lines)).toBe("bookB");
+    expect(getBestBookmakerKey(lines, "over")).toBe("bookB");
   });
 
   it("returns the only book when there's just one, rather than treating it as a degenerate case", () => {
@@ -322,10 +322,22 @@ describe("getBestBookmakerKey", () => {
       { bookmakerKey: "bookA", side: "under" as const, price: 1.91, point: 214.5 },
     ];
 
-    expect(getBestBookmakerKey(lines)).toBe("bookA");
+    expect(getBestBookmakerKey(lines, "over")).toBe("bookA");
   });
 
   it("returns null for no lines", () => {
-    expect(getBestBookmakerKey([])).toBeNull();
+    expect(getBestBookmakerKey([], "over")).toBeNull();
+  });
+
+  it("chooses the highest price for the selected side, not the lowest combined overround", () => {
+    const lines = [
+      { bookmakerKey: "bookA", side: "over" as const, price: 2.1, point: 214.5 },
+      { bookmakerKey: "bookA", side: "under" as const, price: 1.7, point: 214.5 },
+      { bookmakerKey: "bookB", side: "over" as const, price: 1.95, point: 214.5 },
+      { bookmakerKey: "bookB", side: "under" as const, price: 1.95, point: 214.5 },
+    ];
+
+    expect(getBestBookmakerKey(lines, "over")).toBe("bookA");
+    expect(getBestBookmakerKey(lines, "under")).toBe("bookB");
   });
 });
