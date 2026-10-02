@@ -261,3 +261,84 @@ CREATE TABLE IF NOT EXISTS odds_quotes (
 
 CREATE INDEX IF NOT EXISTS idx_odds_quotes_lookup
   ON odds_quotes (quote_set_id, raw_player_name, point, bookmaker_key);
+
+-- Generic event-market targets are independent of creator picks. Any later
+-- trigger can activate one without changing the collector's cadence contract.
+CREATE TABLE IF NOT EXISTS odds_priority_targets (
+  id TEXT PRIMARY KEY,
+  sport_key TEXT NOT NULL,
+  event_id TEXT NOT NULL,
+  home_team TEXT NOT NULL,
+  away_team TEXT NOT NULL,
+  event_start_time TIMESTAMPTZ NOT NULL,
+  market_keys TEXT[] NOT NULL,
+  activated_at TIMESTAMPTZ NOT NULL,
+  reason TEXT NOT NULL,
+  active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (cardinality(market_keys) > 0),
+  CHECK (activated_at < event_start_time)
+);
+
+CREATE INDEX IF NOT EXISTS idx_odds_priority_targets_active_event
+  ON odds_priority_targets (active, event_start_time, event_id);
+
+-- Durable work ledger: leases make cron invocations safe to overlap, while
+-- due windows prevent a late worker from spending quota to recreate stale work.
+CREATE TABLE IF NOT EXISTS odds_collection_checkpoints (
+  id TEXT PRIMARY KEY,
+  kind TEXT NOT NULL CHECK (kind IN ('baseline', 'priority')),
+  collection_profile TEXT NOT NULL CHECK (
+    collection_profile IN ('free-pilot', 'paid-baseline', 'priority')
+  ),
+  target_id TEXT REFERENCES odds_priority_targets(id),
+  sport_key TEXT NOT NULL,
+  event_id TEXT NOT NULL,
+  home_team TEXT NOT NULL,
+  away_team TEXT NOT NULL,
+  event_start_time TIMESTAMPTZ NOT NULL,
+  market_keys TEXT[] NOT NULL,
+  checkpoint_key TEXT NOT NULL,
+  due_at TIMESTAMPTZ NOT NULL,
+  due_window_end TIMESTAMPTZ NOT NULL,
+  priority_rank INTEGER NOT NULL CHECK (priority_rank > 0),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (
+    status IN ('pending', 'claimed', 'completed', 'failed', 'skipped')
+  ),
+  claim_owner TEXT,
+  claim_expires_at TIMESTAMPTZ,
+  attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
+  max_attempts INTEGER NOT NULL DEFAULT 3 CHECK (max_attempts > 0),
+  next_attempt_at TIMESTAMPTZ,
+  observation_id TEXT REFERENCES odds_observations(id),
+  credit_cost INTEGER CHECK (credit_cost IS NULL OR credit_cost >= 0),
+  schedule_reason TEXT NOT NULL,
+  outcome_reason TEXT,
+  last_error TEXT,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (collection_profile, event_id, checkpoint_key),
+  CHECK (cardinality(market_keys) > 0),
+  CHECK (due_at < due_window_end),
+  CHECK (due_window_end <= event_start_time),
+  CHECK ((kind = 'priority') = (target_id IS NOT NULL)),
+  CHECK (
+    (status = 'claimed' AND claim_owner IS NOT NULL AND claim_expires_at IS NOT NULL)
+    OR
+    (status <> 'claimed' AND claim_owner IS NULL AND claim_expires_at IS NULL)
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_odds_collection_checkpoints_due
+  ON odds_collection_checkpoints (
+    status,
+    priority_rank,
+    due_at,
+    next_attempt_at,
+    claim_expires_at
+  );
+
+CREATE INDEX IF NOT EXISTS idx_odds_collection_checkpoints_event
+  ON odds_collection_checkpoints (event_id, due_at);

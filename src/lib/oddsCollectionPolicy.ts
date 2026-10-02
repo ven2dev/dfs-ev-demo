@@ -26,8 +26,10 @@ export type BaselineCheckpointKey =
 
 export type PlannedOddsCheckpoint = {
   eventId: string;
-  checkpointKey: BaselineCheckpointKey;
+  kind: "baseline" | "priority";
+  checkpointKey: string;
   dueAt: string;
+  dueWindowEnd: string;
 };
 
 export type BaselineEventSelection = {
@@ -118,7 +120,7 @@ export const planBaselineCheckpoints = (
     getNflCalendarDate(new Date(week.startTime))
   );
 
-  const checkpoints: PlannedOddsCheckpoint[] = EVENING_CHECKPOINTS.flatMap(
+  const checkpoints: Omit<PlannedOddsCheckpoint, "dueWindowEnd">[] = EVENING_CHECKPOINTS.flatMap(
     ({ dayOffsetFromTuesday, checkpointKey }) => {
       const dayNumber = tuesdayDayNumber + dayOffsetFromTuesday;
       if (dayNumber >= eventDayNumber) return [];
@@ -127,7 +129,7 @@ export const planBaselineCheckpoints = (
         eveningHourEastern
       );
       return dueAt.getTime() < kickoffMs
-        ? [{ eventId: event.id, checkpointKey, dueAt: dueAt.toISOString() }]
+        ? [{ eventId: event.id, kind: "baseline" as const, checkpointKey, dueAt: dueAt.toISOString() }]
         : [];
     }
   );
@@ -135,19 +137,78 @@ export const planBaselineCheckpoints = (
   checkpoints.push(
     {
       eventId: event.id,
+      kind: "baseline",
       checkpointKey: "t-6h",
       dueAt: new Date(kickoffMs - 6 * 60 * 60 * 1000).toISOString(),
     },
     {
       eventId: event.id,
+      kind: "baseline",
       checkpointKey: "t-15m",
       dueAt: new Date(kickoffMs - 15 * 60 * 1000).toISOString(),
     }
   );
 
-  return checkpoints.sort(
+  const sorted = checkpoints.sort(
     (left, right) =>
       Date.parse(left.dueAt) - Date.parse(right.dueAt) ||
       left.checkpointKey.localeCompare(right.checkpointKey)
   );
+  return sorted.map((checkpoint, index) => ({
+    ...checkpoint,
+    dueWindowEnd: sorted[index + 1]?.dueAt ?? kickoff.toISOString(),
+  }));
+};
+
+export const planPriorityCheckpoints = (
+  input: {
+    targetId: string;
+    eventId: string;
+    activatedAt: Date;
+    eventStartTime: Date;
+  },
+  options: { farIntervalMs?: number; activeIntervalMs?: number } = {}
+): PlannedOddsCheckpoint[] => {
+  const activatedAtMs = input.activatedAt.getTime();
+  const kickoffMs = input.eventStartTime.getTime();
+  if (!Number.isFinite(activatedAtMs) || !Number.isFinite(kickoffMs)) {
+    throw new Error("Priority target times must be valid dates");
+  }
+  if (activatedAtMs >= kickoffMs) {
+    throw new Error("Priority target must be activated before kickoff");
+  }
+  if (input.targetId.trim().length === 0 || input.eventId.trim().length === 0) {
+    throw new Error("Priority target and event ids must not be empty");
+  }
+
+  const farIntervalMs = options.farIntervalMs ?? 60 * 60 * 1000;
+  const activeIntervalMs = options.activeIntervalMs ?? 5 * 60 * 1000;
+  if (!Number.isInteger(farIntervalMs) || farIntervalMs <= 0) {
+    throw new Error("farIntervalMs must be a positive integer");
+  }
+  if (!Number.isInteger(activeIntervalMs) || activeIntervalMs <= 0) {
+    throw new Error("activeIntervalMs must be a positive integer");
+  }
+
+  const activeWindowStartMs = kickoffMs - 6 * 60 * 60 * 1000;
+  const dueTimes = [activatedAtMs];
+  let cursor = activatedAtMs;
+  while (cursor < kickoffMs) {
+    cursor =
+      cursor < activeWindowStartMs
+        ? Math.min(cursor + farIntervalMs, activeWindowStartMs)
+        : cursor + activeIntervalMs;
+    if (cursor < kickoffMs && cursor !== dueTimes.at(-1)) dueTimes.push(cursor);
+    if (dueTimes.length > 2_000) {
+      throw new Error("Priority target schedule exceeds the supported checkpoint limit");
+    }
+  }
+
+  return dueTimes.map((dueAtMs, index) => ({
+    eventId: input.eventId,
+    kind: "priority",
+    checkpointKey: `priority:${input.targetId}:${index}`,
+    dueAt: new Date(dueAtMs).toISOString(),
+    dueWindowEnd: new Date(dueTimes[index + 1] ?? kickoffMs).toISOString(),
+  }));
 };

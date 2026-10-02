@@ -3,6 +3,7 @@ import type { SlateEvent } from "./oddsApi";
 import {
   parseOddsCollectionProfile,
   planBaselineCheckpoints,
+  planPriorityCheckpoints,
   selectBaselineEvents,
 } from "./oddsCollectionPolicy";
 
@@ -62,15 +63,18 @@ describe("selectBaselineEvents", () => {
 
 describe("planBaselineCheckpoints", () => {
   it("plans all five Eastern-evening checkpoints plus T-6 and T-15 for Sunday", () => {
-    expect(planBaselineCheckpoints(event("sun", "2026-10-04T20:25:00Z"))).toEqual([
-      { eventId: "sun", checkpointKey: "tuesday-opening", dueAt: "2026-09-30T00:00:00.000Z" },
-      { eventId: "sun", checkpointKey: "wednesday-evening", dueAt: "2026-10-01T00:00:00.000Z" },
-      { eventId: "sun", checkpointKey: "thursday-evening", dueAt: "2026-10-02T00:00:00.000Z" },
-      { eventId: "sun", checkpointKey: "friday-final-practice", dueAt: "2026-10-03T00:00:00.000Z" },
-      { eventId: "sun", checkpointKey: "saturday-evening", dueAt: "2026-10-04T00:00:00.000Z" },
-      { eventId: "sun", checkpointKey: "t-6h", dueAt: "2026-10-04T14:25:00.000Z" },
-      { eventId: "sun", checkpointKey: "t-15m", dueAt: "2026-10-04T20:10:00.000Z" },
+    const checkpoints = planBaselineCheckpoints(event("sun", "2026-10-04T20:25:00Z"));
+    expect(checkpoints.map(({ checkpointKey, dueAt }) => ({ checkpointKey, dueAt }))).toEqual([
+      { checkpointKey: "tuesday-opening", dueAt: "2026-09-30T00:00:00.000Z" },
+      { checkpointKey: "wednesday-evening", dueAt: "2026-10-01T00:00:00.000Z" },
+      { checkpointKey: "thursday-evening", dueAt: "2026-10-02T00:00:00.000Z" },
+      { checkpointKey: "friday-final-practice", dueAt: "2026-10-03T00:00:00.000Z" },
+      { checkpointKey: "saturday-evening", dueAt: "2026-10-04T00:00:00.000Z" },
+      { checkpointKey: "t-6h", dueAt: "2026-10-04T14:25:00.000Z" },
+      { checkpointKey: "t-15m", dueAt: "2026-10-04T20:10:00.000Z" },
     ]);
+    expect(checkpoints[0].dueWindowEnd).toBe(checkpoints[1].dueAt);
+    expect(checkpoints.at(-1)?.dueWindowEnd).toBe("2026-10-04T20:25:00.000Z");
   });
 
   it("stops daily checkpoints the day before a Thursday game", () => {
@@ -83,12 +87,13 @@ describe("planBaselineCheckpoints", () => {
 
   it("uses Eastern wall-clock evenings across the daylight-saving transition", () => {
     const checkpoints = planBaselineCheckpoints(event("sun", "2026-11-08T18:00:00Z"));
-    expect(checkpoints[0]).toEqual({
+    expect(checkpoints[0]).toMatchObject({
       eventId: "sun",
+      kind: "baseline",
       checkpointKey: "tuesday-opening",
       dueAt: "2026-11-04T01:00:00.000Z",
     });
-    expect(checkpoints.at(-1)).toEqual({
+    expect(checkpoints.at(-1)).toMatchObject({
       eventId: "sun",
       checkpointKey: "t-15m",
       dueAt: "2026-11-08T17:45:00.000Z",
@@ -115,5 +120,63 @@ describe("planBaselineCheckpoints", () => {
         eveningHourEastern: 24,
       })
     ).toThrow("eveningHourEastern");
+  });
+});
+
+describe("planPriorityCheckpoints", () => {
+  it("fetches immediately, hourly before T-6, then every five minutes", () => {
+    const checkpoints = planPriorityCheckpoints({
+      targetId: "target-1",
+      eventId: "event-1",
+      activatedAt: new Date("2026-10-04T08:00:00Z"),
+      eventStartTime: new Date("2026-10-04T20:00:00Z"),
+    });
+
+    expect(checkpoints.slice(0, 7).map(({ dueAt }) => dueAt)).toEqual([
+      "2026-10-04T08:00:00.000Z",
+      "2026-10-04T09:00:00.000Z",
+      "2026-10-04T10:00:00.000Z",
+      "2026-10-04T11:00:00.000Z",
+      "2026-10-04T12:00:00.000Z",
+      "2026-10-04T13:00:00.000Z",
+      "2026-10-04T14:00:00.000Z",
+    ]);
+    expect(checkpoints[7].dueAt).toBe("2026-10-04T14:05:00.000Z");
+    expect(checkpoints.at(-1)).toMatchObject({
+      kind: "priority",
+      dueAt: "2026-10-04T19:55:00.000Z",
+      dueWindowEnd: "2026-10-04T20:00:00.000Z",
+    });
+  });
+
+  it("starts five-minute cadence immediately when activated inside T-6", () => {
+    const checkpoints = planPriorityCheckpoints({
+      targetId: "target-1",
+      eventId: "event-1",
+      activatedAt: new Date("2026-10-04T19:42:00Z"),
+      eventStartTime: new Date("2026-10-04T20:00:00Z"),
+    });
+    expect(checkpoints.map(({ dueAt }) => dueAt)).toEqual([
+      "2026-10-04T19:42:00.000Z",
+      "2026-10-04T19:47:00.000Z",
+      "2026-10-04T19:52:00.000Z",
+      "2026-10-04T19:57:00.000Z",
+    ]);
+  });
+
+  it("rejects post-kickoff targets and invalid cadence", () => {
+    const input = {
+      targetId: "target-1",
+      eventId: "event-1",
+      activatedAt: new Date("2026-10-04T20:00:00Z"),
+      eventStartTime: new Date("2026-10-04T20:00:00Z"),
+    };
+    expect(() => planPriorityCheckpoints(input)).toThrow("before kickoff");
+    expect(() =>
+      planPriorityCheckpoints(
+        { ...input, activatedAt: new Date("2026-10-04T19:00:00Z") },
+        { activeIntervalMs: 0 }
+      )
+    ).toThrow("activeIntervalMs");
   });
 });
