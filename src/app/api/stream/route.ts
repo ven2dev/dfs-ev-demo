@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
   let awayTeamName: string;
   let eventTeams: [string, string];
   try {
-    const slateEvents = (await fetchSlateEvents(sportKey)).data;
+    const slateEvents = (await fetchSlateEvents(sportKey, new Date(), undefined, "live")).data;
     const event = slateEvents.find((e) => e.id === eventId);
     if (!event) {
       return NextResponse.json(

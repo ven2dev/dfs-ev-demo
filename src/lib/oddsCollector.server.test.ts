@@ -140,7 +140,8 @@ describe("runOddsCollector", () => {
       "americanfootball_nfl",
       "event-1",
       claimed().market_keys,
-      expect.any(AbortSignal)
+      expect.any(AbortSignal),
+      "scheduled"
     );
     expect(mocks.persistObservation).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -112,7 +112,8 @@ describe("getSharedLivePropInputs", () => {
       key.eventId,
       key.marketKey,
       key.playerName,
-      expect.any(AbortSignal)
+      expect.any(AbortSignal),
+      "live"
     );
     expect(fetchWeatherMock).toHaveBeenCalledWith(
       context.startTime,

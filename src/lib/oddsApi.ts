@@ -1,5 +1,10 @@
 import "server-only";
+import { randomUUID } from "node:crypto";
 import { getCurrentNflSlateWindow, isEventInNflSlateWindow } from "./nflWeek";
+import {
+  recordOddsApiRequest,
+  type OddsApiRequestSource,
+} from "./oddsApiTelemetryRepo";
 // Enforced, not just documented: importing this from a "use client"
 // component now fails the build, since it reads ODDS_API_KEY, which must
 // never reach the browser bundle.
@@ -97,6 +102,22 @@ const responseMetadata = (response: Response) => ({
   },
 });
 
+const emptyQuota = (): OddsApiQuota => ({ remaining: null, used: null, last: null });
+
+const safelyRecordRequest = async (
+  telemetry: Parameters<typeof recordOddsApiRequest>[0]
+) => {
+  // Odds calls historically remain usable without Postgres in local setup.
+  // When a database is configured, telemetry failure is isolated from the
+  // provider result so observability cannot turn current odds into an outage.
+  if (!process.env.DATABASE_URL) return;
+  try {
+    await recordOddsApiRequest(telemetry);
+  } catch (error) {
+    console.error("[oddsApi] failed to persist request telemetry:", error);
+  }
+};
+
 // The bare game list for a sport -- no bookmakers/markets, so this costs
 // ZERO credits on The Odds API's free tier (confirmed against their own
 // docs: only /odds-suffixed endpoints are metered, at
@@ -123,7 +144,8 @@ export const fetchEventOdds = async (
   sportKey: string,
   eventId: string,
   marketKeys: string[],
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  source: OddsApiRequestSource = "direct"
 ): Promise<OddsApiFetch<EventOddsResponse>> => {
   if (marketKeys.length === 0) {
     throw new Error("fetchEventOdds requires at least one market key");
@@ -135,8 +157,41 @@ export const fetchEventOdds = async (
   }
 
   const url = `${ODDS_API_BASE}/sports/${sportKey}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketKeys.join(",")}`;
-  const res = await fetch(url, { cache: "no-store", signal });
+  const requestId = randomUUID();
+  const requestedAt = new Date();
+  let res: Response;
+  try {
+    res = await fetch(url, { cache: "no-store", signal });
+  } catch (error) {
+    await safelyRecordRequest({
+      id: requestId,
+      requestKind: "event-odds",
+      source,
+      sportKey,
+      eventId,
+      requestedMarkets: marketKeys,
+      requestedAt,
+      responseReceivedAt: null,
+      outcome: signal?.aborted ? "aborted" : "network-error",
+      httpStatus: null,
+      quota: emptyQuota(),
+    });
+    throw error;
+  }
   const metadata = responseMetadata(res);
+  await safelyRecordRequest({
+    id: requestId,
+    requestKind: "event-odds",
+    source,
+    sportKey,
+    eventId,
+    requestedMarkets: marketKeys,
+    requestedAt,
+    responseReceivedAt: new Date(metadata.capturedAt),
+    outcome: res.ok ? "success" : "http-error",
+    httpStatus: res.status,
+    quota: metadata.quota,
+  });
   if (!res.ok) {
     throw new OddsApiHttpError(
       `Odds API event-odds fetch failed: ${res.status}`,
@@ -152,7 +207,8 @@ export const fetchEventOdds = async (
 export const fetchSlateEvents = async (
   sportKey: string,
   now: Date = new Date(),
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  source: OddsApiRequestSource = "slate"
 ): Promise<OddsApiFetch<SlateEvent[]>> => {
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
@@ -160,10 +216,48 @@ export const fetchSlateEvents = async (
   }
 
   const url = `${ODDS_API_BASE}/sports/${sportKey}/events?apiKey=${apiKey}`;
-  const res = await fetch(url, { cache: "no-store", signal });
+  const requestId = randomUUID();
+  const requestedAt = new Date();
+  let res: Response;
+  try {
+    res = await fetch(url, { cache: "no-store", signal });
+  } catch (error) {
+    await safelyRecordRequest({
+      id: requestId,
+      requestKind: "events",
+      source,
+      sportKey,
+      eventId: null,
+      requestedMarkets: [],
+      requestedAt,
+      responseReceivedAt: null,
+      outcome: signal?.aborted ? "aborted" : "network-error",
+      httpStatus: null,
+      quota: emptyQuota(),
+    });
+    throw error;
+  }
   const metadata = responseMetadata(res);
+  await safelyRecordRequest({
+    id: requestId,
+    requestKind: "events",
+    source,
+    sportKey,
+    eventId: null,
+    requestedMarkets: [],
+    requestedAt,
+    responseReceivedAt: new Date(metadata.capturedAt),
+    outcome: res.ok ? "success" : "http-error",
+    httpStatus: res.status,
+    quota: metadata.quota,
+  });
   if (!res.ok) {
-    throw new Error(`Odds API events fetch failed: ${res.status}`);
+    throw new OddsApiHttpError(
+      `Odds API events fetch failed: ${res.status}`,
+      res.status,
+      metadata.capturedAt,
+      metadata.quota
+    );
   }
 
   const data: RawSlateEvent[] = await res.json();
@@ -195,7 +289,8 @@ export const fetchPlayerPropMarketOdds = async (
   eventId: string,
   marketKey: string,
   playerName: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  source: OddsApiRequestSource = "direct"
 ): Promise<PlayerPropMarketOddsFetch> => {
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
@@ -203,8 +298,41 @@ export const fetchPlayerPropMarketOdds = async (
   }
 
   const url = `${ODDS_API_BASE}/sports/${sportKey}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketKey}`;
-  const res = await fetch(url, { cache: "no-store", signal });
+  const requestId = randomUUID();
+  const requestedAt = new Date();
+  let res: Response;
+  try {
+    res = await fetch(url, { cache: "no-store", signal });
+  } catch (error) {
+    await safelyRecordRequest({
+      id: requestId,
+      requestKind: "event-odds",
+      source,
+      sportKey,
+      eventId,
+      requestedMarkets: [marketKey],
+      requestedAt,
+      responseReceivedAt: null,
+      outcome: signal?.aborted ? "aborted" : "network-error",
+      httpStatus: null,
+      quota: emptyQuota(),
+    });
+    throw error;
+  }
   const metadata = responseMetadata(res);
+  await safelyRecordRequest({
+    id: requestId,
+    requestKind: "event-odds",
+    source,
+    sportKey,
+    eventId,
+    requestedMarkets: [marketKey],
+    requestedAt,
+    responseReceivedAt: new Date(metadata.capturedAt),
+    outcome: res.ok ? "success" : "http-error",
+    httpStatus: res.status,
+    quota: metadata.quota,
+  });
   if (!res.ok) {
     return { data: { response: null, oddsByBookmaker: [] }, ...metadata };
   }

@@ -103,7 +103,7 @@ const dedupedFetchEventOdds = (
   if (inFlight) return inFlight;
 
   const observationId = randomUUID();
-  const fetchPromise = fetchEventOdds(sportKey, eventId, marketKeys)
+  const fetchPromise = fetchEventOdds(sportKey, eventId, marketKeys, undefined, "discovery")
     .then(async (fetched) => {
       const observationPersisted = await persistDiscoveryObservation(
         sportKey,

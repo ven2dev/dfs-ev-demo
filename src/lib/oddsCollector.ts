@@ -174,7 +174,8 @@ export const runOddsCollector = async (
   const slate = await deps.fetchSlateEvents(
     DEFAULT_SPORT_KEY,
     planningNow,
-    AbortSignal.timeout(config.requestTimeoutMs)
+    AbortSignal.timeout(config.requestTimeoutMs),
+    "scheduled"
   );
   summary.slateQuota = slate.quota;
   const baselineSelections = selectBaselineEvents(config.profile, slate.data, {
@@ -290,7 +291,8 @@ export const runOddsCollector = async (
         checkpoint.sport_key,
         checkpoint.event_id,
         checkpoint.market_keys,
-        AbortSignal.timeout(config.requestTimeoutMs)
+        AbortSignal.timeout(config.requestTimeoutMs),
+        "scheduled"
       );
       attemptCost = fetched.quota.last;
       recordCost(attemptCost);

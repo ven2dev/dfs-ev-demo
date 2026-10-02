@@ -95,10 +95,13 @@ describe("getOrFetchMarketOdds", () => {
     ]);
 
     expect(fetchEventOddsMock).toHaveBeenCalledTimes(1);
-    expect(fetchEventOddsMock).toHaveBeenCalledWith("americanfootball_nfl", "evt-1", [
-      "player_pass_yds",
-      "player_rush_yds",
-    ]);
+    expect(fetchEventOddsMock).toHaveBeenCalledWith(
+      "americanfootball_nfl",
+      "evt-1",
+      ["player_pass_yds", "player_rush_yds"],
+      undefined,
+      "discovery"
+    );
     expect(persistObservationMock).toHaveBeenCalledTimes(1);
     expect(persistObservationMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -143,9 +146,13 @@ describe("getOrFetchMarketOdds", () => {
       "player_rush_yds",
     ]);
 
-    expect(fetchEventOddsMock).toHaveBeenCalledWith("americanfootball_nfl", "evt-1", [
-      "player_rush_yds",
-    ]);
+    expect(fetchEventOddsMock).toHaveBeenCalledWith(
+      "americanfootball_nfl",
+      "evt-1",
+      ["player_rush_yds"],
+      undefined,
+      "discovery"
+    );
   });
 
   it("treats a stale (TTL-expired) cache row as missing and refetches it", async () => {
@@ -155,9 +162,13 @@ describe("getOrFetchMarketOdds", () => {
 
     await getOrFetchMarketOdds("americanfootball_nfl", "evt-1", ["player_pass_yds"]);
 
-    expect(fetchEventOddsMock).toHaveBeenCalledWith("americanfootball_nfl", "evt-1", [
-      "player_pass_yds",
-    ]);
+    expect(fetchEventOddsMock).toHaveBeenCalledWith(
+      "americanfootball_nfl",
+      "evt-1",
+      ["player_pass_yds"],
+      undefined,
+      "discovery"
+    );
   });
 
   it("forceRefresh refetches a row that's within the normal TTL but past the shorter force-refresh cooldown", async () => {
@@ -171,9 +182,13 @@ describe("getOrFetchMarketOdds", () => {
       forceRefresh: true,
     });
 
-    expect(fetchEventOddsMock).toHaveBeenCalledWith("americanfootball_nfl", "evt-1", [
-      "player_pass_yds",
-    ]);
+    expect(fetchEventOddsMock).toHaveBeenCalledWith(
+      "americanfootball_nfl",
+      "evt-1",
+      ["player_pass_yds"],
+      undefined,
+      "discovery"
+    );
   });
 
   it("forceRefresh still refuses to re-hit the API for a market refreshed within the cooldown window -- the anti-spam floor", async () => {
@@ -231,9 +246,13 @@ describe("getOrFetchMarketOdds", () => {
       "player_pass_yds",
     ]);
 
-    expect(fetchEventOddsMock).toHaveBeenCalledWith("americanfootball_nfl", "evt-1", [
-      "player_pass_yds",
-    ]);
+    expect(fetchEventOddsMock).toHaveBeenCalledWith(
+      "americanfootball_nfl",
+      "evt-1",
+      ["player_pass_yds"],
+      undefined,
+      "discovery"
+    );
   });
 
   it("merges a bookmaker's markets from different sources (cache + fresh fetch) into one entry, not duplicates", async () => {

@@ -342,3 +342,33 @@ CREATE INDEX IF NOT EXISTS idx_odds_collection_checkpoints_due
 
 CREATE INDEX IF NOT EXISTS idx_odds_collection_checkpoints_event
   ON odds_collection_checkpoints (event_id, due_at);
+
+CREATE TABLE IF NOT EXISTS odds_api_request_log (
+  id TEXT PRIMARY KEY,
+  request_kind TEXT NOT NULL CHECK (request_kind IN ('events', 'event-odds')),
+  source TEXT NOT NULL CHECK (source IN ('slate', 'discovery', 'live', 'scheduled', 'direct')),
+  sport_key TEXT NOT NULL,
+  event_id TEXT,
+  requested_markets TEXT[] NOT NULL DEFAULT '{}',
+  requested_at TIMESTAMPTZ NOT NULL,
+  response_received_at TIMESTAMPTZ,
+  outcome TEXT NOT NULL CHECK (
+    outcome IN ('success', 'http-error', 'network-error', 'aborted')
+  ),
+  http_status INTEGER CHECK (http_status IS NULL OR http_status BETWEEN 100 AND 599),
+  quota_remaining INTEGER CHECK (quota_remaining IS NULL OR quota_remaining >= 0),
+  quota_used INTEGER CHECK (quota_used IS NULL OR quota_used >= 0),
+  quota_last INTEGER CHECK (quota_last IS NULL OR quota_last >= 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK ((request_kind = 'event-odds') = (event_id IS NOT NULL)),
+  CHECK ((request_kind = 'event-odds') = (cardinality(requested_markets) > 0)),
+  CHECK ((outcome IN ('success', 'http-error')) = (response_received_at IS NOT NULL)),
+  CHECK (response_received_at IS NULL OR response_received_at >= requested_at),
+  CHECK ((outcome = 'network-error' OR outcome = 'aborted') = (http_status IS NULL))
+);
+
+CREATE INDEX IF NOT EXISTS idx_odds_api_request_log_requested
+  ON odds_api_request_log (requested_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_odds_api_request_log_source
+  ON odds_api_request_log (source, requested_at DESC);

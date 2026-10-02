@@ -147,7 +147,8 @@ export const getSharedLivePropInputs = async (
               key.eventId,
               key.marketKey,
               key.playerName,
-              siblingController.signal
+              siblingController.signal,
+              "live"
             );
             let observationPersisted = false;
             if (fetched.data.response) {
