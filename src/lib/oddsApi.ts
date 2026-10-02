@@ -20,16 +20,22 @@ export type OddsOutcome = {
 
 export type OddsMarket = {
   key: string;
+  last_update?: string;
   outcomes: OddsOutcome[];
 };
 
 export type OddsBookmaker = {
   key: string;
+  title?: string;
   markets: OddsMarket[];
 };
 
 export type EventOddsResponse = {
   id: string;
+  sport_key?: string;
+  commence_time?: string;
+  home_team?: string;
+  away_team?: string;
   bookmakers: OddsBookmaker[];
 };
 

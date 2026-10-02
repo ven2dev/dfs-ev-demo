@@ -177,3 +177,87 @@ CREATE TABLE IF NOT EXISTS live_prop_inputs_cache (
   PRIMARY KEY (sport_key, event_id, market_key, player_name),
   CHECK ((payload IS NULL) = (fetched_at IS NULL))
 );
+
+-- #41: immutable market-observation history. One observation represents one
+-- completed upstream response and therefore one honest point in time. Quote
+-- values live in content-addressed sets so a later response with unchanged
+-- prices still gets its own timestamp without duplicating every quote row.
+CREATE TABLE IF NOT EXISTS odds_observations (
+  id TEXT PRIMARY KEY,
+  sport_key TEXT NOT NULL,
+  event_id TEXT NOT NULL,
+  home_team TEXT NOT NULL,
+  away_team TEXT NOT NULL,
+  event_start_time TIMESTAMPTZ NOT NULL,
+  source TEXT NOT NULL CHECK (
+    source IN ('scheduled', 'discovery', 'live', 'provider-historical')
+  ),
+  captured_at TIMESTAMPTZ NOT NULL,
+  requested_markets TEXT[] NOT NULL,
+  collection_profile TEXT,
+  checkpoint_key TEXT,
+  quota_remaining INTEGER CHECK (quota_remaining IS NULL OR quota_remaining >= 0),
+  quota_used INTEGER CHECK (quota_used IS NULL OR quota_used >= 0),
+  quota_last INTEGER CHECK (quota_last IS NULL OR quota_last >= 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (cardinality(requested_markets) > 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_odds_observations_event_cutoff
+  ON odds_observations (event_id, captured_at DESC);
+
+CREATE TABLE IF NOT EXISTS odds_quote_sets (
+  id BIGSERIAL PRIMARY KEY,
+  event_id TEXT NOT NULL,
+  market_key TEXT NOT NULL,
+  content_hash TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (event_id, market_key, content_hash)
+);
+
+CREATE TABLE IF NOT EXISTS odds_observation_markets (
+  observation_id TEXT NOT NULL REFERENCES odds_observations(id),
+  market_key TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (
+    status IN ('returned', 'empty', 'invalid', 'unavailable')
+  ),
+  quote_set_id BIGINT REFERENCES odds_quote_sets(id),
+  PRIMARY KEY (observation_id, market_key),
+  CHECK ((status = 'returned') = (quote_set_id IS NOT NULL))
+);
+
+CREATE INDEX IF NOT EXISTS idx_odds_observation_markets_market
+  ON odds_observation_markets (market_key, observation_id);
+
+-- Provider last_update belongs to each bookmaker's market in the event-odds
+-- response. It is observation metadata, not quote-set content: a bookmaker
+-- can report a newer update time while all normalized prices remain equal.
+CREATE TABLE IF NOT EXISTS odds_observation_book_markets (
+  observation_id TEXT NOT NULL,
+  market_key TEXT NOT NULL,
+  bookmaker_key TEXT NOT NULL,
+  provider_updated_at TIMESTAMPTZ,
+  PRIMARY KEY (observation_id, market_key, bookmaker_key),
+  FOREIGN KEY (observation_id, market_key)
+    REFERENCES odds_observation_markets(observation_id, market_key)
+);
+
+CREATE TABLE IF NOT EXISTS odds_quotes (
+  quote_set_id BIGINT NOT NULL REFERENCES odds_quote_sets(id),
+  bookmaker_key TEXT NOT NULL,
+  raw_player_name TEXT NOT NULL,
+  player_id TEXT,
+  direction TEXT NOT NULL CHECK (direction IN ('over', 'under')),
+  point NUMERIC NOT NULL,
+  decimal_price NUMERIC NOT NULL CHECK (decimal_price > 1),
+  PRIMARY KEY (
+    quote_set_id,
+    bookmaker_key,
+    raw_player_name,
+    direction,
+    point
+  )
+);
+
+CREATE INDEX IF NOT EXISTS idx_odds_quotes_lookup
+  ON odds_quotes (quote_set_id, raw_player_name, point, bookmaker_key);
