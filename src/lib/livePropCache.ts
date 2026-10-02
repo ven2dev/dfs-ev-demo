@@ -1,4 +1,4 @@
-import type { PlayerPropBookmakerLine } from "./oddsApi";
+import type { OddsApiQuota, PlayerPropBookmakerLine } from "./oddsApi";
 import type { WeatherSnapshot } from "./weather";
 
 export type LivePropCacheKey = {
@@ -10,6 +10,13 @@ export type LivePropCacheKey = {
 
 export type LivePropInputs = {
   oddsByBookmaker: PlayerPropBookmakerLine[];
+  oddsObservation?: {
+    origin: "upstream";
+    observationId: string;
+    persisted: boolean;
+    capturedAt: string;
+    quota: OddsApiQuota;
+  };
   weather: WeatherSnapshot;
 };
 

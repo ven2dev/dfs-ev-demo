@@ -33,15 +33,19 @@ const requestFor = (searchParams: Record<string, string>) =>
   }) as NextRequest;
 
 beforeEach(() => {
-  fetchSlateEventsMock.mockResolvedValue([
-    {
-      id: "evt-1",
-      sportKey: "americanfootball_nfl",
-      homeTeam: "Philadelphia Eagles",
-      awayTeam: "Dallas Cowboys",
-      commenceTime: "2026-10-05T17:00:00Z",
-    },
-  ]);
+  fetchSlateEventsMock.mockResolvedValue({
+    data: [
+      {
+        id: "evt-1",
+        sportKey: "americanfootball_nfl",
+        homeTeam: "Philadelphia Eagles",
+        awayTeam: "Dallas Cowboys",
+        commenceTime: "2026-10-05T17:00:00Z",
+      },
+    ],
+    capturedAt: "2026-10-05T12:00:00.000Z",
+    quota: { remaining: 500, used: 0, last: 0 },
+  });
   getVenueForTeamMock.mockReturnValue({ lat: 39.9008, lon: -75.1675 });
   getNflverseTeamAbbreviationMock.mockImplementation((team: string) =>
     team === "Philadelphia Eagles" ? "PHI" : "DAL"

@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
-import type { EventOddsResponse } from "./oddsApi.ts";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import type { EventOddsResponse, OddsApiFetch } from "./oddsApi.ts";
 
 const queryMock = vi.fn();
 const fetchEventOddsMock = vi.fn();
+const persistObservationMock = vi.fn();
 
 vi.mock("./db", () => ({
   getSql: () => ({ query: queryMock }),
@@ -12,14 +13,23 @@ vi.mock("./oddsApi", () => ({
   fetchEventOdds: fetchEventOddsMock,
 }));
 
+vi.mock("./oddsSnapshotRepo", () => ({
+  persistOddsObservation: persistObservationMock,
+}));
+
 // Imported after the mocks so getOrFetchMarketOdds resolves getSql/
 // fetchEventOdds to the fakes above, not the real server-only-guarded
 // modules (which would require a real DATABASE_URL/ODDS_API_KEY).
 const { getOrFetchMarketOdds } = await import("./oddsCacheRepo.ts");
 
+beforeEach(() => {
+  persistObservationMock.mockResolvedValue({ inserted: true });
+});
+
 afterEach(() => {
   queryMock.mockReset();
   fetchEventOddsMock.mockReset();
+  persistObservationMock.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -36,20 +46,36 @@ const freshRow = (marketKey: string, bookmakerKey: string, secondsAgo = 30) => (
   },
 });
 
-const apiResponse = (marketKey: string, bookmakerKey = "draftkings"): EventOddsResponse => ({
-  id: "evt-1",
-  bookmakers: [
-    {
-      key: bookmakerKey,
-      markets: [{ key: marketKey, outcomes: [{ name: "Over", price: -115, point: 71.5 }] }],
-    },
-  ],
+const fetchedResponse = (data: EventOddsResponse): OddsApiFetch<EventOddsResponse> => ({
+  data: {
+    sport_key: "americanfootball_nfl",
+    commence_time: "2026-10-05T17:00:00Z",
+    home_team: "Chicago Bears",
+    away_team: "Seattle Seahawks",
+    ...data,
+  },
+  capturedAt: "2026-10-05T16:00:00.000Z",
+  quota: { remaining: 480, used: 20, last: 1 },
 });
+
+const apiResponse = (
+  marketKey: string,
+  bookmakerKey = "draftkings"
+): OddsApiFetch<EventOddsResponse> =>
+  fetchedResponse({
+    id: "evt-1",
+    bookmakers: [
+      {
+        key: bookmakerKey,
+        markets: [{ key: marketKey, outcomes: [{ name: "Over", price: -115, point: 71.5 }] }],
+      },
+    ],
+  });
 
 describe("getOrFetchMarketOdds", () => {
   it("fetches and caches every requested market on a cold cache", async () => {
     queryMock.mockResolvedValueOnce([]); // SELECT: nothing cached
-    fetchEventOddsMock.mockResolvedValueOnce({
+    fetchEventOddsMock.mockResolvedValueOnce(fetchedResponse({
       id: "evt-1",
       bookmakers: [
         {
@@ -60,7 +86,7 @@ describe("getOrFetchMarketOdds", () => {
           ],
         },
       ],
-    });
+    }));
     queryMock.mockResolvedValue([]); // the two INSERT upserts
 
     await getOrFetchMarketOdds("americanfootball_nfl", "evt-1", [
@@ -73,6 +99,15 @@ describe("getOrFetchMarketOdds", () => {
       "player_pass_yds",
       "player_rush_yds",
     ]);
+    expect(persistObservationMock).toHaveBeenCalledTimes(1);
+    expect(persistObservationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "discovery",
+        requestedMarketKeys: ["player_pass_yds", "player_rush_yds"],
+        quota: { remaining: 480, used: 20, last: 1 },
+      }),
+      expect.objectContaining({ id: "evt-1" })
+    );
     // 1 SELECT + 2 upserts (one per market)
     expect(queryMock).toHaveBeenCalledTimes(3);
   });
@@ -90,7 +125,12 @@ describe("getOrFetchMarketOdds", () => {
 
     expect(fetchEventOddsMock).not.toHaveBeenCalled();
     expect(queryMock).toHaveBeenCalledTimes(1); // just the SELECT, no upserts
-    expect(result.bookmakers).toHaveLength(2);
+    expect(result.odds.bookmakers).toHaveLength(2);
+    expect(Object.values(result.origins)).toEqual([
+      expect.objectContaining({ origin: "cache" }),
+      expect.objectContaining({ origin: "cache" }),
+    ]);
+    expect(persistObservationMock).not.toHaveBeenCalled();
   });
 
   it("only fetches the markets that are missing, not ones already fresh in the cache", async () => {
@@ -146,14 +186,15 @@ describe("getOrFetchMarketOdds", () => {
 
     expect(fetchEventOddsMock).not.toHaveBeenCalled();
     expect(queryMock).toHaveBeenCalledTimes(1); // just the SELECT, no upsert -- no API call was made
-    expect(result.bookmakers).toHaveLength(1);
+    expect(result.odds.bookmakers).toHaveLength(1);
+    expect(result.origins.player_pass_yds.origin).toBe("cache");
   });
 
   it("de-dupes concurrent requests for the same event+market-set, calling the API only once", async () => {
     queryMock.mockResolvedValue([]); // every SELECT/upsert in this test resolves empty
 
-    let resolveFetch!: (value: EventOddsResponse) => void;
-    const pendingFetch = new Promise<EventOddsResponse>((resolve) => {
+    let resolveFetch!: (value: OddsApiFetch<EventOddsResponse>) => void;
+    const pendingFetch = new Promise<OddsApiFetch<EventOddsResponse>>((resolve) => {
       resolveFetch = resolve;
     });
     fetchEventOddsMock.mockReturnValueOnce(pendingFetch);
@@ -165,15 +206,19 @@ describe("getOrFetchMarketOdds", () => {
     // they'd each try to fetch, before the one shared fetch resolves.
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    resolveFetch({
+    resolveFetch(fetchedResponse({
       id: "evt-1",
       bookmakers: [{ key: "draftkings", markets: [{ key: "player_pass_yds", outcomes: [] }] }],
-    });
+    }));
 
     const [result1, result2] = await Promise.all([call1, call2]);
 
     expect(fetchEventOddsMock).toHaveBeenCalledTimes(1);
-    expect(result1.bookmakers).toEqual(result2.bookmakers);
+    expect(result1.odds.bookmakers).toEqual(result2.odds.bookmakers);
+    expect(result1.origins.player_pass_yds.observationId).toBe(
+      result2.origins.player_pass_yds.observationId
+    );
+    expect(persistObservationMock).toHaveBeenCalledTimes(1);
   });
 
   it("de-duplicates repeated market keys before checking the cache or the API", async () => {
@@ -201,7 +246,7 @@ describe("getOrFetchMarketOdds", () => {
       "player_rush_yds",
     ]);
 
-    const draftkings = result.bookmakers.find((b) => b.key === "draftkings");
+    const draftkings = result.odds.bookmakers.find((b) => b.key === "draftkings");
     expect(draftkings?.markets.map((m) => m.key).sort()).toEqual([
       "player_pass_yds",
       "player_rush_yds",
@@ -211,7 +256,7 @@ describe("getOrFetchMarketOdds", () => {
   it("returns an empty result and touches neither the DB nor the API when given no market keys", async () => {
     const result = await getOrFetchMarketOdds("americanfootball_nfl", "evt-1", []);
 
-    expect(result).toEqual({ id: "evt-1", bookmakers: [] });
+    expect(result).toEqual({ odds: { id: "evt-1", bookmakers: [] }, origins: {} });
     expect(queryMock).not.toHaveBeenCalled();
     expect(fetchEventOddsMock).not.toHaveBeenCalled();
   });
@@ -220,7 +265,7 @@ describe("getOrFetchMarketOdds", () => {
     const cacheError = new Error("database unavailable");
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     queryMock.mockResolvedValueOnce([]);
-    fetchEventOddsMock.mockResolvedValueOnce({
+    fetchEventOddsMock.mockResolvedValueOnce(fetchedResponse({
       id: "evt-1",
       bookmakers: [
         {
@@ -231,7 +276,7 @@ describe("getOrFetchMarketOdds", () => {
           ],
         },
       ],
-    });
+    }));
     queryMock.mockRejectedValueOnce(cacheError).mockResolvedValueOnce([]);
 
     const result = await getOrFetchMarketOdds("americanfootball_nfl", "evt-1", [
@@ -239,10 +284,29 @@ describe("getOrFetchMarketOdds", () => {
       "player_rush_yds",
     ]);
 
-    expect(result.bookmakers[0].markets).toHaveLength(2);
+    expect(result.odds.bookmakers[0].markets).toHaveLength(2);
     expect(consoleError).toHaveBeenCalledWith(
       expect.stringContaining('market "player_pass_yds"'),
       cacheError
+    );
+  });
+
+  it("returns fresh odds when immutable-history persistence fails", async () => {
+    const historyError = new Error("history unavailable");
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    queryMock.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    fetchEventOddsMock.mockResolvedValueOnce(apiResponse("player_pass_yds"));
+    persistObservationMock.mockRejectedValueOnce(historyError);
+
+    const result = await getOrFetchMarketOdds("americanfootball_nfl", "evt-1", [
+      "player_pass_yds",
+    ]);
+
+    expect(result.odds.bookmakers).toHaveLength(1);
+    expect(result.origins.player_pass_yds.origin).toBe("upstream");
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining("failed to persist observation"),
+      historyError
     );
   });
 });

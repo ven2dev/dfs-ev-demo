@@ -50,10 +50,10 @@ export const GET = async (
     const sportKey = request.nextUrl.searchParams.get("sportKey") || DEFAULT_SPORT_KEY;
     const forceRefresh = request.nextUrl.searchParams.get("refresh") === "true";
 
-    const odds = await getOrFetchMarketOdds(sportKey, eventId, requestedMarketKeys, {
+    const oddsResult = await getOrFetchMarketOdds(sportKey, eventId, requestedMarketKeys, {
       forceRefresh,
     });
-    const players = groupOddsByPlayer(odds);
+    const players = groupOddsByPlayer(oddsResult.odds);
 
     return NextResponse.json({ success: true, eventId, players });
   } catch (err) {

@@ -9,11 +9,14 @@ import {
   type LivePropInputs,
 } from "./livePropCache";
 import { fetchPlayerPropMarketOdds } from "./oddsApi";
+import { persistOddsObservation } from "./oddsSnapshotRepo";
 import { POLL_INTERVAL_MS } from "./streamConfig";
 import { fetchGameWeather } from "./weather";
 
 export type LivePropFetchContext = {
   startTime: string;
+  homeTeam: string;
+  awayTeam: string;
   venueLat: number;
   venueLon: number;
 };
@@ -137,14 +140,53 @@ export const getSharedLivePropInputs = async (
         }
 
         try {
-          const [oddsByBookmaker, weather] = await Promise.all([
-            fetchPlayerPropMarketOdds(
+          const observationId = randomUUID();
+          const oddsRequest = async () => {
+            const fetched = await fetchPlayerPropMarketOdds(
               key.sportKey,
               key.eventId,
               key.marketKey,
               key.playerName,
               siblingController.signal
-            ),
+            );
+            let observationPersisted = false;
+            if (fetched.data.response) {
+              const event = {
+                ...fetched.data.response,
+                sport_key: fetched.data.response.sport_key ?? key.sportKey,
+                commence_time: fetched.data.response.commence_time ?? context.startTime,
+                home_team: fetched.data.response.home_team ?? context.homeTeam,
+                away_team: fetched.data.response.away_team ?? context.awayTeam,
+              };
+              try {
+                await persistOddsObservation(
+                  {
+                    observationId,
+                    sportKey: event.sport_key,
+                    eventId: key.eventId,
+                    homeTeam: event.home_team,
+                    awayTeam: event.away_team,
+                    eventStartTime: new Date(event.commence_time),
+                    source: "live",
+                    capturedAt: new Date(fetched.capturedAt),
+                    requestedMarketKeys: [key.marketKey],
+                    quota: fetched.quota,
+                  },
+                  event
+                );
+                observationPersisted = true;
+              } catch (error) {
+                console.error(
+                  `[livePropCacheRepo] failed to persist observation "${observationId}":`,
+                  error
+                );
+              }
+            }
+            return { ...fetched, observationPersisted };
+          };
+
+          const [odds, weather] = await Promise.all([
+            oddsRequest(),
             fetchGameWeather(
               context.startTime,
               context.venueLat,
@@ -152,10 +194,20 @@ export const getSharedLivePropInputs = async (
               siblingController.signal
             ),
           ]);
-          if (oddsByBookmaker.length === 0 || !weather) {
+          if (odds.data.oddsByBookmaker.length === 0 || !weather) {
             throw new Error("Failed to fetch real odds/weather");
           }
-          return { oddsByBookmaker, weather };
+          return {
+            oddsByBookmaker: odds.data.oddsByBookmaker,
+            oddsObservation: {
+              origin: "upstream",
+              observationId,
+              persisted: odds.observationPersisted,
+              capturedAt: odds.capturedAt,
+              quota: odds.quota,
+            },
+            weather,
+          };
         } catch (error) {
           siblingController.abort(error);
           throw error;

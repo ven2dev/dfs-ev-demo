@@ -39,6 +39,18 @@ export type EventOddsResponse = {
   bookmakers: OddsBookmaker[];
 };
 
+export type OddsApiQuota = {
+  remaining: number | null;
+  used: number | null;
+  last: number | null;
+};
+
+export type OddsApiFetch<T> = {
+  data: T;
+  capturedAt: string;
+  quota: OddsApiQuota;
+};
+
 export type PlayerPropLine = {
   overPrice: number;
   underPrice: number;
@@ -56,6 +68,22 @@ type RawSlateEvent = {
   away_team: string;
   commence_time: string;
 };
+
+const quotaHeader = (headers: Headers, name: string): number | null => {
+  const raw = headers.get(name);
+  if (raw === null || raw.trim() === "") return null;
+  const value = Number(raw);
+  return Number.isInteger(value) && value >= 0 ? value : null;
+};
+
+const responseMetadata = (response: Response) => ({
+  capturedAt: new Date().toISOString(),
+  quota: {
+    remaining: quotaHeader(response.headers, "x-requests-remaining"),
+    used: quotaHeader(response.headers, "x-requests-used"),
+    last: quotaHeader(response.headers, "x-requests-last"),
+  },
+});
 
 // The bare game list for a sport -- no bookmakers/markets, so this costs
 // ZERO credits on The Odds API's free tier (confirmed against their own
@@ -83,7 +111,7 @@ export const fetchEventOdds = async (
   sportKey: string,
   eventId: string,
   marketKeys: string[]
-): Promise<EventOddsResponse> => {
+): Promise<OddsApiFetch<EventOddsResponse>> => {
   if (marketKeys.length === 0) {
     throw new Error("fetchEventOdds requires at least one market key");
   }
@@ -95,17 +123,18 @@ export const fetchEventOdds = async (
 
   const url = `${ODDS_API_BASE}/sports/${sportKey}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketKeys.join(",")}`;
   const res = await fetch(url, { cache: "no-store" });
+  const metadata = responseMetadata(res);
   if (!res.ok) {
     throw new Error(`Odds API event-odds fetch failed: ${res.status}`);
   }
 
-  return res.json();
+  return { data: await res.json(), ...metadata };
 };
 
 export const fetchSlateEvents = async (
   sportKey: string,
   now: Date = new Date()
-): Promise<SlateEvent[]> => {
+): Promise<OddsApiFetch<SlateEvent[]>> => {
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
     throw new Error("ODDS_API_KEY is not set");
@@ -113,13 +142,14 @@ export const fetchSlateEvents = async (
 
   const url = `${ODDS_API_BASE}/sports/${sportKey}/events?apiKey=${apiKey}`;
   const res = await fetch(url, { cache: "no-store" });
+  const metadata = responseMetadata(res);
   if (!res.ok) {
     throw new Error(`Odds API events fetch failed: ${res.status}`);
   }
 
   const data: RawSlateEvent[] = await res.json();
   const window = getCurrentNflSlateWindow(now);
-  return data
+  const events = data
     .map((event) => ({
       id: event.id,
       sportKey: event.sport_key,
@@ -128,7 +158,13 @@ export const fetchSlateEvents = async (
       commenceTime: event.commence_time,
     }))
     .filter((event) => isEventInNflSlateWindow(event.commenceTime, window));
+  return { data: events, ...metadata };
 };
+
+export type PlayerPropMarketOddsFetch = OddsApiFetch<{
+  response: EventOddsResponse | null;
+  oddsByBookmaker: PlayerPropBookmakerLine[];
+}>;
 
 // Real-time, uncached, deliberately NOT reusing the discovery cache
 // (see #27 step 7's decision) -- a live tracker showing a value frozen
@@ -141,7 +177,7 @@ export const fetchPlayerPropMarketOdds = async (
   marketKey: string,
   playerName: string,
   signal?: AbortSignal
-): Promise<PlayerPropBookmakerLine[]> => {
+): Promise<PlayerPropMarketOddsFetch> => {
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
     throw new Error("ODDS_API_KEY is not set");
@@ -149,8 +185,9 @@ export const fetchPlayerPropMarketOdds = async (
 
   const url = `${ODDS_API_BASE}/sports/${sportKey}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketKey}`;
   const res = await fetch(url, { cache: "no-store", signal });
+  const metadata = responseMetadata(res);
   if (!res.ok) {
-    return [];
+    return { data: { response: null, oddsByBookmaker: [] }, ...metadata };
   }
   const data: EventOddsResponse = await res.json();
 
@@ -179,7 +216,7 @@ export const fetchPlayerPropMarketOdds = async (
       });
     }
   }
-  return lines;
+  return { data: { response: data, oddsByBookmaker: lines }, ...metadata };
 };
 
 export const fetchPlayerPropOdds = async (
@@ -189,8 +226,10 @@ export const fetchPlayerPropOdds = async (
   playerName: string,
   bookmakerKey: string
 ): Promise<PlayerPropLine | null> => {
-  const lines = await fetchPlayerPropMarketOdds(sportKey, eventId, marketKey, playerName);
-  const line = lines.find((candidate) => candidate.bookmakerKey === bookmakerKey);
+  const result = await fetchPlayerPropMarketOdds(sportKey, eventId, marketKey, playerName);
+  const line = result.data.oddsByBookmaker.find(
+    (candidate) => candidate.bookmakerKey === bookmakerKey
+  );
   return line
     ? { overPrice: line.overPrice, underPrice: line.underPrice, point: line.point }
     : null;
