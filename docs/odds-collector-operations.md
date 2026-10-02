@@ -180,3 +180,38 @@ weekly delta supplies a defensible regular-season/postseason projection and
 shows whether quote-set reuse is delivering the expected savings. Until those
 measurements exist, keep Postgres as the source of truth and do not move this
 relational workload to Hostinger MySQL or silently shorten retention.
+
+## Initial live verification
+
+The schema and bounded collector path were verified on 2026-10-02 against the
+configured Postgres database and The Odds API:
+
+- Profile: `free-pilot`, one-claim limit, zero verification-only reserve.
+- Event: Detroit Lions at Carolina Panthers
+  (`a73a76599a4f3422803e57bd8f61b626`), kickoff
+  `2026-10-05T00:20:00Z`.
+- Completed checkpoint: `thursday-evening`; scheduled observation
+  `b3cf9d0f-5446-4fbf-b5e2-d44524b984bd`, captured
+  `2026-10-02T18:46:55.924Z`. A bounded discovery refresh created observation
+  `4ed44150-97ab-4a70-9e35-da3511324f70` at
+  `2026-10-02T18:52:17.443Z`.
+- Provider result: both HTTP 200 responses contained all nine requested
+  markets and 382 normalized quote rows.
+- Quota: the slate request reported zero cost; the scheduled and discovery
+  event-odds requests each reported exactly nine credits. Remaining quota was
+  478 after the two bounded responses.
+- Work ledger: one claim completed, no failure, retry, skip-after-claim, or
+  lease loss. The already-expired Tuesday and Wednesday windows were marked
+  `due-window-expired` without making retrospective requests; four future
+  checkpoints remained pending.
+- Reuse and integrity: the two genuine observations remained distinct, while
+  all nine unchanged market payloads referenced the same nine quote-set IDs.
+  Stored normalized quotes remained 382 rather than doubling to 764, and no
+  duplicate `(event_id, market_key, content_hash)` keys existed. A six-book
+  exact-line sample was present for both Bryce Young and Jared Goff
+  passing-touchdown props at 1.5.
+- Initial allocated table-and-index size across the eight collector tables was
+  488 kB. This is only a post-verification baseline, not a growth forecast.
+
+No credentials, request URLs, or API keys were persisted in the verification
+telemetry.
