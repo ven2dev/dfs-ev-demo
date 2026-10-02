@@ -1,4 +1,4 @@
-const NFL_TIME_ZONE = "America/New_York";
+export const NFL_TIME_ZONE = "America/New_York";
 const REGULAR_SEASON_WEEKS = 18;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -17,7 +17,7 @@ export type NflSlateWindow = {
   timeZone: typeof NFL_TIME_ZONE;
 };
 
-type CalendarDate = { year: number; month: number; day: number };
+export type NflCalendarDate = { year: number; month: number; day: number };
 
 const easternDateFormatter = new Intl.DateTimeFormat("en-CA", {
   timeZone: NFL_TIME_ZONE,
@@ -31,17 +31,17 @@ const offsetFormatter = new Intl.DateTimeFormat("en-US", {
   timeZoneName: "longOffset",
 });
 
-const getEasternCalendarDate = (instant: Date): CalendarDate => {
+export const getNflCalendarDate = (instant: Date): NflCalendarDate => {
   const parts = easternDateFormatter.formatToParts(instant);
   const value = (type: Intl.DateTimeFormatPartTypes) =>
     Number(parts.find((part) => part.type === type)?.value);
   return { year: value("year"), month: value("month"), day: value("day") };
 };
 
-const calendarDateToDayNumber = ({ year, month, day }: CalendarDate) =>
+export const nflCalendarDateToDayNumber = ({ year, month, day }: NflCalendarDate) =>
   Math.floor(Date.UTC(year, month - 1, day) / MS_PER_DAY);
 
-const dayNumberToCalendarDate = (dayNumber: number): CalendarDate => {
+export const nflDayNumberToCalendarDate = (dayNumber: number): NflCalendarDate => {
   const date = new Date(dayNumber * MS_PER_DAY);
   return {
     year: date.getUTCFullYear(),
@@ -60,20 +60,24 @@ const getTimeZoneOffsetMs = (instant: Date): number => {
   return sign * (Number(match[2]) * 60 + Number(match[3])) * 60 * 1000;
 };
 
-const easternMidnightToInstant = ({ year, month, day }: CalendarDate): Date => {
-  const wallClockAsUtc = Date.UTC(year, month - 1, day);
+export const nflLocalDateTimeToInstant = (
+  { year, month, day }: NflCalendarDate,
+  hour = 0,
+  minute = 0
+): Date => {
+  const wallClockAsUtc = Date.UTC(year, month - 1, day, hour, minute);
   let result = new Date(wallClockAsUtc - getTimeZoneOffsetMs(new Date(wallClockAsUtc)));
   result = new Date(wallClockAsUtc - getTimeZoneOffsetMs(result));
   return result;
 };
 
-const weekOneDayNumber = calendarDateToDayNumber(WEEK_1_START_LOCAL);
+const weekOneDayNumber = nflCalendarDateToDayNumber(WEEK_1_START_LOCAL);
 
 // Not clamped to 1 -- a date before the season start legitimately
 // produces 0 or negative, which is what lets getCurrentNflWeekLabel
 // tell "before the season" apart from "Week 1" instead of conflating them.
 export const getCurrentNflWeek = (now: Date = new Date()): number => {
-  const currentDayNumber = calendarDateToDayNumber(getEasternCalendarDate(now));
+  const currentDayNumber = nflCalendarDateToDayNumber(getNflCalendarDate(now));
   return Math.floor((currentDayNumber - weekOneDayNumber) / 7) + 1;
 };
 
@@ -90,8 +94,8 @@ export const getCurrentNflWeekLabel = (now: Date = new Date()): string => {
 export const getCurrentNflSlateWindow = (now: Date = new Date()): NflSlateWindow => {
   const week = getCurrentNflWeek(now);
   const startDayNumber = weekOneDayNumber + (week - 1) * 7;
-  const startTime = easternMidnightToInstant(dayNumberToCalendarDate(startDayNumber));
-  const endTime = easternMidnightToInstant(dayNumberToCalendarDate(startDayNumber + 7));
+  const startTime = nflLocalDateTimeToInstant(nflDayNumberToCalendarDate(startDayNumber));
+  const endTime = nflLocalDateTimeToInstant(nflDayNumberToCalendarDate(startDayNumber + 7));
 
   return {
     label: getCurrentNflWeekLabel(now),
