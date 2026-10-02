@@ -127,10 +127,8 @@ export const fetchSlateEvents = async (
 // Real-time, uncached, deliberately NOT reusing the discovery cache
 // (see #27 step 7's decision) -- a live tracker showing a value frozen
 // for several ticks between real refreshes would defeat its own
-// purpose. Requires a SPECIFIC bookmakerKey (the one the user was
-// actually looking at when they clicked "Watch") rather than "first
-// match" -- picking whichever bookmaker happened to load first would
-// silently show different numbers than what the user chose to track.
+// purpose. Returns every bookmaker so one snapshot can support both
+// the selected-book line anchor and same-line market consensus.
 export const fetchPlayerPropMarketOdds = async (
   sportKey: string,
   eventId: string,
@@ -160,7 +158,13 @@ export const fetchPlayerPropMarketOdds = async (
     const under = market.outcomes.find(
       (outcome) => outcome.name === "Under" && outcome.description === playerName
     );
-    if (over && under && over.point !== undefined) {
+    if (
+      over &&
+      under &&
+      over.point !== undefined &&
+      under.point !== undefined &&
+      over.point === under.point
+    ) {
       lines.push({
         bookmakerKey: bookmaker.key,
         overPrice: over.price,

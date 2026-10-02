@@ -106,3 +106,20 @@ observation; a crashed holder can still be replaced after the lease expires.
 
 Run `psql "$DATABASE_URL" -f db/schema.sql` after pulling schema changes and
 before deploying the stream route. The schema command is idempotent.
+
+## Same-line market consensus
+
+The live EV pipeline compares its model probability with a versioned market
+baseline: `exact-line-median` v1. The selected sportsbook supplies the target
+line. At that exact point, each bookmaker's complete Over/Under pair is
+devigged independently, then the median Over probability is used as the
+consensus; Under is derived as its complement. The median limits the influence
+of one unusually priced book without assigning unsupported quality weights.
+
+Different points are never mixed or translated. Quotes with non-finite decimal
+prices, prices at or below 1, or incomplete pairs do not contribute. One valid
+book remains usable and is labeled as a one-book result rather than rejected by
+an arbitrary minimum. Every live tick exposes the method, version, and
+contributing-book count, and the UI describes that count as coverage rather
+than confidence. This transparent baseline can later be compared with other
+aggregation methods using historical snapshots from issue #41.

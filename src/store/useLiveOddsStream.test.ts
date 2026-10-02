@@ -194,6 +194,11 @@ describe("useLiveOddsStream: connection URL", () => {
           stages: { baseRate: 0.6, afterEnvironment: 0.6, afterCoverage: 0.5 },
           recentStatAverage: 233.5,
           line: 214.5,
+          marketConsensus: {
+            method: "exact-line-median",
+            version: 1,
+            contributingBookCount: 4,
+          },
           weather: { temperatureF: 60, windSpeedMph: 8, precipitationMm: 0 },
         },
       },
@@ -213,6 +218,7 @@ describe("useLiveOddsStream: connection URL", () => {
     expect(entry.evScore).toBeUndefined();
     expect(entry.recentStatAverage).toBeUndefined();
     expect(entry.line).toBeUndefined();
+    expect(entry.marketConsensus).toBeUndefined();
     expect(entry.weather).toBeUndefined();
     // The entry's identity (propId) survives -- only the window-
     // dependent fields are cleared.
@@ -243,6 +249,41 @@ describe("useLiveOddsStream: connection URL", () => {
     expect(nextSnapshot.line).toBeUndefined();
     expect(nextSnapshot.weather).toBeUndefined();
     expect(useAppStore.getState().connectionStatus).toBe("connecting");
+    unmount();
+  });
+
+  it("stores consensus provenance from a matching live tick", () => {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    useAppStore.setState({ primaryWatch: samplePrimaryWatch });
+
+    const { unmount } = renderHook(() => useLiveOddsStream());
+    const source = FakeEventSource.instances[0];
+
+    act(() => {
+      source.onmessage?.({
+        data: JSON.stringify({
+          type: "tick",
+          propId: samplePropId,
+          timestamp: 123,
+          line: 250.5,
+          weather: { temperatureF: 65, windSpeedMph: 5, precipitationMm: 0 },
+          evScore: { modelProb: 0.6, impliedProb: 0.52, edge: 0.08 },
+          stages: { baseRate: 0.7, afterEnvironment: 0.65, afterCoverage: 0.6 },
+          recentStatAverage: 255,
+          marketConsensus: {
+            method: "exact-line-median",
+            version: 1,
+            contributingBookCount: 4,
+          },
+        }),
+      });
+    });
+
+    expect(useAppStore.getState().watchlist[samplePropId].marketConsensus).toEqual({
+      method: "exact-line-median",
+      version: 1,
+      contributingBookCount: 4,
+    });
     unmount();
   });
 });

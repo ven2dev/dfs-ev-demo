@@ -8,7 +8,7 @@ export type EVPipelineInput = {
   windSpeedMph: number;
   precipitationMm: number;
   shadowCoverageRate: number;
-  impliedProb: number; // already devigged from the real Odds API line
+  impliedProb: number; // already devigged from the same-line market consensus
   direction: PlayerPropDirection;
 };
 
