@@ -52,6 +52,18 @@ export type OddsPriorityTargetInput = {
   reason: string;
 };
 
+type OddsPriorityTargetRow = {
+  id: string;
+  sport_key: string;
+  event_id: string;
+  home_team: string;
+  away_team: string;
+  event_start_time: string;
+  market_keys: string[];
+  activated_at: string;
+  reason: string;
+};
+
 const UPSERT_CHECKPOINTS_SQL = `
 INSERT INTO odds_collection_checkpoints (
   id, kind, collection_profile, target_id, sport_key, event_id,
@@ -122,6 +134,8 @@ candidate AS (
   WHERE due_at <= $2::timestamptz
     AND due_window_end > $2::timestamptz
     AND attempts < max_attempts
+    AND priority_rank <= $5
+    AND cardinality(market_keys) <= $6
     AND (
       status = 'pending'
       OR (status = 'failed' AND (next_attempt_at IS NULL OR next_attempt_at <= $2::timestamptz))
@@ -240,6 +254,31 @@ export const upsertOddsPriorityTarget = async (
   );
 };
 
+export const listActiveOddsPriorityTargets = async (
+  now: Date
+): Promise<OddsPriorityTargetInput[]> => {
+  if (!Number.isFinite(now.getTime())) throw new Error("now must be a valid date");
+  const rows = (await getSql().query(
+    `SELECT id, sport_key, event_id, home_team, away_team, event_start_time,
+       market_keys, activated_at, reason
+     FROM odds_priority_targets
+     WHERE active = TRUE AND event_start_time > $1
+     ORDER BY event_start_time, id`,
+    [now.toISOString()]
+  )) as OddsPriorityTargetRow[];
+  return rows.map((row) => ({
+    id: row.id,
+    sportKey: row.sport_key,
+    eventId: row.event_id,
+    homeTeam: row.home_team,
+    awayTeam: row.away_team,
+    eventStartTime: new Date(row.event_start_time),
+    marketKeys: row.market_keys,
+    activatedAt: new Date(row.activated_at),
+    reason: row.reason,
+  }));
+};
+
 export const upsertOddsCollectionCheckpoints = async (
   context: CollectionCheckpointContext,
   checkpoints: PlannedOddsCheckpoint[]
@@ -320,6 +359,8 @@ export const claimDueOddsCheckpoints = async (input: {
   now: Date;
   leaseMs: number;
   limit: number;
+  maxPriorityRank?: number;
+  maxCreditCost?: number;
 }): Promise<{ claimed: ClaimedOddsCheckpoint[]; skippedCount: number }> => {
   nonEmpty(input.ownerId, "ownerId");
   if (!Number.isFinite(input.now.getTime())) throw new Error("now must be a valid date");
@@ -329,12 +370,22 @@ export const claimDueOddsCheckpoints = async (input: {
   if (!Number.isInteger(input.limit) || input.limit <= 0 || input.limit > 100) {
     throw new Error("limit must be an integer from 1 through 100");
   }
+  const maxPriorityRank = input.maxPriorityRank ?? 2_147_483_647;
+  if (!Number.isInteger(maxPriorityRank) || maxPriorityRank < 0) {
+    throw new Error("maxPriorityRank must be a non-negative integer");
+  }
+  const maxCreditCost = input.maxCreditCost ?? 2_147_483_647;
+  if (!Number.isInteger(maxCreditCost) || maxCreditCost < 0) {
+    throw new Error("maxCreditCost must be a non-negative integer");
+  }
 
   const rows = (await getSql().query(CLAIM_DUE_SQL, [
     input.ownerId,
     input.now.toISOString(),
     input.leaseMs,
     input.limit,
+    maxPriorityRank,
+    maxCreditCost,
   ])) as { claimed: ClaimedOddsCheckpoint[]; skipped_count: number }[];
   const result = rows[0];
   if (!result) throw new Error("Checkpoint claim returned no result");
@@ -426,6 +477,8 @@ export const skipOddsCheckpoint = async (input: {
   ownerId: string;
   skippedAt: Date;
   reason: string;
+  creditCost?: number | null;
+  error?: string | null;
 }): Promise<boolean> => {
   nonEmpty(input.checkpointId, "checkpointId");
   nonEmpty(input.ownerId, "ownerId");
@@ -433,13 +486,28 @@ export const skipOddsCheckpoint = async (input: {
   if (!Number.isFinite(input.skippedAt.getTime())) {
     throw new Error("skippedAt must be a valid date");
   }
+  if (
+    input.creditCost !== undefined &&
+    input.creditCost !== null &&
+    (!Number.isInteger(input.creditCost) || input.creditCost < 0)
+  ) {
+    throw new Error("creditCost must be a non-negative integer or null");
+  }
   const rows = await getSql().query(
     `UPDATE odds_collection_checkpoints
      SET status = 'skipped', claim_owner = NULL, claim_expires_at = NULL,
-       outcome_reason = $4, completed_at = $3, updated_at = $3
+       outcome_reason = $4, credit_cost = $5, last_error = $6,
+       completed_at = $3, updated_at = $3
      WHERE id = $1 AND status = 'claimed' AND claim_owner = $2
      RETURNING id`,
-    [input.checkpointId, input.ownerId, input.skippedAt.toISOString(), input.reason]
+    [
+      input.checkpointId,
+      input.ownerId,
+      input.skippedAt.toISOString(),
+      input.reason,
+      input.creditCost ?? null,
+      input.error ?? null,
+    ]
   );
   return rows.length > 0;
 };

@@ -51,6 +51,18 @@ export type OddsApiFetch<T> = {
   quota: OddsApiQuota;
 };
 
+export class OddsApiHttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly capturedAt: string,
+    readonly quota: OddsApiQuota
+  ) {
+    super(message);
+    this.name = "OddsApiHttpError";
+  }
+}
+
 export type PlayerPropLine = {
   overPrice: number;
   underPrice: number;
@@ -110,7 +122,8 @@ export type SlateEvent = {
 export const fetchEventOdds = async (
   sportKey: string,
   eventId: string,
-  marketKeys: string[]
+  marketKeys: string[],
+  signal?: AbortSignal
 ): Promise<OddsApiFetch<EventOddsResponse>> => {
   if (marketKeys.length === 0) {
     throw new Error("fetchEventOdds requires at least one market key");
@@ -122,10 +135,15 @@ export const fetchEventOdds = async (
   }
 
   const url = `${ODDS_API_BASE}/sports/${sportKey}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketKeys.join(",")}`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store", signal });
   const metadata = responseMetadata(res);
   if (!res.ok) {
-    throw new Error(`Odds API event-odds fetch failed: ${res.status}`);
+    throw new OddsApiHttpError(
+      `Odds API event-odds fetch failed: ${res.status}`,
+      res.status,
+      metadata.capturedAt,
+      metadata.quota
+    );
   }
 
   return { data: await res.json(), ...metadata };
@@ -133,7 +151,8 @@ export const fetchEventOdds = async (
 
 export const fetchSlateEvents = async (
   sportKey: string,
-  now: Date = new Date()
+  now: Date = new Date(),
+  signal?: AbortSignal
 ): Promise<OddsApiFetch<SlateEvent[]>> => {
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
@@ -141,7 +160,7 @@ export const fetchSlateEvents = async (
   }
 
   const url = `${ODDS_API_BASE}/sports/${sportKey}/events?apiKey=${apiKey}`;
-  const res = await fetch(url, { cache: "no-store" });
+  const res = await fetch(url, { cache: "no-store", signal });
   const metadata = responseMetadata(res);
   if (!res.ok) {
     throw new Error(`Odds API events fetch failed: ${res.status}`);

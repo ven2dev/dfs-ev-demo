@@ -11,6 +11,7 @@ import {
 } from "@/lib/nflverseClient";
 import { readSyncState, writeSyncState, upsertStats } from "@/lib/playerStatsRepo";
 import { upsertRosterPlayers } from "@/lib/playerRosterRepo";
+import { isAuthorizedCronHeader } from "@/lib/cronAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +19,10 @@ export const dynamic = "force-dynamic";
 // invocation -- checking it means this route can't be triggered by an
 // arbitrary public request, since it writes to Postgres.
 const isAuthorizedCronRequest = (request: NextRequest): boolean => {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  return request.headers.get("authorization") === `Bearer ${secret}`;
+  return isAuthorizedCronHeader(
+    request.headers.get("authorization"),
+    process.env.CRON_SECRET
+  );
 };
 
 export const GET = async (request: NextRequest) => {

@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
+  fetchEventOdds,
   fetchPlayerPropMarketOdds,
   fetchPlayerPropOdds,
   fetchSlateEvents,
+  OddsApiHttpError,
 } from "./oddsApi.ts";
 
 const fetchMock = vi.fn();
@@ -130,6 +132,29 @@ describe("fetchSlateEvents", () => {
     await expect(fetchSlateEvents("americanfootball_nfl")).rejects.toThrow(
       "Odds API events fetch failed: 500"
     );
+  });
+});
+
+describe("fetchEventOdds", () => {
+  it("preserves quota telemetry on a billed HTTP failure", async () => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(null, false, 503, {
+        "x-requests-remaining": "482",
+        "x-requests-used": "18",
+        "x-requests-last": "9",
+      })
+    );
+
+    const error = await fetchEventOdds("americanfootball_nfl", "evt-1", [
+      "player_pass_yds",
+    ]).catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(OddsApiHttpError);
+    expect(error).toMatchObject({
+      status: 503,
+      quota: { remaining: 482, used: 18, last: 9 },
+    });
   });
 });
 

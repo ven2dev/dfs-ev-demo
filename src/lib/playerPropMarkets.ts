@@ -139,3 +139,7 @@ export const getPlayerPropMarket = (key: string) =>
 
 export const isTrackablePlayerPropMarket = (key: string): key is PlayerPropMarketKey =>
   getPlayerPropMarket(key)?.trackable === true;
+
+export const TRACKABLE_PLAYER_PROP_MARKET_KEYS = PLAYER_PROP_MARKETS.filter(
+  (market) => market.trackable && market.outcomeShape === "over-under"
+).map((market) => market.key);

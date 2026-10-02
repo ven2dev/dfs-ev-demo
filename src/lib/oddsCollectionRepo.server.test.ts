@@ -11,6 +11,7 @@ const {
   claimDueOddsCheckpoints,
   completeOddsCheckpoint,
   failOddsCheckpoint,
+  listActiveOddsPriorityTargets,
   skipOddsCheckpoint,
   upsertOddsCollectionCheckpoints,
   upsertOddsPriorityTarget,
@@ -70,6 +71,39 @@ describe("odds collection persistence", () => {
       "2026-10-04T08:00:00.000Z",
       "manual-analysis-priority",
     ]);
+  });
+
+  it("loads only active pregame targets in deterministic order", async () => {
+    queryMock.mockResolvedValueOnce([
+      {
+        id: "target-1",
+        sport_key: "americanfootball_nfl",
+        event_id: "event-1",
+        home_team: "Philadelphia Eagles",
+        away_team: "Dallas Cowboys",
+        event_start_time: "2026-10-04T20:00:00.000Z",
+        market_keys: ["player_pass_yds"],
+        activated_at: "2026-10-04T08:00:00.000Z",
+        reason: "manual-analysis-priority",
+      },
+    ]);
+
+    await expect(
+      listActiveOddsPriorityTargets(new Date("2026-10-04T19:00:00Z"))
+    ).resolves.toEqual([
+      {
+        id: "target-1",
+        sportKey: "americanfootball_nfl",
+        eventId: "event-1",
+        homeTeam: "Philadelphia Eagles",
+        awayTeam: "Dallas Cowboys",
+        eventStartTime: new Date("2026-10-04T20:00:00.000Z"),
+        marketKeys: ["player_pass_yds"],
+        activatedAt: new Date("2026-10-04T08:00:00.000Z"),
+        reason: "manual-analysis-priority",
+      },
+    ]);
+    expect(queryMock.mock.calls[0][0]).toContain("active = TRUE AND event_start_time > $1");
   });
 
   it("creates deterministic checkpoint identities and only reschedules unfinished work", async () => {
@@ -133,6 +167,8 @@ describe("odds collection persistence", () => {
         now: new Date("2026-10-04T19:46:00Z"),
         leaseMs: 30_000,
         limit: 5,
+        maxPriorityRank: 20,
+        maxCreditCost: 9,
       })
     ).resolves.toEqual({
       claimed: [{ id: "checkpoint-1", attempts: 2 }],
@@ -150,6 +186,8 @@ describe("odds collection persistence", () => {
       "2026-10-04T19:46:00.000Z",
       30_000,
       5,
+      20,
+      9,
     ]);
   });
 
