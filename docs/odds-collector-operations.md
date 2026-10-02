@@ -24,16 +24,26 @@ absence is not mistaken for a zero or silently filled from another time.
 For each selected event, the calendar-aware baseline schedules one 8 PM
 America/New_York checkpoint on Tuesday through the day before kickoff, then
 T-6h and T-15m. A Thursday game therefore has Tuesday, Wednesday, T-6h, and
-T-15m checkpoints; a Sunday or Monday game has all seven. The T-15m result is
-only labeled a closing candidate when it was captured no more than 30 minutes
-before kickoff.
+T-15m checkpoints; a Sunday game has seven checkpoints, while a Monday game
+also receives Sunday evening and has eight. The T-15m result is only labeled a
+closing candidate when it was captured no more than 30 minutes before kickoff.
+
+The first automatic free-pilot choice is stored in
+`odds_free_pilot_selections` and remains pinned through schedule flexes. An
+explicit `ODDS_FREE_PILOT_EVENT_ID` deliberately replaces that week's pin and
+supersedes the old event's unfinished checkpoints; completed evidence is never
+deleted. The override must belong to the current NFL week. Update or clear it
+at weekly rollover, otherwise the collector returns an error instead of
+silently spending credits on a different event.
 
 Priority targets are generic event/market targets, independent of creator
 recommendations. They schedule immediately and hourly until T-6h, then every
 five minutes until kickoff. `ODDS_PRIORITY_FAR_INTERVAL_MS` and
 `ODDS_PRIORITY_ACTIVE_INTERVAL_MS` make those two intervals deployment
 configurable. This density is intentionally expensive and must only be enabled
-for markets actively needed by product analysis.
+for markets actively needed by product analysis. Issue #41 provides the
+storage and scheduling foundation only; no production feature creates a
+priority target yet.
 
 The route can run frequently without producing duplicate observations. A
 durable checkpoint ledger claims only due work, uses expiring leases for
@@ -57,9 +67,9 @@ The current plans, checked 2026-10-02, are 500 credits/month at no charge and
   at most 63 baseline credits/week, approximately 274 in an average month.
   Discovery, live viewing, retries, and priority targets share the same quota.
 - Paid baseline: a representative 15-game week with one Thursday game,
-  thirteen Sunday games, and one Monday game schedules 102 event requests, or
-  at most 918 credits. A 16-game version schedules 109 requests, or at most
-  981 credits. Across 18 regular-season weeks, that is roughly 16,524–17,658
+  thirteen Sunday games, and one Monday game schedules 103 event requests, or
+  at most 927 credits. A 16-game version schedules 110 requests, or at most
+  990 credits. Across 18 regular-season weeks, that is roughly 16,686–17,820
   credits before playoffs, interactive traffic, retries, or priority targets.
 - Priority example: tracking one market from Tuesday until a Sunday kickoff can
   approach roughly 180 requests, or 180 credits. Tracking all nine markets at
@@ -95,6 +105,13 @@ full-slate baseline, and finally exploratory free-pilot checkpoints. At zero
 reported credits, no billed work is claimed. Unknown quota is treated as scarce
 rather than unlimited. Explicit user refreshes remain outside this scheduled
 queue and use the existing cache/cooldown controls.
+
+A checkpoint permits at most three attempts. If a paid fetch succeeds but its
+observation cannot be persisted, the raw response is not retained outside that
+request and a later retry must fetch again. The worst-case exposure is therefore
+27 credits for a nine-market checkpoint. The work ledger and request telemetry
+make that cost visible; the retry bound favors recovering missing evidence over
+silently marking it complete.
 
 ## Deployment and Hostinger trigger
 
@@ -135,6 +152,7 @@ in `odds_api_request_log`, while checkpoint outcomes remain in
 | `odds_observation_book_markets` | Provider `last_update` per bookmaker/market at that observation |
 | `odds_quote_sets` | Unique event/market content hashes |
 | `odds_quotes` | Normalized Over/Under price and point rows within a quote set |
+| `odds_free_pilot_selections` | Durable one-event selection per NFL week for the free pilot |
 | `odds_priority_targets` | Explicit dense event/market collection requests |
 | `odds_collection_checkpoints` | Durable scheduled-work, lease, retry, cost, and outcome ledger |
 | `odds_api_request_log` | Sanitized telemetry for every provider request attempt |
@@ -149,7 +167,8 @@ qualifies as a closing candidate.
 ## Retention and storage measurement
 
 Keep the complete regular season and postseason online through model
-validation. There is no weekly cleanup and no automatic deletion policy.
+validation, including the associated request telemetry. There is no weekly
+cleanup and no automatic deletion policy.
 Content-addressed quote sets reduce duplicate price storage without deleting
 observation timestamps or market-availability evidence.
 
@@ -166,6 +185,7 @@ WITH collector_tables(table_name) AS (
     ('odds_observation_book_markets'),
     ('odds_quote_sets'),
     ('odds_quotes'),
+    ('odds_free_pilot_selections'),
     ('odds_priority_targets'),
     ('odds_collection_checkpoints'),
     ('odds_api_request_log')
@@ -214,8 +234,9 @@ configured Postgres database and The Odds API:
   duplicate `(event_id, market_key, content_hash)` keys existed. A six-book
   exact-line sample was present for both Bryce Young and Jared Goff
   passing-touchdown props at 1.5.
-- Initial allocated table-and-index size across the eight collector tables was
-  488 kB. This is only a post-verification baseline, not a growth forecast.
+- Initial allocated table-and-index size across the then-eight collector tables
+  was 488 kB before the durable pilot-selection table was added. This is only a
+  post-verification baseline, not a growth forecast.
 
 No credentials, request URLs, or API keys were persisted in the verification
 telemetry.

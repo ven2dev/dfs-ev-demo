@@ -11,8 +11,11 @@ const {
   claimDueOddsCheckpoints,
   completeOddsCheckpoint,
   failOddsCheckpoint,
+  getFreePilotSelection,
   listActiveOddsPriorityTargets,
+  pinFreePilotSelection,
   skipOddsCheckpoint,
+  supersedeFreePilotCheckpoints,
   upsertOddsCollectionCheckpoints,
   upsertOddsPriorityTarget,
 } = await import("./oddsCollectionRepo.ts");
@@ -43,6 +46,90 @@ afterEach(() => {
 });
 
 describe("odds collection persistence", () => {
+  it("keeps the first automatic free-pilot selection for an NFL week", async () => {
+    queryMock.mockResolvedValueOnce([
+      {
+        week_start_time: "2026-09-29T04:00:00.000Z",
+        week_end_time: "2026-10-06T04:00:00.000Z",
+        sport_key: "americanfootball_nfl",
+        event_id: "event-1",
+        home_team: "Philadelphia Eagles",
+        away_team: "Dallas Cowboys",
+        event_start_time: "2026-10-04T20:00:00.000Z",
+        selection_reason: "latest-sunday",
+        selected_at: "2026-09-30T00:00:00.000Z",
+      },
+    ]);
+
+    await expect(
+      pinFreePilotSelection({
+        weekStartTime: new Date("2026-09-29T04:00:00Z"),
+        weekEndTime: new Date("2026-10-06T04:00:00Z"),
+        event: {
+          id: "event-1",
+          sportKey: "americanfootball_nfl",
+          homeTeam: "Philadelphia Eagles",
+          awayTeam: "Dallas Cowboys",
+          commenceTime: "2026-10-04T20:00:00Z",
+        },
+        reason: "latest-sunday",
+        selectedAt: new Date("2026-09-30T00:00:00Z"),
+      })
+    ).resolves.toMatchObject({
+      event: { id: "event-1" },
+      reason: "latest-sunday",
+    });
+
+    const [sql] = queryMock.mock.calls[0];
+    expect(sql).toContain("ON CONFLICT (week_start_time) DO UPDATE");
+    expect(sql).toContain("EXCLUDED.selection_reason = 'explicit-override'");
+    expect(sql).toContain("NOT EXISTS (SELECT 1 FROM selected)");
+  });
+
+  it("loads a durable weekly pilot selection", async () => {
+    queryMock.mockResolvedValueOnce([
+      {
+        week_start_time: "2026-09-29T04:00:00.000Z",
+        week_end_time: "2026-10-06T04:00:00.000Z",
+        sport_key: "americanfootball_nfl",
+        event_id: "event-1",
+        home_team: "Philadelphia Eagles",
+        away_team: "Dallas Cowboys",
+        event_start_time: "2026-10-04T20:00:00.000Z",
+        selection_reason: "latest-sunday",
+        selected_at: "2026-09-30T00:00:00.000Z",
+      },
+    ]);
+
+    await expect(
+      getFreePilotSelection(new Date("2026-09-29T04:00:00Z"))
+    ).resolves.toMatchObject({ event: { id: "event-1" } });
+    expect(queryMock.mock.calls[0][0]).toContain("FROM odds_free_pilot_selections");
+  });
+
+  it("supersedes only unfinished checkpoints for a replaced pilot event", async () => {
+    queryMock.mockResolvedValueOnce([{ id: "old-1" }, { id: "old-2" }]);
+
+    await expect(
+      supersedeFreePilotCheckpoints({
+        selectedEventId: "event-2",
+        weekStartTime: new Date("2026-09-29T04:00:00Z"),
+        weekEndTime: new Date("2026-10-06T04:00:00Z"),
+        supersededAt: new Date("2026-10-01T12:00:00Z"),
+      })
+    ).resolves.toBe(2);
+
+    const [sql, params] = queryMock.mock.calls[0];
+    expect(sql).toContain("status IN ('pending', 'failed')");
+    expect(sql).toContain("free-pilot-event-superseded");
+    expect(params).toEqual([
+      "event-2",
+      "2026-09-29T04:00:00.000Z",
+      "2026-10-06T04:00:00.000Z",
+      "2026-10-01T12:00:00.000Z",
+    ]);
+  });
+
   it("upserts a priority target with complete event and market context", async () => {
     queryMock.mockResolvedValueOnce([]);
 

@@ -85,6 +85,24 @@ describe("planBaselineCheckpoints", () => {
     ).toEqual(["tuesday-opening", "wednesday-evening", "t-6h", "t-15m"]);
   });
 
+  it("includes Sunday evening for a Monday-night game", () => {
+    const checkpoints = planBaselineCheckpoints(event("mon", "2026-10-06T00:15:00Z"));
+
+    expect(checkpoints.map(({ checkpointKey }) => checkpointKey)).toEqual([
+      "tuesday-opening",
+      "wednesday-evening",
+      "thursday-evening",
+      "friday-final-practice",
+      "saturday-evening",
+      "sunday-evening",
+      "t-6h",
+      "t-15m",
+    ]);
+    expect(
+      checkpoints.find(({ checkpointKey }) => checkpointKey === "sunday-evening")?.dueAt
+    ).toBe("2026-10-05T00:00:00.000Z");
+  });
+
   it("uses Eastern wall-clock evenings across the daylight-saving transition", () => {
     const checkpoints = planBaselineCheckpoints(event("sun", "2026-11-08T18:00:00Z"));
     expect(checkpoints[0]).toMatchObject({

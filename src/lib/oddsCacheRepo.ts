@@ -64,6 +64,15 @@ const persistDiscoveryObservation = async (
     );
     return false;
   }
+  const eventStartMs = Date.parse(event.commence_time);
+  const capturedAtMs = Date.parse(fetched.capturedAt);
+  if (
+    Number.isFinite(eventStartMs) &&
+    Number.isFinite(capturedAtMs) &&
+    capturedAtMs >= eventStartMs
+  ) {
+    return false;
+  }
 
   try {
     await persistOddsObservation(

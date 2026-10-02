@@ -21,6 +21,7 @@ export type BaselineCheckpointKey =
   | "thursday-evening"
   | "friday-final-practice"
   | "saturday-evening"
+  | "sunday-evening"
   | "t-6h"
   | "t-15m";
 
@@ -46,6 +47,7 @@ const EVENING_CHECKPOINTS: readonly {
   { dayOffsetFromTuesday: 2, checkpointKey: "thursday-evening" },
   { dayOffsetFromTuesday: 3, checkpointKey: "friday-final-practice" },
   { dayOffsetFromTuesday: 4, checkpointKey: "saturday-evening" },
+  { dayOffsetFromTuesday: 5, checkpointKey: "sunday-evening" },
 ];
 
 const sundayFormatter = new Intl.DateTimeFormat("en-US", {

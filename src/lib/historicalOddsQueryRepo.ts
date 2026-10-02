@@ -54,7 +54,7 @@ SELECT
       jsonb_build_object(
         'bookmakerKey', quote.bookmaker_key,
         'rawPlayerName', quote.raw_player_name,
-        'playerId', quote.player_id,
+        'playerId', COALESCE(quote.player_id, crosswalk.nflverse_player_id),
         'direction', quote.direction,
         'point', quote.point,
         'decimalPrice', quote.decimal_price
@@ -65,6 +65,8 @@ SELECT
   ) AS quotes
 FROM latest_market AS latest
 LEFT JOIN odds_quotes AS quote ON quote.quote_set_id = latest.quote_set_id
+LEFT JOIN player_crosswalk AS crosswalk
+  ON crosswalk.odds_api_name = quote.raw_player_name
 GROUP BY
   latest.observation_id,
   latest.event_id,

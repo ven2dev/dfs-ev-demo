@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { getSql } from "./db";
 import type { PlannedOddsCheckpoint } from "./oddsCollectionPolicy";
+import type { SlateEvent } from "./oddsApi";
 
 export type CollectionCheckpointProfile = "free-pilot" | "paid-baseline" | "priority";
 
@@ -50,6 +51,26 @@ export type OddsPriorityTargetInput = {
   marketKeys: string[];
   activatedAt: Date;
   reason: string;
+};
+
+export type FreePilotSelection = {
+  weekStartTime: Date;
+  weekEndTime: Date;
+  event: SlateEvent;
+  reason: "latest-sunday" | "explicit-override";
+  selectedAt: Date;
+};
+
+type FreePilotSelectionRow = {
+  week_start_time: string;
+  week_end_time: string;
+  sport_key: string;
+  event_id: string;
+  home_team: string;
+  away_team: string;
+  event_start_time: string;
+  selection_reason: FreePilotSelection["reason"];
+  selected_at: string;
 };
 
 type OddsPriorityTargetRow = {
@@ -199,6 +220,151 @@ const validateUniqueMarketKeys = (marketKeys: string[]) => {
     throw new Error("marketKeys must not contain duplicates");
   }
   return unique;
+};
+
+const mapFreePilotSelection = (row: FreePilotSelectionRow): FreePilotSelection => ({
+  weekStartTime: new Date(row.week_start_time),
+  weekEndTime: new Date(row.week_end_time),
+  event: {
+    id: row.event_id,
+    sportKey: row.sport_key,
+    homeTeam: row.home_team,
+    awayTeam: row.away_team,
+    commenceTime: row.event_start_time,
+  },
+  reason: row.selection_reason,
+  selectedAt: new Date(row.selected_at),
+});
+
+export const getFreePilotSelection = async (
+  weekStartTime: Date
+): Promise<FreePilotSelection | null> => {
+  if (!Number.isFinite(weekStartTime.getTime())) {
+    throw new Error("weekStartTime must be a valid date");
+  }
+  const rows = (await getSql().query(
+    `SELECT week_start_time, week_end_time, sport_key, event_id,
+       home_team, away_team, event_start_time, selection_reason, selected_at
+     FROM odds_free_pilot_selections
+     WHERE week_start_time = $1`,
+    [weekStartTime.toISOString()]
+  )) as FreePilotSelectionRow[];
+  return rows[0] ? mapFreePilotSelection(rows[0]) : null;
+};
+
+export const pinFreePilotSelection = async (input: {
+  weekStartTime: Date;
+  weekEndTime: Date;
+  event: SlateEvent;
+  reason: FreePilotSelection["reason"];
+  selectedAt: Date;
+}): Promise<FreePilotSelection> => {
+  for (const [value, field] of [
+    [input.event.id, "event.id"],
+    [input.event.sportKey, "event.sportKey"],
+    [input.event.homeTeam, "event.homeTeam"],
+    [input.event.awayTeam, "event.awayTeam"],
+  ] as const) {
+    nonEmpty(value, field);
+  }
+  const weekStartMs = input.weekStartTime.getTime();
+  const weekEndMs = input.weekEndTime.getTime();
+  const eventStartMs = Date.parse(input.event.commenceTime);
+  if (
+    !Number.isFinite(weekStartMs) ||
+    !Number.isFinite(weekEndMs) ||
+    !Number.isFinite(eventStartMs) ||
+    !Number.isFinite(input.selectedAt.getTime()) ||
+    weekStartMs >= weekEndMs ||
+    eventStartMs < weekStartMs ||
+    eventStartMs >= weekEndMs
+  ) {
+    throw new Error("Free-pilot selection must contain valid times within one NFL week");
+  }
+
+  const rows = (await getSql().query(
+    `WITH selected AS (
+       INSERT INTO odds_free_pilot_selections (
+         week_start_time, week_end_time, sport_key, event_id, home_team,
+         away_team, event_start_time, selection_reason, selected_at
+       )
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (week_start_time) DO UPDATE SET
+         week_end_time = EXCLUDED.week_end_time,
+         sport_key = EXCLUDED.sport_key,
+         event_id = EXCLUDED.event_id,
+         home_team = EXCLUDED.home_team,
+         away_team = EXCLUDED.away_team,
+         event_start_time = EXCLUDED.event_start_time,
+         selection_reason = EXCLUDED.selection_reason,
+         selected_at = EXCLUDED.selected_at,
+         updated_at = now()
+       WHERE EXCLUDED.selection_reason = 'explicit-override'
+       RETURNING *
+     )
+     SELECT week_start_time, week_end_time, sport_key, event_id,
+       home_team, away_team, event_start_time, selection_reason, selected_at
+     FROM selected
+     UNION ALL
+     SELECT week_start_time, week_end_time, sport_key, event_id,
+       home_team, away_team, event_start_time, selection_reason, selected_at
+     FROM odds_free_pilot_selections
+     WHERE week_start_time = $1 AND NOT EXISTS (SELECT 1 FROM selected)
+     LIMIT 1`,
+    [
+      input.weekStartTime.toISOString(),
+      input.weekEndTime.toISOString(),
+      input.event.sportKey,
+      input.event.id,
+      input.event.homeTeam,
+      input.event.awayTeam,
+      new Date(eventStartMs).toISOString(),
+      input.reason,
+      input.selectedAt.toISOString(),
+    ]
+  )) as FreePilotSelectionRow[];
+  const selection = rows[0];
+  if (!selection) throw new Error("Free-pilot selection returned no result");
+  return mapFreePilotSelection(selection);
+};
+
+export const supersedeFreePilotCheckpoints = async (input: {
+  selectedEventId: string;
+  weekStartTime: Date;
+  weekEndTime: Date;
+  supersededAt: Date;
+}): Promise<number> => {
+  nonEmpty(input.selectedEventId, "selectedEventId");
+  for (const [value, field] of [
+    [input.weekStartTime, "weekStartTime"],
+    [input.weekEndTime, "weekEndTime"],
+    [input.supersededAt, "supersededAt"],
+  ] as const) {
+    if (!Number.isFinite(value.getTime())) throw new Error(`${field} must be a valid date`);
+  }
+  if (input.weekStartTime.getTime() >= input.weekEndTime.getTime()) {
+    throw new Error("Free-pilot supersession requires a valid week window");
+  }
+  const rows = await getSql().query(
+    `UPDATE odds_collection_checkpoints
+     SET status = 'skipped', next_attempt_at = NULL,
+       outcome_reason = 'free-pilot-event-superseded',
+       completed_at = $4, updated_at = $4
+     WHERE collection_profile = 'free-pilot'
+       AND kind = 'baseline'
+       AND event_id <> $1
+       AND event_start_time >= $2
+       AND event_start_time < $3
+       AND status IN ('pending', 'failed')
+     RETURNING id`,
+    [
+      input.selectedEventId,
+      input.weekStartTime.toISOString(),
+      input.weekEndTime.toISOString(),
+      input.supersededAt.toISOString(),
+    ]
+  );
+  return rows.length;
 };
 
 export const upsertOddsPriorityTarget = async (

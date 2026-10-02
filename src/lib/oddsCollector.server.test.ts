@@ -52,6 +52,9 @@ const mocks = {
   fetchSlateEvents: vi.fn(),
   fetchEventOdds: vi.fn(),
   listActiveTargets: vi.fn(),
+  getFreePilotSelection: vi.fn(),
+  pinFreePilotSelection: vi.fn(),
+  supersedeFreePilotCheckpoints: vi.fn(),
   upsertCheckpoints: vi.fn(),
   claimDue: vi.fn(),
   persistObservation: vi.fn(),
@@ -105,6 +108,15 @@ beforeEach(() => {
   mocks.now.mockReturnValue(new Date("2026-10-04T19:46:00Z"));
   mocks.fetchSlateEvents.mockResolvedValue(slateFetch());
   mocks.listActiveTargets.mockResolvedValue([]);
+  mocks.getFreePilotSelection.mockResolvedValue(null);
+  mocks.pinFreePilotSelection.mockImplementation(async (input) => ({
+    weekStartTime: input.weekStartTime,
+    weekEndTime: input.weekEndTime,
+    event: input.event,
+    reason: input.reason,
+    selectedAt: input.selectedAt,
+  }));
+  mocks.supersedeFreePilotCheckpoints.mockResolvedValue(0);
   mocks.upsertCheckpoints.mockImplementation(async (_context, checkpoints) =>
     checkpoints.map((_: unknown, index: number) => `planned-${index}`)
   );
@@ -174,6 +186,60 @@ describe("runOddsCollector", () => {
       expect.objectContaining({ profile: "free-pilot", priorityRank: 40 }),
       expect.arrayContaining([expect.objectContaining({ checkpointKey: "tuesday-opening" })])
     );
+    expect(mocks.pinFreePilotSelection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: expect.objectContaining({ id: "event-1" }),
+        reason: "latest-sunday",
+      })
+    );
+    expect(mocks.supersedeFreePilotCheckpoints).toHaveBeenCalledWith(
+      expect.objectContaining({ selectedEventId: "event-1" })
+    );
+  });
+
+  it("keeps the durable weekly pilot event when kickoff ordering changes", async () => {
+    mocks.getFreePilotSelection.mockResolvedValueOnce({
+      weekStartTime: new Date("2026-09-29T04:00:00Z"),
+      weekEndTime: new Date("2026-10-06T04:00:00Z"),
+      event: {
+        id: "event-1",
+        sportKey: "americanfootball_nfl",
+        homeTeam: "Philadelphia Eagles",
+        awayTeam: "Dallas Cowboys",
+        commenceTime: "2026-10-04T19:00:00.000Z",
+      },
+      reason: "latest-sunday",
+      selectedAt: new Date("2026-09-30T00:00:00Z"),
+    });
+    mocks.claimDue.mockResolvedValueOnce({ claimed: [], skippedCount: 0 });
+
+    const result = await runOddsCollector(config(), deps);
+
+    expect(mocks.pinFreePilotSelection).not.toHaveBeenCalled();
+    expect(mocks.upsertCheckpoints).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventId: "event-1",
+        eventStartTime: new Date("2026-10-04T20:00:00.000Z"),
+      }),
+      expect.any(Array)
+    );
+    expect(result.baselineEvents).toBe(1);
+  });
+
+  it("reports unfinished checkpoints superseded by an explicit pilot override", async () => {
+    mocks.supersedeFreePilotCheckpoints.mockResolvedValueOnce(4);
+    mocks.claimDue.mockResolvedValueOnce({ claimed: [], skippedCount: 0 });
+
+    const result = await runOddsCollector(
+      { ...config(), freePilotEventId: "event-1" },
+      deps
+    );
+
+    expect(mocks.getFreePilotSelection).not.toHaveBeenCalled();
+    expect(mocks.pinFreePilotSelection).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: "explicit-override" })
+    );
+    expect(result.supersededFreePilotCheckpoints).toBe(4);
   });
 
   it("ranks ordinary paid baseline work ahead of exploratory free-pilot work", async () => {

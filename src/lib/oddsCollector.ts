@@ -5,14 +5,18 @@ import {
   planBaselineCheckpoints,
   planPriorityCheckpoints,
   selectBaselineEvents,
+  type BaselineEventSelection,
   type OddsCollectionProfile,
 } from "./oddsCollectionPolicy";
 import {
   claimDueOddsCheckpoints,
   completeOddsCheckpoint,
   failOddsCheckpoint,
+  getFreePilotSelection,
   listActiveOddsPriorityTargets,
+  pinFreePilotSelection,
   skipOddsCheckpoint,
+  supersedeFreePilotCheckpoints,
   upsertOddsCollectionCheckpoints,
   type ClaimedOddsCheckpoint,
 } from "./oddsCollectionRepo";
@@ -27,6 +31,7 @@ import {
 } from "./oddsApi";
 import { persistOddsObservation } from "./oddsSnapshotRepo";
 import { TRACKABLE_PLAYER_PROP_MARKET_KEYS } from "./playerPropMarkets";
+import { getCurrentNflSlateWindow } from "./nflWeek";
 
 export type OddsCollectorConfig = {
   profile: OddsCollectionProfile;
@@ -47,6 +52,7 @@ export type OddsCollectorSummary = {
   baselineEvents: number;
   priorityTargets: number;
   checkpointsUpserted: number;
+  supersededFreePilotCheckpoints: number;
   expiredOrExhaustedSkipped: number;
   claimed: number;
   completed: number;
@@ -65,6 +71,9 @@ export type OddsCollectorDeps = {
   fetchSlateEvents: typeof fetchSlateEvents;
   fetchEventOdds: typeof fetchEventOdds;
   listActiveTargets: typeof listActiveOddsPriorityTargets;
+  getFreePilotSelection: typeof getFreePilotSelection;
+  pinFreePilotSelection: typeof pinFreePilotSelection;
+  supersedeFreePilotCheckpoints: typeof supersedeFreePilotCheckpoints;
   upsertCheckpoints: typeof upsertOddsCollectionCheckpoints;
   claimDue: typeof claimDueOddsCheckpoints;
   persistObservation: typeof persistOddsObservation;
@@ -79,6 +88,9 @@ const realDeps: OddsCollectorDeps = {
   fetchSlateEvents,
   fetchEventOdds,
   listActiveTargets: listActiveOddsPriorityTargets,
+  getFreePilotSelection,
+  pinFreePilotSelection,
+  supersedeFreePilotCheckpoints,
   upsertCheckpoints: upsertOddsCollectionCheckpoints,
   claimDue: claimDueOddsCheckpoints,
   persistObservation: persistOddsObservation,
@@ -159,6 +171,7 @@ export const runOddsCollector = async (
     baselineEvents: 0,
     priorityTargets: 0,
     checkpointsUpserted: 0,
+    supersededFreePilotCheckpoints: 0,
     expiredOrExhaustedSkipped: 0,
     claimed: 0,
     completed: 0,
@@ -182,9 +195,62 @@ export const runOddsCollector = async (
     "scheduled"
   );
   summary.slateQuota = slate.quota;
-  const baselineSelections = selectBaselineEvents(config.profile, slate.data, {
-    freePilotEventId: config.freePilotEventId,
-  });
+  let baselineSelections: BaselineEventSelection[];
+  if (config.profile === "free-pilot") {
+    const window = getCurrentNflSlateWindow(planningNow);
+    const weekStartTime = new Date(window.startTime);
+    const weekEndTime = new Date(window.endTime);
+    const existingSelection = config.freePilotEventId
+      ? null
+      : await deps.getFreePilotSelection(weekStartTime);
+    if (existingSelection) {
+      const refreshedEvent = slate.data.find(
+        (event) => event.id === existingSelection.event.id
+      );
+      baselineSelections = [
+        {
+          event: refreshedEvent ?? existingSelection.event,
+          reason: existingSelection.reason,
+        },
+      ];
+    } else {
+      const candidates = selectBaselineEvents(config.profile, slate.data, {
+        freePilotEventId: config.freePilotEventId,
+      });
+      const candidate = candidates[0];
+      if (candidate) {
+        const selection = await deps.pinFreePilotSelection({
+          weekStartTime,
+          weekEndTime,
+          event: candidate.event,
+          reason: config.freePilotEventId ? "explicit-override" : "latest-sunday",
+          selectedAt: planningNow,
+        });
+        const refreshedEvent = slate.data.find(
+          (event) => event.id === selection.event.id
+        );
+        baselineSelections = [
+          {
+            event: refreshedEvent ?? selection.event,
+            reason: selection.reason,
+          },
+        ];
+      } else {
+        baselineSelections = [];
+      }
+    }
+    const selectedEvent = baselineSelections[0]?.event;
+    if (selectedEvent) {
+      summary.supersededFreePilotCheckpoints = await deps.supersedeFreePilotCheckpoints({
+        selectedEventId: selectedEvent.id,
+        weekStartTime,
+        weekEndTime,
+        supersededAt: planningNow,
+      });
+    }
+  } else {
+    baselineSelections = selectBaselineEvents(config.profile, slate.data);
+  }
   summary.baselineEvents = baselineSelections.length;
 
   for (const selection of baselineSelections) {

@@ -199,6 +199,26 @@ describe("getSharedLivePropInputs", () => {
     expect(queryMock.mock.calls[2][0]).toContain("SET payload");
   });
 
+  it("does not log an expected history error when a live refresh arrives at kickoff", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    queryMock
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ refresh_owner: "owner" }])
+      .mockResolvedValueOnce([{ event_id: "evt-1" }]);
+    fetchOddsMock.mockResolvedValueOnce({
+      ...oddsFetch(),
+      capturedAt: context.startTime,
+    });
+    fetchWeatherMock.mockResolvedValueOnce(weather);
+
+    await expect(getSharedLivePropInputs(key, context)).resolves.toMatchObject({
+      oddsByBookmaker,
+      weather,
+    });
+    expect(persistObservationMock).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
   it("renews a slow refresh with an owner-guarded database update", async () => {
     vi.useFakeTimers();
     let resolveOdds!: (value: ReturnType<typeof oddsFetch>) => void;

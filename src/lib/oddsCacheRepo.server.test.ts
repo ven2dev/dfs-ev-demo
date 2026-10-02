@@ -328,4 +328,26 @@ describe("getOrFetchMarketOdds", () => {
       historyError
     );
   });
+
+  it("serves and caches a post-kickoff response without logging an expected history error", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    queryMock.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    const response = fetchedResponse({
+      id: "evt-1",
+      commence_time: "2026-10-05T17:00:00Z",
+      bookmakers: [
+        {
+          key: "draftkings",
+          markets: [{ key: "player_pass_yds", outcomes: [] }],
+        },
+      ],
+    });
+    response.capturedAt = "2026-10-05T17:00:00.000Z";
+    fetchEventOddsMock.mockResolvedValueOnce(response);
+
+    await getOrFetchMarketOdds("americanfootball_nfl", "evt-1", ["player_pass_yds"]);
+
+    expect(persistObservationMock).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
 });

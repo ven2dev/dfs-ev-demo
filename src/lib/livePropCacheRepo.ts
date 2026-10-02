@@ -159,28 +159,36 @@ export const getSharedLivePropInputs = async (
                 home_team: fetched.data.response.home_team ?? context.homeTeam,
                 away_team: fetched.data.response.away_team ?? context.awayTeam,
               };
-              try {
-                await persistOddsObservation(
-                  {
-                    observationId,
-                    sportKey: event.sport_key,
-                    eventId: key.eventId,
-                    homeTeam: event.home_team,
-                    awayTeam: event.away_team,
-                    eventStartTime: new Date(event.commence_time),
-                    source: "live",
-                    capturedAt: new Date(fetched.capturedAt),
-                    requestedMarketKeys: [key.marketKey],
-                    quota: fetched.quota,
-                  },
-                  event
-                );
-                observationPersisted = true;
-              } catch (error) {
-                console.error(
-                  `[livePropCacheRepo] failed to persist observation "${observationId}":`,
-                  error
-                );
+              const eventStartTime = new Date(event.commence_time);
+              const capturedAt = new Date(fetched.capturedAt);
+              const isPostKickoff =
+                Number.isFinite(eventStartTime.getTime()) &&
+                Number.isFinite(capturedAt.getTime()) &&
+                capturedAt.getTime() >= eventStartTime.getTime();
+              if (!isPostKickoff) {
+                try {
+                  await persistOddsObservation(
+                    {
+                      observationId,
+                      sportKey: event.sport_key,
+                      eventId: key.eventId,
+                      homeTeam: event.home_team,
+                      awayTeam: event.away_team,
+                      eventStartTime,
+                      source: "live",
+                      capturedAt,
+                      requestedMarketKeys: [key.marketKey],
+                      quota: fetched.quota,
+                    },
+                    event
+                  );
+                  observationPersisted = true;
+                } catch (error) {
+                  console.error(
+                    `[livePropCacheRepo] failed to persist observation "${observationId}":`,
+                    error
+                  );
+                }
               }
             }
             return { ...fetched, observationPersisted };

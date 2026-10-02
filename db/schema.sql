@@ -262,6 +262,25 @@ CREATE TABLE IF NOT EXISTS odds_quotes (
 CREATE INDEX IF NOT EXISTS idx_odds_quotes_lookup
   ON odds_quotes (quote_set_id, raw_player_name, point, bookmaker_key);
 
+-- One durable free-tier event choice per NFL week. Automatic selection never
+-- drifts after a schedule flex; an explicit operator override may replace it.
+CREATE TABLE IF NOT EXISTS odds_free_pilot_selections (
+  week_start_time TIMESTAMPTZ PRIMARY KEY,
+  week_end_time TIMESTAMPTZ NOT NULL,
+  sport_key TEXT NOT NULL,
+  event_id TEXT NOT NULL,
+  home_team TEXT NOT NULL,
+  away_team TEXT NOT NULL,
+  event_start_time TIMESTAMPTZ NOT NULL,
+  selection_reason TEXT NOT NULL CHECK (
+    selection_reason IN ('latest-sunday', 'explicit-override')
+  ),
+  selected_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CHECK (week_start_time < week_end_time),
+  CHECK (event_start_time >= week_start_time AND event_start_time < week_end_time)
+);
+
 -- Generic event-market targets are independent of creator picks. Any later
 -- trigger can activate one without changing the collector's cadence contract.
 CREATE TABLE IF NOT EXISTS odds_priority_targets (
