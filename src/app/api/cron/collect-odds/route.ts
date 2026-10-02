@@ -49,6 +49,18 @@ export const GET = async (request: NextRequest) => {
       ),
       retryDelayMs: integerSetting("ODDS_COLLECTION_RETRY_DELAY_MS", 60_000, 1_000, 300_000),
       quotaReserve: integerSetting("ODDS_COLLECTION_QUOTA_RESERVE", 100, 0, 1_000_000),
+      priorityFarIntervalMs: integerSetting(
+        "ODDS_PRIORITY_FAR_INTERVAL_MS",
+        60 * 60 * 1_000,
+        60_000,
+        24 * 60 * 60 * 1_000
+      ),
+      priorityActiveIntervalMs: integerSetting(
+        "ODDS_PRIORITY_ACTIVE_INTERVAL_MS",
+        5 * 60 * 1_000,
+        60_000,
+        6 * 60 * 60 * 1_000
+      ),
     });
     return NextResponse.json({ success: true, result });
   } catch (error) {

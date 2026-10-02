@@ -38,6 +38,8 @@ export type OddsCollectorConfig = {
   requestTimeoutMs: number;
   retryDelayMs: number;
   quotaReserve: number;
+  priorityFarIntervalMs: number;
+  priorityActiveIntervalMs: number;
 };
 
 export type OddsCollectorSummary = {
@@ -101,6 +103,8 @@ const validateConfig = (config: OddsCollectorConfig) => {
     [config.leaseMs, "leaseMs"],
     [config.requestTimeoutMs, "requestTimeoutMs"],
     [config.retryDelayMs, "retryDelayMs"],
+    [config.priorityFarIntervalMs, "priorityFarIntervalMs"],
+    [config.priorityActiveIntervalMs, "priorityActiveIntervalMs"],
   ] as const) {
     if (!Number.isInteger(value) || value <= 0) throw new Error(`${field} must be positive`);
   }
@@ -121,7 +125,7 @@ const baselinePriorityRank = (
   checkpointKey: string
 ) => {
   if (CRITICAL_BASELINE_CHECKPOINTS.has(checkpointKey)) return 20;
-  return profile === "free-pilot" ? 30 : 40;
+  return profile === "paid-baseline" ? 30 : 40;
 };
 
 const quotaPriorityCeiling = (remaining: number | null, reserve: number) => {
@@ -214,12 +218,18 @@ export const runOddsCollector = async (
   const targets = await deps.listActiveTargets(planningNow);
   summary.priorityTargets = targets.length;
   for (const target of targets) {
-    const checkpoints = planPriorityCheckpoints({
-      targetId: target.id,
-      eventId: target.eventId,
-      activatedAt: target.activatedAt,
-      eventStartTime: target.eventStartTime,
-    });
+    const checkpoints = planPriorityCheckpoints(
+      {
+        targetId: target.id,
+        eventId: target.eventId,
+        activatedAt: target.activatedAt,
+        eventStartTime: target.eventStartTime,
+      },
+      {
+        farIntervalMs: config.priorityFarIntervalMs,
+        activeIntervalMs: config.priorityActiveIntervalMs,
+      }
+    );
     const ids = await deps.upsertCheckpoints(
       {
         profile: "priority",

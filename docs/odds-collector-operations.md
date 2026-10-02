@@ -30,8 +30,10 @@ before kickoff.
 
 Priority targets are generic event/market targets, independent of creator
 recommendations. They schedule immediately and hourly until T-6h, then every
-five minutes until kickoff. This density is intentionally expensive and must
-only be enabled for markets actively needed by product analysis.
+five minutes until kickoff. `ODDS_PRIORITY_FAR_INTERVAL_MS` and
+`ODDS_PRIORITY_ACTIVE_INTERVAL_MS` make those two intervals deployment
+configurable. This density is intentionally expensive and must only be enabled
+for markets actively needed by product analysis.
 
 The route can run frequently without producing duplicate observations. A
 durable checkpoint ledger claims only due work, uses expiring leases for
@@ -88,9 +90,11 @@ ORDER BY 1 DESC, 2;
 that credits can never fall below that number. As the reported remaining quota
 approaches the threshold, ordinary work is excluded and each invocation claims
 at most one affordable high-priority checkpoint. Priority targets rank first,
-then T-15m, T-6h, and Friday final-practice checkpoints, then the ordinary free
-pilot and paid-baseline checkpoints. At zero reported credits, no billed work
-is claimed. Unknown quota is treated as scarce rather than unlimited.
+then T-15m, T-6h, and Friday final-practice checkpoints, then the ordinary paid
+full-slate baseline, and finally exploratory free-pilot checkpoints. At zero
+reported credits, no billed work is claimed. Unknown quota is treated as scarce
+rather than unlimited. Explicit user refreshes remain outside this scheduled
+queue and use the existing cache/cooldown controls.
 
 ## Deployment and Hostinger trigger
 

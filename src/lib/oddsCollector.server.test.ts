@@ -14,6 +14,8 @@ const config = (): OddsCollectorConfig => ({
   requestTimeoutMs: 15_000,
   retryDelayMs: 60_000,
   quotaReserve: 100,
+  priorityFarIntervalMs: 60 * 60 * 1_000,
+  priorityActiveIntervalMs: 5 * 60 * 1_000,
 });
 
 const claimed = (): ClaimedOddsCheckpoint => ({
@@ -168,6 +170,95 @@ describe("runOddsCollector", () => {
       claimLimitApplied: 2,
       maxCreditCost: 500,
     });
+    expect(mocks.upsertCheckpoints).toHaveBeenCalledWith(
+      expect.objectContaining({ profile: "free-pilot", priorityRank: 40 }),
+      expect.arrayContaining([expect.objectContaining({ checkpointKey: "tuesday-opening" })])
+    );
+  });
+
+  it("ranks ordinary paid baseline work ahead of exploratory free-pilot work", async () => {
+    mocks.claimDue.mockResolvedValueOnce({ claimed: [], skippedCount: 0 });
+
+    await runOddsCollector({ ...config(), profile: "paid-baseline" }, deps);
+
+    expect(mocks.upsertCheckpoints).toHaveBeenCalledWith(
+      expect.objectContaining({ profile: "paid-baseline", priorityRank: 30 }),
+      expect.arrayContaining([expect.objectContaining({ checkpointKey: "tuesday-opening" })])
+    );
+    expect(mocks.upsertCheckpoints).toHaveBeenCalledWith(
+      expect.objectContaining({ profile: "paid-baseline", priorityRank: 20 }),
+      expect.arrayContaining([expect.objectContaining({ checkpointKey: "t-15m" })])
+    );
+  });
+
+  it.each([
+    { remaining: null, maxCreditCost: 9 },
+    { remaining: 100, maxCreditCost: 100 },
+  ])("admits only critical work when remaining quota is $remaining", async ({
+    remaining,
+    maxCreditCost,
+  }) => {
+    mocks.fetchSlateEvents.mockResolvedValueOnce({
+      ...slateFetch(),
+      quota: { remaining, used: null, last: 0 },
+    });
+    mocks.claimDue.mockResolvedValueOnce({ claimed: [], skippedCount: 0 });
+
+    const result = await runOddsCollector(config(), deps);
+
+    expect(mocks.claimDue).toHaveBeenCalledWith(
+      expect.objectContaining({ maxPriorityRank: 20, maxCreditCost, limit: 1 })
+    );
+    expect(result).toMatchObject({ maxPriorityRank: 20, claimLimitApplied: 1 });
+  });
+
+  it("admits one paid-baseline checkpoint when exactly one request fits above reserve", async () => {
+    mocks.fetchSlateEvents.mockResolvedValueOnce({
+      ...slateFetch(),
+      quota: { remaining: 109, used: 391, last: 0 },
+    });
+    mocks.claimDue.mockResolvedValueOnce({ claimed: [], skippedCount: 0 });
+
+    const result = await runOddsCollector(config(), deps);
+
+    expect(mocks.claimDue).toHaveBeenCalledWith(
+      expect.objectContaining({ maxPriorityRank: 30, maxCreditCost: 109, limit: 1 })
+    );
+    expect(result).toMatchObject({ maxPriorityRank: 30, claimLimitApplied: 1 });
+  });
+
+  it("passes configured priority intervals into target planning", async () => {
+    mocks.listActiveTargets.mockResolvedValueOnce([
+      {
+        id: "target-1",
+        sportKey: "americanfootball_nfl",
+        eventId: "event-1",
+        homeTeam: "Philadelphia Eagles",
+        awayTeam: "Dallas Cowboys",
+        eventStartTime: new Date("2026-10-04T20:00:00Z"),
+        marketKeys: ["player_pass_yds"],
+        activatedAt: new Date("2026-10-04T08:00:00Z"),
+        reason: "manual-analysis-priority",
+      },
+    ]);
+    mocks.claimDue.mockResolvedValueOnce({ claimed: [], skippedCount: 0 });
+
+    await runOddsCollector(
+      {
+        ...config(),
+        priorityFarIntervalMs: 2 * 60 * 60 * 1_000,
+        priorityActiveIntervalMs: 10 * 60 * 1_000,
+      },
+      deps
+    );
+
+    expect(mocks.upsertCheckpoints).toHaveBeenCalledWith(
+      expect.objectContaining({ profile: "priority", priorityRank: 10 }),
+      expect.arrayContaining([
+        expect.objectContaining({ dueAt: "2026-10-04T10:00:00.000Z" }),
+        expect.objectContaining({ dueAt: "2026-10-04T14:10:00.000Z" }),
+      ])
+    );
   });
 
   it("records provider error cost and schedules a retry inside the due window", async () => {

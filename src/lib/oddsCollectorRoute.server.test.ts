@@ -51,6 +51,8 @@ describe("GET /api/cron/collect-odds", () => {
         requestTimeoutMs: 15_000,
         retryDelayMs: 60_000,
         quotaReserve: 100,
+        priorityFarIntervalMs: 3_600_000,
+        priorityActiveIntervalMs: 300_000,
         ownerId: expect.any(String),
       })
     );
