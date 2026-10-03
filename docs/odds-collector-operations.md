@@ -177,12 +177,11 @@ monitor fail closed. The health query checks:
 - whether the collector's shared quota policy can run the next pinned-event
   checkpoint. Degraded quota is a warning until it actually blocks that work.
 
-The `Collector Health` GitHub Actions workflow initially supports manual
-dispatch only. Activation deliberately follows this order: deploy the health
-route, prove one expected missing-wake incident, enable and verify the
-Hostinger trigger with explicit operator approval, and only then add the
-ten-minute schedule. This prevents a knowingly red monitor from training the
-operator to ignore alerts.
+The `Collector Health` GitHub Actions workflow runs every ten minutes and also
+supports manual dispatch. It was activated only after the health route produced
+the expected missing-wake incident and the approved Hostinger trigger completed
+an authenticated recurring wake. This prevents a knowingly red monitor from
+training the operator to ignore alerts.
 
 GitHub stores both `ODDS_HEALTH_URL` and `ODDS_HEALTH_SECRET` as Actions
 secrets. Each health request permits two bounded transport retries before it is
