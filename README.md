@@ -6,9 +6,30 @@ full project brief and roadmap.
 
 ## Setup
 
+Node.js 24 is the supported local, CI, and production runtime. With `nvm`, the
+checked-in version contract can be selected before installing dependencies:
+
 ```bash
+nvm use
 npm install
 cp .env.example .env.local
+```
+
+## Quality checks
+
+Pull requests and pushes to `main` run the same Node 24 quality contract in
+GitHub Actions. It requires no production credentials and makes no paid API
+calls. Run it locally before pushing:
+
+```bash
+nvm use
+npm ci
+git diff --check
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm audit --omit=dev --audit-level=critical
 ```
 
 Fill in `.env.local`:
