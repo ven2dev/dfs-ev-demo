@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { consensusDevigAtLine } from "@/lib/consensusDevig";
 import { computeEV } from "@/lib/computeEV";
 import { DEFAULT_SPORT_KEY, fetchSlateEvents } from "@/lib/oddsApi";
+import { resolveOddsDataSource } from "@/lib/oddsDataSource";
+import {
+  getFixtureLivePropInputs,
+  getFixtureRecentGameStats,
+  getFixtureSlateEvents,
+} from "@/lib/oddsFixtures";
 import {
   getNflverseTeamAbbreviation,
   getVenueForTeam,
@@ -14,8 +20,9 @@ import { buildWatchPropId } from "@/lib/watchPropId";
 import { getPlayerPropMarket, type PlayerPropDirection } from "@/lib/playerPropMarkets";
 import { getSharedLivePropInputs } from "@/lib/livePropCacheRepo";
 
-// SSE endpoint. Real Odds API + real weather calls happen here,
-// server-side only — the API key never reaches the client.
+// SSE endpoint. Production resolves real odds, weather, and player history
+// server-side; fixture deployments resolve the same product-facing shape from
+// deterministic fictional data. The API key never reaches the client.
 //
 // Connections still schedule their own ticks and receive independent
 // SSE responses, but their cost-bearing odds/weather refresh is shared
@@ -82,19 +89,32 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // The event's real home team/kickoff time are re-resolved here, never
-  // trusted from client query params -- weather (and therefore the EV
-  // calc) depends on getting the right venue, and this is a free call
-  // regardless (see fetchSlateEvents), so there's no cost reason to
-  // trust the client instead.
-  let venueLat: number;
-  let venueLon: number;
+  let dataSource: ReturnType<typeof resolveOddsDataSource>;
+  try {
+    dataSource = resolveOddsDataSource();
+  } catch (err) {
+    console.error("[api/stream] invalid odds data-source configuration:", err);
+    return NextResponse.json(
+      { success: false, reason: "Odds data source is misconfigured" },
+      { status: 500 }
+    );
+  }
+
+  // Re-resolve the event server-side rather than trusting client query
+  // parameters. Live mode needs the authoritative team, kickoff, and venue;
+  // fixture mode applies the same identity check to its synthetic slate.
+  let venueLat = 0;
+  let venueLon = 0;
   let startTime: string;
   let homeTeamName: string;
   let awayTeamName: string;
-  let eventTeams: [string, string];
+  let eventTeams: [string, string] | undefined;
   try {
-    const slateEvents = (await fetchSlateEvents(sportKey, new Date(), undefined, "live")).data;
+    const now = new Date();
+    const slateEvents =
+      dataSource === "fixture"
+        ? getFixtureSlateEvents(sportKey, now)
+        : (await fetchSlateEvents(sportKey, now, undefined, "live")).data;
     const event = slateEvents.find((e) => e.id === eventId);
     if (!event) {
       return NextResponse.json(
@@ -102,27 +122,29 @@ export async function GET(request: NextRequest) {
         { status: 404 }
       );
     }
-    const venue = getVenueForTeam(event.homeTeam);
-    if (!venue) {
-      return NextResponse.json(
-        { success: false, reason: `No known venue for home team "${event.homeTeam}"` },
-        { status: 400 }
-      );
-    }
-    venueLat = venue.lat;
-    venueLon = venue.lon;
     startTime = event.commenceTime;
     homeTeamName = event.homeTeam;
     awayTeamName = event.awayTeam;
-    const homeTeam = getNflverseTeamAbbreviation(event.homeTeam);
-    const awayTeam = getNflverseTeamAbbreviation(event.awayTeam);
-    if (!homeTeam || !awayTeam) {
-      return NextResponse.json(
-        { success: false, reason: "Failed to map the selected event's teams" },
-        { status: 502 }
-      );
+    if (dataSource === "live") {
+      const venue = getVenueForTeam(event.homeTeam);
+      if (!venue) {
+        return NextResponse.json(
+          { success: false, reason: `No known venue for home team "${event.homeTeam}"` },
+          { status: 400 }
+        );
+      }
+      venueLat = venue.lat;
+      venueLon = venue.lon;
+      const homeTeam = getNflverseTeamAbbreviation(event.homeTeam);
+      const awayTeam = getNflverseTeamAbbreviation(event.awayTeam);
+      if (!homeTeam || !awayTeam) {
+        return NextResponse.json(
+          { success: false, reason: "Failed to map the selected event's teams" },
+          { status: 502 }
+        );
+      }
+      eventTeams = [homeTeam, awayTeam];
     }
-    eventTeams = [homeTeam, awayTeam];
   } catch (err) {
     console.error("[api/stream] failed to resolve the selected event:", err);
     return NextResponse.json(
@@ -145,16 +167,15 @@ export async function GET(request: NextRequest) {
   // re-querying Postgres on every poll interval would be pure waste.
   let recentGameStats: number[];
   try {
-    const realRecentGameStats = await getRealRecentGameStats(
-      playerName,
-      marketCapability.historicalStatType,
-      {
-        season: getCurrentSeason(new Date(startTime)),
-        eventTeams,
-        marketKey,
-      }
-    );
-    if (!realRecentGameStats || realRecentGameStats.length === 0) {
+    const resolvedRecentGameStats =
+      dataSource === "fixture"
+        ? getFixtureRecentGameStats(eventId, marketCapability.key, playerName)
+        : await getRealRecentGameStats(playerName, marketCapability.historicalStatType, {
+            season: getCurrentSeason(new Date(startTime)),
+            eventTeams: eventTeams!,
+            marketKey,
+          });
+    if (!resolvedRecentGameStats || resolvedRecentGameStats.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -163,9 +184,9 @@ export async function GET(request: NextRequest) {
         { status: 422 }
       );
     }
-    recentGameStats = realRecentGameStats;
+    recentGameStats = resolvedRecentGameStats;
   } catch (err) {
-    console.error("[api/stream] real historical-stats lookup failed:", err);
+    console.error("[api/stream] historical-stats lookup failed:", err);
     return NextResponse.json(
       { success: false, reason: "Historical stats are temporarily unavailable" },
       { status: 503 }
@@ -207,16 +228,25 @@ export async function GET(request: NextRequest) {
         tickCount += 1;
 
         try {
-          const inputs = await getSharedLivePropInputs(
-            { sportKey, eventId, marketKey, playerName },
-            {
-              startTime,
-              homeTeam: homeTeamName,
-              awayTeam: awayTeamName,
-              venueLat,
-              venueLon,
-            }
-          );
+          const inputs =
+            dataSource === "fixture"
+              ? getFixtureLivePropInputs(
+                  eventId,
+                  marketCapability.key,
+                  playerName,
+                  tickCount - 1
+                )
+              : await getSharedLivePropInputs(
+                  { sportKey, eventId, marketKey, playerName },
+                  {
+                    startTime,
+                    homeTeam: homeTeamName,
+                    awayTeam: awayTeamName,
+                    venueLat,
+                    venueLon,
+                  }
+                );
+          if (!inputs) throw new Error("Fixture live inputs are unavailable");
           const oddsLine = inputs.oddsByBookmaker.find(
             (line) => line.bookmakerKey === bookmakerKey
           );

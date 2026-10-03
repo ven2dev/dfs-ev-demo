@@ -4,6 +4,8 @@ import {
   FIXTURE_PLAYERS,
   FIXTURE_SPORT_KEY,
   getFixtureEventOdds,
+  getFixtureLivePropInputs,
+  getFixtureRecentGameStats,
   getFixtureSlateEvents,
 } from "./oddsFixtures";
 
@@ -61,5 +63,34 @@ describe("odds fixtures", () => {
       expect(player.markets[0].lines).toHaveLength(6);
       expect(new Set(player.markets[0].lines.map((line) => line.bookmakerKey)).size).toBe(3);
     }
+  });
+
+  it("provides fictional history and deterministic movement for live EV ticks", () => {
+    const event = getFixtureSlateEvents(FIXTURE_SPORT_KEY, now)[0];
+    const stats = getFixtureRecentGameStats(event.id, "player_pass_yds", "Avery Stone", now);
+    const first = getFixtureLivePropInputs(
+      event.id,
+      "player_pass_yds",
+      "Avery Stone",
+      0,
+      now
+    );
+    const second = getFixtureLivePropInputs(
+      event.id,
+      "player_pass_yds",
+      "Avery Stone",
+      1,
+      now
+    );
+
+    expect(stats).toHaveLength(7);
+    expect(first?.oddsByBookmaker).toHaveLength(3);
+    expect(second?.oddsByBookmaker).not.toEqual(first?.oddsByBookmaker);
+    expect(
+      getFixtureRecentGameStats(event.id, "player_pass_yds", "Real Player", now)
+    ).toBeNull();
+    expect(
+      getFixtureLivePropInputs(event.id, "player_anytime_td", "Avery Stone", 0, now)
+    ).toBeNull();
   });
 });
