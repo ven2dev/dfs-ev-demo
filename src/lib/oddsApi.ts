@@ -5,6 +5,7 @@ import {
   recordOddsApiRequest,
   type OddsApiRequestSource,
 } from "./oddsApiTelemetryRepo";
+import { requireLiveOddsDataSource } from "./oddsDataSource";
 // Enforced, not just documented: importing this from a "use client"
 // component now fails the build, since it reads ODDS_API_KEY, which must
 // never reach the browser bundle.
@@ -147,6 +148,7 @@ export const fetchEventOdds = async (
   signal?: AbortSignal,
   source: OddsApiRequestSource = "direct"
 ): Promise<OddsApiFetch<EventOddsResponse>> => {
+  requireLiveOddsDataSource();
   if (marketKeys.length === 0) {
     throw new Error("fetchEventOdds requires at least one market key");
   }
@@ -210,6 +212,7 @@ export const fetchSlateEvents = async (
   signal?: AbortSignal,
   source: OddsApiRequestSource = "slate"
 ): Promise<OddsApiFetch<SlateEvent[]>> => {
+  requireLiveOddsDataSource();
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
     throw new Error("ODDS_API_KEY is not set");
@@ -292,6 +295,7 @@ export const fetchPlayerPropMarketOdds = async (
   signal?: AbortSignal,
   source: OddsApiRequestSource = "direct"
 ): Promise<PlayerPropMarketOddsFetch> => {
+  requireLiveOddsDataSource();
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
     throw new Error("ODDS_API_KEY is not set");

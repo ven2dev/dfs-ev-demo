@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const recordOddsApiRequestMock = vi.fn();
 const fetchMock = vi.fn();
@@ -10,6 +10,10 @@ vi.stubGlobal("fetch", fetchMock);
 
 const { fetchEventOdds, fetchPlayerPropMarketOdds, fetchSlateEvents } =
   await import("./oddsApi.ts");
+
+beforeEach(() => {
+  vi.stubEnv("ODDS_DATA_SOURCE", "live");
+});
 
 const jsonResponse = (
   body: unknown,
@@ -30,6 +34,18 @@ afterEach(() => {
 });
 
 describe("Odds API request telemetry", () => {
+  it("refuses fixture mode before network or telemetry work", async () => {
+    vi.stubEnv("ODDS_DATA_SOURCE", "fixture");
+    vi.stubEnv("ODDS_API_KEY", "must-not-be-used");
+    vi.stubEnv("DATABASE_URL", "postgres://must-not-be-used");
+
+    await expect(fetchSlateEvents("americanfootball_nfl")).rejects.toThrow(
+      "disabled unless ODDS_DATA_SOURCE=live"
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(recordOddsApiRequestMock).not.toHaveBeenCalled();
+  });
+
   it("records a scheduled event-odds request with its billed quota", async () => {
     vi.stubEnv("ODDS_API_KEY", "test-key");
     vi.stubEnv("DATABASE_URL", "postgres://configured");

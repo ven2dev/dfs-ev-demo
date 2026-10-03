@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import {
   fetchEventOdds,
   fetchPlayerPropMarketOdds,
@@ -9,6 +9,10 @@ import {
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
+
+beforeEach(() => {
+  vi.stubEnv("ODDS_DATA_SOURCE", "live");
+});
 
 afterEach(() => {
   fetchMock.mockReset();
@@ -32,7 +36,7 @@ describe("fetchSlateEvents", () => {
     vi.stubEnv("ODDS_API_KEY", "");
 
     await expect(fetchSlateEvents("americanfootball_nfl")).rejects.toThrow(
-      "ODDS_API_KEY is not set"
+      "requires ODDS_API_KEY"
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -303,7 +307,7 @@ describe("fetchPlayerPropOdds", () => {
 
     await expect(
       fetchPlayerPropOdds("americanfootball_nfl", "evt-1", "player_pass_yds", "Jalen Hurts", "draftkings")
-    ).rejects.toThrow("ODDS_API_KEY is not set");
+    ).rejects.toThrow("requires ODDS_API_KEY");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
