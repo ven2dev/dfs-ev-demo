@@ -1,0 +1,162 @@
+name: Collector Health
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: collector-health
+  cancel-in-progress: false
+
+jobs:
+  health:
+    name: Collector Health
+    if: github.repository == 'ven2dev/dfs-ev-demo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Check collector health and reconcile its incident
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEALTH_URL: ${{ secrets.ODDS_HEALTH_URL }}
+          HEALTH_SECRET: ${{ secrets.ODDS_HEALTH_SECRET }}
+          ALERT_TITLE: "[ops] Collector health alert"
+        run: |
+          set -euo pipefail
+
+          response_file="$(mktemp)"
+          issue_body_file="$(mktemp)"
+          trap 'rm -f "$response_file" "$issue_body_file"' EXIT
+
+          severity="unhealthy"
+          codes=""
+          http_status="000"
+
+          if [[ -z "$HEALTH_URL" || -z "$HEALTH_SECRET" ]]; then
+            codes="monitor-configuration-missing"
+          else
+            set +e
+            http_status="$(
+              curl --silent --show-error --max-time 15 \
+                --retry 2 \
+                --retry-all-errors \
+                --retry-delay 2 \
+                --retry-max-time 40 \
+                --output "$response_file" \
+                --write-out '%{http_code}' \
+                --header "Authorization: Bearer $HEALTH_SECRET" \
+                "$HEALTH_URL" 2>/dev/null
+            )"
+            curl_exit=$?
+            set -e
+
+            if [[ $curl_exit -ne 0 ]]; then
+              codes="health-endpoint-unreachable"
+            elif ! jq -e . "$response_file" >/dev/null 2>&1; then
+              codes="invalid-health-response"
+            else
+              payload_status="$(jq -r '.status // ""' "$response_file")"
+              mapfile -t reasons < <(
+                jq -r '(.reasons // [])[] | select(type == "string")' "$response_file" \
+                  | grep -E '^[a-z0-9-]+$' || true
+              )
+              mapfile -t warnings < <(
+                jq -r '(.warnings // [])[] | select(type == "string")' "$response_file" \
+                  | grep -E '^[a-z0-9-]+$' || true
+              )
+
+              if [[ "$http_status" == "200" && "$payload_status" == "healthy" ]]; then
+                if [[ ${#warnings[@]} -eq 0 ]]; then
+                  severity="healthy"
+                else
+                  severity="warning"
+                  codes="$(printf '%s\n' "${warnings[@]}" | sort -u)"
+                fi
+              elif [[ "$http_status" == "503" && "$payload_status" == "unhealthy" && ${#reasons[@]} -gt 0 ]]; then
+                codes="$(printf '%s\n' "${reasons[@]}" | sort -u)"
+              elif [[ "$http_status" == "500" && "$payload_status" == "error" && ${#reasons[@]} -gt 0 ]]; then
+                codes="$(printf '%s\n' "${reasons[@]}" | sort -u)"
+              elif [[ "$http_status" == "401" ]]; then
+                codes="health-endpoint-rejected"
+              else
+                codes="invalid-health-response"
+              fi
+            fi
+          fi
+
+          issues_json="$(
+            gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 10 \
+              --search "\"$ALERT_TITLE\" in:title" --json number,title,body
+          )"
+          issue_number="$(
+            jq -r --arg title "$ALERT_TITLE" \
+              '.[] | select(.title == $title) | .number' <<<"$issues_json" | head -n 1
+          )"
+          previous_severity=""
+          previous_codes=""
+          if [[ -n "$issue_number" ]]; then
+            previous_severity="$(
+              jq -r --arg title "$ALERT_TITLE" \
+                '.[] | select(.title == $title) | .body' <<<"$issues_json" \
+                | sed -n 's/^Severity: `\([^`]*\)`$/\1/p' \
+                | head -n 1
+            )"
+            previous_codes="$(
+              jq -r --arg title "$ALERT_TITLE" \
+                '.[] | select(.title == $title) | .body' <<<"$issues_json" \
+                | sed -n 's/^- `\([a-z0-9-]*\)`$/\1/p' \
+                | sort -u
+            )"
+          fi
+
+          if [[ "$severity" == "healthy" ]]; then
+            if [[ -n "$issue_number" ]]; then
+              gh issue close "$issue_number" --repo "$GITHUB_REPOSITORY" \
+                --reason completed \
+                --comment "Collector health returned to normal." >/dev/null
+            fi
+            echo "Collector health is healthy."
+            exit 0
+          fi
+
+          {
+            echo "Automated collector-health incident."
+            echo
+            echo "Severity: \`$severity\`"
+            echo
+            echo "Reason codes:"
+            while IFS= read -r code; do
+              [[ -n "$code" ]] && echo "- \`$code\`"
+            done <<<"$codes"
+            echo
+            echo "This issue is updated in place while the condition persists and closes on recovery."
+          } >"$issue_body_file"
+
+          if [[ -n "$issue_number" ]]; then
+            gh issue edit "$issue_number" --repo "$GITHUB_REPOSITORY" \
+              --body-file "$issue_body_file" >/dev/null
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" \
+              --title "$ALERT_TITLE" \
+              --body-file "$issue_body_file" >/dev/null
+          fi
+
+          if [[ "$severity" == "unhealthy" ]]; then
+            newly_unhealthy_codes=""
+            while IFS= read -r code; do
+              if [[ -n "$code" ]] && ! grep -Fqx "$code" <<<"$previous_codes"; then
+                newly_unhealthy_codes+="${newly_unhealthy_codes:+$'\n'}$code"
+              fi
+            done <<<"$codes"
+
+            if [[ "$previous_severity" != "unhealthy" || -n "$newly_unhealthy_codes" ]]; then
+              echo "::error::Collector health has a new unhealthy condition."
+              exit 1
+            fi
+          fi
+
+          echo "Collector health incident remains open at severity: $severity."

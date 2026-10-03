@@ -15,6 +15,11 @@ export const ODDS_COLLECTION_PROFILES = [
 
 export type OddsCollectionProfile = (typeof ODDS_COLLECTION_PROFILES)[number];
 
+export type OddsCollectionQuotaLimits = {
+  maxPriorityRank: number;
+  maxCreditCost: number;
+};
+
 export type BaselineCheckpointKey =
   | "tuesday-opening"
   | "wednesday-evening"
@@ -71,6 +76,36 @@ export const parseOddsCollectionProfile = (
     return value as OddsCollectionProfile;
   }
   throw new Error(`Unknown odds collection profile "${value}"`);
+};
+
+export const getOddsCollectionQuotaLimits = (
+  remaining: number | null,
+  reserve: number,
+  marketCreditCost: number
+): OddsCollectionQuotaLimits => {
+  if (remaining !== null && (!Number.isInteger(remaining) || remaining < 0)) {
+    throw new Error("remaining quota must be a non-negative integer or null");
+  }
+  if (!Number.isInteger(reserve) || reserve < 0) {
+    throw new Error("quota reserve must be a non-negative integer");
+  }
+  if (!Number.isInteger(marketCreditCost) || marketCreditCost <= 0) {
+    throw new Error("market credit cost must be a positive integer");
+  }
+
+  const maxPriorityRank =
+    remaining === 0
+      ? 0
+      : remaining === null || remaining <= reserve
+        ? 20
+        : remaining <= reserve + marketCreditCost
+          ? 30
+          : 40;
+
+  return {
+    maxPriorityRank,
+    maxCreditCost: remaining ?? marketCreditCost,
+  };
 };
 
 export const selectBaselineEvents = (

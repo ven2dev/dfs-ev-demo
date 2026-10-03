@@ -137,11 +137,82 @@ Five minutes is required if a priority target needs the approved T-6h cadence.
 Use the same strong secret in Hostinger and the app deployment, restrict access
 to the Hostinger account, and rotate both values together if it is exposed.
 
-The endpoint returns a compact execution summary. A non-2xx response, repeated
-`failed` or `leaseLost` counts, `unknownCostAttempts`, or a declining quota near
-the reserve requires investigation. Request-level evidence remains available
-in `odds_api_request_log`, while checkpoint outcomes remain in
+The collector endpoint returns a compact execution summary. A non-2xx response,
+repeated `failed` or `leaseLost` counts, `unknownCostAttempts`, or a declining
+quota near the reserve requires investigation. Request-level evidence remains
+available in `odds_api_request_log`, while checkpoint outcomes remain in
 `odds_collection_checkpoints`.
+
+## Health monitoring and incident lifecycle
+
+`GET /api/health/odds-collector` is a read-only Postgres health check. It never
+calls The Odds API. Authorize it with `Authorization: Bearer ODDS_HEALTH_SECRET`;
+use a different random value from `CRON_SECRET` so the monitor cannot invoke
+the quota-bearing collector route. A healthy check returns HTTP 200, an
+operationally unhealthy check returns 503, a query or configuration failure
+returns 500, and an unauthorized request returns 401. Responses contain only
+stable reason codes, never quota values, event ids, timestamps, URLs, database
+details, or credentials.
+
+The expected Production profile is deliberately hard-coded as `free-pilot`.
+Moving to `paid-baseline` therefore requires a coordinated health-contract and
+operations-guide change; changing only the environment variable makes the
+monitor fail closed. The health query checks:
+
+- a current-week durable free-pilot pin;
+- a 15-minute pin-creation grace at the Tuesday week boundary, ending early as
+  soon as the first new-week scheduled wake occurs;
+- a successful scheduled slate wake no more than 20 minutes old;
+- successful scheduled event-odds calls with unknown cost in the last 24 hours;
+- failed current-pin checkpoints with at least two attempts that remain inside
+  their due window;
+- current-pin checkpoints terminally skipped after exhausting attempts or
+  their retry window;
+- claims expired by more than 10 minutes, allowing the next five-minute wake to
+  recover an ordinary abandoned lease first;
+- pinned-event checkpoints that expired even though their window ended after
+  the pin was created, excluding legitimate pre-activation backlog;
+- unfinished future checkpoints from another profile and active priority
+  targets; and
+- whether the collector's shared quota policy can run the next pinned-event
+  checkpoint. Degraded quota is a warning until it actually blocks that work.
+
+The `Collector Health` GitHub Actions workflow initially supports manual
+dispatch only. Activation deliberately follows this order: deploy the health
+route, prove one expected missing-wake incident, enable and verify the
+Hostinger trigger with explicit operator approval, and only then add the
+ten-minute schedule. This prevents a knowingly red monitor from training the
+operator to ignore alerts.
+
+GitHub stores both `ODDS_HEALTH_URL` and `ODDS_HEALTH_SECRET` as Actions
+secrets. Each health request permits two bounded transport retries before it is
+treated as unreachable. The workflow publishes only reason codes to one issue
+titled `[ops] Collector health alert`. The first unhealthy transition opens the
+issue and fails once, producing a failed-workflow notification. A newly
+observed unhealthy reason also fails once while that incident remains open, so
+a stale wake cannot hide behind an earlier missed checkpoint. Unchanged
+persistent reasons update the issue without repeated failure emails; warnings
+use the same issue without failing. Recovery closes it, and a later incident
+opens a new issue.
+The workflow has only `issues: write` permission and does not check out code,
+install dependencies, or receive database/provider credentials.
+
+Enable [GitHub Actions email or web notifications](https://docs.github.com/en/subscriptions-and-notifications/how-tos/managing-github-actions-notifications),
+preferably failed workflows only. [Scheduled-workflow notifications](https://docs.github.com/en/actions/concepts/workflows-and-actions/notifications-for-workflow-runs)
+go to the user who created the schedule or most recently changed its cron
+expression, so a future cron editor also inherits notification ownership.
+[GitHub schedules](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)
+can be delayed or dropped under load, and public-repository schedules disable
+after 60 days without repository activity. These are accepted pilot
+limitations; issue #62 owns the longer-term independent production-health
+design.
+
+To stop collection immediately, disable the Hostinger cron job. Then set
+`ODDS_COLLECTION_PROFILE=disabled` in Production and redeploy as defense in
+depth; the disabled collector returns before making a provider request. Disable
+the scheduled health workflow during a planned shutdown because profile drift
+is intentionally unhealthy. Never delete observations, request telemetry,
+checkpoints, or the weekly pin as part of shutdown.
 
 ## Data dictionary and as-of semantics
 

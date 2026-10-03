@@ -297,7 +297,11 @@ export const pinFreePilotSelection = async (input: {
          away_team = EXCLUDED.away_team,
          event_start_time = EXCLUDED.event_start_time,
          selection_reason = EXCLUDED.selection_reason,
-         selected_at = EXCLUDED.selected_at,
+         selected_at = CASE
+           WHEN odds_free_pilot_selections.event_id = EXCLUDED.event_id
+             THEN odds_free_pilot_selections.selected_at
+           ELSE EXCLUDED.selected_at
+         END,
          updated_at = now()
        WHERE EXCLUDED.selection_reason = 'explicit-override'
        RETURNING *

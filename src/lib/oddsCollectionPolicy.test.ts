@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SlateEvent } from "./oddsApi";
 import {
+  getOddsCollectionQuotaLimits,
   parseOddsCollectionProfile,
   planBaselineCheckpoints,
   planPriorityCheckpoints,
@@ -25,6 +26,31 @@ describe("parseOddsCollectionProfile", () => {
     expect(parseOddsCollectionProfile("free-pilot")).toBe("free-pilot");
     expect(parseOddsCollectionProfile("paid-baseline")).toBe("paid-baseline");
     expect(() => parseOddsCollectionProfile("paid")).toThrow("Unknown odds collection profile");
+  });
+});
+
+describe("getOddsCollectionQuotaLimits", () => {
+  it("applies the same priority degradation and affordability limits used by the collector", () => {
+    expect(getOddsCollectionQuotaLimits(120, 100, 9)).toEqual({
+      maxPriorityRank: 40,
+      maxCreditCost: 120,
+    });
+    expect(getOddsCollectionQuotaLimits(109, 100, 9)).toEqual({
+      maxPriorityRank: 30,
+      maxCreditCost: 109,
+    });
+    expect(getOddsCollectionQuotaLimits(100, 100, 9)).toEqual({
+      maxPriorityRank: 20,
+      maxCreditCost: 100,
+    });
+    expect(getOddsCollectionQuotaLimits(0, 100, 9)).toEqual({
+      maxPriorityRank: 0,
+      maxCreditCost: 0,
+    });
+    expect(getOddsCollectionQuotaLimits(null, 100, 9)).toEqual({
+      maxPriorityRank: 20,
+      maxCreditCost: 9,
+    });
   });
 });
 
