@@ -123,3 +123,15 @@ an arbitrary minimum. Every live tick exposes the method, version, and
 contributing-book count, and the UI describes that count as coverage rather
 than confidence. This transparent baseline can later be compared with other
 aggregation methods using historical snapshots from issue #41.
+
+## Historical odds observations
+
+The append-only odds collector records scheduled, discovery, and genuinely
+refreshed live responses for movement analysis and future model calibration.
+It supports a one-game free-tier pilot and an explicit full-slate paid profile;
+both use the same immutable observation and content-addressed quote-set schema.
+
+See [Odds observation collector](docs/odds-collector-operations.md) for cadence,
+quota estimates and degradation, Hostinger cron setup, data provenance,
+retention, and database-size measurement. Apply `db/schema.sql` before enabling
+the collector; the profile defaults to `disabled`.

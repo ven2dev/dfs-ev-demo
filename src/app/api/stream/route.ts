@@ -90,9 +90,11 @@ export async function GET(request: NextRequest) {
   let venueLat: number;
   let venueLon: number;
   let startTime: string;
+  let homeTeamName: string;
+  let awayTeamName: string;
   let eventTeams: [string, string];
   try {
-    const slateEvents = await fetchSlateEvents(sportKey);
+    const slateEvents = (await fetchSlateEvents(sportKey, new Date(), undefined, "live")).data;
     const event = slateEvents.find((e) => e.id === eventId);
     if (!event) {
       return NextResponse.json(
@@ -110,6 +112,8 @@ export async function GET(request: NextRequest) {
     venueLat = venue.lat;
     venueLon = venue.lon;
     startTime = event.commenceTime;
+    homeTeamName = event.homeTeam;
+    awayTeamName = event.awayTeam;
     const homeTeam = getNflverseTeamAbbreviation(event.homeTeam);
     const awayTeam = getNflverseTeamAbbreviation(event.awayTeam);
     if (!homeTeam || !awayTeam) {
@@ -205,7 +209,13 @@ export async function GET(request: NextRequest) {
         try {
           const inputs = await getSharedLivePropInputs(
             { sportKey, eventId, marketKey, playerName },
-            { startTime, venueLat, venueLon }
+            {
+              startTime,
+              homeTeam: homeTeamName,
+              awayTeam: awayTeamName,
+              venueLat,
+              venueLon,
+            }
           );
           const oddsLine = inputs.oddsByBookmaker.find(
             (line) => line.bookmakerKey === bookmakerKey

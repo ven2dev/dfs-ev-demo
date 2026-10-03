@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
+  fetchEventOdds,
   fetchPlayerPropMarketOdds,
   fetchPlayerPropOdds,
   fetchSlateEvents,
+  OddsApiHttpError,
 } from "./oddsApi.ts";
 
 const fetchMock = vi.fn();
@@ -13,9 +15,15 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-const jsonResponse = (body: unknown, ok = true, status = 200) => ({
+const jsonResponse = (
+  body: unknown,
+  ok = true,
+  status = 200,
+  headers: Record<string, string> = {}
+) => ({
   ok,
   status,
+  headers: new Headers(headers),
   json: () => Promise.resolve(body),
 });
 
@@ -55,12 +63,12 @@ describe("fetchSlateEvents", () => {
       ])
     );
 
-    const events = await fetchSlateEvents(
+    const result = await fetchSlateEvents(
       "americanfootball_nfl",
       new Date("2026-09-30T12:00:00Z")
     );
 
-    expect(events).toEqual([
+    expect(result.data).toEqual([
       {
         id: "evt-1",
         sportKey: "americanfootball_nfl",
@@ -92,12 +100,29 @@ describe("fetchSlateEvents", () => {
       ])
     );
 
-    const events = await fetchSlateEvents(
+    const result = await fetchSlateEvents(
       "americanfootball_nfl",
       new Date("2026-09-30T12:00:00Z")
     );
 
-    expect(events.map((event) => event.id)).toEqual(["week-4"]);
+    expect(result.data.map((event) => event.id)).toEqual(["week-4"]);
+  });
+
+  it("captures response time and sanitized quota headers", async () => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse([], true, 200, {
+        "x-requests-remaining": "491",
+        "x-requests-used": "9",
+        "x-requests-last": "0",
+      })
+    );
+
+    const before = Date.now();
+    const result = await fetchSlateEvents("americanfootball_nfl");
+
+    expect(new Date(result.capturedAt).getTime()).toBeGreaterThanOrEqual(before);
+    expect(result.quota).toEqual({ remaining: 491, used: 9, last: 0 });
   });
 
   it("throws on a non-ok response instead of silently returning an empty slate", async () => {
@@ -107,6 +132,29 @@ describe("fetchSlateEvents", () => {
     await expect(fetchSlateEvents("americanfootball_nfl")).rejects.toThrow(
       "Odds API events fetch failed: 500"
     );
+  });
+});
+
+describe("fetchEventOdds", () => {
+  it("preserves quota telemetry on a billed HTTP failure", async () => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(null, false, 503, {
+        "x-requests-remaining": "482",
+        "x-requests-used": "18",
+        "x-requests-last": "9",
+      })
+    );
+
+    const error = await fetchEventOdds("americanfootball_nfl", "evt-1", [
+      "player_pass_yds",
+    ]).catch((caught) => caught);
+
+    expect(error).toBeInstanceOf(OddsApiHttpError);
+    expect(error).toMatchObject({
+      status: 503,
+      quota: { remaining: 482, used: 18, last: 9 },
+    });
   });
 });
 
@@ -169,7 +217,7 @@ describe("fetchPlayerPropOdds", () => {
       controller.signal
     );
 
-    expect(result).toEqual([
+    expect(result.data.oddsByBookmaker).toEqual([
       {
         bookmakerKey: "draftkings",
         overPrice: 1.91,
@@ -183,6 +231,7 @@ describe("fetchPlayerPropOdds", () => {
         point: 213.5,
       },
     ]);
+    expect(result.data.response?.bookmakers).toHaveLength(2);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ signal: controller.signal });
   });
@@ -216,7 +265,7 @@ describe("fetchPlayerPropOdds", () => {
         "player_pass_yds",
         "Jalen Hurts"
       )
-    ).resolves.toEqual([]);
+    ).resolves.toMatchObject({ data: { oddsByBookmaker: [], response: expect.any(Object) } });
   });
 
   it("returns null when the specified bookmaker doesn't have this market, even if another bookmaker does", async () => {

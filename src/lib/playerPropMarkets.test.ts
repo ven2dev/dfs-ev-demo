@@ -3,6 +3,7 @@ import {
   getPlayerPropMarket,
   isTrackablePlayerPropMarket,
   PLAYER_PROP_MARKETS,
+  TRACKABLE_PLAYER_PROP_MARKET_KEYS,
 } from "./playerPropMarkets";
 
 describe("player prop market capabilities", () => {
@@ -27,6 +28,7 @@ describe("player prop market capabilities", () => {
       });
       expect(isTrackablePlayerPropMarket(marketKey)).toBe(true);
     }
+    expect(TRACKABLE_PLAYER_PROP_MARKET_KEYS).toEqual(Object.keys(expectedMappings));
   });
 
   it("keeps every yes-only touchdown market browse-only", () => {

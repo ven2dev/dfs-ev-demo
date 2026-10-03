@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const queryMock = vi.fn();
 const fetchOddsMock = vi.fn();
 const fetchWeatherMock = vi.fn();
+const persistObservationMock = vi.fn();
 
 vi.mock("./db", () => ({
   getSql: () => ({ query: queryMock }),
@@ -16,6 +17,10 @@ vi.mock("./weather", () => ({
   fetchGameWeather: fetchWeatherMock,
 }));
 
+vi.mock("./oddsSnapshotRepo", () => ({
+  persistOddsObservation: persistObservationMock,
+}));
+
 const { getSharedLivePropInputs } = await import("./livePropCacheRepo.ts");
 
 const key = {
@@ -27,6 +32,8 @@ const key = {
 
 const context = {
   startTime: "2026-10-05T17:00:00Z",
+  homeTeam: "Chicago Bears",
+  awayTeam: "Seattle Seahawks",
   venueLat: 41.8623,
   venueLon: -87.6167,
 };
@@ -42,10 +49,40 @@ const oddsByBookmaker = [
 
 const weather = { temperatureF: 62, windSpeedMph: 8, precipitationMm: 0 };
 
+const oddsFetch = () => ({
+  data: {
+    response: {
+      id: "evt-1",
+      bookmakers: [
+        {
+          key: "draftkings",
+          markets: [
+            {
+              key: "player_pass_yds",
+              outcomes: [
+                { name: "Over", description: "Jalen Hurts", point: 214.5, price: 1.91 },
+                { name: "Under", description: "Jalen Hurts", point: 214.5, price: 1.89 },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    oddsByBookmaker,
+  },
+  capturedAt: "2026-10-05T16:00:00.000Z",
+  quota: { remaining: 479, used: 21, last: 1 },
+});
+
+beforeEach(() => {
+  persistObservationMock.mockResolvedValue({ inserted: true });
+});
+
 afterEach(() => {
   queryMock.mockReset();
   fetchOddsMock.mockReset();
   fetchWeatherMock.mockReset();
+  persistObservationMock.mockReset();
   vi.restoreAllMocks();
   vi.useRealTimers();
 });
@@ -56,11 +93,16 @@ describe("getSharedLivePropInputs", () => {
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ refresh_owner: "owner" }])
       .mockResolvedValueOnce([{ event_id: "evt-1" }]);
-    fetchOddsMock.mockResolvedValueOnce(oddsByBookmaker);
+    fetchOddsMock.mockResolvedValueOnce(oddsFetch());
     fetchWeatherMock.mockResolvedValueOnce(weather);
 
-    await expect(getSharedLivePropInputs(key, context)).resolves.toEqual({
+    await expect(getSharedLivePropInputs(key, context)).resolves.toMatchObject({
       oddsByBookmaker,
+      oddsObservation: {
+        origin: "upstream",
+        capturedAt: "2026-10-05T16:00:00.000Z",
+        quota: { remaining: 479, used: 21, last: 1 },
+      },
       weather,
     });
 
@@ -70,13 +112,25 @@ describe("getSharedLivePropInputs", () => {
       key.eventId,
       key.marketKey,
       key.playerName,
-      expect.any(AbortSignal)
+      expect.any(AbortSignal),
+      "live"
     );
     expect(fetchWeatherMock).toHaveBeenCalledWith(
       context.startTime,
       context.venueLat,
       context.venueLon,
       expect.any(AbortSignal)
+    );
+    expect(persistObservationMock).toHaveBeenCalledTimes(1);
+    expect(persistObservationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "live",
+        eventStartTime: new Date(context.startTime),
+        homeTeam: context.homeTeam,
+        awayTeam: context.awayTeam,
+        requestedMarketKeys: [key.marketKey],
+      }),
+      expect.objectContaining({ id: key.eventId })
     );
     expect(queryMock).toHaveBeenCalledTimes(3);
     expect(queryMock.mock.calls[1][0]).toContain("ON CONFLICT");
@@ -97,6 +151,7 @@ describe("getSharedLivePropInputs", () => {
     });
     expect(fetchOddsMock).not.toHaveBeenCalled();
     expect(fetchWeatherMock).not.toHaveBeenCalled();
+    expect(persistObservationMock).not.toHaveBeenCalled();
     expect(queryMock).toHaveBeenCalledTimes(1);
   });
 
@@ -108,10 +163,10 @@ describe("getSharedLivePropInputs", () => {
       .mockResolvedValueOnce([{ refresh_owner: "owner" }])
       .mockRejectedValueOnce(writeError)
       .mockResolvedValueOnce([]);
-    fetchOddsMock.mockResolvedValueOnce(oddsByBookmaker);
+    fetchOddsMock.mockResolvedValueOnce(oddsFetch());
     fetchWeatherMock.mockResolvedValueOnce(weather);
 
-    await expect(getSharedLivePropInputs(key, context)).resolves.toEqual({
+    await expect(getSharedLivePropInputs(key, context)).resolves.toMatchObject({
       oddsByBookmaker,
       weather,
     });
@@ -122,9 +177,51 @@ describe("getSharedLivePropInputs", () => {
     expect(queryMock.mock.calls[3][0]).toContain("refresh_owner = NULL");
   });
 
+  it("returns and caches fresh inputs when immutable-history persistence fails", async () => {
+    const historyError = new Error("history unavailable");
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    queryMock
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ refresh_owner: "owner" }])
+      .mockResolvedValueOnce([{ event_id: "evt-1" }]);
+    fetchOddsMock.mockResolvedValueOnce(oddsFetch());
+    fetchWeatherMock.mockResolvedValueOnce(weather);
+    persistObservationMock.mockRejectedValueOnce(historyError);
+
+    await expect(getSharedLivePropInputs(key, context)).resolves.toMatchObject({
+      oddsByBookmaker,
+      weather,
+    });
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining("failed to persist observation"),
+      historyError
+    );
+    expect(queryMock.mock.calls[2][0]).toContain("SET payload");
+  });
+
+  it("does not log an expected history error when a live refresh arrives at kickoff", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    queryMock
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ refresh_owner: "owner" }])
+      .mockResolvedValueOnce([{ event_id: "evt-1" }]);
+    fetchOddsMock.mockResolvedValueOnce({
+      ...oddsFetch(),
+      capturedAt: context.startTime,
+    });
+    fetchWeatherMock.mockResolvedValueOnce(weather);
+
+    await expect(getSharedLivePropInputs(key, context)).resolves.toMatchObject({
+      oddsByBookmaker,
+      weather,
+    });
+    expect(persistObservationMock).not.toHaveBeenCalled();
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
   it("renews a slow refresh with an owner-guarded database update", async () => {
     vi.useFakeTimers();
-    let resolveOdds!: (value: typeof oddsByBookmaker) => void;
+    let resolveOdds!: (value: ReturnType<typeof oddsFetch>) => void;
     queryMock
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ refresh_owner: "owner" }])
@@ -147,8 +244,8 @@ describe("getSharedLivePropInputs", () => {
     expect(queryMock.mock.calls[2][0]).toContain("refresh_owner = $5");
     expect(queryMock.mock.calls[2][1][4]).toBe(queryMock.mock.calls[1][1][4]);
 
-    resolveOdds(oddsByBookmaker);
-    await expect(refresh).resolves.toEqual({ oddsByBookmaker, weather });
+    resolveOdds(oddsFetch());
+    await expect(refresh).resolves.toMatchObject({ oddsByBookmaker, weather });
     expect(queryMock).toHaveBeenCalledTimes(4);
   });
 

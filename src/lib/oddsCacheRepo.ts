@@ -1,7 +1,15 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import { getSql } from "./db";
-import { fetchEventOdds, type EventOddsResponse, type OddsMarket } from "./oddsApi";
+import {
+  fetchEventOdds,
+  type EventOddsResponse,
+  type OddsApiFetch,
+  type OddsApiQuota,
+  type OddsMarket,
+} from "./oddsApi";
+import { persistOddsObservation } from "./oddsSnapshotRepo";
 
 // Discovery costs real credits (1 per market requested), so re-fetching
 // a market that was checked moments ago -- even by a different request
@@ -35,20 +43,89 @@ const FORCE_REFRESH_COOLDOWN_MS = 20 * 1000;
 // SAME instance. Unlike the live stream's database-backed refresh lease,
 // this discovery cache does not make a cross-instance guarantee; it
 // covers the realistic burst case at this app's current internal scale.
-const inFlightFetches = new Map<string, Promise<EventOddsResponse>>();
+type FreshEventOdds = OddsApiFetch<EventOddsResponse> & {
+  observationId: string;
+  observationPersisted: boolean;
+};
+
+const inFlightFetches = new Map<string, Promise<FreshEventOdds>>();
+
+const persistDiscoveryObservation = async (
+  sportKey: string,
+  eventId: string,
+  marketKeys: string[],
+  fetched: OddsApiFetch<EventOddsResponse>,
+  observationId: string
+): Promise<boolean> => {
+  const event = fetched.data;
+  if (!event.commence_time || !event.home_team || !event.away_team) {
+    console.error(
+      `[oddsCacheRepo] skipped observation "${observationId}": upstream event metadata is incomplete`
+    );
+    return false;
+  }
+  const eventStartMs = Date.parse(event.commence_time);
+  const capturedAtMs = Date.parse(fetched.capturedAt);
+  if (
+    Number.isFinite(eventStartMs) &&
+    Number.isFinite(capturedAtMs) &&
+    capturedAtMs >= eventStartMs
+  ) {
+    return false;
+  }
+
+  try {
+    await persistOddsObservation(
+      {
+        observationId,
+        sportKey: event.sport_key ?? sportKey,
+        eventId,
+        homeTeam: event.home_team,
+        awayTeam: event.away_team,
+        eventStartTime: new Date(event.commence_time),
+        source: "discovery",
+        capturedAt: new Date(fetched.capturedAt),
+        requestedMarketKeys: marketKeys,
+        quota: fetched.quota,
+      },
+      event
+    );
+    return true;
+  } catch (error) {
+    // History must never make a current-odds request fail after the provider
+    // already returned usable data. The gap is explicit in server logs.
+    console.error(
+      `[oddsCacheRepo] failed to persist observation "${observationId}":`,
+      error
+    );
+    return false;
+  }
+};
 
 const dedupedFetchEventOdds = (
   sportKey: string,
   eventId: string,
   marketKeys: string[]
-): Promise<EventOddsResponse> => {
-  const dedupeKey = `${eventId}::${[...marketKeys].sort().join(",")}`;
+): Promise<FreshEventOdds> => {
+  const dedupeKey = `${sportKey}::${eventId}::${[...marketKeys].sort().join(",")}`;
   const inFlight = inFlightFetches.get(dedupeKey);
   if (inFlight) return inFlight;
 
-  const fetchPromise = fetchEventOdds(sportKey, eventId, marketKeys).finally(() => {
-    inFlightFetches.delete(dedupeKey);
-  });
+  const observationId = randomUUID();
+  const fetchPromise = fetchEventOdds(sportKey, eventId, marketKeys, undefined, "discovery")
+    .then(async (fetched) => {
+      const observationPersisted = await persistDiscoveryObservation(
+        sportKey,
+        eventId,
+        marketKeys,
+        fetched,
+        observationId
+      );
+      return { ...fetched, observationId, observationPersisted };
+    })
+    .finally(() => {
+      inFlightFetches.delete(dedupeKey);
+    });
   inFlightFetches.set(dedupeKey, fetchPromise);
   return fetchPromise;
 };
@@ -61,6 +138,19 @@ type CacheRow = {
   market_key: string;
   payload: CachedMarketPayload;
   fetched_at: string;
+};
+
+export type MarketOddsOrigin = {
+  origin: "cache" | "upstream";
+  capturedAt: string;
+  observationId: string | null;
+  observationPersisted: boolean;
+  quota: OddsApiQuota | null;
+};
+
+export type MarketOddsResult = {
+  odds: EventOddsResponse;
+  origins: Record<string, MarketOddsOrigin>;
 };
 
 // Slices a multi-market API response down to just one market's data --
@@ -117,10 +207,10 @@ export const getOrFetchMarketOdds = async (
   eventId: string,
   marketKeys: string[],
   options: GetOrFetchMarketOddsOptions = {}
-): Promise<EventOddsResponse> => {
+): Promise<MarketOddsResult> => {
   const uniqueMarketKeys = Array.from(new Set(marketKeys));
   if (uniqueMarketKeys.length === 0) {
-    return { id: eventId, bookmakers: [] };
+    return { odds: { id: eventId, bookmakers: [] }, origins: {} };
   }
 
   const sql = getSql();
@@ -142,10 +232,18 @@ export const getOrFetchMarketOdds = async (
   const freshnessThresholdMs = options.forceRefresh ? FORCE_REFRESH_COOLDOWN_MS : CACHE_TTL_MS;
 
   const freshRowsByMarket = new Map<string, CachedMarketPayload>();
+  const origins: Record<string, MarketOddsOrigin> = {};
   for (const row of cachedRows) {
     const ageMs = Date.now() - new Date(row.fetched_at).getTime();
     if (ageMs < freshnessThresholdMs) {
       freshRowsByMarket.set(row.market_key, row.payload);
+      origins[row.market_key] = {
+        origin: "cache",
+        capturedAt: new Date(row.fetched_at).toISOString(),
+        observationId: null,
+        observationPersisted: false,
+        quota: null,
+      };
     }
   }
 
@@ -153,10 +251,17 @@ export const getOrFetchMarketOdds = async (
 
   const freshlyFetchedSlices = new Map<string, CachedMarketPayload>();
   if (missingMarketKeys.length > 0) {
-    const response = await dedupedFetchEventOdds(sportKey, eventId, missingMarketKeys);
+    const fetched = await dedupedFetchEventOdds(sportKey, eventId, missingMarketKeys);
 
     for (const marketKey of missingMarketKeys) {
-      freshlyFetchedSlices.set(marketKey, sliceByMarket(response, marketKey));
+      freshlyFetchedSlices.set(marketKey, sliceByMarket(fetched.data, marketKey));
+      origins[marketKey] = {
+        origin: "upstream",
+        capturedAt: fetched.capturedAt,
+        observationId: fetched.observationId,
+        observationPersisted: fetched.observationPersisted,
+        quota: fetched.quota,
+      };
     }
 
     // Cache writes are independent per market -- one failing must not
@@ -167,10 +272,10 @@ export const getOrFetchMarketOdds = async (
       cacheWrites.map(([marketKey, slice]) =>
         sql.query(
           `INSERT INTO event_market_odds_cache (event_id, market_key, payload, fetched_at)
-           VALUES ($1, $2, $3, now())
+           VALUES ($1, $2, $3, $4)
            ON CONFLICT (event_id, market_key)
            DO UPDATE SET payload = EXCLUDED.payload, fetched_at = EXCLUDED.fetched_at`,
-          [eventId, marketKey, JSON.stringify(slice)]
+          [eventId, marketKey, JSON.stringify(slice), fetched.capturedAt]
         )
       )
     );
@@ -185,8 +290,11 @@ export const getOrFetchMarketOdds = async (
     });
   }
 
-  return mergeSlices(eventId, [
-    ...Array.from(freshRowsByMarket.values()),
-    ...Array.from(freshlyFetchedSlices.values()),
-  ]);
+  return {
+    odds: mergeSlices(eventId, [
+      ...Array.from(freshRowsByMarket.values()),
+      ...Array.from(freshlyFetchedSlices.values()),
+    ]),
+    origins,
+  };
 };

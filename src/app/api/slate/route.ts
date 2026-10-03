@@ -12,8 +12,8 @@ export const GET = async (request: NextRequest) => {
     const sportKey = request.nextUrl.searchParams.get("sportKey") || DEFAULT_SPORT_KEY;
     const now = new Date();
     const window = getCurrentNflSlateWindow(now);
-    const events = await fetchSlateEvents(sportKey, now);
-    return NextResponse.json({ success: true, events, window });
+    const eventsResult = await fetchSlateEvents(sportKey, now);
+    return NextResponse.json({ success: true, events: eventsResult.data, window });
   } catch (err) {
     console.error("[api/slate] GET failed:", err);
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
