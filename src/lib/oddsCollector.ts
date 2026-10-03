@@ -2,6 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import {
+  getOddsCollectionQuotaLimits,
   planBaselineCheckpoints,
   planPriorityCheckpoints,
   selectBaselineEvents,
@@ -138,13 +139,6 @@ const baselinePriorityRank = (
 ) => {
   if (CRITICAL_BASELINE_CHECKPOINTS.has(checkpointKey)) return 20;
   return profile === "paid-baseline" ? 30 : 40;
-};
-
-const quotaPriorityCeiling = (remaining: number | null, reserve: number) => {
-  if (remaining === 0) return 0;
-  if (remaining === null || remaining <= reserve) return 20;
-  if (remaining <= reserve + TRACKABLE_PLAYER_PROP_MARKET_KEYS.length) return 30;
-  return 40;
 };
 
 const costFromError = (error: unknown): number | null =>
@@ -314,17 +308,18 @@ export const runOddsCollector = async (
     summary.checkpointsUpserted += ids.length;
   }
 
-  summary.maxPriorityRank = quotaPriorityCeiling(
+  const quotaLimits = getOddsCollectionQuotaLimits(
     slate.quota.remaining,
-    config.quotaReserve
+    config.quotaReserve,
+    TRACKABLE_PLAYER_PROP_MARKET_KEYS.length
   );
+  summary.maxPriorityRank = quotaLimits.maxPriorityRank;
   const remaining = slate.quota.remaining;
   const scarceOrUnknown =
     remaining === null ||
     remaining <= config.quotaReserve + TRACKABLE_PLAYER_PROP_MARKET_KEYS.length;
   summary.claimLimitApplied = scarceOrUnknown ? 1 : config.claimLimit;
-  summary.maxCreditCost =
-    remaining ?? TRACKABLE_PLAYER_PROP_MARKET_KEYS.length;
+  summary.maxCreditCost = quotaLimits.maxCreditCost;
   const claimResult = await deps.claimDue({
     ownerId: config.ownerId,
     now: deps.now(),

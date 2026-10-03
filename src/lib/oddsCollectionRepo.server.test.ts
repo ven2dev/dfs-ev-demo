@@ -83,6 +83,8 @@ describe("odds collection persistence", () => {
     const [sql] = queryMock.mock.calls[0];
     expect(sql).toContain("ON CONFLICT (week_start_time) DO UPDATE");
     expect(sql).toContain("EXCLUDED.selection_reason = 'explicit-override'");
+    expect(sql).toContain("odds_free_pilot_selections.event_id = EXCLUDED.event_id");
+    expect(sql).toContain("THEN odds_free_pilot_selections.selected_at");
     expect(sql).toContain("NOT EXISTS (SELECT 1 FROM selected)");
   });
 
