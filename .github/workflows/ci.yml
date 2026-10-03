@@ -60,6 +60,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Test Firestore security rules
+        run: npm run test:firestore-rules
+
       - name: Build
         run: npm run build
 

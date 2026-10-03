@@ -12,6 +12,7 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run --config vitest.config.ts && vitest run --config vitest.node.config.ts",
+    "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-dfs-ev-preview-rules \"node tests/firestoreRules.mjs\"",
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {
@@ -31,6 +32,7 @@
     }
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "10.4.2",
     "@testing-library/jest-dom": "7.0.1",
@@ -41,6 +43,7 @@
     "@vitejs/plugin-react": "6.1.1",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
+    "firebase-tools": "15.32.1",
     "jsdom": "30.1.1",
     "tailwindcss": "^4",
     "typescript": "^5",

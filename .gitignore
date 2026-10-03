@@ -15,6 +15,9 @@ CLAUDE.md
 
 # testing
 /coverage
+/firebase-debug.log
+/firestore-debug.log
+/.firebase/
 
 # next.js
 /.next/
