@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthorizedCronHeader } from "@/lib/cronAuth";
 import { evaluateOddsCollectorHealth } from "@/lib/oddsCollectorHealth";
 import { getOddsCollectorHealthSnapshot } from "@/lib/oddsCollectorHealthRepo";
+import { requireLiveOddsDataSource } from "@/lib/oddsDataSource";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -24,7 +25,7 @@ const quotaReserve = () => {
 
 const response = (
   body: {
-    status: "healthy" | "unhealthy" | "error" | "unauthorized";
+    status: "healthy" | "unhealthy" | "unavailable" | "error" | "unauthorized";
     reasons?: string[];
     warnings?: string[];
   },
@@ -43,6 +44,12 @@ export const GET = async (request: NextRequest) => {
     )
   ) {
     return response({ status: "unauthorized" }, 401);
+  }
+
+  try {
+    requireLiveOddsDataSource();
+  } catch {
+    return response({ status: "unavailable", reasons: ["data-source-not-live"] }, 503);
   }
 
   try {

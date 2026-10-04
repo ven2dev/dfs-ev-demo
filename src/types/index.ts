@@ -1,3 +1,5 @@
+import type { OddsDataSource } from "@/lib/oddsDataSource";
+
 export type ConnectionStatus = "connecting" | "live" | "stale" | "disconnected";
 
 export type AuthStatus = "loading" | "signed-in" | "signed-out" | "unavailable";
@@ -56,6 +58,9 @@ export type MarketConsensus = {
 
 export type WatchedProp = {
   propId: string;
+  // Server-authoritative provenance for every value in the latest tick.
+  // UI copy must not infer this from hostnames or missing credentials.
+  dataSource?: OddsDataSource;
   // Optional, not a zeroed placeholder: undefined means "no fresh tick
   // yet under the CURRENT sampleWindow" (either never watched live, or
   // just reconnected after a window change) -- a zeroed EVScore would
@@ -66,7 +71,7 @@ export type WatchedProp = {
   // undefined as "nothing to show yet," not "edge is zero."
   evScore?: EVScore;
   evHistory: EVHistory;
-  // Optional: only present once a real SSE tick has landed under the
+  // Optional: only present once a fresh SSE tick has landed under the
   // CURRENT sampleWindow.
   stages?: EVPipelineStages;
   // Average of the prop's OWN stat (same stat as the line itself, e.g.
@@ -74,7 +79,7 @@ export type WatchedProp = {
   // fantasy-points projection. Same "undefined until a fresh tick
   // lands" rule as evScore/stages.
   recentStatAverage?: number;
-  // The live line and weather belong to the same prop identity as the
+  // The tick's line and weather belong to the same prop identity as the
   // EV values above. Keeping them here prevents a newly-selected prop
   // from rendering another selection's last global line or weather.
   line?: number;

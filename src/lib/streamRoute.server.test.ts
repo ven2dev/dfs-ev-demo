@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextRequest } from "next/server";
+import { POLL_INTERVAL_MS } from "./streamConfig";
 
 const fetchSlateEventsMock = vi.fn();
 const getVenueForTeamMock = vi.fn();
@@ -33,6 +34,8 @@ const requestFor = (searchParams: Record<string, string>) =>
   }) as NextRequest;
 
 beforeEach(() => {
+  vi.stubEnv("ODDS_DATA_SOURCE", "live");
+  vi.stubEnv("ODDS_API_KEY", "test-key");
   fetchSlateEventsMock.mockResolvedValue({
     data: [
       {
@@ -54,6 +57,8 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
+  vi.unstubAllEnvs();
+  vi.useRealTimers();
 });
 
 describe("GET /api/stream market capability validation", () => {
@@ -194,6 +199,7 @@ describe("GET /api/stream consensus devig ticks", () => {
     const tick = await openStream("over");
 
     expect(tick.type).toBe("tick");
+    expect(tick.dataSource).toBe("live");
     expect(tick.line).toBe(250.5);
     expect(tick.evScore.impliedProb).toBeCloseTo(0.525, 12);
     expect(tick.marketConsensus).toEqual({
@@ -260,5 +266,80 @@ describe("GET /api/stream consensus devig ticks", () => {
       type: "error",
       message: "No valid two-way market quotes remain at line 250.5",
     });
+  });
+});
+
+describe("GET /api/stream fixture ticks", () => {
+  beforeEach(() => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    vi.stubEnv("ODDS_DATA_SOURCE", "fixture");
+  });
+
+  it("runs the signed-out EV path without live roster, provider, weather, or cache access", async () => {
+    const { getFixtureSlateEvents } = await import("./oddsFixtures");
+    const eventId = getFixtureSlateEvents("americanfootball_nfl", new Date())[0].id;
+    const response = await GET(
+      requestFor({
+        eventId,
+        marketKey: "player_pass_yds",
+        playerName: "Avery Stone",
+        bookmakerKey: "fixture-northstar",
+        direction: "over",
+        sampleWindow: "5",
+      })
+    );
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Expected an SSE response body");
+    const { value } = await reader.read();
+    await reader.cancel();
+    const tick = JSON.parse(new TextDecoder().decode(value).replace(/^data: /, "").trim());
+
+    expect(response.status).toBe(200);
+    expect(tick).toMatchObject({
+      type: "tick",
+      dataSource: "fixture",
+      line: 244.5,
+      marketConsensus: {
+        method: "exact-line-median",
+        version: 1,
+        contributingBookCount: 3,
+      },
+    });
+    expect(fetchSlateEventsMock).not.toHaveBeenCalled();
+    expect(getVenueForTeamMock).not.toHaveBeenCalled();
+    expect(getNflverseTeamAbbreviationMock).not.toHaveBeenCalled();
+    expect(getRealRecentGameStatsMock).not.toHaveBeenCalled();
+    expect(getSharedLivePropInputsMock).not.toHaveBeenCalled();
+  });
+
+  it("advances fixture prices deterministically across scheduled SSE ticks", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-03T12:00:00.000Z"));
+    const { getFixtureSlateEvents } = await import("./oddsFixtures");
+    const eventId = getFixtureSlateEvents("americanfootball_nfl", new Date())[0].id;
+    const response = await GET(
+      requestFor({
+        eventId,
+        marketKey: "player_pass_yds",
+        playerName: "Avery Stone",
+        bookmakerKey: "fixture-northstar",
+        direction: "over",
+      })
+    );
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Expected an SSE response body");
+    const first = await reader.read();
+    const nextRead = reader.read();
+    await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    const second = await nextRead;
+    await reader.cancel();
+    const decode = (value: Uint8Array | undefined) =>
+      JSON.parse(new TextDecoder().decode(value).replace(/^data: /, "").trim());
+    const firstTick = decode(first.value);
+    const secondTick = decode(second.value);
+
+    expect(secondTick.timestamp - firstTick.timestamp).toBe(POLL_INTERVAL_MS);
+    expect(secondTick.evScore.impliedProb).not.toBe(firstTick.evScore.impliedProb);
+    expect(getSharedLivePropInputsMock).not.toHaveBeenCalled();
   });
 });

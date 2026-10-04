@@ -6,6 +6,7 @@ import {
   type PlayerPropDirection,
 } from "@/lib/playerPropMarkets";
 import { getAllBookmakerKeys } from "@/lib/discoveredProps";
+import { isOddsDataSource, type OddsDataSource } from "@/lib/oddsDataSource";
 import { PlayerPropsCard } from "@/components/PlayerPropsCard";
 import { BookmakerLinesSheet, type SeeAllTarget } from "@/components/BookmakerLinesSheet";
 import {
@@ -48,8 +49,8 @@ const formatKickoff = (iso: string) =>
     minute: "2-digit",
   });
 
-// Real event list, market discovery, book comparison, and selection of
-// a supported prop for the live EV pipeline.
+// Event list, market discovery, book comparison, and selection of
+// a supported prop for the EV pipeline.
 export const SlateBrowser = () => {
   const realSlate = useRealSlate();
   const realSlateStatus = useRealSlateStatus();
@@ -58,6 +59,7 @@ export const SlateBrowser = () => {
   const setRealSlate = useSetRealSlate();
   const setRealSlateStatus = useSetRealSlateStatus();
   const setRealSlateError = useSetRealSlateError();
+  const [slateDataSource, setSlateDataSource] = useState<OddsDataSource | null>(null);
 
   const selectedEventId = useSelectedEventId();
   const setSelectedEventId = useSetSelectedEventId();
@@ -93,8 +95,8 @@ export const SlateBrowser = () => {
   const [comparisonBookmakerKeys, setComparisonBookmakerKeys] = useState<string[]>([]);
   const [seeAllTarget, setSeeAllTarget] = useState<SeeAllTarget | null>(null);
   // Which slot the next "Watch" click assigns to -- primary drives the
-  // live EV pipeline, secondary exists only to demo optimistic
-  // watch/unwatch + rollback with a second real (but not live-tracked)
+  // EV stream, secondary exists only to demo optimistic
+  // watch/unwatch + rollback with a second discovered (but not stream-tracked)
   // prop.
   const [watchAssignTarget, setWatchAssignTarget] = useState<"primary" | "secondary">("primary");
   const [watchDirection, setWatchDirection] = useState<PlayerPropDirection>("over");
@@ -122,7 +124,7 @@ export const SlateBrowser = () => {
   // discoveredProps itself changes, so this only fires on a REAL change,
   // not every render. A fresh discovery result can drop the book that
   // was selected (a different market set may not include it) or arrive
-  // with none selected yet -- default to the first real book rather than
+  // with none selected yet -- default to the first available book rather than
   // show a stale/invalid one.
   const [prevAllBookmakerKeys, setPrevAllBookmakerKeys] = useState(allBookmakerKeys);
   if (allBookmakerKeys !== prevAllBookmakerKeys) {
@@ -154,9 +156,15 @@ export const SlateBrowser = () => {
         if (disposed || controller.signal.aborted || requestGeneration !== generation) return;
         if (!data.success) {
           setRealSlateStatus("error");
-          setRealSlateError(data.reason ?? "Failed to load the real slate");
+          setRealSlateError(data.reason ?? "Failed to load the slate");
           return;
         }
+        if (!isOddsDataSource(data.dataSource)) {
+          setRealSlateStatus("error");
+          setRealSlateError("Slate response did not identify its data source");
+          return;
+        }
+        setSlateDataSource(data.dataSource);
         setRealSlate(data.events, data.window);
         setRealSlateError(null);
         setRealSlateStatus("loaded");
@@ -252,6 +260,11 @@ export const SlateBrowser = () => {
         setDiscoveryError("Props response did not match the selected event");
         return;
       }
+      if (!isOddsDataSource(data.dataSource) || data.dataSource !== slateDataSource) {
+        setDiscoveryStatus("error");
+        setDiscoveryError("Props response did not match the slate data source");
+        return;
+      }
       setDiscoveredProps(data.players, eventId, marketKeys);
       setDiscoveryStatus("loaded");
     } catch (err) {
@@ -331,6 +344,13 @@ export const SlateBrowser = () => {
       <h2 className="text-lg font-medium">
         Browse the {realSlateWindow?.label ?? "current NFL"} slate
       </h2>
+
+      {slateDataSource === "fixture" && (
+        <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+          Preview fixture data — the teams, players, books, and prices in this browser are
+          fictional. No live provider calls are made.
+        </p>
+      )}
 
       {realSlateStatus === "loading" && (
         <p className="mt-2 text-sm text-zinc-500">Loading this week&rsquo;s games…</p>

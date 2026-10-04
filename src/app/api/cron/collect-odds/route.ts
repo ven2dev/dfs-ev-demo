@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAuthorizedCronHeader } from "@/lib/cronAuth";
 import { runOddsCollector } from "@/lib/oddsCollector";
 import { parseOddsCollectionProfile } from "@/lib/oddsCollectionPolicy";
+import { requireLiveOddsDataSource } from "@/lib/oddsDataSource";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -31,6 +32,15 @@ export const GET = async (request: NextRequest) => {
     )
   ) {
     return NextResponse.json({ success: false, reason: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    requireLiveOddsDataSource();
+  } catch {
+    return NextResponse.json(
+      { success: false, reason: "Odds collection is unavailable for this data source" },
+      { status: 503 }
+    );
   }
 
   try {

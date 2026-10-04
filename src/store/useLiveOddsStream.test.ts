@@ -189,6 +189,7 @@ describe("useLiveOddsStream: connection URL", () => {
       watchlist: {
         [samplePropId]: {
           propId: samplePropId,
+          dataSource: "live",
           evScore: { modelProb: 0.6, impliedProb: 0.5, edge: 0.1 },
           evHistory: [{ timestamp: 1, evScore: 0.1 }],
           stages: { baseRate: 0.6, afterEnvironment: 0.6, afterCoverage: 0.5 },
@@ -214,6 +215,7 @@ describe("useLiveOddsStream: connection URL", () => {
 
     const entry = useAppStore.getState().watchlist[samplePropId];
     expect(entry.stages).toBeUndefined();
+    expect(entry.dataSource).toBeUndefined();
     expect(entry.evHistory).toEqual([]);
     expect(entry.evScore).toBeUndefined();
     expect(entry.recentStatAverage).toBeUndefined();
@@ -263,6 +265,7 @@ describe("useLiveOddsStream: connection URL", () => {
       source.onmessage?.({
         data: JSON.stringify({
           type: "tick",
+          dataSource: "fixture",
           propId: samplePropId,
           timestamp: 123,
           line: 250.5,
@@ -284,6 +287,7 @@ describe("useLiveOddsStream: connection URL", () => {
       version: 1,
       contributingBookCount: 4,
     });
+    expect(useAppStore.getState().watchlist[samplePropId].dataSource).toBe("fixture");
     unmount();
   });
 });

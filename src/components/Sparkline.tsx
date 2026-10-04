@@ -1,6 +1,6 @@
 export function Sparkline({ values }: { values: number[] }) {
   if (values.length < 2) {
-    return <div className="h-10 text-xs text-zinc-500">Collecting live data…</div>;
+    return <div className="h-10 text-xs text-zinc-500">Collecting tick data…</div>;
   }
   const min = Math.min(...values);
   const max = Math.max(...values);

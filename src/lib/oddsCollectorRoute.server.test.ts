@@ -17,6 +17,8 @@ const request = (authorization?: string) =>
 beforeEach(() => {
   vi.stubEnv("CRON_SECRET", "cron-secret");
   vi.stubEnv("ODDS_COLLECTION_PROFILE", "free-pilot");
+  vi.stubEnv("ODDS_DATA_SOURCE", "live");
+  vi.stubEnv("ODDS_API_KEY", "test-key");
   runCollectorMock.mockResolvedValue({ profile: "free-pilot", completed: 1 });
 });
 
@@ -56,6 +58,19 @@ describe("GET /api/cron/collect-odds", () => {
         ownerId: expect.any(String),
       })
     );
+  });
+
+  it("refuses fixture collection without invoking collector logic", async () => {
+    vi.stubEnv("ODDS_DATA_SOURCE", "fixture");
+
+    const response = await GET(request("Bearer cron-secret"));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      reason: "Odds collection is unavailable for this data source",
+    });
+    expect(runCollectorMock).not.toHaveBeenCalled();
   });
 
   it("fails closed on an invalid or accidental paid profile value", async () => {

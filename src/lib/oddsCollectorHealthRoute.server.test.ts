@@ -39,6 +39,8 @@ beforeEach(() => {
   vi.setSystemTime(new Date("2026-10-03T12:00:00.000Z"));
   vi.stubEnv("ODDS_HEALTH_SECRET", "health-secret");
   vi.stubEnv("ODDS_COLLECTION_PROFILE", "free-pilot");
+  vi.stubEnv("ODDS_DATA_SOURCE", "live");
+  vi.stubEnv("ODDS_API_KEY", "test-key");
   snapshotMock.mockResolvedValue(healthySnapshot());
 });
 
@@ -72,6 +74,19 @@ describe("GET /api/health/odds-collector", () => {
       unknownCostLookbackMs: 86_400_000,
       staleClaimGraceMs: 600_000,
     });
+  });
+
+  it("reports fixture deployments as unavailable without querying Postgres", async () => {
+    vi.stubEnv("ODDS_DATA_SOURCE", "fixture");
+
+    const response = await GET(request("Bearer health-secret"));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      status: "unavailable",
+      reasons: ["data-source-not-live"],
+    });
+    expect(snapshotMock).not.toHaveBeenCalled();
   });
 
   it("uses 503 for an unhealthy collector and keeps warnings non-failing", async () => {

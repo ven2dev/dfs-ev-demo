@@ -6,8 +6,9 @@ full project brief and roadmap.
 
 ## Setup
 
-Node.js 24 is the supported local, CI, and production runtime. With `nvm`, the
-checked-in version contract can be selected before installing dependencies:
+Node.js 24 is the supported local, CI, and production runtime. Java 21 is also
+required for the local Firestore security-rules emulator test. With `nvm`, the
+checked-in Node version contract can be selected before installing dependencies:
 
 ```bash
 nvm use
@@ -28,6 +29,7 @@ git diff --check
 npm run typecheck
 npm run lint
 npm test
+npm run test:firestore-rules
 npm run build
 npm audit --omit=dev --audit-level=critical
 ```
@@ -37,6 +39,11 @@ Fill in `.env.local`:
 - **Odds API** (`ODDS_API_KEY`) — free tier key from [the-odds-api.com](https://the-odds-api.com).
 - **Firebase** (`NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_SERVICE_ACCOUNT_KEY_BASE64`) — see the comments in `.env.example`.
 - **Postgres / historical stats** (`DATABASE_URL`, `CRON_SECRET`) — see below.
+
+Vercel Preview is deliberately isolated from Production and uses deterministic
+odds fixtures. See [Preview environment isolation](docs/preview-environment.md)
+for the environment matrix, deployment-protection behavior, ownership, and
+credential-rotation procedure.
 
 ```bash
 npm run dev

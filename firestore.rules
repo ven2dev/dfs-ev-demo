@@ -1,0 +1,12 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The browser uses Firebase Authentication only. All application data
+    // access is mediated by authenticated server routes through Admin SDK,
+    // which bypasses Firestore rules. No browser identity needs direct access.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

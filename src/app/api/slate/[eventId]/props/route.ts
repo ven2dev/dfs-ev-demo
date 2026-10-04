@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { DEFAULT_SPORT_KEY } from "@/lib/oddsApi";
 import { getOrFetchMarketOdds } from "@/lib/oddsCacheRepo";
 import { groupOddsByPlayer } from "@/lib/discoveredProps";
-import { isValidPlayerPropMarketKey } from "@/lib/playerPropMarkets";
+import { resolveOddsDataSource } from "@/lib/oddsDataSource";
+import { getFixtureEventOdds } from "@/lib/oddsFixtures";
+import {
+  isValidPlayerPropMarketKey,
+  type PlayerPropMarketKey,
+} from "@/lib/playerPropMarkets";
 
 // Real, shared market data (not per-user state), so this follows
 // /api/stream's precedent -- no auth gate, unlike the requireUid-backed
@@ -50,12 +55,24 @@ export const GET = async (
     const sportKey = request.nextUrl.searchParams.get("sportKey") || DEFAULT_SPORT_KEY;
     const forceRefresh = request.nextUrl.searchParams.get("refresh") === "true";
 
-    const oddsResult = await getOrFetchMarketOdds(sportKey, eventId, requestedMarketKeys, {
-      forceRefresh,
-    });
-    const players = groupOddsByPlayer(oddsResult.odds);
+    const dataSource = resolveOddsDataSource();
+    const odds =
+      dataSource === "fixture"
+        ? getFixtureEventOdds(eventId, requestedMarketKeys as PlayerPropMarketKey[])
+        : (
+            await getOrFetchMarketOdds(sportKey, eventId, requestedMarketKeys, {
+              forceRefresh,
+            })
+          ).odds;
+    if (!odds) {
+      return NextResponse.json(
+        { success: false, reason: `Fixture event "${eventId}" was not found` },
+        { status: 404 }
+      );
+    }
+    const players = groupOddsByPlayer(odds);
 
-    return NextResponse.json({ success: true, eventId, players });
+    return NextResponse.json({ success: true, dataSource, eventId, players });
   } catch (err) {
     console.error("[api/slate/[eventId]/props] GET failed:", err);
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });
