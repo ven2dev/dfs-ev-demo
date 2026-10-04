@@ -3,8 +3,8 @@
 ## Report a vulnerability privately
 
 Use this repository's [private vulnerability reporting form](https://github.com/ven2dev/dfs-ev-demo/security/advisories/new)
-or choose **Security and quality → Report a vulnerability** on GitHub. Include
-the affected deployment or commit, reproduction steps, expected and observed
+to submit a report. Include the affected deployment or commit, reproduction
+steps, expected and observed
 behavior, and potential impact. Use a minimal reproduction with sensitive
 values removed. Keep credentials, account data, and vulnerability details in
 the private report rather than a public issue, PR, or log.

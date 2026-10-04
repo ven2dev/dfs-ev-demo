@@ -40,6 +40,25 @@ scanning, repository push protection, and private reporting. Notification
 attestation and the cancelled web-editor block-test evidence remain pending;
 they must be recorded separately before #59 is complete.
 
+### Optional secret-scanning settings
+
+Decision for #59: leave non-provider pattern detection and optional provider
+validity checks disabled. Keep provider-pattern scanning and push protection
+enabled. Non-provider patterns broaden detection to generic keys and connection
+strings; defer enabling that category until its alert volume and triage policy
+can be assessed. This leaves a detection gap for generic credentials, so use
+the existing credential-handling rules and include generic-secret exposure in
+manual review. Reconsider the setting during weekly security triage.
+
+Optional validity checks may contact a credential's issuing service. Handle a
+suspected exposure through manual investigation and revocation/rotation,
+without enabling additional automatic verification requests in this ticket.
+An unknown validity status is not evidence that a credential is safe. This
+decision concerns the optional repository setting; GitHub's existing provider
+partner notifications and built-in GitHub-token checks may still occur.
+See [detection capabilities](https://docs.github.com/en/code-security/reference/secret-security/supported-secret-scanning-patterns)
+and [validity checks](https://docs.github.com/en/code-security/concepts/secret-security/secret-scanning).
+
 ## Workflow validation and Action updates
 
 Run `actionlint` locally against all three workflows:
@@ -84,6 +103,10 @@ and the standard query suite on PRs to `main`, pushes to `main`, Monday
 `pull_request` analysis for Dependabot PRs; declared permissions alone do not
 prove that the restricted token can upload results.
 
+Concurrency cancels superseded runs only for the same PR. Push, schedule, and
+dispatch runs have separate groups per run and do not cancel one another,
+including pending runs, so each main commit can establish its own baseline.
+
 The bootstrap PR cannot establish an existing main comparison baseline.
 Complete rollout in this order:
 
@@ -96,15 +119,25 @@ Complete rollout in this order:
 3. Confirm the first genuine Dependabot PR uploads CodeQL results and passes
    ordinary CI under its restricted token. If no update is available, retain
    this as pending instead of manufacturing a dependency change.
-4. Read the actual reported CodeQL check name and source from those runs before
+4. Verify a real fork PR on this public repository uploads results using its
+   read-only token and no application secrets. Record approval requirements,
+   workflow run, analyzed SHA, and uploaded analysis. Do not switch to
+   `pull_request_target` to execute fork code with elevated permissions.
+5. Read the actual reported CodeQL check name and source from those runs before
    adding it to required checks in `DFS_Main` (ruleset 22423636). Preserve the
    existing `CI` and `Vercel` checks, strict up-to-date policy, PR/thread rules,
    and no bypass actors. Verify enforcement on a subsequent PR. Until this is
    done, CodeQL analysis is advisory; existing CI and Vercel remain required.
 
-Track these post-merge acceptance checks on #59. The bootstrap PR references
-the issue without `Closes #59`; keep it open while any required evidence is
-pending. Add links and distinguish workflow success from actual analysis upload.
+After the configuration reaches the default branch, also record GitHub's
+acceptance of `dependabot.yml`, successful update jobs, and actual grouping
+and assignment. Local YAML/schema checks cannot supply this acceptance evidence.
+
+Track these post-merge acceptance checks on #59. Use `Refs #59` in the bootstrap
+PR and explicitly explain that this is an intentional exception to the usual
+`Closes #N` convention: required evidence remains pending after merge. Keep
+the issue open through those checks. Add links and distinguish workflow success
+from actual analysis upload.
 
 ## Disabled schedules and recovery
 

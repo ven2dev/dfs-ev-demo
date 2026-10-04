@@ -21,9 +21,19 @@ group excludes `@firebase/rules-unit-testing`; that package belongs with
 upgrades, which require explicit compatibility review. Other major upgrades
 remain individual PRs. Grouping does not establish compatibility by itself.
 
+`@types/node` major updates are ignored to keep the declarations aligned with
+the supported Node 24 runtime. Node runtime upgrades are maintained manually:
+Dependabot does not update `.nvmrc` or the deployed runtime contract. A runtime
+upgrade ticket must review `.nvmrc`, `package.json` engines and Node types, CI,
+and Vercel configuration together, then reconsider this ignore rule.
+
 Security groups separate production and development dependencies, including
 transitive lockfile findings. They can include updates that also need the
 Firebase checklists below. Review the actual changed dependency paths.
+
+Local schema validation is preparatory. GitHub's acceptance of
+`dependabot.yml`, update-job results, and actual grouping/assignment can only
+be recorded after the configuration is merged into the default branch.
 
 ## Every update
 

@@ -15,8 +15,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: codeql-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Supersede old PR analyses, but preserve every main baseline run. A distinct
+  # group for each non-PR run also avoids cancellation of pending baselines.
+  group: codeql-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   analyze:
