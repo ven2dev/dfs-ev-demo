@@ -40,7 +40,7 @@ jobs:
           java-version: "21"
 
       - name: Cache Firebase emulator binaries
-        uses: actions/cache@v6
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.cache/firebase/emulators
           key: firebase-emulators-${{ runner.os }}-${{ hashFiles('package-lock.json') }}

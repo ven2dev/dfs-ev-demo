@@ -24,9 +24,6 @@ const sampleWindow = {
 
 const mockFetchOnce = (data: unknown) => {
   let response = data;
-  if (typeof response === "object" && response !== null && "success" in response) {
-    response = { dataSource: "live", ...response };
-  }
   if (
     typeof response === "object" &&
     response !== null &&
@@ -63,7 +60,7 @@ describe("SlateBrowser", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.setSystemTime(new Date("2026-09-29T12:00:00Z")); // verified Week 4 (see nflWeek.test.ts)
     global.fetch = vi.fn();
-    mockFetchOnce({ success: true, events: [] });
+    mockFetchOnce({ success: true, dataSource: "live", events: [] });
 
     render(<SlateBrowser />);
 
@@ -86,7 +83,7 @@ describe("SlateBrowser", () => {
 
   it("loads the slate on mount and lists games sorted by kickoff time, not arrival order", async () => {
     global.fetch = vi.fn();
-    mockFetchOnce({ success: true, events: sampleEvents });
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
 
     render(<SlateBrowser />);
 
@@ -98,12 +95,12 @@ describe("SlateBrowser", () => {
 
   it("refreshes the server-owned slate when the tab regains focus", async () => {
     global.fetch = vi.fn();
-    mockFetchOnce({ success: true, events: sampleEvents });
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
 
     render(<SlateBrowser />);
     await screen.findByLabelText("Select a game");
 
-    mockFetchOnce({ success: true, events: [sampleEvents[0]] });
+    mockFetchOnce({ success: true, dataSource: "live", events: [sampleEvents[0]] });
     window.dispatchEvent(new Event("focus"));
 
     await waitFor(() => expect(fetchMock()).toHaveBeenCalledTimes(2));
@@ -118,9 +115,21 @@ describe("SlateBrowser", () => {
     expect(await screen.findByText("Internal error")).toBeInTheDocument();
   });
 
-  it("shows the market checklist after selecting a game, and checking boxes alone fetches nothing", async () => {
+  it("rejects a successful slate response that omits its data source", async () => {
     global.fetch = vi.fn();
     mockFetchOnce({ success: true, events: sampleEvents });
+
+    render(<SlateBrowser />);
+
+    expect(
+      await screen.findByText("Slate response did not identify its data source")
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText("Select a game")).not.toBeInTheDocument();
+  });
+
+  it("shows the market checklist after selecting a game, and checking boxes alone fetches nothing", async () => {
+    global.fetch = vi.fn();
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
 
     render(<SlateBrowser />);
     const select = await screen.findByLabelText("Select a game");
@@ -139,7 +148,7 @@ describe("SlateBrowser", () => {
 
   it("fetches discovered props only when 'Show props' is clicked, batching every checked market into one request", async () => {
     global.fetch = vi.fn();
-    mockFetchOnce({ success: true, events: sampleEvents });
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
 
     render(<SlateBrowser />);
     fireEvent.change(await screen.findByLabelText("Select a game"), {
@@ -150,6 +159,7 @@ describe("SlateBrowser", () => {
 
     mockFetchOnce({
       success: true,
+      dataSource: "live",
       eventId: "evt-1",
       players: [
         {
@@ -174,9 +184,34 @@ describe("SlateBrowser", () => {
     expect(requestedUrl).not.toContain("refresh=true");
   });
 
+  it("rejects props whose data source differs from the loaded slate", async () => {
+    global.fetch = vi.fn();
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
+
+    render(<SlateBrowser />);
+    fireEvent.change(await screen.findByLabelText("Select a game"), {
+      target: { value: "evt-1" },
+    });
+    fireEvent.click(await screen.findByLabelText("Passing Yards"));
+
+    mockFetchOnce({
+      success: true,
+      dataSource: "fixture",
+      eventId: "evt-1",
+      players: [{ playerName: "Wrong Source Player", markets: [] }],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+
+    expect(
+      await screen.findByText("Props response did not match the slate data source")
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Wrong Source Player")).not.toBeInTheDocument();
+    expect(useAppStore.getState().discoveredProps).toEqual([]);
+  });
+
   it("ignores a discovery response after the selected event changes", async () => {
     global.fetch = vi.fn();
-    mockFetchOnce({ success: true, events: sampleEvents });
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
 
     render(<SlateBrowser />);
     const select = await screen.findByLabelText("Select a game");
@@ -196,6 +231,7 @@ describe("SlateBrowser", () => {
       json: () =>
         Promise.resolve({
           success: true,
+          dataSource: "live",
           eventId: "evt-1",
           players: [{ playerName: "Stale Player", markets: [] }],
         }),
@@ -210,7 +246,7 @@ describe("SlateBrowser", () => {
 
   const showPropsWithFourBooks = async () => {
     global.fetch = vi.fn();
-    mockFetchOnce({ success: true, events: sampleEvents });
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
 
     render(<SlateBrowser />);
     fireEvent.change(await screen.findByLabelText("Select a game"), {
@@ -220,6 +256,7 @@ describe("SlateBrowser", () => {
 
     mockFetchOnce({
       success: true,
+      dataSource: "live",
       eventId: "evt-1",
       players: [
         {
@@ -335,7 +372,7 @@ describe("SlateBrowser", () => {
 
   it("shows a Refresh odds button only after props have been shown, and it requests with refresh=true", async () => {
     global.fetch = vi.fn();
-    mockFetchOnce({ success: true, events: sampleEvents });
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
 
     render(<SlateBrowser />);
     fireEvent.change(await screen.findByLabelText("Select a game"), {
@@ -347,13 +384,14 @@ describe("SlateBrowser", () => {
 
     mockFetchOnce({
       success: true,
+      dataSource: "live",
       eventId: "evt-1",
       players: [{ playerName: "Jalen Hurts", markets: [] }],
     });
     fireEvent.click(screen.getByRole("button", { name: "Show props" }));
     await screen.findByText("Jalen Hurts");
 
-    mockFetchOnce({ success: true, eventId: "evt-1", players: [] });
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players: [] });
     fireEvent.click(screen.getByRole("button", { name: "Refresh odds" }));
 
     await waitFor(() => {
