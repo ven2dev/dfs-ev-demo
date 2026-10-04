@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run --config vitest.config.ts && vitest run --config vitest.node.config.ts",
+    "test": "npm run test:firebase-admin-runtime && vitest run --config vitest.config.ts && vitest run --config vitest.node.config.ts",
+    "test:firebase-admin-runtime": "node --no-experimental-require-module -e \"require('firebase-admin/auth')\"",
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-dfs-ev-preview-rules \"node tests/firestoreRules.mjs\"",
     "test:watch": "vitest --config vitest.config.ts"
   },
@@ -29,6 +30,9 @@
   "overrides": {
     "gaxios": {
       "uuid": "^11.1.1"
+    },
+    "jwks-rsa": {
+      "jose": "5.10.0"
     }
   },
   "devDependencies": {

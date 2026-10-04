@@ -19,7 +19,7 @@ export function useLiveOddsStream() {
   const primaryWatch = usePrimaryWatch();
 
   useEffect(() => {
-    // Nothing to track yet -- no real selection has been watched. Make
+    // Nothing to track yet -- no selection has been watched. Make
     // sure a PREVIOUS connection (from before the user cleared it) is
     // reflected as disconnected, not left showing a stale "live" status.
     if (!primaryWatch) {
@@ -36,7 +36,7 @@ export function useLiveOddsStream() {
 
     setConnectionStatus("connecting");
 
-    // Clear the selected prop's complete snapshot before connecting.
+    // Clear the selected prop's complete tick snapshot before connecting.
     // This covers both sample-window changes and a new watched identity,
     // so no line, weather, EV, or history can render under a selection
     // that did not produce it.
@@ -47,6 +47,7 @@ export function useLiveOddsStream() {
       [expectedPropId]: {
         ...existingSnapshot,
         propId: expectedPropId,
+        dataSource: undefined,
         stages: undefined,
         evHistory: [],
         evScore: undefined,
@@ -115,12 +116,13 @@ export function useLiveOddsStream() {
           ...currentWatchlist,
           [data.propId]: {
             propId: data.propId,
+            dataSource: data.dataSource,
             evScore: data.evScore,
             evHistory: [
               ...(existing?.evHistory ?? []),
               { timestamp: data.timestamp, evScore: data.evScore.edge },
             ],
-            // Computed server-side (real odds/weather) on every tick --
+            // Computed server-side from the tick's declared source and
             // carried through as-is rather than recomputed client-side
             // against stale data, which is what page.tsx used to do.
             stages: data.stages,

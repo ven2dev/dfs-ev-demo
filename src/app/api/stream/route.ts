@@ -296,6 +296,7 @@ export async function GET(request: NextRequest) {
 
           send({
             type: "tick",
+            dataSource,
             propId,
             timestamp: Date.now(),
             line: oddsLine.point,

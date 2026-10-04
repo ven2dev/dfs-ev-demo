@@ -5,6 +5,7 @@ import { Sparkline } from "@/components/Sparkline";
 import { MarketConsensusSummary } from "@/components/MarketConsensusSummary";
 import { SlateBrowser } from "@/components/SlateBrowser";
 import { getAuthHeaders } from "@/lib/authHeaders";
+import { getOddsProvenanceCopy } from "@/lib/oddsProvenance";
 import { computeEntryHitProbability } from "@/lib/pickEm";
 import { buildWatchPropId } from "@/lib/watchPropId";
 import { mockGoal } from "@/store/mockData";
@@ -48,12 +49,13 @@ export default function Home() {
   const setGoal = useSetGoal();
 
   const watched = primaryWatch ? watchlist[buildWatchPropId(primaryWatch)] : undefined;
+  const provenance = getOddsProvenanceCopy(watched?.dataSource);
 
-  // A second, independently-watched real prop (#27 step 7) -- NOT wired
-  // into live SSE tracking, same as before. This section exists purely
+  // A second, independently-watched discovered prop (#27 step 7) -- NOT wired
+  // into SSE tracking, same as before. This section exists purely
   // to demonstrate the optimistic-update + rollback pattern in
-  // isolation, per the brief's call for ONE example; it just uses a
-  // second real selection now instead of a hardcoded mock one.
+  // isolation, per the brief's call for ONE example; it uses a second
+  // slate selection instead of a hardcoded one.
   const isWatchingSecond = secondaryWatch
     ? Boolean(watchlist[buildWatchPropId(secondaryWatch)])
     : false;
@@ -73,7 +75,7 @@ export default function Home() {
       {
         getUid: () => useAppStore.getState().uid,
         getWatchlistEntry: (id) => useAppStore.getState().watchlist[id],
-        // Only ever touches this one key -- the live SSE hook
+        // Only ever touches this one key -- the SSE hook
         // concurrently updates a *different* key (the primary prop) on
         // its own schedule, and a full-object write would clobber
         // whatever it wrote while this request was in flight.
@@ -108,7 +110,7 @@ export default function Home() {
   };
 
   // A genuine user preference change, worth persisting -- unlike
-  // useLiveOddsStream's own setMatchupConfig calls (live weather/line
+  // useLiveOddsStream's own setMatchupConfig calls (tick weather/line
   // refresh on every SSE tick), which stay local-only; persisting those
   // would write to Firestore every few seconds for every connected user.
   // No snapshot-and-revert on failure here, per the brief's call for ONE
@@ -217,19 +219,25 @@ export default function Home() {
       {!primaryWatch && (
         <section className="rounded-lg border border-zinc-200 p-6 text-sm text-zinc-500 dark:border-zinc-800">
           Select a game and a prop above, then click <strong>Watch</strong> to start
-          tracking its live EV here.
+          tracking its EV here.
         </section>
       )}
 
       {primaryWatch && (
         <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+          {provenance.isFixture && (
+            <p className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+              Preview fixture data — teams, players, odds, weather, and history are
+              fictional. No live provider calls are made.
+            </p>
+          )}
           <h2 className="text-lg font-medium">
             {primaryWatch.awayTeam} @ {primaryWatch.homeTeam}
           </h2>
           <p className="mt-1 text-sm text-zinc-500">
             {primaryWatch.playerName} — {primaryWatch.propType}, line{" "}
-            {watched?.line ?? "—"} ({primaryWatch.direction}, {primaryWatch.bookmakerKey}; real
-            player-prop line, live Odds API)
+            {watched?.line ?? "—"} ({primaryWatch.direction}, {primaryWatch.bookmakerKey};{" "}
+            {provenance.line})
           </p>
 
           <div className="mt-4 flex gap-2">
@@ -249,7 +257,7 @@ export default function Home() {
           </div>
 
           {/* Active-node stepper — steps through base->env->coverage->final
-              on each new live tick; exactly one node active at a time. */}
+              on each new tick; exactly one node active at a time. */}
           <div className="mt-6 flex items-center gap-2 text-xs">
             {STAGES.map((stage, i) => (
               <div key={stage.key} className="flex items-center gap-2">
@@ -274,7 +282,7 @@ export default function Home() {
                 <span>{(watched.stages.baseRate * 100).toFixed(1)}%</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span>After environment adjustment (real weather)</span>
+                <span>{provenance.environment}</span>
                 <span>{(watched.stages.afterEnvironment * 100).toFixed(1)}%</span>
               </div>
               <div className="flex justify-between text-sm">
@@ -310,7 +318,7 @@ export default function Home() {
               Avg last {matchupConfig.sampleWindow} games:{" "}
               {watched.recentStatAverage.toFixed(1)} {primaryWatch.propType.toLowerCase()}{" "}
               <em className="text-zinc-400">
-                (historical average, not a projection — no predictive model yet)
+                ({provenance.history})
               </em>
             </p>
           )}
@@ -342,28 +350,34 @@ export default function Home() {
 
       <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium">Live Tracker</h2>
+          <h2 className="text-lg font-medium">EV Tracker</h2>
           <div className="flex items-center gap-2 text-sm">
             <span className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
-            <span className="capitalize">{connectionStatus}</span>
+            <span className="capitalize">
+              {connectionStatus === "live" && provenance.stream
+                ? provenance.stream
+                : connectionStatus}
+            </span>
           </div>
         </div>
         {watched?.evScore && primaryWatch ? (
           <div className="mt-4">
             <div className="flex justify-between text-sm">
-              <span>{primaryWatch.playerName} — live edge</span>
+              <span>
+                {primaryWatch.playerName} — {provenance.edge}
+              </span>
               <span>{(watched.evScore.edge * 100).toFixed(1)}%</span>
             </div>
             <div className="mt-2">
               <Sparkline values={watched.evHistory.map((h) => h.evScore)} />
             </div>
             <p className="mt-1 text-xs text-zinc-400">
-              {watched.evHistory.length} live ticks recorded
+              {watched.evHistory.length} {provenance.ticks}
             </p>
           </div>
         ) : (
           <p className="mt-2 text-sm text-zinc-500">
-            {primaryWatch ? "Waiting for first live tick…" : "Nothing watched yet."}
+            {primaryWatch ? provenance.waiting : "Nothing watched yet."}
           </p>
         )}
 

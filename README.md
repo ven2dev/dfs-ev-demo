@@ -38,6 +38,11 @@ Fill in `.env.local`:
 - **Firebase** (`NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_SERVICE_ACCOUNT_KEY_BASE64`) — see the comments in `.env.example`.
 - **Postgres / historical stats** (`DATABASE_URL`, `CRON_SECRET`) — see below.
 
+Vercel Preview is deliberately isolated from Production and uses deterministic
+odds fixtures. See [Preview environment isolation](docs/preview-environment.md)
+for the environment matrix, deployment-protection behavior, ownership, and
+credential-rotation procedure.
+
 ```bash
 npm run dev
 ```

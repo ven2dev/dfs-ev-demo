@@ -48,8 +48,8 @@ const formatKickoff = (iso: string) =>
     minute: "2-digit",
   });
 
-// Real event list, market discovery, book comparison, and selection of
-// a supported prop for the live EV pipeline.
+// Event list, market discovery, book comparison, and selection of
+// a supported prop for the EV pipeline.
 export const SlateBrowser = () => {
   const realSlate = useRealSlate();
   const realSlateStatus = useRealSlateStatus();
@@ -93,8 +93,8 @@ export const SlateBrowser = () => {
   const [comparisonBookmakerKeys, setComparisonBookmakerKeys] = useState<string[]>([]);
   const [seeAllTarget, setSeeAllTarget] = useState<SeeAllTarget | null>(null);
   // Which slot the next "Watch" click assigns to -- primary drives the
-  // live EV pipeline, secondary exists only to demo optimistic
-  // watch/unwatch + rollback with a second real (but not live-tracked)
+  // EV stream, secondary exists only to demo optimistic
+  // watch/unwatch + rollback with a second discovered (but not stream-tracked)
   // prop.
   const [watchAssignTarget, setWatchAssignTarget] = useState<"primary" | "secondary">("primary");
   const [watchDirection, setWatchDirection] = useState<PlayerPropDirection>("over");
@@ -154,7 +154,7 @@ export const SlateBrowser = () => {
         if (disposed || controller.signal.aborted || requestGeneration !== generation) return;
         if (!data.success) {
           setRealSlateStatus("error");
-          setRealSlateError(data.reason ?? "Failed to load the real slate");
+          setRealSlateError(data.reason ?? "Failed to load the slate");
           return;
         }
         setRealSlate(data.events, data.window);

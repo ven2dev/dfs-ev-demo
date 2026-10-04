@@ -199,6 +199,7 @@ describe("GET /api/stream consensus devig ticks", () => {
     const tick = await openStream("over");
 
     expect(tick.type).toBe("tick");
+    expect(tick.dataSource).toBe("live");
     expect(tick.line).toBe(250.5);
     expect(tick.evScore.impliedProb).toBeCloseTo(0.525, 12);
     expect(tick.marketConsensus).toEqual({
@@ -296,6 +297,7 @@ describe("GET /api/stream fixture ticks", () => {
     expect(response.status).toBe(200);
     expect(tick).toMatchObject({
       type: "tick",
+      dataSource: "fixture",
       line: 244.5,
       marketConsensus: {
         method: "exact-line-median",
