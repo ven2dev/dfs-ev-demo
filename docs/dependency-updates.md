@@ -93,4 +93,6 @@ Dependabot opens no override update. Record the chosen patched version, scope,
 compatibility evidence, and condition for eventual removal.
 
 See the [gRPC override rationale](../README.md#firebase-client-grpc-override)
-and the [security automation roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/59#issuecomment-5978407279).
+and [security policy](../SECURITY.md). Maintainer ownership, audit dispositions,
+notification evidence, and automation recovery follow the
+[security operations runbook](security-operations.md).

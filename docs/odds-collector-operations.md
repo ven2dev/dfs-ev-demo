@@ -193,8 +193,9 @@ a stale wake cannot hide behind an earlier missed checkpoint. Unchanged
 persistent reasons update the issue without repeated failure emails; warnings
 use the same issue without failing. Recovery closes it, and a later incident
 opens a new issue.
-The workflow has only `issues: write` permission and does not check out code,
-install dependencies, or receive database/provider credentials.
+The workflow defaults to no permissions; only the health job grants
+`issues: write`. It does not check out code, install dependencies, or receive
+database/provider credentials.
 
 Enable [GitHub Actions email or web notifications](https://docs.github.com/en/subscriptions-and-notifications/how-tos/managing-github-actions-notifications),
 preferably failed workflows only. [Scheduled-workflow notifications](https://docs.github.com/en/actions/concepts/workflows-and-actions/notifications-for-workflow-runs)
@@ -205,6 +206,17 @@ can be delayed or dropped under load, and public-repository schedules disable
 after 60 days without repository activity. These are accepted pilot
 limitations; issue #62 owns the longer-term independent production-health
 design.
+
+During weekly operations review, check the workflow's enabled state and recent
+runs even if no failure notification arrived. A disabled schedule produces no
+failed run and this monitor has no push-trigger fallback. After inactivity,
+re-enable `collector-health.yml`, manually dispatch a verification run, and
+confirm a later scheduled run. Check for an intentional planned shutdown before
+re-enabling. The [security operations runbook](security-operations.md#disabled-schedules-and-recovery)
+contains the state/run queries, enable/dispatch commands, and notification
+evidence procedure. Collector Health's existing health secrets are operational
+credentials; they are separate from the CodeQL job's no-production-secrets
+boundary.
 
 To stop collection immediately, disable the Hostinger cron job. Then set
 `ODDS_COLLECTION_PROFILE=disabled` in Production and redeploy as defense in
