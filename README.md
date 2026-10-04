@@ -49,6 +49,29 @@ credential-rotation procedure.
 npm run dev
 ```
 
+## Firebase client gRPC override
+
+Issue [#69](https://github.com/ven2dev/dfs-ev-demo/issues/69) pins
+`@grpc/grpc-js` to `1.14.5` only under `@firebase/firestore`. The client
+Firestore SDK declares `~1.9.0`, which resolves to vulnerable `1.9.16`;
+Firebase `12.19.0` / Firestore `4.17.2` still declare that same range, so a
+normal Firebase upgrade alone does not remove the findings. Version `1.14.5`
+fixes [unauthorized certificate handling](https://github.com/grpc/grpc-node/security/advisories/GHSA-m9gg-hp2v-232j)
+and [handler error disclosure](https://github.com/grpc/grpc-node/security/advisories/GHSA-f596-whhp-79r4).
+The `1.14.0` through `1.14.4` releases are also affected.
+
+This override intentionally crosses Firestore's declared minor-version range.
+Application code uses the client SDK for Authentication and the Admin SDK for
+Firestore; `npm run test:firestore-rules` exercises the client Firestore SDK
+under Node against the local emulator. Keep that compatibility check and
+`npm test` (including the Admin runtime check) passing. The override is not
+global; Admin and tooling already resolve to `1.14.5` and may deduplicate it.
+
+Re-check the upstream gRPC requirement on every Firebase bump. Remove the
+override once the selected Firebase/Firestore release natively resolves to a
+patched version, then regenerate the lockfile and verify the production audit,
+`npm ls`, and the complete quality checks above without it.
+
 ## Historical player stats (Postgres + nflverse)
 
 Real sample-window hit rates (base rate of the EV pipeline) are backed by
