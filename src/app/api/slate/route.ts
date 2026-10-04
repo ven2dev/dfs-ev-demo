@@ -19,7 +19,7 @@ export const GET = async (request: NextRequest) => {
       dataSource === "fixture"
         ? getFixtureSlateEvents(sportKey, now)
         : (await fetchSlateEvents(sportKey, now)).data;
-    return NextResponse.json({ success: true, events, window });
+    return NextResponse.json({ success: true, dataSource, events, window });
   } catch (err) {
     console.error("[api/slate] GET failed:", err);
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });

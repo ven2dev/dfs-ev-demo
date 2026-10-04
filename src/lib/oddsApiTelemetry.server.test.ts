@@ -34,14 +34,28 @@ afterEach(() => {
 });
 
 describe("Odds API request telemetry", () => {
-  it("refuses fixture mode before network or telemetry work", async () => {
+  it.each([
+    ["slate fetch", () => fetchSlateEvents("americanfootball_nfl")],
+    [
+      "event-odds fetch",
+      () => fetchEventOdds("americanfootball_nfl", "event-1", ["player_pass_yds"]),
+    ],
+    [
+      "player-market fetch",
+      () =>
+        fetchPlayerPropMarketOdds(
+          "americanfootball_nfl",
+          "event-1",
+          "player_pass_yds",
+          "Avery Stone"
+        ),
+    ],
+  ])("refuses fixture mode before network or telemetry work: %s", async (_label, request) => {
     vi.stubEnv("ODDS_DATA_SOURCE", "fixture");
     vi.stubEnv("ODDS_API_KEY", "must-not-be-used");
     vi.stubEnv("DATABASE_URL", "postgres://must-not-be-used");
 
-    await expect(fetchSlateEvents("americanfootball_nfl")).rejects.toThrow(
-      "disabled unless ODDS_DATA_SOURCE=live"
-    );
+    await expect(request()).rejects.toThrow("disabled unless ODDS_DATA_SOURCE=live");
     expect(fetchMock).not.toHaveBeenCalled();
     expect(recordOddsApiRequestMock).not.toHaveBeenCalled();
   });

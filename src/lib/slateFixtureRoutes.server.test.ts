@@ -38,6 +38,7 @@ describe("fixture slate routes", () => {
 
     expect(response.status).toBe(200);
     expect(body.success).toBe(true);
+    expect(body.dataSource).toBe("fixture");
     expect(body.events).toEqual([
       expect.objectContaining({ id: expect.stringMatching(/^fixture-week-/) }),
     ]);
@@ -56,6 +57,7 @@ describe("fixture slate routes", () => {
     expect(response.status).toBe(200);
     expect(body).toEqual({
       success: true,
+      dataSource: "fixture",
       eventId,
       players: expect.arrayContaining([
         expect.objectContaining({ playerName: "Avery Stone" }),

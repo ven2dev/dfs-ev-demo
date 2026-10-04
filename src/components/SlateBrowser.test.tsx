@@ -23,10 +23,18 @@ const sampleWindow = {
 };
 
 const mockFetchOnce = (data: unknown) => {
-  const response =
-    typeof data === "object" && data !== null && "events" in data && !("window" in data)
-      ? { ...data, window: sampleWindow }
-      : data;
+  let response = data;
+  if (typeof response === "object" && response !== null && "success" in response) {
+    response = { dataSource: "live", ...response };
+  }
+  if (
+    typeof response === "object" &&
+    response !== null &&
+    "events" in response &&
+    !("window" in response)
+  ) {
+    response = { ...response, window: sampleWindow };
+  }
   fetchMock().mockResolvedValueOnce({ json: () => Promise.resolve(response) });
 };
 
@@ -48,12 +56,12 @@ const sampleEvents = [
 ];
 
 describe("SlateBrowser", () => {
-  it("titles the section with the real current NFL week, not a static label", async () => {
+  it("titles the section with the server-provided NFL week, not a static label", async () => {
     // shouldAdvanceTime: pins Date.now() while still letting RTL's own
     // internal setTimeout-based polling (findByText, waitFor) actually
     // tick -- plain useFakeTimers() freezes those too and hangs forever.
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    vi.setSystemTime(new Date("2026-09-29T12:00:00Z")); // verified real Week 4 (see nflWeek.test.ts)
+    vi.setSystemTime(new Date("2026-09-29T12:00:00Z")); // verified Week 4 (see nflWeek.test.ts)
     global.fetch = vi.fn();
     mockFetchOnce({ success: true, events: [] });
 
@@ -62,7 +70,21 @@ describe("SlateBrowser", () => {
     expect(await screen.findByText("Browse the Week 4 slate")).toBeInTheDocument();
   });
 
-  it("loads the real slate on mount and lists games sorted by kickoff time, not arrival order", async () => {
+  it("labels fixture browsing before the user selects or watches a prop", async () => {
+    global.fetch = vi.fn();
+    mockFetchOnce({ success: true, dataSource: "fixture", events: sampleEvents });
+
+    render(<SlateBrowser />);
+
+    expect(await screen.findByText(/Preview fixture data/)).toHaveTextContent(
+      "teams, players, books, and prices"
+    );
+    expect(screen.getByText(/Preview fixture data/)).toHaveTextContent(
+      "No live provider calls are made"
+    );
+  });
+
+  it("loads the slate on mount and lists games sorted by kickoff time, not arrival order", async () => {
     global.fetch = vi.fn();
     mockFetchOnce({ success: true, events: sampleEvents });
 
@@ -87,7 +109,7 @@ describe("SlateBrowser", () => {
     await waitFor(() => expect(fetchMock()).toHaveBeenCalledTimes(2));
   });
 
-  it("shows an error message if the real slate fails to load", async () => {
+  it("shows an error message if the slate fails to load", async () => {
     global.fetch = vi.fn();
     mockFetchOnce({ success: false, reason: "Internal error" });
 
@@ -285,7 +307,7 @@ describe("SlateBrowser", () => {
     expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("under");
   });
 
-  it("switching the assign target to Secondary watches a second real prop without disturbing the primary one", async () => {
+  it("switching the assign target to Secondary watches a second discovered prop without disturbing the primary one", async () => {
     await showPropsWithFourBooks();
     fireEvent.click(screen.getByLabelText("Next bookmaker")); // -> "bovada"
     fireEvent.click(screen.getByText("Watch Over"));

@@ -6,8 +6,9 @@ full project brief and roadmap.
 
 ## Setup
 
-Node.js 24 is the supported local, CI, and production runtime. With `nvm`, the
-checked-in version contract can be selected before installing dependencies:
+Node.js 24 is the supported local, CI, and production runtime. Java 21 is also
+required for the local Firestore security-rules emulator test. With `nvm`, the
+checked-in Node version contract can be selected before installing dependencies:
 
 ```bash
 nvm use
@@ -28,6 +29,7 @@ git diff --check
 npm run typecheck
 npm run lint
 npm test
+npm run test:firestore-rules
 npm run build
 npm audit --omit=dev --audit-level=critical
 ```

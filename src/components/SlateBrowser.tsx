@@ -6,6 +6,7 @@ import {
   type PlayerPropDirection,
 } from "@/lib/playerPropMarkets";
 import { getAllBookmakerKeys } from "@/lib/discoveredProps";
+import { isOddsDataSource, type OddsDataSource } from "@/lib/oddsDataSource";
 import { PlayerPropsCard } from "@/components/PlayerPropsCard";
 import { BookmakerLinesSheet, type SeeAllTarget } from "@/components/BookmakerLinesSheet";
 import {
@@ -58,6 +59,7 @@ export const SlateBrowser = () => {
   const setRealSlate = useSetRealSlate();
   const setRealSlateStatus = useSetRealSlateStatus();
   const setRealSlateError = useSetRealSlateError();
+  const [slateDataSource, setSlateDataSource] = useState<OddsDataSource | null>(null);
 
   const selectedEventId = useSelectedEventId();
   const setSelectedEventId = useSetSelectedEventId();
@@ -122,7 +124,7 @@ export const SlateBrowser = () => {
   // discoveredProps itself changes, so this only fires on a REAL change,
   // not every render. A fresh discovery result can drop the book that
   // was selected (a different market set may not include it) or arrive
-  // with none selected yet -- default to the first real book rather than
+  // with none selected yet -- default to the first available book rather than
   // show a stale/invalid one.
   const [prevAllBookmakerKeys, setPrevAllBookmakerKeys] = useState(allBookmakerKeys);
   if (allBookmakerKeys !== prevAllBookmakerKeys) {
@@ -157,6 +159,12 @@ export const SlateBrowser = () => {
           setRealSlateError(data.reason ?? "Failed to load the slate");
           return;
         }
+        if (!isOddsDataSource(data.dataSource)) {
+          setRealSlateStatus("error");
+          setRealSlateError("Slate response did not identify its data source");
+          return;
+        }
+        setSlateDataSource(data.dataSource);
         setRealSlate(data.events, data.window);
         setRealSlateError(null);
         setRealSlateStatus("loaded");
@@ -252,6 +260,11 @@ export const SlateBrowser = () => {
         setDiscoveryError("Props response did not match the selected event");
         return;
       }
+      if (!isOddsDataSource(data.dataSource) || data.dataSource !== slateDataSource) {
+        setDiscoveryStatus("error");
+        setDiscoveryError("Props response did not match the slate data source");
+        return;
+      }
       setDiscoveredProps(data.players, eventId, marketKeys);
       setDiscoveryStatus("loaded");
     } catch (err) {
@@ -331,6 +344,13 @@ export const SlateBrowser = () => {
       <h2 className="text-lg font-medium">
         Browse the {realSlateWindow?.label ?? "current NFL"} slate
       </h2>
+
+      {slateDataSource === "fixture" && (
+        <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
+          Preview fixture data — the teams, players, books, and prices in this browser are
+          fictional. No live provider calls are made.
+        </p>
+      )}
 
       {realSlateStatus === "loading" && (
         <p className="mt-2 text-sm text-zinc-500">Loading this week&rsquo;s games…</p>

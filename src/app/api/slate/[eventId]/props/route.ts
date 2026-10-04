@@ -72,7 +72,7 @@ export const GET = async (
     }
     const players = groupOddsByPlayer(odds);
 
-    return NextResponse.json({ success: true, eventId, players });
+    return NextResponse.json({ success: true, dataSource, eventId, players });
   } catch (err) {
     console.error("[api/slate/[eventId]/props] GET failed:", err);
     return NextResponse.json({ success: false, reason: "Internal error" }, { status: 500 });

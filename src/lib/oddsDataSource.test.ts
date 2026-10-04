@@ -1,12 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { requireLiveOddsDataSource, resolveOddsDataSource } from "./oddsDataSource";
+import {
+  isOddsDataSource,
+  requireLiveOddsDataSource,
+  resolveOddsDataSource,
+} from "./oddsDataSource";
+
+describe("isOddsDataSource", () => {
+  it("accepts only the two response-contract values", () => {
+    expect(isOddsDataSource("live")).toBe(true);
+    expect(isOddsDataSource("fixture")).toBe(true);
+    expect(isOddsDataSource("mock")).toBe(false);
+    expect(isOddsDataSource(undefined)).toBe(false);
+  });
+});
 
 describe("resolveOddsDataSource", () => {
   it("preserves live Production behavior during rollout and requires its credential", () => {
     expect(
       resolveOddsDataSource({
         VERCEL_ENV: "production",
-        NODE_ENV: "production",
         ODDS_DATA_SOURCE: undefined,
         ODDS_API_KEY: "production-key",
       })
@@ -15,7 +27,6 @@ describe("resolveOddsDataSource", () => {
     expect(() =>
       resolveOddsDataSource({
         VERCEL_ENV: "production",
-        NODE_ENV: "production",
         ODDS_DATA_SOURCE: undefined,
         ODDS_API_KEY: undefined,
       })
@@ -26,7 +37,6 @@ describe("resolveOddsDataSource", () => {
     expect(() =>
       resolveOddsDataSource({
         VERCEL_ENV: "production",
-        NODE_ENV: "production",
         ODDS_DATA_SOURCE: "fixture",
         ODDS_API_KEY: undefined,
       })
@@ -37,7 +47,6 @@ describe("resolveOddsDataSource", () => {
     expect(
       resolveOddsDataSource({
         VERCEL_ENV: "preview",
-        NODE_ENV: "production",
         ODDS_DATA_SOURCE: undefined,
         ODDS_API_KEY: undefined,
       })
@@ -46,7 +55,6 @@ describe("resolveOddsDataSource", () => {
     expect(() =>
       resolveOddsDataSource({
         VERCEL_ENV: "preview",
-        NODE_ENV: "production",
         ODDS_DATA_SOURCE: "live",
         ODDS_API_KEY: "should-not-matter",
       })
@@ -57,7 +65,6 @@ describe("resolveOddsDataSource", () => {
     expect(
       resolveOddsDataSource({
         VERCEL_ENV: undefined,
-        NODE_ENV: "development",
         ODDS_DATA_SOURCE: undefined,
         ODDS_API_KEY: undefined,
       })
@@ -65,7 +72,6 @@ describe("resolveOddsDataSource", () => {
     expect(
       resolveOddsDataSource({
         VERCEL_ENV: undefined,
-        NODE_ENV: "development",
         ODDS_DATA_SOURCE: "live",
         ODDS_API_KEY: "local-key",
       })
@@ -77,9 +83,8 @@ describe("resolveOddsDataSource", () => {
     const env = new Proxy(
       {
         VERCEL_ENV: "preview",
-        NODE_ENV: "production",
         ODDS_DATA_SOURCE: "fixture",
-      } as NodeJS.ProcessEnv,
+      },
       {
         get(target, property, receiver) {
           reads.push(property);
@@ -97,7 +102,6 @@ describe("resolveOddsDataSource", () => {
     expect(() =>
       resolveOddsDataSource({
         VERCEL_ENV: "preview",
-        NODE_ENV: "production",
         ODDS_DATA_SOURCE: "mock",
         ODDS_API_KEY: undefined,
       })
@@ -105,7 +109,6 @@ describe("resolveOddsDataSource", () => {
     expect(() =>
       resolveOddsDataSource({
         VERCEL_ENV: "staging",
-        NODE_ENV: "production",
         ODDS_DATA_SOURCE: "fixture",
         ODDS_API_KEY: undefined,
       })
@@ -118,7 +121,6 @@ describe("requireLiveOddsDataSource", () => {
     expect(() =>
       requireLiveOddsDataSource({
         VERCEL_ENV: "preview",
-        NODE_ENV: "production",
         ODDS_DATA_SOURCE: "fixture",
         ODDS_API_KEY: undefined,
       })

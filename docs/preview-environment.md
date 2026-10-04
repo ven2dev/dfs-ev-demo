@@ -9,9 +9,14 @@ missing key.
 
 | Environment | Odds source | Neon | Firebase | Collection |
 | --- | --- | --- | --- | --- |
-| Production | `live` (unset temporarily defaults to live during rollout) | `neon-cordovan-nest` | `edgetrace-adf8c` | Production profile and triggers only |
-| Vercel Preview | `fixture` only | `dfs-ev-preview` | `edgetrace-preview-vn2` | Hard-refused |
+| Production | `live` (unset temporarily defaults to live during rollout) | Production-only resource | Production-only project | Production profile and triggers only |
+| Vercel Preview | `fixture` only | Preview-only resource | Preview-only project | Hard-refused |
 | Local/test | `fixture` by default | Developer-selected | Developer-selected | Disabled unless explicitly configured |
+
+`VERCEL_ENV` defines the deployment class. A non-Vercel or self-hosted
+deployment has no Vercel classification and is therefore treated like local
+development; it must set `ODDS_DATA_SOURCE` explicitly instead of relying on a
+deployment default.
 
 Preview has no `ODDS_API_KEY`. Its deterministic fictional slate supports the
 signed-out slate, prop-discovery, watch, and EV-stream journey without calling
@@ -29,6 +34,12 @@ database, and Admin service-account key. Browser Firestore access is denied by
 the source-controlled `firestore.rules`; server routes use the Preview Admin
 credential. Deploying the same deny-all rules to Production remains a separate
 Production change and requires explicit approval.
+
+The source-controlled deny-all rules were deployed to Preview and verified on
+2026-10-03. `npm run test:firestore-rules` independently proves that signed-out
+and signed-in browser clients can neither read nor write. The Firestore
+emulator requires Java 21; CI pins that version and caches the downloaded
+emulator binary.
 
 ## Access and Google sign-in
 
@@ -67,18 +78,14 @@ local or Production resource. Verification output must contain only a short
 hash of the database host plus database name and the non-secret Firebase
 project ID; never print a connection string or service-account JSON.
 
-The bounded verification on 2026-10-03 established:
-
-| Environment | Database fingerprint | Firebase project | `player_game_stats` rows |
-| --- | --- | --- | ---: |
-| Preview | `33c162ea6822` | `edgetrace-preview-vn2` | 0 |
-| Production | `daf7575499a5` | `edgetrace-adf8c` | 30,625 |
-
-The fingerprints are evidence for that verification run, not permanent
-identifiers; rotate or recreate a database and they will change. The stable
-Preview deployment also returned a fictional current-week slate, exact-line
-three-book prop quotes, and an SSE EV tick through Vercel's authenticated CLI
-bypass. After the first Preview Google sign-in, the authenticated
+The bounded verification on 2026-10-03 compared hashed database identities and
+a known Production-only marker dataset without publishing either resource
+identifier or the Production row count. Preview resolved to a different, empty
+database while the marker dataset remained present only in Production. The
+stable Preview deployment also returned a fictional current-week slate,
+exact-line three-book prop quotes,
+and an SSE EV tick through Vercel's authenticated CLI bypass. After the first
+Preview Google sign-in, the authenticated
 `GET /api/user-data` and `PUT /api/goal` routes completed against the isolated
 resources without runtime errors. Production remained HTTP 200 throughout
 provisioning and verification.

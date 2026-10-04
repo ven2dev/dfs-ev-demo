@@ -3,18 +3,19 @@ export const ODDS_DATA_SOURCES = ["live", "fixture"] as const;
 export type OddsDataSource = (typeof ODDS_DATA_SOURCES)[number];
 
 type OddsRuntimeEnv = {
+  [key: string]: string | undefined;
   VERCEL_ENV?: string;
-  NODE_ENV?: string;
   ODDS_DATA_SOURCE?: string;
   ODDS_API_KEY?: string;
 };
 
+export const isOddsDataSource = (value: unknown): value is OddsDataSource =>
+  typeof value === "string" && (ODDS_DATA_SOURCES as readonly string[]).includes(value);
+
 const configuredDataSource = (raw: string | undefined): OddsDataSource | undefined => {
   const value = raw?.trim();
   if (!value) return undefined;
-  if ((ODDS_DATA_SOURCES as readonly string[]).includes(value)) {
-    return value as OddsDataSource;
-  }
+  if (isOddsDataSource(value)) return value;
   throw new Error(`Unknown ODDS_DATA_SOURCE "${value}"; expected "live" or "fixture"`);
 };
 
