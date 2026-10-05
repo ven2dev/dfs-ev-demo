@@ -7,6 +7,22 @@ PRs per ecosystem. Security fixes have separate groups and do not wait for
 that weekly schedule or count toward the version-PR limit. Human review and
 the required repository checks precede every merge; updates are not auto-merged.
 
+## Merge reconciliation
+
+Use merge commits to reconcile branches and merge dependency PRs. Automatic
+Dependabot rebasing is disabled for both ecosystems. If an update branch falls
+behind `main`, merge `main` into that branch, resolve conflicts, and rerun the
+required checks. Use GitHub's **Create a merge commit** option for the final
+merge; do not invoke `@dependabot rebase`, rebase locally, or force-push a
+rewritten branch. The PR description's standard bot commands do not establish
+the repository's reconciliation policy.
+
+The configuration applies after it reaches the default branch. GitHub notes
+that already-open PRs can continue automatic rebasing until 30 days after
+creation, even after `rebase-strategy: disabled` is set. Watch those existing
+branches during the transition; the setting does not make them immediately
+exempt. See [Dependabot's rebase strategy](https://docs.github.com/en/code-security/reference/supply-chain-security/dependabot-options-reference#rebase-strategy).
+
 ## Group policy
 
 Related version groups come before production/development minor-and-patch
