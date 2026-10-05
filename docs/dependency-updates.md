@@ -1,8 +1,9 @@
 # Dependency update review
 
 `vneilly` owns dependency review and is the assignee configured in
-[dependabot.yml](../.github/dependabot.yml). Routine npm and GitHub Actions
-updates run Mondays at 09:00 America/Los_Angeles, with at most five open version
+[dependabot.yml](../.github/dependabot.yml). Routine npm, GitHub Actions, and
+Docker Compose updates run Mondays at 09:00 America/Los_Angeles, with at most
+five open version
 PRs per ecosystem. Security fixes have separate groups and do not wait for
 that weekly schedule or count toward the version-PR limit. Human review and
 the required repository checks precede every merge; updates are not auto-merged.
@@ -10,8 +11,8 @@ the required repository checks precede every merge; updates are not auto-merged.
 ## Merge reconciliation
 
 Use merge commits to reconcile branches and merge dependency PRs. Automatic
-Dependabot rebasing is disabled for both ecosystems. If an update branch falls
-behind `main`, merge `main` into that branch, resolve conflicts, and rerun the
+Dependabot rebasing is disabled for all three ecosystems. If an update branch
+falls behind `main`, merge `main` into that branch, resolve conflicts, and rerun the
 required checks. Use GitHub's **Create a merge commit** option for the final
 merge; do not invoke `@dependabot rebase`, rebase locally, or force-push a
 rewritten branch. The PR description's standard bot commands do not establish
@@ -29,7 +30,18 @@ Related version groups come before production/development minor-and-patch
 fallbacks. Next.js and `eslint-config-next` must retain identical exact
 versions. React includes React DOM and both corresponding `@types` packages.
 Tailwind includes its PostCSS integration. Test tooling includes Vitest,
-jsdom, Testing Library, and the Vite plugins used by the test configurations.
+jsdom, Testing Library, the Vite plugins used by the test configurations, and
+the development-only `pg`/`@types/pg` driver pair. Driver updates must pass the
+real PostgreSQL suite using the exact production SQL factory.
+
+Docker Compose updates maintain the PostgreSQL tag and digest in
+`compose.test.yml`, the single definition used locally and in CI. Keep its
+multi-platform digest pin and check both Apple Silicon and Linux AMD64 support.
+PostgreSQL major updates are ignored: moving beyond major 18 requires a
+deliberate ticket that confirms production's major and updates the harness
+contract. Review image updates for PostgreSQL and Alpine compatibility and run
+`npm run test:db:local` before approving them. Confirm the first real Compose
+update job discovers the file and assigns its PR after this configuration merges.
 
 Firebase client, Admin, and tooling have separate version groups. The client
 group excludes `@firebase/rules-unit-testing`; that package belongs with
@@ -62,7 +74,8 @@ and compatibility; record unexplained changes for review.
 - For Next.js updates, read the installed version's relevant guides in
   `node_modules/next/dist/docs/` and verify the exact Next/ESLint version match.
 - Run the full CI contract: typecheck, lint, whitespace checks, tests, Firestore
-  rules emulator, build, and production audit. Record the Node version and
+  rules emulator, CI-gate regression, DB target guards and PostgreSQL suite,
+  build, and production audit. Record the Node version and
   results in the PR.
 - Review the full development audit separately. A clean production audit does
   not dispose of development/build-tool findings. Retained findings need an

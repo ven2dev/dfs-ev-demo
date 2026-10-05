@@ -14,6 +14,12 @@
     "test": "npm run test:firebase-admin-runtime && vitest run --config vitest.config.ts && vitest run --config vitest.node.config.ts",
     "test:firebase-admin-runtime": "node --no-experimental-require-module -e \"require('firebase-admin/auth')\"",
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-dfs-ev-preview-rules \"node tests/firestoreRules.mjs\"",
+    "test:ci-gate": "node --test tests/ciGate.check.mjs",
+    "test:db": "node scripts/test-db.mjs run",
+    "test:db:local": "node scripts/test-db.mjs local",
+    "test:db:repeat": "node scripts/test-db.mjs repeat",
+    "test:db:down": "node scripts/test-db.mjs down",
+    "test:db:guard": "node --test tests/db/target.check.mjs",
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {
@@ -45,6 +51,7 @@
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.3",
     "@types/node": "^24.19.1",
+    "@types/pg": "8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "6.1.1",
@@ -52,6 +59,7 @@
     "eslint-config-next": "16.3.8",
     "firebase-tools": "15.32.1",
     "jsdom": "30.1.1",
+    "pg": "8.23.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vite-tsconfig-paths": "6.1.1",

@@ -137,23 +137,27 @@ describe("getSharedLivePropInputs", () => {
     expect(queryMock.mock.calls[1][0]).toContain("refresh_lease_until");
   });
 
-  it("serves a fresh database payload without touching either upstream API", async () => {
-    queryMock.mockResolvedValueOnce([
-      {
-        payload: { oddsByBookmaker, weather },
-        fetched_at: new Date().toISOString(),
-      },
-    ]);
+  it.each(["string", "Date"] as const)(
+    "serves a fresh database payload with a %s timestamp without touching either upstream API",
+    async (timestampType) => {
+      const fetchedAt = new Date();
+      queryMock.mockResolvedValueOnce([
+        {
+          payload: { oddsByBookmaker, weather },
+          fetched_at: timestampType === "Date" ? fetchedAt : fetchedAt.toISOString(),
+        },
+      ]);
 
-    await expect(getSharedLivePropInputs(key, context)).resolves.toEqual({
-      oddsByBookmaker,
-      weather,
-    });
-    expect(fetchOddsMock).not.toHaveBeenCalled();
-    expect(fetchWeatherMock).not.toHaveBeenCalled();
-    expect(persistObservationMock).not.toHaveBeenCalled();
-    expect(queryMock).toHaveBeenCalledTimes(1);
-  });
+      await expect(getSharedLivePropInputs(key, context)).resolves.toEqual({
+        oddsByBookmaker,
+        weather,
+      });
+      expect(fetchOddsMock).not.toHaveBeenCalled();
+      expect(fetchWeatherMock).not.toHaveBeenCalled();
+      expect(persistObservationMock).not.toHaveBeenCalled();
+      expect(queryMock).toHaveBeenCalledTimes(1);
+    }
+  );
 
   it("fails open with the fresh upstream result when its cache update fails", async () => {
     const writeError = new Error("write failed");

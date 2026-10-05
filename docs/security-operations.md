@@ -89,8 +89,10 @@ comment. When updating a pin:
    before approving the update. Retain `persist-credentials: false` for
    checkouts that do not push.
 
-CI grants `contents: read`. CodeQL's analysis job grants `contents: read` and
-`security-events: write`; add `actions: read` only with a documented need.
+CI's application and database jobs grant `contents: read`; its aggregate gate
+has `permissions: {}` and no checkout. CodeQL's analysis job grants
+`contents: read` and `security-events: write`; add `actions: read` only with a
+documented need.
 Collector Health defaults to no workflow permissions and grants `issues: write`
 only to the incident-management job. Its health credentials are separate from
 the security-analysis job, which has no application secrets or provider calls.

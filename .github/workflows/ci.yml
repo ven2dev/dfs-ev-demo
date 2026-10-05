@@ -16,8 +16,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    name: CI
+  app:
+    name: App checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -70,6 +70,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Verify aggregate CI gate
+        run: npm run test:ci-gate
+
       - name: Test
         run: npm test
 
@@ -81,3 +84,56 @@ jobs:
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=critical
+
+  db:
+    name: DB integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check database target guards
+        run: npm run test:db:guard
+
+      - name: Test disposable PostgreSQL
+        run: npm run test:db:local
+
+      - name: Remove disposable PostgreSQL
+        if: ${{ always() }}
+        timeout-minutes: 2
+        run: npm run test:db:down
+
+  ci:
+    # Preserve the required check name; neither upstream job may bypass it.
+    name: CI
+    needs: [app, db]
+    if: ${{ always() }}
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Require every upstream job to succeed
+        shell: bash
+        env:
+          APP_RESULT: ${{ needs.app.result }}
+          DB_RESULT: ${{ needs.db.result }}
+        run: |
+          echo "App checks: $APP_RESULT; DB integration: $DB_RESULT"
+          if [[ "$APP_RESULT" != "success" || "$DB_RESULT" != "success" ]]; then
+            echo "CI requires both App checks and DB integration to succeed."
+            exit 1
+          fi

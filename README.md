@@ -28,7 +28,10 @@ npm ci
 git diff --check
 npm run typecheck
 npm run lint
+npm run test:ci-gate
 npm test
+npm run test:db:guard
+npm run test:db:local
 npm run test:firestore-rules
 npm run build
 npm audit --omit=dev --audit-level=critical
@@ -42,7 +45,21 @@ provider calls. Dependency updates follow the
 notification evidence, and disabled-schedule recovery are covered in the
 [security operations runbook](docs/security-operations.md).
 
-Fill in `.env.local`:
+Disposable PostgreSQL integration tests use Docker Desktop and throwaway local
+credentials. Run `npm run test:db:local` to provision, test, and clean up, or
+`npm run test:db:down` to remove resources after an interruption. See the
+[database testing guide](docs/database-testing.md) for environment guards,
+schema bootstrap, and test scope.
+
+CI runs `App checks` and `DB integration` in parallel. The required `CI` gate
+runs after both jobs and passes only if both succeed; failed, cancelled, or
+skipped jobs fail the gate. Local database checks require a running Docker
+service; the gate's regression check executes its actual shell script locally.
+
+Keep the relay worktree's `.env.local` fixture-only (`ODDS_DATA_SOURCE=fixture`).
+For application runs with real providers, load the following variables from a
+private file outside the worktree in your own terminal, separate from the agent
+session:
 
 - **Odds API** (`ODDS_API_KEY`) — free tier key from [the-odds-api.com](https://the-odds-api.com).
 - **Firebase** (`NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_SERVICE_ACCOUNT_KEY_BASE64`) — see the comments in `.env.example`.
