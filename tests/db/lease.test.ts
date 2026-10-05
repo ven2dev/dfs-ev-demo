@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { openTestClient } from "./harness";
 import {
-  backendPid, cacheState, expireLease, freshAfter, key, keyValues, leaseMs,
+  backendPid, cacheState, expireLease, freshAfter, key, leaseMs,
   openContenders, payload, seedStaleRow, testStore, waitForBlocked,
 } from "./leaseSupport";
 
@@ -54,19 +54,17 @@ it.each(["cold", "stale"] as const)(
   }
 );
 
-it("a valid renewal extends the lease and prevents competing takeover", async () => {
+it("renewing an expired lease extends it and prevents competing takeover", async () => {
   const [owner, competitor] = await openContenders(2);
   const threshold = await freshAfter(owner.client);
   expect(await owner.store.tryAcquireRefresh(key, owner.owner, threshold, leaseMs)).toBe(true);
-  await owner.client.query(
-    `UPDATE live_prop_inputs_cache SET refresh_lease_until = now() + interval '30 seconds'
-     WHERE sport_key = $1 AND event_id = $2 AND market_key = $3 AND player_name = $4`, keyValues
-  );
+  // Without renewal this expired, empty row is eligible for takeover.
+  await expireLease(owner.client);
   const before = await cacheState(owner.client);
-  expect(before).toMatchObject({ lease_active: true });
+  expect(before).toMatchObject({ payload: null, fetched_at: null, refresh_owner: owner.owner, lease_active: false });
   expect(await owner.store.renew(key, owner.owner, leaseMs)).toBe(true);
   const renewed = await cacheState(owner.client);
-  expect(renewed!.refresh_lease_until!.getTime() - before!.refresh_lease_until!.getTime()).toBeGreaterThan(20_000);
+  expect(renewed!.refresh_lease_until!.getTime() - before!.refresh_lease_until!.getTime()).toBeGreaterThan(leaseMs);
   expect(renewed).toMatchObject({ refresh_owner: owner.owner, lease_active: true });
   expect(await competitor.store.tryAcquireRefresh(key, competitor.owner, threshold, leaseMs)).toBe(false);
 });

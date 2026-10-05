@@ -66,10 +66,10 @@ approval for that action.
 ## Image and storage
 
 The single Compose definition pins `postgres:18.6-alpine3.24` to its multi-platform
-manifest digest, verified against the official registry. Production reported
-PostgreSQL 18.6 during intake on 2026-10-04; matching major 18 replaces the
-issue's original major 17 proposal. The same definition supports Apple Silicon
-locally and Linux AMD64 in CI.
+manifest digest, verified against the official registry. Major 18 matches the
+production major confirmed during intake, replacing the issue's original
+major 17 proposal. The same definition supports Apple Silicon locally and
+Linux AMD64 in CI.
 
 PostgreSQL 18 uses `/var/lib/postgresql/18/docker`; the parent
 `/var/lib/postgresql` is a 512 MiB tmpfs mount. No database data volume survives
@@ -95,9 +95,10 @@ covers full-schema bootstrap plus these lease scenarios:
   are observed blocked through `pg_stat_activity`, ungranted `pg_locks`, and
   `pg_blocking_pids()` chains reaching the holder. Only then does it commit;
   all competitors must return false.
-- A valid renewal extends the lease and prevents takeover. Forced expiry uses
-  `UPDATE ... refresh_lease_until = now() - interval '1 second'`, followed by a
-  25-way race with exactly one takeover winner.
+- Renewal of a forced-expired lease restores exclusivity and prevents takeover;
+  without renewal, its empty, expired row would be eligible for takeover.
+  Forced expiry uses `UPDATE ... refresh_lease_until = now() - interval '1 second'`.
+  A separate 25-way race produces exactly one takeover winner.
 - Explicit characterization cases: expiry alone permits the current owner to
   renew or publish until replaced. Changing this policy requires deliberately
   changing these tests and production behavior.
@@ -148,22 +149,6 @@ npm run test:db:local -- --testNamePattern=deliberately-no-matching-case
 That command must exit unsuccessfully and remove the disposable container.
 It is validation evidence, not a passing integration run.
 
-## Step 3 local validation
-
-On 2026-10-04, Node 24.18.1 and the pinned PostgreSQL 18.6 service passed
-20 complete repetitions: 260 database case executions, with no failures or
-retries. Both cold/stale lock proofs and both write/takeover orderings ran in
-every repetition. The final container and network were removed.
-
-After a clean `npm ci`, typecheck, lint, all 445 unit tests (262 jsdom and
-183 Node, plus the Admin runtime check), all three DB target-guard cases,
-Firestore rules, production build, and `git diff --check` passed. The production
-dependency audit reported zero vulnerabilities.
-
-A bootstrap-only filtered run passed one case and skipped 12. The report guard
-correctly rejected it with exit code 1 and removed the container and network.
-GitHub CI and aggregate-gate failure evidence remain step 4 work.
-
 ## CI enforcement
 
 On PRs to `main` and pushes to `main`, `App checks` and `DB integration` run
@@ -189,26 +174,11 @@ list, unique check name, empty permissions, and absence of checkout. This runs
 inside `App checks`. The extraction checks the current YAML block layout;
 `actionlint` remains the workflow syntax validator.
 
-### Step 4 local validation
+### Hosted gate validation
 
-On 2026-10-04, actionlint 1.7.12 passed all three workflows. ShellCheck was not
-installed, so its optional integration did not run; zizmor was not used.
-The Dependabot JSON schema check and Compose configuration check passed.
-
-On Node 24.18.1, clean `npm ci`, typecheck, lint, the three gate-regression
-checks (including all 16 result pairs), three DB target guards, all 445 unit
-tests and the Admin runtime check, all 13 PostgreSQL cases, Firestore rules,
-production build, and whitespace checks passed. The database service and
-network were removed, and a second explicit cleanup command also exited zero.
-The production audit reported zero vulnerabilities. The clean install still
-reported the pre-existing development-tool advisory baseline (13 findings);
-this step changes no dependency versions or lockfile entries.
-
-### Before-merge GitHub evidence
-
-Local script tests cannot prove GitHub schedules the gate correctly. Before
-merge, create an unmerged `validation/dfsEV-45-db-gate` branch from the completed
-feature branch, with separately approved commits and pushes:
+Local script tests cannot prove GitHub schedules the gate correctly. When
+changing the gate, verify failure propagation on a separate, unmerged
+validation branch with separately approved commits and pushes:
 
 1. Change only the database test command to
    `npm run test:db:local -- --testNamePattern='^bootstraps'`. Open a draft PR to
@@ -218,12 +188,15 @@ feature branch, with separately approved commits and pushes:
    commit, job results, and cleanup evidence on #45.
 2. Restore the database command in a follow-up commit without rewriting
    history. Obtain a complete successful run showing both upstream jobs and
-   `CI` passing and record it. Close the validation PR without merging it.
+   `CI` passing and record it. Close the validation PR without merging it, then
+   delete its temporary local and remote branches.
 3. Obtain passing checks on the final feature PR before the owner merges it.
    Record GitHub's acceptance of the new Dependabot Compose configuration and
    discovery/grouping evidence after merge; local schema validation is only
    preparatory.
 
-These hosted runs and the new default-branch Dependabot evidence are pending
-until approved publication. Do not treat local truth-table coverage as hosted
-failure-propagation evidence.
+Keep dated local validation results, tool versions, suite counts, audit
+dispositions, and hosted run URLs on #45 rather than in this guide. The initial
+hosted failure and passing proofs are recorded in the
+[completed validation evidence](https://github.com/ven2dev/dfs-ev-demo/issues/45#issuecomment-5989637479).
+Do not treat local truth-table coverage as hosted failure-propagation evidence.

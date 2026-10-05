@@ -20,7 +20,7 @@ const requiredTests = [
     `25 independent clients acquire exactly one ${state}-row lease`,
     `observes all 24 contenders blocked behind a held ${state}-row acquisition transaction`,
   ]),
-  "a valid renewal extends the lease and prevents competing takeover",
+  "renewing an expired lease extends it and prevents competing takeover",
   "25 independent clients produce exactly one takeover of a forced expired lease",
   "characterization: an expired owner may renew before any takeover",
   "characterization: an expired owner may publish before any takeover",
