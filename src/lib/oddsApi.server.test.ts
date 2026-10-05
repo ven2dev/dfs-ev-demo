@@ -31,6 +31,76 @@ const jsonResponse = (
   json: () => Promise.resolve(body),
 });
 
+describe("provider request boundaries", () => {
+  beforeEach(() => {
+    vi.stubEnv("ODDS_API_KEY", "test-key");
+  });
+
+  const eventFetchers = [
+    ["discovery", (eventId: string) => fetchEventOdds("americanfootball_nfl", eventId, ["player_pass_yds"])],
+    ["live", (eventId: string) => fetchPlayerPropMarketOdds("americanfootball_nfl", eventId, "player_pass_yds", "Jalen Hurts")],
+  ] as const;
+
+  describe.each(eventFetchers)("%s event IDs", (_name, call) => {
+    it.each([
+      "", ".", "..", "../../other", "a/b", "a\\b", "%2e%2e%2fother",
+      "%252e%252e", "evt?apiKey=other", "evt#fragment", "evt\n", "evt\u0000",
+      "évt", "a".repeat(129),
+    ])("rejects unsafe ID %j before fetch", async (eventId) => {
+      await expect(call(eventId)).rejects.toThrow("Invalid eventId");
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+  });
+
+  it.each(["basketball_nba", "../../sports/basketball_nba", "americanfootball_nfl?regions=eu#", ""])(
+    "rejects unsupported sport %j at every provider boundary", async (sportKey) => {
+      await expect(fetchSlateEvents(sportKey)).rejects.toThrow("Only americanfootball_nfl");
+      await expect(fetchEventOdds(sportKey, "evt-1", ["player_pass_yds"])).rejects.toThrow("Only americanfootball_nfl");
+      await expect(fetchPlayerPropMarketOdds(sportKey, "evt-1", "player_pass_yds", "Jalen Hurts")).rejects.toThrow("Only americanfootball_nfl");
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it.each(["h2h", "player_pass_yds&regions=eu", "player_pass_yds#", "player_pass_yds,player_receptions"])(
+    "rejects unknown/injected market %j before fetch", async (marketKey) => {
+      await expect(fetchEventOdds("americanfootball_nfl", "evt-1", ["player_pass_yds", marketKey])).rejects.toThrow("Unknown player-prop market");
+      await expect(fetchPlayerPropMarketOdds("americanfootball_nfl", "evt-1", marketKey, "Jalen Hurts")).rejects.toThrow("Unknown player-prop market");
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
+  );
+
+  it("rejects an empty market batch without fetching", async () => {
+    await expect(fetchEventOdds("americanfootball_nfl", "evt-1", [])).rejects.toThrow("at least one market");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("keeps credentials inside one query value and preserves safe path tokens, markets, and abort signals", async () => {
+    const apiKey = "local&regions=eu#?+example";
+    vi.stubEnv("ODDS_API_KEY", apiKey);
+    fetchMock.mockResolvedValue(jsonResponse({ bookmakers: [] }));
+    const controller = new AbortController();
+    await fetchEventOdds("americanfootball_nfl", "fixture-week_4", ["player_pass_yds", "player_anytime_td"], controller.signal);
+    await fetchPlayerPropMarketOdds("americanfootball_nfl", "a".repeat(128), "player_receptions", "Jalen Hurts", controller.signal);
+    fetchMock.mockResolvedValue(jsonResponse([]));
+    await fetchSlateEvents("americanfootball_nfl", new Date(), controller.signal);
+
+    const urls = fetchMock.mock.calls.map(([url, options]) => {
+      const parsed = new URL(url);
+      expect(parsed.origin).toBe("https://api.the-odds-api.com");
+      expect(parsed.hash).toBe("");
+      expect(parsed.searchParams.getAll("apiKey")).toEqual([apiKey]);
+      expect(options).toMatchObject({ cache: "no-store", signal: controller.signal, redirect: "error" });
+      return parsed;
+    });
+    expect(urls[0].pathname).toBe("/v4/sports/americanfootball_nfl/events/fixture-week_4/odds/");
+    expect([...urls[0].searchParams]).toEqual([["apiKey", apiKey], ["regions", "us"], ["markets", "player_pass_yds,player_anytime_td"]]);
+    expect(urls[1].pathname).toBe(`/v4/sports/americanfootball_nfl/events/${"a".repeat(128)}/odds/`);
+    expect(urls[1].searchParams.get("markets")).toBe("player_receptions");
+    expect(urls[2].pathname).toBe("/v4/sports/americanfootball_nfl/events");
+    expect([...urls[2].searchParams]).toEqual([["apiKey", apiKey]]);
+  });
+});
+
 describe("fetchSlateEvents", () => {
   it("throws when ODDS_API_KEY is not set, without making a request", async () => {
     vi.stubEnv("ODDS_API_KEY", "");

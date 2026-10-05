@@ -139,6 +139,37 @@ PR and explicitly explain that this is an intentional exception to the usual
 the issue open through those checks. Add links and distinguish workflow success
 from actual analysis upload.
 
+## Odds provider request validation
+
+The initial main baseline raised three `js/request-forgery` alerts at the
+Odds API fetch sites. URL parsing confirmed that unrestricted path inputs
+could alter the provider endpoint or query. The initial origin was fixed;
+arbitrary-host access and exploitable provider redirects were not established.
+Do not dismiss the alerts based solely on that fixed origin.
+
+The follow-up validates requests at both the public route and provider
+boundaries. Only `americanfootball_nfl` is accepted, and accepted sport input
+resolves to that constant. Event IDs are opaque tokens of 1–128 ASCII letters,
+digits, underscores, or hyphens; fixture IDs follow the same contract. Markets
+must resolve to the player-prop capability registry. Path segments are encoded,
+query values use `URLSearchParams`, and all three fetch sites reject redirects.
+An unexpected provider redirect therefore fails the request and requires
+investigation rather than being followed with the API key.
+
+Regression tests mock provider fetches and route dependencies. They exercise
+invalid inputs before provider/cache/history access, valid fixture/live paths,
+query-value isolation, redirect policy, and existing abort/quota telemetry.
+They make no provider calls and do not establish production-provider behavior.
+The useful source PR must upload CodeQL analysis against the main baseline;
+after merge, confirm that all three alerts are fixed in main's uploaded
+analysis. Until then, disposition is **fix prepared, scanner verification
+pending**, with owner `vneilly` and tracking issue #59. Retain the alerts rather
+than suppressing the query or manually declaring them fixed.
+
+See the [CodeQL request-forgery guidance](https://codeql.github.com/codeql-query-help/javascript/js-request-forgery/)
+for fixed-host and pathname restrictions. Broader provider-route abuse controls
+remain tracked separately in #61; safe URL construction does not cap quota use.
+
 ## Disabled schedules and recovery
 
 GitHub can auto-disable public-repository scheduled workflows after 60 days

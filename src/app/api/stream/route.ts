@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { consensusDevigAtLine } from "@/lib/consensusDevig";
 import { computeEV } from "@/lib/computeEV";
-import { DEFAULT_SPORT_KEY, fetchSlateEvents } from "@/lib/oddsApi";
+import { fetchSlateEvents } from "@/lib/oddsApi";
+import { DEFAULT_SPORT_KEY, isSafeOddsEventId, isSupportedOddsSport } from "@/lib/oddsRequestInputs";
 import { resolveOddsDataSource } from "@/lib/oddsDataSource";
 import {
   getFixtureLivePropInputs,
@@ -56,7 +57,8 @@ export async function GET(request: NextRequest) {
   const playerName = params.get("playerName");
   const bookmakerKey = params.get("bookmakerKey");
   const direction = params.get("direction");
-  const sportKey = params.get("sportKey") || DEFAULT_SPORT_KEY;
+  const requestedSport = params.get("sportKey") ?? DEFAULT_SPORT_KEY;
+  const sportKey = DEFAULT_SPORT_KEY;
   const sampleWindow = parseSampleWindow(params.get("sampleWindow"));
 
   if (!eventId || !marketKey || !playerName || !bookmakerKey || !direction) {
@@ -65,6 +67,13 @@ export async function GET(request: NextRequest) {
         success: false,
         reason: "eventId, marketKey, playerName, bookmakerKey, and direction are required",
       },
+      { status: 400 }
+    );
+  }
+
+  if (!isSupportedOddsSport(requestedSport) || !isSafeOddsEventId(eventId)) {
+    return NextResponse.json(
+      { success: false, reason: "Invalid sportKey or eventId" },
       { status: 400 }
     );
   }
