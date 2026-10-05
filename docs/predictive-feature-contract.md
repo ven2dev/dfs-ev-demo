@@ -391,7 +391,7 @@ create a probability of participation.
 | Player/game/season-type identity unresolved or statistic inapplicable to registry position | No canonical label; retain raw evidence and reason for resolution. |
 | Postponed/rescheduled, not played | No label until the actual completed event and predecessor mapping are resolved. |
 | Canceled/unplayed | Terminal `unplayed` record, no numeric label. |
-| Suspended/unfinished | Provisional event record; withhold final labels until official completion/termination and the rule for recorded official stats are resolved. No partial-game total masquerading as full-game final. |
+| Suspended/unfinished | Provisional event record; withhold final labels until official completion/termination is confirmed and the rule for recorded official stats is resolved. No partial-game total masquerading as full-game final. |
 
 A missing row cannot prove DNP, zero participation or zero statistic. Player
 stats may omit players with no recorded usage; a complete eligible-population
@@ -465,9 +465,10 @@ Fair-price/EV calculations must state how pushes and settlement differences
 are handled; normalizing away push mass silently is not an acceptable service
 contract. #54 owns that implementation and evaluation, not #49.
 
-[Issue #54](https://github.com/ven2dev/dfs-ev-demo/issues/54) currently asks for
-arbitrary supported points with complementary Over/Under probabilities and
-complementarity tests. The required handoff amendments are:
+At the Step 2 review, [issue #54](https://github.com/ven2dev/dfs-ev-demo/issues/54)
+asked for arbitrary supported points with complementary Over/Under probabilities
+and complementarity tests. The Step 3 amendment carries these requirements into
+the live issue:
 
 - Replace universal two-way complementarity with the three probabilities above,
   keeping two-way complementarity only when push is impossible.
@@ -481,12 +482,12 @@ complementarity tests. The required handoff amendments are:
 - Enforce data/label availability at walk-forward training and prediction
   cutoffs; reconstructed unversioned history remains exploratory.
 
-Step 3 must update the live #54 issue body before #49 closes. Preserve unrelated
-scope while correcting its model contract, probability acceptance criterion,
-test criterion and relevant population/cutoff validation requirements. Re-read
-the saved issue and record the update/diff and issue link as closure evidence;
-a document handoff or issue comment alone does not satisfy this closure gate.
-This targeted Step 2 commit does not yet edit the issue body.
+Step 3 updated the live #54 body and read the saved text back exactly, preserving
+unrelated scope while correcting its model contract, probability/test criteria
+and population/cutoff validation requirements. The
+[operational handoff](predictive-data-operations.md#downstream-handoff-and-closure-evidence)
+links the exact body diff and verification on #49. A document handoff or issue
+comment alone would not have satisfied this closure gate.
 The existing `computeEV` heuristic remains interim until a validated version is
 deliberately integrated.
 
