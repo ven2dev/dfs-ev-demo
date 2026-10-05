@@ -62,6 +62,29 @@ afterEach(() => {
 });
 
 describe("GET /api/stream market capability validation", () => {
+  it.each([
+    ["sportKey", "basketball_nba"],
+    ["sportKey", "../../other?apiKey=other#"],
+    ["sportKey", ""],
+    ["eventId", "../other"],
+    ["eventId", "evt?markets=h2h#"],
+    ["eventId", "%2e%2e"],
+    ["eventId", "evt\n"],
+  ])("rejects unsafe %s=%j before any upstream or database access", async (key, value) => {
+    const response = await GET(requestFor({
+      eventId: "evt-1",
+      marketKey: "player_pass_yds",
+      playerName: "Jalen Hurts",
+      bookmakerKey: "draftkings",
+      direction: "over",
+      [key]: value,
+    }));
+    expect(response.status).toBe(400);
+    expect(fetchSlateEventsMock).not.toHaveBeenCalled();
+    expect(getSharedLivePropInputsMock).not.toHaveBeenCalled();
+    expect(getRealRecentGameStatsMock).not.toHaveBeenCalled();
+  });
+
   it("rejects a browse-only market before opening a live stream", async () => {
     const response = await GET(
       requestFor({
