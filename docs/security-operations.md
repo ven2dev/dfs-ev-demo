@@ -153,12 +153,15 @@ resolves to that constant. Event IDs are opaque tokens of 1–128 ASCII letters,
 digits, underscores, or hyphens; fixture IDs follow the same contract. Markets
 must resolve to the player-prop capability registry. Path segments are encoded,
 query values use `URLSearchParams`, and all three fetch sites reject redirects.
-An unexpected provider redirect therefore fails the request and requires
-investigation rather than being followed with the API key.
+A blocked redirect fails the request through the existing network-error path,
+with empty quota metadata. Telemetry does not distinguish it from other network
+failures.
 
 Regression tests mock provider fetches and route dependencies. They exercise
 invalid inputs before provider/cache/history access, valid fixture/live paths,
-query-value isolation, redirect policy, and existing abort/quota telemetry.
+query-value isolation, and existing abort/quota telemetry. They assert the
+`redirect: "error"` option at each fetch site; they do not simulate a redirect
+or verify its failure path.
 They make no provider calls and do not establish production-provider behavior.
 The useful source PR must upload CodeQL analysis against the main baseline;
 after merge, confirm that all three alerts are fixed in main's uploaded
