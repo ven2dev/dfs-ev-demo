@@ -6,16 +6,21 @@ import {
   type OddsApiRequestSource,
 } from "./oddsApiTelemetryRepo";
 import { requireLiveOddsDataSource } from "./oddsDataSource";
+import { requireOddsEventId, requireOddsSport } from "./oddsRequestInputs";
+import { getPlayerPropMarket } from "./playerPropMarkets";
 // Enforced, not just documented: importing this from a "use client"
 // component now fails the build, since it reads ODDS_API_KEY, which must
 // never reach the browser bundle.
 
 const ODDS_API_BASE = "https://api.the-odds-api.com/v4";
 
-// This app is NFL-only for now (see CLAUDE.md's Stack section) -- one
-// shared constant instead of the literal repeated across callers, so
-// adding a second sport later is a one-place change, not a find/replace.
-export const DEFAULT_SPORT_KEY = "americanfootball_nfl";
+export { DEFAULT_SPORT_KEY } from "./oddsRequestInputs";
+
+const requireOddsMarket = (marketKey: string): string => {
+  const market = getPlayerPropMarket(marketKey);
+  if (!market) throw new Error("Unknown player-prop market key");
+  return market.key;
+};
 
 export type OddsOutcome = {
   name: string;
@@ -152,18 +157,22 @@ export const fetchEventOdds = async (
   if (marketKeys.length === 0) {
     throw new Error("fetchEventOdds requires at least one market key");
   }
+  sportKey = requireOddsSport(sportKey);
+  eventId = requireOddsEventId(eventId);
+  marketKeys = marketKeys.map(requireOddsMarket);
 
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
     throw new Error("ODDS_API_KEY is not set");
   }
 
-  const url = `${ODDS_API_BASE}/sports/${sportKey}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketKeys.join(",")}`;
+  const url = new URL(`${ODDS_API_BASE}/sports/${sportKey}/events/${encodeURIComponent(eventId)}/odds/`);
+  url.search = new URLSearchParams({ apiKey, regions: "us", markets: marketKeys.join(",") }).toString();
   const requestId = randomUUID();
   const requestedAt = new Date();
   let res: Response;
   try {
-    res = await fetch(url, { cache: "no-store", signal });
+    res = await fetch(url.toString(), { cache: "no-store", signal, redirect: "error" });
   } catch (error) {
     await safelyRecordRequest({
       id: requestId,
@@ -213,17 +222,19 @@ export const fetchSlateEvents = async (
   source: OddsApiRequestSource = "slate"
 ): Promise<OddsApiFetch<SlateEvent[]>> => {
   requireLiveOddsDataSource();
+  sportKey = requireOddsSport(sportKey);
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
     throw new Error("ODDS_API_KEY is not set");
   }
 
-  const url = `${ODDS_API_BASE}/sports/${sportKey}/events?apiKey=${apiKey}`;
+  const url = new URL(`${ODDS_API_BASE}/sports/${sportKey}/events`);
+  url.search = new URLSearchParams({ apiKey }).toString();
   const requestId = randomUUID();
   const requestedAt = new Date();
   let res: Response;
   try {
-    res = await fetch(url, { cache: "no-store", signal });
+    res = await fetch(url.toString(), { cache: "no-store", signal, redirect: "error" });
   } catch (error) {
     await safelyRecordRequest({
       id: requestId,
@@ -296,17 +307,21 @@ export const fetchPlayerPropMarketOdds = async (
   source: OddsApiRequestSource = "direct"
 ): Promise<PlayerPropMarketOddsFetch> => {
   requireLiveOddsDataSource();
+  sportKey = requireOddsSport(sportKey);
+  eventId = requireOddsEventId(eventId);
+  marketKey = requireOddsMarket(marketKey);
   const apiKey = process.env.ODDS_API_KEY;
   if (!apiKey) {
     throw new Error("ODDS_API_KEY is not set");
   }
 
-  const url = `${ODDS_API_BASE}/sports/${sportKey}/events/${eventId}/odds/?apiKey=${apiKey}&regions=us&markets=${marketKey}`;
+  const url = new URL(`${ODDS_API_BASE}/sports/${sportKey}/events/${encodeURIComponent(eventId)}/odds/`);
+  url.search = new URLSearchParams({ apiKey, regions: "us", markets: marketKey }).toString();
   const requestId = randomUUID();
   const requestedAt = new Date();
   let res: Response;
   try {
-    res = await fetch(url, { cache: "no-store", signal });
+    res = await fetch(url.toString(), { cache: "no-store", signal, redirect: "error" });
   } catch (error) {
     await safelyRecordRequest({
       id: requestId,
