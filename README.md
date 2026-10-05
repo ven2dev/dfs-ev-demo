@@ -103,6 +103,15 @@ Real sample-window hit rates (base rate of the EV pipeline) are backed by
 [nflverse](https://github.com/nflverse/nflverse-data)'s public NFL stats, synced
 into a Neon Postgres database.
 
+The future independent projection has a separate
+[predictive source decision](docs/predictive-data-sources.md),
+[feature/cutoff/identity contract](docs/predictive-feature-contract.md), and
+[operating-cost and handoff plan](docs/predictive-data-operations.md) from #49.
+All nine market candidates support prospective predictor capture; complete
+outcome coverage remains blocked on qualified participation evidence. Current
+revised historical files are exploratory, public/commercial display rights
+remain conditional, and no projection model or new ingestion job ships here.
+
 ### Provider notes (nflverse)
 
 - **Cost:** free, no API key. The actual CSV downloads (GitHub Releases
