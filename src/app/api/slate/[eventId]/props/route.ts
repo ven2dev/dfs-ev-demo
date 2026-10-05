@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DEFAULT_SPORT_KEY } from "@/lib/oddsApi";
+import { DEFAULT_SPORT_KEY, isSafeOddsEventId, isSupportedOddsSport } from "@/lib/oddsRequestInputs";
 import { getOrFetchMarketOdds } from "@/lib/oddsCacheRepo";
 import { groupOddsByPlayer } from "@/lib/discoveredProps";
 import { resolveOddsDataSource } from "@/lib/oddsDataSource";
@@ -20,6 +20,9 @@ export const GET = async (
     const { eventId } = await params;
     if (!eventId) {
       return NextResponse.json({ success: false, reason: "eventId is required" }, { status: 400 });
+    }
+    if (!isSafeOddsEventId(eventId)) {
+      return NextResponse.json({ success: false, reason: "Invalid eventId" }, { status: 400 });
     }
 
     const marketsParam = request.nextUrl.searchParams.get("markets");
@@ -52,7 +55,14 @@ export const GET = async (
       );
     }
 
-    const sportKey = request.nextUrl.searchParams.get("sportKey") || DEFAULT_SPORT_KEY;
+    const requestedSport = request.nextUrl.searchParams.get("sportKey") ?? DEFAULT_SPORT_KEY;
+    if (!isSupportedOddsSport(requestedSport)) {
+      return NextResponse.json(
+        { success: false, reason: "Only americanfootball_nfl is supported" },
+        { status: 400 }
+      );
+    }
+    const sportKey = DEFAULT_SPORT_KEY;
     const forceRefresh = request.nextUrl.searchParams.get("refresh") === "true";
 
     const dataSource = resolveOddsDataSource();
