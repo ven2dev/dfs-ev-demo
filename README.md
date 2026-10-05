@@ -34,6 +34,14 @@ npm run build
 npm audit --omit=dev --audit-level=critical
 ```
 
+CodeQL analyzes JavaScript/TypeScript on PRs, pushes to `main`, and weekly.
+Its analysis job uses no production application credentials and makes no paid
+provider calls. Dependency updates follow the
+[review guide](docs/dependency-updates.md); report vulnerabilities through the
+[security policy](SECURITY.md). Maintainer validation, required-check rollout,
+notification evidence, and disabled-schedule recovery are covered in the
+[security operations runbook](docs/security-operations.md).
+
 Fill in `.env.local`:
 
 - **Odds API** (`ODDS_API_KEY`) — free tier key from [the-odds-api.com](https://the-odds-api.com).

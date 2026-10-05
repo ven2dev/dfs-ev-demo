@@ -1,0 +1,117 @@
+version: 2
+
+# Review guide and Firebase override checklists: docs/dependency-updates.md.
+# Related packages take precedence over fallback groups. Security updates use
+# separate groups and are not delayed until the weekly version-update schedule.
+updates:
+  - package-ecosystem: npm
+    directory: /
+    rebase-strategy: disabled
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Los_Angeles
+    assignees:
+      - vneilly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    # Upgrade the runtime and its types together through a deliberate ticket.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+    groups:
+      next:
+        applies-to: version-updates
+        patterns:
+          - next
+          - eslint-config-next
+      react:
+        applies-to: version-updates
+        patterns:
+          - react
+          - react-dom
+          - "@types/react"
+          - "@types/react-dom"
+      tailwind:
+        applies-to: version-updates
+        patterns:
+          - tailwindcss
+          - "@tailwindcss/*"
+      test-tooling:
+        applies-to: version-updates
+        patterns:
+          - vitest
+          - "@vitest/*"
+          - vite
+          - "@vitejs/plugin-react"
+          - vite-tsconfig-paths
+          - jsdom
+          - "@testing-library/*"
+      firebase-client:
+        applies-to: version-updates
+        patterns:
+          - firebase
+          - "@firebase/*"
+        exclude-patterns:
+          - "@firebase/rules-unit-testing"
+      firebase-admin:
+        applies-to: version-updates
+        patterns:
+          - firebase-admin
+      firebase-tooling:
+        applies-to: version-updates
+        patterns:
+          - firebase-tools
+          - "@firebase/rules-unit-testing"
+      production-minor-patch:
+        applies-to: version-updates
+        dependency-type: production
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      development-minor-patch:
+        applies-to: version-updates
+        dependency-type: development
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+      production-security:
+        applies-to: security-updates
+        dependency-type: production
+        patterns:
+          - "*"
+      development-security:
+        applies-to: security-updates
+        dependency-type: development
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: /
+    rebase-strategy: disabled
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Los_Angeles
+    assignees:
+      - vneilly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      actions:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
