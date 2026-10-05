@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { DEFAULT_SPORT_KEY, fetchSlateEvents } from "@/lib/oddsApi";
+import { fetchSlateEvents } from "@/lib/oddsApi";
+import { DEFAULT_SPORT_KEY, isSupportedOddsSport } from "@/lib/oddsRequestInputs";
 import { resolveOddsDataSource } from "@/lib/oddsDataSource";
 import { getFixtureSlateEvents } from "@/lib/oddsFixtures";
 import { getCurrentNflSlateWindow } from "@/lib/nflWeek";
@@ -11,7 +12,14 @@ import { getCurrentNflSlateWindow } from "@/lib/nflWeek";
 // the props discovery route.
 export const GET = async (request: NextRequest) => {
   try {
-    const sportKey = request.nextUrl.searchParams.get("sportKey") || DEFAULT_SPORT_KEY;
+    const requestedSport = request.nextUrl.searchParams.get("sportKey") ?? DEFAULT_SPORT_KEY;
+    if (!isSupportedOddsSport(requestedSport)) {
+      return NextResponse.json(
+        { success: false, reason: "Only americanfootball_nfl is supported" },
+        { status: 400 }
+      );
+    }
+    const sportKey = DEFAULT_SPORT_KEY;
     const now = new Date();
     const window = getCurrentNflSlateWindow(now);
     const dataSource = resolveOddsDataSource();

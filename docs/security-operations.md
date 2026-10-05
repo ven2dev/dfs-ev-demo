@@ -36,9 +36,9 @@ exceptions.
 The 2026-10-04 [baseline/dispositions](https://github.com/ven2dev/dfs-ev-demo/issues/59#issuecomment-5978472280)
 and [settings/provenance evidence](https://github.com/ven2dev/dfs-ev-demo/issues/59#issuecomment-5978559303)
 are snapshots. The latter records enabled Dependabot security updates, secret
-scanning, repository push protection, and private reporting. Notification
-attestation and the cancelled web-editor block-test evidence remain pending;
-they must be recorded separately before #59 is complete.
+scanning, repository push protection, and private reporting. Account notification
+settings and the cancelled web-editor block test were verified on 2026-10-04;
+see the verification snapshot below and #59 for subsequent rollout evidence.
 
 ### Optional secret-scanning settings
 
@@ -138,6 +138,89 @@ PR and explicitly explain that this is an intentional exception to the usual
 `Closes #N` convention: required evidence remains pending after merge. Keep
 the issue open through those checks. Add links and distinguish workflow success
 from actual analysis upload.
+
+### Verified uploads and remaining rollout
+
+Post-merge evidence is recorded on [#59](https://github.com/ven2dev/dfs-ev-demo/issues/59#issuecomment-5986299912).
+The following analyses uploaded without errors in category
+`/language:javascript-typescript`:
+
+| Analysis | Ref/commit | Results |
+| --- | --- | --- |
+| 1890203567 | Initial main baseline, `d577f42` (#73) | Three request-forgery findings |
+| 1890204354 | Genuine Dependabot #72 merge ref, `92b4a1b` | Restricted-token upload verified |
+| 1890266990 | Useful source PR #79 merge ref, `1d055fc` | Zero findings |
+| 1890304078 | Main after #79, `5f934ae` | Zero findings |
+| 1890311950 | Main after #72, `9a217b5` | Zero findings |
+
+All three original request-forgery alerts are now marked fixed on main.
+The open Dependabot alert query returned no alerts after #72 merged; that
+does not replace the separate production and full development npm audits.
+GitHub has also processed the default-branch Dependabot configuration and
+opened five routine grouped PRs (#74–#78), assigned to `vneilly`.
+
+The observed analysis job check is `CodeQL (javascript-typescript)`, reported
+by the `github-actions` app (integration ID 15368). The separately reported
+`CodeQL` check belongs to `github-advanced-security` (ID 57789); these are
+distinct checks. Require the observed analysis job after fork upload is proven,
+and preserve the existing CI/Vercel requirements and strict up-to-date policy.
+
+Notification evidence: direct observation and a session screenshot of the
+authenticated owner's account settings showed Dependabot alerts enabled on
+GitHub, email, and CLI; weekly Dependabot digest emails; and Actions email
+notifications for failed workflows only. The owner also checked the Dependabot
+preferences and confirmed they looked correct. This verifies preferences,
+not end-to-end email delivery. Personal email addresses are omitted from
+public evidence.
+
+Push-protection evidence: a temporary web-editor submission using GitHub's
+official dummy was blocked with the wording "Secret scanning found a GitHub
+Secret Scanning secret on line 1." The submission was cancelled, the editor
+cleared, and unsaved changes discarded. No bypass was selected, no test branch
+or commit was created, and the main SHA stayed `9a217b5`. The open secret-alert
+query remained empty. Never copy the dummy value into this record.
+
+At this snapshot, fork upload and required-check enforcement remain pending.
+The public fork `vneilly/dfs-ev-demo` was created for a useful runbook-update PR;
+no application code, dependency, or workflow permission changes are needed.
+The repository's fork approval policy is `first_time_contributors`. Record the
+fork run's actual token permissions and uploaded analysis, then apply and read
+back the required-check rule. Record enforcement on the open PR before declaring
+rollout complete. Use #59's latest evidence for the current completion status.
+
+## Odds provider request validation
+
+The initial main baseline raised three `js/request-forgery` alerts at the
+Odds API fetch sites. URL parsing confirmed that unrestricted path inputs
+could alter the provider endpoint or query. The initial origin was fixed;
+arbitrary-host access and exploitable provider redirects were not established.
+Do not dismiss the alerts based solely on that fixed origin.
+
+The follow-up validates requests at both the public route and provider
+boundaries. Only `americanfootball_nfl` is accepted, and accepted sport input
+resolves to that constant. Event IDs are opaque tokens of 1–128 ASCII letters,
+digits, underscores, or hyphens; fixture IDs follow the same contract. Markets
+must resolve to the player-prop capability registry. Path segments are encoded,
+query values use `URLSearchParams`, and all three fetch sites reject redirects.
+A blocked redirect fails the request through the existing network-error path,
+with empty quota metadata. Telemetry does not distinguish it from other network
+failures.
+
+Regression tests mock provider fetches and route dependencies. They exercise
+invalid inputs before provider/cache/history access, valid fixture/live paths,
+query-value isolation, and existing abort/quota telemetry. They assert the
+`redirect: "error"` option at each fetch site; they do not simulate a redirect
+or verify its failure path.
+They make no provider calls and do not establish production-provider behavior.
+The useful source PR #79 and its subsequent main analysis uploaded zero
+findings, and all three alerts are now marked **fixed** by CodeQL on main.
+Owner: `vneilly`; evidence remains on #59. No query suppression or manual alert
+dismissal was used. For future findings, retain the alerts until the fix is
+verified by uploaded analysis rather than manually declaring them fixed.
+
+See the [CodeQL request-forgery guidance](https://codeql.github.com/codeql-query-help/javascript/js-request-forgery/)
+for fixed-host and pathname restrictions. Broader provider-route abuse controls
+remain tracked separately in #61; safe URL construction does not cap quota use.
 
 ## Disabled schedules and recovery
 
