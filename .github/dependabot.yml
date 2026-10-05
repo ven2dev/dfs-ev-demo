@@ -50,6 +50,8 @@ updates:
           - vite-tsconfig-paths
           - jsdom
           - "@testing-library/*"
+          - pg
+          - "@types/pg"
       firebase-client:
         applies-to: version-updates
         patterns:
@@ -115,3 +117,22 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+
+  - package-ecosystem: docker-compose
+    directory: /
+    rebase-strategy: disabled
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Los_Angeles
+    assignees:
+      - vneilly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    # Match production's PostgreSQL major; upgrade it through a deliberate ticket.
+    ignore:
+      - dependency-name: postgres
+        update-types:
+          - version-update:semver-major

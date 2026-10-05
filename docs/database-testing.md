@@ -74,7 +74,9 @@ locally and Linux AMD64 in CI.
 PostgreSQL 18 uses `/var/lib/postgresql/18/docker`; the parent
 `/var/lib/postgresql` is a 512 MiB tmpfs mount. No database data volume survives
 service removal. See the [official image's storage documentation](https://github.com/docker-library/docs/blob/master/postgres/README.md#pgdata).
-Dependabot maintenance for the image and driver is added with step 4's CI work.
+Dependabot maintains the image through its weekly `docker-compose` entry and
+the driver pair through its npm test-tooling group. Major PostgreSQL upgrades
+remain deliberate; see the [dependency review guide](dependency-updates.md).
 
 ## Suite contract
 
@@ -161,3 +163,67 @@ dependency audit reported zero vulnerabilities.
 A bootstrap-only filtered run passed one case and skipped 12. The report guard
 correctly rejected it with exit code 1 and removed the container and network.
 GitHub CI and aggregate-gate failure evidence remain step 4 work.
+
+## CI enforcement
+
+On PRs to `main` and pushes to `main`, `App checks` and `DB integration` run
+independently on Linux. The database job runs a clean Node 24 `npm ci`, the
+target guards, and `npm run test:db:local`. This uses the same Compose file,
+image digest, health check, loopback port, throwaway credentials, and tmpfs as
+the laptop command. An additional `always()` cleanup step runs
+`npm run test:db:down`; no production credentials or external database access
+are configured in either CI job.
+
+The sole job named `CI` depends on both jobs and uses `if: always()` with
+`permissions: {}` and no checkout. It fails unless both dependency results are
+exactly `success`, including when a dependency failed, was cancelled, or was
+skipped. This retains the existing ruleset's required `CI` check without a
+settings change. Workflow cancellation can cancel the gate itself; cancellation
+does not provide a successful required check. GitHub documents these results
+in the [needs context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context).
+
+`npm run test:ci-gate` extracts and executes the actual inline gate shell script
+against all 16 combinations of GitHub's four job results. It also rejects empty
+or unexpected results and checks the gate's always-run condition, dependency
+list, unique check name, empty permissions, and absence of checkout. This runs
+inside `App checks`. The extraction checks the current YAML block layout;
+`actionlint` remains the workflow syntax validator.
+
+### Step 4 local validation
+
+On 2026-10-04, actionlint 1.7.12 passed all three workflows. ShellCheck was not
+installed, so its optional integration did not run; zizmor was not used.
+The Dependabot JSON schema check and Compose configuration check passed.
+
+On Node 24.18.1, clean `npm ci`, typecheck, lint, the three gate-regression
+checks (including all 16 result pairs), three DB target guards, all 445 unit
+tests and the Admin runtime check, all 13 PostgreSQL cases, Firestore rules,
+production build, and whitespace checks passed. The database service and
+network were removed, and a second explicit cleanup command also exited zero.
+The production audit reported zero vulnerabilities. The clean install still
+reported the pre-existing development-tool advisory baseline (13 findings);
+this step changes no dependency versions or lockfile entries.
+
+### Before-merge GitHub evidence
+
+Local script tests cannot prove GitHub schedules the gate correctly. Before
+merge, create an unmerged `validation/dfsEV-45-db-gate` branch from the completed
+feature branch, with separately approved commits and pushes:
+
+1. Change only the database test command to
+   `npm run test:db:local -- --testNamePattern='^bootstraps'`. Open a draft PR to
+   `main` so the actual workflow runs. The one-case suite must be rejected by
+   the mandatory-report guard, `DB integration` must fail, and `CI` must run
+   and fail with its database result shown as `failure`. Record the run URL,
+   commit, job results, and cleanup evidence on #45.
+2. Restore the database command in a follow-up commit without rewriting
+   history. Obtain a complete successful run showing both upstream jobs and
+   `CI` passing and record it. Close the validation PR without merging it.
+3. Obtain passing checks on the final feature PR before the owner merges it.
+   Record GitHub's acceptance of the new Dependabot Compose configuration and
+   discovery/grouping evidence after merge; local schema validation is only
+   preparatory.
+
+These hosted runs and the new default-branch Dependabot evidence are pending
+until approved publication. Do not treat local truth-table coverage as hosted
+failure-propagation evidence.

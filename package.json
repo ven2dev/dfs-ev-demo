@@ -14,6 +14,7 @@
     "test": "npm run test:firebase-admin-runtime && vitest run --config vitest.config.ts && vitest run --config vitest.node.config.ts",
     "test:firebase-admin-runtime": "node --no-experimental-require-module -e \"require('firebase-admin/auth')\"",
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-dfs-ev-preview-rules \"node tests/firestoreRules.mjs\"",
+    "test:ci-gate": "node --test tests/ciGate.check.mjs",
     "test:db": "node scripts/test-db.mjs run",
     "test:db:local": "node scripts/test-db.mjs local",
     "test:db:repeat": "node scripts/test-db.mjs repeat",
