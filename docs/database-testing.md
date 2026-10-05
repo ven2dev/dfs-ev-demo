@@ -83,10 +83,55 @@ and uses real Node timers. The jsdom suite excludes `tests/db/`. Setup applies
 the complete `db/schema.sql` twice and truncates only `live_prop_inputs_cache`
 between cases. Tracked database clients close after each case and suite.
 
-The runner also validates Vitest's JSON report: required cases must execute and
-pass, and skipped/todo or missing cases fail. Step 2's required case verifies
-full-schema bootstrap; step 3 extends the contract with all lease scenarios.
-This bootstrap check alone does not establish concurrent lease correctness.
+The runner also validates Vitest's JSON report: all 13 required cases must
+execute and pass, and skipped/todo or missing cases fail. The current contract
+covers full-schema bootstrap plus these lease scenarios:
+
+- Plain 25-way acquisition races for both an absent row and stale cached data.
+  Each contender has its own connected client and distinct `pg_backend_pid()`.
+- Cold and stale acquisition transactions held open while all 24 competitors
+  are observed blocked through `pg_stat_activity`, ungranted `pg_locks`, and
+  `pg_blocking_pids()` chains reaching the holder. Only then does it commit;
+  all competitors must return false.
+- A valid renewal extends the lease and prevents takeover. Forced expiry uses
+  `UPDATE ... refresh_lease_until = now() - interval '1 second'`, followed by a
+  25-way race with exactly one takeover winner.
+- Explicit characterization cases: expiry alone permits the current owner to
+  renew or publish until replaced. Changing this policy requires deliberately
+  changing these tests and production behavior.
+- After takeover, the previous owner cannot renew, write, or release the new
+  owner's lease.
+- Both write/takeover orderings under real overlapping transactions. A held
+  former-owner write commits fresh data, defeating every blocked takeover;
+  alternatively a held takeover commits first, causing the blocked old write
+  to throw the lease-lost error. Pending queries settle after commit or rollback
+  before cleanup.
+- Full `getOrRefreshLivePropInputs` orchestration across 25 database-backed
+  consumers. A fake fetch stays deferred until every initial acquisition
+  returns and all 24 followers enter a controlled wait. Followers resume after
+  the owner publishes; all receive the same JSON payload with cleared ownership.
+
+All five operations come from the production SQL factory. The provider wrapper
+is untouched; these tests make no Odds API, weather, or Neon calls. The refresh
+orchestration retains autocommit queries and real lifecycle timers. Explicit
+transactions are limited to tests that control and observe lock ordering.
+Freshness fixtures use the database clock; expiry never depends on sleeps.
+Lock polling has a 7.5-second deadline and emits backend/lock diagnostics on
+failure. See [PostgreSQL's lock view](https://www.postgresql.org/docs/18/view-pg-locks.html).
+
+## Repetition check
+
+Run 20 complete suites with the same disposable service, preserving per-case
+reset and client cleanup:
+
+```bash
+npm run test:db:repeat -- 20
+```
+
+The default count is 20; an explicit integer from 1 through 100 is accepted.
+Filters are refused in repetition mode. Every iteration must satisfy the full
+13-case report contract. The runner stops at the first failure and removes the
+service after the run, including on failure or normal interruption.
 
 Connection timeouts, statement timeouts, and bounded test hooks prevent a
 broken server or blocked query from waiting indefinitely. An explicit cleanup
@@ -100,3 +145,19 @@ npm run test:db:local -- --testNamePattern=deliberately-no-matching-case
 
 That command must exit unsuccessfully and remove the disposable container.
 It is validation evidence, not a passing integration run.
+
+## Step 3 local validation
+
+On 2026-10-04, Node 24.18.1 and the pinned PostgreSQL 18.6 service passed
+20 complete repetitions: 260 database case executions, with no failures or
+retries. Both cold/stale lock proofs and both write/takeover orderings ran in
+every repetition. The final container and network were removed.
+
+After a clean `npm ci`, typecheck, lint, all 445 unit tests (262 jsdom and
+183 Node, plus the Admin runtime check), all three DB target-guard cases,
+Firestore rules, production build, and `git diff --check` passed. The production
+dependency audit reported zero vulnerabilities.
+
+A bootstrap-only filtered run passed one case and skipped 12. The report guard
+correctly rejected it with exit code 1 and removed the container and network.
+GitHub CI and aggregate-gate failure evidence remain step 4 work.

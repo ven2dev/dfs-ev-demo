@@ -16,6 +16,7 @@
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-dfs-ev-preview-rules \"node tests/firestoreRules.mjs\"",
     "test:db": "node scripts/test-db.mjs run",
     "test:db:local": "node scripts/test-db.mjs local",
+    "test:db:repeat": "node scripts/test-db.mjs repeat",
     "test:db:down": "node scripts/test-db.mjs down",
     "test:db:guard": "node --test tests/db/target.check.mjs",
     "test:watch": "vitest --config vitest.config.ts"
