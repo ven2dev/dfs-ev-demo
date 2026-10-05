@@ -1,0 +1,22 @@
+name: dfs-ev-demo-test
+
+services:
+  postgres:
+    image: postgres:18.6-alpine3.24@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
+    environment:
+      # Public, throwaway credentials for this disposable local database only.
+      POSTGRES_DB: dfs_ev_test
+      POSTGRES_USER: dfs_ev_test
+      POSTGRES_PASSWORD: dfs_ev_test
+    ports:
+      - "127.0.0.1:54329:5432"
+    tmpfs:
+      # PostgreSQL 18's data directory is beneath this mount.
+      - /var/lib/postgresql:rw,size=512m
+    shm_size: 128mb
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "dfs_ev_test", "-d", "dfs_ev_test"]
+      interval: 1s
+      timeout: 5s
+      retries: 30
+    stop_grace_period: 10s
