@@ -109,8 +109,7 @@ jobs:
         run: npm run test:db:guard
 
       - name: Test disposable PostgreSQL
-        # Validation-only change: prove an incomplete suite fails the DB job and CI gate.
-        run: npm run test:db:local -- --testNamePattern='^bootstraps'
+        run: npm run test:db:local
 
       - name: Remove disposable PostgreSQL
         if: ${{ always() }}
