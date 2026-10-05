@@ -126,4 +126,3 @@ export async function waitForBlocked(monitor: Client, pids: number[], holderPid:
   }
   throw new Error(`Expected ${pids.length} DB backends blocked behind ${holderPid}; observed ${JSON.stringify(snapshot)}`);
 }
-

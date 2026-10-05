@@ -27,4 +27,3 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
     ]);
   });
 });
-
