@@ -105,10 +105,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Check database target guards
+      - name: Check database target, bootstrap and report guards
         run: npm run test:db:guard
 
-      - name: Test disposable PostgreSQL
+      - name: Verify migration artifacts, catalog contracts and PostgreSQL behavior
         run: npm run test:db:local
 
       - name: Remove disposable PostgreSQL

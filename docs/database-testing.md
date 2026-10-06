@@ -2,8 +2,8 @@
 
 Issue #45 runs the shared live-prop refresh SQL against a real disposable
 database. Production continues to use Neon; `pg` and `@types/pg` are exact-pinned
-development dependencies. Issue #60 can reuse the full-schema bootstrap for
-migration tests.
+development dependencies. Issue #60 supplies the shared migration bootstrap,
+catalog contracts and isolated migration proofs.
 
 ## Local commands
 
@@ -17,7 +17,9 @@ npm run test:db:local
 ```
 
 `test:db:local` starts `compose.test.yml`, waits up to 60 seconds for health,
-runs the separate database suite, and removes the service and its network even
+runs migration/reference artifact checks, all mandatory Node database checks,
+an independent catalog-contract drift check and the lease suite. It removes the
+service and its network even
 if startup or tests fail. It preserves failure exit codes. SIGINT/SIGTERM also
 request cleanup; a forced kill or machine shutdown can prevent cleanup. To
 remove any resources left by an interrupted run:
@@ -35,14 +37,14 @@ and port mean only one database suite should run at a time on a machine.
 No real application credentials are needed. The relay worktree's `.env.local`
 can stay fixture-only; database tests never read it. Compose explicitly uses
 `--env-file /dev/null`, and the DB Vitest config disables `.env` loading.
-The harness refuses an environment containing `DATABASE_URL`, `ODDS_API_KEY`,
+The harness refuses an environment containing `DATABASE_URL`, `MIGRATION_DATABASE_URL`, `ODDS_API_KEY`,
 Firebase Admin variables, Google application credentials, or ambient
 `POSTGRES_*`/`PG*` configuration. Run it from a shell without those variables.
 
 The service exposes only `127.0.0.1:54329`, with database, username, and password
 all set to `dfs_ev_test`. These public throwaway values belong only to this test
-container. The schema bootstrap verifies the database, role, and PostgreSQL 18
-major before executing DDL.
+container. The schema bootstrap validates the full connection configuration and
+verifies the connected database, role, and PostgreSQL 18 major before DDL.
 
 For an already running disposable service, `test:db` requires an explicit URL:
 
@@ -81,13 +83,18 @@ remain deliberate; see the [dependency review guide](dependency-updates.md).
 ## Suite contract
 
 `vitest.db.config.mts` selects only `tests/db/**/*.test.ts`, runs files serially,
-and uses real Node timers. The jsdom suite excludes `tests/db/`. Setup applies
-the complete `db/schema.sql` twice and truncates only `live_prop_inputs_cache`
-between cases. Tracked database clients close after each case and suite.
+and uses real Node timers. The jsdom suite excludes `tests/db/`. Setup installs
+ordered migrations through the repository runner, then verifies a no-op rerun;
+both calls verify the full application and ledger catalog before commit. The
+generated `db/schema.sql` remains a checked reference and is never executed by
+the bootstrap. An existing unversioned nonempty schema is refused without repair
+or adoption. Setup truncates only `live_prop_inputs_cache` between cases.
+Tracked database clients close after each case and suite.
 
 The runner also validates Vitest's JSON report: all 13 required cases must
 execute and pass, and skipped/todo or missing cases fail. The current contract
-covers full-schema bootstrap plus these lease scenarios:
+covers full-schema bootstrap, including ledger/data-preserving reruns, plus
+these lease scenarios:
 
 - Plain 25-way acquisition races for both an absent row and stale cached data.
   Each contender has its own connected client and distinct `pg_backend_pid()`.
@@ -122,6 +129,26 @@ Freshness fixtures use the database clock; expiry never depends on sleeps.
 Lock polling has a 7.5-second deadline and emits backend/lock diagnostics on
 failure. See [PostgreSQL's lock view](https://www.postgresql.org/docs/18/view-pg-locks.html).
 
+Migration, plan, catalog and contract scenarios each use a registered random
+`dfs_ev_test_<20 hex>` database in the same service. They never drop/reset shared
+`public` or depend on #45's file ordering; their scratch target guards continue
+to refuse the primary `dfs_ev_test` database. Only #45's explicitly guarded
+bootstrap installs into that fixed primary target. It does not broaden scratch
+cleanup permissions. The two independent historical fixtures have committed
+provenance and SHA-256 anchors; tests require no runtime Git history and work in
+a shallow checkout.
+
+`scripts/db-test-contract.mjs` contains the reviewed static list of required
+cases. The mandatory Node suite covers target/bootstrap/report guards and every
+catalog, contract, migration and plan unit/integration case. A custom reporter
+consumes Node's documented test events and emits JSON alongside normal console
+output. Its gate requires the complete successful summary and each named case
+exactly once in its original file, with no skipped/todo/failed/cancelled results.
+Deleting or filtering a test cannot remove its requirement automatically. New
+mandatory cases need an explicit list update. The Vitest JSON gate retains all
+13 existing lease requirements and also refuses duplicate or incomplete results.
+Reports are written into a unique temporary directory and removed in finally.
+
 ## Repetition check
 
 Run 20 complete suites with the same disposable service, preserving per-case
@@ -133,7 +160,8 @@ npm run test:db:repeat -- 20
 
 The default count is 20; an explicit integer from 1 through 100 is accepted.
 Filters are refused in repetition mode. Every iteration must satisfy the full
-13-case report contract. The runner stops at the first failure and removes the
+Node and 13-case lease report contracts, plus both artifact drift checks. The
+runner stops at the first failure and removes the
 service after the run, including on failure or normal interruption.
 
 Connection timeouts, statement timeouts, and bounded test hooks prevent a
@@ -153,7 +181,9 @@ It is validation evidence, not a passing integration run.
 
 On PRs to `main` and pushes to `main`, `App checks` and `DB integration` run
 independently on Linux. The database job runs a clean Node 24 `npm ci`, the
-target guards, and `npm run test:db:local`. This uses the same Compose file,
+target/bootstrap/report guards, and `npm run test:db:local`. The local command
+requires migration/reference integrity, all named database cases and freshly
+rebuilt contract equality to succeed. This uses the same Compose file,
 image digest, health check, loopback port, throwaway credentials, and tmpfs as
 the laptop command. An additional `always()` cleanup step runs
 `npm run test:db:down`; no production credentials or external database access

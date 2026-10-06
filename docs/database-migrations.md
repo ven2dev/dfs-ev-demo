@@ -96,8 +96,9 @@ install plan, applies it, then computes and applies a fresh no-op plan. It
 closes and removes the scratch database in finally. It
 reports versions only after scratch cleanup. It does not migrate the shared
 `dfs_ev_test` database. The container lifecycle above is manual: run
-`test:db:down` even if the dev command fails. The existing #45 test harness still
-uses the generated schema reference until the shared-bootstrap work in Step 4.
+`test:db:down` even if the dev command fails. The #45 test harness now uses this
+runner's guarded empty/prefix bootstrap and full catalog verification on its
+fixed disposable primary database.
 
 ## Migration artifacts and immutability
 
@@ -117,7 +118,8 @@ edit ordered migration files rather than the reference. Append a reviewed file,
 then run `npm run db:migrations:generate`. Generation preserves the checksums of
 all previously recorded files and refuses edited/deleted history. Applied files
 are immutable; corrections require a new forward migration. These commands do
-not connect to any database. Step 4 adds their required CI execution.
+not connect to any database. The mandatory disposable DB command runs this
+artifact check in CI before the database cases.
 
 ## Generated catalog contracts
 
@@ -148,7 +150,8 @@ before writing any artifacts. Review the complete generated diff with the SQL;
 generation deliberately rewrites contracts, while the migration-manifest guard
 continues refusing edits to known migration bytes. The check rebuilds the same
 catalogs, reports every missing/changed/unexpected artifact and exits nonzero on
-drift without writing. Step 4 will make that check mandatory in CI.
+drift without writing. The mandatory disposable DB command runs this independent
+contract drift check in CI as well as the verifier cases.
 
 Comparison includes column positions/types/nullability/defaults, identity and
 generation state, collation, PK/unique/check/FK definitions, validation and
@@ -410,8 +413,12 @@ rollback, independently connected lock contention and concurrent runners,
 corrupt-ledger rejection and scratch target/cleanup guards. The committed
 `tests/db/fixtures/` schemas retain source-object provenance and SHA-256 anchors;
 tests use those immutable independent copies without needing Git history. Run it with
-the explicit `TEST_DATABASE_URL` while the Compose service is running. Step 4
-owns the aggregate named-case/report gate and shared #45 migration bootstrap.
+the explicit `TEST_DATABASE_URL` while the Compose service is running.
+`npm run test:db:local` now requires all catalog/contract/migration/plan unit and
+integration cases through a static named-case JSON report gate, both artifact
+checks and all 13 #45 lease cases using the shared runner bootstrap. Repeat this
+complete pipeline with `npm run test:db:repeat -- 3` to check isolation. See the
+[database test guide](database-testing.md) for lifecycle and CI enforcement.
 
 Keep dated results and snapshot/mismatch dispositions on #60. Actual remote
 Neon transport and Production schema remain unverified until the owner runs the

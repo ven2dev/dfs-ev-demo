@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { withTestClient } from "./harness";
+import { bootstrapTestDatabase, withTestClient } from "./harness";
 
 it("bootstraps the full application schema twice on PostgreSQL 18", async () => {
   await withTestClient(async (client) => {
@@ -9,6 +9,7 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
     expect(tables.rows.map((row) => row.tablename)).toEqual([
       "creator_video_submissions",
       "creators",
+      "db_migrations",
       "event_market_odds_cache",
       "live_prop_inputs_cache",
       "nflverse_roster_players",
@@ -25,5 +26,20 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
       "player_game_stats",
       "sync_state",
     ]);
+    const historySql = "SELECT * FROM public.db_migrations ORDER BY version";
+    const history = (await client.query(historySql)).rows;
+    expect(history.map(({ version, provenance, sha256 }) => ({ version, provenance, sha256 }))).toEqual([
+      { version: 1, provenance: "executed", sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
+      { version: 2, provenance: "executed", sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
+    ]);
+    await client.query(`INSERT INTO live_prop_inputs_cache (sport_key, event_id, market_key, player_name)
+      VALUES ('synthetic-bootstrap', 'synthetic-event', 'player_pass_yds', 'Synthetic Player')`);
+    const rows = (await client.query("SELECT * FROM live_prop_inputs_cache")).rows;
+    const result = await bootstrapTestDatabase();
+    expect(result.first.executed).toEqual([]);
+    expect(result.repeat.executed).toEqual([]);
+    expect(result.repeat.schemaVersion).toBe(2);
+    expect((await client.query(historySql)).rows).toEqual(history);
+    expect((await client.query("SELECT * FROM live_prop_inputs_cache")).rows).toEqual(rows);
   });
 });
