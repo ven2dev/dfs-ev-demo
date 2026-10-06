@@ -12,6 +12,11 @@ Use a small repository-owned runner over an injected, dedicated query client.
 Retain the existing `pg` dev client locally and Neon Client for owner-run direct
 remote sessions. Add no migration package dependency.
 
+Use SHA-256 alone in the manifest and ledger. The custom runner has no
+Postgrator checksum compatibility requirement. Removing the redundant field
+before any adoption avoids a permanent ledger column and a later ledger
+migration; the application migration SQL bytes and SHA-256 values are unchanged.
+
 ## Bounded comparison
 
 The comparison covered Postgrator 8.0.0's README and implementation plus the
@@ -42,11 +47,12 @@ session client. The project owns maintenance of this core and its meaningful
 real-Postgres failure/rollback tests. This decision is about responsibility
 overlap, not an assertion that Postgrator is unsafe or unmaintained.
 
-Both alternatives require LF-enforced SQL, a committed MD5/SHA-256 manifest,
+The selected runner requires LF-enforced SQL, a committed SHA-256 manifest,
 immutable applied files, complete history validation, transaction-scoped
 advisory locking, `SET LOCAL` bounded timeouts, and a test where the second of
-two migrations fails and rolls back the first. Those remain acceptance work;
-the catalog exporter does not implement them.
+two migrations fails and rolls back the first. Step 1 implements these local
+core proofs; complete catalog verification, plan approval, adoption and rollout
+evidence remain acceptance work.
 
 [Neon's driver documentation](https://github.com/neondatabase/serverless#pool-and-client)
 supports interactive sessions through Client and native WebSockets on Node 24.

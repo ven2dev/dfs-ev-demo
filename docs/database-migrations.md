@@ -7,6 +7,23 @@ for harness-owned disposable databases; owner-run remote execution, deep
 catalog verification and adoption remain pending. The owner approved developing
 and testing this candidate runner locally while Production evidence is pending.
 
+The roadmap and these instructions use the same step numbers:
+
+| Step | Deliverable |
+| --- | --- |
+| 0 | Read-only catalog evidence |
+| 1 | Candidate runner, ledger, lock and guards |
+| 2 | Full catalog verifier and generated contracts |
+| 3 | Fingerprint-bound plan and verified adoption |
+| 4 | Isolated proofs, shared #45 bootstrap and required CI |
+| 5 | Protected database readiness |
+| 6 | Release/recovery documentation and acceptance handoff |
+
+Steps 0 and 1 are intermediate commits within one migration-delivery PR.
+Do not merge/deploy this intermediate state: remote `up` is still unavailable,
+and the generated reference header is not an operational rollout instruction.
+Complete the remaining steps and approved schema prerequisites before merge.
+
 ## Candidate migrations and local runner
 
 `db/migrations/0001_pre_41_baseline.sql` preserves the authentic eight-table
@@ -19,13 +36,27 @@ reconciliation migration before adoption can be implemented.
 The repository-owned core uses one dedicated client and one transaction for
 all pending files, ledger inserts and verification. It takes a transaction
 advisory lock with `pg_try_advisory_xact_lock`; contention fails immediately.
+This provides mutual exclusion with a fail-fast policy rather than queueing and
+automatically serializing competing invocations. The operator must retry with a
+freshly approved plan once the other transaction finishes.
 Transaction-local timeouts bound lock waits to three seconds, statements to
 15 seconds and idle transactions to 15 seconds. Whole multi-statement files
 execute directly through the client. Migration files cannot issue transaction
 or session-control statements; the runner owns those boundaries and settings.
 
-`public.db_migrations` records ordered versions, filenames, non-null MD5 and
-SHA-256 checksums, runner version, executed/adopted provenance and application
+For a future hot-table ALTER requiring different timeouts, first deliver a
+separately reviewed runner extension for bounded per-migration `lockTimeoutMs`
+and `statementTimeoutMs` metadata. The runner would validate explicit limits,
+apply the options through transaction-local settings immediately before that
+file, and restore its defaults before the next file and final verification.
+Those options must be covered by the committed manifest and approved-plan
+fingerprint, with real-Postgres timeout/rollback tests. This extension is not
+implemented yet; embedded `SET LOCAL`, broad session-control exemptions and
+unbounded timeout overrides remain refused. The migration author must add the
+supported option before writing the first migration that needs it.
+
+`public.db_migrations` records ordered versions, filenames, non-null SHA-256
+checksums, runner version, executed/adopted provenance and application
 time. Step 1 writes only `executed` records. The reader rejects empty existing
 ledgers, version holes, missing fields, checksum mismatches and unsupported
 runner versions. An unversioned nonempty schema is refused without mutation.
@@ -58,7 +89,7 @@ uses the generated schema reference until the shared-bootstrap work in Step 4.
 
 ## Migration artifacts and immutability
 
-`db/migration-manifest.json` commits both checksums for every SQL file.
+`db/migration-manifest.json` commits the SHA-256 checksum for every SQL file.
 `.gitattributes` enforces LF for SQL and the manifest. Files must use ordered,
 contiguous four-digit versions starting at 0001; down files, symlinks, invalid
 UTF-8, CRLF and empty content are refused.
@@ -92,6 +123,14 @@ artifacts before connecting and reads ledger metadata inside a bounded
 `REPEATABLE READ READ ONLY` transaction. It never creates a ledger. An absent
 ledger reports version 0; existing invalid history fails with a safe fixed code.
 Status is ledger information, not readiness or deep schema verification.
+
+Actual Neon transport remains **pending owner evidence**. CI exercises the `pg`
+path only; the first owner-run Production `status` is the smoke test for Neon
+Client's WebSocket connection, read-only transaction and transaction-local
+settings. Record its date, commit, Node/driver versions, exit code and sanitized
+status (or fixed failure code) on #60. Verify the hashed target identity without
+posting URLs, credentials or raw driver errors. A local pg pass is not a Neon
+transport pass; no successful remote outcome is claimed here.
 
 ## Owner-run Production snapshot
 
@@ -189,8 +228,9 @@ registered scratch database per scenario. It proves empty installation against
 the authentic current catalog, data/ledger-preserving no-op reruns, read-only
 status, refusal of unversioned schemas, two-file failure rollback, verification
 rollback, independently connected lock contention and concurrent runners,
-corrupt-ledger rejection and scratch target/cleanup guards. Fixtures use Git's
-historical objects, so the local checkout must retain those commits. Run it with
+corrupt-ledger rejection and scratch target/cleanup guards. The committed
+`tests/db/fixtures/` schemas retain source-object provenance and SHA-256 anchors;
+tests use those immutable independent copies without needing Git history. Run it with
 the explicit `TEST_DATABASE_URL` while the Compose service is running. Step 4
 owns the aggregate named-case/report gate and shared #45 migration bootstrap.
 

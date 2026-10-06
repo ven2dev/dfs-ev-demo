@@ -5,13 +5,11 @@
     {
       "version": 1,
       "filename": "0001_pre_41_baseline.sql",
-      "md5": "a6ae02f41ad0bb5f30af68406a86c1d9",
       "sha256": "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98"
     },
     {
       "version": 2,
       "filename": "0002_market_observation_history.sql",
-      "md5": "32d282faa1ad342b10f7ec42f4421299",
       "sha256": "df35a458b5d6e3f26cbbdd84d8cfa65244e865dd6963b6f0e1f8f5f0e8dd7297"
     }
   ]

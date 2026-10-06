@@ -7,7 +7,6 @@ export const LOCK_KEY = 1;
 const ledgerSql = `CREATE TABLE public.db_migrations (
   version integer PRIMARY KEY CHECK (version > 0),
   filename text NOT NULL UNIQUE,
-  md5 text NOT NULL CHECK (md5 ~ '^[0-9a-f]{32}$'),
   sha256 text NOT NULL CHECK (sha256 ~ '^[0-9a-f]{64}$'),
   runner_version integer NOT NULL CHECK (runner_version = 1),
   provenance text NOT NULL CHECK (provenance IN ('executed', 'adopted')),
@@ -26,7 +25,7 @@ export function validateHistory(history, files) {
   if (!history.length || history.length > files.length) refuse("invalid-migration-history");
   for (const [index, row] of history.entries()) {
     const file = files[index];
-    if (row.version !== file.version || row.filename !== file.filename || row.md5 !== file.md5 ||
+    if (row.version !== file.version || row.filename !== file.filename ||
         row.sha256 !== file.sha256 || row.runner_version !== RUNNER_VERSION ||
         !["adopted", "executed"].includes(row.provenance) || !row.applied_at) refuse("invalid-migration-history");
   }
@@ -35,7 +34,7 @@ export function validateHistory(history, files) {
 export async function readLedger(client, files) {
   const { rows: [state] } = await client.query("SELECT to_regclass('public.db_migrations') AS ledger");
   if (state.ledger === null) return null;
-  const { rows } = await client.query("SELECT version, filename, md5, sha256, runner_version, provenance, applied_at FROM public.db_migrations ORDER BY version");
+  const { rows } = await client.query("SELECT version, filename, sha256, runner_version, provenance, applied_at FROM public.db_migrations ORDER BY version");
   validateHistory(rows, files);
   return rows;
 }
@@ -90,9 +89,9 @@ export async function runScratchMigrations(client, { expected, files, assertTarg
       // Execute the entire reviewed multi-statement file on this session.
       await client.query(file.sql);
       await client.query(`INSERT INTO public.db_migrations
-        (version, filename, md5, sha256, runner_version, provenance)
-        VALUES ($1, $2, $3, $4, $5, 'executed')`,
-      [file.version, file.filename, file.md5, file.sha256, RUNNER_VERSION]);
+        (version, filename, sha256, runner_version, provenance)
+        VALUES ($1, $2, $3, $4, 'executed')`,
+      [file.version, file.filename, file.sha256, RUNNER_VERSION]);
     }
     await verify(client, files.length);
     await readLedger(client, files);

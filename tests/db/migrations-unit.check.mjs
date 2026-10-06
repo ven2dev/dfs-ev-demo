@@ -24,13 +24,13 @@ async function withFiles(run) {
 
 test("candidate artifacts preserve the authentic historical boundary and all schema comments", async () => {
   const files = await checkMigrationArtifacts();
-  const legacy = spawnSync("git", ["show", "68c65f6e918730b0d8b22a761a482a79225347b6:db/schema.sql"], { encoding: "utf8" });
-  assert.equal(legacy.status, 0);
-  assert.equal(files[0].sql, legacy.stdout);
+  const legacy = await readFile(new URL("./fixtures/pre-41.schema.sql", import.meta.url), "utf8");
+  const original = await readFile(new URL("./fixtures/current-before-60.schema.sql", import.meta.url), "utf8");
+  assert.equal(fingerprint(legacy), "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98");
+  assert.equal(fingerprint(original), "95c349dc4fb79a604ce3c38abe2d064673bd6d6a86e3cbed8a086744102a85c2");
+  assert.equal(files[0].sql, legacy);
   assert.equal(files.length, 2);
-  const original = spawnSync("git", ["show", "a3a5dd9:db/schema.sql"], { encoding: "utf8" });
-  assert.equal(original.status, 0);
-  assert.equal(files.map((file) => file.sql).join("\n"), original.stdout);
+  assert.equal(files.map((file) => file.sql).join("\n"), original);
 });
 
 test("manifest rejects edited bytes, missing files, extra fields and unsupported runner versions", async () => {
@@ -73,10 +73,10 @@ test("SQL cannot end the runner transaction even behind comments and quoted stat
 test("ledger validation refuses holes, checksum mismatches, empty history and unknown provenance", async () => {
   const files = await checkMigrationArtifacts();
   const rows = files.map((file) => ({ version: file.version, filename: file.filename,
-    md5: file.md5, sha256: file.sha256, runner_version: 1, provenance: "executed", applied_at: "2026-10-05" }));
+    sha256: file.sha256, runner_version: 1, provenance: "executed", applied_at: "2026-10-05" }));
   assert.doesNotThrow(() => validateHistory(rows, files));
   for (const broken of [[], [rows[1]], [...rows, rows[1]],
-    [{ ...rows[0], sha256: null }], [{ ...rows[0], md5: "edited" }],
+    [{ ...rows[0], sha256: null }], [{ ...rows[0], sha256: "0".repeat(64) }],
     [{ ...rows[0], runner_version: 2 }], [{ ...rows[0], provenance: "unknown" }],
     [{ ...rows[0], applied_at: null }]]) assert.throws(() => validateHistory(broken, files));
 });

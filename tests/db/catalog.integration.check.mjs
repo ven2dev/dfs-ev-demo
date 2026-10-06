@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import { execFileSync } from "node:child_process";
 import { after, before, test } from "node:test";
 import { Client } from "pg";
 import { readCatalog } from "../../scripts/db-catalog.mjs";
@@ -54,8 +53,8 @@ test("empty export creates neither application objects nor migration ledger", as
 });
 
 test("exports authentic eight-table pre-41 and seventeen-table current candidates", async () => {
-  const legacy = execFileSync("git", ["show", "68c65f6e918730b0d8b22a761a482a79225347b6:db/schema.sql"], { encoding: "utf8" });
-  const current = await readFile(new URL("../../db/schema.sql", import.meta.url), "utf8");
+  const legacy = await readFile(new URL("./fixtures/pre-41.schema.sql", import.meta.url), "utf8");
+  const current = await readFile(new URL("./fixtures/current-before-60.schema.sql", import.meta.url), "utf8");
   for (const [sql, expectedCount] of [[legacy, 8], [current, 17]]) {
     await withScratch(async (client, config) => {
       await client.query(sql);

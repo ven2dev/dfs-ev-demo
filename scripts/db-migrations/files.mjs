@@ -75,7 +75,6 @@ export async function readMigrationFiles(directory = migrationDirectory) {
     assertTransactionalSql(sql);
     files.push(Object.freeze({
       version: index + 1, filename: entry.name, sql,
-      md5: createHash("md5").update(bytes).digest("hex"),
       sha256: createHash("sha256").update(bytes).digest("hex"),
     }));
   }
@@ -84,7 +83,7 @@ export async function readMigrationFiles(directory = migrationDirectory) {
 
 export function buildManifest(files) {
   return { formatVersion: 1, runnerVersion: RUNNER_VERSION,
-    migrations: files.map(({ version, filename, md5, sha256 }) => ({ version, filename, md5, sha256 })) };
+    migrations: files.map(({ version, filename, sha256 }) => ({ version, filename, sha256 })) };
 }
 
 export function validateManifest(manifest, files) {

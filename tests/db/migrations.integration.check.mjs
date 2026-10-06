@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, before, test } from "node:test";
@@ -19,7 +18,7 @@ before(async () => {
   files = await checkMigrationArtifacts();
   harness = await createScratchHarness(process.env);
   reference = await harness.withDatabase(async (client, expected) => {
-    await client.query(execFileSync("git", ["show", "a3a5dd9:db/schema.sql"], { encoding: "utf8" }));
+    await client.query(await readFile(new URL("./fixtures/current-before-60.schema.sql", import.meta.url), "utf8"));
     return readCatalog(client, expected);
   });
 });
@@ -43,6 +42,9 @@ test("empty installation matches the authentic current catalog and reruns preser
       await verifyCandidateTables(session, version);
     } });
     assert.deepEqual(await runScratchMigrations(client, options), { schemaVersion: 2, executed: [1, 2] });
+    const ledgerColumns = await client.query("SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'db_migrations' ORDER BY ordinal_position");
+    assert.deepEqual(ledgerColumns.rows.map((row) => row.column_name),
+      ["version", "filename", "sha256", "runner_version", "provenance", "applied_at"]);
     assert.equal((await client.query("SELECT current_setting('standard_conforming_strings') AS mode")).rows[0].mode, "off");
     await client.query("SET standard_conforming_strings = on");
     const catalog = await readCatalog(client, expected);
