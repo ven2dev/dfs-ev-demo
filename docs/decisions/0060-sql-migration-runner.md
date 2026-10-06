@@ -1,8 +1,10 @@
 # #60 SQL migration runner decision
 
-Status: selected for the approved roadmap; implementation follows Production
-catalog evidence and the mismatch decision. Scope is transactional, forward
-SQL migrations, not a general migration framework.
+Status: selected for the approved roadmap. The owner approved the Step 1
+candidate runner on disposable local databases while Production catalog
+evidence is pending. Production reconciliation, adoption and remote execution
+still require that evidence and its mismatch decision. Scope is transactional,
+forward SQL migrations, not a general migration framework.
 
 ## Decision
 

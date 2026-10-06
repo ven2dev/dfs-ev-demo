@@ -2,8 +2,96 @@
 
 Issue #60 establishes versioned SQL delivery. The approved roadmap is at
 [the issue](https://github.com/ven2dev/dfs-ev-demo/issues/60#issuecomment-6006046013).
-This first step supplies catalog evidence; migration execution and adoption
-are not implemented yet.
+Step 0 supplies catalog evidence. Step 1 adds candidate SQL files and a runner
+for harness-owned disposable databases; owner-run remote execution, deep
+catalog verification and adoption remain pending. The owner approved developing
+and testing this candidate runner locally while Production evidence is pending.
+
+## Candidate migrations and local runner
+
+`db/migrations/0001_pre_41_baseline.sql` preserves the authentic eight-table
+historical schema byte for byte. `0002_market_observation_history.sql` adds the
+nine #41 tables; concatenating these files preserves the original current SQL
+and its comments. These are source candidates, not an assertion about what was
+deployed to Production. A comparison may require a separately reviewed appended
+reconciliation migration before adoption can be implemented.
+
+The repository-owned core uses one dedicated client and one transaction for
+all pending files, ledger inserts and verification. It takes a transaction
+advisory lock with `pg_try_advisory_xact_lock`; contention fails immediately.
+Transaction-local timeouts bound lock waits to three seconds, statements to
+15 seconds and idle transactions to 15 seconds. Whole multi-statement files
+execute directly through the client. Migration files cannot issue transaction
+or session-control statements; the runner owns those boundaries and settings.
+
+`public.db_migrations` records ordered versions, filenames, non-null MD5 and
+SHA-256 checksums, runner version, executed/adopted provenance and application
+time. Step 1 writes only `executed` records. The reader rejects empty existing
+ledgers, version holes, missing fields, checksum mismatches and unsupported
+runner versions. An unversioned nonempty schema is refused without mutation.
+Existing valid prefix history can receive pending files in scratch tests;
+reruns preserve ledger timestamps and application rows.
+
+The initial verifier checks the exact candidate table set and ledger history
+before commit. Step 2 will replace this minimum check with complete generated
+catalog contracts. A table-name check alone does not qualify an existing schema
+for adoption. Step 3 owns fingerprint-bound plans and owner-run remote `up`;
+`db:migrate up` currently refuses before connecting.
+
+Use Node 24, no application credentials and the existing Compose service:
+
+```bash
+docker compose --env-file /dev/null --project-name dfs-ev-demo-test \
+  -f compose.test.yml up -d --wait --wait-timeout 60
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
+  npm run db:migrate:dev
+npm run test:db:down
+```
+
+The dev command creates a randomly named, registered scratch database, checks
+the connected database/role/PostgreSQL major, installs the candidates, reruns
+them as a no-op, then closes and removes the scratch database in finally. It
+reports versions only after scratch cleanup. It does not migrate the shared
+`dfs_ev_test` database. The container lifecycle above is manual: run
+`test:db:down` even if the dev command fails. The existing #45 test harness still
+uses the generated schema reference until the shared-bootstrap work in Step 4.
+
+## Migration artifacts and immutability
+
+`db/migration-manifest.json` commits both checksums for every SQL file.
+`.gitattributes` enforces LF for SQL and the manifest. Files must use ordered,
+contiguous four-digit versions starting at 0001; down files, symlinks, invalid
+UTF-8, CRLF and empty content are refused.
+
+```bash
+npm run db:migrations:check
+npm run test:db:migrations:unit
+```
+
+The check verifies SQL against the complete manifest and verifies `db/schema.sql`
+against commented migration-file concatenation. The reference is generated;
+edit ordered migration files rather than the reference. Append a reviewed file,
+then run `npm run db:migrations:generate`. Generation preserves the checksums of
+all previously recorded files and refuses edited/deleted history. Applied files
+are immutable; corrections require a new forward migration. These commands do
+not connect to any database. Step 4 adds their required CI execution.
+
+## Read-only migration status
+
+With the same owner-verified target identity used for catalog export:
+
+```bash
+npm run db:migrate -- status --environment production \
+  --expected-host-fingerprint HOST_FINGERPRINT --expected-database DATABASE_NAME
+```
+
+The owner runs this with explicit `MIGRATION_DATABASE_URL` in their own terminal.
+The command shares the catalog export's direct-endpoint and target guards, does
+not load `.env`, and has no `DATABASE_URL` fallback. It checks local migration
+artifacts before connecting and reads ledger metadata inside a bounded
+`REPEATABLE READ READ ONLY` transaction. It never creates a ledger. An absent
+ledger reports version 0; existing invalid history fails with a safe fixed code.
+Status is ledger information, not readiness or deep schema verification.
 
 ## Owner-run Production snapshot
 
@@ -95,6 +183,16 @@ a running service from `compose.test.yml`. It creates random, registered
 database/role/major before any fixture setup, then closes and removes each
 scratch database in finally. It does not reset #45's shared schema. These tests
 must fail without the disposable target; they never skip or use DATABASE_URL.
+
+`test:db:migrations` uses the same fixed disposable service and a separately
+registered scratch database per scenario. It proves empty installation against
+the authentic current catalog, data/ledger-preserving no-op reruns, read-only
+status, refusal of unversioned schemas, two-file failure rollback, verification
+rollback, independently connected lock contention and concurrent runners,
+corrupt-ledger rejection and scratch target/cleanup guards. Fixtures use Git's
+historical objects, so the local checkout must retain those commits. Run it with
+the explicit `TEST_DATABASE_URL` while the Compose service is running. Step 4
+owns the aggregate named-case/report gate and shared #45 migration bootstrap.
 
 Keep dated results and snapshot/mismatch dispositions on #60. Actual remote
 Neon transport and Production schema remain unverified until the owner runs the
