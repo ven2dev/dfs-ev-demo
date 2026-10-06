@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { canonicalJson } from "./db-catalog.mjs";
 
-function validateSnapshot(snapshot) {
+export function validateSnapshot(snapshot) {
   if (snapshot.formatVersion !== 1 || snapshot.schema !== "public" || !Number.isInteger(snapshot.postgresMajor) ||
       !Array.isArray(snapshot.objects)) throw new Error("invalid-catalog-format");
   const keys = new Set();

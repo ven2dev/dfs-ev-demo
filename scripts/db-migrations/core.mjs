@@ -1,10 +1,10 @@
-import { readFile } from "node:fs/promises";
+import { collectCatalog } from "../db-catalog.mjs";
 import { RUNNER_VERSION } from "./files.mjs";
 import { refuse } from "./errors.mjs";
 
 export const LOCK_NAMESPACE = 60604560;
 export const LOCK_KEY = 1;
-const ledgerSql = `CREATE TABLE public.db_migrations (
+export const ledgerSql = `CREATE TABLE public.db_migrations (
   version integer PRIMARY KEY CHECK (version > 0),
   filename text NOT NULL UNIQUE,
   sha256 text NOT NULL CHECK (sha256 ~ '^[0-9a-f]{64}$'),
@@ -79,8 +79,7 @@ export async function runScratchMigrations(client, { expected, files, assertTarg
     if (!lock.acquired) refuse("migration-lock-busy");
     let history = await readLedger(client, files);
     if (history === null) {
-      const sql = await readFile(new URL("../../db/catalog.sql", import.meta.url), "utf8");
-      if ((await client.query(sql)).rows.length) refuse("unversioned-schema-refused");
+      if ((await collectCatalog(client)).objects.length) refuse("unversioned-schema-refused");
       await client.query(ledgerSql);
       history = [];
     }

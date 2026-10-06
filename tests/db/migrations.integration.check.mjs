@@ -8,14 +8,18 @@ import { readCatalog } from "../../scripts/db-catalog.mjs";
 import { compareCatalogs } from "../../scripts/compare-db-catalog.mjs";
 import { buildManifest, checkMigrationArtifacts, loadMigrationSet, readMigrationFiles } from "../../scripts/db-migrations/files.mjs";
 import { LOCK_KEY, LOCK_NAMESPACE, readMigrationStatus, runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
-import { verifyCandidateTables } from "../../scripts/db-migrations/candidates.mjs";
+import { createCatalogVerifier, loadCatalogContracts } from "../../scripts/db-migrations/contracts.mjs";
 import { createScratchHarness } from "./scratch.mjs";
 
 let harness;
 let files;
 let reference;
+let contracts;
+let verify;
 before(async () => {
   files = await checkMigrationArtifacts();
+  contracts = await loadCatalogContracts(files);
+  verify = createCatalogVerifier(contracts);
   harness = await createScratchHarness(process.env);
   reference = await harness.withDatabase(async (client, expected) => {
     await client.query(await readFile(new URL("./fixtures/current-before-60.schema.sql", import.meta.url), "utf8"));
@@ -25,7 +29,7 @@ before(async () => {
 after(async () => { await harness?.close(); });
 
 const optionsFor = (expected, overrides = {}) => ({ expected, files, assertTarget: harness.assertTarget,
-  verify: verifyCandidateTables, ...overrides });
+  verify, ...overrides });
 async function ledgerRows(client) {
   return (await client.query("SELECT * FROM public.db_migrations ORDER BY version")).rows;
 }
@@ -39,7 +43,7 @@ test("empty installation matches the authentic current catalog and reruns preser
     await client.query("SET standard_conforming_strings = off");
     const options = optionsFor(expected, { verify: async (session, version) => {
       assert.equal((await session.query("SELECT current_setting('standard_conforming_strings') AS mode")).rows[0].mode, "on");
-      await verifyCandidateTables(session, version);
+      await verify(session, version);
     } });
     assert.deepEqual(await runScratchMigrations(client, options), { schemaVersion: 2, executed: [1, 2] });
     const ledgerColumns = await client.query("SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'db_migrations' ORDER BY ordinal_position");
@@ -48,7 +52,8 @@ test("empty installation matches the authentic current catalog and reruns preser
     assert.equal((await client.query("SELECT current_setting('standard_conforming_strings') AS mode")).rows[0].mode, "off");
     await client.query("SET standard_conforming_strings = on");
     const catalog = await readCatalog(client, expected);
-    const application = { ...catalog, objects: catalog.objects.filter((object) => !object.name.startsWith("db_migrations")) };
+    const ledgerObjects = new Set(contracts.ledger.objects.map((object) => object.kind + ":" + object.name));
+    const application = { ...catalog, objects: catalog.objects.filter((object) => !ledgerObjects.has(object.kind + ":" + object.name)) };
     assert.deepEqual(compareCatalogs(reference, application), []);
     await client.query("INSERT INTO creators (channel_name) VALUES ('synthetic creator')");
     await client.query("INSERT INTO creator_video_submissions (creator_id, video_url, transcript_text) SELECT id, 'https://example.invalid/synthetic', 'synthetic text' FROM creators");
@@ -89,7 +94,7 @@ test("recorded baseline upgrades preserve seeded relationships and working seque
     assert.deepEqual((await client.query("SELECT * FROM creator_video_submissions")).rows, original.rows);
     const { rows } = await client.query("INSERT INTO creators (channel_name) VALUES ('after upgrade') RETURNING id");
     assert.equal(Number(rows[0].id), 2);
-    await verifyCandidateTables(client, 2);
+    await verify(client, 2);
   });
 });
 
@@ -137,12 +142,24 @@ test("second migration invalid SQL rolls back the successful first file and its 
   }
 });
 
-test("verification failure rolls back all application DDL and ledger writes", async () => {
+test("deep catalog mismatch rolls back all application DDL and ledger writes without an inner commit", async () => {
   await harness.withDatabase(async (client, expected) => {
-    await assert.rejects(runScratchMigrations(client, optionsFor(expected, { verify: async (session) => {
+    const boundaries = [];
+    const observed = { query: async (sql, params) => {
+      if (/^(BEGIN|COMMIT|ROLLBACK)\b/.test(sql)) boundaries.push(sql);
+      return client.query(sql, params);
+    } };
+    await assert.rejects(runScratchMigrations(observed, optionsFor(expected, { verify: async (session, version) => {
       assert.equal((await ledgerRows(session)).length, 2);
-      throw new Error("synthetic-verification-failed");
-    } })), /synthetic-verification-failed/);
+      await session.query("ALTER TABLE creators ALTER COLUMN channel_name DROP NOT NULL; ALTER SEQUENCE creators_id_seq INCREMENT BY 2");
+      await verify(session, version);
+    } })), (error) => {
+      assert.equal(error.message, "candidate-catalog-mismatch");
+      assert.ok(error.differences.some((difference) => difference.startsWith("Changed column:creators.channel_name / not_null")));
+      assert.ok(error.differences.some((difference) => difference.startsWith("Changed sequence:creators_id_seq / increment")));
+      return true;
+    });
+    assert.deepEqual(boundaries, ["BEGIN", "ROLLBACK"]);
     await assertEmpty(client);
     assert.deepEqual((await runScratchMigrations(client, optionsFor(expected))).executed, [1, 2]);
   });
@@ -168,7 +185,7 @@ test("held transaction lock fails promptly and concurrent runners cannot double-
       const barrier = new Promise((resolve) => { release = resolve; });
       const held = new Promise((resolve) => { arrived = resolve; });
       const first = runScratchMigrations(client, optionsFor(expected, { verify: async (session, version) => {
-        await verifyCandidateTables(session, version);
+        await verify(session, version);
         arrived();
         await barrier;
       } }));

@@ -1,4 +1,5 @@
 db/*.sql text eol=lf
 db/migrations/*.sql text eol=lf
 db/migration-manifest.json text eol=lf
+db/catalog-contracts/*.json text eol=lf
 tests/db/fixtures/*.sql text eol=lf

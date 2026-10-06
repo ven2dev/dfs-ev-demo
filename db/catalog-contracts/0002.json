@@ -1,0 +1,5798 @@
+{
+  "catalogFingerprint": "be99ea6e1473dcc6b47dbb2aa23a57487a5c8529adabe725dfc19c0d731185e3",
+  "contractVersion": 1,
+  "formatVersion": 1,
+  "objects": [
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.creator_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "nextval('creator_video_submissions_id_seq'::regclass)",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.submitted_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.transcript_text"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.video_title"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.video_url"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "creators.channel_name"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "creators.created_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "nextval('creators_id_seq'::regclass)",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "creators.id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "event_market_odds_cache.event_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "event_market_odds_cache.fetched_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "event_market_odds_cache.market_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "jsonb"
+      },
+      "kind": "column",
+      "name": "event_market_odds_cache.payload"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.event_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 6,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.fetched_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.market_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 5,
+        "type": "jsonb"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.payload"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.player_name"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 8,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.refresh_lease_until"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 7,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.refresh_owner"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.sport_key"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.first_name"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 6,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.football_name"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.full_name"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.last_name"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.player_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.position"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.season"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.source_updated_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.status"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.synced_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.team"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 14,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.created_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.event_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 10,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.http_status"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.outcome"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 13,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.quota_last"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 11,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.quota_remaining"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 12,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.quota_used"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.request_kind"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.requested_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": "'{}'::text[]",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "text[]"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.requested_markets"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 8,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.response_received_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.source"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_api_request_log.sport_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "0",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 18,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.attempts"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.away_team"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.checkpoint_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 17,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.claim_expires_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 16,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.claim_owner"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.collection_profile"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 26,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.completed_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 27,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.created_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 22,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.credit_cost"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.due_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 13,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.due_window_end"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.event_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.event_start_time"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.home_team"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.kind"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 25,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.last_error"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "text[]"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.market_keys"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "3",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 19,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.max_attempts"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 20,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.next_attempt_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 21,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.observation_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 24,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.outcome_reason"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 14,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.priority_rank"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 23,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.schedule_reason"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.sport_key"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": "'pending'::text",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 15,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.status"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.target_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 28,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_collection_checkpoints.updated_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_free_pilot_selections.away_team"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_free_pilot_selections.event_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_free_pilot_selections.event_start_time"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_free_pilot_selections.home_team"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_free_pilot_selections.selected_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_free_pilot_selections.selection_reason"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_free_pilot_selections.sport_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_free_pilot_selections.updated_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_free_pilot_selections.week_end_time"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_free_pilot_selections.week_start_time"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observation_book_markets.bookmaker_key"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observation_book_markets.market_key"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observation_book_markets.observation_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 4,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_observation_book_markets.provider_updated_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observation_markets.market_key"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observation_markets.observation_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 4,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "odds_observation_markets.quote_set_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observation_markets.status"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observations.away_team"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_observations.captured_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 11,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observations.checkpoint_key"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 10,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observations.collection_profile"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 15,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_observations.created_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observations.event_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_observations.event_start_time"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observations.home_team"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observations.id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 14,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "odds_observations.quota_last"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 12,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "odds_observations.quota_remaining"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 13,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "odds_observations.quota_used"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "text[]"
+      },
+      "kind": "column",
+      "name": "odds_observations.requested_markets"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observations.source"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_observations.sport_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.activated_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "true",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "boolean"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.active"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.away_team"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.created_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.event_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.event_start_time"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.home_team"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "text[]"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.market_keys"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.reason"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.sport_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_priority_targets.updated_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_quote_sets.content_hash"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "odds_quote_sets.created_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_quote_sets.event_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "nextval('odds_quote_sets_id_seq'::regclass)",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "odds_quote_sets.id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_quote_sets.market_key"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_quotes.bookmaker_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "numeric"
+      },
+      "kind": "column",
+      "name": "odds_quotes.decimal_price"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_quotes.direction"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_quotes.player_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "numeric"
+      },
+      "kind": "column",
+      "name": "odds_quotes.point"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "odds_quotes.quote_set_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "odds_quotes.raw_player_name"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "player_crosswalk.created_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_crosswalk.nflverse_player_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_crosswalk.nflverse_player_name"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_crosswalk.odds_api_name"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "player_game_stats.created_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "date"
+      },
+      "kind": "column",
+      "name": "player_game_stats.game_date"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "nextval('player_game_stats_id_seq'::regclass)",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "player_game_stats.id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "boolean"
+      },
+      "kind": "column",
+      "name": "player_game_stats.is_home"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_game_stats.opponent"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_game_stats.player_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_game_stats.player_name"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "player_game_stats.season"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_game_stats.stat_type"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "numeric"
+      },
+      "kind": "column",
+      "name": "player_game_stats.stat_value"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_game_stats.team"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "player_game_stats.week"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "sync_state.last_synced_asset_updated_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "sync_state.source_name"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "sync_state.updated_at"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (creator_id) REFERENCES creators(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.creator_video_submissions",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.creator_video_submissions",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.creators",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.creators",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_creator_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL creator_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_creator_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL submitted_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_submitted_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL transcript_text",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_transcript_text_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (video_url)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_video_url_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL video_url",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_video_url_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (channel_name)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creators.creators_channel_name_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL channel_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creators.creators_channel_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creators.creators_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creators.creators_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creators.creators_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "event_market_odds_cache.event_market_odds_cache_event_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL fetched_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "event_market_odds_cache.event_market_odds_cache_fetched_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL market_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "event_market_odds_cache.event_market_odds_cache_market_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL payload",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "event_market_odds_cache.event_market_odds_cache_payload_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (event_id, market_key)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "event_market_odds_cache.event_market_odds_cache_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((payload IS NULL) = (fetched_at IS NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_event_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL market_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_market_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (sport_key, event_id, market_key, player_name)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL player_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_player_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL sport_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_sport_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL first_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_first_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL full_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_full_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL last_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_last_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (season, player_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL player_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_player_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL \"position\"",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_position_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL season",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_season_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL source_updated_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_source_updated_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL status",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_status_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL synced_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_synced_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((request_kind = 'event-odds'::text) = (event_id IS NOT NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((request_kind = 'event-odds'::text) = (cardinality(requested_markets) > 0))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((outcome = ANY (ARRAY['success'::text, 'http-error'::text])) = (response_received_at IS NOT NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_check2"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (response_received_at IS NULL OR response_received_at >= requested_at)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_check3"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((outcome = 'network-error'::text OR outcome = 'aborted'::text) = (http_status IS NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_check4"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (http_status IS NULL OR http_status >= 100 AND http_status <= 599)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_http_status_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (outcome = ANY (ARRAY['success'::text, 'http-error'::text, 'network-error'::text, 'aborted'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_outcome_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL outcome",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_outcome_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (quota_last IS NULL OR quota_last >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_quota_last_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (quota_remaining IS NULL OR quota_remaining >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_quota_remaining_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (quota_used IS NULL OR quota_used >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_quota_used_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (request_kind = ANY (ARRAY['events'::text, 'event-odds'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_request_kind_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL request_kind",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_request_kind_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL requested_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_requested_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL requested_markets",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_requested_markets_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (source = ANY (ARRAY['slate'::text, 'discovery'::text, 'live'::text, 'scheduled'::text, 'direct'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_source_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL source",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_source_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL sport_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_api_request_log.odds_api_request_log_sport_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (attempts >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_attempts_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL attempts",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_attempts_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL away_team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_away_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (due_at < due_window_end)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (due_window_end <= event_start_time)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((kind = 'priority'::text) = (target_id IS NOT NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_check2"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (status = 'claimed'::text AND claim_owner IS NOT NULL AND claim_expires_at IS NOT NULL OR status <> 'claimed'::text AND claim_owner IS NULL AND claim_expires_at IS NULL)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_check3"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL checkpoint_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_checkpoint_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (collection_profile = ANY (ARRAY['free-pilot'::text, 'paid-baseline'::text, 'priority'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_collection_profile_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (collection_profile, event_id, checkpoint_key)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_collection_profile_event_id_che_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL collection_profile",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_collection_profile_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (credit_cost IS NULL OR credit_cost >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_credit_cost_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL due_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_due_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL due_window_end",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_due_window_end_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_event_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_start_time",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_event_start_time_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL home_team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_home_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (kind = ANY (ARRAY['baseline'::text, 'priority'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_kind_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL kind",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_kind_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (cardinality(market_keys) > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_market_keys_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL market_keys",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_market_keys_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (max_attempts > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_max_attempts_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL max_attempts",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_max_attempts_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (observation_id) REFERENCES odds_observations(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.odds_collection_checkpoints",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.odds_collection_checkpoints",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.odds_observations",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.odds_observations",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_observation_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (priority_rank > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_priority_rank_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL priority_rank",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_priority_rank_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL schedule_reason",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_schedule_reason_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL sport_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_sport_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (status = ANY (ARRAY['pending'::text, 'claimed'::text, 'completed'::text, 'failed'::text, 'skipped'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_status_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL status",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_status_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (target_id) REFERENCES odds_priority_targets(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.odds_collection_checkpoints",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.odds_collection_checkpoints",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.odds_priority_targets",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.odds_priority_targets",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_target_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL updated_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_collection_checkpoints.odds_collection_checkpoints_updated_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL away_team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_away_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (week_start_time < week_end_time)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (event_start_time >= week_start_time AND event_start_time < week_end_time)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_event_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_start_time",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_event_start_time_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL home_team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_home_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (week_start_time)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL selected_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_selected_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (selection_reason = ANY (ARRAY['latest-sunday'::text, 'explicit-override'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_selection_reason_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL selection_reason",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_selection_reason_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL sport_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_sport_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL updated_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_updated_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL week_end_time",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_week_end_time_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL week_start_time",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_free_pilot_selections.odds_free_pilot_selections_week_start_time_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL bookmaker_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_book_markets.odds_observation_book_markets_bookmaker_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL market_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_book_markets.odds_observation_book_markets_market_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (observation_id, market_key) REFERENCES odds_observation_markets(observation_id, market_key)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.odds_observation_book_markets",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.odds_observation_book_markets",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.odds_observation_markets",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.odds_observation_markets",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_book_markets.odds_observation_book_markets_observation_id_market_key_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL observation_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_book_markets.odds_observation_book_markets_observation_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (observation_id, market_key, bookmaker_key)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_book_markets.odds_observation_book_markets_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((status = 'returned'::text) = (quote_set_id IS NOT NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_markets.odds_observation_markets_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL market_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_markets.odds_observation_markets_market_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (observation_id) REFERENCES odds_observations(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.odds_observation_markets",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.odds_observation_markets",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.odds_observations",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.odds_observations",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_markets.odds_observation_markets_observation_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL observation_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_markets.odds_observation_markets_observation_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (observation_id, market_key)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_markets.odds_observation_markets_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (quote_set_id) REFERENCES odds_quote_sets(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.odds_observation_markets",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.odds_observation_markets",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.odds_quote_sets",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.odds_quote_sets",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_markets.odds_observation_markets_quote_set_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (status = ANY (ARRAY['returned'::text, 'empty'::text, 'invalid'::text, 'unavailable'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_markets.odds_observation_markets_status_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL status",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observation_markets.odds_observation_markets_status_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL away_team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_away_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL captured_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_captured_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_event_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_start_time",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_event_start_time_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL home_team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_home_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (quota_last IS NULL OR quota_last >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_quota_last_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (quota_remaining IS NULL OR quota_remaining >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_quota_remaining_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (quota_used IS NULL OR quota_used >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_quota_used_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (cardinality(requested_markets) > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_requested_markets_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL requested_markets",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_requested_markets_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (source = ANY (ARRAY['scheduled'::text, 'discovery'::text, 'live'::text, 'provider-historical'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_source_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL source",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_source_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL sport_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_observations.odds_observations_sport_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL activated_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_activated_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL active",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_active_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL away_team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_away_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (activated_at < event_start_time)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_event_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_start_time",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_event_start_time_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL home_team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_home_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (cardinality(market_keys) > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_market_keys_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL market_keys",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_market_keys_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL reason",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_reason_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL sport_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_sport_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL updated_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_priority_targets.odds_priority_targets_updated_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL content_hash",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quote_sets.odds_quote_sets_content_hash_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quote_sets.odds_quote_sets_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (event_id, market_key, content_hash)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quote_sets.odds_quote_sets_event_id_market_key_content_hash_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quote_sets.odds_quote_sets_event_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quote_sets.odds_quote_sets_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL market_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quote_sets.odds_quote_sets_market_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quote_sets.odds_quote_sets_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL bookmaker_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quotes.odds_quotes_bookmaker_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (decimal_price > 1::numeric)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quotes.odds_quotes_decimal_price_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL decimal_price",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quotes.odds_quotes_decimal_price_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (direction = ANY (ARRAY['over'::text, 'under'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quotes.odds_quotes_direction_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL direction",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quotes.odds_quotes_direction_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (quote_set_id, bookmaker_key, raw_player_name, direction, point)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quotes.odds_quotes_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL point",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quotes.odds_quotes_point_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (quote_set_id) REFERENCES odds_quote_sets(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.odds_quote_sets",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.odds_quote_sets",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.odds_quotes",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.odds_quotes",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quotes.odds_quotes_quote_set_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL quote_set_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quotes.odds_quotes_quote_set_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL raw_player_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "odds_quotes.odds_quotes_raw_player_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_crosswalk.player_crosswalk_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL nflverse_player_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_crosswalk.player_crosswalk_nflverse_player_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL nflverse_player_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_crosswalk.player_crosswalk_nflverse_player_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL odds_api_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_crosswalk.player_crosswalk_odds_api_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (odds_api_name)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_crosswalk.player_crosswalk_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL game_date",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_game_date_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL is_home",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_is_home_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL opponent",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_opponent_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL player_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_player_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (player_id, season, week, stat_type)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_player_id_season_week_stat_type_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL player_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_player_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL season",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_season_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL stat_type",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_stat_type_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL stat_value",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_stat_value_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL week",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_week_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL last_synced_asset_updated_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "sync_state.sync_state_last_synced_asset_updated_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (source_name)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "sync_state.sync_state_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL source_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "sync_state.sync_state_source_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL updated_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "sync_state.sync_state_updated_at_not_null"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX creator_video_submissions_pkey ON creator_video_submissions USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "creator_video_submissions",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "creator_video_submissions_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX creator_video_submissions_video_url_key ON creator_video_submissions USING btree (video_url)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "creator_video_submissions",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "creator_video_submissions_video_url_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX creators_channel_name_key ON creators USING btree (channel_name)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "creators",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "creators_channel_name_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX creators_pkey ON creators USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "creators",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "creators_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX event_market_odds_cache_pkey ON event_market_odds_cache USING btree (event_id, market_key)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "event_market_odds_cache",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "event_market_odds_cache_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_creator_video_submissions_creator ON creator_video_submissions USING btree (creator_id, submitted_at DESC)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "creator_video_submissions",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_creator_video_submissions_creator"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_nflverse_roster_match_candidates ON nflverse_roster_players USING btree (season, source_updated_at DESC, team)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "nflverse_roster_players",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_nflverse_roster_match_candidates"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_odds_api_request_log_requested ON odds_api_request_log USING btree (requested_at DESC)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_api_request_log",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_odds_api_request_log_requested"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_odds_api_request_log_source ON odds_api_request_log USING btree (source, requested_at DESC)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_api_request_log",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_odds_api_request_log_source"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_odds_collection_checkpoints_due ON odds_collection_checkpoints USING btree (status, priority_rank, due_at, next_attempt_at, claim_expires_at)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_collection_checkpoints",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_odds_collection_checkpoints_due"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_odds_collection_checkpoints_event ON odds_collection_checkpoints USING btree (event_id, due_at)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_collection_checkpoints",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_odds_collection_checkpoints_event"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_odds_observation_markets_market ON odds_observation_markets USING btree (market_key, observation_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_observation_markets",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_odds_observation_markets_market"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_odds_observations_event_cutoff ON odds_observations USING btree (event_id, captured_at DESC)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_observations",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_odds_observations_event_cutoff"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_odds_priority_targets_active_event ON odds_priority_targets USING btree (active, event_start_time, event_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_priority_targets",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_odds_priority_targets_active_event"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_odds_quotes_lookup ON odds_quotes USING btree (quote_set_id, raw_player_name, point, bookmaker_key)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_quotes",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_odds_quotes_lookup"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_player_game_stats_lookup ON player_game_stats USING btree (player_id, stat_type, game_date DESC)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "player_game_stats",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_player_game_stats_lookup"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX live_prop_inputs_cache_pkey ON live_prop_inputs_cache USING btree (sport_key, event_id, market_key, player_name)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "live_prop_inputs_cache",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "live_prop_inputs_cache_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX nflverse_roster_players_pkey ON nflverse_roster_players USING btree (season, player_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "nflverse_roster_players",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "nflverse_roster_players_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX odds_api_request_log_pkey ON odds_api_request_log USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_api_request_log",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "odds_api_request_log_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX odds_collection_checkpoints_collection_profile_event_id_che_key ON odds_collection_checkpoints USING btree (collection_profile, event_id, checkpoint_key)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_collection_checkpoints",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "odds_collection_checkpoints_collection_profile_event_id_che_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX odds_collection_checkpoints_pkey ON odds_collection_checkpoints USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_collection_checkpoints",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "odds_collection_checkpoints_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX odds_free_pilot_selections_pkey ON odds_free_pilot_selections USING btree (week_start_time)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_free_pilot_selections",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "odds_free_pilot_selections_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX odds_observation_book_markets_pkey ON odds_observation_book_markets USING btree (observation_id, market_key, bookmaker_key)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_observation_book_markets",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "odds_observation_book_markets_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX odds_observation_markets_pkey ON odds_observation_markets USING btree (observation_id, market_key)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_observation_markets",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "odds_observation_markets_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX odds_observations_pkey ON odds_observations USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_observations",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "odds_observations_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX odds_priority_targets_pkey ON odds_priority_targets USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_priority_targets",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "odds_priority_targets_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX odds_quote_sets_event_id_market_key_content_hash_key ON odds_quote_sets USING btree (event_id, market_key, content_hash)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_quote_sets",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "odds_quote_sets_event_id_market_key_content_hash_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX odds_quote_sets_pkey ON odds_quote_sets USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_quote_sets",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "odds_quote_sets_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX odds_quotes_pkey ON odds_quotes USING btree (quote_set_id, bookmaker_key, raw_player_name, direction, point)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "odds_quotes",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "odds_quotes_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX player_crosswalk_pkey ON player_crosswalk USING btree (odds_api_name)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "player_crosswalk",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "player_crosswalk_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX player_game_stats_pkey ON player_game_stats USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "player_game_stats",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "player_game_stats_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX player_game_stats_player_id_season_week_stat_type_key ON player_game_stats USING btree (player_id, season, week, stat_type)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "player_game_stats",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "player_game_stats_player_id_season_week_stat_type_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX sync_state_pkey ON sync_state USING btree (source_name)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "sync_state",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "sync_state_pkey"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "creator_video_submissions"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "creators"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "event_market_odds_cache"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "live_prop_inputs_cache"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "nflverse_roster_players"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "odds_api_request_log"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "odds_collection_checkpoints"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "odds_free_pilot_selections"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "odds_observation_book_markets"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "odds_observation_markets"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "odds_observations"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "odds_priority_targets"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "odds_quote_sets"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "odds_quotes"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "player_crosswalk"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "player_game_stats"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "sync_state"
+    },
+    {
+      "definition": {
+        "cache": "1",
+        "cycle": false,
+        "increment": "1",
+        "maximum": "9223372036854775807",
+        "minimum": "1",
+        "owned_by": [
+          "public.creator_video_submissions.id"
+        ],
+        "start": "1",
+        "type": "bigint"
+      },
+      "kind": "sequence",
+      "name": "creator_video_submissions_id_seq"
+    },
+    {
+      "definition": {
+        "cache": "1",
+        "cycle": false,
+        "increment": "1",
+        "maximum": "9223372036854775807",
+        "minimum": "1",
+        "owned_by": [
+          "public.creators.id"
+        ],
+        "start": "1",
+        "type": "bigint"
+      },
+      "kind": "sequence",
+      "name": "creators_id_seq"
+    },
+    {
+      "definition": {
+        "cache": "1",
+        "cycle": false,
+        "increment": "1",
+        "maximum": "9223372036854775807",
+        "minimum": "1",
+        "owned_by": [
+          "public.odds_quote_sets.id"
+        ],
+        "start": "1",
+        "type": "bigint"
+      },
+      "kind": "sequence",
+      "name": "odds_quote_sets_id_seq"
+    },
+    {
+      "definition": {
+        "cache": "1",
+        "cycle": false,
+        "increment": "1",
+        "maximum": "9223372036854775807",
+        "minimum": "1",
+        "owned_by": [
+          "public.player_game_stats.id"
+        ],
+        "start": "1",
+        "type": "bigint"
+      },
+      "kind": "sequence",
+      "name": "player_game_stats_id_seq"
+    }
+  ],
+  "postgresMajor": 18,
+  "schema": "public",
+  "source": {
+    "catalogSqlSha256": "50b793374303eac886588b514d5fde18eec0856135c5e2d68e0826fe07b1fd1f",
+    "migrations": [
+      {
+        "filename": "0001_pre_41_baseline.sql",
+        "sha256": "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98",
+        "version": 1
+      },
+      {
+        "filename": "0002_market_observation_history.sql",
+        "sha256": "df35a458b5d6e3f26cbbdd84d8cfa65244e865dd6963b6f0e1f8f5f0e8dd7297",
+        "version": 2
+      }
+    ]
+  }
+}

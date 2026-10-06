@@ -68,25 +68,35 @@ export function parseCatalogOptions(args, environment) {
   return { config, identity, identityOnly: values.identity === true, output: values.output };
 }
 
-export async function readCatalog(client, expected) {
+// Collect within the caller's transaction. This function must never BEGIN,
+// COMMIT or ROLLBACK: the migration runner owns its atomic SQL/ledger boundary.
+// Callers pin search_path to public (with implicit pg_catalog) or pg_catalog,
+// public so PostgreSQL deparses definitions consistently.
+export async function collectCatalog(client, expected) {
   const sql = await readFile(new URL("../db/catalog.sql", import.meta.url), "utf8");
+  const { rows: [server] } = await client.query(
+    "SELECT current_database() AS database, current_user AS role, current_setting('server_version_num')::integer AS version"
+  );
+  if (expected && (server.database !== expected.database || server.role !== expected.user)) refuse("connected-target-mismatch");
+  if (server.version < 180000 || server.version >= 190000) refuse("postgresql-18-required");
+  const { rows: objects } = await client.query(sql);
+  const catalog = { postgresMajor: 18, schema: "public", objects };
+  return {
+    formatVersion: 1, serverVersionNum: server.version, ...catalog,
+    catalogFingerprint: fingerprint(canonicalJson(catalog)),
+  };
+}
+
+export async function readCatalog(client, expected) {
+  if (!expected?.database || !expected?.user) refuse("expected-target-required");
   await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
   try {
     await client.query("SET LOCAL lock_timeout = '3s'");
     await client.query("SET LOCAL statement_timeout = '15s'");
     await client.query("SET LOCAL search_path = pg_catalog, public");
-    const { rows: [server] } = await client.query(
-      "SELECT current_database() AS database, current_user AS role, current_setting('server_version_num')::integer AS version"
-    );
-    if (server.database !== expected.database || server.role !== expected.user) refuse("connected-target-mismatch");
-    if (server.version < 180000 || server.version >= 190000) refuse("postgresql-18-required");
-    const { rows: objects } = await client.query(sql);
-    const catalog = { postgresMajor: 18, schema: "public", objects };
+    const catalog = await collectCatalog(client, expected);
     await client.query("COMMIT");
-    return {
-      formatVersion: 1, serverVersionNum: server.version, ...catalog,
-      catalogFingerprint: fingerprint(canonicalJson(catalog)),
-    };
+    return catalog;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;

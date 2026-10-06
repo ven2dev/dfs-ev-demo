@@ -3,9 +3,10 @@
 Issue #60 establishes versioned SQL delivery. The approved roadmap is at
 [the issue](https://github.com/ven2dev/dfs-ev-demo/issues/60#issuecomment-6006046013).
 Step 0 supplies catalog evidence. Step 1 adds candidate SQL files and a runner
-for harness-owned disposable databases; owner-run remote execution, deep
-catalog verification and adoption remain pending. The owner approved developing
-and testing this candidate runner locally while Production evidence is pending.
+for harness-owned disposable databases. Step 2 supplies complete catalog
+contracts and transactional verification. Owner-run remote execution and
+adoption remain pending. The owner approved developing and testing the
+candidate locally while Production evidence is pending.
 
 The roadmap and these instructions use the same step numbers:
 
@@ -19,7 +20,7 @@ The roadmap and these instructions use the same step numbers:
 | 5 | Protected database readiness |
 | 6 | Release/recovery documentation and acceptance handoff |
 
-Steps 0 and 1 are intermediate commits within one migration-delivery PR.
+Steps 0–2 are intermediate commits within one migration-delivery PR.
 Do not merge/deploy this intermediate state: remote `up` is still unavailable,
 and the generated reference header is not an operational rollout instruction.
 Complete the remaining steps and approved schema prerequisites before merge.
@@ -63,11 +64,15 @@ runner versions. An unversioned nonempty schema is refused without mutation.
 Existing valid prefix history can receive pending files in scratch tests;
 reruns preserve ledger timestamps and application rows.
 
-The initial verifier checks the exact candidate table set and ledger history
-before commit. Step 2 will replace this minimum check with complete generated
-catalog contracts. A table-name check alone does not qualify an existing schema
-for adoption. Step 3 owns fingerprint-bound plans and owner-run remote `up`;
-`db:migrate up` currently refuses before connecting.
+The verifier compares the complete managed `public` catalog against the reviewed
+contract for the target version plus the exact ledger contract before commit,
+including a no-op rerun. It collects definitions inside the runner's existing
+transaction without opening or committing another transaction. Any mismatch
+rolls back pending SQL and ledger writes; it never repairs drift. A nonempty
+unversioned database is still refused before executing any migration, including
+the byte-preserved `IF NOT EXISTS` statements. Step 3 owns fingerprint-bound
+plans and owner-run adoption/remote `up`; `db:migrate up` currently refuses
+before connecting.
 
 Use Node 24, no application credentials and the existing Compose service:
 
@@ -106,6 +111,68 @@ then run `npm run db:migrations:generate`. Generation preserves the checksums of
 all previously recorded files and refuses edited/deleted history. Applied files
 are immutable; corrections require a new forward migration. These commands do
 not connect to any database. Step 4 adds their required CI execution.
+
+## Generated catalog contracts
+
+`db/catalog-contracts/0001.json` and `0002.json` describe the application catalog
+after each migration prefix. `ledger.json` independently describes the ledger
+DDL. Each artifact has a SHA-256 catalog fingerprint and binds the exact catalog
+query plus its migration-prefix checksums or ledger-DDL checksum/runner version.
+The local dev command validates these bindings before connecting. Adding a
+migration requires its new prefix contract; a missing, stale, edited or extra
+contract is refused. Runtime verification cannot regenerate or bless artifacts.
+
+With the disposable Compose service running and the fixed test URL:
+
+```bash
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
+  npm run db:contracts:generate
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
+  npm run db:contracts:check
+npm run test:db:contracts:unit
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
+  npm run test:db:contracts
+```
+
+Generation builds each migration prefix and the ledger directly from reviewed
+SQL in separate registered scratch databases, independently of the verifier it
+is generating. It rolls back the scratch transactions and removes all databases
+before writing any artifacts. Review the complete generated diff with the SQL;
+generation deliberately rewrites contracts, while the migration-manifest guard
+continues refusing edits to known migration bytes. The check rebuilds the same
+catalogs, reports every missing/changed/unexpected artifact and exits nonzero on
+drift without writing. Step 4 will make that check mandatory in CI.
+
+Comparison includes column positions/types/nullability/defaults, identity and
+generation state, collation, PK/unique/check/FK definitions, validation and
+enforcement, internal FK-trigger enable states, index definitions/validity/
+readiness, sequence configuration and column ownership, relation options,
+inheritance, view/partition definitions, RLS policies and their target roles,
+custom triggers/rules/routines, enum/domain definitions and domain constraints,
+and extensions. All missing/unexpected objects and changed fields are reported.
+The ledger is included by its exact catalog objects; no name-prefix exemption
+can hide a similarly named unexpected table, index or trigger.
+
+Environmental owner roles, OIDs, actual server minor version, target identity,
+capture time, row data and mutable sequence counters are excluded from
+contracts. Policy target roles and FK-trigger states are semantic definitions
+and are retained. PostgreSQL-major changes require updating the explicitly
+supported major, regenerating every contract and reviewing the SQL/deparser
+differences and real-Postgres proofs before adopting or migrating that major.
+No automatic normalization erases a major-version difference.
+
+The supported contract scope is the managed `public` schema, not cluster
+privileges or other schemas. Standalone composite/range/base types, custom
+collations/operators/operator classes/families/conversions, text-search objects
+and extended statistics are inventoried as `unsupported`; aggregates also lack
+a complete definition contract. Their presence fails comparison, and generation
+refuses to bless them. Add complete definition coverage with proofs before a
+migration introduces one of these classes. This keeps unexpected objects from
+silently falling outside the comparison.
+
+The strengthened Step 2 inventory adds fields to the Step 0 export. Re-export
+any older snapshot with this checkout before deciding mismatch disposition;
+do not erase absent fields from older evidence to make a comparison pass.
 
 ## Read-only migration status
 
@@ -178,7 +245,8 @@ statement timeouts and a fixed search path. It reads catalog definitions for
 relations, columns/defaults, constraints/validation state, indexes, sequence
 configuration/ownership, custom triggers, policies, routines, types and
 extensions in `public`. It never reads application rows, sequence progress,
-ledger contents, hostnames or role names into the exported artifact. Definitions
+ledger contents, hostnames or owner role names into the exported artifact. Policy
+target roles are part of their definitions and remain visible. Definitions
 can contain SQL constants or routine bodies: inspect the artifact before sharing.
 This is a schema inventory, not a complete PostgreSQL privilege/cluster dump.
 
@@ -222,6 +290,13 @@ a running service from `compose.test.yml`. It creates random, registered
 database/role/major before any fixture setup, then closes and removes each
 scratch database in finally. It does not reset #45's shared schema. These tests
 must fail without the disposable target; they never skip or use DATABASE_URL.
+
+`test:db:contracts:unit` checks source/fingerprint binding, artifact drift,
+unsupported-class refusal and safe CLI guards. `test:db:contracts` proves both
+prefix contracts against independent historical fixtures, complete multi-field
+drift reporting, unvalidated/unenforced constraints, disabled internal FK
+triggers, naturally invalid concurrent indexes, upgrade rollback observed by a
+second connection, ledger-definition drift and deterministic regeneration.
 
 `test:db:migrations` uses the same fixed disposable service and a separately
 registered scratch database per scenario. It proves empty installation against
