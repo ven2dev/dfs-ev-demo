@@ -194,3 +194,28 @@ test("contract generation refuses unsupported managed objects and cleans up its 
   const sql = files[0].sql + "\nCREATE TYPE unreviewed_range AS RANGE (subtype = integer);\n";
   await assert.rejects(buildCatalogContracts(harness, [{ ...files[0], sql, sha256: fingerprint(sql) }]), /unsupported-catalog-object/);
 });
+
+test("an extension can be explicitly contracted without its members hiding application drift", async () => {
+  const sql = "CREATE EXTENSION pg_trgm WITH SCHEMA public;\n";
+  const extensionFiles = [...files, { version: 3, filename: "0003_synthetic_extension.sql", sql, sha256: fingerprint(sql) }];
+  const artifacts = await buildCatalogContracts(harness, extensionFiles);
+  const extensionContracts = { ledger: JSON.parse(artifacts.get("ledger.json")),
+    migrations: [1, 2, 3].map((version) => JSON.parse(artifacts.get("000" + version + ".json"))) };
+  assert.deepEqual(compareCatalogs(contracts.migrations[1], extensionContracts.migrations[2]), ["Unexpected extension:pg_trgm"]);
+  await harness.withDatabase(async (client, expected) => {
+    await runScratchMigrations(client, optionsFor(expected));
+    await client.query(sql);
+    assert.deepEqual(await compareCandidateCatalog(client, contracts, 2), ["Unexpected extension:pg_trgm"]);
+    await assert.rejects(runScratchMigrations(client, optionsFor(expected)), /candidate-catalog-mismatch/);
+    await client.query("DROP EXTENSION pg_trgm");
+    const options = optionsFor(expected, { files: extensionFiles, verify: createCatalogVerifier(extensionContracts) });
+    assert.deepEqual((await runScratchMigrations(client, options)).executed, [3]);
+    assert.deepEqual((await runScratchMigrations(client, options)).executed, []);
+    const incorrectVersion = structuredClone(extensionContracts);
+    incorrectVersion.migrations[2].objects.find((object) => object.kind === "extension").definition.version = "unreviewed";
+    has(await compareCandidateCatalog(client, incorrectVersion, 3), "Changed extension:pg_trgm / version");
+    await client.query("ALTER TABLE creators ALTER COLUMN channel_name DROP NOT NULL");
+    has(await compareCandidateCatalog(client, extensionContracts, 3), "Changed column:creators.channel_name / not_null");
+    await assert.rejects(runScratchMigrations(client, options), /candidate-catalog-mismatch/);
+  });
+});

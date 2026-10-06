@@ -70,15 +70,18 @@ export function parseCatalogOptions(args, environment) {
 
 // Collect within the caller's transaction. This function must never BEGIN,
 // COMMIT or ROLLBACK: the migration runner owns its atomic SQL/ledger boundary.
-// Callers pin search_path to public (with implicit pg_catalog) or pg_catalog,
-// public so PostgreSQL deparses definitions consistently.
+// Require exactly pg_catalog, public as the effective lookup path (public with
+// implicit pg_catalog is equivalent). This also refuses temp/shadow schemas.
 export async function collectCatalog(client, expected) {
   const sql = await readFile(new URL("../db/catalog.sql", import.meta.url), "utf8");
   const { rows: [server] } = await client.query(
-    "SELECT current_database() AS database, current_user AS role, current_setting('server_version_num')::integer AS version"
+    `SELECT pg_catalog.current_database() AS database, current_user AS role,
+      pg_catalog.current_setting('server_version_num')::integer AS version,
+      pg_catalog.current_schemas(true) OPERATOR(pg_catalog.=) ARRAY['pg_catalog', 'public']::pg_catalog.name[] AS catalog_search_path_valid`
   );
   if (expected && (server.database !== expected.database || server.role !== expected.user)) refuse("connected-target-mismatch");
   if (server.version < 180000 || server.version >= 190000) refuse("postgresql-18-required");
+  if (server.catalog_search_path_valid !== true) refuse("catalog-search-path-refused");
   const { rows: objects } = await client.query(sql);
   const catalog = { postgresMajor: 18, schema: "public", objects };
   return {

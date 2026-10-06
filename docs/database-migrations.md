@@ -150,6 +150,13 @@ readiness, sequence configuration and column ownership, relation options,
 inheritance, view/partition definitions, RLS policies and their target roles,
 custom triggers/rules/routines, enum/domain definitions and domain constraints,
 and extensions. All missing/unexpected objects and changed fields are reported.
+Extension members identified by `pg_depend.deptype = 'e'` are excluded from
+individual object comparison; the extension's name, version and relocatability
+form its reviewed catalog entry. Children of an extension-owned relation or
+domain are excluded with their parent. An unreviewed extension still produces
+an unexpected extension mismatch; this does not authorize adding an extension
+or adopting a Production schema. The owner must resolve it from the snapshot
+through an explicit contract/migration decision.
 The ledger is included by its exact catalog objects; no name-prefix exemption
 can hide a similarly named unexpected table, index or trigger.
 
@@ -160,6 +167,15 @@ and are retained. PostgreSQL-major changes require updating the explicitly
 supported major, regenerating every contract and reviewing the SQL/deparser
 differences and real-Postgres proofs before adopting or migrating that major.
 No automatic normalization erases a major-version difference.
+
+`collectCatalog` verifies that the effective search path is exactly
+`pg_catalog, public` before running the inventory. `public` with implicit
+`pg_catalog` is equivalent. Other paths, including shadow or temporary schemas,
+fail with `catalog-search-path-refused` rather than producing false definition
+differences. Callers must configure the supported path within their own
+transaction; the collector does not change session settings or transaction
+boundaries. The read-only exporter pins a transaction-local path and restores
+the inherited session path at commit/rollback.
 
 The supported contract scope is the managed `public` schema, not cluster
 privileges or other schemas. Standalone composite/range/base types, custom
@@ -173,6 +189,13 @@ silently falling outside the comparison.
 The strengthened Step 2 inventory adds fields to the Step 0 export. Re-export
 any older snapshot with this checkout before deciding mismatch disposition;
 do not erase absent fields from older evidence to make a comparison pass.
+
+Raw column positions and one full contract per migration prefix remain explicit
+candidate limitations. A Production snapshot with dropped-column history may
+show a position-only mismatch; record it for an approved normalization decision
+before adoption. Contract storage grows with cumulative schema size and can be
+revisited separately. Step 3's plan must expose the complete readable mismatch
+list to the owner even though operational CLIs retain fixed-code logging.
 
 ## Read-only migration status
 

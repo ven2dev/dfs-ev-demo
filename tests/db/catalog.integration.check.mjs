@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { after, before, test } from "node:test";
 import { Client } from "pg";
-import { readCatalog } from "../../scripts/db-catalog.mjs";
+import { collectCatalog, readCatalog } from "../../scripts/db-catalog.mjs";
 import { assertNoApplicationCredentials, parseTestDatabaseUrl } from "./target.mts";
 
 const activeScratch = new Set();
@@ -92,7 +92,7 @@ test("exports preserve synthetic rows and exclude row values and sequence progre
 test("database enforces read-only export and failed exports roll back their session", async () => {
   await withScratch(async (client, config) => {
     const guardedClient = { query: async (text, params) => {
-      if (text.includes("WITH relations AS")) await client.query("CREATE TABLE exporter_must_not_create (id integer)");
+      if (text.includes("WITH extension_members AS")) await client.query("CREATE TABLE exporter_must_not_create (id integer)");
       return client.query(text, params);
     } };
     await assert.rejects(readCatalog(guardedClient, config), (error) => error.code === "25006");
@@ -107,5 +107,60 @@ test("catalog refuses an unexpected connected database before catalog access", a
   await withScratch(async (client, config) => {
     await assert.rejects(readCatalog(client, { ...config, database: "another_test" }), /connected-target-mismatch/);
     assert.deepEqual((await readCatalog(client, config)).objects, []);
+  });
+});
+
+test("collector refuses noncanonical and shadow search paths before inventory without changing transaction boundaries", async () => {
+  await withScratch(async (client, config) => {
+    await client.query(await readFile(new URL("./fixtures/pre-41.schema.sql", import.meta.url), "utf8"));
+    const reference = await readCatalog(client, config);
+    await client.query(`CREATE SCHEMA shadow;
+      CREATE FUNCTION shadow.fake_equal(pg_catalog.name[], pg_catalog.name[]) RETURNS boolean
+        LANGUAGE sql IMMUTABLE AS 'SELECT true';
+      CREATE OPERATOR shadow.= (LEFTARG = pg_catalog.name[], RIGHTARG = pg_catalog.name[], FUNCTION = shadow.fake_equal);
+      SET search_path = pg_catalog`);
+    const observed = { query: async (sql, params) => {
+      assert.ok(!sql.includes("WITH extension_members AS"), "Refusal must precede inventory.");
+      assert.ok(!/^(BEGIN|COMMIT|ROLLBACK)\b/.test(sql), "Collector must preserve the caller's transaction.");
+      return client.query(sql, params);
+    } };
+    for (const path of ["pg_catalog", "public, pg_catalog", "shadow, public", "pg_catalog, shadow, public"]) {
+      await client.query("SELECT set_config('search_path', $1, false)", [path]);
+      await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");
+      try {
+        await assert.rejects(collectCatalog(observed, config), /catalog-search-path-refused/);
+        assert.equal((await client.query("SELECT current_setting('search_path') AS path")).rows[0].path, path);
+        assert.equal((await client.query("SELECT current_setting('transaction_read_only') AS mode")).rows[0].mode, "on");
+      } finally { await client.query("ROLLBACK"); }
+    }
+    // The public exporter pins a supported local path and restores the session.
+    const before = (await client.query("SHOW search_path")).rows[0].search_path;
+    assert.deepEqual((await readCatalog(client, config)).objects, reference.objects);
+    assert.equal((await client.query("SHOW search_path")).rows[0].search_path, before);
+    for (const path of ["public", "pg_catalog, public"]) {
+      await client.query("SELECT set_config('search_path', $1, false)", [path]);
+      assert.deepEqual((await collectCatalog(client, config)).objects, reference.objects);
+    }
+    await client.query("CREATE TEMP TABLE creators (value text)");
+    await assert.rejects(collectCatalog(client, config), /catalog-search-path-refused/);
+  });
+});
+
+test("extension inventory covers members by exact dependency ownership and retains unrelated objects", async () => {
+  await withScratch(async (client, config) => {
+    await client.query("CREATE EXTENSION pg_trgm WITH SCHEMA public");
+    const first = await readCatalog(client, config);
+    assert.equal(first.objects.length, 1);
+    assert.equal(first.objects[0].kind, "extension");
+    assert.equal(first.objects[0].name, "pg_trgm");
+    assert.equal(first.objects[0].definition.version, (await client.query("SELECT extversion FROM pg_extension WHERE extname = 'pg_trgm'")).rows[0].extversion);
+    await client.query(`CREATE TABLE extension_fixture (id integer PRIMARY KEY, value text NOT NULL);
+      ALTER EXTENSION pg_trgm ADD TABLE extension_fixture;
+      CREATE FUNCTION similarity_unreviewed() RETURNS integer LANGUAGE sql AS 'SELECT 1'`);
+    const second = await readCatalog(client, config);
+    assert.equal(second.objects.length, 2);
+    assert.deepEqual(second.objects.find((object) => object.kind === "extension"), first.objects[0]);
+    assert.equal(second.objects.find((object) => object.kind === "routine").name, "similarity_unreviewed()");
+    assert.ok(!JSON.stringify(second.objects).includes("extension_fixture"));
   });
 });

@@ -1,13 +1,21 @@
 -- Read-only #60 inventory. Definitions only: no application rows, connection
 -- details, OIDs, ownership role names, statistics or mutable sequence values.
 -- The export is evidence; this query does not decide which schema to adopt.
-WITH relations AS (
+WITH extension_members AS (
+  -- Extension identity/version is the reviewed unit. Do not treat its members
+  -- as independently managed application objects (including unsupported kinds).
+  SELECT classid, objid
+  FROM pg_catalog.pg_depend
+  WHERE refclassid = 'pg_catalog.pg_extension'::regclass AND deptype = 'e'
+), relations AS (
   SELECT c.*
   FROM pg_catalog.pg_class c
   JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
   WHERE n.nspname = 'public'
+    AND NOT EXISTS (SELECT FROM extension_members e WHERE e.classid = 'pg_catalog.pg_class'::regclass AND e.objid = c.oid)
 ), objects AS (
-  SELECT 'relation' AS kind, c.relname::text AS name,
+  SELECT 'pg_catalog.pg_class'::regclass AS object_class, c.oid AS object_id,
+    'relation' AS kind, c.relname::text AS name,
     jsonb_build_object(
       'kind', c.relkind, 'persistence', c.relpersistence,
       'access_method', (SELECT amname FROM pg_catalog.pg_am WHERE oid = c.relam),
@@ -27,7 +35,7 @@ WITH relations AS (
     ) AS definition
   FROM relations c WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f')
   UNION ALL
-  SELECT 'column', c.relname || '.' || a.attname,
+  SELECT 'pg_catalog.pg_class'::regclass, c.oid, 'column', c.relname || '.' || a.attname,
     jsonb_build_object(
       'position', a.attnum, 'type', format_type(a.atttypid, a.atttypmod),
       'not_null', a.attnotnull, 'identity', a.attidentity, 'generated', a.attgenerated,
@@ -41,7 +49,7 @@ WITH relations AS (
   LEFT JOIN pg_catalog.pg_namespace cn ON cn.oid = co.collnamespace
   WHERE c.relkind IN ('r', 'p', 'v', 'm', 'f') AND a.attnum > 0 AND NOT a.attisdropped
   UNION ALL
-  SELECT 'constraint', c.relname || '.' || co.conname,
+  SELECT 'pg_catalog.pg_constraint'::regclass, co.oid, 'constraint', c.relname || '.' || co.conname,
     jsonb_build_object(
       'type', co.contype, 'definition', pg_get_constraintdef(co.oid, true),
       'validated', co.convalidated, 'enforced', co.conenforced, 'deferrable', co.condeferrable,
@@ -64,7 +72,7 @@ WITH relations AS (
     )
   FROM relations c JOIN pg_catalog.pg_constraint co ON co.conrelid = c.oid
   UNION ALL
-  SELECT 'index', ic.relname,
+  SELECT 'pg_catalog.pg_class'::regclass, ic.oid, 'index', ic.relname,
     jsonb_build_object(
       'table', c.relname, 'definition', pg_get_indexdef(i.indexrelid, 0, true),
       'unique', i.indisunique, 'primary', i.indisprimary,
@@ -77,7 +85,7 @@ WITH relations AS (
   JOIN pg_catalog.pg_index i ON i.indrelid = c.oid
   JOIN pg_catalog.pg_class ic ON ic.oid = i.indexrelid
   UNION ALL
-  SELECT 'sequence', c.relname,
+  SELECT 'pg_catalog.pg_class'::regclass, c.oid, 'sequence', c.relname,
     jsonb_build_object(
       'type', format_type(s.seqtypid, NULL), 'start', s.seqstart::text,
       'increment', s.seqincrement::text, 'minimum', s.seqmin::text,
@@ -94,17 +102,17 @@ WITH relations AS (
     )
   FROM relations c JOIN pg_catalog.pg_sequence s ON s.seqrelid = c.oid
   UNION ALL
-  SELECT 'trigger', c.relname || '.' || t.tgname,
+  SELECT 'pg_catalog.pg_trigger'::regclass, t.oid, 'trigger', c.relname || '.' || t.tgname,
     jsonb_build_object('definition', pg_get_triggerdef(t.oid, true), 'enabled', t.tgenabled)
   FROM relations c JOIN pg_catalog.pg_trigger t ON t.tgrelid = c.oid
   WHERE NOT t.tgisinternal
   UNION ALL
-  SELECT 'rule', c.relname || '.' || r.rulename,
+  SELECT 'pg_catalog.pg_rewrite'::regclass, r.oid, 'rule', c.relname || '.' || r.rulename,
     jsonb_build_object('definition', pg_get_ruledef(r.oid, true), 'enabled', r.ev_enabled)
   FROM relations c JOIN pg_catalog.pg_rewrite r ON r.ev_class = c.oid
   WHERE r.rulename <> '_RETURN'
   UNION ALL
-  SELECT 'policy', c.relname || '.' || pol.polname,
+  SELECT 'pg_catalog.pg_policy'::regclass, pol.oid, 'policy', c.relname || '.' || pol.polname,
     jsonb_build_object(
       'command', pol.polcmd, 'permissive', pol.polpermissive,
       'roles', (SELECT jsonb_agg(CASE WHEN role_oid = 0 THEN 'public' ELSE pg_get_userbyid(role_oid)::text END
@@ -115,7 +123,7 @@ WITH relations AS (
     )
   FROM relations c JOIN pg_catalog.pg_policy pol ON pol.polrelid = c.oid
   UNION ALL
-  SELECT 'routine', p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')',
+  SELECT 'pg_catalog.pg_proc'::regclass, p.oid, 'routine', p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')',
     jsonb_build_object(
       'kind', p.prokind, 'security_definer', p.prosecdef,
       'definition', CASE WHEN p.prokind <> 'a' THEN pg_get_functiondef(p.oid) END
@@ -123,7 +131,7 @@ WITH relations AS (
   FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public'
   UNION ALL
-  SELECT 'type', t.typname,
+  SELECT 'pg_catalog.pg_type'::regclass, t.oid, 'type', t.typname,
     jsonb_build_object(
       'kind', t.typtype, 'base_type', CASE WHEN t.typtype = 'd' THEN format_type(t.typbasetype, t.typtypmod) END,
       'not_null', t.typnotnull, 'default', t.typdefault,
@@ -132,17 +140,18 @@ WITH relations AS (
   FROM pg_catalog.pg_type t JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
   WHERE n.nspname = 'public' AND t.typtype IN ('e', 'd')
   UNION ALL
-  SELECT 'domain_constraint', t.typname || '.' || co.conname,
+  SELECT 'pg_catalog.pg_constraint'::regclass, co.oid, 'domain_constraint', t.typname || '.' || co.conname,
     jsonb_build_object('definition', pg_get_constraintdef(co.oid, true),
       'validated', co.convalidated, 'enforced', co.conenforced)
   FROM pg_catalog.pg_constraint co
   JOIN pg_catalog.pg_type t ON t.oid = co.contypid
   JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
   WHERE n.nspname = 'public'
+    AND NOT EXISTS (SELECT FROM extension_members e WHERE e.classid = 'pg_catalog.pg_type'::regclass AND e.objid = t.oid)
   UNION ALL
   -- Inventory classes without a complete definition contract as unsupported.
   -- They must cause refusal, never disappear from the managed-object check.
-  SELECT 'unsupported', 'type.' || t.typname, jsonb_build_object('kind', t.typtype)
+  SELECT 'pg_catalog.pg_type'::regclass, t.oid, 'unsupported', 'type.' || t.typname, jsonb_build_object('kind', t.typtype)
   FROM pg_catalog.pg_type t
   JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
   LEFT JOIN pg_catalog.pg_class c ON c.oid = t.typrelid
@@ -151,43 +160,45 @@ WITH relations AS (
     (t.typtype = 'b' AND NOT EXISTS (SELECT FROM pg_catalog.pg_type element WHERE element.typarray = t.oid))
   )
   UNION ALL
-  SELECT 'unsupported', 'collation.' || c.collname, '{}'::jsonb
+  SELECT 'pg_catalog.pg_collation'::regclass, c.oid, 'unsupported', 'collation.' || c.collname, '{}'::jsonb
   FROM pg_catalog.pg_collation c JOIN pg_catalog.pg_namespace n ON n.oid = c.collnamespace WHERE n.nspname = 'public'
   UNION ALL
-  SELECT 'unsupported', 'operator.' || o.oprname || '(' ||
+  SELECT 'pg_catalog.pg_operator'::regclass, o.oid, 'unsupported', 'operator.' || o.oprname || '(' ||
     CASE WHEN o.oprleft = 0 THEN 'NONE' ELSE format_type(o.oprleft, NULL) END || ',' ||
     CASE WHEN o.oprright = 0 THEN 'NONE' ELSE format_type(o.oprright, NULL) END || ')', '{}'::jsonb
   FROM pg_catalog.pg_operator o JOIN pg_catalog.pg_namespace n ON n.oid = o.oprnamespace WHERE n.nspname = 'public'
   UNION ALL
-  SELECT 'unsupported', 'operator_class.' || a.amname || '.' || o.opcname, '{}'::jsonb
+  SELECT 'pg_catalog.pg_opclass'::regclass, o.oid, 'unsupported', 'operator_class.' || a.amname || '.' || o.opcname, '{}'::jsonb
   FROM pg_catalog.pg_opclass o JOIN pg_catalog.pg_namespace n ON n.oid = o.opcnamespace
   JOIN pg_catalog.pg_am a ON a.oid = o.opcmethod WHERE n.nspname = 'public'
   UNION ALL
-  SELECT 'unsupported', 'operator_family.' || a.amname || '.' || o.opfname, '{}'::jsonb
+  SELECT 'pg_catalog.pg_opfamily'::regclass, o.oid, 'unsupported', 'operator_family.' || a.amname || '.' || o.opfname, '{}'::jsonb
   FROM pg_catalog.pg_opfamily o JOIN pg_catalog.pg_namespace n ON n.oid = o.opfnamespace
   JOIN pg_catalog.pg_am a ON a.oid = o.opfmethod WHERE n.nspname = 'public'
   UNION ALL
-  SELECT 'unsupported', 'conversion.' || c.conname, '{}'::jsonb
+  SELECT 'pg_catalog.pg_conversion'::regclass, c.oid, 'unsupported', 'conversion.' || c.conname, '{}'::jsonb
   FROM pg_catalog.pg_conversion c JOIN pg_catalog.pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = 'public'
   UNION ALL
-  SELECT 'unsupported', 'text_search_config.' || c.cfgname, '{}'::jsonb
+  SELECT 'pg_catalog.pg_ts_config'::regclass, c.oid, 'unsupported', 'text_search_config.' || c.cfgname, '{}'::jsonb
   FROM pg_catalog.pg_ts_config c JOIN pg_catalog.pg_namespace n ON n.oid = c.cfgnamespace WHERE n.nspname = 'public'
   UNION ALL
-  SELECT 'unsupported', 'text_search_dictionary.' || d.dictname, '{}'::jsonb
+  SELECT 'pg_catalog.pg_ts_dict'::regclass, d.oid, 'unsupported', 'text_search_dictionary.' || d.dictname, '{}'::jsonb
   FROM pg_catalog.pg_ts_dict d JOIN pg_catalog.pg_namespace n ON n.oid = d.dictnamespace WHERE n.nspname = 'public'
   UNION ALL
-  SELECT 'unsupported', 'text_search_parser.' || p.prsname, '{}'::jsonb
+  SELECT 'pg_catalog.pg_ts_parser'::regclass, p.oid, 'unsupported', 'text_search_parser.' || p.prsname, '{}'::jsonb
   FROM pg_catalog.pg_ts_parser p JOIN pg_catalog.pg_namespace n ON n.oid = p.prsnamespace WHERE n.nspname = 'public'
   UNION ALL
-  SELECT 'unsupported', 'text_search_template.' || t.tmplname, '{}'::jsonb
+  SELECT 'pg_catalog.pg_ts_template'::regclass, t.oid, 'unsupported', 'text_search_template.' || t.tmplname, '{}'::jsonb
   FROM pg_catalog.pg_ts_template t JOIN pg_catalog.pg_namespace n ON n.oid = t.tmplnamespace WHERE n.nspname = 'public'
   UNION ALL
-  SELECT 'unsupported', 'statistics.' || s.stxname, '{}'::jsonb
+  SELECT 'pg_catalog.pg_statistic_ext'::regclass, s.oid, 'unsupported', 'statistics.' || s.stxname, '{}'::jsonb
   FROM pg_catalog.pg_statistic_ext s JOIN pg_catalog.pg_namespace n ON n.oid = s.stxnamespace WHERE n.nspname = 'public'
   UNION ALL
-  SELECT 'extension', e.extname,
+  SELECT 'pg_catalog.pg_extension'::regclass, e.oid, 'extension', e.extname,
     jsonb_build_object('version', e.extversion, 'relocatable', e.extrelocatable)
   FROM pg_catalog.pg_extension e JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace
   WHERE n.nspname = 'public'
 )
-SELECT kind, name, definition FROM objects ORDER BY kind COLLATE "C", name COLLATE "C";
+SELECT kind, name, definition FROM objects o
+WHERE NOT EXISTS (SELECT FROM extension_members e WHERE e.classid = o.object_class AND e.objid = o.object_id)
+ORDER BY kind COLLATE "C", name COLLATE "C";

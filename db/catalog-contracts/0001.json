@@ -1951,7 +1951,7 @@
   "postgresMajor": 18,
   "schema": "public",
   "source": {
-    "catalogSqlSha256": "50b793374303eac886588b514d5fde18eec0856135c5e2d68e0826fe07b1fd1f",
+    "catalogSqlSha256": "6174d71894f9e05c3e57dda8bef4dce2ce7e97bc99ce9ef5da14edb334ce67fa",
     "migrations": [
       {
         "filename": "0001_pre_41_baseline.sql",
