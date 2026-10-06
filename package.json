@@ -20,6 +20,10 @@
     "test:db:repeat": "node scripts/test-db.mjs repeat",
     "test:db:down": "node scripts/test-db.mjs down",
     "test:db:guard": "node --test tests/db/target.check.mjs",
+    "db:catalog": "node scripts/db-catalog.mjs",
+    "db:catalog:diff": "node scripts/compare-db-catalog.mjs",
+    "test:db:catalog:unit": "node --test tests/db/catalog-unit.check.mjs",
+    "test:db:catalog": "node --test tests/db/catalog.integration.check.mjs",
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {
