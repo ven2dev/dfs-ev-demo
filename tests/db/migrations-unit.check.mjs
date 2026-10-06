@@ -81,7 +81,7 @@ test("ledger validation refuses holes, checksum mismatches, empty history and un
     [{ ...rows[0], applied_at: null }]]) assert.throws(() => validateHistory(broken, files));
 });
 
-test("manual status requires explicit matching targets and remote up remains disabled before connecting", () => {
+test("manual status requires explicit matching targets and up requires approval before any connection", () => {
   const args = ["status", "--environment", "test", "--expected-host-fingerprint", fingerprint("127.0.0.1").slice(0, 12),
     "--expected-database", "dfs_ev_test"];
   assert.equal(parseMigrationCommand(args, { TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL }).config.database, "dfs_ev_test");
@@ -91,7 +91,7 @@ test("manual status requires explicit matching targets and remote up remains dis
   }
   const refused = spawnSync(process.execPath, ["scripts/db-migrate.mjs", "up"], { encoding: "utf8", env: {} });
   assert.equal(refused.status, 1);
-  assert.equal(refused.stderr, "db-migrate: approved-plan-support-pending\n");
+  assert.equal(refused.stderr, "db-migrate: approved-plan-fingerprint-required\n");
   const malformed = spawnSync(process.execPath, ["scripts/db-migrate.mjs", "status", "--environment", "production"],
     { encoding: "utf8", env: { MIGRATION_DATABASE_URL: "postgresql://synthetic-secret@bad" } });
   assert.equal(malformed.status, 1);

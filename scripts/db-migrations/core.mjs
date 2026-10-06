@@ -39,7 +39,7 @@ export async function readLedger(client, files) {
   return rows;
 }
 
-async function configureTransaction(client) {
+export async function configureTransaction(client) {
   await client.query("SET LOCAL lock_timeout = '3s'");
   await client.query("SET LOCAL statement_timeout = '15s'");
   await client.query("SET LOCAL idle_in_transaction_session_timeout = '15s'");
@@ -66,17 +66,38 @@ export async function readMigrationStatus(client, expected, files) {
   }
 }
 
-// Step 1 mutations are callable only with a live harness-owned scratch target.
-// Owner-run remote up waits for the catalog verifier and approved-plan support.
-export async function runScratchMigrations(client, { expected, files, assertTarget, verify }) {
-  if (typeof assertTarget !== "function" || typeof verify !== "function") refuse("scratch-verifier-required");
-  assertTarget(expected);
+// Shared boundary for scratch installation and fingerprint-approved adoption.
+// This takes the lock before invoking any history/catalog reader or writer.
+export async function withMigrationTransaction(client, expected, run) {
   await client.query("BEGIN");
   try {
     await configureTransaction(client);
     await checkConnectedTarget(client, expected);
     const { rows: [lock] } = await client.query("SELECT pg_try_advisory_xact_lock($1, $2) AS acquired", [LOCK_NAMESPACE, LOCK_KEY]);
     if (!lock.acquired) refuse("migration-lock-busy");
+    const result = await run();
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  }
+}
+
+export async function insertLedgerRow(client, file, provenance) {
+  if (!["executed", "adopted"].includes(provenance)) refuse("invalid-migration-provenance");
+  await client.query(`INSERT INTO public.db_migrations
+    (version, filename, sha256, runner_version, provenance)
+    VALUES ($1, $2, $3, $4, $5)`,
+  [file.version, file.filename, file.sha256, RUNNER_VERSION, provenance]);
+}
+
+// Unapproved scratch bootstrap retains refusal of every unversioned nonempty
+// catalog. Adoption is available only through the approved-plan engine.
+export async function runScratchMigrations(client, { expected, files, assertTarget, verify }) {
+  if (typeof assertTarget !== "function" || typeof verify !== "function") refuse("scratch-verifier-required");
+  assertTarget(expected);
+  return withMigrationTransaction(client, expected, async () => {
     let history = await readLedger(client, files);
     if (history === null) {
       if ((await collectCatalog(client)).objects.length) refuse("unversioned-schema-refused");
@@ -87,17 +108,10 @@ export async function runScratchMigrations(client, { expected, files, assertTarg
     for (const file of pending) {
       // Execute the entire reviewed multi-statement file on this session.
       await client.query(file.sql);
-      await client.query(`INSERT INTO public.db_migrations
-        (version, filename, sha256, runner_version, provenance)
-        VALUES ($1, $2, $3, $4, 'executed')`,
-      [file.version, file.filename, file.sha256, RUNNER_VERSION]);
+      await insertLedgerRow(client, file, "executed");
     }
     await verify(client, files.length);
-    await readLedger(client, files);
-    await client.query("COMMIT");
+    if ((await readLedger(client, files))?.length !== files.length) refuse("incomplete-migration-history");
     return { schemaVersion: files.length, executed: pending.map((file) => file.version) };
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  }
+  });
 }

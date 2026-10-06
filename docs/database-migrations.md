@@ -5,8 +5,9 @@ Issue #60 establishes versioned SQL delivery. The approved roadmap is at
 Step 0 supplies catalog evidence. Step 1 adds candidate SQL files and a runner
 for harness-owned disposable databases. Step 2 supplies complete catalog
 contracts and transactional verification. Owner-run remote execution and
-adoption remain pending. The owner approved developing and testing the
-candidate locally while Production evidence is pending.
+adoption remain pending. Step 3 adds read-only fingerprint-bound plans and
+verified adoption on registered scratch databases. The owner approved developing
+and testing the candidate locally while Production evidence is pending.
 
 The roadmap and these instructions use the same step numbers:
 
@@ -20,7 +21,7 @@ The roadmap and these instructions use the same step numbers:
 | 5 | Protected database readiness |
 | 6 | Release/recovery documentation and acceptance handoff |
 
-Steps 0–2 are intermediate commits within one migration-delivery PR.
+Steps 0–3 are intermediate commits within one migration-delivery PR.
 Do not merge/deploy this intermediate state: remote `up` is still unavailable,
 and the generated reference header is not an operational rollout instruction.
 Complete the remaining steps and approved schema prerequisites before merge.
@@ -40,6 +41,8 @@ advisory lock with `pg_try_advisory_xact_lock`; contention fails immediately.
 This provides mutual exclusion with a fail-fast policy rather than queueing and
 automatically serializing competing invocations. The operator must retry with a
 freshly approved plan once the other transaction finishes.
+The advisory lock excludes other participating runners. Manual schema changes
+do not take this lock; a remote rollout must control concurrent DDL separately.
 Transaction-local timeouts bound lock waits to three seconds, statements to
 15 seconds and idle transactions to 15 seconds. Whole multi-statement files
 execute directly through the client. Migration files cannot issue transaction
@@ -58,9 +61,11 @@ supported option before writing the first migration that needs it.
 
 `public.db_migrations` records ordered versions, filenames, non-null SHA-256
 checksums, runner version, executed/adopted provenance and application
-time. Step 1 writes only `executed` records. The reader rejects empty existing
-ledgers, version holes, missing fields, checksum mismatches and unsupported
-runner versions. An unversioned nonempty schema is refused without mutation.
+time. The original scratch bootstrap writes only `executed` records. The reader
+rejects empty existing ledgers, version holes, missing fields, checksum mismatches and unsupported
+runner versions. The original bootstrap refuses an unversioned nonempty schema
+without mutation; the approved-plan engine can adopt an exactly verified prefix
+as described below.
 Existing valid prefix history can receive pending files in scratch tests;
 reruns preserve ledger timestamps and application rows.
 
@@ -69,10 +74,11 @@ contract for the target version plus the exact ledger contract before commit,
 including a no-op rerun. It collects definitions inside the runner's existing
 transaction without opening or committing another transaction. Any mismatch
 rolls back pending SQL and ledger writes; it never repairs drift. A nonempty
-unversioned database is still refused before executing any migration, including
-the byte-preserved `IF NOT EXISTS` statements. Step 3 owns fingerprint-bound
-plans and owner-run adoption/remote `up`; `db:migrate up` currently refuses
-before connecting.
+unversioned database cannot receive application SQL until the approved-plan
+engine has verified and recorded its recognized prefix. This guard protects
+the byte-preserved `IF NOT EXISTS` statements from masking drift.
+`db:migrate up` currently refuses before connecting while owner rollout
+evidence is pending; only the registered scratch engine can mutate a target.
 
 Use Node 24, no application credentials and the existing Compose service:
 
@@ -85,8 +91,9 @@ npm run test:db:down
 ```
 
 The dev command creates a randomly named, registered scratch database, checks
-the connected database/role/PostgreSQL major, installs the candidates, reruns
-them as a no-op, then closes and removes the scratch database in finally. It
+the connected database/role/PostgreSQL major, computes and approves a local
+install plan, applies it, then computes and applies a fresh no-op plan. It
+closes and removes the scratch database in finally. It
 reports versions only after scratch cleanup. It does not migrate the shared
 `dfs_ev_test` database. The container lifecycle above is manual: run
 `test:db:down` even if the dev command fails. The existing #45 test harness still
@@ -194,8 +201,74 @@ Raw column positions and one full contract per migration prefix remain explicit
 candidate limitations. A Production snapshot with dropped-column history may
 show a position-only mismatch; record it for an approved normalization decision
 before adoption. Contract storage grows with cumulative schema size and can be
-revisited separately. Step 3's plan must expose the complete readable mismatch
-list to the owner even though operational CLIs retain fixed-code logging.
+revisited separately. The plan artifact exposes the complete readable mismatch
+list to the owner while operational CLIs retain fixed-code logging.
+
+## Fingerprint-bound plans and local adoption
+
+After verifying the same direct endpoint used for the catalog export, the owner
+can generate a read-only plan in their own terminal:
+
+```bash
+npm run db:migrate -- plan --environment production \
+  --expected-host-fingerprint HOST_FINGERPRINT --expected-database DATABASE_NAME \
+  --output "$HOME/.config/dfs-ev-demo/db-snapshots/production-plan-60.json"
+```
+
+Use explicit `MIGRATION_DATABASE_URL`; no `.env` or application `DATABASE_URL`
+fallback is available. The command uses a bounded `REPEATABLE READ READ ONLY`
+transaction and never creates a ledger. The destination must be outside the
+repository, including symlinked parent directories. It is created exclusively
+with mode 600 and is never overwritten. Definitions and complete readable
+differences remain in this private artifact. Stdout reports only hashed target
+identity, the fingerprint, operations, mismatch count and fixed refusal code.
+A non-executable catalog plan still writes its evidence and exits nonzero;
+invalid ledger history fails without repair.
+
+The plan identifies the observed schema and ledger versions separately:
+
+| Observed state | Planned operations |
+| --- | --- |
+| Empty managed catalog, no ledger | Execute all migrations |
+| No ledger, exactly one matching migration-prefix catalog | Adopt that prefix, execute only later files |
+| Valid ledger and matching full prefix plus ledger catalog | Execute only pending files, or verify a no-op |
+| Unrecognized/ambiguous unversioned catalog or recorded catalog drift | No operations; readable differences and refusal |
+| Existing empty/corrupt ledger | Refusal without repair or adoption |
+
+The deterministic SHA-256 fingerprint binds the declared environment, full
+host/database/role/port identity, PostgreSQL major, observed catalog, complete
+ledger history including timestamps/provenance, immutable migration checksums,
+runner version, catalog-query/ledger-contract bindings, target version and
+ordered operations. Displayed identity hashes are shortened; the fingerprint
+also binds a full composite identity hash. Passwords, row data and mutable
+sequence counters are excluded. Local source bytes and contracts are validated
+and frozen before connecting; they cannot change between planning and execution.
+
+The scratch engine requires an explicit approved fingerprint. Inside one
+transaction it acquires the shared fail-fast lock, reads history/catalog and
+recomputes the plan before any ledger DDL, application SQL or insert. Changed
+target, source, schema or history refuses the old approval. Adoption inserts
+`adopted` rows for a verified prefix without replaying its SQL; later files run
+with `executed` provenance. Final verification checks the full application and
+ledger catalog, complete target history, unchanged prior ledger rows and each
+new row's planned provenance before commit. Any failure rolls back both adoption
+and pending SQL. Even a no-op needs a fresh matching plan and final verification.
+
+```bash
+npm run test:db:plans:unit
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
+  npm run test:db:plans
+```
+
+This iteration exposes owner-run read-only `plan`, not remote adoption.
+`up` requires `--approved-plan-fingerprint` but still refuses Preview/Production
+with `owner-rollout-evidence-pending`; test CLI `up` refuses `scratch-up-only`.
+Local mutation proofs use registered random scratch databases through the same
+approved-plan engine. Production snapshot comparison/disposition, actual Neon
+transport evidence and recovery prerequisites remain pending. Their owner
+approval and a separately reviewed remote activation must precede rollout and
+the complete migration PR's merge. A matching local plan is not Production
+acceptance evidence.
 
 ## Read-only migration status
 
@@ -320,6 +393,14 @@ prefix contracts against independent historical fixtures, complete multi-field
 drift reporting, unvalidated/unenforced constraints, disabled internal FK
 triggers, naturally invalid concurrent indexes, upgrade rollback observed by a
 second connection, ledger-definition drift and deterministic regeneration.
+
+`test:db:plans` proves deterministic read-only plans, seeded current adoption
+without application SQL replay, baseline adoption/upgrade and recorded-prefix
+upgrades, readable drift, ambiguous-prefix refusal, stale fingerprints,
+corrupt-ledger refusal, SQL/verifier rollback, prior/new ledger-result integrity,
+independent-client lock/concurrency behavior, private CLI artifacts and scratch
+target guards. Data, sequence state and prior ledger rows survive adoption or a
+failed upgrade. It uses the same registered scratch lifecycle.
 
 `test:db:migrations` uses the same fixed disposable service and a separately
 registered scratch database per scenario. It proves empty installation against

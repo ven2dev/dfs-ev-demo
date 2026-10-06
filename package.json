@@ -34,6 +34,8 @@
     "db:migrate:dev": "node scripts/db-migrate-dev.mjs",
     "test:db:migrations:unit": "node --test tests/db/migrations-unit.check.mjs",
     "test:db:migrations": "node --test tests/db/migrations.integration.check.mjs",
+    "test:db:plans:unit": "node --test tests/db/plans-unit.check.mjs",
+    "test:db:plans": "node --test tests/db/plans.integration.check.mjs",
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {
