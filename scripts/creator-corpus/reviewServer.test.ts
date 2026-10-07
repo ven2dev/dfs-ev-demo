@@ -318,7 +318,7 @@ describe("decisions", () => {
     const stale = discoveryFor([record(1, { apiFetchedAt: "2026-08-01T00:00:00.000Z" })]);
     await start({ discovery: stale });
     const state = JSON.parse((await call(server, { path: "/api/data", headers: auth() })).body);
-    expect(state.stale).toEqual({ blocked: true, staleVideos: 1, maxAgeDays: 30 });
+    expect(state.stale).toEqual({ blocked: true, staleVideos: 1, maxAgeDays: 30, oldestFetchedAt: "2026-08-01T00:00:00.000Z" });
     const reply = await post(decision());
     expect(reply.status).toBe(409);
     expect(JSON.parse(reply.body)).toEqual({ error: "stale-discovery-data" });

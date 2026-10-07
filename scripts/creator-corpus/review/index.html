@@ -8,10 +8,59 @@
     <link rel="stylesheet" href="/app.css" />
   </head>
   <body>
-    <main>
+    <header class="top">
       <h1>Creator video review</h1>
-      <p id="status">Loading…</p>
+      <nav id="creators" aria-label="Creators"></nav>
+    </header>
+    <div id="banner" role="alert" hidden></div>
+    <main>
+      <p id="status" role="status" aria-live="polite">Loading…</p>
+      <section id="summary" aria-label="Summary" hidden></section>
+      <section id="grid-section" aria-label="Weeks" hidden>
+        <h2>Weeks</h2>
+        <p class="legend">
+          <span class="chip slot-present">Included</span>
+          <span class="chip slot-review">Needs review</span>
+          <span class="chip slot-missing">Missing</span>
+          Select a week to see every video published in it, including excluded ones.
+        </p>
+        <div id="grid"></div>
+      </section>
+      <section id="list-section" aria-label="Videos" hidden>
+        <h2>Videos</h2>
+        <form id="filters" class="filters" aria-label="Filters">
+          <label>Show
+            <select id="filter-status">
+              <option value="needs-review">Needs review</option>
+              <option value="present">Included</option>
+              <option value="excluded">Excluded</option>
+              <option value="decided">I have decided</option>
+              <option value="all">Everything</option>
+            </select>
+          </label>
+          <label>Reason
+            <select id="filter-reason"></select>
+          </label>
+          <label>Search
+            <input id="filter-query" type="search" autocomplete="off" placeholder="title or description" />
+          </label>
+          <label>Order
+            <select id="filter-sort">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+        </form>
+        <p id="week-note" hidden></p>
+        <p id="count" aria-live="polite"></p>
+        <ol id="videos" class="videos"></ol>
+        <button id="more" type="button" hidden>Show more</button>
+      </section>
+      <p id="keys" class="keys" hidden>
+        Keys: <kbd>j</kbd>/<kbd>k</kbd> next/previous video, <kbd>i</kbd> include, <kbd>e</kbd> exclude (then type a reason and press Enter).
+      </p>
     </main>
+    <datalist id="reason-presets"></datalist>
     <script src="/client.js" defer></script>
   </body>
 </html>

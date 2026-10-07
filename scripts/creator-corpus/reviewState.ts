@@ -61,7 +61,7 @@ export type ReviewState = {
   generatedAt: string;
   ruleVersion: string;
   window: RegisteredWindow;
-  stale: { blocked: boolean; staleVideos: number; maxAgeDays: number };
+  stale: { blocked: boolean; staleVideos: number; maxAgeDays: number; oldestFetchedAt: string | null };
   creators: ReviewCreator[];
 };
 
@@ -82,6 +82,9 @@ export const buildReviewState = ({
   now: Date;
 }): ReviewState => {
   const staleVideos = discovery.creators.reduce((total, creator) => total + getStaleVideoIds(creator.videos, now).length, 0);
+  const fetchTimes = discovery.creators.flatMap((creator) => creator.videos.map((video) => Date.parse(video.apiFetchedAt)));
+  const oldest = fetchTimes.filter((time) => !Number.isNaN(time));
+  const oldestFetchedAt = oldest.length ? new Date(Math.min(...oldest)).toISOString() : null;
   const creators = discovery.creators.map((creator): ReviewCreator => {
     const events = decisions[creator.key] ?? [];
     const manifest = buildCreatorManifest({
@@ -127,7 +130,7 @@ export const buildReviewState = ({
     generatedAt: now.toISOString(),
     ruleVersion: discovery.registration.ruleVersion,
     window: discovery.registration.window,
-    stale: { blocked: staleVideos > 0, staleVideos, maxAgeDays: API_DATA_MAX_AGE_DAYS },
+    stale: { blocked: staleVideos > 0, staleVideos, maxAgeDays: API_DATA_MAX_AGE_DAYS, oldestFetchedAt },
     creators,
   };
 };

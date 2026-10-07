@@ -81,8 +81,8 @@ describe("buildReviewState", () => {
   });
 
   it("marks stale data as blocking and counts the stale videos across creators", () => {
-    expect(build().stale).toEqual({ blocked: false, staleVideos: 0, maxAgeDays: 30 });
+    expect(build().stale).toEqual({ blocked: false, staleVideos: 0, maxAgeDays: 30, oldestFetchedAt: NOW.toISOString() });
     const stale = discoveryFor([record(1, { apiFetchedAt: "2026-08-01T00:00:00.000Z" })], [record(900, { apiFetchedAt: "2026-08-01T00:00:00.000Z" })]);
-    expect(build({}, stale).stale).toEqual({ blocked: true, staleVideos: 2, maxAgeDays: 30 });
+    expect(build({}, stale).stale).toEqual({ blocked: true, staleVideos: 2, maxAgeDays: 30, oldestFetchedAt: "2026-08-01T00:00:00.000Z" });
   });
 });
