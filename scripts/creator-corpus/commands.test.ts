@@ -4,6 +4,7 @@ import type { RegisteredWindow } from "../../src/lib/creatorVideoRule.ts";
 import {
   CommandError,
   compareChannelTitle,
+  rebuildDiscovery,
   confirmCreators,
   discoverCreator,
   formatScreenReport,
@@ -12,7 +13,9 @@ import {
   screenManifests,
   type RegistryEntry,
 } from "./commands.ts";
+import type { DecisionEvent } from "../../src/lib/creatorDecisions.ts";
 import { YoutubeApiError, type ApiVideo, type UploadItem, type YoutubeClient } from "./youtubeApi.ts";
+import { discoveryFor, record, vid as supportVid } from "./testSupport.ts";
 
 const NOW = new Date("2026-10-07T12:00:00Z");
 const WINDOW: RegisteredWindow = { endSeason: 2026, endWeek: 4 };
@@ -315,5 +318,61 @@ describe("screenManifests", () => {
     const report = formatScreenReport([row]);
     expect(report.split("\n")[0]).toMatch(/^creator\s+weeks\s+present\s+review\s+missing\s+share/);
     expect(report).toContain("a  ");
+  });
+});
+
+describe("rebuildDiscovery", () => {
+  const event = (overrides: Partial<DecisionEvent> = {}): DecisionEvent => ({
+    videoId: supportVid(1),
+    decision: "include",
+    reason: "props throughout",
+    ruleVersion: "v1",
+    decidedAt: "2026-10-07T13:00:00.000Z",
+    ...overrides,
+  });
+  const rebuild = (decisions: Record<string, DecisionEvent[]>, discovery = discoveryFor([record(1), record(2, { title: "NFL Week 6 recap" })])) =>
+    rebuildDiscovery({ discovery, decisions, now: NOW });
+
+  it("applies the active decision and carries its provenance into the manifest", () => {
+    const result = rebuild({ "creator-a": [event()] });
+    const video = result.creators[0].manifest.videos.find((entry) => entry.videoId === supportVid(1))!;
+    expect(video).toMatchObject({
+      status: "present",
+      classification: { status: "needs-review" },
+      decision: { decision: "include", ruleVersion: "v1", decidedAt: "2026-10-07T13:00:00.000Z" },
+    });
+    expect(result.rebuiltAt).toBe(NOW.toISOString());
+    expect(result.creators[1].manifest.videos).toHaveLength(1);
+  });
+
+  it("treats a cleared decision as no override", () => {
+    const result = rebuild({
+      "creator-a": [event(), event({ decision: "clear", reason: "unsure", decidedAt: "2026-10-07T14:00:00.000Z" })],
+    });
+    const video = result.creators[0].manifest.videos.find((entry) => entry.videoId === supportVid(1))!;
+    expect(video).toMatchObject({ status: "needs-review", decision: null });
+  });
+
+  it("does not modify its input and works without any API access", () => {
+    const discovery = discoveryFor([record(1)]);
+    const before = JSON.stringify(discovery);
+    rebuildDiscovery({ discovery, decisions: { "creator-a": [event()] }, now: NOW });
+    expect(JSON.stringify(discovery)).toBe(before);
+  });
+
+  it("refuses stale API data with a fixed code", () => {
+    const stale = discoveryFor([record(1, { apiFetchedAt: "2026-08-01T00:00:00.000Z" })]);
+    expect(() => rebuild({}, stale)).toThrow(expect.objectContaining({ code: "stale-discovery-data" }));
+  });
+
+  it("refuses decisions for creators it does not know and decisions that would silently not count", () => {
+    expect(() => rebuild({ "creator-z": [event()] })).toThrow(expect.objectContaining({ code: "unknown-creator-in-decisions" }));
+    expect(() => rebuild({ "creator-a": [event({ videoId: supportVid(77) })] })).toThrow(
+      expect.objectContaining({ code: "invalid-decisions-present" })
+    );
+    const outside = discoveryFor([record(1), record(2, { publishedAt: "2025-02-01T12:00:00Z" })]);
+    expect(() => rebuild({ "creator-a": [event({ videoId: supportVid(2) })] }, outside)).toThrow(
+      expect.objectContaining({ code: "invalid-decisions-present" })
+    );
   });
 });

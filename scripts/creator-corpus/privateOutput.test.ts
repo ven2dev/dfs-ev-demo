@@ -1,10 +1,16 @@
 // @vitest-environment node
 import { randomUUID } from "node:crypto";
-import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { assertPrivateOutputAvailable, readPrivateJson, writePrivateJson } from "./privateOutput.ts";
+import {
+  assertPrivateOutputAvailable,
+  readPrivateJson,
+  readPrivateJsonOptional,
+  replacePrivateJson,
+  writePrivateJson,
+} from "./privateOutput.ts";
 
 let directory: string;
 beforeEach(async () => {
@@ -88,5 +94,48 @@ describe("readPrivateJson", () => {
     expect(await code(readPrivateJson(join(directory, "absent.json")))).toBe("input-unreadable");
     await writeFile(join(directory, "bad.json"), "{not json");
     expect(await code(readPrivateJson(join(directory, "bad.json")))).toBe("input-unreadable");
+  });
+});
+
+describe("readPrivateJsonOptional", () => {
+  it("returns undefined for a missing file but fails for a corrupt or unsafe one", async () => {
+    expect(await readPrivateJsonOptional(join(directory, "absent.json"))).toBeUndefined();
+    await writeFile(join(directory, "ok.json"), '{"k":1}');
+    expect(await readPrivateJsonOptional(join(directory, "ok.json"))).toEqual({ k: 1 });
+    await writeFile(join(directory, "bad.json"), "{nope");
+    expect(await code(readPrivateJsonOptional(join(directory, "bad.json")))).toBe("input-unreadable");
+    expect(await code(readPrivateJsonOptional(join(process.cwd(), "package.json")))).toBe("must-be-outside-repository");
+  });
+});
+
+describe("replacePrivateJson", () => {
+  it("replaces an existing file atomically at owner-only permissions and leaves no temporary file", async () => {
+    const target = join(directory, "log.json");
+    await writeFile(target, '{"old":true}', { mode: 0o644 });
+    await replacePrivateJson(target, { fresh: 1 });
+    expect(JSON.parse(await readFile(target, "utf8"))).toEqual({ fresh: 1 });
+    expect((await stat(target)).mode & 0o777).toBe(0o600);
+    await replacePrivateJson(join(directory, "new.json"), { a: 1 });
+    expect((await readdir(directory)).sort()).toEqual(["log.json", "new.json"]);
+  });
+
+  it("keeps the original and removes its temporary file when the replace fails", async () => {
+    const target = join(directory, "is-a-directory.json");
+    await mkdir(target);
+    await writeFile(join(target, "keep.txt"), "x");
+    expect(await code(replacePrivateJson(target, { a: 1 }))).toBe("output-unwritable");
+    expect((await readdir(directory)).sort()).toEqual(["is-a-directory.json"]);
+    expect(await readFile(join(target, "keep.txt"), "utf8")).toBe("x");
+  });
+
+  it("refuses repository locations and non-JSON names", async () => {
+    const name = `creator-corpus-test-${randomUUID()}.json`;
+    try {
+      expect(await code(replacePrivateJson(join(process.cwd(), name), {}))).toBe("must-be-outside-repository");
+      expect(await code(readFile(join(process.cwd(), name)))).toBe("ENOENT");
+    } finally {
+      await rm(join(process.cwd(), name), { force: true });
+    }
+    expect(await code(replacePrivateJson(join(directory, "x.txt"), {}))).toBe("json-file-required");
   });
 });

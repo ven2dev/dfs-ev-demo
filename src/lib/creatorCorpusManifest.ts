@@ -16,6 +16,9 @@ export type ReviewDecision = {
   videoId: string;
   decision: "include" | "exclude";
   reason: string;
+  // Provenance carried from the owner's decision event (see creatorDecisions.ts).
+  ruleVersion?: string;
+  decidedAt?: string;
 };
 
 export type ManifestVideoStatus = "present" | "needs-review" | "excluded";

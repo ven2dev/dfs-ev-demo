@@ -9,17 +9,14 @@ import {
   discoverCreator,
   formatScreenReport,
   parseRegistry,
+  rebuildDiscovery,
   resolveCreators,
   screenManifests,
   type CreatorDiscovery,
 } from "./commands.ts";
-import {
-  InputError,
-  isEndWeekClosed,
-  loadRegistration,
-  parseCreatorsFile,
-  parseDecisionsFile,
-} from "./creatorInputs.ts";
+import { DecisionsFileError, effectiveDecisions, parseDecisionsFile } from "../../src/lib/creatorDecisions.ts";
+import { InputError, isEndWeekClosed, loadRegistration, parseCreatorsFile } from "./creatorInputs.ts";
+import { parseDiscoveryFile } from "./discoveryFile.ts";
 import { PrivateFileError, assertPrivateOutputAvailable, readPrivateJson, writePrivateJson } from "./privateOutput.ts";
 import { YoutubeApiError, createQuotaMeter, createYoutubeClient, type FetchLike } from "./youtubeApi.ts";
 
@@ -58,6 +55,14 @@ const apiClient = (deps: CliDeps, maxUnits: number) => {
   if (!apiKey) throw new YoutubeApiError("api-key-missing");
   const meter = createQuotaMeter(maxUnits);
   return { meter, client: createYoutubeClient({ apiKey, fetchImpl: deps.fetchImpl, meter }) };
+};
+
+const readDecisions = (content: unknown) => {
+  try {
+    return parseDecisionsFile(content);
+  } catch {
+    return usage("invalid-decisions-file");
+  }
 };
 
 export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
@@ -113,13 +118,13 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     const registry = parseRegistry(await readPrivateJson(values.registry));
     const confirmed = registry.creators.filter((entry) => entry.confirmed);
     if (confirmed.length === 0) return usage("no-confirmed-creators");
-    const decisions = values.decisions ? parseDecisionsFile(await readPrivateJson(values.decisions)) : {};
+    const decisions = values.decisions ? readDecisions(await readPrivateJson(values.decisions)) : {};
     await assertPrivateOutputAvailable(values.output);
     const { client, meter } = apiClient(deps, parseUnits(values["max-units"], 1000));
     const creators: CreatorDiscovery[] = [];
     for (const entry of confirmed) {
       creators.push(
-        await discoverCreator({ client, entry, window: registration.window, decisions: decisions[entry.key] ?? [], now })
+        await discoverCreator({ client, entry, window: registration.window, decisions: effectiveDecisions(decisions[entry.key] ?? []), now })
       );
     }
     await writePrivateJson(values.output, {
@@ -131,6 +136,17 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     });
     deps.out(formatScreenReport(screenManifests(creators.map((creator) => creator.manifest))));
     deps.out(JSON.stringify({ creators: creators.length, quotaUsed: meter.used, quotaLimit: meter.limit }));
+    return;
+  }
+
+  if (command === "rebuild") {
+    const values = parse({ input: { type: "string" }, decisions: { type: "string" }, output: { type: "string" } });
+    if (!values.input || !values.decisions || !values.output) return usage("input-decisions-and-output-required");
+    const discovery = parseDiscoveryFile(await readPrivateJson(values.input));
+    const decisions = readDecisions(await readPrivateJson(values.decisions));
+    const rebuilt = rebuildDiscovery({ discovery, decisions, now: deps.now() });
+    await writePrivateJson(values.output, rebuilt);
+    deps.out(formatScreenReport(screenManifests(rebuilt.creators.map((creator) => creator.manifest))));
     return;
   }
 
@@ -148,7 +164,7 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
   usage("unknown-command");
 };
 
-const KNOWN = [UsageError, InputError, PrivateFileError, CommandError, YoutubeApiError];
+const KNOWN = [UsageError, InputError, PrivateFileError, CommandError, YoutubeApiError, DecisionsFileError];
 
 export const main = async (argv: string[]): Promise<number> => {
   try {

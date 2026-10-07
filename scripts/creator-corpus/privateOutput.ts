@@ -1,4 +1,5 @@
-import { access, open, readFile, realpath } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { access, open, readFile, realpath, rename, rm } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -71,5 +72,50 @@ export const readPrivateJson = async (path: string): Promise<unknown> => {
     return JSON.parse(await readFile(target, "utf8"));
   } catch {
     return fail("input-unreadable");
+  }
+};
+
+// Like readPrivateJson, but a file that does not exist yet is `undefined`
+// rather than an error. A file that exists and is unreadable or corrupt still
+// fails, so a caller never overwrites something it could not understand.
+export const readPrivateJsonOptional = async (path: string): Promise<unknown> => {
+  const target = await checkedPath(path);
+  let content: string;
+  try {
+    content = await readFile(target, "utf8");
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "ENOENT" ? undefined : fail("input-unreadable");
+  }
+  try {
+    return JSON.parse(content);
+  } catch {
+    return fail("input-unreadable");
+  }
+};
+
+// Atomic replace for files the owner updates over time (the decisions log).
+// The new content is written to an owner-only temporary file in the same
+// directory and renamed over the target, so a crash can leave the old file or
+// the new one but never a partial file.
+export const replacePrivateJson = async (path: string, data: unknown): Promise<void> => {
+  const target = await checkedPath(path);
+  const temporary = join(dirname(target), `.${basename(target)}.${randomUUID()}.tmp`);
+  let handle;
+  try {
+    handle = await open(temporary, "wx", 0o600);
+  } catch {
+    return fail("output-unwritable");
+  }
+  try {
+    try {
+      await handle.writeFile(JSON.stringify(data, null, 2) + "\n");
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
+    await rename(temporary, target);
+  } catch {
+    await rm(temporary, { force: true });
+    return fail("output-unwritable");
   }
 };

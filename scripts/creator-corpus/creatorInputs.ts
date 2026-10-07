@@ -129,29 +129,3 @@ export const windowEnd = (window: RegisteredWindow): Date => {
 
 export const isEndWeekClosed = (window: RegisteredWindow, now: Date): boolean =>
   now.getTime() >= windowEnd(window).getTime();
-
-// Decisions file: { "<creatorKey>": [{ videoId, decision, reason }] }.
-export type DecisionsFile = Record<string, { videoId: string; decision: "include" | "exclude"; reason: string }[]>;
-
-export const parseDecisionsFile = (input: unknown): DecisionsFile => {
-  if (typeof input !== "object" || input === null || Array.isArray(input)) return fail("invalid-decisions-file");
-  const result: DecisionsFile = {};
-  for (const [creatorKey, list] of Object.entries(input as Record<string, unknown>)) {
-    if (!KEY.test(creatorKey) || !Array.isArray(list)) return fail("invalid-decisions-file");
-    result[creatorKey] = list.map((item) => {
-      if (typeof item !== "object" || item === null) return fail("invalid-decisions-file");
-      const { videoId, decision, reason, ...extra } = item as Record<string, unknown>;
-      if (
-        Object.keys(extra).length > 0 ||
-        typeof videoId !== "string" ||
-        !isVideoId(videoId) ||
-        (decision !== "include" && decision !== "exclude") ||
-        typeof reason !== "string"
-      ) {
-        return fail("invalid-decisions-file");
-      }
-      return { videoId, decision, reason };
-    });
-  }
-  return result;
-};

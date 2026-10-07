@@ -5,7 +5,6 @@ import {
   isEndWeekClosed,
   loadRegistration,
   parseCreatorsFile,
-  parseDecisionsFile,
   parseRegistration,
   parseVideoId,
   windowEnd,
@@ -121,24 +120,5 @@ describe("window bounds", () => {
     expect(isEndWeekClosed(window, new Date("2026-10-06T03:59:59.999Z"))).toBe(false);
     expect(isEndWeekClosed(window, new Date("2026-10-06T04:00:00.000Z"))).toBe(true);
     expect(isEndWeekClosed({ endSeason: 2026, endWeek: 5 }, new Date("2026-10-07T00:00:00Z"))).toBe(false);
-  });
-});
-
-describe("parseDecisionsFile", () => {
-  it("accepts per-creator decision lists and refuses anything else", () => {
-    expect(parseDecisionsFile({ "creator-a": [{ videoId: ID, decision: "include", reason: "props throughout" }] })).toEqual({
-      "creator-a": [{ videoId: ID, decision: "include", reason: "props throughout" }],
-    });
-    for (const bad of [
-      [],
-      { "Bad Key": [] },
-      { a: "x" },
-      { a: [{ videoId: "short", decision: "include", reason: "r" }] },
-      { a: [{ videoId: ID, decision: "maybe", reason: "r" }] },
-      { a: [{ videoId: ID, decision: "include" }] },
-      { a: [{ videoId: ID, decision: "include", reason: "r", extra: 1 }] },
-    ]) {
-      expect(() => parseDecisionsFile(bad)).toThrow(expect.objectContaining({ code: "invalid-decisions-file" }));
-    }
   });
 });

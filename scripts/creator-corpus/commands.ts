@@ -1,10 +1,13 @@
 import {
   buildCreatorManifest,
+  getStaleVideoIds,
   type CreatorManifest,
   type ReviewDecision,
 } from "../../src/lib/creatorCorpusManifest.ts";
+import { effectiveDecisions, type DecisionsFile } from "../../src/lib/creatorDecisions.ts";
 import type { RegisteredWindow, VideoRecord } from "../../src/lib/creatorVideoRule.ts";
 import { windowEnd, windowStart, type CreatorInput } from "./creatorInputs.ts";
+import type { DiscoveryFile } from "./discoveryFile.ts";
 import {
   MAX_VIDEOS_PER_REQUEST,
   YoutubeApiError,
@@ -275,4 +278,35 @@ export const formatScreenReport = (rows: readonly ScreenRow[]): string => {
   const widths = header.map((title, column) => Math.max(title.length, ...lines.map((line) => line[column].length)));
   const format = (cells: string[]) => cells.map((cell, column) => cell.padEnd(widths[column])).join("  ");
   return [format(header), ...lines.map(format)].join("\n") + "\n";
+};
+
+// Rebuilds every creator's manifest from the videos already saved in a
+// discovery file plus the owner's decisions, with no API call. Stale API data
+// is refused (refresh through `discover`), and so is anything that would make
+// a decision silently not count.
+export const rebuildDiscovery = ({
+  discovery,
+  decisions,
+  now,
+}: {
+  discovery: DiscoveryFile;
+  decisions: DecisionsFile;
+  now: Date;
+}): DiscoveryFile => {
+  if (discovery.creators.some((creator) => getStaleVideoIds(creator.videos, now).length > 0)) {
+    throw new CommandError("stale-discovery-data");
+  }
+  const known = new Set(discovery.creators.map((creator) => creator.key));
+  if (Object.keys(decisions).some((key) => !known.has(key))) throw new CommandError("unknown-creator-in-decisions");
+  const creators = discovery.creators.map((creator) => {
+    const manifest = buildCreatorManifest({
+      creatorKey: creator.key,
+      videos: creator.videos,
+      decisions: effectiveDecisions(decisions[creator.key] ?? []),
+      window: discovery.registration.window,
+    });
+    if (manifest.invalidDecisions.length > 0) throw new CommandError("invalid-decisions-present");
+    return { ...creator, manifest };
+  });
+  return { ...discovery, rebuiltAt: now.toISOString(), creators };
 };
