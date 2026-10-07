@@ -1,10 +1,13 @@
 # #60 SQL migration runner decision
 
 Status: selected for the approved roadmap. The owner approved the Step 1
-candidate runner on disposable local databases while Production catalog
-evidence is pending. Production reconciliation, adoption and remote execution
-still require that evidence and its mismatch decision. Scope is transactional,
-forward SQL migrations, not a general migration framework.
+candidate runner on disposable local databases. The subsequent owner-run
+Production snapshot matches the version-2 managed catalog with zero
+differences; the owner also reports successful read-only Neon transport checks.
+The [dated evidence handoff](../database-migration-evidence.md) records those
+results. Production adoption and remote execution still require recovery
+evidence and separate activation review. Scope is transactional, forward SQL
+migrations, not a general migration framework.
 
 ## Decision
 
@@ -56,8 +59,10 @@ evidence remain acceptance work.
 
 [Neon's driver documentation](https://github.com/neondatabase/serverless#pool-and-client)
 supports interactive sessions through Client and native WebSockets on Node 24.
-Local pg success does not prove the actual Production transport; the owner-run
-catalog export records that evidence without changing the database.
+The owner reports that the Production read-only transport checks passed.
+Offline artifact validation confirms the schema and source bindings; it does
+not reproduce the remote session. Runtime command metadata remains to be
+recorded as described in the evidence handoff.
 
 Because Postgrator is not being added, no new dependency pin or Dependabot group
 is needed. Existing pg/@types/pg remain in test-tooling; future updates must pass

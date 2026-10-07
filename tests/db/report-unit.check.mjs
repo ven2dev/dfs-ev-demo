@@ -5,7 +5,8 @@ import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { LEASE_REQUIRED_CASES, validateLeaseDbReport, validateNodeDbReport } from "../../scripts/db-test-contract.mjs";
+import { LEASE_REQUIRED_CASES, READINESS_REQUIRED_CASES, validateLeaseDbReport, validateNodeDbReport,
+  validateReadinessDbReport } from "../../scripts/db-test-contract.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const reporter = fileURLToPath(new URL("../../scripts/db-test-reporter.mjs", import.meta.url));
@@ -40,6 +41,21 @@ test("Node DB report requires each named case in its original file and a complet
     const changed = structuredClone(report);
     mutate(changed);
     assert.throws(() => validateNodeDbReport(changed, required), /DB test contract failed/);
+  }
+});
+
+test("Vitest DB report requires the readiness cases independently of the existing 13 lease cases", () => {
+  const assertions = [...LEASE_REQUIRED_CASES, ...READINESS_REQUIRED_CASES]
+    .map((fullName) => ({ fullName, status: "passed" }));
+  const report = { success: true, numPassedTests: assertions.length,
+    testResults: [{ assertionResults: assertions }] };
+  assert.equal(validateLeaseDbReport(report), 13);
+  assert.equal(validateReadinessDbReport(report), 4);
+  for (const fullName of READINESS_REQUIRED_CASES) {
+    const remaining = assertions.filter((row) => row.fullName !== fullName);
+    const changed = { ...report, numPassedTests: remaining.length, testResults: [{ assertionResults: remaining }] };
+    assert.equal(validateLeaseDbReport(changed), 13);
+    assert.throws(() => validateReadinessDbReport(changed), /DB test contract failed/);
   }
 });
 

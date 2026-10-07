@@ -15,6 +15,13 @@ export const LEASE_REQUIRED_CASES = Object.freeze([
   "25 database-backed consumers wait for one fetch and receive the same persisted payload",
 ]);
 
+export const READINESS_REQUIRED_CASES = Object.freeze([
+  "database readiness reports missing ledger without creating one on authentic current schema",
+  "database readiness accepts migrated history and valid ahead history while preserving rows",
+  "database readiness refuses behind, corrupt and missing-table states without repair",
+  "database readiness reads are bounded, enforced read-only and reject view substitutes",
+]);
+
 export const NODE_REQUIRED_CASES = Object.freeze({
   "tests/db/target.check.mjs": Object.freeze([
     "accepts only explicit loopback test connections",
@@ -28,6 +35,11 @@ export const NODE_REQUIRED_CASES = Object.freeze({
     "Node DB report requires each named case in its original file and a complete successful summary",
     "actual Node reports refuse zero, filtered, missing, skipped, todo and failed cases",
     "Vitest DB report preserves all required lease cases and refuses missing, skipped, todo or failed results",
+    "Vitest DB report requires the readiness cases independently of the existing 13 lease cases",
+  ]),
+  "tests/db/readiness-manifest-unit.check.mjs": Object.freeze([
+    "readiness generation binds the explicit minimum to validated migration and table contracts",
+    "readiness artifact checks reject missing or stale runtime manifests without rewriting them",
   ]),
   "tests/db/catalog-unit.check.mjs": Object.freeze([
     "catalog requires explicit credentials, environment and matching expected target",
@@ -136,3 +148,5 @@ export function validateLeaseDbReport(report, required = LEASE_REQUIRED_CASES) {
   for (const name of required) if (assertions.filter((test) => test.fullName === name).length !== 1) refuse();
   return required.length;
 }
+
+export const validateReadinessDbReport = (report) => validateLeaseDbReport(report, READINESS_REQUIRED_CASES);

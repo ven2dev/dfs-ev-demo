@@ -17,8 +17,9 @@ npm run test:db:local
 ```
 
 `test:db:local` starts `compose.test.yml`, waits up to 60 seconds for health,
-runs migration/reference artifact checks, all mandatory Node database checks,
-an independent catalog-contract drift check and the lease suite. It removes the
+runs migration/reference/readiness artifact checks, all mandatory Node database
+checks, an independent catalog-contract drift check and the lease/readiness
+suite. It removes the
 service and its network even
 if startup or tests fail. It preserves failure exit codes. SIGINT/SIGTERM also
 request cleanup; a forced kill or machine shutdown can prevent cleanup. To
@@ -91,8 +92,9 @@ the bootstrap. An existing unversioned nonempty schema is refused without repair
 or adoption. Setup truncates only `live_prop_inputs_cache` between cases.
 Tracked database clients close after each case and suite.
 
-The runner also validates Vitest's JSON report: all 13 required cases must
-execute and pass, and skipped/todo or missing cases fail. The current contract
+The runner also validates Vitest's JSON report: all 13 required #45 cases and
+four separate readiness cases must execute and pass, and skipped/todo or missing
+cases fail. The #45 contract
 covers full-schema bootstrap, including ledger/data-preserving reruns, plus
 these lease scenarios:
 
@@ -136,11 +138,15 @@ to refuse the primary `dfs_ev_test` database. Only #45's explicitly guarded
 bootstrap installs into that fixed primary target. It does not broaden scratch
 cleanup permissions. The two independent historical fixtures have committed
 provenance and SHA-256 anchors; tests require no runtime Git history and work in
-a shallow checkout.
+a shallow checkout. The four readiness cases use their own registered scratch
+databases and the actual runtime SQL. They preserve synthetic rows and history,
+refuse missing/behind/corrupt states and view substitutes, accept supported
+ahead history with a warning, and prove the read-only/timeout/history bounds.
 
 `scripts/db-test-contract.mjs` contains the reviewed static list of required
 cases. The mandatory Node suite covers target/bootstrap/report guards and every
-catalog, contract, migration and plan unit/integration case. A custom reporter
+catalog, contract, migration, plan and readiness-artifact unit/integration case.
+A custom reporter
 consumes Node's documented test events and emits JSON alongside normal console
 output. Its gate requires the complete successful summary and each named case
 exactly once in its original file, with no skipped/todo/failed/cancelled results.

@@ -4,10 +4,15 @@ Issue #60 establishes versioned SQL delivery. The approved roadmap is at
 [the issue](https://github.com/ven2dev/dfs-ev-demo/issues/60#issuecomment-6006046013).
 Step 0 supplies catalog evidence. Step 1 adds candidate SQL files and a runner
 for harness-owned disposable databases. Step 2 supplies complete catalog
-contracts and transactional verification. Owner-run remote execution and
-adoption remain pending. Step 3 adds read-only fingerprint-bound plans and
-verified adoption on registered scratch databases. The owner approved developing
-and testing the candidate locally while Production evidence is pending.
+contracts and transactional verification. Step 3 adds read-only
+fingerprint-bound plans and verified adoption on registered scratch databases.
+Step 4 supplies the shared bootstrap and mandatory CI proofs. Step 5 implements
+the protected readiness endpoint, with local validation only. The owner-run
+Production snapshot and plan now verify the existing schema at version 2, and
+the owner reports successful read-only Neon transport checks. The dated
+[evidence handoff](database-migration-evidence.md) records these results.
+Production adoption, recovery evidence and remote activation review remain
+pending; the owner explicitly instructed that `up` must not run yet.
 
 The roadmap and these instructions use the same step numbers:
 
@@ -31,9 +36,10 @@ Complete the remaining steps and approved schema prerequisites before merge.
 `db/migrations/0001_pre_41_baseline.sql` preserves the authentic eight-table
 historical schema byte for byte. `0002_market_observation_history.sql` adds the
 nine #41 tables; concatenating these files preserves the original current SQL
-and its comments. These are source candidates, not an assertion about what was
-deployed to Production. A comparison may require a separately reviewed appended
-reconciliation migration before adoption can be implemented.
+and its comments. The owner-run Production snapshot matches the complete
+version-2 managed catalog with zero differences, so the captured schema requires
+no reconciliation migration. Any later drift requires a fresh comparison and a
+separately reviewed disposition before adoption.
 
 The repository-owned core uses one dedicated client and one transaction for
 all pending files, ledger inserts and verification. It takes a transaction
@@ -267,11 +273,14 @@ This iteration exposes owner-run read-only `plan`, not remote adoption.
 `up` requires `--approved-plan-fingerprint` but still refuses Preview/Production
 with `owner-rollout-evidence-pending`; test CLI `up` refuses `scratch-up-only`.
 Local mutation proofs use registered random scratch databases through the same
-approved-plan engine. Production snapshot comparison/disposition, actual Neon
-transport evidence and recovery prerequisites remain pending. Their owner
-approval and a separately reviewed remote activation must precede rollout and
-the complete migration PR's merge. A matching local plan is not Production
-acceptance evidence.
+approved-plan engine. The Production snapshot comparison now has zero
+differences, and the owner reports that the actual read-only Neon transport
+checks passed. Protected readiness is implemented locally. Recovery
+prerequisites, deployed readiness evidence, release/recovery documentation and
+separate remote activation review remain outstanding. Their
+completion and owner approval must precede rollout and the complete migration
+PR's merge. The stored Production plan is evidence of a valid adoption proposal;
+it is not approval to execute it.
 
 ## Read-only migration status
 
@@ -290,13 +299,88 @@ artifacts before connecting and reads ledger metadata inside a bounded
 ledger reports version 0; existing invalid history fails with a safe fixed code.
 Status is ledger information, not readiness or deep schema verification.
 
-Actual Neon transport remains **pending owner evidence**. CI exercises the `pg`
-path only; the first owner-run Production `status` is the smoke test for Neon
-Client's WebSocket connection, read-only transaction and transaction-local
-settings. Record its date, commit, Node/driver versions, exit code and sanitized
-status (or fixed failure code) on #60. Verify the hashed target identity without
-posting URLs, credentials or raw driver errors. A local pg pass is not a Neon
-transport pass; no successful remote outcome is claimed here.
+The owner reports successful Production read-only Neon transport checks,
+including status at ledger version 0. The
+[evidence handoff](database-migration-evidence.md) distinguishes that owner-run
+result from the offline artifact verification. CI exercises the `pg` path only.
+The roadmap's command metadata record still needs the owner-run commit,
+Node/driver versions and exit codes; those values are not embedded in the two
+supplied artifacts. Keep sanitized status and hashed target identity with that
+record, without URLs, credentials or raw driver errors.
+
+## Protected database readiness
+
+`GET /api/health/database` is the cheap owner check after an approved deploy.
+Configure a dedicated `DB_READINESS_SECRET` for that environment, independent
+from `CRON_SECRET` and `ODDS_HEALTH_SECRET`. Missing secret returns HTTP 503
+`not-configured` without database access. A missing or incorrect bearer returns
+401 before database access; an authorized request without `DATABASE_URL` also
+returns 503 `not-configured`. Every response uses `Cache-Control: no-store`.
+
+In the owner's terminal, with the secret loaded through the private environment
+procedure, replace `YOUR_DEPLOYMENT` below. Supplying the header through stdin
+keeps the expanded secret out of the curl process arguments. Do not enable curl
+verbose/trace output or shell tracing.
+
+```bash
+curl --silent --show-error --include --config - <<EOF
+url = "https://YOUR_DEPLOYMENT/api/health/database"
+header = "Authorization: Bearer $DB_READINESS_SECRET"
+EOF
+```
+
+The endpoint imports a generated TypeScript manifest, never migration tooling
+or SQL files. `db/readiness.json` explicitly declares this application's minimum
+compatible version (currently 2). The generated manifest separately records
+the maximum known version (currently 2), known checksums/filenames/runner
+version and required tables from the minimum version's verified contract.
+Appending an unrelated migration need not raise the application minimum; a new
+application dependency on a later schema requires a reviewed minimum update.
+
+| State | HTTP result |
+| --- | --- |
+| Missing ledger, including the captured Production state | 503 `migration-ledger-missing`, recorded schema version 0 |
+| Empty, gapped, malformed or checksum-mismatched history; unsupported runner | 503 `migration-history-invalid` |
+| Valid recorded version below the application minimum | 503 `schema-behind` |
+| Required table missing or replaced with a view | 503 `required-tables-missing` |
+| Valid history at or above the minimum, through maximum known version | 200 `ready` |
+| Valid contiguous ahead history with the known prefix intact and supported runner | 200 `ready`, warning `schema-ahead` |
+| More than 1,024 ledger entries | 503 `migration-history-limit-exceeded` |
+| Query/connection/timeout failure | 503 `database-unavailable`, no driver details |
+
+Successful authorized results include only `schemaVersion`, `minimumVersion`,
+`maximumKnownVersion` and fixed reason/warning codes. They omit target identity,
+table names, checksums, history rows and credentials. Readiness verifies history
+and table existence; the complete catalog verifier remains the migration-time
+schema proof.
+
+The repository uses Neon HTTP read-only, repeatable-read transactions, with
+transaction-local 2-second statement and 1-second lock timeouts and one
+5-second HTTP abort deadline across both requests. A first bounded relation
+probe avoids reading an absent ledger. If present, a second transaction reads
+table presence and at most 1,025 history rows in one snapshot. It reads no
+application data and cannot create, adopt or migrate anything.
+
+After appending migrations, regenerate in this order: migration artifacts,
+catalog contracts, then the runtime readiness manifest. Review all generated
+changes. The contracts command uses only the guarded disposable database:
+
+```bash
+npm run db:migrations:generate
+# With the documented TEST_DATABASE_URL and disposable Compose service:
+npm run db:contracts:generate
+npm run db:readiness:generate
+npm run db:readiness:check
+```
+
+Typecheck and the mandatory disposable DB pipeline both check readiness
+manifest drift. Route/repository/unit tests cover authorization, safe responses,
+read bounds and ahead/invalid history; four named real-Postgres readiness cases
+prove data/history preservation, missing-ledger refusal, behind/corrupt/missing
+tables, read-only enforcement and history limits. The JSON report gate requires
+all four in addition to the unchanged 13 #45 cases. Local proofs do not claim
+that the endpoint is deployed or that the Neon HTTP path has been exercised
+against Production. Production readiness remains 503 until ledger adoption.
 
 ## Owner-run Production snapshot
 
@@ -416,11 +500,14 @@ tests use those immutable independent copies without needing Git history. Run it
 the explicit `TEST_DATABASE_URL` while the Compose service is running.
 `npm run test:db:local` now requires all catalog/contract/migration/plan unit and
 integration cases through a static named-case JSON report gate, both artifact
-checks and all 13 #45 lease cases using the shared runner bootstrap. Repeat this
+checks, the readiness manifest check, all 13 #45 lease cases using the shared
+runner bootstrap and four separate readiness cases. Repeat this
 complete pipeline with `npm run test:db:repeat -- 3` to check isolation. See the
 [database test guide](database-testing.md) for lifecycle and CI enforcement.
 
-Keep dated results and snapshot/mismatch dispositions on #60. Actual remote
-Neon transport and Production schema remain unverified until the owner runs the
-export. [#86](https://github.com/ven2dev/dfs-ev-demo/issues/86) separately owns
-Neon-console, branch and point-in-time restore access.
+Keep dated results and snapshot/mismatch dispositions on #60. The
+[evidence handoff](database-migration-evidence.md) records the verified
+Production schema and owner-reported read-only Neon transport pass. Recovery
+evidence remains pending. [#86](https://github.com/ven2dev/dfs-ev-demo/issues/86)
+separately owns Neon-console, branch and point-in-time restore access; SQL
+connectivity does not establish those capabilities.

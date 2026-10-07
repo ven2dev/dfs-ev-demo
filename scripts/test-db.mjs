@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { NODE_REQUIRED_CASES, validateLeaseDbReport, validateNodeDbReport } from "./db-test-contract.mjs";
+import { NODE_REQUIRED_CASES, validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport } from "./db-test-contract.mjs";
 import {
   assertNoApplicationCredentials,
   LOCAL_TEST_DATABASE_URL,
@@ -43,6 +43,8 @@ async function runSuite(environment, filters) {
   try {
     let code = await run(process.execPath, ["scripts/db-migration-artifacts.mjs", "check"], environment);
     if (code !== 0 || interrupted) return code || 1;
+    code = await run(process.execPath, ["scripts/db-readiness-manifest.mjs", "check"], environment);
+    if (code !== 0 || interrupted) return code || 1;
     const nodeReportPath = join(reportDir, "node-results.json");
     code = await run(process.execPath, [
       "--test", "--test-concurrency=4", "--test-timeout=60000",
@@ -63,7 +65,8 @@ async function runSuite(environment, filters) {
     if (code !== 0 || interrupted) return code || 1;
     const report = JSON.parse(await readFile(reportPath, "utf8"));
     const leaseRequiredCases = validateLeaseDbReport(report);
-    console.log(JSON.stringify({ nodeRequiredCases, leaseRequiredCases, result: "verified" }));
+    const readinessRequiredCases = validateReadinessDbReport(report);
+    console.log(JSON.stringify({ nodeRequiredCases, leaseRequiredCases, readinessRequiredCases, result: "verified" }));
     return 0;
   } finally {
     await rm(reportDir, { recursive: true, force: true });

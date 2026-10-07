@@ -56,6 +56,12 @@ runs after both jobs and passes only if both succeed; failed, cancelled, or
 skipped jobs fail the gate. Local database checks require a running Docker
 service; the gate's regression check executes its actual shell script locally.
 
+The protected [database readiness check](docs/database-migrations.md#protected-database-readiness)
+uses a dedicated `DB_READINESS_SECRET` and read-only version/table checks. It
+returns 503 until a valid migration ledger exists. It never adopts or migrates
+the database. Typecheck and the disposable DB pipeline also verify the generated
+runtime readiness manifest.
+
 Keep the relay worktree's `.env.local` fixture-only (`ODDS_DATA_SOURCE=fixture`).
 For application runs with real providers, load the following variables from a
 private file outside the worktree in your own terminal, separate from the agent
