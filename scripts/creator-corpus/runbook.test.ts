@@ -17,8 +17,8 @@ const toolSources = readdirSync(TOOL_DIRECTORY)
   .concat(source("src/lib/creatorDecisions.ts"));
 const CLI = source("scripts/creator-corpus/cli.ts");
 
-const COMMANDS = ["resolve", "confirm", "discover", "review", "rebuild", "screen"];
-const OPTIONS = ["creators", "output", "max-units", "registry", "keys", "decisions", "allow-incomplete-end-week", "input", "port"];
+const COMMANDS = ["resolve", "confirm", "discover", "review", "rebuild", "screen", "purge"];
+const OPTIONS = ["creators", "output", "max-units", "registry", "keys", "decisions", "allow-incomplete-end-week", "input", "port", "dry-run", "force"];
 
 describe("creator corpus runbook", () => {
   it("documents every command, and every command it shows exists", () => {

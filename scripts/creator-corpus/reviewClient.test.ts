@@ -447,6 +447,7 @@ describe("stale data", () => {
     expect(banner.textContent).toContain("Jul 31, 2026");
     expect(banner.textContent).toContain("Decisions are disabled");
     expect(banner.textContent).toContain("discover");
+    expect(banner.textContent).toContain("purge");
     expect([...document.querySelectorAll<HTMLButtonElement>(".act")].every((entry) => entry.disabled)).toBe(true);
     const card = cards()[0];
     reasonField(card).value = "reason";

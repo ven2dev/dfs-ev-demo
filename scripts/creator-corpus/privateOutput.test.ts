@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   assertPrivateOutputAvailable,
+  deletePrivateFile,
   readPrivateJson,
   readPrivateJsonOptional,
   replacePrivateJson,
@@ -249,5 +250,26 @@ describe("withPrivateFileLock", () => {
     await writeFile(join(directory, "real.json"), "{}");
     await symlink(join(directory, "real.json"), join(directory, "alias.json"));
     expect(await code(withPrivateFileLock(join(directory, "alias.json"), async () => "x"))).toBe("symlink-not-allowed");
+  });
+});
+
+describe("deletePrivateFile", () => {
+  it("deletes an ordinary private file and nothing else", async () => {
+    await writeFile(join(directory, "gone.json"), "{}");
+    await writeFile(join(directory, "stays.json"), "{}");
+    await deletePrivateFile(join(directory, "gone.json"));
+    expect(await readdir(directory)).toEqual(["stays.json"]);
+  });
+
+  it("refuses repository files, links, non-JSON names and files that do not exist", async () => {
+    expect(await code(deletePrivateFile(join(process.cwd(), "package.json")))).toBe("must-be-outside-repository");
+    expect(JSON.parse(await readFile(join(process.cwd(), "package.json"), "utf8")).name).toBe("dfs-ev-demo");
+    await writeFile(join(directory, "real.json"), "{}");
+    await symlink(join(directory, "real.json"), join(directory, "alias.json"));
+    expect(await code(deletePrivateFile(join(directory, "alias.json")))).toBe("symlink-not-allowed");
+    await writeFile(join(directory, "note.txt"), "x");
+    expect(await code(deletePrivateFile(join(directory, "note.txt")))).toBe("json-file-required");
+    expect(await code(deletePrivateFile(join(directory, "absent.json")))).toBe("input-unreadable");
+    expect((await readdir(directory)).sort()).toEqual(["alias.json", "note.txt", "real.json"]);
   });
 });

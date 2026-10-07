@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { access, lstat, open, readFile, realpath, rename, rm } from "node:fs/promises";
+import { access, lstat, open, readFile, realpath, rename, rm, unlink } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -192,5 +192,17 @@ const lockIsStale = async (lockPath: string, staleMs: number): Promise<boolean> 
     return false;
   } catch (error) {
     return (error as NodeJS.ErrnoException).code === "ESRCH";
+  }
+};
+
+// Deletes a private file that passed the same location, symlink and hard-link
+// checks as every other private file, and only if it exists. Used to remove
+// saved API data once its retention period ends.
+export const deletePrivateFile = async (path: string): Promise<void> => {
+  const target = await checkedPath(path);
+  try {
+    await unlink(target);
+  } catch {
+    return fail("input-unreadable");
   }
 };

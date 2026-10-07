@@ -385,7 +385,7 @@
     const since = stale.oldestFetchedAt ? formatDate(stale.oldestFetchedAt) : "an unknown time";
     showBanner(
       "The saved YouTube data was fetched " + since + " and is over " + stale.maxAgeDays + " days old. Decisions are disabled. " +
-        "Refresh it with the discover command, then reopen this page."
+        "Refresh it with the discover command, delete the old file with the purge command, then reopen this page."
     );
   };
 

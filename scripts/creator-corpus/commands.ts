@@ -1,13 +1,15 @@
 import {
+  API_DATA_MAX_AGE_DAYS,
   buildCreatorManifest,
   getStaleVideoIds,
+  isApiDataStale,
   type CreatorManifest,
   type ReviewDecision,
 } from "../../src/lib/creatorCorpusManifest.ts";
 import { effectiveDecisions, eventsFor, type DecisionsFile } from "../../src/lib/creatorDecisions.ts";
 import type { RegisteredWindow, VideoRecord } from "../../src/lib/creatorVideoRule.ts";
 import { windowEnd, windowStart, type CreatorInput } from "./creatorInputs.ts";
-import type { DecisionNotApplied, DiscoveryFile } from "./discoveryFile.ts";
+import { parseDiscoveryFile, type DecisionNotApplied, type DiscoveryFile } from "./discoveryFile.ts";
 import {
   MAX_VIDEOS_PER_REQUEST,
   YoutubeApiError,
@@ -358,4 +360,43 @@ export const rebuildDiscovery = ({
     return { ...creator, manifest, decisionsNotApplied: notApplied };
   });
   return { ...discovery, rebuiltAt: now.toISOString(), creators, decisionsNotApplied };
+};
+
+export type ApiDataFileReport = {
+  kind: "discovery" | "registry";
+  records: number;
+  oldestFetchedAt: string | null;
+  // When the oldest record reaches the retention limit; null for an empty file.
+  deleteBy: string | null;
+  stale: boolean;
+};
+
+// Describes a saved file that holds API-derived data, without reading any of
+// its titles or descriptions out. A file is stale when any record in it is past
+// the retention limit. Anything that is not a discovery or registry file (a
+// decisions log, say) is refused, so purge can never be pointed at the owner's
+// own records.
+export const inspectApiDataFile = (content: unknown, now: Date): ApiDataFileReport => {
+  const creators = (content as { creators?: unknown } | null)?.creators;
+  const first = Array.isArray(creators) ? (creators[0] as Record<string, unknown> | undefined) : undefined;
+  let kind: ApiDataFileReport["kind"];
+  let fetched: string[];
+  if (first && Array.isArray(first.videos)) {
+    kind = "discovery";
+    fetched = parseDiscoveryFile(content).creators.flatMap((creator) => creator.videos.map((video) => video.apiFetchedAt));
+  } else if (first && typeof first.channelId === "string") {
+    kind = "registry";
+    fetched = parseRegistry(content).creators.map((entry) => entry.apiFetchedAt);
+  } else {
+    throw new CommandError("unrecognized-data-file");
+  }
+  const times = fetched.map((value) => Date.parse(value)).filter((time) => !Number.isNaN(time));
+  const oldest = times.length ? Math.min(...times) : null;
+  return {
+    kind,
+    records: fetched.length,
+    oldestFetchedAt: oldest === null ? null : new Date(oldest).toISOString(),
+    deleteBy: oldest === null ? null : new Date(oldest + API_DATA_MAX_AGE_DAYS * 24 * 60 * 60 * 1000).toISOString(),
+    stale: fetched.some((value) => isApiDataStale(value, now)),
+  };
 };

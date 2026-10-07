@@ -5,6 +5,7 @@ import {
   CommandError,
   applyDecisions,
   compareChannelTitle,
+  inspectApiDataFile,
   rebuildDiscovery,
   confirmCreators,
   discoverCreator,
@@ -470,5 +471,58 @@ describe("creator keys that collide with Object properties", () => {
       now: NOW,
     });
     expect(withDecision.creators[0].manifest.videos[0].decision).toMatchObject({ decision: "include" });
+  });
+});
+
+describe("inspectApiDataFile", () => {
+  const registryFile = (apiFetchedAt: string) => ({
+    formatVersion: 1,
+    resolvedAt: apiFetchedAt,
+    failures: [],
+    creators: [
+      {
+        key: "a",
+        name: "n",
+        seedVideoId: vid(1),
+        channelId: channel("a"),
+        channelTitle: "t",
+        uploadsPlaylistId: "UU" + "a".repeat(22),
+        titleMatch: "exact",
+        confirmed: true,
+        apiFetchedAt,
+      },
+    ],
+  });
+
+  it("reports counts, the oldest fetch and the delete-by date for a discovery file", () => {
+    const report = inspectApiDataFile(JSON.parse(JSON.stringify(discoveryFor([record(1), record(2)]))), NOW);
+    expect(report).toEqual({
+      kind: "discovery",
+      records: 3,
+      oldestFetchedAt: NOW.toISOString(),
+      deleteBy: "2026-11-06T12:00:00.000Z",
+      stale: false,
+    });
+  });
+
+  it("is stale as soon as any one record is older than 30 days, and exactly 30 days is not", () => {
+    const later = (days: number, seconds = 0) => new Date(NOW.getTime() + days * 86_400_000 + seconds * 1000);
+    const content = JSON.parse(JSON.stringify(discoveryFor([record(1)])));
+    expect(inspectApiDataFile(content, later(30)).stale).toBe(false);
+    expect(inspectApiDataFile(content, later(30, 1)).stale).toBe(true);
+    const mixed = JSON.parse(JSON.stringify(discoveryFor([record(1), record(2, { apiFetchedAt: "2026-08-01T00:00:00.000Z" })])));
+    expect(inspectApiDataFile(mixed, NOW)).toMatchObject({ stale: true, oldestFetchedAt: "2026-08-01T00:00:00.000Z" });
+  });
+
+  it("understands saved channel details", () => {
+    expect(inspectApiDataFile(registryFile(NOW.toISOString()), NOW)).toMatchObject({ kind: "registry", records: 1, stale: false });
+    expect(inspectApiDataFile(registryFile("2026-08-01T00:00:00.000Z"), NOW)).toMatchObject({ kind: "registry", stale: true });
+  });
+
+  it("refuses anything that is not saved API data, including a decisions log", () => {
+    for (const content of [null, [], {}, { creators: [] }, { creators: [{}] }, { "creator-a": [] }, { creators: [{ videos: "x" }] }]) {
+      expect(() => inspectApiDataFile(content, NOW)).toThrow();
+    }
+    expect(() => inspectApiDataFile({ "creator-a": [] }, NOW)).toThrow(expect.objectContaining({ code: "unrecognized-data-file" }));
   });
 });

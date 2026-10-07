@@ -228,26 +228,43 @@ lists each one under `decisionsNotApplied` with the reason:
 The skipped decision stays in the log. If the video returns, the next run
 applies it again.
 
-### 9. Refresh when the data ages
+### 9. Refresh and delete when the data ages
 
-Saved API data may only be used for 30 days (see below). To continue after
-that, run `discover` again with a **new output filename**, then `review` and
-`rebuild` against the new file, reusing the same decisions file. Decisions
-carry over because they are keyed by video ID.
+Saved API data may be kept for at most 30 calendar days (see below). To
+continue after that, run `resolve` and `confirm` again if your registry is also
+older than 30 days (`discover` refuses a stale registry), then `discover` with a
+**new output filename**, then `review` and `rebuild` against the new file,
+reusing the same decisions file. Decisions carry over because they are keyed by
+video ID.
+
+Then **delete the old files**. The 30-day limit is on keeping the data, not only
+on using it:
+
+```bash
+npm run creators -- purge --input ~/.config/dfs-ev-demo/creators/discovery.json --dry-run
+```
+
+shows the file's kind, how many records it holds, its oldest fetch time and its
+delete-by date, and whether it is stale, without printing any titles. Without
+`--dry-run`, `purge` deletes the file once any record in it is past the limit.
+It refuses to delete a file that is still inside its period unless you add
+`--force`. It only accepts discovery, rebuilt-manifest and registry files, so
+it can never delete your decisions log or any other file.
 
 ## Data age
 
 The tools treat API-derived fields (titles, descriptions, publish times,
-lengths) as data to be refreshed, not kept. Every video carries the time it was
-fetched. Data older than **30 days** is refused: `rebuild` fails with
-`stale-discovery-data`, and the review page blocks decisions.
+lengths, channel titles) as data to be refreshed, not kept. Every record carries
+the time it was fetched. Data older than **30 days** is refused: `rebuild` fails
+with `stale-discovery-data`, `discover` fails with `stale-registry-data`, and the
+review page blocks decisions.
 
-The 30-day figure is a conservative stand-in. **Open item for the owner:** read
-the current YouTube API Services Developer Policies' stored-data rules and
-confirm or change the limit (`API_DATA_MAX_AGE_DAYS` in
-`src/lib/creatorCorpusManifest.ts`). Your decisions (video IDs, your choice and
-reason) are your own records and are not subject to the refresh limit; titles
-and descriptions are.
+The 30-day figure is the policy's own: the YouTube API Services Developer
+Policies (III.E.4.d) allow non-authorized data to be stored temporarily, "not
+longer than 30 calendar days". That limit applies to keeping the data, so stale
+files must be deleted, not only left unused. Use `purge` (step 9). Your
+decisions (video IDs, your choice and reason) are your own records and are not
+subject to the limit; titles, descriptions and channel titles are.
 
 ## Troubleshooting
 
@@ -272,7 +289,10 @@ Every failure prints one line, `creator-corpus: <code>`.
 | `invalid-decisions-file` | The decisions file is not in the current log format. The tool will not overwrite it. |
 | `unknown-creator-in-decisions` | A creator key in the decisions file is not in the registry (usually a typo). Nothing was fetched. Fix the key. |
 | `invalid-decisions-present` | The decision log itself is damaged (a duplicate or reason-less decision). Restore it from a copy. |
-| `stale-discovery-data` | The saved data is over 30 days old. Run `discover` again. |
+| `stale-discovery-data` | The saved data is over 30 days old. Run `discover` again, then `purge` the old file. |
+| `stale-registry-data` | The saved channel details are over 30 days old. Run `resolve` and `confirm` again. |
+| `not-stale-yet` | `purge` kept a file that is still inside its 30 days. Use `--force` to delete it anyway. |
+| `unrecognized-data-file` | `purge` was given something that is not a discovery, manifest or registry file. Nothing was deleted. |
 | `nothing-to-clear`, `video-outside-window`, `unknown-video` | The review page refused a decision for that video (shown in plain words on the card). |
 | `invalid-port` | `--port` must be 0 or between 1024 and 65535. |
 | `network-error`, `timeout`, `server-error` | The request to Google failed. Check the connection and try again; a run that fails writes nothing. |

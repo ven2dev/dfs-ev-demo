@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -176,7 +176,9 @@ describe("discover", () => {
   const args = (extra: string[] = []) => ["discover", "--registry", path("registry.json"), "--output", path("discovery.json"), ...extra];
 
   it("refuses to run before the registered end week has closed, unless explicitly overridden", async () => {
-    await writeJson("registry.json", registryFor(true));
+    const early = registryFor(true);
+    early.creators[0].apiFetchedAt = "2026-10-01T00:00:00.000Z";
+    await writeJson("registry.json", early);
     const { calls, fetchImpl } = fakeYoutube(videos, pages);
     expect((await run(args(), { fetchImpl, now: () => OPEN })).code).toBe("end-week-not-closed");
     expect(calls).toHaveLength(0);
@@ -447,6 +449,96 @@ describe("review", () => {
       "invalid-discovery-file"
     );
     expect(lines).toEqual([]);
+  });
+});
+
+describe("stale registry", () => {
+  it("is refused by discover before any API call, so saved channel details are refetched", async () => {
+    const stale = registryFor(true);
+    stale.creators[0].apiFetchedAt = "2026-08-01T00:00:00.000Z";
+    await writeJson("registry.json", stale);
+    const { calls, fetchImpl } = fakeYoutube({}, [[]]);
+    const result = await run(["discover", "--registry", path("registry.json"), "--output", path("d.json")], { fetchImpl });
+    expect(result.code).toBe("stale-registry-data");
+    expect(calls).toHaveLength(0);
+    expect(await exists("d.json")).toBe(false);
+  });
+});
+
+describe("purge", () => {
+  const FRESH = new Date("2026-10-20T12:00:00Z");
+  const STALE = new Date("2026-12-01T12:00:00Z");
+  const purge = (name: string, extra: string[] = [], now: Date = FRESH) =>
+    run(["purge", "--input", path(name), ...extra], { now: () => now });
+  const seedDiscovery = () => writeJson("discovery.json", discoveryFor([supportRecord(1, { title: "SENTINEL-PRIVATE-TITLE NFL props" })]));
+
+  it("reports a fresh file with its delete-by date and touches nothing in a dry run", async () => {
+    await seedDiscovery();
+    const result = await purge("discovery.json", ["--dry-run"]);
+    expect(result.code).toBe("ok");
+    expect(JSON.parse(result.lines[0])).toEqual({
+      kind: "discovery",
+      records: 2,
+      oldestFetchedAt: "2026-10-07T12:00:00.000Z",
+      deleteBy: "2026-11-06T12:00:00.000Z",
+      stale: false,
+      deleted: false,
+    });
+    expect(await exists("discovery.json")).toBe(true);
+  });
+
+  it("never prints titles or descriptions", async () => {
+    await seedDiscovery();
+    const result = await purge("discovery.json", ["--dry-run"]);
+    expect(result.lines.join("\n")).not.toContain("SENTINEL-PRIVATE-TITLE");
+  });
+
+  it("keeps a file that is still inside its retention period unless the owner forces deletion", async () => {
+    await seedDiscovery();
+    expect((await purge("discovery.json")).code).toBe("not-stale-yet");
+    expect(await exists("discovery.json")).toBe(true);
+    const forced = await purge("discovery.json", ["--force"]);
+    expect(forced.code).toBe("ok");
+    expect(JSON.parse(forced.lines[0]).deleted).toBe(true);
+    expect(await exists("discovery.json")).toBe(false);
+  });
+
+  it("deletes a discovery file once any record is past the retention limit", async () => {
+    await seedDiscovery();
+    const result = await purge("discovery.json", [], STALE);
+    expect(result.code).toBe("ok");
+    expect(JSON.parse(result.lines[0])).toMatchObject({ stale: true, deleted: true });
+    expect(await exists("discovery.json")).toBe(false);
+  });
+
+  it("handles saved channel details the same way", async () => {
+    await writeJson("registry.json", registryFor(true));
+    expect((await purge("registry.json")).code).toBe("not-stale-yet");
+    expect(JSON.parse((await purge("registry.json", ["--dry-run"])).lines[0])).toMatchObject({ kind: "registry", records: 1, stale: false });
+    expect((await purge("registry.json", [], STALE)).code).toBe("ok");
+    expect(await exists("registry.json")).toBe(false);
+  });
+
+  it("will not delete the owner's own records or any other file", async () => {
+    await writeJson("decisions.json", {
+      "creator-a": [{ videoId: vid(1), decision: "include", reason: "r", ruleVersion: "v1", decidedAt: "2026-10-07T10:00:00.000Z" }],
+    });
+    await writeJson("other.json", { anything: true });
+    await writeJson("empty-creators.json", { creators: [] });
+    for (const name of ["decisions.json", "other.json", "empty-creators.json"]) {
+      expect((await purge(name, ["--force"], STALE)).code, name).toBe("unrecognized-data-file");
+      expect(await exists(name), name).toBe(true);
+    }
+  });
+
+  it("applies the usual private-file rules and requires an input", async () => {
+    expect((await run(["purge"])).code).toBe("input-required");
+    expect((await run(["purge", "--input", join(process.cwd(), "package.json"), "--force"])).code).toBe("must-be-outside-repository");
+    await seedDiscovery();
+    await symlink(path("discovery.json"), path("alias.json"));
+    expect((await purge("alias.json", ["--force"], STALE)).code).toBe("symlink-not-allowed");
+    expect(await exists("discovery.json")).toBe(true);
+    expect((await run(["purge", "--input", path("missing.json")])).code).toBe("input-unreadable");
   });
 });
 

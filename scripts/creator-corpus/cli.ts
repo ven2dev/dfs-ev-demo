@@ -8,6 +8,7 @@ import {
   confirmCreators,
   discoverCreator,
   formatScreenReport,
+  inspectApiDataFile,
   parseRegistry,
   rebuildDiscovery,
   resolveCreators,
@@ -18,7 +19,8 @@ import { DecisionsFileError, effectiveDecisions, eventsFor, parseDecisionsFile }
 import { InputError, isEndWeekClosed, loadRegistration, parseCreatorsFile } from "./creatorInputs.ts";
 import { parseDiscoveryFile } from "./discoveryFile.ts";
 import { readDecisionsFile } from "./decisionStore.ts";
-import { PrivateFileError, assertPrivateOutputAvailable, readPrivateJson, writePrivateJson } from "./privateOutput.ts";
+import { isApiDataStale } from "../../src/lib/creatorCorpusManifest.ts";
+import { PrivateFileError, assertPrivateOutputAvailable, deletePrivateFile, readPrivateJson, writePrivateJson } from "./privateOutput.ts";
 import { startReviewServer } from "./reviewServer.ts";
 import { YoutubeApiError, createQuotaMeter, createYoutubeClient, type FetchLike } from "./youtubeApi.ts";
 
@@ -126,6 +128,9 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     const registry = parseRegistry(await readPrivateJson(values.registry));
     const confirmed = registry.creators.filter((entry) => entry.confirmed);
     if (confirmed.length === 0) return usage("no-confirmed-creators");
+    // Saved channel details are API data too: past the retention limit they
+    // must be fetched again (resolve), not reused.
+    if (confirmed.some((entry) => isApiDataStale(entry.apiFetchedAt, now))) throw new CommandError("stale-registry-data");
     const decisions = values.decisions ? readDecisions(await readPrivateJson(values.decisions)) : {};
     // A misspelled creator key must stop the run before any quota is spent.
     const registryKeys = new Set(registry.creators.map((entry) => entry.key));
@@ -199,6 +204,23 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     } finally {
       await server.close();
     }
+    return;
+  }
+
+  if (command === "purge") {
+    const values = parse({ input: { type: "string" }, "dry-run": { type: "boolean" }, force: { type: "boolean" } });
+    if (!values.input) return usage("input-required");
+    const report = inspectApiDataFile(await readPrivateJson(values.input), deps.now());
+    const summary = { ...report, deleted: false };
+    if (values["dry-run"]) {
+      deps.out(JSON.stringify(summary));
+      return;
+    }
+    // A file still inside its retention period is kept unless the owner
+    // explicitly asks to delete it early.
+    if (!report.stale && !values.force) throw new CommandError("not-stale-yet");
+    await deletePrivateFile(values.input);
+    deps.out(JSON.stringify({ ...summary, deleted: true }));
     return;
   }
 
