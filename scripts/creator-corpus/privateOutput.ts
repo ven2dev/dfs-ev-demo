@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { constants } from "node:fs";
 import { access, lstat, open, readFile, realpath, rename, rm, unlink } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,9 +21,11 @@ const repositoryRoot = (): string => fileURLToPath(new URL("../../", import.meta
 // Every file this tool reads or writes must be a .json file in an existing
 // directory outside the repository (after resolving symlinks), so nothing can
 // be committed by accident.
-const checkedPath = async (path: string): Promise<string> => {
+const checkedPath = async (path: string, extensions: readonly string[] = [".json"]): Promise<string> => {
   const target = resolve(path);
-  if (!target.endsWith(".json")) fail("json-file-required");
+  if (!extensions.some((extension) => target.endsWith(extension))) {
+    fail(extensions.includes(".json") ? "json-file-required" : "jsonl-file-required");
+  }
   let parent: string;
   try {
     parent = await realpath(dirname(target));
@@ -144,7 +147,7 @@ export const withPrivateFileLock = async <T>(
   work: () => Promise<T>,
   { timeoutMs = 5000, staleMs = 30_000 }: { timeoutMs?: number; staleMs?: number } = {}
 ): Promise<T> => {
-  const target = await checkedPath(path);
+  const target = await checkedPath(path, [".json", ".jsonl"]);
   const lockPath = join(dirname(target), `.${basename(target)}.lock`);
   const deadline = Date.now() + timeoutMs;
   for (;;) {
@@ -204,5 +207,45 @@ export const deletePrivateFile = async (path: string): Promise<void> => {
     await unlink(target);
   } catch {
     return fail("input-unreadable");
+  }
+};
+
+// Reads a JSON Lines file as text. A file that does not exist yet is
+// `undefined`; one that exists but cannot be read still fails, so a caller
+// never appends to something it could not understand.
+export const readPrivateTextOptional = async (path: string): Promise<string | undefined> => {
+  const target = await checkedPath(path, [".jsonl"]);
+  try {
+    return await readFile(target, "utf8");
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "ENOENT" ? undefined : fail("input-unreadable");
+  }
+};
+
+// Appends one line to a private JSON Lines log, creating it at owner-only
+// permissions. The file is opened append-only and without following links, so
+// a link swapped in after the location check still cannot redirect the write,
+// and the line goes out in one write that is flushed before returning. Callers
+// hold the file lock around their read-check-append.
+export const appendPrivateLine = async (path: string, line: string): Promise<void> => {
+  if (line.includes("\n") || line.includes("\r")) throw new PrivateFileError("invalid-line");
+  const target = await checkedPath(path, [".jsonl"]);
+  let handle;
+  try {
+    handle = await open(
+      target,
+      constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT | constants.O_NOFOLLOW,
+      0o600
+    );
+  } catch {
+    return fail("output-unwritable");
+  }
+  try {
+    await handle.write(line + "\n");
+    await handle.sync();
+  } catch {
+    return fail("output-unwritable");
+  } finally {
+    await handle.close();
   }
 };

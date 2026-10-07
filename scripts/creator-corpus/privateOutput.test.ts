@@ -5,10 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  appendPrivateLine,
   assertPrivateOutputAvailable,
   deletePrivateFile,
   readPrivateJson,
   readPrivateJsonOptional,
+  readPrivateTextOptional,
   replacePrivateJson,
   withPrivateFileLock,
   writePrivateJson,
@@ -271,5 +273,52 @@ describe("deletePrivateFile", () => {
     expect(await code(deletePrivateFile(join(directory, "note.txt")))).toBe("json-file-required");
     expect(await code(deletePrivateFile(join(directory, "absent.json")))).toBe("input-unreadable");
     expect((await readdir(directory)).sort()).toEqual(["alias.json", "note.txt", "real.json"]);
+  });
+});
+
+describe("JSON Lines helpers", () => {
+  const log = () => join(directory, "log.jsonl");
+
+  it("appends lines to an owner-only file without disturbing earlier lines", async () => {
+    await appendPrivateLine(log(), '{"a":1}');
+    await appendPrivateLine(log(), '{"b":2}');
+    expect(await readFile(log(), "utf8")).toBe('{"a":1}\n{"b":2}\n');
+    expect((await stat(log())).mode & 0o777).toBe(0o600);
+    expect(await readdir(directory)).toEqual(["log.jsonl"]);
+  });
+
+  it("appends to a file that already exists without truncating it", async () => {
+    await writeFile(log(), '{"old":true}\n');
+    await appendPrivateLine(log(), '{"new":true}');
+    expect(await readFile(log(), "utf8")).toBe('{"old":true}\n{"new":true}\n');
+  });
+
+  it("refuses a line that contains a line break", async () => {
+    for (const bad of ["a\nb", "a\rb"]) expect(await code(appendPrivateLine(log(), bad))).toBe("invalid-line");
+    await expect(stat(log())).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("requires a .jsonl name and applies the usual location, symbolic-link and hard-link rules", async () => {
+    expect(await code(appendPrivateLine(join(directory, "log.json"), "{}"))).toBe("jsonl-file-required");
+    expect(await code(appendPrivateLine(join(process.cwd(), `creator-corpus-test-${randomUUID()}.jsonl`), "{}"))).toBe("must-be-outside-repository");
+    await writeFile(join(directory, "real.jsonl"), "");
+    await symlink(join(directory, "real.jsonl"), join(directory, "alias.jsonl"));
+    expect(await code(appendPrivateLine(join(directory, "alias.jsonl"), "{}"))).toBe("symlink-not-allowed");
+    expect(await readFile(join(directory, "real.jsonl"), "utf8")).toBe("");
+    await link(join(directory, "real.jsonl"), join(directory, "second.jsonl"));
+    expect(await code(appendPrivateLine(join(directory, "real.jsonl"), "{}"))).toBe("hard-link-not-allowed");
+  });
+
+  it("reads a log as text, treats a missing one as undefined, and applies the same rules", async () => {
+    expect(await readPrivateTextOptional(log())).toBeUndefined();
+    await appendPrivateLine(log(), '{"a":1}');
+    expect(await readPrivateTextOptional(log())).toBe('{"a":1}\n');
+    expect(await code(readPrivateTextOptional(join(directory, "log.json")))).toBe("jsonl-file-required");
+    expect(await code(readPrivateTextOptional(join(process.cwd(), "x.jsonl")))).toBe("must-be-outside-repository");
+  });
+
+  it("can be locked like a JSON file", async () => {
+    expect(await withPrivateFileLock(log(), async () => "ok")).toBe("ok");
+    expect(await readdir(directory)).toEqual([]);
   });
 });
