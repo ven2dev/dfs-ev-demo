@@ -3,6 +3,7 @@ import {
   DECISION_REASON_MAX_LENGTH,
   checkDecisionEvent,
   effectiveDecisions,
+  eventsFor,
   hasActiveDecision,
   parseDecisionsFile,
   type DecisionEvent,
@@ -132,5 +133,27 @@ describe("effectiveDecisions", () => {
     const events = [event()];
     expect(hasActiveDecision(events, A)).toBe(true);
     expect(hasActiveDecision(events, B)).toBe(false);
+  });
+});
+
+describe("eventsFor", () => {
+  it("returns an empty list for any key the file does not own, including names inherited from Object", () => {
+    for (const file of [{}, parseDecisionsFile({}), Object.create(null)]) {
+      for (const key of ["creator-a", "constructor", "toString", "hasOwnProperty", "valueOf", "__proto__"]) {
+        expect(eventsFor(file, key), key).toEqual([]);
+      }
+    }
+  });
+
+  it("returns the events of a creator whose key collides with an Object property", () => {
+    const events = [event()];
+    const file = parseDecisionsFile({ constructor: events });
+    expect(eventsFor(file, "constructor")).toEqual(events);
+    expect(eventsFor(file, "creator-a")).toEqual([]);
+    expect(effectiveDecisions(eventsFor(parseDecisionsFile({}), "constructor"))).toEqual([]);
+  });
+
+  it("keeps a parsed file free of an inherited prototype", () => {
+    expect(Object.getPrototypeOf(parseDecisionsFile({ "creator-a": [] }))).toBeNull();
   });
 });

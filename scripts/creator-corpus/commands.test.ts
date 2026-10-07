@@ -455,3 +455,20 @@ describe("applyDecisions", () => {
     expect(() => apply([{ ...decision(supportVid(1)), reason: "  " }])).toThrow(expect.objectContaining({ code: "invalid-decisions-present" }));
   });
 });
+
+describe("creator keys that collide with Object properties", () => {
+  it("rebuilds a creator named constructor when no decisions were recorded", () => {
+    const discovery = discoveryFor([record(1)]);
+    discovery.creators[0].key = "constructor";
+    discovery.creators[0].manifest.creatorKey = "constructor";
+    const result = rebuildDiscovery({ discovery, decisions: {}, now: NOW });
+    expect(result.creators[0].key).toBe("constructor");
+    expect(result.decisionsNotApplied).toEqual([]);
+    const withDecision = rebuildDiscovery({
+      discovery,
+      decisions: { constructor: [{ videoId: supportVid(1), decision: "include" as const, reason: "r", ruleVersion: "v1", decidedAt: "2026-10-07T13:00:00.000Z" }] },
+      now: NOW,
+    });
+    expect(withDecision.creators[0].manifest.videos[0].decision).toMatchObject({ decision: "include" });
+  });
+});

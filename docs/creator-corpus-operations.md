@@ -161,7 +161,10 @@ In the page:
   (up to 500 characters). Keyboard: `j`/`k` move between videos; `i` or `e`
   focus the reason field, then Enter saves.
 - Every decision is saved immediately to the decisions file. Closing the tab
-  loses nothing.
+  loses nothing. Saves take a short lock (a hidden `.decisions.json.lock` file
+  beside the log), so two review windows or two commands on the same log cannot
+  overwrite each other's decisions. A lock left by a crashed run is cleared
+  automatically once its owner is gone or after 30 seconds.
 
 If the saved YouTube data is older than 30 days the page shows a red banner and
 disables all decisions (see *Data age* below).
@@ -265,6 +268,7 @@ Every failure prints one line, `creator-corpus: <code>`.
 | `title-mismatch-cannot-confirm` | The stored name does not match the resolved channel. Fix the creators file and resolve again. |
 | `creator-not-confirmed`, `no-confirmed-creators` | Run `confirm` first and pass the confirmed registry to `discover`. |
 | `symlink-not-allowed`, `hard-link-not-allowed` | A file is a symbolic link or has a second hard link. Use a plain file in a folder outside the repository. |
+| `file-busy` | Another process held the decisions-file lock for over 5 seconds. Wait and try the save again. |
 | `invalid-decisions-file` | The decisions file is not in the current log format. The tool will not overwrite it. |
 | `unknown-creator-in-decisions` | A creator key in the decisions file is not in the registry (usually a typo). Nothing was fetched. Fix the key. |
 | `invalid-decisions-present` | The decision log itself is damaged (a duplicate or reason-less decision). Restore it from a copy. |

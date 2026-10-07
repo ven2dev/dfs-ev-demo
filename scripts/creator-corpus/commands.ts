@@ -4,7 +4,7 @@ import {
   type CreatorManifest,
   type ReviewDecision,
 } from "../../src/lib/creatorCorpusManifest.ts";
-import { effectiveDecisions, type DecisionsFile } from "../../src/lib/creatorDecisions.ts";
+import { effectiveDecisions, eventsFor, type DecisionsFile } from "../../src/lib/creatorDecisions.ts";
 import type { RegisteredWindow, VideoRecord } from "../../src/lib/creatorVideoRule.ts";
 import { windowEnd, windowStart, type CreatorInput } from "./creatorInputs.ts";
 import type { DecisionNotApplied, DiscoveryFile } from "./discoveryFile.ts";
@@ -352,7 +352,7 @@ export const rebuildDiscovery = ({
       videos: creator.videos,
       unavailableVideoIds: creator.unavailableVideoIds,
       window: discovery.registration.window,
-      active: effectiveDecisions(decisions[creator.key] ?? []),
+      active: effectiveDecisions(eventsFor(decisions, creator.key)),
     });
     decisionsNotApplied.push(...notApplied);
     return { ...creator, manifest, decisionsNotApplied: notApplied };

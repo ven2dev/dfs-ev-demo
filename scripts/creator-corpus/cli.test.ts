@@ -309,6 +309,25 @@ describe("rebuild", () => {
   });
 });
 
+describe("a creator whose key is named like an Object property", () => {
+  it("is discovered without a decisions file and with an empty one", async () => {
+    const registry = registryFor(true);
+    registry.creators[0].key = "constructor";
+    await writeJson("registry.json", registry);
+    const pages = [[{ videoId: vid(2), at: "2025-10-09T15:00:00Z" }]];
+    const videos = { [vid(2)]: videoJson(vid(2), { title: "NFL Week 6 best bets" }) };
+    const { fetchImpl } = fakeYoutube(videos, pages);
+    expect((await run(["discover", "--registry", path("registry.json"), "--output", path("one.json")], { fetchImpl })).code).toBe("ok");
+    await writeJson("empty.json", {});
+    const second = fakeYoutube(videos, pages);
+    expect(
+      (await run(["discover", "--registry", path("registry.json"), "--output", path("two.json"), "--decisions", path("empty.json")], { fetchImpl: second.fetchImpl })).code
+    ).toBe("ok");
+    expect((await readJson("two.json")).creators[0].key).toBe("constructor");
+    expect((await run(["rebuild", "--input", path("two.json"), "--decisions", path("empty.json"), "--output", path("three.json")])).code).toBe("ok");
+  });
+});
+
 describe("discover validates the decisions it is given", () => {
   const pages = [[{ videoId: vid(2), at: "2025-10-09T15:00:00Z" }]];
   const videos = { [vid(2)]: videoJson(vid(2), { title: "NFL Week 6 best bets" }) };

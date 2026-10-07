@@ -182,3 +182,44 @@ describe("concurrency", () => {
     expect((await read)["creator-a"]).toHaveLength(1);
   });
 });
+
+describe("a creator whose key is named like an Object property", () => {
+  it("records and reads decisions for a creator named constructor", async () => {
+    const discovery = discoveryFor([record(1)]);
+    discovery.creators[0].key = "constructor";
+    discovery.creators[0].manifest.creatorKey = "constructor";
+    const store = createDecisionStore({ path, discovery, now: () => NOW });
+    await store.append({ creatorKey: "constructor", videoId: vid(1), decision: "include", reason: "r" });
+    await store.append({ creatorKey: "constructor", videoId: vid(1), decision: "clear", reason: "unsure" });
+    expect(Object.keys(await store.read())).toEqual(["constructor"]);
+    expect((await onDisk()).constructor).toHaveLength(2);
+  });
+});
+
+describe("two review processes on the same log", () => {
+  // Two stores have independent in-process queues, exactly like two separate
+  // review commands. Only the file lock keeps them from overwriting each other.
+  it("never lose each other's decisions", async () => {
+    const videos = Array.from({ length: 60 }, (_, index) => record(index + 1));
+    const discovery = discoveryFor(videos);
+    const first = createDecisionStore({ path, discovery, now: () => NOW });
+    const second = createDecisionStore({ path, discovery, now: () => NOW });
+    await Promise.all(
+      videos.map((video, index) => (index % 2 === 0 ? first : second).append(request(Number(video.videoId.slice(3)))))
+    );
+    const events = (await onDisk())["creator-a"];
+    expect(events).toHaveLength(60);
+    expect(new Set(events.map((event) => event.videoId)).size).toBe(60);
+    expect((await readdir(directory)).sort()).toEqual(["decisions.json"]);
+  });
+
+  it("fail with a fixed code, and lose nothing, when the lock is held too long", async () => {
+    const discovery = discoveryFor([record(1)]);
+    const store = createDecisionStore({ path, discovery, now: () => NOW });
+    await store.append(request(1));
+    await writeFile(join(directory, ".decisions.json.lock"), JSON.stringify({ pid: process.pid, at: Date.now() }));
+    const slow = createDecisionStore({ path, discovery, now: () => NOW, lock: { timeoutMs: 100 } });
+    expect(await codeOf(slow.append(request(1, { reason: "second" })))).toBe("file-busy");
+    expect((await onDisk())["creator-a"]).toHaveLength(1);
+  });
+});

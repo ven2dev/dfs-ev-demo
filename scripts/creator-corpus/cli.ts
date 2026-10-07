@@ -14,7 +14,7 @@ import {
   screenManifests,
   type CreatorDiscovery,
 } from "./commands.ts";
-import { DecisionsFileError, effectiveDecisions, parseDecisionsFile } from "../../src/lib/creatorDecisions.ts";
+import { DecisionsFileError, effectiveDecisions, eventsFor, parseDecisionsFile } from "../../src/lib/creatorDecisions.ts";
 import { InputError, isEndWeekClosed, loadRegistration, parseCreatorsFile } from "./creatorInputs.ts";
 import { parseDiscoveryFile } from "./discoveryFile.ts";
 import { readDecisionsFile } from "./decisionStore.ts";
@@ -135,7 +135,7 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     const creators: CreatorDiscovery[] = [];
     for (const entry of confirmed) {
       creators.push(
-        await discoverCreator({ client, entry, window: registration.window, decisions: effectiveDecisions(decisions[entry.key] ?? []), now })
+        await discoverCreator({ client, entry, window: registration.window, decisions: effectiveDecisions(eventsFor(decisions, entry.key)), now })
       );
     }
     // Decisions for creators that are in the registry but were not discovered

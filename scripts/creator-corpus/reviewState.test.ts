@@ -86,3 +86,14 @@ describe("buildReviewState", () => {
     expect(build({}, stale).stale).toEqual({ blocked: true, staleVideos: 2, maxAgeDays: 30, oldestFetchedAt: "2026-08-01T00:00:00.000Z" });
   });
 });
+
+describe("creator keys that collide with Object properties", () => {
+  it("builds the state for a creator named constructor, with and without decisions", () => {
+    const discovery = discoveryFor([record(1)]);
+    discovery.creators[0].key = "constructor";
+    discovery.creators[0].manifest.creatorKey = "constructor";
+    expect(buildReviewState({ discovery, decisions: {}, now: NOW }).creators[0].key).toBe("constructor");
+    const decided = buildReviewState({ discovery, decisions: { constructor: [event()] }, now: NOW });
+    expect(decided.creators[0].videos[0].decision).toMatchObject({ decision: "include" });
+  });
+});

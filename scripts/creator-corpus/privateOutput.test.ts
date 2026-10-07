@@ -9,6 +9,7 @@ import {
   readPrivateJson,
   readPrivateJsonOptional,
   replacePrivateJson,
+  withPrivateFileLock,
   writePrivateJson,
 } from "./privateOutput.ts";
 
@@ -175,5 +176,78 @@ describe("file links", () => {
     expect(await readPrivateJson(join(directory, "plain.json"))).toEqual({ k: 1 });
     await replacePrivateJson(join(directory, "plain.json"), { k: 2 });
     expect(await readPrivateJson(join(directory, "plain.json"))).toEqual({ k: 2 });
+  });
+});
+
+describe("withPrivateFileLock", () => {
+  const lockFile = () => join(directory, ".log.json.lock");
+  const target = () => join(directory, "log.json");
+  const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  it("runs the work, returns its result and removes the lock", async () => {
+    expect(await withPrivateFileLock(target(), async () => "done")).toBe("done");
+    expect(await readdir(directory)).toEqual([]);
+  });
+
+  it("removes the lock even when the work throws", async () => {
+    await expect(withPrivateFileLock(target(), async () => Promise.reject(new Error("boom")))).rejects.toThrow("boom");
+    expect(await readdir(directory)).toEqual([]);
+  });
+
+  it("holds the lock with its owner recorded, at owner-only permissions, while the work runs", async () => {
+    await withPrivateFileLock(target(), async () => {
+      expect(JSON.parse(await readFile(lockFile(), "utf8"))).toMatchObject({ pid: process.pid });
+      expect((await stat(lockFile())).mode & 0o777).toBe(0o600);
+    });
+  });
+
+  it("makes a second holder wait until the first has finished", async () => {
+    const order: string[] = [];
+    const first = withPrivateFileLock(target(), async () => {
+      order.push("first start");
+      await wait(150);
+      order.push("first end");
+    });
+    await wait(30);
+    const second = withPrivateFileLock(target(), async () => {
+      order.push("second start");
+    });
+    await Promise.all([first, second]);
+    expect(order).toEqual(["first start", "first end", "second start"]);
+  });
+
+  it("gives up with a fixed code when the lock stays held, and leaves the holder's lock alone", async () => {
+    const holder = withPrivateFileLock(target(), async () => wait(300));
+    await wait(30);
+    expect(await code(withPrivateFileLock(target(), async () => "never", { timeoutMs: 100 }))).toBe("file-busy");
+    await holder;
+    expect(await readdir(directory)).toEqual([]);
+  });
+
+  it("takes over a lock whose owner process no longer exists", async () => {
+    await writeFile(lockFile(), JSON.stringify({ pid: 2147483646, at: Date.now() }));
+    expect(await withPrivateFileLock(target(), async () => "taken over", { timeoutMs: 500 })).toBe("taken over");
+  });
+
+  it("takes over a lock older than the stale limit, but not a fresh one held by a live process", async () => {
+    await writeFile(lockFile(), JSON.stringify({ pid: process.pid, at: Date.now() - 60_000 }));
+    expect(await withPrivateFileLock(target(), async () => "old", { staleMs: 1000, timeoutMs: 500 })).toBe("old");
+    await writeFile(lockFile(), JSON.stringify({ pid: process.pid, at: Date.now() }));
+    expect(await code(withPrivateFileLock(target(), async () => "fresh", { staleMs: 60_000, timeoutMs: 100 }))).toBe("file-busy");
+  });
+
+  it("handles an unreadable lock file by its age", async () => {
+    await writeFile(lockFile(), "{ half written");
+    expect(await code(withPrivateFileLock(target(), async () => "x", { staleMs: 60_000, timeoutMs: 100 }))).toBe("file-busy");
+    expect(await withPrivateFileLock(target(), async () => "aged out", { staleMs: 0, timeoutMs: 500 })).toBe("aged out");
+  });
+
+  it("applies the same location rules as every other private file", async () => {
+    expect(await code(withPrivateFileLock(join(process.cwd(), `creator-corpus-test-${randomUUID()}.json`), async () => "x"))).toBe(
+      "must-be-outside-repository"
+    );
+    await writeFile(join(directory, "real.json"), "{}");
+    await symlink(join(directory, "real.json"), join(directory, "alias.json"));
+    expect(await code(withPrivateFileLock(join(directory, "alias.json"), async () => "x"))).toBe("symlink-not-allowed");
   });
 });

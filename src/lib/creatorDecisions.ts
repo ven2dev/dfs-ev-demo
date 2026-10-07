@@ -34,6 +34,11 @@ const CREATOR_KEY = /^[a-z0-9][a-z0-9-]{0,31}$/;
 const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
 const EVENT_KEYS = ["decidedAt", "decision", "reason", "ruleVersion", "videoId"];
 
+// A creator's events, by own property only: a valid key like "constructor"
+// must never resolve to something inherited from Object.prototype.
+export const eventsFor = (file: DecisionsFile, creatorKey: string): DecisionEvent[] =>
+  Object.hasOwn(file, creatorKey) ? file[creatorKey] : [];
+
 export const isCreatorKey = (value: string): boolean => CREATOR_KEY.test(value);
 
 export const checkDecisionEvent = (value: unknown): DecisionEventProblem | null => {
@@ -68,7 +73,8 @@ export class DecisionsFileError extends Error {
 // rather than silently dropping a decision the owner made.
 export const parseDecisionsFile = (input: unknown): DecisionsFile => {
   if (typeof input !== "object" || input === null || Array.isArray(input)) throw new DecisionsFileError();
-  const file: DecisionsFile = {};
+  // No prototype, so a creator key such as "constructor" is ordinary data.
+  const file: DecisionsFile = Object.create(null);
   for (const [creatorKey, events] of Object.entries(input)) {
     if (!isCreatorKey(creatorKey) || !Array.isArray(events)) throw new DecisionsFileError();
     for (const event of events) if (checkDecisionEvent(event) !== null) throw new DecisionsFileError();

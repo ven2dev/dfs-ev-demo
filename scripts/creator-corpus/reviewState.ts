@@ -5,7 +5,7 @@ import {
   type ManifestSlot,
   type CreatorManifest,
 } from "../../src/lib/creatorCorpusManifest.ts";
-import { effectiveDecisions, type DecisionEvent, type DecisionsFile } from "../../src/lib/creatorDecisions.ts";
+import { effectiveDecisions, eventsFor, type DecisionEvent, type DecisionsFile } from "../../src/lib/creatorDecisions.ts";
 import type { ReasonCode, RegisteredWindow } from "../../src/lib/creatorVideoRule.ts";
 import type { DiscoveryFile } from "./discoveryFile.ts";
 
@@ -86,7 +86,7 @@ export const buildReviewState = ({
   const oldest = fetchTimes.filter((time) => !Number.isNaN(time));
   const oldestFetchedAt = oldest.length ? new Date(Math.min(...oldest)).toISOString() : null;
   const creators = discovery.creators.map((creator): ReviewCreator => {
-    const events = decisions[creator.key] ?? [];
+    const events = eventsFor(decisions, creator.key);
     const manifest = buildCreatorManifest({
       creatorKey: creator.key,
       videos: creator.videos,

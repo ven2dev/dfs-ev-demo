@@ -131,3 +131,66 @@ export const replacePrivateJson = async (path: string, data: unknown): Promise<v
     return fail("output-unwritable");
   }
 };
+
+const LOCK_POLL_MS = 25;
+
+// Runs `work` while holding an exclusive lock next to a private file, so two
+// processes cannot both read the same version and then overwrite each other's
+// change. The lock is a file created exclusively and holding its owner's
+// process id and time. A lock whose owner is gone, or that is older than
+// `staleMs`, is taken over so a crashed process cannot block the owner forever.
+export const withPrivateFileLock = async <T>(
+  path: string,
+  work: () => Promise<T>,
+  { timeoutMs = 5000, staleMs = 30_000 }: { timeoutMs?: number; staleMs?: number } = {}
+): Promise<T> => {
+  const target = await checkedPath(path);
+  const lockPath = join(dirname(target), `.${basename(target)}.lock`);
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    try {
+      const handle = await open(lockPath, "wx", 0o600);
+      try {
+        await handle.writeFile(JSON.stringify({ pid: process.pid, at: Date.now() }));
+      } finally {
+        await handle.close();
+      }
+      break;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") return fail("output-unwritable");
+    }
+    if (await lockIsStale(lockPath, staleMs)) {
+      await rm(lockPath, { force: true });
+      continue;
+    }
+    if (Date.now() >= deadline) return fail("file-busy");
+    await new Promise((resolve) => setTimeout(resolve, LOCK_POLL_MS));
+  }
+  try {
+    return await work();
+  } finally {
+    await rm(lockPath, { force: true });
+  }
+};
+
+const lockIsStale = async (lockPath: string, staleMs: number): Promise<boolean> => {
+  let owner: { pid?: unknown; at?: unknown };
+  try {
+    owner = JSON.parse(await readFile(lockPath, "utf8"));
+  } catch {
+    // Unreadable or half-written: judge by the file's own age instead.
+    try {
+      return Date.now() - (await lstat(lockPath)).mtimeMs > staleMs;
+    } catch {
+      return true;
+    }
+  }
+  if (typeof owner.at === "number" && Date.now() - owner.at > staleMs) return true;
+  if (typeof owner.pid !== "number") return false;
+  try {
+    process.kill(owner.pid, 0);
+    return false;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "ESRCH";
+  }
+};
