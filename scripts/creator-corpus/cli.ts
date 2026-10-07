@@ -17,7 +17,9 @@ import {
 import { DecisionsFileError, effectiveDecisions, parseDecisionsFile } from "../../src/lib/creatorDecisions.ts";
 import { InputError, isEndWeekClosed, loadRegistration, parseCreatorsFile } from "./creatorInputs.ts";
 import { parseDiscoveryFile } from "./discoveryFile.ts";
+import { readDecisionsFile } from "./decisionStore.ts";
 import { PrivateFileError, assertPrivateOutputAvailable, readPrivateJson, writePrivateJson } from "./privateOutput.ts";
+import { startReviewServer } from "./reviewServer.ts";
 import { YoutubeApiError, createQuotaMeter, createYoutubeClient, type FetchLike } from "./youtubeApi.ts";
 
 // Owner-run commands for the #88 corpus manifest. Failures print one fixed
@@ -38,6 +40,8 @@ export type CliDeps = {
   fetchImpl: FetchLike;
   now: () => Date;
   out: (line: string) => void;
+  // Resolves when the owner stops a long-running command (Ctrl+C).
+  waitForStop: () => Promise<void>;
 };
 
 const COMMON = {
@@ -150,6 +154,26 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     return;
   }
 
+  if (command === "review") {
+    const values = parse({ input: { type: "string" }, decisions: { type: "string" }, port: { type: "string" } });
+    if (!values.input || !values.decisions) return usage("input-and-decisions-required");
+    const port = values.port === undefined ? 0 : Number(values.port);
+    if (!Number.isInteger(port) || (port !== 0 && (port < 1024 || port > 65535))) return usage("invalid-port");
+    const discovery = parseDiscoveryFile(await readPrivateJson(values.input));
+    // Fail now, not on the first click, if the decisions path is unusable.
+    await readDecisionsFile(values.decisions);
+    const server = await startReviewServer({ discovery, decisionsPath: values.decisions, now: deps.now, port });
+    deps.out("Open this address in your browser. It only works on this computer:");
+    deps.out(server.url);
+    deps.out("Press Ctrl+C to stop.");
+    try {
+      await deps.waitForStop();
+    } finally {
+      await server.close();
+    }
+    return;
+  }
+
   if (command === "screen") {
     const values = parse({ input: { type: "string" } });
     if (!values.input) return usage("input-required");
@@ -173,6 +197,11 @@ export const main = async (argv: string[]): Promise<number> => {
       fetchImpl: (url, init) => fetch(url, init),
       now: () => new Date(),
       out: (line) => process.stdout.write(line.endsWith("\n") ? line : line + "\n"),
+      waitForStop: () =>
+        new Promise<void>((resolve) => {
+          process.once("SIGINT", () => resolve());
+          process.once("SIGTERM", () => resolve());
+        }),
     });
     return 0;
   } catch (error) {

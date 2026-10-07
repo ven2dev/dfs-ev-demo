@@ -31,7 +31,7 @@ describe("checkDecisionEvent", () => {
   it.each([
     ["not an object", null, "invalid-event"],
     ["an array", [], "invalid-event"],
-    ["a missing field", (({ ruleVersion: _unused, ...rest }) => rest)(event()), "invalid-event"],
+    ["a missing field", Object.fromEntries(Object.entries(event()).filter(([key]) => key !== "ruleVersion")), "invalid-event"],
     ["an extra field", { ...event(), extra: 1 }, "invalid-event"],
     ["a short video id", event({ videoId: "short" }), "invalid-video-id"],
     ["an id with a slash", event({ videoId: "aaaaaaaaaa/" }), "invalid-video-id"],

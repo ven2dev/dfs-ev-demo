@@ -1,9 +1,9 @@
 // @vitest-environment node
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCli, type CliDeps } from "./cli.ts";
 import type { FetchLike } from "./youtubeApi.ts";
 import { discoveryFor, record as supportRecord, vid as supportVid } from "./testSupport.ts";
@@ -69,6 +69,7 @@ const run = async (args: string[], overrides: Partial<CliDeps> = {}) => {
     },
     now: () => CLOSED,
     out: (line) => lines.push(line),
+    waitForStop: async () => undefined,
     ...overrides,
   };
   try {
@@ -304,6 +305,60 @@ describe("discover with an event-log decisions file", () => {
   });
 });
 
+describe("review", () => {
+  const seed = async () => {
+    await writeJson("discovery.json", discoveryFor([supportRecord(1)]));
+  };
+  const reviewArgs = (extra: string[] = []) => ["review", "--input", path("discovery.json"), "--decisions", path("decisions.json"), ...extra];
+
+  it("prints a fragment-token address, serves it while running, and stops cleanly", async () => {
+    await seed();
+    let stop!: () => void;
+    const stopped = new Promise<void>((resolve) => (stop = resolve));
+    const lines: string[] = [];
+    const running = run(reviewArgs(), {
+      waitForStop: () => stopped,
+      out: (line) => {
+        lines.push(line);
+      },
+    });
+    await vi.waitFor(() => expect(lines.some((line) => line.startsWith("http://127.0.0.1:"))).toBe(true));
+    const address = new URL(lines.find((line) => line.startsWith("http://"))!);
+    expect(address.search).toBe("");
+    const token = new URLSearchParams(address.hash.slice(1)).get("token")!;
+    const data = await fetch(`${address.origin}/api/data`, { headers: { Authorization: `Bearer ${token}` } });
+    expect(data.status).toBe(200);
+    expect((await fetch(`${address.origin}/api/data`)).status).toBe(401);
+    stop();
+    expect((await running).code).toBe("ok");
+    await expect(fetch(`${address.origin}/`)).rejects.toThrow();
+  });
+
+  it("fails before starting for missing options, a bad port, an unusable decisions path or a bad file", async () => {
+    await seed();
+    const lines: string[] = [];
+    const out = (line: string) => {
+      lines.push(line);
+    };
+    expect((await run(["review"], { out })).code).toBe("input-and-decisions-required");
+    for (const port of ["80", "70000", "abc", "1.5", "-1"]) {
+      expect((await run(reviewArgs([`--port=${port}`]), { out })).code, port).toBe("invalid-port");
+    }
+    expect(
+      (await run(["review", "--input", path("discovery.json"), "--decisions", join(process.cwd(), "decisions.json")], { out })).code
+    ).toBe("must-be-outside-repository");
+    await writeFile(path("decisions.json"), "{ corrupt");
+    expect((await run(reviewArgs(), { out })).code).toBe("input-unreadable");
+    await writeJson("decisions.json", { "creator-a": [{ videoId: vid(1), decision: "include", reason: "old format" }] });
+    expect((await run(reviewArgs(), { out })).code).toBe("invalid-decisions-file");
+    await writeJson("bad-discovery.json", { creators: [] });
+    expect((await run(["review", "--input", path("bad-discovery.json"), "--decisions", path("fresh.json")], { out })).code).toBe(
+      "invalid-discovery-file"
+    );
+    expect(lines).toEqual([]);
+  });
+});
+
 describe("screen and dispatch", () => {
   it("prints coverage from a discovery file and refuses other files", async () => {
     await writeJson("registry.json", registryFor(true));
@@ -345,6 +400,34 @@ describe("the real command line", () => {
     expect(badDirectory.status).toBe(1);
     expect(badDirectory.stderr).toBe("creator-corpus: directory-missing\n");
     expect(badDirectory.stderr + badDirectory.stdout).not.toContain(KEY);
+  });
+
+  it("serves the review page from the real command and exits cleanly on Ctrl+C", async () => {
+    await writeJson("discovery.json", discoveryFor([supportRecord(1)]));
+    const child = spawn(
+      process.execPath,
+      ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "scripts/creator-corpus/cli.ts", "review", "--input", path("discovery.json"), "--decisions", path("decisions.json")],
+      { cwd: process.cwd(), env: { PATH: process.env.PATH ?? "" } as unknown as NodeJS.ProcessEnv }
+    );
+    try {
+      const exited = new Promise<number | null>((resolve) => child.on("exit", (code) => resolve(code)));
+      const address = await new Promise<string>((resolve, reject) => {
+        let output = "";
+        child.stdout.on("data", (chunk) => {
+          output += chunk;
+          const match = /http:\/\/127\.0\.0\.1:\d+\/#token=\S+/.exec(output);
+          if (match) resolve(match[0]);
+        });
+        child.on("exit", () => reject(new Error("exited before printing an address")));
+      });
+      const url = new URL(address);
+      expect((await fetch(url.origin + "/")).status).toBe(200);
+      child.kill("SIGINT");
+      expect(await exited).toBe(0);
+      await expect(fetch(url.origin + "/")).rejects.toThrow();
+    } finally {
+      child.kill("SIGKILL");
+    }
   });
 
   it("reports an unrecognised failure generically", () => {
