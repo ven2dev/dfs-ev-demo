@@ -28,6 +28,7 @@ export const discoveryFor = (videos: VideoRecord[], otherVideos: VideoRecord[] =
     uploadPages: 1,
     stoppedEarly: false,
     enrichedVideos: list.length,
+    decisionsNotApplied: [],
   });
   return {
     formatVersion: 1,

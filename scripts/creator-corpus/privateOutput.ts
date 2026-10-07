@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { access, open, readFile, realpath, rename, rm } from "node:fs/promises";
+import { access, lstat, open, readFile, realpath, rename, rm } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,7 +34,19 @@ const checkedPath = async (path: string): Promise<string> => {
   if (within === "" || (within !== ".." && !within.startsWith(".." + sep) && !within.startsWith(sep))) {
     fail("must-be-outside-repository");
   }
-  return join(parent, basename(target));
+  const candidate = join(parent, basename(target));
+  // Resolving the directory is not enough: a file here that is a symbolic link
+  // (or a second hard link) to a file inside the repository would put private
+  // data in the repository while looking like it is outside. Refuse both.
+  let info;
+  try {
+    info = await lstat(candidate);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") fail("input-unreadable");
+  }
+  if (info?.isSymbolicLink()) fail("symlink-not-allowed");
+  if (info?.isFile() && info.nlink > 1) fail("hard-link-not-allowed");
+  return candidate;
 };
 
 // Exclusive create with owner-only permissions: an existing file is never

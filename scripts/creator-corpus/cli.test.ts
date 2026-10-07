@@ -278,7 +278,7 @@ describe("rebuild", () => {
     expect((await run(["rebuild", "--input", path("discovery.json")])).code).toBe("input-decisions-and-output-required");
   });
 
-  it("fails with fixed codes for stale data, bad decisions files, unknown creators and uncounted decisions", async () => {
+  it("fails with fixed codes for stale data, bad decisions files and unknown creators", async () => {
     await seed();
     expect((await run(rebuildArgs("a.json"), { now: () => new Date("2027-01-01T00:00:00Z") })).code).toBe("stale-discovery-data");
     expect(await exists("a.json")).toBe(false);
@@ -289,15 +289,74 @@ describe("rebuild", () => {
     await writeJson("decisions.json", { "creator-z": [decision()] });
     expect((await run(rebuildArgs("c.json"))).code).toBe("unknown-creator-in-decisions");
 
-    await writeJson("decisions.json", { "creator-a": [decision({ videoId: supportVid(55) })] });
-    expect((await run(rebuildArgs("d.json"))).code).toBe("invalid-decisions-present");
-    for (const name of ["b.json", "c.json", "d.json"]) expect(await exists(name)).toBe(false);
+    for (const name of ["b.json", "c.json"]) expect(await exists(name)).toBe(false);
+  });
+
+  it("reports and skips a decision for a video that is not in the discovery file", async () => {
+    await seed({ "creator-a": [decision({ videoId: supportVid(55) })] });
+    const result = await run(rebuildArgs("d.json"));
+    expect(result.code).toBe("ok");
+    expect(result.lines.at(-1)).toContain("1 decision(s) were not applied");
+    expect((await readJson("d.json")).decisionsNotApplied).toEqual([
+      { creatorKey: "creator-a", videoId: supportVid(55), why: "video-not-in-discovery" },
+    ]);
   });
 
   it("rejects a file that is not a discovery file", async () => {
     await writeJson("discovery.json", { creators: [] });
     await writeJson("decisions.json", {});
     expect((await run(rebuildArgs())).code).toBe("invalid-discovery-file");
+  });
+});
+
+describe("discover validates the decisions it is given", () => {
+  const pages = [[{ videoId: vid(2), at: "2025-10-09T15:00:00Z" }]];
+  const videos = { [vid(2)]: videoJson(vid(2), { title: "NFL Week 6 best bets" }) };
+  const event = (overrides: Record<string, unknown> = {}) => ({
+    videoId: vid(2), decision: "include", reason: "reason", ruleVersion: "v1", decidedAt: "2026-10-07T10:00:00.000Z", ...overrides,
+  });
+  const args = () => ["discover", "--registry", path("registry.json"), "--output", path("d.json"), "--decisions", path("decisions.json")];
+
+  it("stops before spending any quota when a decision names a creator that is not in the registry", async () => {
+    await writeJson("registry.json", registryFor(true));
+    await writeJson("decisions.json", { "creator-typo": [event()] });
+    const { calls, fetchImpl } = fakeYoutube(videos, pages);
+    expect((await run(args(), { fetchImpl })).code).toBe("unknown-creator-in-decisions");
+    expect(calls).toHaveLength(0);
+    expect(await exists("d.json")).toBe(false);
+  });
+
+  it("warns, and records why, when decisions could not be applied", async () => {
+    await writeJson("registry.json", registryFor(true));
+    await writeJson("decisions.json", { "creator-a": [event(), event({ videoId: vid(77) })] });
+    const { fetchImpl } = fakeYoutube(videos, pages);
+    const result = await run(args(), { fetchImpl });
+    expect(result.code).toBe("ok");
+    expect(result.lines.some((line) => line.includes("1 decision(s) were not applied"))).toBe(true);
+    const file = await readJson("d.json");
+    expect(file.decisionsNotApplied).toEqual([{ creatorKey: "creator-a", videoId: vid(77), why: "video-not-in-discovery" }]);
+    expect(file.creators[0].manifest.videos[0]).toMatchObject({ status: "present", decision: { decision: "include" } });
+  });
+
+  it("keeps decisions for a registered creator that was not discovered this run, and says so", async () => {
+    const registry = registryFor(true);
+    registry.creators.push({ ...registry.creators[0], key: "creator-b", channelId: "UC" + "b".repeat(22), uploadsPlaylistId: "UU" + "b".repeat(22), confirmed: false });
+    await writeJson("registry.json", registry);
+    await writeJson("decisions.json", { "creator-b": [event({ videoId: vid(5) })] });
+    const { fetchImpl } = fakeYoutube(videos, pages);
+    expect((await run(args(), { fetchImpl })).code).toBe("ok");
+    expect((await readJson("d.json")).decisionsNotApplied).toEqual([
+      { creatorKey: "creator-b", videoId: vid(5), why: "creator-not-discovered" },
+    ]);
+  });
+
+  it("prints no warning when every decision applied", async () => {
+    await writeJson("registry.json", registryFor(true));
+    await writeJson("decisions.json", { "creator-a": [event()] });
+    const { fetchImpl } = fakeYoutube(videos, pages);
+    const result = await run(args(), { fetchImpl });
+    expect(result.lines.some((line) => line.includes("were not applied"))).toBe(false);
+    expect((await readJson("d.json")).decisionsNotApplied).toEqual([]);
   });
 });
 

@@ -61,6 +61,10 @@ const apiClient = (deps: CliDeps, maxUnits: number) => {
   return { meter, client: createYoutubeClient({ apiKey, fetchImpl: deps.fetchImpl, meter }) };
 };
 
+const notAppliedNotice = (count: number): string =>
+  `${count} decision(s) were not applied (the video is gone, was not listed, or is outside the window). ` +
+  "They stay in your log and are listed with the reason under decisionsNotApplied in the output file.";
+
 const readDecisions = (content: unknown) => {
   try {
     return parseDecisionsFile(content);
@@ -123,6 +127,9 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     const confirmed = registry.creators.filter((entry) => entry.confirmed);
     if (confirmed.length === 0) return usage("no-confirmed-creators");
     const decisions = values.decisions ? readDecisions(await readPrivateJson(values.decisions)) : {};
+    // A misspelled creator key must stop the run before any quota is spent.
+    const registryKeys = new Set(registry.creators.map((entry) => entry.key));
+    if (Object.keys(decisions).some((key) => !registryKeys.has(key))) throw new CommandError("unknown-creator-in-decisions");
     await assertPrivateOutputAvailable(values.output);
     const { client, meter } = apiClient(deps, parseUnits(values["max-units"], 1000));
     const creators: CreatorDiscovery[] = [];
@@ -131,14 +138,33 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
         await discoverCreator({ client, entry, window: registration.window, decisions: effectiveDecisions(decisions[entry.key] ?? []), now })
       );
     }
+    // Decisions for creators that are in the registry but were not discovered
+    // in this run are kept in the log and reported, not applied.
+    const confirmedKeys = new Set(confirmed.map((entry) => entry.key));
+    const decisionsNotApplied = [
+      ...creators.flatMap((creator) => creator.decisionsNotApplied),
+      ...Object.entries(decisions)
+        .filter(([key]) => !confirmedKeys.has(key))
+        .flatMap(([key, events]) =>
+          effectiveDecisions(events).map((decision) => ({
+            creatorKey: key,
+            videoId: decision.videoId,
+            why: "creator-not-discovered" as const,
+          }))
+        ),
+    ];
     await writePrivateJson(values.output, {
       formatVersion: 1,
       discoveredAt: now.toISOString(),
       registration,
       quota: meter,
       creators,
+      decisionsNotApplied,
     });
     deps.out(formatScreenReport(screenManifests(creators.map((creator) => creator.manifest))));
+    if (decisionsNotApplied.length > 0) {
+      deps.out(notAppliedNotice(decisionsNotApplied.length));
+    }
     deps.out(JSON.stringify({ creators: creators.length, quotaUsed: meter.used, quotaLimit: meter.limit }));
     return;
   }
@@ -152,9 +178,7 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     await writePrivateJson(values.output, rebuilt);
     deps.out(formatScreenReport(screenManifests(rebuilt.creators.map((creator) => creator.manifest))));
     const skipped = rebuilt.decisionsNotApplied?.length ?? 0;
-    if (skipped > 0) {
-      deps.out(`${skipped} decision(s) were not applied because the video is no longer available from YouTube (listed in the output file).`);
-    }
+    if (skipped > 0) deps.out(notAppliedNotice(skipped));
     return;
   }
 

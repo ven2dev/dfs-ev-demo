@@ -7,7 +7,7 @@ import {
 import { effectiveDecisions, type DecisionsFile } from "../../src/lib/creatorDecisions.ts";
 import type { RegisteredWindow, VideoRecord } from "../../src/lib/creatorVideoRule.ts";
 import { windowEnd, windowStart, type CreatorInput } from "./creatorInputs.ts";
-import type { DiscoveryFile } from "./discoveryFile.ts";
+import type { DecisionNotApplied, DiscoveryFile } from "./discoveryFile.ts";
 import {
   MAX_VIDEOS_PER_REQUEST,
   YoutubeApiError,
@@ -150,6 +150,43 @@ export const parseRegistry = (input: unknown): CreatorRegistry => {
   return value as CreatorRegistry;
 };
 
+// Builds a creator's manifest from the owner's active decisions. A decision
+// that cannot be applied (the video is gone, was never listed, or is outside
+// the registered window) is skipped and reported with the reason: it stays in
+// the append-only log, but it never changes coverage unnoticed and never
+// blocks the workflow.
+export const applyDecisions = ({
+  creatorKey,
+  videos,
+  unavailableVideoIds,
+  window,
+  active,
+}: {
+  creatorKey: string;
+  videos: readonly VideoRecord[];
+  unavailableVideoIds: readonly string[];
+  window: RegisteredWindow;
+  active: readonly ReviewDecision[];
+}): { manifest: CreatorManifest; notApplied: DecisionNotApplied[] } => {
+  const first = buildCreatorManifest({ creatorKey, videos, decisions: active, window });
+  const unavailable = new Set(unavailableVideoIds);
+  const skipped = new Map<string, DecisionNotApplied["why"]>();
+  for (const invalid of first.invalidDecisions) {
+    if (invalid.reason === "unknown-video") {
+      skipped.set(invalid.videoId, unavailable.has(invalid.videoId) ? "video-unavailable" : "video-not-in-discovery");
+    } else if (invalid.reason === "outside-window") {
+      skipped.set(invalid.videoId, "video-outside-window");
+    } else {
+      // A duplicate or reason-less decision means the log itself is damaged.
+      throw new CommandError("invalid-decisions-present");
+    }
+  }
+  const notApplied = [...skipped].map(([videoId, why]): DecisionNotApplied => ({ creatorKey, videoId, why }));
+  if (skipped.size === 0) return { manifest: first, notApplied };
+  const applicable = active.filter((decision) => !skipped.has(decision.videoId));
+  return { manifest: buildCreatorManifest({ creatorKey, videos, decisions: applicable, window }), notApplied };
+};
+
 export type CreatorDiscovery = {
   key: string;
   manifest: CreatorManifest;
@@ -158,6 +195,7 @@ export type CreatorDiscovery = {
   uploadPages: number;
   stoppedEarly: boolean;
   enrichedVideos: number;
+  decisionsNotApplied: DecisionNotApplied[];
 };
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -213,14 +251,23 @@ export const discoverCreator = async ({
     }
   }
   const returned = new Set(fetched.map((video) => video.videoId));
+  const unavailableVideoIds = ids.filter((id) => !returned.has(id));
+  const { manifest, notApplied } = applyDecisions({
+    creatorKey: entry.key,
+    videos: fetched,
+    unavailableVideoIds,
+    window,
+    active: decisions,
+  });
   return {
     key: entry.key,
-    manifest: buildCreatorManifest({ creatorKey: entry.key, videos: fetched, decisions, window }),
+    manifest,
     videos: fetched,
-    unavailableVideoIds: ids.filter((id) => !returned.has(id)),
+    unavailableVideoIds,
     uploadPages: listing.pages,
     stoppedEarly: listing.stoppedEarly,
     enrichedVideos: fetched.length,
+    decisionsNotApplied: notApplied,
   };
 };
 
@@ -282,8 +329,8 @@ export const formatScreenReport = (rows: readonly ScreenRow[]): string => {
 
 // Rebuilds every creator's manifest from the videos already saved in a
 // discovery file plus the owner's decisions, with no API call. Stale API data
-// is refused (refresh through `discover`), and so is anything that would make
-// a decision silently not count.
+// and decisions for creators this file does not know are refused. Any decision
+// that cannot be applied is skipped and reported, never dropped silently.
 export const rebuildDiscovery = ({
   discovery,
   decisions,
@@ -298,24 +345,17 @@ export const rebuildDiscovery = ({
   }
   const known = new Set(discovery.creators.map((creator) => creator.key));
   if (Object.keys(decisions).some((key) => !known.has(key))) throw new CommandError("unknown-creator-in-decisions");
-  const decisionsNotApplied: NonNullable<DiscoveryFile["decisionsNotApplied"]> = [];
+  const decisionsNotApplied: DecisionNotApplied[] = [];
   const creators = discovery.creators.map((creator) => {
-    // A video YouTube no longer returns cannot be part of the manifest. The
-    // owner's decision about it stays in the log, is reported, and is not applied.
-    const unavailable = new Set(creator.unavailableVideoIds);
-    const applicable = effectiveDecisions(decisions[creator.key] ?? []).filter((decision) => {
-      if (!unavailable.has(decision.videoId)) return true;
-      decisionsNotApplied.push({ creatorKey: creator.key, videoId: decision.videoId, why: "video-unavailable" });
-      return false;
-    });
-    const manifest = buildCreatorManifest({
+    const { manifest, notApplied } = applyDecisions({
       creatorKey: creator.key,
       videos: creator.videos,
-      decisions: applicable,
+      unavailableVideoIds: creator.unavailableVideoIds,
       window: discovery.registration.window,
+      active: effectiveDecisions(decisions[creator.key] ?? []),
     });
-    if (manifest.invalidDecisions.length > 0) throw new CommandError("invalid-decisions-present");
-    return { ...creator, manifest };
+    decisionsNotApplied.push(...notApplied);
+    return { ...creator, manifest, decisionsNotApplied: notApplied };
   });
   return { ...discovery, rebuiltAt: now.toISOString(), creators, decisionsNotApplied };
 };

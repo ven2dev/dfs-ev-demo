@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { RegisteredWindow } from "../../src/lib/creatorVideoRule.ts";
 import {
   CommandError,
+  applyDecisions,
   compareChannelTitle,
   rebuildDiscovery,
   confirmCreators,
@@ -263,6 +264,30 @@ describe("discoverCreator", () => {
     expect(result).toMatchObject({ uploadPages: 2, stoppedEarly: true });
   });
 
+  it("reports decisions about videos that vanished from the uploads list instead of failing", async () => {
+    const { client } = fakeClient({
+      pages: [{ items: [item(1, "2025-10-09T15:00:00Z"), item(2, "2025-10-09T16:00:00Z")], nextPageToken: null }],
+      videos: { [vid(1)]: apiVideo(vid(1)) },
+    });
+    const result = await discoverCreator({
+      client,
+      entry,
+      window: WINDOW,
+      decisions: [
+        { videoId: vid(1), decision: "include", reason: "r" },
+        { videoId: vid(2), decision: "exclude", reason: "was listed, now gone" },
+        { videoId: vid(99), decision: "include", reason: "never listed again" },
+      ],
+      now: NOW,
+    });
+    expect(result.unavailableVideoIds).toEqual([vid(2)]);
+    expect(result.decisionsNotApplied).toEqual([
+      { creatorKey: "a", videoId: vid(2), why: "video-unavailable" },
+      { creatorKey: "a", videoId: vid(99), why: "video-not-in-discovery" },
+    ]);
+    expect(result.manifest.invalidDecisions).toEqual([]);
+  });
+
   it("applies owner decisions, refuses unconfirmed creators and videos from another channel", async () => {
     const pages = [{ items: [item(2, "2025-10-09T15:00:00Z")], nextPageToken: null }];
     const flagged = apiVideo(vid(2), { title: "NFL Week 6 best bets" });
@@ -371,10 +396,6 @@ describe("rebuildDiscovery", () => {
     expect(result.decisionsNotApplied).toEqual([{ creatorKey: "creator-a", videoId: supportVid(77), why: "video-unavailable" }]);
     expect(result.creators[0].manifest.videos.map((video) => video.videoId)).toEqual([supportVid(1)]);
     expect(result.creators[0].manifest.videos[0].decision).toMatchObject({ decision: "include" });
-    // A decision for a video that is neither present nor listed as unavailable is still an error.
-    expect(() =>
-      rebuildDiscovery({ discovery, decisions: { "creator-a": [event({ videoId: supportVid(78) })] }, now: NOW })
-    ).toThrow(expect.objectContaining({ code: "invalid-decisions-present" }));
   });
 
   it("reports an empty list when every decision was applied", () => {
@@ -386,14 +407,51 @@ describe("rebuildDiscovery", () => {
     expect(() => rebuild({}, stale)).toThrow(expect.objectContaining({ code: "stale-discovery-data" }));
   });
 
-  it("refuses decisions for creators it does not know and decisions that would silently not count", () => {
+  it("refuses decisions for creators it does not know", () => {
     expect(() => rebuild({ "creator-z": [event()] })).toThrow(expect.objectContaining({ code: "unknown-creator-in-decisions" }));
-    expect(() => rebuild({ "creator-a": [event({ videoId: supportVid(77) })] })).toThrow(
-      expect.objectContaining({ code: "invalid-decisions-present" })
-    );
+  });
+
+  it("reports, and skips, decisions for videos that are not listed or are outside the window instead of failing", () => {
     const outside = discoveryFor([record(1), record(2, { publishedAt: "2025-02-01T12:00:00Z" })]);
-    expect(() => rebuild({ "creator-a": [event({ videoId: supportVid(2) })] }, outside)).toThrow(
-      expect.objectContaining({ code: "invalid-decisions-present" })
+    const result = rebuild(
+      { "creator-a": [event(), event({ videoId: supportVid(2) }), event({ videoId: supportVid(78) })] },
+      outside
     );
+    expect(result.decisionsNotApplied).toEqual([
+      { creatorKey: "creator-a", videoId: supportVid(2), why: "video-outside-window" },
+      { creatorKey: "creator-a", videoId: supportVid(78), why: "video-not-in-discovery" },
+    ]);
+    expect(result.creators[0].manifest.videos.find((video) => video.videoId === supportVid(1))!.decision).toMatchObject({
+      decision: "include",
+    });
+  });
+});
+
+describe("applyDecisions", () => {
+  const window = { endSeason: 2026, endWeek: 4 };
+  const videos = [record(1), record(2, { publishedAt: "2025-02-01T12:00:00Z" })];
+  const decision = (videoId: string) => ({ videoId, decision: "include" as const, reason: "r", ruleVersion: "v1", decidedAt: "2026-10-07T13:00:00.000Z" });
+  const apply = (active: ReturnType<typeof decision>[], unavailableVideoIds: string[] = []) =>
+    applyDecisions({ creatorKey: "creator-a", videos, unavailableVideoIds, window, active });
+
+  it("applies what it can and labels each skipped decision by what is known about the video", () => {
+    const result = apply([decision(supportVid(1)), decision(supportVid(2)), decision(supportVid(60)), decision(supportVid(61))], [supportVid(61)]);
+    expect(result.manifest.videos.find((video) => video.videoId === supportVid(1))!.decision).not.toBeNull();
+    expect(result.notApplied).toEqual([
+      { creatorKey: "creator-a", videoId: supportVid(2), why: "video-outside-window" },
+      { creatorKey: "creator-a", videoId: supportVid(60), why: "video-not-in-discovery" },
+      { creatorKey: "creator-a", videoId: supportVid(61), why: "video-unavailable" },
+    ]);
+    expect(result.manifest.invalidDecisions).toEqual([]);
+  });
+
+  it("reports nothing when every decision applies", () => {
+    expect(apply([decision(supportVid(1))]).notApplied).toEqual([]);
+    expect(apply([]).notApplied).toEqual([]);
+  });
+
+  it("fails on a damaged log (a duplicate or reason-less decision) rather than guessing", () => {
+    expect(() => apply([decision(supportVid(1)), decision(supportVid(1))])).toThrow(expect.objectContaining({ code: "invalid-decisions-present" }));
+    expect(() => apply([{ ...decision(supportVid(1)), reason: "  " }])).toThrow(expect.objectContaining({ code: "invalid-decisions-present" }));
   });
 });

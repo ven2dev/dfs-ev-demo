@@ -14,9 +14,15 @@ export type DiscoveryFile = {
   registration: Registration;
   quota: unknown;
   creators: CreatorDiscovery[];
-  // Decisions kept in the log but not applied because the video is no longer
-  // available from YouTube. Written by `rebuild` so nothing is dropped silently.
-  decisionsNotApplied?: { creatorKey: string; videoId: string; why: "video-unavailable" }[];
+  // Decisions kept in the log but not applied, with the reason, so nothing is
+  // dropped silently. Written by `discover` and `rebuild`.
+  decisionsNotApplied?: DecisionNotApplied[];
+};
+
+export type DecisionNotApplied = {
+  creatorKey: string;
+  videoId: string;
+  why: "video-unavailable" | "video-not-in-discovery" | "video-outside-window" | "creator-not-discovered";
 };
 
 const fail = (): never => {
@@ -67,7 +73,9 @@ export const parseDiscoveryFile = (input: unknown): DiscoveryFile => {
     ) {
       return fail();
     }
-    return { ...(entry as unknown as CreatorDiscovery), videos: entry.videos.map(checkVideo) };
+    // Files written before the field existed report nothing as not applied.
+    const notApplied = Array.isArray(entry.decisionsNotApplied) ? entry.decisionsNotApplied : [];
+    return { ...(entry as unknown as CreatorDiscovery), videos: entry.videos.map(checkVideo), decisionsNotApplied: notApplied };
   });
   return { ...(input as unknown as DiscoveryFile), registration, creators };
 };

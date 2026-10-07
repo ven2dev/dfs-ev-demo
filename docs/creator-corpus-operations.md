@@ -20,8 +20,9 @@ exception ends before any public use (#91).
 - **Everything the tools read or write must be a `.json` file outside this
   repository.** They refuse any path inside the repository (after resolving
   symlinks), so creator names, API data and your decisions cannot be committed
-  by accident. Output files are created with owner-only permissions and are
-  never overwritten.
+  by accident. A file that is itself a symbolic link, or has a second hard
+  link, is refused too, since it could point back into the repository. Output
+  files are created with owner-only permissions and are never overwritten.
 - **Never put the API key in a file, an argument, an issue or a chat.** It is
   read only from the `YOUTUBE_API_KEY` environment variable and is sent in a
   request header, never in a URL. Error output contains one fixed code and
@@ -122,7 +123,10 @@ a daily default of 10,000. Options:
 
 - `--max-units N` — hard cap for the run (default 1000); the run stops before
   it would be exceeded and writes nothing.
-- `--decisions <file>` — apply your review decisions (see step 7).
+- `--decisions <file>` — apply your review decisions (see step 7). A creator key
+  in the file that is not in the registry stops the run before any API call.
+  Decisions that cannot be applied are listed (see *Decisions that cannot be
+  applied* below).
 - `--allow-incomplete-end-week` — only for testing. Without it the command
   refuses to run until the registered end week has closed.
 
@@ -196,14 +200,30 @@ npm run creators -- rebuild --input ~/.config/dfs-ev-demo/creators/discovery.jso
 
 This applies the active decisions to the saved videos with **no API call** and
 writes a new file (it never overwrites). It refuses stale data, decisions for
-unknown creators, and any decision that would silently not count. A decision
-about a video YouTube no longer returns stays in your log but cannot be applied;
-`rebuild` says how many were skipped and lists them in the output file under
-`decisionsNotApplied`. To see coverage again at any time:
+unknown creators. A decision that cannot be applied is skipped and reported
+(next section). To see coverage again at any time:
 
 ```bash
 npm run creators -- screen --input ~/.config/dfs-ev-demo/creators/manifest.json
 ```
+
+### Decisions that cannot be applied
+
+Your log is permanent, but a decision can only count while its video is in the
+saved data. `discover` and `rebuild` never fail on such a decision and never
+skip it silently: the command prints how many were skipped, and the output file
+lists each one under `decisionsNotApplied` with the reason:
+
+- `video-unavailable` — YouTube listed the video but no longer returns it
+  (removed or made private).
+- `video-not-in-discovery` — the video is not in the saved data at all. It may
+  have been deleted, or the ID in a hand-edited log may be wrong.
+- `video-outside-window` — the video is outside the registered weeks.
+- `creator-not-discovered` — the creator is in the registry but was not
+  discovered in this run.
+
+The skipped decision stays in the log. If the video returns, the next run
+applies it again.
 
 ### 9. Refresh when the data ages
 
@@ -244,8 +264,10 @@ Every failure prints one line, `creator-corpus: <code>`.
 | `invalid-creators-file`, `invalid-creator-key`, `invalid-creator-name`, `invalid-seed-video`, `duplicate-creator-key` | The creators file is malformed; see step 1. |
 | `title-mismatch-cannot-confirm` | The stored name does not match the resolved channel. Fix the creators file and resolve again. |
 | `creator-not-confirmed`, `no-confirmed-creators` | Run `confirm` first and pass the confirmed registry to `discover`. |
+| `symlink-not-allowed`, `hard-link-not-allowed` | A file is a symbolic link or has a second hard link. Use a plain file in a folder outside the repository. |
 | `invalid-decisions-file` | The decisions file is not in the current log format. The tool will not overwrite it. |
-| `invalid-decisions-present`, `unknown-creator-in-decisions` | A decision names a video or creator that cannot be applied. Fix the log (a decision for a video outside the window, or a misspelled key). |
+| `unknown-creator-in-decisions` | A creator key in the decisions file is not in the registry (usually a typo). Nothing was fetched. Fix the key. |
+| `invalid-decisions-present` | The decision log itself is damaged (a duplicate or reason-less decision). Restore it from a copy. |
 | `stale-discovery-data` | The saved data is over 30 days old. Run `discover` again. |
 | `nothing-to-clear`, `video-outside-window`, `unknown-video` | The review page refused a decision for that video (shown in plain words on the card). |
 | `invalid-port` | `--port` must be 0 or between 1024 and 65535. |

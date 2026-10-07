@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { randomUUID } from "node:crypto";
-import { mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { link, mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -137,5 +137,43 @@ describe("replacePrivateJson", () => {
       await rm(join(process.cwd(), name), { force: true });
     }
     expect(await code(replacePrivateJson(join(directory, "x.txt"), {}))).toBe("json-file-required");
+  });
+});
+
+describe("file links", () => {
+  // A link here would put private data inside the repository (or somewhere
+  // unchecked) while the link itself looks like it is outside.
+  it("refuses a symbolic link that points into the repository, for every read and write", async () => {
+    const linked = join(directory, "innocent.json");
+    await symlink(join(process.cwd(), "package.json"), linked);
+    expect(await code(readPrivateJson(linked))).toBe("symlink-not-allowed");
+    expect(await code(readPrivateJsonOptional(linked))).toBe("symlink-not-allowed");
+    expect(await code(writePrivateJson(linked, {}))).toBe("symlink-not-allowed");
+    expect(await code(replacePrivateJson(linked, {}))).toBe("symlink-not-allowed");
+    expect(await code(assertPrivateOutputAvailable(linked))).toBe("symlink-not-allowed");
+    expect(JSON.parse(await readFile(join(process.cwd(), "package.json"), "utf8")).name).toBe("dfs-ev-demo");
+  });
+
+  it("refuses any symbolic link, even a dangling one or one to another private file", async () => {
+    await writeFile(join(directory, "real.json"), "{}");
+    await symlink(join(directory, "real.json"), join(directory, "alias.json"));
+    await symlink(join(directory, "nowhere.json"), join(directory, "dangling.json"));
+    expect(await code(readPrivateJson(join(directory, "alias.json")))).toBe("symlink-not-allowed");
+    expect(await code(writePrivateJson(join(directory, "dangling.json"), {}))).toBe("symlink-not-allowed");
+    await expect(stat(join(directory, "nowhere.json"))).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it("refuses a file that has a second hard link", async () => {
+    await writeFile(join(directory, "one.json"), '{"k":1}');
+    await link(join(directory, "one.json"), join(directory, "two.json"));
+    expect(await code(readPrivateJson(join(directory, "one.json")))).toBe("hard-link-not-allowed");
+    expect(await code(readPrivateJson(join(directory, "two.json")))).toBe("hard-link-not-allowed");
+  });
+
+  it("still reads and replaces an ordinary private file", async () => {
+    await writeFile(join(directory, "plain.json"), '{"k":1}');
+    expect(await readPrivateJson(join(directory, "plain.json"))).toEqual({ k: 1 });
+    await replacePrivateJson(join(directory, "plain.json"), { k: 2 });
+    expect(await readPrivateJson(join(directory, "plain.json"))).toEqual({ k: 2 });
   });
 });
