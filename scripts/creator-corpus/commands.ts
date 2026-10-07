@@ -298,15 +298,24 @@ export const rebuildDiscovery = ({
   }
   const known = new Set(discovery.creators.map((creator) => creator.key));
   if (Object.keys(decisions).some((key) => !known.has(key))) throw new CommandError("unknown-creator-in-decisions");
+  const decisionsNotApplied: NonNullable<DiscoveryFile["decisionsNotApplied"]> = [];
   const creators = discovery.creators.map((creator) => {
+    // A video YouTube no longer returns cannot be part of the manifest. The
+    // owner's decision about it stays in the log, is reported, and is not applied.
+    const unavailable = new Set(creator.unavailableVideoIds);
+    const applicable = effectiveDecisions(decisions[creator.key] ?? []).filter((decision) => {
+      if (!unavailable.has(decision.videoId)) return true;
+      decisionsNotApplied.push({ creatorKey: creator.key, videoId: decision.videoId, why: "video-unavailable" });
+      return false;
+    });
     const manifest = buildCreatorManifest({
       creatorKey: creator.key,
       videos: creator.videos,
-      decisions: effectiveDecisions(decisions[creator.key] ?? []),
+      decisions: applicable,
       window: discovery.registration.window,
     });
     if (manifest.invalidDecisions.length > 0) throw new CommandError("invalid-decisions-present");
     return { ...creator, manifest };
   });
-  return { ...discovery, rebuiltAt: now.toISOString(), creators };
+  return { ...discovery, rebuiltAt: now.toISOString(), creators, decisionsNotApplied };
 };

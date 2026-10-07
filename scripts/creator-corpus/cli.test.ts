@@ -257,6 +257,19 @@ describe("rebuild", () => {
     expect((await run(["screen", "--input", path("rebuilt.json")])).code).toBe("ok");
   });
 
+  it("tells the owner when a decision was not applied because the video is gone", async () => {
+    const discovery = discoveryFor([supportRecord(1)]);
+    discovery.creators[0].unavailableVideoIds = [supportVid(77)];
+    await writeJson("discovery.json", discovery);
+    await writeJson("decisions.json", { "creator-a": [decision({ videoId: supportVid(77) })] });
+    const result = await run(rebuildArgs());
+    expect(result.code).toBe("ok");
+    expect(result.lines.at(-1)).toContain("1 decision(s) were not applied");
+    expect((await readJson("rebuilt.json")).decisionsNotApplied).toEqual([
+      { creatorKey: "creator-a", videoId: supportVid(77), why: "video-unavailable" },
+    ]);
+  });
+
   it("refuses to overwrite an existing output and requires every path", async () => {
     await seed();
     await writeJson("rebuilt.json", { keep: true });

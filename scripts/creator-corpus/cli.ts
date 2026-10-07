@@ -151,6 +151,10 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     const rebuilt = rebuildDiscovery({ discovery, decisions, now: deps.now() });
     await writePrivateJson(values.output, rebuilt);
     deps.out(formatScreenReport(screenManifests(rebuilt.creators.map((creator) => creator.manifest))));
+    const skipped = rebuilt.decisionsNotApplied?.length ?? 0;
+    if (skipped > 0) {
+      deps.out(`${skipped} decision(s) were not applied because the video is no longer available from YouTube (listed in the output file).`);
+    }
     return;
   }
 

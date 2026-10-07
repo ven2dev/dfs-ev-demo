@@ -14,6 +14,9 @@ export type DiscoveryFile = {
   registration: Registration;
   quota: unknown;
   creators: CreatorDiscovery[];
+  // Decisions kept in the log but not applied because the video is no longer
+  // available from YouTube. Written by `rebuild` so nothing is dropped silently.
+  decisionsNotApplied?: { creatorKey: string; videoId: string; why: "video-unavailable" }[];
 };
 
 const fail = (): never => {

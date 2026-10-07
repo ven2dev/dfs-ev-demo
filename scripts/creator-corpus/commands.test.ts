@@ -360,6 +360,27 @@ describe("rebuildDiscovery", () => {
     expect(JSON.stringify(discovery)).toBe(before);
   });
 
+  it("keeps a decision about a video that is no longer available, reports it, and does not apply it", () => {
+    const discovery = discoveryFor([record(1)]);
+    discovery.creators[0].unavailableVideoIds = [supportVid(77)];
+    const result = rebuildDiscovery({
+      discovery,
+      decisions: { "creator-a": [event(), event({ videoId: supportVid(77), reason: "was a good one" })] },
+      now: NOW,
+    });
+    expect(result.decisionsNotApplied).toEqual([{ creatorKey: "creator-a", videoId: supportVid(77), why: "video-unavailable" }]);
+    expect(result.creators[0].manifest.videos.map((video) => video.videoId)).toEqual([supportVid(1)]);
+    expect(result.creators[0].manifest.videos[0].decision).toMatchObject({ decision: "include" });
+    // A decision for a video that is neither present nor listed as unavailable is still an error.
+    expect(() =>
+      rebuildDiscovery({ discovery, decisions: { "creator-a": [event({ videoId: supportVid(78) })] }, now: NOW })
+    ).toThrow(expect.objectContaining({ code: "invalid-decisions-present" }));
+  });
+
+  it("reports an empty list when every decision was applied", () => {
+    expect(rebuild({ "creator-a": [event()] }).decisionsNotApplied).toEqual([]);
+  });
+
   it("refuses stale API data with a fixed code", () => {
     const stale = discoveryFor([record(1, { apiFetchedAt: "2026-08-01T00:00:00.000Z" })]);
     expect(() => rebuild({}, stale)).toThrow(expect.objectContaining({ code: "stale-discovery-data" }));

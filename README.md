@@ -220,3 +220,12 @@ See [Odds observation collector](docs/odds-collector-operations.md) for cadence,
 quota estimates and degradation, Hostinger cron setup, data provenance,
 retention, and database-size measurement. Apply `db/schema.sql` before enabling
 the collector; the profile defaults to `disabled`.
+
+## Creator corpus tools (owner-run)
+
+Local, owner-run commands build and review the expected-video manifest for the
+creator corpus: official YouTube Data API discovery (metadata only), a
+loopback-only review page, and an append-only decision log. They are not part
+of the deployed app, a build, CI or any scheduled job, and all inputs and
+outputs must be JSON files outside this repository. See the
+[creator corpus runbook](docs/creator-corpus-operations.md) before use.
