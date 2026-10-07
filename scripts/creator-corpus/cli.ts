@@ -1,0 +1,175 @@
+import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
+import type { CreatorManifest } from "../../src/lib/creatorCorpusManifest.ts";
+import {
+  CommandError,
+  confirmCreators,
+  discoverCreator,
+  formatScreenReport,
+  parseRegistry,
+  resolveCreators,
+  screenManifests,
+  type CreatorDiscovery,
+} from "./commands.ts";
+import {
+  InputError,
+  isEndWeekClosed,
+  loadRegistration,
+  parseCreatorsFile,
+  parseDecisionsFile,
+} from "./creatorInputs.ts";
+import { PrivateFileError, assertPrivateOutputAvailable, readPrivateJson, writePrivateJson } from "./privateOutput.ts";
+import { YoutubeApiError, createQuotaMeter, createYoutubeClient, type FetchLike } from "./youtubeApi.ts";
+
+// Owner-run commands for the #88 corpus manifest. Failures print one fixed
+// code; nothing printed here can contain the API key, a URL or a raw error.
+class UsageError extends Error {
+  code: string;
+  constructor(code: string) {
+    super(code);
+    this.code = code;
+  }
+}
+const usage = (code: string): never => {
+  throw new UsageError(code);
+};
+
+export type CliDeps = {
+  env: Record<string, string | undefined>;
+  fetchImpl: FetchLike;
+  now: () => Date;
+  out: (line: string) => void;
+};
+
+const COMMON = {
+  output: { type: "string" },
+  "max-units": { type: "string" },
+} as const;
+
+const parseUnits = (value: string | undefined, fallback: number): number => {
+  const units = value === undefined ? fallback : Number(value);
+  return Number.isInteger(units) && units >= 1 && units <= 10_000 ? units : usage("invalid-max-units");
+};
+
+const apiClient = (deps: CliDeps, maxUnits: number) => {
+  const apiKey = deps.env.YOUTUBE_API_KEY?.trim();
+  if (!apiKey) throw new YoutubeApiError("api-key-missing");
+  const meter = createQuotaMeter(maxUnits);
+  return { meter, client: createYoutubeClient({ apiKey, fetchImpl: deps.fetchImpl, meter }) };
+};
+
+export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
+  const [command, ...rest] = argv;
+  const parse = <const O extends ParseArgsOptionsConfig>(options: O) => {
+    try {
+      return parseArgs({ args: rest, options, allowPositionals: false }).values;
+    } catch {
+      return usage("invalid-options");
+    }
+  };
+
+  if (command === "resolve") {
+    const values = parse({ ...COMMON, creators: { type: "string" } });
+    if (!values.creators || !values.output) return usage("creators-and-output-required");
+    const creators = parseCreatorsFile(await readPrivateJson(values.creators));
+    await assertPrivateOutputAvailable(values.output);
+    const { client, meter } = apiClient(deps, parseUnits(values["max-units"], 50));
+    const registry = await resolveCreators(client, creators, deps.now());
+    await writePrivateJson(values.output, registry);
+    for (const entry of registry.creators) {
+      deps.out(`${entry.key}\t${entry.titleMatch}\tstored: ${entry.name}\tchannel: ${entry.channelTitle}`);
+    }
+    for (const failure of registry.failures) deps.out(`${failure.key}\tFAILED\t${failure.code}`);
+    deps.out(JSON.stringify({ resolved: registry.creators.length, failed: registry.failures.length, quotaUsed: meter.used }));
+    return;
+  }
+
+  if (command === "confirm") {
+    const values = parse({ registry: { type: "string" }, keys: { type: "string" }, output: { type: "string" } });
+    if (!values.registry || !values.keys || !values.output) return usage("registry-keys-and-output-required");
+    const registry = parseRegistry(await readPrivateJson(values.registry));
+    await assertPrivateOutputAvailable(values.output);
+    const confirmed = confirmCreators(registry, values.keys.split(",").map((key) => key.trim()));
+    await writePrivateJson(values.output, confirmed);
+    deps.out(JSON.stringify({ confirmed: confirmed.creators.filter((entry) => entry.confirmed).length }));
+    return;
+  }
+
+  if (command === "discover") {
+    const values = parse({
+      ...COMMON,
+      registry: { type: "string" },
+      decisions: { type: "string" },
+      "allow-incomplete-end-week": { type: "boolean" },
+    });
+    if (!values.registry || !values.output) return usage("registry-and-output-required");
+    const registration = await loadRegistration();
+    const now = deps.now();
+    if (!isEndWeekClosed(registration.window, now) && !values["allow-incomplete-end-week"]) {
+      return usage("end-week-not-closed");
+    }
+    const registry = parseRegistry(await readPrivateJson(values.registry));
+    const confirmed = registry.creators.filter((entry) => entry.confirmed);
+    if (confirmed.length === 0) return usage("no-confirmed-creators");
+    const decisions = values.decisions ? parseDecisionsFile(await readPrivateJson(values.decisions)) : {};
+    await assertPrivateOutputAvailable(values.output);
+    const { client, meter } = apiClient(deps, parseUnits(values["max-units"], 1000));
+    const creators: CreatorDiscovery[] = [];
+    for (const entry of confirmed) {
+      creators.push(
+        await discoverCreator({ client, entry, window: registration.window, decisions: decisions[entry.key] ?? [], now })
+      );
+    }
+    await writePrivateJson(values.output, {
+      formatVersion: 1,
+      discoveredAt: now.toISOString(),
+      registration,
+      quota: meter,
+      creators,
+    });
+    deps.out(formatScreenReport(screenManifests(creators.map((creator) => creator.manifest))));
+    deps.out(JSON.stringify({ creators: creators.length, quotaUsed: meter.used, quotaLimit: meter.limit }));
+    return;
+  }
+
+  if (command === "screen") {
+    const values = parse({ input: { type: "string" } });
+    if (!values.input) return usage("input-required");
+    const file = (await readPrivateJson(values.input)) as { creators?: { manifest?: CreatorManifest }[] };
+    if (!Array.isArray(file?.creators) || !file.creators.every((creator) => creator?.manifest)) {
+      return usage("invalid-discovery-file");
+    }
+    deps.out(formatScreenReport(screenManifests(file.creators.map((creator) => creator.manifest as CreatorManifest))));
+    return;
+  }
+
+  usage("unknown-command");
+};
+
+const KNOWN = [UsageError, InputError, PrivateFileError, CommandError, YoutubeApiError];
+
+export const main = async (argv: string[]): Promise<number> => {
+  try {
+    await runCli(argv, {
+      env: process.env,
+      fetchImpl: (url, init) => fetch(url, init),
+      now: () => new Date(),
+      out: (line) => process.stdout.write(line.endsWith("\n") ? line : line + "\n"),
+    });
+    return 0;
+  } catch (error) {
+    const known = KNOWN.some((type) => error instanceof type);
+    process.stderr.write(`creator-corpus: ${known ? (error as { code: string }).code : "unexpected-failure"}\n`);
+    return 1;
+  }
+};
+
+// Keep readFile referenced so a future reader sees inputs are never read here
+// without the private-path checks.
+void readFile;
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  process.exitCode = await main(process.argv.slice(2));
+}
