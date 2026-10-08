@@ -38,6 +38,7 @@
     "test:db:migrations": "node --test tests/db/migrations.integration.check.mjs",
     "test:db:plans:unit": "node --test tests/db/plans-unit.check.mjs",
     "test:db:plans": "node --test tests/db/plans.integration.check.mjs",
+    "creators": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/creator-corpus/cli.ts",
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {

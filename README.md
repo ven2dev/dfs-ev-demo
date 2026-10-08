@@ -230,3 +230,13 @@ quota estimates and degradation, Hostinger cron setup, data provenance,
 retention, and database-size measurement. Verify the required schema through
 the migration delivery process before enabling the collector; the profile
 defaults to `disabled`.
+
+## Creator corpus tools (owner-run)
+
+Local, owner-run commands build and review the expected-video manifest for the
+creator corpus: official YouTube Data API discovery (metadata only), a
+loopback-only review page, an append-only decision log, and a queue for
+capturing transcripts by hand. They are not part of the deployed app, a build,
+CI or any scheduled job, and all inputs and outputs must be JSON files (JSON
+Lines for the capture log) outside this repository. See the
+[creator corpus runbook](docs/creator-corpus-operations.md) before use.
