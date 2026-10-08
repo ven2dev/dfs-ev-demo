@@ -12,32 +12,35 @@ export const gameId = (number: number) => "00000000-0000-4000-8000-" + String(nu
 export const TARGET = gameId(10);
 export const PRIOR = [1, 2, 3, 4, 5].map(gameId);
 
-export function revision<K extends Kind>(id: string, kind: K, data: DataByKind[K], predecessorId: string | null = null): Revision<K> {
+export const revision = <K extends Kind>(id: string, kind: K, data: DataByKind[K], predecessorId: string | null = null): Revision<K> => {
   return { id, kind, data, predecessorId, correctionReason: predecessorId ? "synthetic correction" : null } as Revision<K>;
-}
-export function artifact(id: string, feed: Kind, rows: Revision[]): Artifact {
+};
+export const artifact = (id: string, feed: Kind, rows: Revision[]): Artifact => {
   const bytes = canonical(rows);
   return { id, feed, bytes, sha256: digest(bytes), source: "synthetic", origin: "fixture://passing-yards/" + id,
     schemaVersion: "predictive-proof-v1", parserVersion: "synthetic-json-v1", rightsReviewVersion: "synthetic-only-v1" };
-}
-export function addCapture(dataset: Dataset, id: string, rows: Revision[], at = CAPTURE_A) {
+};
+export const addCapture = (dataset: Dataset, id: string, rows: Revision[], at = CAPTURE_A) => {
   dataset.artifacts.push(artifact(id, rows[0].kind, rows));
   dataset.captures.push({ id: "capture-" + id, artifactId: id, capturedAt: at, availableAt: at, ingestedAt: at,
     publishedAt: null, publicationEvidence: null, state: "published" });
-}
-export function request(cutoff = CUTOFF_A): Request {
+};
+export const request = (cutoff = CUTOFF_A): Request => {
   return { playerId: PLAYER, gameId: TARGET, cutoff, computedAt: "2026-10-09T00:00:00.000Z", candidate: "player-opponent-v1:player_pass_yds" };
-}
-export function schedule(number: number, kickoff: string, home = TEAM, away = "nfl:team:NYG", season = 2026, seasonType: "REG" | "POST" = "REG"): Schedule {
+};
+export const schedule = (number: number, kickoff: string, home = TEAM, away = "nfl:team:NYG", season = 2026, seasonType: "REG" | "POST" = "REG"): Schedule => {
   return { gameId: gameId(number), rawGameId: "synthetic-game-" + number, season, seasonType, week: number <= 5 ? number : 6,
     kickoff, homeTeamId: home, awayTeamId: away, rawHomeTeam: home.split(":").at(-1)!, rawAwayTeam: away.split(":").at(-1)!, mappingVersion: "synthetic-identity-v1" };
-}
+};
+export const coverage = (teamId: string, gameIds: string[]): DataByKind["schedule-coverage"] => ({
+  teamId, fromSeason: 2024, throughSeason: 2026, gameIds: [...gameIds].sort(), state: "complete", evidenceVersion: "synthetic-schedule-enumeration-v1",
+});
 
 // No provider rows, player names, network calls, database or environment reads.
 // Capturing old games now establishes only this synthetic forward replay proof.
-export function passingYardsFixture(includeB = true): Dataset {
+export const passingYardsFixture = (includeB = true): Dataset => {
   const dataset: Dataset = { formatVersion: 1, artifacts: [], captures: [] };
-  const rows: Record<Kind, Revision[]> = { schedule: [], membership: [], "player-passing": [], "team-passing": [], completion: [], participation: [], availability: [] };
+  const rows: Record<Kind, Revision[]> = { schedule: [], membership: [], "player-passing": [], "team-passing": [], completion: [], participation: [], availability: [], "schedule-coverage": [] };
   const games = ["09-06", "09-13", "09-20", "09-27", "10-04"].map((date, i) => schedule(i + 1, "2026-" + date + "T17:00:00.000Z"));
   const opponents = ["BUF", "KC", "NE", "SF"];
   const against = ["09-13", "09-20", "09-27", "10-04"].map((date, i) => schedule(i + 20, "2026-" + date + "T20:00:00.000Z", OPPONENT, "nfl:team:" + opponents[i]));
@@ -45,6 +48,8 @@ export function passingYardsFixture(includeB = true): Dataset {
   const ignored = [schedule(30, "2026-01-11T17:00:00.000Z", TEAM, OPPONENT, 2025, "POST"),
     schedule(31, "2023-09-10T17:00:00.000Z", TEAM, "nfl:team:NYG", 2023), schedule(32, "2026-10-18T17:00:00.000Z", TEAM)];
   for (const game of [...games, ...against, target, ...ignored]) rows.schedule.push(revision("schedule-" + game.rawGameId, "schedule", game));
+  for (const team of [TEAM, OPPONENT]) rows["schedule-coverage"].push(revision("coverage-" + team, "schedule-coverage", coverage(team,
+    [...games, ...against, target, ...ignored].filter((game) => game.season >= 2024 && [game.homeTeamId, game.awayTeamId].includes(team)).map((game) => game.gameId))));
   for (const game of [...games, target]) {
     rows.membership.push(revision("member-" + game.rawGameId, "membership", {
       gameId: game.gameId, playerId: PLAYER, rawPlayerId: PLAYER, teamId: TEAM, rawTeam: "PHI", position: "QB",
@@ -69,10 +74,10 @@ export function passingYardsFixture(includeB = true): Dataset {
   rows.availability.push(revision("availability-target", "availability", { gameId: TARGET, playerId: PLAYER, injury: "unknown", depth: "unknown", evidenceVersion: "synthetic-availability-v1" }));
   for (const kind of Object.keys(rows) as Kind[]) addCapture(dataset, "A-" + kind, rows[kind]);
   if (includeB) {
-    const playerA = rows["player-passing"].find((row) => row.data.gameId === PRIOR[4])! as Revision<"player-passing">;
-    const teamA = rows["team-passing"].find((row) => row.data.gameId === PRIOR[4])! as Revision<"team-passing">;
+    const playerA = rows["player-passing"].find((row) => row.kind === "player-passing" && row.data.gameId === PRIOR[4])! as Revision<"player-passing">;
+    const teamA = rows["team-passing"].find((row) => row.kind === "team-passing" && row.data.gameId === PRIOR[4])! as Revision<"team-passing">;
     addCapture(dataset, "B-player", [revision("player-correction-B", "player-passing", { ...playerA.data, passingYards: 320 }, playerA.id)], CAPTURE_B);
     addCapture(dataset, "B-team", [revision("team-correction-B", "team-passing", { ...teamA.data, passingYards: 380 }, teamA.id)], CAPTURE_B);
   }
   return dataset;
-}
+};

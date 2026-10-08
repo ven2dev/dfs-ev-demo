@@ -1,12 +1,18 @@
 export type SeasonType = "REG" | "POST";
 export type Candidate = "stats-v1:player_pass_yds" | "player-opponent-v1:player_pass_yds";
 export type Kind = "schedule" | "membership" | "player-passing" | "team-passing" |
-  "completion" | "participation" | "availability";
+  "completion" | "participation" | "availability" | "schedule-coverage";
 
 export type Schedule = {
   gameId: string; rawGameId: string; season: number; seasonType: SeasonType; week: number;
   kickoff: string; homeTeamId: string; awayTeamId: string;
   rawHomeTeam: string; rawAwayTeam: string; mappingVersion: string;
+};
+// Independent enumeration evidence for a team's complete REG + POST schedule
+// across the requested seasons. Missing rows cannot shrink this expected set.
+export type ScheduleCoverage = {
+  teamId: string; fromSeason: number; throughSeason: number; gameIds: string[];
+  state: "complete" | "incomplete"; evidenceVersion: string;
 };
 export type Membership = {
   gameId: string; playerId: string; rawPlayerId: string; teamId: string; rawTeam: string;
@@ -32,6 +38,7 @@ export type Availability = {
 export type DataByKind = {
   schedule: Schedule; membership: Membership; "player-passing": PlayerPassing; "team-passing": Passing;
   completion: Completion; participation: Participation; availability: Availability;
+  "schedule-coverage": ScheduleCoverage;
 };
 export type Revision<K extends Kind = Kind> = K extends Kind ? {
   id: string; kind: K; predecessorId: string | null; correctionReason: string | null; data: DataByKind[K];
@@ -68,7 +75,7 @@ export type Summary = {
   attemptsPerGame: number | null; passingYardsPerAttempt: number | null;
 };
 export type Bundle = {
-  formatVersion: 1; featureVersion: "passing-yards-replay-v1"; readMode: "application-data-replay";
+  formatVersion: 1; featureVersion: "passing-yards-replay-v2"; readMode: "application-data-replay";
   usage: "synthetic-internal-research"; modelValidated: false; populationCoverage: "unqualified";
   units: { attempts: "attempts"; passingYards: "yards"; attemptsPerGame: "attempts/game";
     passingYardsPerAttempt: "yards/attempt"; scheduledRestHours: "hours" };
@@ -78,4 +85,5 @@ export type Bundle = {
   player: Summary[]; team: Summary[] | null; opponent: Summary[] | null;
   scheduledRestHours: number | null; dependencyAvailableAt: string | null; dependencies: Dependency[];
   excludedSchedule: Exclusion[]; inputDigest: string;
+  scheduleCoverage: { state: "complete" | "unverified"; missingGameIds: string[] };
 };
