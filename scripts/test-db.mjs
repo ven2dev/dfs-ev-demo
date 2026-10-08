@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { NODE_REQUIRED_CASES, validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport } from "./db-test-contract.mjs";
 import {
   assertNoApplicationCredentials,
   LOCAL_TEST_DATABASE_URL,
@@ -13,21 +14,6 @@ const root = fileURLToPath(new URL("../", import.meta.url));
 const composeArgs = [
   "compose", "--env-file", "/dev/null", "--project-name", "dfs-ev-demo-test",
   "-f", fileURLToPath(new URL("../compose.test.yml", import.meta.url)),
-];
-const requiredTests = [
-  "bootstraps the full application schema twice on PostgreSQL 18",
-  ...["cold", "stale"].flatMap((state) => [
-    `25 independent clients acquire exactly one ${state}-row lease`,
-    `observes all 24 contenders blocked behind a held ${state}-row acquisition transaction`,
-  ]),
-  "renewing an expired lease extends it and prevents competing takeover",
-  "25 independent clients produce exactly one takeover of a forced expired lease",
-  "characterization: an expired owner may renew before any takeover",
-  "characterization: an expired owner may publish before any takeover",
-  "a replaced owner cannot renew, write, or release the new owner's lease",
-  "an expired owner's write committed first makes all blocked takeovers fail",
-  "a takeover committed first makes the blocked former-owner write lose its lease",
-  "25 database-backed consumers wait for one fetch and receive the same persisted payload",
 ];
 let activeChild;
 let interrupted;
@@ -55,20 +41,32 @@ async function runSuite(environment, filters) {
   parseTestDatabaseUrl(environment.TEST_DATABASE_URL);
   const reportDir = await mkdtemp(join(tmpdir(), "dfs-ev-db-test-"));
   try {
+    let code = await run(process.execPath, ["scripts/db-migration-artifacts.mjs", "check"], environment);
+    if (code !== 0 || interrupted) return code || 1;
+    code = await run(process.execPath, ["scripts/db-readiness-manifest.mjs", "check"], environment);
+    if (code !== 0 || interrupted) return code || 1;
+    const nodeReportPath = join(reportDir, "node-results.json");
+    code = await run(process.execPath, [
+      "--test", "--test-concurrency=4", "--test-timeout=60000",
+      "--test-reporter=spec", "--test-reporter=./scripts/db-test-reporter.mjs",
+      "--test-reporter-destination=stdout", "--test-reporter-destination=" + nodeReportPath,
+      ...Object.keys(NODE_REQUIRED_CASES),
+    ], environment);
+    if (code !== 0 || interrupted) return code || 1;
+    const nodeRequiredCases = validateNodeDbReport(JSON.parse(await readFile(nodeReportPath, "utf8")));
+    code = await run(process.execPath, ["scripts/db-catalog-contracts.mjs", "check"], environment);
+    if (code !== 0 || interrupted) return code || 1;
     const reportPath = join(reportDir, "results.json");
-    const code = await run(process.execPath, [
+    code = await run(process.execPath, [
       fileURLToPath(new URL("../node_modules/vitest/vitest.mjs", import.meta.url)),
       "run", "--config", "vitest.db.config.mts", "--reporter=default",
       "--reporter=json", "--outputFile.json=" + reportPath, ...filters,
     ], environment);
-    if (code !== 0) return code;
+    if (code !== 0 || interrupted) return code || 1;
     const report = JSON.parse(await readFile(reportPath, "utf8"));
-    const assertions = report.testResults.flatMap((file) => file.assertionResults);
-    if (!report.success || report.numPassedTests < requiredTests.length ||
-        assertions.some((test) => test.status !== "passed") ||
-        requiredTests.some((name) => !assertions.some((test) => test.fullName === name && test.status === "passed"))) {
-      throw new Error("DB test contract failed: required cases must execute and pass; skipped/todo or missing cases are failures.");
-    }
+    const leaseRequiredCases = validateLeaseDbReport(report);
+    const readinessRequiredCases = validateReadinessDbReport(report);
+    console.log(JSON.stringify({ nodeRequiredCases, leaseRequiredCases, readinessRequiredCases, result: "verified" }));
     return 0;
   } finally {
     await rm(reportDir, { recursive: true, force: true });

@@ -25,9 +25,12 @@ provider-shaped observations, telemetry, caches, or crosswalk rows.
 
 The two Neon resources are separate projects connected to mutually exclusive
 Vercel environments under the normal unprefixed database variable names. Do
-not reconnect either database to both environments. Applying `db/schema.sql`
-to Preview is safe and idempotent; Preview starts with empty tables and must
-not receive a Production data copy.
+not reconnect either database to both environments. Preview must not receive
+a Production data copy. `db/schema.sql` is now a generated reference; do not
+apply it as a hosted setup command. Remote migration writes remain disabled;
+initializing a new hosted Preview database requires separately approved schema
+delivery under the [migration guide](database-migrations.md). The fixture odds
+journey described above does not require database migration activation.
 
 Preview uses a separate Firebase web app, Authentication tenant, Firestore
 database, and Admin service-account key. Browser Firestore access is denied by
