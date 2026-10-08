@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Creator video review</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <header class="top">
+      <h1>Creator video review</h1>
+      <nav id="views" aria-label="Views" hidden>
+        <button id="tab-review" type="button" class="tab selected" aria-pressed="true">Review</button>
+        <button id="tab-capture" type="button" class="tab" aria-pressed="false">Capture</button>
+      </nav>
+      <nav id="creators" aria-label="Creators"></nav>
+    </header>
+    <div id="banner" role="alert" hidden></div>
+    <main id="review-view">
+      <p id="status" role="status" aria-live="polite">Loading…</p>
+      <section id="summary" aria-label="Summary" hidden></section>
+      <section id="grid-section" aria-label="Weeks" hidden>
+        <h2>Weeks</h2>
+        <p class="legend">
+          <span class="chip slot-present">Included</span>
+          <span class="chip slot-review">Needs review</span>
+          <span class="chip slot-missing">Missing</span>
+          Select a week to see every video published in it, including excluded ones.
+        </p>
+        <div id="grid"></div>
+      </section>
+      <section id="list-section" aria-label="Videos" hidden>
+        <h2>Videos</h2>
+        <form id="filters" class="filters" aria-label="Filters">
+          <label>Show
+            <select id="filter-status">
+              <option value="needs-review">Needs review</option>
+              <option value="present">Included</option>
+              <option value="excluded">Excluded</option>
+              <option value="decided">I have decided</option>
+              <option value="all">Everything</option>
+            </select>
+          </label>
+          <label>Reason
+            <select id="filter-reason"></select>
+          </label>
+          <label>Search
+            <input id="filter-query" type="search" autocomplete="off" placeholder="title or description" />
+          </label>
+          <label>Order
+            <select id="filter-sort">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+            </select>
+          </label>
+        </form>
+        <p id="week-note" hidden></p>
+        <p id="count" aria-live="polite"></p>
+        <ol id="videos" class="videos"></ol>
+        <button id="more" type="button" hidden>Show more</button>
+      </section>
+      <p id="keys" class="keys" hidden>
+        Keys: <kbd>j</kbd>/<kbd>k</kbd> next/previous video, <kbd>i</kbd> include, <kbd>e</kbd> exclude (then type a reason and press Enter).
+      </p>
+    </main>
+    <main id="capture-view" hidden>
+      <nav id="capture-creators" aria-label="Creators to capture"></nav>
+      <div id="capture-banner" role="alert" hidden></div>
+      <p id="capture-status" role="status" aria-live="polite"></p>
+      <section id="capture-summary" aria-label="Capture progress"></section>
+      <label class="scope">
+        <input id="capture-scope" type="checkbox" />
+        Include videos still flagged for review
+      </label>
+      <section aria-label="Weeks">
+        <h2>Weeks</h2>
+        <p class="legend">
+          <span class="chip slot-present">Done</span>
+          <span class="chip slot-review">Some left</span>
+          <span class="chip slot-empty">Nothing queued</span>
+          Select a week to see only its videos.
+        </p>
+        <div id="capture-grid"></div>
+      </section>
+      <section id="capture-current" aria-label="Current video"></section>
+      <section aria-label="Queue">
+        <h2>Queue</h2>
+        <form id="capture-filters" class="filters" aria-label="Queue filters">
+          <label>Show
+            <select id="capture-filter">
+              <option value="needs-capture">Needs a transcript</option>
+              <option value="captured">Captured</option>
+              <option value="unavailable">Marked unavailable</option>
+              <option value="all">Everything</option>
+            </select>
+          </label>
+          <label>Search
+            <input id="capture-query" type="search" autocomplete="off" placeholder="title" />
+          </label>
+        </form>
+        <p id="capture-week-note" hidden></p>
+        <p id="capture-count" aria-live="polite"></p>
+        <ol id="capture-list" class="videos"></ol>
+        <button id="capture-more" type="button" hidden>Show more</button>
+      </section>
+      <p class="keys">
+        Keys: <kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Enter</kbd> in the transcript box saves; <kbd>n</kbd> skips to the next video.
+      </p>
+    </main>
+    <datalist id="reason-presets"></datalist>
+    <script src="/capture.js" defer></script>
+    <script src="/client.js" defer></script>
+  </body>
+</html>

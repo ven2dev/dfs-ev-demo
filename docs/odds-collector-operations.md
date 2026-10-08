@@ -115,8 +115,12 @@ silently marking it complete.
 
 ## Deployment and Hostinger trigger
 
-Apply `db/schema.sql` to the configured Postgres database before enabling the
-collector. Set `ODDS_API_KEY`, `DATABASE_URL`, `CRON_SECRET`, and the selected
+Verify that the configured Postgres database has the required collector schema
+before enabling collection. Follow the [migration delivery and activation
+guide](database-migrations.md); `db/schema.sql` is a generated reference, not a
+hosted setup command. Remote migration writes remain disabled, so a new hosted
+database requires separately approved schema delivery. Set `ODDS_API_KEY`,
+`DATABASE_URL`, `CRON_SECRET`, and the selected
 profile only in the server deployment. Never expose them with a
 `NEXT_PUBLIC_` prefix.
 

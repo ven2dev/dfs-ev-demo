@@ -1,0 +1,313 @@
+{
+  "catalogFingerprint": "987e08490dd0486003a5a0eca04b62f74efcc6b404c9be14096408b4d88055b0",
+  "contractVersion": 1,
+  "formatVersion": 1,
+  "objects": [
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "db_migrations.applied_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "db_migrations.filename"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "db_migrations.provenance"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "db_migrations.runner_version"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "db_migrations.sha256"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "db_migrations.version"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL applied_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_applied_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (filename)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_filename_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL filename",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_filename_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (version)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (provenance = ANY (ARRAY['executed'::text, 'adopted'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_provenance_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL provenance",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_provenance_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (runner_version = 1)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_runner_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL runner_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_runner_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (sha256 ~ '^[0-9a-f]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_sha256_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL sha256",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_sha256_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (version > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "db_migrations.db_migrations_version_not_null"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX db_migrations_filename_key ON db_migrations USING btree (filename)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "db_migrations",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "db_migrations_filename_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX db_migrations_pkey ON db_migrations USING btree (version)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "db_migrations",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "db_migrations_pkey"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "db_migrations"
+    }
+  ],
+  "postgresMajor": 18,
+  "schema": "public",
+  "source": {
+    "catalogSqlSha256": "6174d71894f9e05c3e57dda8bef4dce2ce7e97bc99ce9ef5da14edb334ce67fa",
+    "ledgerSqlSha256": "f043334553be5cf03ef0d7962c2f20a457ad263448ef6d14d6dd4879bf213a53",
+    "runnerVersion": 1
+  }
+}

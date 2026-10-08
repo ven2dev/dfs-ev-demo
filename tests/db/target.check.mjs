@@ -51,7 +51,7 @@ test("rejects application credentials and ambient pg configuration", () => {
     TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL,
     ODDS_DATA_SOURCE: "fixture",
   }));
-  for (const name of ["DATABASE_URL", "ODDS_API_KEY", "FIREBASE_ADMIN_PROJECT_ID", "FIREBASE_ADMIN_PRIVATE_KEY", "POSTGRES_URL", "PGHOST", "PGOPTIONS", "GOOGLE_APPLICATION_CREDENTIALS"]) {
+  for (const name of ["DATABASE_URL", "MIGRATION_DATABASE_URL", "ODDS_API_KEY", "FIREBASE_ADMIN_PROJECT_ID", "FIREBASE_ADMIN_PRIVATE_KEY", "POSTGRES_URL", "PGHOST", "PGOPTIONS", "GOOGLE_APPLICATION_CREDENTIALS"]) {
     assert.throws(() => assertNoApplicationCredentials({ [name]: "test-only-placeholder" }));
   }
 });
