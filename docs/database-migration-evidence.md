@@ -60,11 +60,12 @@ read-only transport checks passed. Status reported version 0 without creating a
 ledger. This owner-run result is accepted as the transport outcome; the offline
 review made no Production connection.
 
-The roadmap also calls for the command commit, Node/driver versions, exit codes
-and sanitized status to be recorded on #60. The supplied artifacts do not carry
-that runtime metadata, so the detailed command record remains outstanding.
-The current checkout's dependency version is not evidence of the owner's
-runtime version.
+The owner's terminal transcript records commit
+`ceb7e902ca0eb0f4d5c83a6838af78d111bd815f`, Node 24.21.0 and
+`@neondatabase/serverless` 1.2.0. Snapshot, status and plan each exited 0.
+Status reported `ledger: absent`, `schemaVersion: 0`, `knownVersion: 2`, empty
+history, host fingerprint `35a55a714d7e` and database fingerprint `693fe5919fc2`.
+These values are owner-supplied runtime evidence, not artifact metadata.
 
 ## Step 5 local verification
 
@@ -93,29 +94,54 @@ Neon HTTP readiness behavior is covered through the repository/route tests;
 actual read SQL is exercised with local `pg`. Owner-run deployed HTTP readiness
 evidence remains pending after approved adoption and deployment.
 
-## Remaining release prerequisites
+## Owner-reported logical backup and recovery restore
+
+In the subsequent owner-run terminal handoff, PostgreSQL 18.6 Homebrew tools
+created a private custom-format Production dump. Its SHA-256 is
+`a147cd8420c222f7b77be90090b7ad923324436905b628fa0dca7972b0f30f9d`.
+The private archive is `production-retry.dump` in the owner's external
+`db-backups/recovery-60.Od4VTT` directory; it was not copied into this repository.
+
+The owner verified the Production direct host fingerprint `35a55a714d7e` and
+separate recovery direct host fingerprint `632f8bb67310`. The recovery project
+is `dfs-ev-recovery-60`; its branch named `production` is not the application's
+Production branch. The restore script checked archive bytes against the digest,
+PostgreSQL major 18 and zero initial user tables, then used `pg_restore` with
+`--single-transaction --exit-on-error --no-owner --no-acl`. Restore exited 0.
+
+This is successful owner-reported backup/restore execution, not completed
+recovery verification. Post-restore catalog, data/sequence comparisons and
+provider recovery-access/retention disposition remain pending. Source ownership
+and ACLs were intentionally not restored, so this does not prove a complete
+privilege recovery. The transcript supplies no exact capture time; none is
+inferred. The earlier pinned-container requirement versus native Homebrew tools
+also needs disposition before activation.
+
+## Remaining activation prerequisites
 
 The [migration guide](database-migrations.md) and
 [approved roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/60#issuecomment-6006046013)
 still require:
 
-1. Usable recovery evidence: an owner-run logical backup and successful restore
-   into a separate private recovery target using compatible PostgreSQL 18
-   tools. An archive listing alone does not prove recovery. Production data
-   stays outside the relay worktree, Git, CI and disposable test databases.
+1. Complete recovery verification: backup and restore execution succeeded as
+   reported above; post-restore schema/data/sequence checks and the native-tool
+   disposition remain pending. Production data stays outside the relay
+   worktree, Git, CI and disposable test databases.
 2. A disposition for provider recovery access and limitations under
    [#86](https://github.com/ven2dev/dfs-ev-demo/issues/86). Branch/PITR access and
    retention remain unverified; successful SQL connectivity does not prove
    those capabilities. Retain the logical recovery fallback.
 3. Step 5's protected database readiness check is implemented and verified
-   locally; deployed readiness evidence remains pending. Step 6's complete
-   release/recovery documentation still needs the forward-fix and application
-   rollback compatibility rules.
+   locally; deployed readiness evidence remains pending. The migration guide
+   now documents forward-fix, uncertain-commit, application
+   rollback compatibility and separately approved restore rules.
 4. Separate review of remote activation and explicit owner approval of a fresh
    plan before adoption. The current CLI continues to refuse remote `up` with
    `owner-rollout-evidence-pending`.
-5. Schema adoption and verification before the owner-approved merge/deploy,
+5. Schema adoption and verification before a release that requires the ledger,
    followed by protected readiness and application/collector smoke checks.
+   PR #93 proposes tooling delivery with remote writes disabled; approval of
+   that scope amendment is distinct from approval of Production activation.
 
 The read-only handoff is complete. Production activation, adoption, recovery
 verification, merge and deployment are not completed or authorized by it.

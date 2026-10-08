@@ -26,10 +26,28 @@ The roadmap and these instructions use the same step numbers:
 | 5 | Protected database readiness |
 | 6 | Release/recovery documentation and acceptance handoff |
 
-Steps 0–3 are intermediate commits within one migration-delivery PR.
-Do not merge/deploy this intermediate state: remote `up` is still unavailable,
-and the generated reference header is not an operational rollout instruction.
-Complete the remaining steps and approved schema prerequisites before merge.
+## PR #93 delivery scope and deferred activation
+
+PR #93 delivers the tested migration tooling and additive readiness endpoint.
+It does not activate remote migrations or complete issue #60. This is a proposed
+scope amendment to the earlier all-at-once roadmap: its adoption-before-merge
+sequence remains the future activation sequence, rather than a prerequisite for
+merging this tooling-only delivery. Review and approval of this PR must include
+that scope amendment; passing CI alone does not approve it.
+
+Merging to main triggers the normal Vercel application deployment. Build,
+startup, cron and existing application routes never import the migration runner
+or require the new ledger. The application's existing database schema is
+unchanged. The new protected readiness endpoint returns 503 until a ledger
+exists (or `not-configured` without its dedicated secret); it is not wired into
+application startup, traffic routing or an existing health monitor. Do not make
+it a deployment/traffic gate before adoption. Existing application behavior
+does not depend on a readiness 200.
+
+Remote `up` continues to refuse before connection. This PR cannot initialize a
+new hosted application database through the migration CLI. `db/schema.sql` is
+a generated reference, not an alternate remote activation path. Keep issue #60
+open for the remaining activation work described below.
 
 ## Candidate migrations and local runner
 
@@ -275,11 +293,12 @@ with `owner-rollout-evidence-pending`; test CLI `up` refuses `scratch-up-only`.
 Local mutation proofs use registered random scratch databases through the same
 approved-plan engine. The Production snapshot comparison now has zero
 differences, and the owner reports that the actual read-only Neon transport
-checks passed. Protected readiness is implemented locally. Recovery
-prerequisites, deployed readiness evidence, release/recovery documentation and
-separate remote activation review remain outstanding. Their
-completion and owner approval must precede rollout and the complete migration
-PR's merge. The stored Production plan is evidence of a valid adoption proposal;
+checks passed. Protected readiness is implemented locally, and the deferred
+activation runbook is documented below. Recovery verification, deployed
+readiness evidence and separate remote activation review remain outstanding. Their
+completion and owner approval must precede remote activation. PR #93 proposes
+merging tooling separately under the delivery scope above. The stored
+Production plan is evidence of a valid adoption proposal;
 it is not approval to execute it.
 
 ## Read-only migration status
@@ -303,9 +322,9 @@ The owner reports successful Production read-only Neon transport checks,
 including status at ledger version 0. The
 [evidence handoff](database-migration-evidence.md) distinguishes that owner-run
 result from the offline artifact verification. CI exercises the `pg` path only.
-The roadmap's command metadata record still needs the owner-run commit,
-Node/driver versions and exit codes; those values are not embedded in the two
-supplied artifacts. Keep sanitized status and hashed target identity with that
+The evidence handoff records the owner's terminal transcript commit,
+Node/driver versions and exit codes; these are owner-supplied runtime evidence,
+not metadata embedded in the two artifacts. Keep sanitized status and hashed target identity with that
 record, without URLs, credentials or raw driver errors.
 
 ## Protected database readiness
@@ -511,3 +530,53 @@ Production schema and owner-reported read-only Neon transport pass. Recovery
 evidence remains pending. [#86](https://github.com/ven2dev/dfs-ev-demo/issues/86)
 separately owns Neon-console, branch and point-in-time restore access; SQL
 connectivity does not establish those capabilities.
+
+
+## Deferred Production activation and recovery runbook
+
+This runbook describes a future separately reviewed rollout. It does not enable
+`up`, authorize a Production command or claim issue #60 is complete.
+
+1. Review the remote execution implementation and target guards separately;
+   the current CLI intentionally refuses remote writes. Control concurrent DDL
+   and schedule an owner-run change window.
+2. Capture a fresh read-only Production catalog, status and plan from the exact
+   reviewed release. Resolve all differences. Verify the direct endpoint and
+   PostgreSQL major; do not reuse an old plan approval after state changes.
+3. Verify a usable private logical backup and restore, including post-restore
+   schema and data/sequence checks. Record tool versions, archive digest,
+   private artifact location, exit codes and recovery limitations. Production
+   rows and raw error logs stay outside Git, CI and disposable tests. The owner
+   has reported a successful PostgreSQL 18.6 restore; comparisons remain open.
+   The earlier roadmap specified a pinned PostgreSQL container; accepting
+   native Homebrew 18.6 as equivalent tooling needs explicit disposition in the
+   activation review. Resolve branch/PITR access and retention under #86, or
+   explicitly accept the logical recovery fallback and its measured limits.
+4. Obtain explicit owner approval for the fresh plan fingerprint. Only after
+   the separately reviewed activation code exists may the owner invoke `up`
+   in their own terminal. Recomputed state must match before mutation.
+5. Verify ledger history and the complete managed catalog after commit. For
+   the captured v2 state, adoption records versions 1 and 2 without replaying
+   application SQL. Unexpected state stops the rollout; do not repair manually.
+6. Deploy a schema-compatible application release, configure the independent
+   readiness secret privately, then verify authorized readiness and application
+   smoke checks. Check collector health if enabled; do not enable collection or
+   consume provider quota merely to test migration delivery.
+
+A failure before transaction commit rolls back application SQL and ledger writes
+atomically. Preserve sanitized failure evidence and obtain a fresh plan before
+retrying. A lost connection around commit has an uncertain outcome: inspect
+read-only status/catalog before deciding whether to retry.
+
+After commit, correct database defects with a separately reviewed forward
+migration. Never edit applied SQL/checksums or delete ledger rows to simulate a
+rollback. Roll back the application only to a release compatible with the
+current schema; prefer additive schema changes and retain compatibility until
+older application releases are no longer needed. An application rollback does
+not roll back the database.
+
+Restoring Production is a separate owner-approved recovery operation, never an
+automatic response to a failed deployment. Stop or coordinate writers, quantify
+writes since the backup, define their recovery/reconciliation, and verify the
+restored target before reconnecting the application. This drill restored only
+a separate recovery target and proves no Production cutover capability by itself.
