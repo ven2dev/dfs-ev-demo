@@ -328,9 +328,11 @@ the process that held it no longer exists, never merely because it is old; a
 lock held for over 5 seconds by a live process gives `file-busy`. Removing a
 dead process's lock needs a short-lived claim of its own with the same
 guarantees, so a paused process can never be displaced. If a process dies
-mid-takeover it can leave a tiny hidden `.…lock.reap-…` file beside the log;
-the next run clears it, and it is safe to delete by hand when no tool is
-running. The log must
+mid-takeover, the claim it left (a tiny hidden `.…lock.reap-…` file beside the
+log) is **not** removed automatically, because doing so safely is not possible
+with plain files. Everything then stops with `takeover-claim-abandoned` instead
+of guessing. Close every tool and delete that one hidden file, and the next run
+recovers. The log must
 be a single-link regular file readable only by you, or it is refused.
 
 The log holds transcript text, so treat it as the most sensitive file here: keep
@@ -377,6 +379,7 @@ Every failure prints one line, `creator-corpus: <code>`.
 | `invalid-captures-file` | The capture log is damaged or was edited by hand. The tool will not read, repair or overwrite it. Restore it from a copy. |
 | `transcript-empty`, `transcript-too-large`, `transcript-invalid-characters`, `transcript-too-short` | The Capture page refused the text: nothing pasted, over 500 KB, control characters, or under 200 characters (confirm with *Save anyway* if it is really that short). |
 | `invalid-published-date`, `invalid-caption-kind`, `note-too-long`, `reason-too-long` | A field on the Capture form is not acceptable. The page shows what to change; nothing was saved. |
+| `takeover-claim-abandoned` | A previous run died in the middle of taking over a stale lock and left a hidden `.…lock.reap-…` file next to the decisions or captures file. Nothing was changed. Close every tool, delete that one hidden file, and run again. |
 | `reason-required` | Replacing a transcript needs a reason. |
 | `already-captured`, `already-unavailable`, `nothing-to-replace` | The video's state does not allow that action (for example a second capture instead of a replace). |
 | `video-not-in-queue` | The video is excluded, or flagged while the flagged box is unticked. Reload the page; change the decision or tick the box if you want it in the queue. |

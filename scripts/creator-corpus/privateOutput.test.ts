@@ -12,7 +12,6 @@ import {
   readPrivateJsonOptional,
   readPrivateTextOptional,
   reapStaleLock,
-  removeAbandoned,
   replacePrivateJson,
   withPrivateFileLock,
   writePrivateJson,
@@ -303,12 +302,27 @@ describe("withPrivateFileLock", () => {
     expect(await readFile(lockFile(), "utf8")).toBe(stale);
   });
 
-  it("removes a claim whose claimant is gone and finishes the takeover, leaving nothing behind", async () => {
+  it("fails closed when a takeover claimant died, with a fixed code, changing neither file", async () => {
     const stale = lockOf(2147483646);
     await writeFile(lockFile(), stale);
-    await writeFile(claimFile(stale), lockOf(2147483645, "dead-claimant"));
+    const dead = lockOf(2147483645, "dead-claimant");
+    await writeFile(claimFile(stale), dead);
+    expect(await code(withPrivateFileLock(target(), async () => "never", { timeoutMs: 2000 }))).toBe("takeover-claim-abandoned");
+    expect(await readFile(lockFile(), "utf8")).toBe(stale);
+    expect(await readFile(claimFile(stale), "utf8")).toBe(dead);
+    expect((await readdir(directory)).sort()).toEqual([".log.json.lock", `.log.json.lock.reap-${JSON.parse(stale).token}`]);
+    // Deleting the named claim file is the whole recovery.
+    await rm(claimFile(stale));
     expect(await withPrivateFileLock(target(), async () => "recovered", { timeoutMs: 2000 })).toBe("recovered");
     expect(await readdir(directory)).toEqual([]);
+  });
+
+  it("fails closed on a claim it cannot read, rather than guessing", async () => {
+    const stale = lockOf(2147483646);
+    await writeFile(lockFile(), stale);
+    await writeFile(claimFile(stale), "{ damaged");
+    expect(await code(withPrivateFileLock(target(), async () => "never", { timeoutMs: 500 }))).toBe("takeover-claim-abandoned");
+    expect(await readFile(claimFile(stale), "utf8")).toBe("{ damaged");
   });
 
   it("names each claim for the lock it is removing, so claims for different locks never collide", async () => {
@@ -316,16 +330,6 @@ describe("withPrivateFileLock", () => {
     await writeFile(lockFile(), first);
     expect(claimFile(first)).toContain(".reap-");
     expect(claimFile(first)).not.toBe(claimFile(lockOf(2147483646)));
-  });
-
-  it("puts back a file that turns out not to be the abandoned one it moved aside", async () => {
-    const live = lockOf(process.pid, "live-owner");
-    await writeFile(lockFile(), live);
-    await removeAbandoned(lockFile(), "some-other-token");
-    expect(await readFile(lockFile(), "utf8")).toBe(live);
-    expect(await readdir(directory)).toEqual([".log.json.lock"]);
-    await removeAbandoned(lockFile(), "live-owner");
-    expect(await readdir(directory)).toEqual([]);
   });
 
   it("handles an unreadable lock file by its age", async () => {

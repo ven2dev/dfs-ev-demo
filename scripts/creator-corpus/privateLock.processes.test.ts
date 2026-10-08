@@ -54,7 +54,7 @@ const staleLock = async (target: string) =>
   writeFile(join(directory, `.${target}.lock`), JSON.stringify({ pid: await deadPid(), at: Date.now() - 1000, token: randomUUID() }), { mode: 0o600 });
 
 describe("the file lock across processes", () => {
-  it("never displaces a paused takeover claimant, however long it is paused, and recovers once it is gone", async () => {
+  it("never displaces a paused takeover claimant, however long it is paused, and then stops and asks for cleanup once it is gone", async () => {
     // A live process stands in for a claimant that is paused (machine sleep, a debugger):
     // it holds the claim for the stale lock and is not running its takeover.
     const paused = spawn(process.execPath, ["-e", "setTimeout(() => {}, 120000)"], { stdio: "ignore" });
@@ -73,9 +73,17 @@ describe("the file lock across processes", () => {
       expect(await readFile(claimPath, "utf8")).toBe(claim);
       expect(JSON.parse(await readFile(lockPath, "utf8")).token).toBe(stale.token);
 
-      // Once the claimant is gone, contenders recover and exactly one at a time gets in.
+      // Once the claimant is gone, contenders stop and say so, touching nothing.
       paused.kill("SIGKILL");
       await new Promise((done) => paused.once("close", done));
+      await rm(goPath(), { force: true });
+      const abandoned = await runWorkers(6, "try", join(directory, "log.json"));
+      expect(abandoned.map((result) => result.stdout)).toEqual(Array(6).fill("takeover-claim-abandoned"));
+      expect(await readFile(claimPath, "utf8")).toBe(claim);
+      expect(JSON.parse(await readFile(lockPath, "utf8")).token).toBe(stale.token);
+
+      // The owner deletes the named claim file, and everything works again.
+      await rm(claimPath);
       await rm(goPath(), { force: true });
       await writeFile(join(shared, "counter.txt"), "0");
       const recovered = await runWorkers(6, "section", join(directory, "log.json"));

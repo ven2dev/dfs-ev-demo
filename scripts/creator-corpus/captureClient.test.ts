@@ -424,6 +424,7 @@ describe("saving a transcript", () => {
       "transcript-invalid-characters": "control characters",
       "unauthorized": "session token",
       "insecure-file-permissions": "chmod 600",
+      "takeover-claim-abandoned": "hidden .reap file",
       "video-not-in-queue": "not in the queue",
       "mystery-code": "could not save",
     };

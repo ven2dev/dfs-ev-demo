@@ -302,8 +302,8 @@ export const startReviewServer = async ({
       if (response.headersSent) return response.end();
       if (error instanceof HttpError) return sendJson(response, error.status, { error: error.code });
       if (error instanceof PrivateFileError && error.code === "file-busy") return sendJson(response, 503, { error: "file-busy" });
-      if (error instanceof PrivateFileError && error.code === "insecure-file-permissions") {
-        return sendJson(response, 409, { error: "insecure-file-permissions" });
+      if (error instanceof PrivateFileError && (error.code === "insecure-file-permissions" || error.code === "takeover-claim-abandoned")) {
+        return sendJson(response, 409, { error: error.code });
       }
       const code = error instanceof CommandError ? error.code : "";
       if (VALIDATION_CODES.has(code) || CAPTURE_VALIDATION_CODES.has(code)) return sendJson(response, 400, { error: code });

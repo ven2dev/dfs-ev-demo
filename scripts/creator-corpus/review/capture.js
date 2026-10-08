@@ -39,6 +39,7 @@
     "invalid-captures-file": "The captures file is damaged, so nothing was saved. It has not been changed.",
     "insecure-file-permissions": "The captures file can be read by other users, so nothing was saved. Run chmod 600 on it and try again.",
     "video-not-in-queue": "That video is not in the queue, perhaps because it was excluded or is flagged. Reload the page.",
+    "takeover-claim-abandoned": "A previous save was interrupted mid-takeover and left a hidden .reap file beside the captures file. Nothing was saved. Close the tool, delete that file (see the runbook), and start again.",
     "file-busy": "Another process is saving to the captures file. Try again in a moment.",
     "payload-too-large": "That request was too large to send.",
     "server-error": "The server could not save that. Your transcript is still in the box.",

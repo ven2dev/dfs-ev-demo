@@ -215,37 +215,20 @@ const ownedFileIsStale = async (path: string, staleMs: number): Promise<boolean>
   return ownerIsGone(owner);
 };
 
-// Removes a file whose owner is gone without removing a live replacement: move
-// it aside, check that what was moved is the file judged abandoned, and put it
-// back if not.
-// Exported for tests only.
-export const removeAbandoned = async (path: string, token: string | null): Promise<void> => {
-  const quarantine = `${path}.${randomUUID()}.stale`;
-  try {
-    await rename(path, quarantine);
-  } catch {
-    return;
-  }
-  const moved = await readOwner(quarantine);
-  const wasAbandoned = token === null ? moved === "unreadable" : moved !== "absent" && moved !== "unreadable" && moved.token === token;
-  if (!wasAbandoned) {
-    try {
-      await link(quarantine, path);
-    } catch {
-      // Someone else already holds the path: the moved file is not ours to keep.
-    }
-  }
-  await rm(quarantine, { force: true });
-};
-
 // Removes a stale lock without ever removing a live one. The claim to do so is
 // itself an owned file, named for the exact stale lock being removed, so only
 // contenders that judged that same lock stale compete for it. The holder
 // judges again while holding the claim: nothing else can remove or replace a
 // stale lock (its owner is gone, and removal needs this claim), so what it
 // removes is what it judged. A live claimant is never displaced, however long
-// it is paused. A claim whose claimant died is removed like any other
-// abandoned file. Returns whether this call did the takeover work.
+// it is paused.
+//
+// A claim whose claimant died is NOT removed automatically. Doing that would
+// need another compare-and-remove on a shared path, which cannot be made safe
+// with plain files (a replacement claim could be removed in the gap). So it
+// fails closed with a fixed code and the owner deletes the named file while no
+// tool is running. That only follows a crash in the middle of a takeover.
+// Returns whether this call did the takeover work.
 export const reapStaleLock = async (lockPath: string, staleMs: number): Promise<boolean> => {
   const lock = await readOwner(lockPath);
   if (lock === "absent") return true;
@@ -254,16 +237,18 @@ export const reapStaleLock = async (lockPath: string, staleMs: number): Promise<
   const claimToken = randomUUID();
   if (!(await acquireOwned(claimPath, claimToken))) {
     const claim = await readOwner(claimPath);
-    if (claim !== "absent" && (await ownedFileIsStale(claimPath, staleMs))) {
-      await removeAbandoned(claimPath, claim === "unreadable" ? null : claim.token);
-    }
+    if (claim === "unreadable" || (claim !== "absent" && ownerIsGone(claim))) return fail("takeover-claim-abandoned");
     return false;
   }
   try {
-    const current = await readOwner(lockPath);
-    const same = current !== "absent" && (current === "unreadable" ? key === "unreadable" : current.token === key);
-    if (same && (await ownedFileIsStale(lockPath, staleMs))) {
-      await removeAbandoned(lockPath, key === "unreadable" ? null : key);
+    if (await ownedFileIsStale(lockPath, staleMs)) {
+      const quarantine = `${lockPath}.${randomUUID()}.stale`;
+      try {
+        await rename(lockPath, quarantine);
+        await rm(quarantine, { force: true });
+      } catch {
+        // Already removed: nothing left to do.
+      }
     }
     return true;
   } finally {
