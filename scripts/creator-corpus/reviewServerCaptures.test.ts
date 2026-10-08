@@ -81,13 +81,17 @@ describe("routes exist only when captures are enabled", () => {
     await start({ capturesPath: undefined });
     expect((await call(server, { path: "/api/captures", headers: auth() })).status).toBe(404);
     expect((await post(capture())).status).toBe(404);
-    expect((await call(server, { path: "/api/data", headers: auth() })).status).toBe(200);
+    const data = await call(server, { path: "/api/data", headers: auth() });
+    expect(data.status).toBe(200);
+    expect(JSON.parse(data.body).features).toEqual({ captures: false });
   });
 
   it("serves them when enabled", async () => {
     await start();
     expect((await call(server, { path: "/api/captures", headers: auth() })).status).toBe(200);
     expect((await post(capture())).status).toBe(200);
+    const data = await call(server, { path: "/api/data", headers: auth() });
+    expect(JSON.parse(data.body).features).toEqual({ captures: true });
   });
 });
 

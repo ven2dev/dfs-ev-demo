@@ -424,13 +424,42 @@
     document.addEventListener("keydown", (event) => {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) return;
       if (event.key !== "j" && event.key !== "k") return;
-      const items = [...document.querySelectorAll(".video")];
+      if (byId("review-view").hidden) return;
+      const items = [...document.querySelectorAll("#review-view .video")];
       const index = items.indexOf(document.activeElement);
       const next = items[event.key === "j" ? Math.min(items.length - 1, index + 1) : Math.max(0, index - 1)];
       if (next) next.focus();
     });
     const presets = byId("reason-presets");
     for (const reason of QUICK_REASONS) presets.append(el("option", { attrs: { value: reason } }));
+  };
+
+  // The capture view lives in the same page so the token stays in memory. It
+  // gets only the helpers it needs; it never sees the review state.
+  const wireCaptureTab = () => {
+    const review = byId("review-view");
+    const capture = byId("capture-view");
+    const creators = byId("creators");
+    const tabReview = byId("tab-review");
+    const tabCapture = byId("tab-capture");
+    byId("views").hidden = false;
+    let started = false;
+    const show = (name) => {
+      const onCapture = name === "capture";
+      review.hidden = onCapture;
+      creators.hidden = onCapture;
+      capture.hidden = !onCapture;
+      tabReview.setAttribute("aria-pressed", onCapture ? "false" : "true");
+      tabCapture.setAttribute("aria-pressed", onCapture ? "true" : "false");
+      tabReview.className = "tab" + (onCapture ? "" : " selected");
+      tabCapture.className = "tab" + (onCapture ? " selected" : "");
+      if (onCapture && !started) {
+        started = true;
+        globalThis.creatorCapture.start({ api, el, byId, formatDate, formatDuration });
+      }
+    };
+    tabReview.addEventListener("click", () => show("review"));
+    tabCapture.addEventListener("click", () => show("capture"));
   };
 
   const start = async () => {
@@ -451,6 +480,7 @@
     }
     say("Loaded " + state.data.creators.length + " creator(s).");
     renderAll();
+    if (state.data.features && state.data.features.captures && globalThis.creatorCapture) wireCaptureTab();
   };
 
   start();

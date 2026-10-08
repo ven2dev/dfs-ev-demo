@@ -30,6 +30,7 @@
   }
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.45; }
 .top { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; padding: 0.75rem 1rem; border-bottom: 1px solid var(--line); background: var(--card); position: sticky; top: 0; z-index: 2; }
 h1 { font-size: 1.1rem; margin: 0; }
@@ -79,4 +80,23 @@ button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible
 .history ol { margin: 0.25rem 0; padding-left: 1.2rem; color: var(--muted); font-size: 0.9rem; }
 kbd { border: 1px solid var(--line); border-radius: 0.25rem; padding: 0 0.3rem; background: var(--card); }
 #more { margin: 1rem 0; }
+.slot-empty { background: var(--card); color: var(--muted); border-color: var(--line); }
+#views { margin-left: auto; }
+#capture-banner { padding: 0.75rem 1rem; background: var(--bad-bg); color: var(--bad); border-bottom: 1px solid var(--bad); font-weight: 600; }
+#capture-summary { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0.5rem 0; align-items: center; }
+.progress { flex: 1 1 12rem; height: 0.9rem; }
+.scope { display: flex; gap: 0.5rem; align-items: center; margin: 0.5rem 0; }
+#capture-current { background: var(--card); border: 1px solid var(--line); border-radius: 0.5rem; padding: 0.5rem 1rem 1rem; margin: 1rem 0; }
+.capture-form { display: grid; gap: 0.6rem; margin-top: 0.5rem; }
+.cap-field { display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.85rem; color: var(--muted); }
+.cap-field small { color: var(--muted); }
+.cap-field input, .cap-field select, .cap-field textarea { padding: 0.35rem 0.5rem; border: 1px solid var(--line); border-radius: 0.4rem; background: var(--bg); color: var(--fg); max-width: 28rem; }
+.cap-field .cap-text { max-width: none; }
+.cap-row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; }
+.cap-row .cap-field { flex: 1 1 12rem; }
+.cap-text { width: 100%; min-height: 16rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; resize: vertical; }
+.meter { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.cap-save { border-color: var(--ok); color: var(--ok); font-weight: 600; }
+.row-select { text-align: left; width: 100%; border: 0; background: transparent; padding: 0; font-weight: 600; overflow-wrap: anywhere; }
+.row-select.chosen { color: var(--accent); }
 @media (max-width: 40rem) { main { padding: 0.5rem; } .slot { width: 1.6rem; height: 1.6rem; } }

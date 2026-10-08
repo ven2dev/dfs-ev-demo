@@ -26,6 +26,7 @@ export const LOOPBACK_ADDRESS = "127.0.0.1";
 const ASSETS = {
   "/": { file: "index.html", type: "text/html; charset=utf-8" },
   "/client.js": { file: "client.js", type: "text/javascript; charset=utf-8" },
+  "/capture.js": { file: "capture.js", type: "text/javascript; charset=utf-8" },
   "/app.css": { file: "app.css", type: "text/css; charset=utf-8" },
 } as const;
 
@@ -268,7 +269,9 @@ export const startReviewServer = async ({
       throw new HttpError(401, "unauthorized");
     }
 
-    if (path === "/api/data") return sendJson(response, 200, await state());
+    if (path === "/api/data") {
+      return sendJson(response, 200, { ...(await state()), features: { captures: captureRoutes } });
+    }
     if (path === "/api/captures") {
       const scope = new URL(request.url ?? "/", origin).searchParams.get("scope") ?? "included";
       if (!QUEUE_SCOPES.includes(scope)) throw new HttpError(400, "invalid-request");

@@ -127,7 +127,7 @@ describe("binding and addressing", () => {
 describe("assets", () => {
   it("serves the page and its script and style without a token, and none of them carry data", async () => {
     await start();
-    for (const [path, type] of [["/", "text/html"], ["/client.js", "text/javascript"], ["/app.css", "text/css"]] as const) {
+    for (const [path, type] of [["/", "text/html"], ["/client.js", "text/javascript"], ["/capture.js", "text/javascript"], ["/app.css", "text/css"]] as const) {
       const reply = await call(server, { path });
       expect(reply.status).toBe(200);
       expect(reply.headers["content-type"]).toContain(type);
@@ -140,6 +140,7 @@ describe("assets", () => {
     await start();
     const html = (await call(server, {})).body;
     expect(html).toContain('src="/client.js"');
+    expect(html).toContain('src="/capture.js"');
     expect(html).toContain('href="/app.css"');
     expect(html).not.toMatch(/<script(?![^>]*\bsrc=)/i);
     expect(html).not.toMatch(/https?:\/\//i);
