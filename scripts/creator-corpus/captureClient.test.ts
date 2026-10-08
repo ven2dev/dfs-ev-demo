@@ -423,6 +423,8 @@ describe("saving a transcript", () => {
       "already-captured": "already has a transcript",
       "transcript-invalid-characters": "control characters",
       "unauthorized": "session token",
+      "insecure-file-permissions": "chmod 600",
+      "video-not-in-queue": "not in the queue",
       "mystery-code": "could not save",
     };
     for (const [code, words] of Object.entries(expected)) {
@@ -490,11 +492,34 @@ describe("marking a video unavailable", () => {
     type(field(".cap-note"), "captions disabled");
     click(buttonNamed("No transcript available") ?? null);
     await vi.waitFor(() => expect(server.posts()).toHaveLength(1));
-    expect(server.posts()[0]!.body).toEqual({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable", scope: "included", note: "captions disabled" });
+    expect(server.posts()[0]!.body).toEqual({
+      creatorKey: "creator-a",
+      videoId: vid(1),
+      action: "unavailable",
+      scope: "included",
+      note: "captions disabled",
+      publishedDate: "2025-10-09",
+    });
     await vi.waitFor(() => expect(heading()).toBe("NFL Week 7 Player Props"));
     expect(status()).toBe("Marked unavailable: NFL Week 6 Player Props");
     show("unavailable");
     expect(rowTitles()).toEqual(["NFL Week 6 Player Props"]);
+  });
+
+  it("sends the date as confirmed on the form, and refuses a missing or invalid one without sending anything", async () => {
+    const server = await makeServer();
+    await mount(server);
+    await openCapture();
+    type(field(".cap-date"), "");
+    click(buttonNamed("No transcript available") ?? null);
+    expect(error()).toContain("publish date");
+    expect(document.activeElement).toBe(field(".cap-date"));
+    expect(server.posts()).toHaveLength(0);
+    type(field(".cap-date"), "2025-10-08");
+    click(buttonNamed("No transcript available") ?? null);
+    await vi.waitFor(() => expect(server.posts()).toHaveLength(1));
+    expect(server.posts()[0]!.body).toMatchObject({ action: "unavailable", publishedDate: "2025-10-08" });
+    expect(server.events[0]).toMatchObject({ event: "unavailable", publishedDate: "2025-10-08" });
   });
 
   it("lets a video marked unavailable be captured later", async () => {

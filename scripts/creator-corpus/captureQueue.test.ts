@@ -70,7 +70,7 @@ describe("states and progress", () => {
   });
 
   it("counts captured and unavailable videos and moves the next pointer to the oldest still needing one", () => {
-    const captures = [captureEvent(1), buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(4), action: "unavailable", reason: "disabled" }, NOW)];
+    const captures = [captureEvent(1), buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(4), action: "unavailable", publishedDate: "2025-10-09", reason: "disabled" }, NOW)];
     const creator = creatorA(build({ captures }));
     expect(creator.items.map((item) => item.state)).toEqual(["captured", "unavailable"]);
     expect(creator.counts).toEqual({ needsCapture: 0, captured: 1, unavailable: 1, total: 2 });
@@ -89,7 +89,7 @@ describe("states and progress", () => {
   });
 
   it("counts an unavailable video under its own week column, not as captured", () => {
-    const captures = [buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable" }, NOW), captureEvent(4)];
+    const captures = [buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable", publishedDate: "2025-10-09" }, NOW), captureEvent(4)];
     const creator = creatorA(build({ captures }));
     const week = (number: number) => creator.weeks.find((entry) => entry.season === 2025 && entry.week === number)!;
     expect(week(6)).toMatchObject({ needsCapture: 0, captured: 0, unavailable: 1 });
@@ -115,7 +115,7 @@ describe("states and progress", () => {
 
   it("lets a video marked unavailable be captured later", () => {
     const captures = [
-      buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable" }, NOW),
+      buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable", publishedDate: "2025-10-09" }, NOW),
       captureEvent(1),
     ];
     expect(creatorA(build({ captures })).items[0]).toMatchObject({ state: "captured", capture: { events: 2 } });
@@ -143,7 +143,7 @@ describe("what the state may contain", () => {
   });
 
   it("gives an unavailable capture no text, hash or preview", () => {
-    const captures = [buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable", note: "private video" }, NOW)];
+    const captures = [buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable", publishedDate: "2025-10-09", note: "private video" }, NOW)];
     expect(creatorA(build({ captures })).items[0].capture).toMatchObject({
       event: "unavailable",
       characters: null,
@@ -195,7 +195,7 @@ describe("creator keys that start with another creator's key", () => {
     d.creators[0].manifest.creatorKey = "creator";
     d.creators[1].key = "creator-a";
     d.creators[1].manifest.creatorKey = "creator-a";
-    const unavailable = buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(5), action: "unavailable" }, NOW);
+    const unavailable = buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(5), action: "unavailable", publishedDate: "2025-10-09" }, NOW);
     const state = build({ discovery: d, captures: [captureEvent(2, {}, "creator-a"), unavailable] });
     expect(state.creators.map((creator) => [creator.key, creator.counts.captured, creator.counts.unavailable])).toEqual([
       ["creator", 0, 0],

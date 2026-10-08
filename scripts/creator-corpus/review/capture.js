@@ -37,6 +37,8 @@
     "video-outside-window": "That video is outside the registered window.",
     "stale-discovery-data": "The saved YouTube data is too old to use. Refresh it with the discover command.",
     "invalid-captures-file": "The captures file is damaged, so nothing was saved. It has not been changed.",
+    "insecure-file-permissions": "The captures file can be read by other users, so nothing was saved. Run chmod 600 on it and try again.",
+    "video-not-in-queue": "That video is not in the queue, perhaps because it was excluded or is flagged. Reload the page.",
     "file-busy": "Another process is saving to the captures file. Try again in a moment.",
     "payload-too-large": "That request was too large to send.",
     "server-error": "The server could not save that. Your transcript is still in the box.",
@@ -225,14 +227,14 @@
       const body = { creatorKey: cap.creator, videoId: item.videoId, action, scope: cap.scope };
       const note = form.querySelector(".cap-note").value.trim();
       if (note) body.note = note;
+      const date = form.querySelector(".cap-date").value;
+      const dateProblem = () => !DATE_ONLY.test(date);
       if (action === "capture" || action === "replace") {
         const text = form.querySelector(".cap-text").value;
-        const date = form.querySelector(".cap-date").value;
         if (text.trim() === "") return fail(message, form, ".cap-text", "transcript-empty");
         if (new TextEncoder().encode(text).length > MAX_TRANSCRIPT_BYTES) return fail(message, form, ".cap-text", "transcript-too-large");
-        if (!DATE_ONLY.test(date)) return fail(message, form, ".cap-date", "invalid-published-date");
+        if (dateProblem()) return fail(message, form, ".cap-date", "invalid-published-date");
         body.text = text;
-        body.publishedDate = date;
         body.captionKind = form.querySelector(".cap-kind").value;
         if (action === "replace") {
           const reason = form.querySelector(".cap-reason").value.trim();
@@ -240,7 +242,10 @@
           body.reason = reason;
         }
         if (confirmShort) body.confirmShort = true;
+      } else if (dateProblem()) {
+        return fail(message, form, ".cap-date", "invalid-published-date");
       }
+      body.publishedDate = date;
       setBusy(true);
       try {
         const result = await api("/api/capture", {

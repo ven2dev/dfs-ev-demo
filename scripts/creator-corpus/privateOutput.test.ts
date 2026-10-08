@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { randomUUID } from "node:crypto";
-import { link, mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { chmod, link, mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -11,6 +11,8 @@ import {
   readPrivateJson,
   readPrivateJsonOptional,
   readPrivateTextOptional,
+  reapStaleLock,
+  removeAbandoned,
   replacePrivateJson,
   withPrivateFileLock,
   writePrivateJson,
@@ -199,7 +201,7 @@ describe("withPrivateFileLock", () => {
 
   it("holds the lock with its owner recorded, at owner-only permissions, while the work runs", async () => {
     await withPrivateFileLock(target(), async () => {
-      expect(JSON.parse(await readFile(lockFile(), "utf8"))).toMatchObject({ pid: process.pid });
+      expect(JSON.parse(await readFile(lockFile(), "utf8"))).toMatchObject({ pid: process.pid, token: expect.stringMatching(/^[0-9a-f-]{36}$/) });
       expect((await stat(lockFile())).mode & 0o777).toBe(0o600);
     });
   });
@@ -227,16 +229,103 @@ describe("withPrivateFileLock", () => {
     expect(await readdir(directory)).toEqual([]);
   });
 
-  it("takes over a lock whose owner process no longer exists", async () => {
-    await writeFile(lockFile(), JSON.stringify({ pid: 2147483646, at: Date.now() }));
+  const lockOf = (pid: number, token: string = randomUUID(), at = Date.now()) => JSON.stringify({ pid, at, token });
+
+  it("takes over a lock whose owner process no longer exists, leaving nothing behind", async () => {
+    await writeFile(lockFile(), lockOf(2147483646));
     expect(await withPrivateFileLock(target(), async () => "taken over", { timeoutMs: 500 })).toBe("taken over");
+    expect(await readdir(directory)).toEqual([]);
   });
 
-  it("takes over a lock older than the stale limit, but not a fresh one held by a live process", async () => {
-    await writeFile(lockFile(), JSON.stringify({ pid: process.pid, at: Date.now() - 60_000 }));
-    expect(await withPrivateFileLock(target(), async () => "old", { staleMs: 1000, timeoutMs: 500 })).toBe("old");
-    await writeFile(lockFile(), JSON.stringify({ pid: process.pid, at: Date.now() }));
-    expect(await code(withPrivateFileLock(target(), async () => "fresh", { staleMs: 60_000, timeoutMs: 100 }))).toBe("file-busy");
+  it("treats an owner it may not signal as alive, not gone", async () => {
+    // Process 1 exists but cannot be signalled by an ordinary user (EPERM), or can by root.
+    await writeFile(lockFile(), lockOf(1));
+    expect(await code(withPrivateFileLock(target(), async () => "intruder", { timeoutMs: 150 }))).toBe("file-busy");
+  });
+
+  it("judges staleness again after taking the takeover claim, so a lock that was replaced is left alone", async () => {
+    // The contender saw an old stale lock; by the time it holds the claim, a live owner has a fresh one.
+    const fresh = lockOf(process.pid, "fresh-owner");
+    await writeFile(lockFile(), fresh);
+    expect(await reapStaleLock(lockFile(), 30_000)).toBe(true);
+    expect(await readFile(lockFile(), "utf8")).toBe(fresh);
+    expect(await readdir(directory)).toEqual([".log.json.lock"]);
+    await writeFile(lockFile(), lockOf(2147483646));
+    expect(await reapStaleLock(lockFile(), 30_000)).toBe(true);
+    expect(await readdir(directory)).toEqual([]);
+  });
+
+  it("never takes over a lock whose owner is alive, however old it is", async () => {
+    const old = lockOf(process.pid, "owner-token", Date.now() - 24 * 60 * 60 * 1000);
+    await writeFile(lockFile(), old);
+    expect(await code(withPrivateFileLock(target(), async () => "intruder", { staleMs: 1, timeoutMs: 150 }))).toBe("file-busy");
+    expect(await readFile(lockFile(), "utf8")).toBe(old);
+  });
+
+  it("removes only its own lock on release", async () => {
+    const theirs = lockOf(process.pid, "someone-else");
+    await withPrivateFileLock(target(), async () => {
+      await rm(lockFile());
+      await writeFile(lockFile(), theirs);
+    });
+    expect(await readFile(lockFile(), "utf8")).toBe(theirs);
+    expect(await readdir(directory)).toEqual([".log.json.lock"]);
+  });
+
+  it("writes the lock whole, so a waiting process never sees a half-written one", async () => {
+    let sawPartial = false;
+    const stop = Date.now() + 400;
+    const watcher = (async () => {
+      while (Date.now() < stop) {
+        try {
+          JSON.parse(await readFile(lockFile(), "utf8"));
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "ENOENT") sawPartial = true;
+        }
+      }
+    })();
+    for (let index = 0; index < 40; index++) await withPrivateFileLock(target(), async () => undefined);
+    await watcher;
+    expect(sawPartial).toBe(false);
+  });
+
+  const claimFile = (lock: string) => `${lockFile()}.reap-${(JSON.parse(lock) as { token: string }).token}`;
+
+  it("never displaces a takeover claim whose claimant is alive, however old the claim is", async () => {
+    const stale = lockOf(2147483646);
+    await writeFile(lockFile(), stale);
+    const claim = lockOf(process.pid, "paused-claimant", Date.now() - 24 * 60 * 60 * 1000);
+    await writeFile(claimFile(stale), claim);
+    const old = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    await utimes(claimFile(stale), old, old);
+    expect(await code(withPrivateFileLock(target(), async () => "x", { timeoutMs: 200, staleMs: 1 }))).toBe("file-busy");
+    expect(await readFile(claimFile(stale), "utf8")).toBe(claim);
+    expect(await readFile(lockFile(), "utf8")).toBe(stale);
+  });
+
+  it("removes a claim whose claimant is gone and finishes the takeover, leaving nothing behind", async () => {
+    const stale = lockOf(2147483646);
+    await writeFile(lockFile(), stale);
+    await writeFile(claimFile(stale), lockOf(2147483645, "dead-claimant"));
+    expect(await withPrivateFileLock(target(), async () => "recovered", { timeoutMs: 2000 })).toBe("recovered");
+    expect(await readdir(directory)).toEqual([]);
+  });
+
+  it("names each claim for the lock it is removing, so claims for different locks never collide", async () => {
+    const first = lockOf(2147483646);
+    await writeFile(lockFile(), first);
+    expect(claimFile(first)).toContain(".reap-");
+    expect(claimFile(first)).not.toBe(claimFile(lockOf(2147483646)));
+  });
+
+  it("puts back a file that turns out not to be the abandoned one it moved aside", async () => {
+    const live = lockOf(process.pid, "live-owner");
+    await writeFile(lockFile(), live);
+    await removeAbandoned(lockFile(), "some-other-token");
+    expect(await readFile(lockFile(), "utf8")).toBe(live);
+    expect(await readdir(directory)).toEqual([".log.json.lock"]);
+    await removeAbandoned(lockFile(), "live-owner");
+    expect(await readdir(directory)).toEqual([]);
   });
 
   it("handles an unreadable lock file by its age", async () => {
@@ -288,9 +377,38 @@ describe("JSON Lines helpers", () => {
   });
 
   it("appends to a file that already exists without truncating it", async () => {
-    await writeFile(log(), '{"old":true}\n');
+    await writeFile(log(), '{"old":true}\n', { mode: 0o600 });
     await appendPrivateLine(log(), '{"new":true}');
     expect(await readFile(log(), "utf8")).toBe('{"old":true}\n{"new":true}\n');
+  });
+
+  it("refuses an existing log that group or others can read, and neither reads nor changes it", async () => {
+    for (const mode of [0o644, 0o640, 0o604, 0o660, 0o666]) {
+      await writeFile(log(), '{"old":true}\n');
+      await chmod(log(), mode);
+      expect(await code(appendPrivateLine(log(), '{"new":true}')), mode.toString(8)).toBe("insecure-file-permissions");
+      expect(await code(readPrivateTextOptional(log())), mode.toString(8)).toBe("insecure-file-permissions");
+      expect(await readFile(log(), "utf8")).toBe('{"old":true}\n');
+      expect((await stat(log())).mode & 0o777).toBe(mode);
+      await rm(log());
+    }
+  });
+
+  it("accepts an existing owner-only log, whatever the owner bits", async () => {
+    await writeFile(log(), '{"old":true}\n');
+    for (const mode of [0o600, 0o400, 0o700]) {
+      await chmod(log(), mode);
+      expect(await readPrivateTextOptional(log())).toBe('{"old":true}\n');
+    }
+    await chmod(log(), 0o600);
+    await appendPrivateLine(log(), '{"new":true}');
+    expect(await readFile(log(), "utf8")).toBe('{"old":true}\n{"new":true}\n');
+  });
+
+  it("refuses a log with a second hard link even when it is owner-only", async () => {
+    await writeFile(log(), "", { mode: 0o600 });
+    await link(log(), join(directory, "other.jsonl"));
+    expect(await code(appendPrivateLine(log(), "{}"))).toBe("hard-link-not-allowed");
   });
 
   it("refuses a line that contains a line break", async () => {

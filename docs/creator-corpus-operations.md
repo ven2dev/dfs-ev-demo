@@ -24,7 +24,8 @@ exception ends before any public use (#91).
   symlinks), so creator names, API data and your decisions cannot be committed
   by accident. A file that is itself a symbolic link, or has a second hard
   link, is refused too, since it could point back into the repository. Output
-  files are created with owner-only permissions and are never overwritten.
+  files are created with owner-only permissions and are never overwritten. An
+  existing capture log that others can read is refused, not changed.
 - **Never put the API key in a file, an argument, an issue or a chat.** It is
   read only from the `YOUTUBE_API_KEY` environment variable and is sent in a
   request header, never in a URL. Error output contains one fixed code and
@@ -289,9 +290,16 @@ for review* to add flagged ones). For each video:
 
 Things worth knowing:
 
-- Text is stored as pasted, except that a leading byte-order mark is removed and
-  line endings become `\n`, so timestamps and wording survive for later
-  extraction. Limit 500 KB. Control characters are refused.
+- Text is stored exactly as pasted, except that line endings become `\n`, so
+  every character, timestamp and word survives for later extraction and the
+  stored hash describes exactly what you pasted. Limit 500 KB. Control
+  characters are refused.
+- The queue decides what can be saved, not the page. A video you excluded, or
+  one still flagged while the box above is unticked, is refused with
+  `video-not-in-queue` even from an old tab. If you exclude a video after
+  capturing it, the capture stays in the log but the queue stops listing it.
+- **No transcript available** also records the **Published date** you confirmed,
+  like a saved transcript.
 - Under 200 characters the page asks first (*Save anyway*), because that is
   usually a partial copy.
 - A saved transcript is never edited. **Replace transcript** adds a new version
@@ -315,7 +323,15 @@ The capture log is an **append-only** file with one JSON event per line
 the text and its length. The tool re-verifies every line when it reads the file
 and refuses the whole file if any line was edited or damaged. Saves take the same
 kind of short lock as decisions (a hidden `.captures.jsonl.lock` file), so two
-windows cannot interleave writes.
+windows or two commands cannot interleave writes. A lock is taken over only when
+the process that held it no longer exists, never merely because it is old; a
+lock held for over 5 seconds by a live process gives `file-busy`. Removing a
+dead process's lock needs a short-lived claim of its own with the same
+guarantees, so a paused process can never be displaced. If a process dies
+mid-takeover it can leave a tiny hidden `.…lock.reap-…` file beside the log;
+the next run clears it, and it is safe to delete by hand when no tool is
+running. The log must
+be a single-link regular file readable only by you, or it is refused.
 
 The log holds transcript text, so treat it as the most sensitive file here: keep
 it outside the repository (enforced), do not share it, and do not open it in an
@@ -363,6 +379,8 @@ Every failure prints one line, `creator-corpus: <code>`.
 | `invalid-published-date`, `invalid-caption-kind`, `note-too-long`, `reason-too-long` | A field on the Capture form is not acceptable. The page shows what to change; nothing was saved. |
 | `reason-required` | Replacing a transcript needs a reason. |
 | `already-captured`, `already-unavailable`, `nothing-to-replace` | The video's state does not allow that action (for example a second capture instead of a replace). |
+| `video-not-in-queue` | The video is excluded, or flagged while the flagged box is unticked. Reload the page; change the decision or tick the box if you want it in the queue. |
+| `insecure-file-permissions` | The capture log can be read by other users. Nothing was read or written. Run `chmod 600` on it (the tool never loosens or silently changes it). |
 | `payload-too-large` | A request body was over the limit. A transcript above 500 KB is refused for this reason or `transcript-too-large`. |
 | `invalid-decisions-file` | The decisions file is not in the current log format. The tool will not overwrite it. |
 | `unknown-creator-in-decisions` | A creator key in the decisions file is not in the registry (usually a typo). Nothing was fetched. Fix the key. |

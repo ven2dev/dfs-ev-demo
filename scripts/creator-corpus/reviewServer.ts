@@ -78,6 +78,7 @@ const CONFLICT_CODES = new Set([
   "already-unavailable",
   "nothing-to-replace",
   "invalid-captures-file",
+  "video-not-in-queue",
 ]);
 
 const sha256 = (value: string) => createHash("sha256").update(value).digest();
@@ -219,7 +220,7 @@ export const startReviewServer = async ({
     assets.set(route, { body: await readFile(new URL(`./review/${file}`, import.meta.url), "utf8"), type });
   }
 
-  const captureStore = capturesPath ? createCaptureStore({ path: capturesPath, discovery, now, lock }) : null;
+  const captureStore = capturesPath ? createCaptureStore({ path: capturesPath, discovery, now, lock, decisions: () => store.read() }) : null;
 
   const state = async () => buildReviewState({ discovery, decisions: await store.read(), now: now() });
   const queue = async (scope: QueueScope) =>
@@ -287,7 +288,7 @@ export const startReviewServer = async ({
     const body = await readBody(request, route.limit);
     if (path === "/api/capture") {
       const { request: captureRequest, scope } = parseCaptureRequest(body);
-      const event = await (captureStore as NonNullable<typeof captureStore>).append(captureRequest);
+      const event = await (captureStore as NonNullable<typeof captureStore>).append(captureRequest, scope);
       return sendJson(response, 200, { receipt: captureReceipt(event), queue: await queue(scope) });
     }
     const event = await store.append(parseDecisionRequest(body));
@@ -301,6 +302,9 @@ export const startReviewServer = async ({
       if (response.headersSent) return response.end();
       if (error instanceof HttpError) return sendJson(response, error.status, { error: error.code });
       if (error instanceof PrivateFileError && error.code === "file-busy") return sendJson(response, 503, { error: "file-busy" });
+      if (error instanceof PrivateFileError && error.code === "insecure-file-permissions") {
+        return sendJson(response, 409, { error: "insecure-file-permissions" });
+      }
       const code = error instanceof CommandError ? error.code : "";
       if (VALIDATION_CODES.has(code) || CAPTURE_VALIDATION_CODES.has(code)) return sendJson(response, 400, { error: code });
       if (CONFLICT_CODES.has(code)) return sendJson(response, 409, { error: code });

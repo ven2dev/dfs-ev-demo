@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { request as httpRequest } from "node:http";
-import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -226,7 +226,7 @@ describe("saving a capture", () => {
 
   it("records an unavailable video and a replacement with its reason", async () => {
     await start();
-    expect((await post(capture({ videoId: vid(4), action: "unavailable", text: undefined, publishedDate: undefined, reason: "captions off" }))).status).toBe(200);
+    expect((await post(capture({ videoId: vid(4), action: "unavailable", text: undefined, reason: "captions off" }))).status).toBe(200);
     expect((await post(capture())).status).toBe(200);
     const replaced = await post(capture({ action: "replace", reason: "pasted the wrong one", text: TEXT + "tail\n" }));
     expect(replaced.status).toBe(200);
@@ -288,22 +288,28 @@ describe("refusals", () => {
     const cases: [Record<string, unknown>, number, string][] = [
       [capture({ creatorKey: "creator-z" }), 400, "unknown-creator-key"],
       [capture({ videoId: vid(55) }), 400, "unknown-video"],
-      [capture({ videoId: vid(2), text: "" }), 400, "transcript-empty"],
-      [capture({ videoId: vid(2), text: TEXT + "\u0000" }), 400, "transcript-invalid-characters"],
-      [capture({ videoId: vid(2), text: "short" }), 400, "transcript-too-short"],
-      [capture({ videoId: vid(2), publishedDate: "2025-02-30" }), 400, "invalid-published-date"],
-      [capture({ videoId: vid(2), captionKind: "human" }), 400, "invalid-caption-kind"],
-      [capture({ videoId: vid(2), action: "delete" }), 400, "invalid-capture-action"],
-      [capture({ videoId: vid(2), action: "replace" }), 400, "reason-required"],
-      [capture({ videoId: vid(2), note: "n".repeat(501) }), 400, "note-too-long"],
+      [capture({ videoId: vid(4), text: "" }), 400, "transcript-empty"],
+      [capture({ videoId: vid(4), text: TEXT + "\u0000" }), 400, "transcript-invalid-characters"],
+      [capture({ videoId: vid(4), text: "short" }), 400, "transcript-too-short"],
+      [capture({ videoId: vid(4), publishedDate: "2025-02-30" }), 400, "invalid-published-date"],
+      [capture({ videoId: vid(4), captionKind: "human" }), 400, "invalid-caption-kind"],
+      [capture({ videoId: vid(4), action: "delete" }), 400, "invalid-capture-action"],
+      [capture({ videoId: vid(4), action: "replace" }), 400, "reason-required"],
+      [capture({ videoId: vid(4), note: "n".repeat(501) }), 400, "note-too-long"],
+      [capture({ videoId: vid(2) }), 409, "video-not-in-queue"],
+      [capture({ videoId: vid(3) }), 409, "video-not-in-queue"],
+      [capture({ videoId: vid(2), scope: "included-and-flagged" }), 200, "accepted"],
       [capture(), 409, "already-captured"],
-      [capture({ videoId: vid(2), action: "replace", reason: "fix" }), 409, "nothing-to-replace"],
+      [capture({ videoId: vid(4), action: "replace", reason: "fix" }), 409, "nothing-to-replace"],
     ];
     for (const [body, status, code] of cases) {
       const reply = await post(body);
       expect(reply.status, code).toBe(status);
-      expect(JSON.parse(reply.body)).toEqual({ error: code });
-      expect(reply.body).not.toContain(SENTINEL);
+      // A refusal never echoes the text. (An accepted save returns the capped preview.)
+      if (status !== 200) {
+        expect(JSON.parse(reply.body)).toEqual({ error: code });
+        expect(reply.body).not.toContain(SENTINEL);
+      }
     }
   });
 
@@ -320,7 +326,7 @@ describe("refusals", () => {
   });
 
   it("reports a damaged log with a fixed code and leaves it untouched", async () => {
-    await writeFile(capturesPath, "{ not a capture\n");
+    await writeFile(capturesPath, "{ not a capture\n", { mode: 0o600 });
     await start();
     for (const reply of [await post(capture()), await call(server, { path: "/api/captures", headers: auth() })]) {
       expect(reply.status).toBe(409);
@@ -328,6 +334,17 @@ describe("refusals", () => {
       expect(reply.body).not.toContain(directory);
     }
     expect(await readFile(capturesPath, "utf8")).toBe("{ not a capture\n");
+  });
+
+  it("refuses a log other users can read, with a fixed code, and does not touch it", async () => {
+    await writeFile(capturesPath, "", { mode: 0o644 });
+    await chmod(capturesPath, 0o644);
+    await start();
+    for (const reply of [await post(capture()), await call(server, { path: "/api/captures", headers: auth() })]) {
+      expect(reply.status).toBe(409);
+      expect(JSON.parse(reply.body)).toEqual({ error: "insecure-file-permissions" });
+    }
+    expect(await readFile(capturesPath, "utf8")).toBe("");
   });
 
   it("reports a held lock as busy and loses nothing", async () => {

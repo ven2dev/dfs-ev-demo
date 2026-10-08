@@ -44,12 +44,12 @@ const line = (event: CaptureEvent) => JSON.stringify(event);
 const log = (...events: CaptureEvent[]) => events.map(line).join("\n") + "\n";
 
 describe("normalizeTranscript", () => {
-  it("changes only line endings and a leading byte-order mark", () => {
+  it("changes only line endings and keeps everything else, including a leading byte-order mark", () => {
     expect(normalizeTranscript("a\r\nb\rc\nd")).toBe("a\nb\nc\nd");
-    expect(normalizeTranscript("﻿hello")).toBe("hello");
+    expect(normalizeTranscript("\uFEFFhello")).toBe("\uFEFFhello");
     const untouched = "  0:07  odd   spacing \t and trailing space \n\n  é ✓ 日本語 \n";
     expect(normalizeTranscript(untouched)).toBe(untouched);
-    expect(normalizeTranscript("x﻿y")).toBe("x﻿y");
+    expect(normalizeTranscript("x\uFEFFy")).toBe("x\uFEFFy");
   });
 });
 
@@ -155,19 +155,30 @@ describe("buildCaptureEvent", () => {
     expect(checkCaptureEvent(event)).toBe(true);
   });
 
-  it("records an unavailable video with no text, hash or date", () => {
-    const event = build({ action: "unavailable", text: undefined, publishedDate: undefined, reason: "captions disabled" });
+  it("records an unavailable video with no text or hash, but with the confirmed date", () => {
+    const event = build({ action: "unavailable", text: undefined, reason: "captions disabled" });
     expect(event).toMatchObject({
       event: "unavailable",
       text: null,
       sha256: null,
       characters: null,
-      publishedDate: null,
+      publishedDate: "2025-10-09",
       captionKind: null,
       reason: "captions disabled",
     });
     expect(checkCaptureEvent(event)).toBe(true);
     expect(checkCaptureEvent(build({ action: "unavailable" }))).toBe(true);
+  });
+
+  it("requires a real confirmed date for an unavailable video, and a stored one is checked when read back", () => {
+    for (const publishedDate of [undefined, "", "2025-02-30", "2001-01-01", "2026-10-20", "10/09/2025"]) {
+      expect(codeOf(() => build({ action: "unavailable", publishedDate: publishedDate as never })), String(publishedDate)).toBe("invalid-published-date");
+    }
+    const stored = JSON.parse(JSON.stringify(build({ action: "unavailable" }))) as Record<string, unknown>;
+    expect(checkCaptureEvent(stored)).toBe(true);
+    for (const bad of [null, "2025-02-30", "2026-10-20", "2001-01-01", 20251009]) {
+      expect(checkCaptureEvent({ ...stored, publishedDate: bad }), String(bad)).toBe(false);
+    }
   });
 
   it("never echoes the text of a refused transcript in its error", () => {

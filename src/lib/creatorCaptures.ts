@@ -29,8 +29,8 @@ export type CaptureEvent = {
   source: typeof CAPTURE_SOURCE;
   usageStatus: typeof CAPTURE_USAGE_STATUS;
   // The date the owner confirmed from the video page (YYYY-MM-DD). Day
-  // precision only: the page shows no time. Null for an unavailable event.
-  publishedDate: string | null;
+  // precision only: the page shows no time. Every event carries one.
+  publishedDate: string;
   captionKind: CaptionKind | null;
   text: string | null;
   sha256: string | null;
@@ -92,10 +92,10 @@ const EVENT_KEYS = [
   "videoId",
 ];
 
-// Stored exactly as pasted except for a leading byte-order mark and line
-// endings, so timestamps and wording survive untouched for later extraction.
-export const normalizeTranscript = (raw: string): string =>
-  raw.replace(/^﻿/, "").replace(/\r\n?/g, "\n");
+// Stored exactly as pasted except for line endings, so every character,
+// timestamp and wording survives untouched for later extraction, and the hash
+// describes exactly the text that was pasted.
+export const normalizeTranscript = (raw: string): string => raw.replace(/\r\n?/g, "\n");
 
 export const hashTranscript = (text: string): string => createHash("sha256").update(text, "utf8").digest("hex");
 
@@ -150,10 +150,12 @@ export const buildCaptureEvent = (request: CaptureRequest, now: Date): CaptureEv
   } as const;
 
   if (action === "unavailable") {
+    const unavailableDateProblem = checkPublishedDate(request.publishedDate, now);
+    if (unavailableDateProblem) throw new CaptureError(unavailableDateProblem);
     return {
       ...base,
       event: "unavailable",
-      publishedDate: null,
+      publishedDate: request.publishedDate as string,
       captionKind: null,
       text: null,
       sha256: null,
@@ -214,8 +216,8 @@ export const checkCaptureEvent = (value: unknown): boolean => {
   }
   if (event.event === "unavailable") {
     return (
-      event.publishedDate === null && event.captionKind === null && event.text === null &&
-      event.sha256 === null && event.characters === null
+      checkPublishedDate(event.publishedDate, new Date(event.capturedAt)) === null &&
+      event.captionKind === null && event.text === null && event.sha256 === null && event.characters === null
     );
   }
   if (event.event !== "captured" && event.event !== "replaced") return false;

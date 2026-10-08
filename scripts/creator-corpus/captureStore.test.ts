@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MAX_TRANSCRIPT_BYTES, hashTranscript, parseCaptureLog } from "../../src/lib/creatorCaptures.ts";
+import type { DecisionsFile } from "../../src/lib/creatorDecisions.ts";
 import { createCaptureStore, readCapturesFile } from "./captureStore.ts";
 import { NOW, discoveryFor, record, vid } from "./testSupport.ts";
 
@@ -18,10 +19,20 @@ afterEach(async () => {
   await rm(directory, { recursive: true, force: true });
 });
 
+// An included video by the rule (a prop title). Videos 5 and 6 are flagged for
+// review and excluded by the rule.
+const prop = (n: number, overrides: Record<string, unknown> = {}) => record(n, { title: "NFL Week 6 Player Props", ...overrides });
 const discovery = () =>
-  discoveryFor([record(1), record(2), record(3, { publishedAt: "2025-02-01T12:00:00Z" }), record(4, { publishedAt: "2026-10-08T12:00:00Z" })]);
-const store = (options: { discovery?: ReturnType<typeof discoveryFor>; lock?: { timeoutMs?: number } } = {}) =>
-  createCaptureStore({ path, discovery: options.discovery ?? discovery(), now: () => NOW, lock: options.lock });
+  discoveryFor([
+    prop(1),
+    prop(2),
+    prop(3, { publishedAt: "2025-02-01T12:00:00Z" }),
+    prop(4, { publishedAt: "2026-10-08T12:00:00Z" }),
+    record(5, { title: "Week 6 NFL best bets and picks" }),
+    record(6, { title: "NFL Week 6 reaction and recap" }),
+  ]);
+const store = (options: { discovery?: ReturnType<typeof discoveryFor>; lock?: { timeoutMs?: number }; decisions?: () => Promise<DecisionsFile> } = {}) =>
+  createCaptureStore({ path, discovery: options.discovery ?? discovery(), now: () => NOW, lock: options.lock, decisions: options.decisions });
 const capture = (n: number, overrides: Record<string, unknown> = {}) => ({
   creatorKey: "creator-a",
   videoId: vid(n),
@@ -75,7 +86,7 @@ describe("append", () => {
   it("appends replace and unavailable events in order, keeping every earlier line untouched", async () => {
     const s = store();
     const first = await s.append(capture(1));
-    await s.append({ creatorKey: "creator-a", videoId: vid(2), action: "unavailable", reason: "captions disabled" });
+    await s.append({ creatorKey: "creator-a", videoId: vid(2), action: "unavailable", publishedDate: "2025-10-09", reason: "captions disabled" });
     const replaced = await s.append(capture(1, { action: "replace", reason: "pasted the wrong video", text: TEXT + "tail\n" }));
     const written = await lines();
     expect(written).toHaveLength(3);
@@ -90,7 +101,7 @@ describe("append", () => {
 
   it("lets a video first marked unavailable be captured later", async () => {
     const s = store();
-    await s.append({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable" });
+    await s.append({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable", publishedDate: "2025-10-09" });
     await s.append(capture(1));
     expect((await s.read()).map((event) => event.event)).toEqual(["unavailable", "captured"]);
   });
@@ -139,17 +150,17 @@ describe("refusals", () => {
   it("refuses a second capture, a capture after unavailable twice, and unavailable after a capture", async () => {
     const s = store();
     await s.append(capture(1));
-    await s.append({ creatorKey: "creator-a", videoId: vid(2), action: "unavailable" });
+    await s.append({ creatorKey: "creator-a", videoId: vid(2), action: "unavailable", publishedDate: "2025-10-09" });
     const before = await readFile(path, "utf8");
     expect(await codeOf(s.append(capture(1)))).toBe("already-captured");
-    expect(await codeOf(s.append({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable" }))).toBe("already-captured");
-    expect(await codeOf(s.append({ creatorKey: "creator-a", videoId: vid(2), action: "unavailable" }))).toBe("already-unavailable");
+    expect(await codeOf(s.append({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable", publishedDate: "2025-10-09" }))).toBe("already-captured");
+    expect(await codeOf(s.append({ creatorKey: "creator-a", videoId: vid(2), action: "unavailable", publishedDate: "2025-10-09" }))).toBe("already-unavailable");
     expect(await codeOf(s.append(capture(2, { action: "replace", reason: "fix" })))).toBe("nothing-to-replace");
     expect(await readFile(path, "utf8")).toBe(before);
   });
 
   it("blocks every capture when the discovery data is stale", async () => {
-    const stale = discoveryFor([record(1, { apiFetchedAt: "2026-08-01T00:00:00.000Z" })]);
+    const stale = discoveryFor([prop(1, { apiFetchedAt: "2026-08-01T00:00:00.000Z" })]);
     expect(await codeOf(store({ discovery: stale }).append(capture(1)))).toBe("stale-discovery-data");
     await absent();
   });
@@ -202,7 +213,7 @@ describe("location rules", () => {
 
 describe("concurrency", () => {
   it("never loses or interleaves an event across two independent stores", async () => {
-    const many = discoveryFor(Array.from({ length: 60 }, (_, index) => record(index + 1)));
+    const many = discoveryFor(Array.from({ length: 60 }, (_, index) => prop(index + 1)));
     const first = store({ discovery: many });
     const second = store({ discovery: many });
     await Promise.all(Array.from({ length: 60 }, (_, index) => (index % 2 === 0 ? first : second).append(capture(index + 1))));
@@ -235,5 +246,85 @@ describe("concurrency", () => {
     const results = await Promise.allSettled([s.append(capture(1, { text: "" })), s.append(capture(2)), s.append(capture(55)), s.append(capture(1))]);
     expect(results.map((result) => result.status)).toEqual(["rejected", "fulfilled", "rejected", "fulfilled"]);
     expect((await readCapturesFile(path)).map((event) => event.videoId)).toEqual([vid(2), vid(1)]);
+  });
+});
+
+const decision = (videoId: string, kind: "include" | "exclude" | "clear"): DecisionsFile => ({
+  "creator-a": [{ videoId, decision: kind, reason: "owner decision", ruleVersion: "v1", decidedAt: NOW.toISOString() }],
+});
+
+describe("only videos in the queue can be captured", () => {
+  it("refuses a video the rule excluded, for every action and scope, and writes nothing", async () => {
+    for (const scope of ["included", "included-and-flagged"] as const) {
+      for (const action of ["capture", "unavailable"] as const) {
+        const request = action === "capture" ? capture(6) : { creatorKey: "creator-a", videoId: vid(6), action, publishedDate: "2025-10-09" };
+        expect(await codeOf(store().append(request, scope)), `${action} ${scope}`).toBe("video-not-in-queue");
+      }
+    }
+    expect(await codeOf(store().append({ creatorKey: "creator-a", videoId: vid(6), action: "replace", reason: "x", text: TEXT, publishedDate: "2025-10-09" }))).toBe(
+      "video-not-in-queue"
+    );
+    await absent();
+  });
+
+  it("refuses a flagged video under the narrow scope and accepts it under the wide one", async () => {
+    expect(await codeOf(store().append(capture(5)))).toBe("video-not-in-queue");
+    expect(await codeOf(store().append(capture(5), "included"))).toBe("video-not-in-queue");
+    await absent();
+    expect(await codeOf(store().append(capture(5), "included-and-flagged"))).toBe("accepted");
+    expect((await lines()).length).toBe(1);
+  });
+
+  it("follows the owner's current decisions, read at the moment of each save", async () => {
+    let current: DecisionsFile = {};
+    const s = store({ decisions: async () => current });
+    expect(await codeOf(s.append(capture(5)))).toBe("video-not-in-queue");
+    current = decision(vid(5), "include");
+    expect(await codeOf(s.append(capture(5)))).toBe("accepted");
+    current = decision(vid(1), "exclude");
+    expect(await codeOf(s.append(capture(1)))).toBe("video-not-in-queue");
+    expect(await codeOf(s.append(capture(2)))).toBe("accepted");
+    current = decision(vid(1), "clear");
+    expect(await codeOf(s.append(capture(1)))).toBe("accepted");
+  });
+
+  it("applies the rules in order: unknown creator or video, then window, then eligibility", async () => {
+    expect(await codeOf(store().append(capture(1, { creatorKey: "creator-z" })))).toBe("unknown-creator-key");
+    expect(await codeOf(store().append(capture(99)))).toBe("unknown-video");
+    expect(await codeOf(store().append(capture(3)))).toBe("video-outside-window");
+  });
+
+  it("keeps an earlier capture in the log after the owner excludes the video, and refuses any new event for it", async () => {
+    let current: DecisionsFile = {};
+    const s = store({ decisions: async () => current });
+    await s.append(capture(1));
+    current = decision(vid(1), "exclude");
+    expect(await codeOf(s.append(capture(1, { action: "replace", reason: "again" })))).toBe("video-not-in-queue");
+    expect((await s.read()).map((event) => event.videoId)).toEqual([vid(1)]);
+  });
+});
+
+describe("the confirmed publish date", () => {
+  it("is required, valid and stored for an unavailable video too", async () => {
+    const unavailable = (overrides: Record<string, unknown> = {}) => ({ creatorKey: "creator-a", videoId: vid(1), action: "unavailable" as const, ...overrides });
+    expect(await codeOf(store().append(unavailable()))).toBe("invalid-published-date");
+    expect(await codeOf(store().append(unavailable({ publishedDate: "2025-02-30" })))).toBe("invalid-published-date");
+    await absent();
+    const event = await store().append(unavailable({ publishedDate: "2025-10-09" }));
+    expect(event).toMatchObject({ event: "unavailable", publishedDate: "2025-10-09", text: null, sha256: null });
+    expect((await store().read())[0]).toEqual(event);
+  });
+});
+
+describe("the text is kept exactly", () => {
+  it("keeps a leading byte-order mark and every other character, changing only line endings", async () => {
+    const text = "\uFEFF" + TEXT.replaceAll("\n", "\r\n") + "  trailing spaces  \t\n";
+    const event = await store().append(capture(1, { text }));
+    const expected = text.replaceAll("\r\n", "\n");
+    expect(event.text).toBe(expected);
+    expect(event.text!.startsWith("\uFEFF")).toBe(true);
+    expect(event.sha256).toBe(hashTranscript(expected));
+    expect(event.characters).toBe(expected.length);
+    expect((await store().read())[0]!.text).toBe(expected);
   });
 });

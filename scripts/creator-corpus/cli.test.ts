@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -448,9 +448,12 @@ describe("review", () => {
     const out = () => undefined;
     expect((await run(reviewArgs(["--captures", path("captures.json")]), { out })).code).toBe("jsonl-file-required");
     expect((await run(reviewArgs(["--captures", join(process.cwd(), "captures-test.jsonl")]), { out })).code).toBe("must-be-outside-repository");
-    await writeFile(path("bad.jsonl"), "{ not a capture\n");
+    await writeFile(path("bad.jsonl"), "{ not a capture\n", { mode: 0o600 });
     expect((await run(reviewArgs(["--captures", path("bad.jsonl")]), { out })).code).toBe("invalid-captures-file");
     expect(await readFile(path("bad.jsonl"), "utf8")).toBe("{ not a capture\n");
+    await writeFile(path("open.jsonl"), "", { mode: 0o644 });
+    await chmod(path("open.jsonl"), 0o644);
+    expect((await run(reviewArgs(["--captures", path("open.jsonl")]), { out })).code).toBe("insecure-file-permissions");
   });
 
   it("fails before starting for missing options, a bad port, an unusable decisions path or a bad file", async () => {
