@@ -56,6 +56,12 @@ runs after both jobs and passes only if both succeed; failed, cancelled, or
 skipped jobs fail the gate. Local database checks require a running Docker
 service; the gate's regression check executes its actual shell script locally.
 
+The protected [database readiness check](docs/database-migrations.md#protected-database-readiness)
+uses a dedicated `DB_READINESS_SECRET` and read-only version/table checks. It
+returns 503 until a valid migration ledger exists. It never adopts or migrates
+the database. Typecheck and the disposable DB pipeline also verify the generated
+runtime readiness manifest.
+
 Keep the relay worktree's `.env.local` fixture-only (`ODDS_DATA_SOURCE=fixture`).
 For application runs with real providers, load the following variables from a
 private file outside the worktree in your own terminal, separate from the agent
@@ -139,10 +145,12 @@ remain conditional, and no projection model or new ingestion job ships here.
    (and several related env vars) on Preview/Production — pull the value into
    `.env.local` yourself from Neon's own dashboard (not Vercel's, which hides
    it once marked sensitive).
-2. **Create the schema:**
-   ```bash
-   psql "$DATABASE_URL" -f db/schema.sql
-   ```
+2. **Review schema delivery:** the remote migration CLI is intentionally disabled.
+   Do not initialize a hosted database through the generated reference file.
+   Follow the separately approved [activation runbook](docs/database-migrations.md#deferred-production-activation-and-recovery-runbook).
+   The existing Production schema is already present. For disposable local
+   installation proofs, use `npm run db:migrate:dev` with the guarded test
+   service and explicit `TEST_DATABASE_URL` from the migration guide.
 3. **Set `CRON_SECRET`** (any random value, e.g. `openssl rand -hex 32`) in
    both `.env.local` and the Vercel project's env vars (Production only —
    that's the only environment Vercel Cron actually triggers).
@@ -189,8 +197,9 @@ every 10 seconds. Both upstream requests share one cancellation scope and a
 lease is released. Followers wait for and reuse the lease holder's
 observation; a crashed holder can still be replaced after the lease expires.
 
-Run `psql "$DATABASE_URL" -f db/schema.sql` after pulling schema changes and
-before deploying the stream route. The schema command is idempotent.
+Future schema changes use the reviewed migration delivery process in
+[the migration guide](docs/database-migrations.md). Builds and app startup never
+apply SQL. The current Production schema already includes the cache tables.
 
 ## Same-line market consensus
 
@@ -218,5 +227,6 @@ both use the same immutable observation and content-addressed quote-set schema.
 
 See [Odds observation collector](docs/odds-collector-operations.md) for cadence,
 quota estimates and degradation, Hostinger cron setup, data provenance,
-retention, and database-size measurement. Apply `db/schema.sql` before enabling
-the collector; the profile defaults to `disabled`.
+retention, and database-size measurement. Verify the required schema through
+the migration delivery process before enabling the collector; the profile
+defaults to `disabled`.

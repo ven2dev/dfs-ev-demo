@@ -1,0 +1,1963 @@
+{
+  "catalogFingerprint": "5bf458c0c7777895d4a4b0913d4338b6c44ca630cb6bd9c45bd7019acffcf1ee",
+  "contractVersion": 1,
+  "formatVersion": 1,
+  "objects": [
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.creator_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "nextval('creator_video_submissions_id_seq'::regclass)",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.submitted_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.transcript_text"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.video_title"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "creator_video_submissions.video_url"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "creators.channel_name"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "creators.created_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "nextval('creators_id_seq'::regclass)",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "creators.id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "event_market_odds_cache.event_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "event_market_odds_cache.fetched_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "event_market_odds_cache.market_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "jsonb"
+      },
+      "kind": "column",
+      "name": "event_market_odds_cache.payload"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.event_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 6,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.fetched_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.market_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 5,
+        "type": "jsonb"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.payload"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.player_name"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 8,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.refresh_lease_until"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 7,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.refresh_owner"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "live_prop_inputs_cache.sport_key"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.first_name"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 6,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.football_name"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.full_name"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.last_name"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.player_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.position"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.season"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.source_updated_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.status"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.synced_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "nflverse_roster_players.team"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "player_crosswalk.created_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_crosswalk.nflverse_player_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_crosswalk.nflverse_player_name"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_crosswalk.odds_api_name"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "player_game_stats.created_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "date"
+      },
+      "kind": "column",
+      "name": "player_game_stats.game_date"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "nextval('player_game_stats_id_seq'::regclass)",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "player_game_stats.id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "boolean"
+      },
+      "kind": "column",
+      "name": "player_game_stats.is_home"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_game_stats.opponent"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_game_stats.player_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_game_stats.player_name"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "player_game_stats.season"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_game_stats.stat_type"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "numeric"
+      },
+      "kind": "column",
+      "name": "player_game_stats.stat_value"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "player_game_stats.team"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "player_game_stats.week"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "sync_state.last_synced_asset_updated_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "sync_state.source_name"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "now()",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "sync_state.updated_at"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (creator_id) REFERENCES creators(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.creator_video_submissions",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.creator_video_submissions",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.creators",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.creators",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_creator_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL creator_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_creator_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL submitted_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_submitted_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL transcript_text",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_transcript_text_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (video_url)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_video_url_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL video_url",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creator_video_submissions.creator_video_submissions_video_url_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (channel_name)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creators.creators_channel_name_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL channel_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creators.creators_channel_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creators.creators_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creators.creators_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "creators.creators_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "event_market_odds_cache.event_market_odds_cache_event_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL fetched_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "event_market_odds_cache.event_market_odds_cache_fetched_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL market_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "event_market_odds_cache.event_market_odds_cache_market_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL payload",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "event_market_odds_cache.event_market_odds_cache_payload_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (event_id, market_key)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "event_market_odds_cache.event_market_odds_cache_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((payload IS NULL) = (fetched_at IS NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_event_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL market_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_market_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (sport_key, event_id, market_key, player_name)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL player_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_player_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL sport_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "live_prop_inputs_cache.live_prop_inputs_cache_sport_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL first_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_first_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL full_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_full_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL last_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_last_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (season, player_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL player_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_player_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL \"position\"",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_position_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL season",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_season_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL source_updated_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_source_updated_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL status",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_status_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL synced_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_synced_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "nflverse_roster_players.nflverse_roster_players_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_crosswalk.player_crosswalk_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL nflverse_player_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_crosswalk.player_crosswalk_nflverse_player_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL nflverse_player_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_crosswalk.player_crosswalk_nflverse_player_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL odds_api_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_crosswalk.player_crosswalk_odds_api_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (odds_api_name)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_crosswalk.player_crosswalk_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL game_date",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_game_date_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL is_home",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_is_home_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL opponent",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_opponent_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL player_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_player_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (player_id, season, week, stat_type)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_player_id_season_week_stat_type_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL player_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_player_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL season",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_season_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL stat_type",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_stat_type_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL stat_value",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_stat_value_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL team",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_team_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL week",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "player_game_stats.player_game_stats_week_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL last_synced_asset_updated_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "sync_state.sync_state_last_synced_asset_updated_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (source_name)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "sync_state.sync_state_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL source_name",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "sync_state.sync_state_source_name_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL updated_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "sync_state.sync_state_updated_at_not_null"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX creator_video_submissions_pkey ON creator_video_submissions USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "creator_video_submissions",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "creator_video_submissions_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX creator_video_submissions_video_url_key ON creator_video_submissions USING btree (video_url)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "creator_video_submissions",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "creator_video_submissions_video_url_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX creators_channel_name_key ON creators USING btree (channel_name)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "creators",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "creators_channel_name_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX creators_pkey ON creators USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "creators",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "creators_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX event_market_odds_cache_pkey ON event_market_odds_cache USING btree (event_id, market_key)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "event_market_odds_cache",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "event_market_odds_cache_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_creator_video_submissions_creator ON creator_video_submissions USING btree (creator_id, submitted_at DESC)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "creator_video_submissions",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_creator_video_submissions_creator"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_nflverse_roster_match_candidates ON nflverse_roster_players USING btree (season, source_updated_at DESC, team)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "nflverse_roster_players",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_nflverse_roster_match_candidates"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX idx_player_game_stats_lookup ON player_game_stats USING btree (player_id, stat_type, game_date DESC)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "player_game_stats",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "idx_player_game_stats_lookup"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX live_prop_inputs_cache_pkey ON live_prop_inputs_cache USING btree (sport_key, event_id, market_key, player_name)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "live_prop_inputs_cache",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "live_prop_inputs_cache_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX nflverse_roster_players_pkey ON nflverse_roster_players USING btree (season, player_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "nflverse_roster_players",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "nflverse_roster_players_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX player_crosswalk_pkey ON player_crosswalk USING btree (odds_api_name)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "player_crosswalk",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "player_crosswalk_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX player_game_stats_pkey ON player_game_stats USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "player_game_stats",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "player_game_stats_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX player_game_stats_player_id_season_week_stat_type_key ON player_game_stats USING btree (player_id, season, week, stat_type)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "player_game_stats",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "player_game_stats_player_id_season_week_stat_type_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX sync_state_pkey ON sync_state USING btree (source_name)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "sync_state",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "sync_state_pkey"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "creator_video_submissions"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "creators"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "event_market_odds_cache"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "live_prop_inputs_cache"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "nflverse_roster_players"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "player_crosswalk"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "player_game_stats"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "sync_state"
+    },
+    {
+      "definition": {
+        "cache": "1",
+        "cycle": false,
+        "increment": "1",
+        "maximum": "9223372036854775807",
+        "minimum": "1",
+        "owned_by": [
+          "public.creator_video_submissions.id"
+        ],
+        "start": "1",
+        "type": "bigint"
+      },
+      "kind": "sequence",
+      "name": "creator_video_submissions_id_seq"
+    },
+    {
+      "definition": {
+        "cache": "1",
+        "cycle": false,
+        "increment": "1",
+        "maximum": "9223372036854775807",
+        "minimum": "1",
+        "owned_by": [
+          "public.creators.id"
+        ],
+        "start": "1",
+        "type": "bigint"
+      },
+      "kind": "sequence",
+      "name": "creators_id_seq"
+    },
+    {
+      "definition": {
+        "cache": "1",
+        "cycle": false,
+        "increment": "1",
+        "maximum": "9223372036854775807",
+        "minimum": "1",
+        "owned_by": [
+          "public.player_game_stats.id"
+        ],
+        "start": "1",
+        "type": "bigint"
+      },
+      "kind": "sequence",
+      "name": "player_game_stats_id_seq"
+    }
+  ],
+  "postgresMajor": 18,
+  "schema": "public",
+  "source": {
+    "catalogSqlSha256": "6174d71894f9e05c3e57dda8bef4dce2ce7e97bc99ce9ef5da14edb334ce67fa",
+    "migrations": [
+      {
+        "filename": "0001_pre_41_baseline.sql",
+        "sha256": "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98",
+        "version": 1
+      }
+    ]
+  }
+}

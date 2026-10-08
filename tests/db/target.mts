@@ -7,6 +7,7 @@ export function assertNoApplicationCredentials(environment: NodeJS.ProcessEnv) {
   const forbidden = Object.keys(environment).some(
     (name) =>
       name === "DATABASE_URL" ||
+      name === "MIGRATION_DATABASE_URL" ||
       name === "ODDS_API_KEY" ||
       name.startsWith("FIREBASE_ADMIN_") ||
       name.startsWith("POSTGRES_") ||
