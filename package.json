@@ -39,6 +39,7 @@
     "test:db:plans:unit": "node --test tests/db/plans-unit.check.mjs",
     "test:db:plans": "node --test tests/db/plans.integration.check.mjs",
     "creators": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/creator-corpus/cli.ts",
+    "predictive:demo": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/demo.ts",
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {
