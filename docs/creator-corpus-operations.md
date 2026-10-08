@@ -1,7 +1,8 @@
 # Creator corpus tools (owner-run)
 
 These commands build the expected-video manifest for the creator corpus (#40,
-#88) and let the owner review it (#92). They are **local, owner-run tools**.
+#88), let the owner review it (#92), and give the owner a queue for capturing
+transcripts by hand (#89). They are **local, owner-run tools**.
 They are not part of the deployed app, a build, CI or any scheduled job, and
 nothing here is imported by the application.
 
@@ -9,7 +10,8 @@ They operate under the #40 internal-POC exception and its guardrails. Read the
 [amendment on #40](https://github.com/ven2dev/dfs-ev-demo/issues/40) before
 use. The tools fetch **metadata only** (video IDs, titles, descriptions,
 publish times, lengths) through the official YouTube Data API. They never fetch
-captions, transcripts or audio; that is a separate, later step (#89). The
+captions, transcripts or audio. Transcripts enter only when **you** copy one from
+YouTube's own transcript panel and paste it into the Capture page (step 10). The
 exception ends before any public use (#91).
 
 ## Ground rules
@@ -17,8 +19,8 @@ exception ends before any public use (#91).
 - **Run these in your own terminal**, not one attached to an agent session. The
   commands print creator names and titles, and your API key is in that
   terminal's environment.
-- **Everything the tools read or write must be a `.json` file outside this
-  repository.** They refuse any path inside the repository (after resolving
+- **Everything the tools read or write must be a `.json` file (or, for the
+  capture log, a `.jsonl` file) outside this repository.** They refuse any path inside the repository (after resolving
   symlinks), so creator names, API data and your decisions cannot be committed
   by accident. A file that is itself a symbolic link, or has a second hard
   link, is refused too, since it could point back into the repository. Output
@@ -30,6 +32,10 @@ exception ends before any public use (#91).
 - **Keep creator names out of the repository and GitHub.** Use the opaque `key`
   (for example `creator-a`) everywhere that is shared. Names live only in your
   private creators file.
+- **Real transcripts never go into an agent session**, whether a relay or a
+  local one, and never into an issue, a pull request or a commit. Do the
+  capture work in your own browser and terminal, and do not ask an agent to
+  open, print or summarize the capture log.
 - Use Node 24 (`nvm use` in the repository).
 
 A suggested private folder: `~/.config/dfs-ev-demo/creators/`.
@@ -138,6 +144,9 @@ unavailable and never replaced.
 ```bash
 npm run creators -- review --input ~/.config/dfs-ev-demo/creators/discovery.json --decisions ~/.config/dfs-ev-demo/creators/decisions.json
 ```
+
+To also use the Capture page (step 10), add `--captures <file>.jsonl`, a new
+file or your existing capture log.
 
 It prints an address that works only on this computer (add `--port N`, 1024–65535,
 to choose the port) and keeps running until you press Ctrl+C. Open the address
@@ -251,6 +260,68 @@ It refuses to delete a file that is still inside its period unless you add
 `--force`. It only accepts discovery, rebuilt-manifest and registry files, so
 it can never delete your decisions log or any other file.
 
+### 10. Capture transcripts by hand
+
+Start the review tool with a capture log:
+
+```bash
+npm run creators -- review --input ~/.config/dfs-ev-demo/creators/discovery.json --decisions ~/.config/dfs-ev-demo/creators/decisions.json --captures ~/.config/dfs-ev-demo/creators/captures.jsonl
+```
+
+A **Capture** tab appears beside **Review**. Without `--captures` the tab does
+not exist and the capture routes answer not-found. The tool checks the whole log
+before it starts and refuses a damaged one (`invalid-captures-file`).
+
+The queue holds the videos you have included (tick *Include videos still flagged
+for review* to add flagged ones). For each video:
+
+1. Select **Open on YouTube**, open the video's transcript panel, and copy the
+   whole transcript.
+2. Paste it into the Transcript box. The counter shows characters, size and
+   lines.
+3. Check the **Published date** against the video page. It starts as the day the
+   API reports, in Pacific time, but what you save is the date **you** confirm.
+   Pick the **Caption type** if you can tell (auto-generated or uploaded by the
+   creator), and add a note if useful.
+4. **Save transcript** (or Ctrl/Cmd+Enter). The page moves to the next video.
+   If a video has no transcript, use **No transcript available**. **Skip**
+   changes nothing. Pressing `n` outside a field also skips.
+
+Things worth knowing:
+
+- Text is stored as pasted, except that a leading byte-order mark is removed and
+  line endings become `\n`, so timestamps and wording survive for later
+  extraction. Limit 500 KB. Control characters are refused.
+- Under 200 characters the page asks first (*Save anyway*), because that is
+  usually a partial copy.
+- A saved transcript is never edited. **Replace transcript** adds a new version
+  and requires a reason; the older version stays in the log. A video marked
+  unavailable can be captured later. Counts and the week grid update after every
+  save, and the list's **Show** filter switches between needing a transcript,
+  captured, unavailable, or everything.
+- What you have typed but not saved is kept in memory while you look at another
+  video, and is lost if you close the tab. After a failed save the text stays in
+  the box.
+- The page never shows a saved transcript back. It shows the length, a short
+  fingerprint and a preview of the first 160 characters.
+- **Backlog plan.** Work one creator at a time, oldest week first (the page
+  opens on the oldest video that still needs one). Roughly 300–450 transcripts
+  take a few focused sessions. Every save is written to the log immediately, so
+  closing the tool and reopening it loses nothing and needs no clean-up.
+
+The capture log is an **append-only** file with one JSON event per line
+(`captured`, `replaced` or `unavailable`), each carrying the source
+(`manual-owner-paste`), the usage status (`internal-research-only`), a SHA-256 of
+the text and its length. The tool re-verifies every line when it reads the file
+and refuses the whole file if any line was edited or damaged. Saves take the same
+kind of short lock as decisions (a hidden `.captures.jsonl.lock` file), so two
+windows cannot interleave writes.
+
+The log holds transcript text, so treat it as the most sensitive file here: keep
+it outside the repository (enforced), do not share it, and do not open it in an
+agent session. It contains no API data, so the 30-day limit does not apply to
+it, and `purge` will never delete it.
+
 ## Data age
 
 The tools treat API-derived fields (titles, descriptions, publish times,
@@ -285,7 +356,14 @@ Every failure prints one line, `creator-corpus: <code>`.
 | `title-mismatch-cannot-confirm` | The stored name does not match the resolved channel. Fix the creators file and resolve again. |
 | `creator-not-confirmed`, `no-confirmed-creators` | Run `confirm` first and pass the confirmed registry to `discover`. |
 | `symlink-not-allowed`, `hard-link-not-allowed` | A file is a symbolic link or has a second hard link. Use a plain file in a folder outside the repository. |
-| `file-busy` | Another process held the decisions-file lock for over 5 seconds. Wait and try the save again. |
+| `file-busy` | Another process held the decisions-file or captures-file lock for over 5 seconds. Wait and try the save again. |
+| `jsonl-file-required` | The capture log must be a `.jsonl` file (and the other files `.json`). Rename it or choose another path. |
+| `invalid-captures-file` | The capture log is damaged or was edited by hand. The tool will not read, repair or overwrite it. Restore it from a copy. |
+| `transcript-empty`, `transcript-too-large`, `transcript-invalid-characters`, `transcript-too-short` | The Capture page refused the text: nothing pasted, over 500 KB, control characters, or under 200 characters (confirm with *Save anyway* if it is really that short). |
+| `invalid-published-date`, `invalid-caption-kind`, `note-too-long`, `reason-too-long` | A field on the Capture form is not acceptable. The page shows what to change; nothing was saved. |
+| `reason-required` | Replacing a transcript needs a reason. |
+| `already-captured`, `already-unavailable`, `nothing-to-replace` | The video's state does not allow that action (for example a second capture instead of a replace). |
+| `payload-too-large` | A request body was over the limit. A transcript above 500 KB is refused for this reason or `transcript-too-large`. |
 | `invalid-decisions-file` | The decisions file is not in the current log format. The tool will not overwrite it. |
 | `unknown-creator-in-decisions` | A creator key in the decisions file is not in the registry (usually a typo). Nothing was fetched. Fix the key. |
 | `invalid-decisions-present` | The decision log itself is damaged (a duplicate or reason-less decision). Restore it from a copy. |
@@ -302,8 +380,11 @@ Any other code: send the exact line (it contains no secrets).
 
 ## What is not covered here
 
-- **Caption and transcript fetching** (#89) is not built. These tools never
-  touch captions.
-- **Database persistence** (#90) is not built. Your decisions and manifests live
-  only in the private files above until the planned import.
+- **Automatic caption or transcript fetching.** None exists and none is planned
+  for the API-key path: the YouTube API policies bar scraping or non-API access
+  by an API client. Transcripts come only from your own manual capture
+  (step 10) or, later, creator-authorized sources (#91). This is a summary of the
+  policy as read for this project, not legal advice.
+- **Database persistence** (#90) is not built. Your decisions, captures and
+  manifests live only in the private files above until the planned import.
 - **Public or product use** of any of this is blocked by #91.
