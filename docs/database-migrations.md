@@ -1,0 +1,582 @@
+# Database migration intake and catalog evidence
+
+Issue #60 establishes versioned SQL delivery. The approved roadmap is at
+[the issue](https://github.com/ven2dev/dfs-ev-demo/issues/60#issuecomment-6006046013).
+Step 0 supplies catalog evidence. Step 1 adds candidate SQL files and a runner
+for harness-owned disposable databases. Step 2 supplies complete catalog
+contracts and transactional verification. Step 3 adds read-only
+fingerprint-bound plans and verified adoption on registered scratch databases.
+Step 4 supplies the shared bootstrap and mandatory CI proofs. Step 5 implements
+the protected readiness endpoint, with local validation only. The owner-run
+Production snapshot and plan now verify the existing schema at version 2, and
+the owner reports successful read-only Neon transport checks. The dated
+[evidence handoff](database-migration-evidence.md) records these results.
+Production adoption, recovery evidence and remote activation review remain
+pending; the owner explicitly instructed that `up` must not run yet.
+
+The roadmap and these instructions use the same step numbers:
+
+| Step | Deliverable |
+| --- | --- |
+| 0 | Read-only catalog evidence |
+| 1 | Candidate runner, ledger, lock and guards |
+| 2 | Full catalog verifier and generated contracts |
+| 3 | Fingerprint-bound plan and verified adoption |
+| 4 | Isolated proofs, shared #45 bootstrap and required CI |
+| 5 | Protected database readiness |
+| 6 | Release/recovery documentation and acceptance handoff |
+
+## PR #93 delivery scope and deferred activation
+
+PR #93 delivers the tested migration tooling and additive readiness endpoint.
+It does not activate remote migrations or complete issue #60. This is a proposed
+scope amendment to the earlier all-at-once roadmap: its adoption-before-merge
+sequence remains the future activation sequence, rather than a prerequisite for
+merging this tooling-only delivery. Review and approval of this PR must include
+that scope amendment; passing CI alone does not approve it.
+
+Merging to main triggers the normal Vercel application deployment. Build,
+startup, cron and existing application routes never import the migration runner
+or require the new ledger. The application's existing database schema is
+unchanged. The new protected readiness endpoint returns 503 until a ledger
+exists (or `not-configured` without its dedicated secret); it is not wired into
+application startup, traffic routing or an existing health monitor. Do not make
+it a deployment/traffic gate before adoption. Existing application behavior
+does not depend on a readiness 200.
+
+Remote `up` continues to refuse before connection. This PR cannot initialize a
+new hosted application database through the migration CLI. `db/schema.sql` is
+a generated reference, not an alternate remote activation path. Keep issue #60
+open for the remaining activation work described below.
+
+## Candidate migrations and local runner
+
+`db/migrations/0001_pre_41_baseline.sql` preserves the authentic eight-table
+historical schema byte for byte. `0002_market_observation_history.sql` adds the
+nine #41 tables; concatenating these files preserves the original current SQL
+and its comments. The owner-run Production snapshot matches the complete
+version-2 managed catalog with zero differences, so the captured schema requires
+no reconciliation migration. Any later drift requires a fresh comparison and a
+separately reviewed disposition before adoption.
+
+The repository-owned core uses one dedicated client and one transaction for
+all pending files, ledger inserts and verification. It takes a transaction
+advisory lock with `pg_try_advisory_xact_lock`; contention fails immediately.
+This provides mutual exclusion with a fail-fast policy rather than queueing and
+automatically serializing competing invocations. The operator must retry with a
+freshly approved plan once the other transaction finishes.
+The advisory lock excludes other participating runners. Manual schema changes
+do not take this lock; a remote rollout must control concurrent DDL separately.
+Transaction-local timeouts bound lock waits to three seconds, statements to
+15 seconds and idle transactions to 15 seconds. Whole multi-statement files
+execute directly through the client. Migration files cannot issue transaction
+or session-control statements; the runner owns those boundaries and settings.
+
+For a future hot-table ALTER requiring different timeouts, first deliver a
+separately reviewed runner extension for bounded per-migration `lockTimeoutMs`
+and `statementTimeoutMs` metadata. The runner would validate explicit limits,
+apply the options through transaction-local settings immediately before that
+file, and restore its defaults before the next file and final verification.
+Those options must be covered by the committed manifest and approved-plan
+fingerprint, with real-Postgres timeout/rollback tests. This extension is not
+implemented yet; embedded `SET LOCAL`, broad session-control exemptions and
+unbounded timeout overrides remain refused. The migration author must add the
+supported option before writing the first migration that needs it.
+
+`public.db_migrations` records ordered versions, filenames, non-null SHA-256
+checksums, runner version, executed/adopted provenance and application
+time. The original scratch bootstrap writes only `executed` records. The reader
+rejects empty existing ledgers, version holes, missing fields, checksum mismatches and unsupported
+runner versions. The original bootstrap refuses an unversioned nonempty schema
+without mutation; the approved-plan engine can adopt an exactly verified prefix
+as described below.
+Existing valid prefix history can receive pending files in scratch tests;
+reruns preserve ledger timestamps and application rows.
+
+The verifier compares the complete managed `public` catalog against the reviewed
+contract for the target version plus the exact ledger contract before commit,
+including a no-op rerun. It collects definitions inside the runner's existing
+transaction without opening or committing another transaction. Any mismatch
+rolls back pending SQL and ledger writes; it never repairs drift. A nonempty
+unversioned database cannot receive application SQL until the approved-plan
+engine has verified and recorded its recognized prefix. This guard protects
+the byte-preserved `IF NOT EXISTS` statements from masking drift.
+`db:migrate up` currently refuses before connecting while owner rollout
+evidence is pending; only the registered scratch engine can mutate a target.
+
+Use Node 24, no application credentials and the existing Compose service:
+
+```bash
+docker compose --env-file /dev/null --project-name dfs-ev-demo-test \
+  -f compose.test.yml up -d --wait --wait-timeout 60
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
+  npm run db:migrate:dev
+npm run test:db:down
+```
+
+The dev command creates a randomly named, registered scratch database, checks
+the connected database/role/PostgreSQL major, computes and approves a local
+install plan, applies it, then computes and applies a fresh no-op plan. It
+closes and removes the scratch database in finally. It
+reports versions only after scratch cleanup. It does not migrate the shared
+`dfs_ev_test` database. The container lifecycle above is manual: run
+`test:db:down` even if the dev command fails. The #45 test harness now uses this
+runner's guarded empty/prefix bootstrap and full catalog verification on its
+fixed disposable primary database.
+
+## Migration artifacts and immutability
+
+`db/migration-manifest.json` commits the SHA-256 checksum for every SQL file.
+`.gitattributes` enforces LF for SQL and the manifest. Files must use ordered,
+contiguous four-digit versions starting at 0001; down files, symlinks, invalid
+UTF-8, CRLF and empty content are refused.
+
+```bash
+npm run db:migrations:check
+npm run test:db:migrations:unit
+```
+
+The check verifies SQL against the complete manifest and verifies `db/schema.sql`
+against commented migration-file concatenation. The reference is generated;
+edit ordered migration files rather than the reference. Append a reviewed file,
+then run `npm run db:migrations:generate`. Generation preserves the checksums of
+all previously recorded files and refuses edited/deleted history. Applied files
+are immutable; corrections require a new forward migration. These commands do
+not connect to any database. The mandatory disposable DB command runs this
+artifact check in CI before the database cases.
+
+## Generated catalog contracts
+
+`db/catalog-contracts/0001.json` and `0002.json` describe the application catalog
+after each migration prefix. `ledger.json` independently describes the ledger
+DDL. Each artifact has a SHA-256 catalog fingerprint and binds the exact catalog
+query plus its migration-prefix checksums or ledger-DDL checksum/runner version.
+The local dev command validates these bindings before connecting. Adding a
+migration requires its new prefix contract; a missing, stale, edited or extra
+contract is refused. Runtime verification cannot regenerate or bless artifacts.
+
+With the disposable Compose service running and the fixed test URL:
+
+```bash
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
+  npm run db:contracts:generate
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
+  npm run db:contracts:check
+npm run test:db:contracts:unit
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
+  npm run test:db:contracts
+```
+
+Generation builds each migration prefix and the ledger directly from reviewed
+SQL in separate registered scratch databases, independently of the verifier it
+is generating. It rolls back the scratch transactions and removes all databases
+before writing any artifacts. Review the complete generated diff with the SQL;
+generation deliberately rewrites contracts, while the migration-manifest guard
+continues refusing edits to known migration bytes. The check rebuilds the same
+catalogs, reports every missing/changed/unexpected artifact and exits nonzero on
+drift without writing. The mandatory disposable DB command runs this independent
+contract drift check in CI as well as the verifier cases.
+
+Comparison includes column positions/types/nullability/defaults, identity and
+generation state, collation, PK/unique/check/FK definitions, validation and
+enforcement, internal FK-trigger enable states, index definitions/validity/
+readiness, sequence configuration and column ownership, relation options,
+inheritance, view/partition definitions, RLS policies and their target roles,
+custom triggers/rules/routines, enum/domain definitions and domain constraints,
+and extensions. All missing/unexpected objects and changed fields are reported.
+Extension members identified by `pg_depend.deptype = 'e'` are excluded from
+individual object comparison; the extension's name, version and relocatability
+form its reviewed catalog entry. Children of an extension-owned relation or
+domain are excluded with their parent. An unreviewed extension still produces
+an unexpected extension mismatch; this does not authorize adding an extension
+or adopting a Production schema. The owner must resolve it from the snapshot
+through an explicit contract/migration decision.
+The ledger is included by its exact catalog objects; no name-prefix exemption
+can hide a similarly named unexpected table, index or trigger.
+
+Environmental owner roles, OIDs, actual server minor version, target identity,
+capture time, row data and mutable sequence counters are excluded from
+contracts. Policy target roles and FK-trigger states are semantic definitions
+and are retained. PostgreSQL-major changes require updating the explicitly
+supported major, regenerating every contract and reviewing the SQL/deparser
+differences and real-Postgres proofs before adopting or migrating that major.
+No automatic normalization erases a major-version difference.
+
+`collectCatalog` verifies that the effective search path is exactly
+`pg_catalog, public` before running the inventory. `public` with implicit
+`pg_catalog` is equivalent. Other paths, including shadow or temporary schemas,
+fail with `catalog-search-path-refused` rather than producing false definition
+differences. Callers must configure the supported path within their own
+transaction; the collector does not change session settings or transaction
+boundaries. The read-only exporter pins a transaction-local path and restores
+the inherited session path at commit/rollback.
+
+The supported contract scope is the managed `public` schema, not cluster
+privileges or other schemas. Standalone composite/range/base types, custom
+collations/operators/operator classes/families/conversions, text-search objects
+and extended statistics are inventoried as `unsupported`; aggregates also lack
+a complete definition contract. Their presence fails comparison, and generation
+refuses to bless them. Add complete definition coverage with proofs before a
+migration introduces one of these classes. This keeps unexpected objects from
+silently falling outside the comparison.
+
+The strengthened Step 2 inventory adds fields to the Step 0 export. Re-export
+any older snapshot with this checkout before deciding mismatch disposition;
+do not erase absent fields from older evidence to make a comparison pass.
+
+Raw column positions and one full contract per migration prefix remain explicit
+candidate limitations. A Production snapshot with dropped-column history may
+show a position-only mismatch; record it for an approved normalization decision
+before adoption. Contract storage grows with cumulative schema size and can be
+revisited separately. The plan artifact exposes the complete readable mismatch
+list to the owner while operational CLIs retain fixed-code logging.
+
+## Fingerprint-bound plans and local adoption
+
+After verifying the same direct endpoint used for the catalog export, the owner
+can generate a read-only plan in their own terminal:
+
+```bash
+npm run db:migrate -- plan --environment production \
+  --expected-host-fingerprint HOST_FINGERPRINT --expected-database DATABASE_NAME \
+  --output "$HOME/.config/dfs-ev-demo/db-snapshots/production-plan-60.json"
+```
+
+Use explicit `MIGRATION_DATABASE_URL`; no `.env` or application `DATABASE_URL`
+fallback is available. The command uses a bounded `REPEATABLE READ READ ONLY`
+transaction and never creates a ledger. The destination must be outside the
+repository, including symlinked parent directories. It is created exclusively
+with mode 600 and is never overwritten. Definitions and complete readable
+differences remain in this private artifact. Stdout reports only hashed target
+identity, the fingerprint, operations, mismatch count and fixed refusal code.
+A non-executable catalog plan still writes its evidence and exits nonzero;
+invalid ledger history fails without repair.
+
+The plan identifies the observed schema and ledger versions separately:
+
+| Observed state | Planned operations |
+| --- | --- |
+| Empty managed catalog, no ledger | Execute all migrations |
+| No ledger, exactly one matching migration-prefix catalog | Adopt that prefix, execute only later files |
+| Valid ledger and matching full prefix plus ledger catalog | Execute only pending files, or verify a no-op |
+| Unrecognized/ambiguous unversioned catalog or recorded catalog drift | No operations; readable differences and refusal |
+| Existing empty/corrupt ledger | Refusal without repair or adoption |
+
+The deterministic SHA-256 fingerprint binds the declared environment, full
+host/database/role/port identity, PostgreSQL major, observed catalog, complete
+ledger history including timestamps/provenance, immutable migration checksums,
+runner version, catalog-query/ledger-contract bindings, target version and
+ordered operations. Displayed identity hashes are shortened; the fingerprint
+also binds a full composite identity hash. Passwords, row data and mutable
+sequence counters are excluded. Local source bytes and contracts are validated
+and frozen before connecting; they cannot change between planning and execution.
+
+The scratch engine requires an explicit approved fingerprint. Inside one
+transaction it acquires the shared fail-fast lock, reads history/catalog and
+recomputes the plan before any ledger DDL, application SQL or insert. Changed
+target, source, schema or history refuses the old approval. Adoption inserts
+`adopted` rows for a verified prefix without replaying its SQL; later files run
+with `executed` provenance. Final verification checks the full application and
+ledger catalog, complete target history, unchanged prior ledger rows and each
+new row's planned provenance before commit. Any failure rolls back both adoption
+and pending SQL. Even a no-op needs a fresh matching plan and final verification.
+
+```bash
+npm run test:db:plans:unit
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
+  npm run test:db:plans
+```
+
+This iteration exposes owner-run read-only `plan`, not remote adoption.
+`up` requires `--approved-plan-fingerprint` but still refuses Preview/Production
+with `owner-rollout-evidence-pending`; test CLI `up` refuses `scratch-up-only`.
+Local mutation proofs use registered random scratch databases through the same
+approved-plan engine. The Production snapshot comparison now has zero
+differences, and the owner reports that the actual read-only Neon transport
+checks passed. Protected readiness is implemented locally, and the deferred
+activation runbook is documented below. Recovery verification, deployed
+readiness evidence and separate remote activation review remain outstanding. Their
+completion and owner approval must precede remote activation. PR #93 proposes
+merging tooling separately under the delivery scope above. The stored
+Production plan is evidence of a valid adoption proposal;
+it is not approval to execute it.
+
+## Read-only migration status
+
+With the same owner-verified target identity used for catalog export:
+
+```bash
+npm run db:migrate -- status --environment production \
+  --expected-host-fingerprint HOST_FINGERPRINT --expected-database DATABASE_NAME
+```
+
+The owner runs this with explicit `MIGRATION_DATABASE_URL` in their own terminal.
+The command shares the catalog export's direct-endpoint and target guards, does
+not load `.env`, and has no `DATABASE_URL` fallback. It checks local migration
+artifacts before connecting and reads ledger metadata inside a bounded
+`REPEATABLE READ READ ONLY` transaction. It never creates a ledger. An absent
+ledger reports version 0; existing invalid history fails with a safe fixed code.
+Status is ledger information, not readiness or deep schema verification.
+
+The owner reports successful Production read-only Neon transport checks,
+including status at ledger version 0. The
+[evidence handoff](database-migration-evidence.md) distinguishes that owner-run
+result from the offline artifact verification. CI exercises the `pg` path only.
+The evidence handoff records the owner's terminal transcript commit,
+Node/driver versions and exit codes; these are owner-supplied runtime evidence,
+not metadata embedded in the two artifacts. Keep sanitized status and hashed target identity with that
+record, without URLs, credentials or raw driver errors.
+
+## Protected database readiness
+
+`GET /api/health/database` is the cheap owner check after an approved deploy.
+Configure a dedicated `DB_READINESS_SECRET` for that environment, independent
+from `CRON_SECRET` and `ODDS_HEALTH_SECRET`. Missing secret returns HTTP 503
+`not-configured` without database access. A missing or incorrect bearer returns
+401 before database access; an authorized request without `DATABASE_URL` also
+returns 503 `not-configured`. Every response uses `Cache-Control: no-store`.
+
+In the owner's terminal, with the secret loaded through the private environment
+procedure, replace `YOUR_DEPLOYMENT` below. Supplying the header through stdin
+keeps the expanded secret out of the curl process arguments. Do not enable curl
+verbose/trace output or shell tracing.
+
+```bash
+curl --silent --show-error --include --config - <<EOF
+url = "https://YOUR_DEPLOYMENT/api/health/database"
+header = "Authorization: Bearer $DB_READINESS_SECRET"
+EOF
+```
+
+The endpoint imports a generated TypeScript manifest, never migration tooling
+or SQL files. `db/readiness.json` explicitly declares this application's minimum
+compatible version (currently 2). The generated manifest separately records
+the maximum known version (currently 2), known checksums/filenames/runner
+version and required tables from the minimum version's verified contract.
+Appending an unrelated migration need not raise the application minimum; a new
+application dependency on a later schema requires a reviewed minimum update.
+
+| State | HTTP result |
+| --- | --- |
+| Missing ledger, including the captured Production state | 503 `migration-ledger-missing`, recorded schema version 0 |
+| Empty, gapped, malformed or checksum-mismatched history; unsupported runner | 503 `migration-history-invalid` |
+| Valid recorded version below the application minimum | 503 `schema-behind` |
+| Required table missing or replaced with a view | 503 `required-tables-missing` |
+| Valid history at or above the minimum, through maximum known version | 200 `ready` |
+| Valid contiguous ahead history with the known prefix intact and supported runner | 200 `ready`, warning `schema-ahead` |
+| More than 1,024 ledger entries | 503 `migration-history-limit-exceeded` |
+| Query/connection/timeout failure | 503 `database-unavailable`, no driver details |
+
+Successful authorized results include only `schemaVersion`, `minimumVersion`,
+`maximumKnownVersion` and fixed reason/warning codes. They omit target identity,
+table names, checksums, history rows and credentials. Readiness verifies history
+and table existence; the complete catalog verifier remains the migration-time
+schema proof.
+
+The repository uses Neon HTTP read-only, repeatable-read transactions, with
+transaction-local 2-second statement and 1-second lock timeouts and one
+5-second HTTP abort deadline across both requests. A first bounded relation
+probe avoids reading an absent ledger. If present, a second transaction reads
+table presence and at most 1,025 history rows in one snapshot. It reads no
+application data and cannot create, adopt or migrate anything.
+
+After appending migrations, regenerate in this order: migration artifacts,
+catalog contracts, then the runtime readiness manifest. Review all generated
+changes. The contracts command uses only the guarded disposable database:
+
+```bash
+npm run db:migrations:generate
+# With the documented TEST_DATABASE_URL and disposable Compose service:
+npm run db:contracts:generate
+npm run db:readiness:generate
+npm run db:readiness:check
+```
+
+Typecheck and the mandatory disposable DB pipeline both check readiness
+manifest drift. Route/repository/unit tests cover authorization, safe responses,
+read bounds and ahead/invalid history; four named real-Postgres readiness cases
+prove data/history preservation, missing-ledger refusal, behind/corrupt/missing
+tables, read-only enforcement and history limits. The JSON report gate requires
+all four in addition to the unchanged 13 #45 cases. Local proofs do not claim
+that the endpoint is deployed or that the Neon HTTP path has been exercised
+against Production. Production readiness remains 503 until ledger adoption.
+
+## Owner-run Production snapshot
+
+Run these commands in your own terminal, outside an agent-attached shell, using
+Node 24. Set `MIGRATION_DATABASE_URL` through your existing secure procedure to
+the **direct, non-pooled Production Neon endpoint**. Never paste that value into
+chat, a command argument, an issue or a log. The exporter does not load any
+credential file, `.env`, or Vercel session, and cannot fall back to `DATABASE_URL`.
+
+From this checkout, inspect only the hashed URL identity:
+
+```bash
+npm run db:catalog -- --environment production --identity
+```
+
+This does not connect to the database. Verify the URL's resource against your
+Production-only Vercel integration and note the returned `hostFingerprint`.
+`production` is an owner-supplied label, not independently verified environment
+classification. Both Preview and Production may have the same database name;
+the database name alone is insufficient identity evidence.
+
+Create a private output directory, then replace `HOST_FINGERPRINT` and
+`DATABASE_NAME` below with the verified hash and actual database name:
+
+```bash
+umask 077
+mkdir -p "$HOME/.config/dfs-ev-demo/db-snapshots"
+npm run db:catalog -- --environment production \
+  --expected-host-fingerprint HOST_FINGERPRINT \
+  --expected-database DATABASE_NAME \
+  --output "$HOME/.config/dfs-ev-demo/db-snapshots/production-before-60.json"
+```
+
+The output file must be outside this repository and is created exclusively with
+mode 600. An existing file is never overwritten. The command prints only a
+table count and catalog fingerprint; failures print fixed codes rather than
+connection strings, driver errors or private filesystem paths. Missing output
+directories must be created before connecting. A successful snapshot includes
+the actual PostgreSQL version and hashed URL identity; the connected database
+and role must match the supplied connection configuration. Only PostgreSQL 18
+is supported by this initial catalog format.
+
+The transaction is `REPEATABLE READ READ ONLY`, with transaction-local lock and
+statement timeouts and a fixed search path. It reads catalog definitions for
+relations, columns/defaults, constraints/validation state, indexes, sequence
+configuration/ownership, custom triggers, policies, routines, types and
+extensions in `public`. It never reads application rows, sequence progress,
+ledger contents, hostnames or owner role names into the exported artifact. Policy
+target roles are part of their definitions and remain visible. Definitions
+can contain SQL constants or routine bodies: inspect the artifact before sharing.
+This is a schema inventory, not a complete PostgreSQL privilege/cluster dump.
+
+The snapshot is prerequisite evidence, not permission to mutate Production.
+In particular, determine whether all nine #41 tables are present:
+`odds_observations`, `odds_quote_sets`, `odds_observation_markets`,
+`odds_observation_book_markets`, `odds_quotes`, `odds_free_pilot_selections`,
+`odds_priority_targets`, `odds_collection_checkpoints`, and `odds_api_request_log`.
+
+## Candidate comparison and mismatch disposition
+
+The eight-table candidate comes from
+`68c65f6e918730b0d8b22a761a482a79225347b6:db/schema.sql`, the parent of the first
+#41 schema commit. Current source defines 17 tables. Neither is assumed to match
+Production: earlier `CREATE TABLE IF NOT EXISTS` applications may have preserved
+older definitions. Local candidate exports use the same exporter on synthetic
+scratch databases; dates, target hashes, minor versions, rows and sequence
+progress do not affect their normalized catalog comparison.
+
+Compare two explicitly selected catalog JSON files:
+
+```bash
+npm run db:catalog:diff -- --expected /path/to/current-candidate.json \
+  --actual /path/to/production-before-60.json
+```
+
+Every missing/unexpected object and every changed definition field is printed;
+differences return exit code 1. PostgreSQL-major differences require regeneration
+and review, rather than erasing the version difference. This comparison reports
+evidence; it does not choose an adoption baseline or create a migration ledger.
+Resolve each mismatch on #60 through an approved contract correction or an
+explicit reconciliation migration before adoption logic is implemented.
+
+## Local verification
+
+No real credentials are needed. `test:db:catalog:unit` verifies target/argument
+guards, fingerprinting, private output placement, safe errors and complete diff
+reporting. `test:db:catalog` requires the existing fixed `TEST_DATABASE_URL` and
+a running service from `compose.test.yml`. It creates random, registered
+`dfs_ev_test_*` scratch databases within that guarded container, verifies its
+database/role/major before any fixture setup, then closes and removes each
+scratch database in finally. It does not reset #45's shared schema. These tests
+must fail without the disposable target; they never skip or use DATABASE_URL.
+
+`test:db:contracts:unit` checks source/fingerprint binding, artifact drift,
+unsupported-class refusal and safe CLI guards. `test:db:contracts` proves both
+prefix contracts against independent historical fixtures, complete multi-field
+drift reporting, unvalidated/unenforced constraints, disabled internal FK
+triggers, naturally invalid concurrent indexes, upgrade rollback observed by a
+second connection, ledger-definition drift and deterministic regeneration.
+
+`test:db:plans` proves deterministic read-only plans, seeded current adoption
+without application SQL replay, baseline adoption/upgrade and recorded-prefix
+upgrades, readable drift, ambiguous-prefix refusal, stale fingerprints,
+corrupt-ledger refusal, SQL/verifier rollback, prior/new ledger-result integrity,
+independent-client lock/concurrency behavior, private CLI artifacts and scratch
+target guards. Data, sequence state and prior ledger rows survive adoption or a
+failed upgrade. It uses the same registered scratch lifecycle.
+
+`test:db:migrations` uses the same fixed disposable service and a separately
+registered scratch database per scenario. It proves empty installation against
+the authentic current catalog, data/ledger-preserving no-op reruns, read-only
+status, refusal of unversioned schemas, two-file failure rollback, verification
+rollback, independently connected lock contention and concurrent runners,
+corrupt-ledger rejection and scratch target/cleanup guards. The committed
+`tests/db/fixtures/` schemas retain source-object provenance and SHA-256 anchors;
+tests use those immutable independent copies without needing Git history. Run it with
+the explicit `TEST_DATABASE_URL` while the Compose service is running.
+`npm run test:db:local` now requires all catalog/contract/migration/plan unit and
+integration cases through a static named-case JSON report gate, both artifact
+checks, the readiness manifest check, all 13 #45 lease cases using the shared
+runner bootstrap and four separate readiness cases. Repeat this
+complete pipeline with `npm run test:db:repeat -- 3` to check isolation. See the
+[database test guide](database-testing.md) for lifecycle and CI enforcement.
+
+Keep dated results and snapshot/mismatch dispositions on #60. The
+[evidence handoff](database-migration-evidence.md) records the verified
+Production schema and owner-reported read-only Neon transport pass. Recovery
+evidence remains pending. [#86](https://github.com/ven2dev/dfs-ev-demo/issues/86)
+separately owns Neon-console, branch and point-in-time restore access; SQL
+connectivity does not establish those capabilities.
+
+
+## Deferred Production activation and recovery runbook
+
+This runbook describes a future separately reviewed rollout. It does not enable
+`up`, authorize a Production command or claim issue #60 is complete.
+
+1. Review the remote execution implementation and target guards separately;
+   the current CLI intentionally refuses remote writes. Control concurrent DDL
+   and schedule an owner-run change window.
+2. Capture a fresh read-only Production catalog, status and plan from the exact
+   reviewed release. Resolve all differences. Verify the direct endpoint and
+   PostgreSQL major; do not reuse an old plan approval after state changes.
+3. Verify a usable private logical backup and restore, including post-restore
+   schema and data/sequence checks. Record tool versions, archive digest,
+   private artifact location, exit codes and recovery limitations. Production
+   rows and raw error logs stay outside Git, CI and disposable tests. The owner
+   has reported a successful PostgreSQL 18.6 restore; comparisons remain open.
+   The earlier roadmap specified a pinned PostgreSQL container; accepting
+   native Homebrew 18.6 as equivalent tooling needs explicit disposition in the
+   activation review. Resolve branch/PITR access and retention under #86, or
+   explicitly accept the logical recovery fallback and its measured limits.
+4. Obtain explicit owner approval for the fresh plan fingerprint. Only after
+   the separately reviewed activation code exists may the owner invoke `up`
+   in their own terminal. Recomputed state must match before mutation.
+5. Verify ledger history and the complete managed catalog after commit. For
+   the captured v2 state, adoption records versions 1 and 2 without replaying
+   application SQL. Unexpected state stops the rollout; do not repair manually.
+6. Deploy a schema-compatible application release, configure the independent
+   readiness secret privately, then verify authorized readiness and application
+   smoke checks. Check collector health if enabled; do not enable collection or
+   consume provider quota merely to test migration delivery.
+
+A failure before transaction commit rolls back application SQL and ledger writes
+atomically. Preserve sanitized failure evidence and obtain a fresh plan before
+retrying. A lost connection around commit has an uncertain outcome: inspect
+read-only status/catalog before deciding whether to retry.
+
+After commit, correct database defects with a separately reviewed forward
+migration. Never edit applied SQL/checksums or delete ledger rows to simulate a
+rollback. Roll back the application only to a release compatible with the
+current schema; prefer additive schema changes and retain compatibility until
+older application releases are no longer needed. An application rollback does
+not roll back the database.
+
+Restoring Production is a separate owner-approved recovery operation, never an
+automatic response to a failed deployment. Stop or coordinate writers, quantify
+writes since the backup, define their recovery/reconciliation, and verify the
+restored target before reconnecting the application. This drill restored only
+a separate recovery target and proves no Production cutover capability by itself.

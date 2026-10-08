@@ -1,5 +1,5 @@
-import { readFile } from "node:fs/promises";
 import { Client } from "pg";
+import { bootstrapPrimaryTestDatabase } from "./bootstrap.mjs";
 import { assertNoApplicationCredentials, parseTestDatabaseUrl } from "./target.mts";
 
 const clients = new Set<Client>();
@@ -41,23 +41,7 @@ export async function withTestClient<T>(run: (client: Client) => Promise<T>): Pr
 }
 
 export async function bootstrapTestDatabase() {
-  const schema = await readFile(new URL("../../db/schema.sql", import.meta.url), "utf8");
-  await withTestClient(async (client) => {
-    const result = await client.query<{
-      database: string;
-      role: string;
-      version: number;
-    }>(`SELECT current_database() AS database, current_user AS role,
-               current_setting('server_version_num')::integer AS version`);
-    const server = result.rows[0];
-    if (server.database !== "dfs_ev_test" || server.role !== "dfs_ev_test" ||
-        server.version < 180000 || server.version >= 190000) {
-      throw new Error("Bootstrap requires the disposable dfs_ev_test database and role on PostgreSQL 18.");
-    }
-    // Both calls must succeed: #60 can reuse this full-schema bootstrap.
-    await client.query(schema);
-    await client.query(schema);
-  });
+  return withTestClient((client) => bootstrapPrimaryTestDatabase(client, process.env));
 }
 
 export async function resetLivePropCache() {

@@ -1,0 +1,649 @@
+// @vitest-environment node
+import { spawn, spawnSync } from "node:child_process";
+import { chmod, mkdtemp, readFile, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { runCli, type CliDeps } from "./cli.ts";
+import type { FetchLike } from "./youtubeApi.ts";
+import { discoveryFor, record as supportRecord, vid as supportVid } from "./testSupport.ts";
+
+const KEY = "SECRET-KEY-VALUE-123";
+const vid = (n: number) => "vid" + String(n).padStart(8, "0");
+const channelId = "UC" + "a".repeat(22);
+const playlistId = "UU" + "a".repeat(22);
+const CLOSED = new Date("2026-10-07T12:00:00Z");
+const OPEN = new Date("2026-10-05T12:00:00Z");
+
+const videoJson = (id: string, overrides: Record<string, unknown> = {}) => ({
+  id,
+  snippet: {
+    title: "NFL Week 6 Player Props",
+    description: "",
+    publishedAt: "2025-10-09T15:00:00Z",
+    channelId,
+    channelTitle: "Example Channel",
+    liveBroadcastContent: "none",
+    ...overrides,
+  },
+  contentDetails: { duration: "PT30M" },
+});
+
+// A tiny stand-in for the two YouTube endpoints, recording every request.
+const fakeYoutube = (videos: Record<string, ReturnType<typeof videoJson>>, pages: { videoId: string; at: string }[][]) => {
+  const calls: { url: URL; headers: Record<string, string> }[] = [];
+  const fetchImpl: FetchLike = async (raw, init) => {
+    const url = new URL(raw);
+    calls.push({ url, headers: init.headers });
+    const body = url.pathname.endsWith("/videos")
+      ? { items: (url.searchParams.get("id") ?? "").split(",").flatMap((id) => (videos[id] ? [videos[id]] : [])) }
+      : (() => {
+          const index = url.searchParams.get("pageToken") ? Number(url.searchParams.get("pageToken")!.slice(1)) : 0;
+          return {
+            items: pages[index].map((page) => ({ contentDetails: { videoId: page.videoId, videoPublishedAt: page.at } })),
+            ...(index + 1 < pages.length ? { nextPageToken: `P${index + 1}` } : {}),
+          };
+        })();
+    return { ok: true, status: 200, json: async () => body };
+  };
+  return { calls, fetchImpl };
+};
+
+let directory: string;
+beforeEach(async () => {
+  directory = await mkdtemp(join(tmpdir(), "creator-corpus-cli-"));
+});
+afterEach(async () => {
+  await rm(directory, { recursive: true, force: true });
+});
+
+const path = (name: string) => join(directory, name);
+const writeJson = (name: string, value: unknown) => writeFile(path(name), JSON.stringify(value));
+const readJson = async (name: string) => JSON.parse(await readFile(path(name), "utf8"));
+const run = async (args: string[], overrides: Partial<CliDeps> = {}) => {
+  const lines: string[] = [];
+  const deps: CliDeps = {
+    env: { YOUTUBE_API_KEY: KEY },
+    fetchImpl: async () => {
+      throw new Error("unexpected network call");
+    },
+    now: () => CLOSED,
+    out: (line) => lines.push(line),
+    waitForStop: async () => undefined,
+    ...overrides,
+  };
+  try {
+    await runCli(args, deps);
+    return { code: "ok", lines };
+  } catch (error) {
+    return { code: (error as { code?: string }).code ?? "unexpected-failure", lines };
+  }
+};
+const exists = async (name: string) => stat(path(name)).then(() => true, () => false);
+
+const creatorsFile = [{ key: "creator-a", name: "Example Channel", seedVideoId: vid(1) }];
+const registryFor = (confirmed: boolean) => ({
+  formatVersion: 1,
+  resolvedAt: CLOSED.toISOString(),
+  failures: [],
+  creators: [
+    {
+      key: "creator-a",
+      name: "Example Channel",
+      seedVideoId: vid(1),
+      channelId,
+      channelTitle: "Example Channel",
+      uploadsPlaylistId: playlistId,
+      titleMatch: "exact",
+      confirmed,
+      apiFetchedAt: CLOSED.toISOString(),
+    },
+  ],
+});
+
+describe("resolve", () => {
+  it("writes an unconfirmed registry, prints the name comparison, and counts quota", async () => {
+    await writeJson("creators.json", creatorsFile);
+    const { calls, fetchImpl } = fakeYoutube({ [vid(1)]: videoJson(vid(1)) }, [[]]);
+    const result = await run(["resolve", "--creators", path("creators.json"), "--output", path("registry.json")], { fetchImpl });
+    expect(result.code).toBe("ok");
+    expect(result.lines[0]).toBe("creator-a\texact\tstored: Example Channel\tchannel: Example Channel");
+    expect(JSON.parse(result.lines.at(-1)!)).toEqual({ resolved: 1, failed: 0, quotaUsed: 1 });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].headers).toEqual({ "x-goog-api-key": KEY });
+    expect((await readJson("registry.json")).creators[0]).toMatchObject({ confirmed: false, uploadsPlaylistId: playlistId });
+    expect((await stat(path("registry.json"))).mode & 0o777).toBe(0o600);
+  });
+
+  it("fails before any network call for missing options, key, bad units, a taken output or an unsafe input", async () => {
+    await writeJson("creators.json", creatorsFile);
+    await writeJson("taken.json", {});
+    const { calls, fetchImpl } = fakeYoutube({ [vid(1)]: videoJson(vid(1)) }, [[]]);
+    const base = ["resolve", "--creators", path("creators.json"), "--output", path("registry.json")];
+    expect((await run(["resolve"], { fetchImpl })).code).toBe("creators-and-output-required");
+    expect((await run(base, { env: {}, fetchImpl })).code).toBe("api-key-missing");
+    expect((await run(base, { env: { YOUTUBE_API_KEY: "  " }, fetchImpl })).code).toBe("api-key-missing");
+    expect((await run([...base, "--max-units", "0"], { fetchImpl })).code).toBe("invalid-max-units");
+    expect((await run([...base, "--max-units", "abc"], { fetchImpl })).code).toBe("invalid-max-units");
+    expect(
+      (await run(["resolve", "--creators", path("creators.json"), "--output", path("taken.json")], { fetchImpl })).code
+    ).toBe("output-exists");
+    expect(
+      (await run(["resolve", "--creators", join(process.cwd(), "package.json"), "--output", path("r.json")], { fetchImpl })).code
+    ).toBe("must-be-outside-repository");
+    expect((await run([...base, "--bogus"], { fetchImpl })).code).toBe("invalid-options");
+    // Each refusal above must happen before the API is touched, so none can spend quota.
+    expect(calls).toHaveLength(0);
+    expect(await exists("registry.json")).toBe(false);
+  });
+
+  it("stops the whole run at the unit cap and writes no registry", async () => {
+    await writeJson("creators.json", [
+      { key: "creator-a", name: "Example Channel", seedVideoId: vid(1) },
+      { key: "creator-b", name: "Other Channel", seedVideoId: vid(2) },
+    ]);
+    const { calls, fetchImpl } = fakeYoutube(
+      { [vid(1)]: videoJson(vid(1)), [vid(2)]: videoJson(vid(2), { channelId: "UC" + "b".repeat(22) }) },
+      [[]]
+    );
+    const result = await run(
+      ["resolve", "--creators", path("creators.json"), "--output", path("registry.json"), "--max-units", "1"],
+      { fetchImpl }
+    );
+    expect(result.code).toBe("quota-limit-reached");
+    expect(calls).toHaveLength(1);
+    expect(await exists("registry.json")).toBe(false);
+  });
+});
+
+describe("confirm", () => {
+  it("writes a new registry with only the named creators confirmed and never overwrites", async () => {
+    await writeJson("registry.json", registryFor(false));
+    const args = ["confirm", "--registry", path("registry.json"), "--keys", "creator-a", "--output", path("confirmed.json")];
+    expect((await run(args)).code).toBe("ok");
+    expect((await readJson("confirmed.json")).creators[0].confirmed).toBe(true);
+    expect((await readJson("registry.json")).creators[0].confirmed).toBe(false);
+    expect((await run(args)).code).toBe("output-exists");
+    expect((await run(["confirm", "--registry", path("registry.json"), "--keys", "nobody", "--output", path("x.json")])).code).toBe(
+      "unknown-creator-key"
+    );
+  });
+});
+
+describe("discover", () => {
+  const pages = [[{ videoId: vid(2), at: "2025-10-09T15:00:00Z" }]];
+  const videos = { [vid(2)]: videoJson(vid(2)) };
+  const args = (extra: string[] = []) => ["discover", "--registry", path("registry.json"), "--output", path("discovery.json"), ...extra];
+
+  it("refuses to run before the registered end week has closed, unless explicitly overridden", async () => {
+    const early = registryFor(true);
+    early.creators[0].apiFetchedAt = "2026-10-01T00:00:00.000Z";
+    await writeJson("registry.json", early);
+    const { calls, fetchImpl } = fakeYoutube(videos, pages);
+    expect((await run(args(), { fetchImpl, now: () => OPEN })).code).toBe("end-week-not-closed");
+    expect(calls).toHaveLength(0);
+    expect((await run(args(["--allow-incomplete-end-week"]), { fetchImpl, now: () => OPEN })).code).toBe("ok");
+  });
+
+  it("requires a confirmed creator", async () => {
+    await writeJson("registry.json", registryFor(false));
+    const { calls, fetchImpl } = fakeYoutube(videos, pages);
+    expect((await run(args(), { fetchImpl })).code).toBe("no-confirmed-creators");
+    expect(calls).toHaveLength(0);
+  });
+
+  it("writes the manifest with quota used and prints the coverage table", async () => {
+    await writeJson("registry.json", registryFor(true));
+    const { calls, fetchImpl } = fakeYoutube(videos, pages);
+    const result = await run(args(), { fetchImpl });
+    expect(result.code).toBe("ok");
+    const file = await readJson("discovery.json");
+    expect(file.registration.window).toEqual({ endSeason: 2026, endWeek: 4 });
+    expect(file.quota).toEqual({ limit: 1000, used: 2, byEndpoint: { "videos.list": 1, "playlistItems.list": 1 } });
+    expect(file.creators[0].manifest.summary.slots).toEqual({ present: 1, "needs-review": 0, missing: 39 });
+    expect(result.lines[0]).toMatch(/^creator\s+weeks/);
+    expect(JSON.parse(result.lines.at(-1)!)).toEqual({ creators: 1, quotaUsed: 2, quotaLimit: 1000 });
+    expect(calls.map((call) => call.url.pathname.split("/").pop())).toEqual(["playlistItems", "videos"]);
+  });
+
+  it("stops at the hard unit cap without writing a partial file", async () => {
+    await writeJson("registry.json", registryFor(true));
+    const { calls, fetchImpl } = fakeYoutube(videos, pages);
+    expect((await run(args(["--max-units", "1"]), { fetchImpl })).code).toBe("quota-limit-reached");
+    expect(calls).toHaveLength(1);
+    expect(await exists("discovery.json")).toBe(false);
+  });
+
+  it("applies owner decisions from a private decisions file", async () => {
+    await writeJson("registry.json", registryFor(true));
+    await writeJson("decisions.json", {
+      "creator-a": [
+        { videoId: vid(2), decision: "exclude", reason: "recap only", ruleVersion: "v1", decidedAt: "2026-10-07T13:00:00.000Z" },
+      ],
+    });
+    const { fetchImpl } = fakeYoutube(videos, pages);
+    expect((await run(args(["--decisions", path("decisions.json")]), { fetchImpl })).code).toBe("ok");
+    const [video] = (await readJson("discovery.json")).creators[0].manifest.videos;
+    expect(video).toMatchObject({ status: "excluded", decision: { decision: "exclude" } });
+  });
+});
+
+describe("rebuild", () => {
+  const decision = (overrides: Record<string, unknown> = {}) => ({
+    videoId: supportVid(1),
+    decision: "include",
+    reason: "props throughout",
+    ruleVersion: "v1",
+    decidedAt: "2026-10-07T13:00:00.000Z",
+    ...overrides,
+  });
+  const rebuildArgs = (output = "rebuilt.json") => [
+    "rebuild", "--input", path("discovery.json"), "--decisions", path("decisions.json"), "--output", path(output),
+  ];
+  const seed = async (decisions: unknown = { "creator-a": [decision()] }) => {
+    await writeJson("discovery.json", discoveryFor([supportRecord(1)]));
+    await writeJson("decisions.json", decisions);
+  };
+
+  it("applies decisions without any network call and writes a private, screenable file", async () => {
+    await seed();
+    let calls = 0;
+    const result = await run(rebuildArgs(), { fetchImpl: async () => { calls++; throw new Error("no network allowed"); } });
+    expect(result.code).toBe("ok");
+    expect(calls).toBe(0);
+    const rebuilt = await readJson("rebuilt.json");
+    expect(rebuilt.rebuiltAt).toBe(CLOSED.toISOString());
+    expect(rebuilt.creators[0].manifest.videos[0]).toMatchObject({ status: "present", decision: { decision: "include" } });
+    expect((await stat(path("rebuilt.json"))).mode & 0o777).toBe(0o600);
+    expect(result.lines[0]).toMatch(/^creator\s+weeks/);
+    expect((await run(["screen", "--input", path("rebuilt.json")])).code).toBe("ok");
+  });
+
+  it("tells the owner when a decision was not applied because the video is gone", async () => {
+    const discovery = discoveryFor([supportRecord(1)]);
+    discovery.creators[0].unavailableVideoIds = [supportVid(77)];
+    await writeJson("discovery.json", discovery);
+    await writeJson("decisions.json", { "creator-a": [decision({ videoId: supportVid(77) })] });
+    const result = await run(rebuildArgs());
+    expect(result.code).toBe("ok");
+    expect(result.lines.at(-1)).toContain("1 decision(s) were not applied");
+    expect((await readJson("rebuilt.json")).decisionsNotApplied).toEqual([
+      { creatorKey: "creator-a", videoId: supportVid(77), why: "video-unavailable" },
+    ]);
+  });
+
+  it("refuses to overwrite an existing output and requires every path", async () => {
+    await seed();
+    await writeJson("rebuilt.json", { keep: true });
+    expect((await run(rebuildArgs())).code).toBe("output-exists");
+    expect(await readJson("rebuilt.json")).toEqual({ keep: true });
+    expect((await run(["rebuild", "--input", path("discovery.json")])).code).toBe("input-decisions-and-output-required");
+  });
+
+  it("fails with fixed codes for stale data, bad decisions files and unknown creators", async () => {
+    await seed();
+    expect((await run(rebuildArgs("a.json"), { now: () => new Date("2027-01-01T00:00:00Z") })).code).toBe("stale-discovery-data");
+    expect(await exists("a.json")).toBe(false);
+
+    await writeFile(path("decisions.json"), JSON.stringify({ "creator-a": [{ videoId: supportVid(1), decision: "include", reason: "old format" }] }));
+    expect((await run(rebuildArgs("b.json"))).code).toBe("invalid-decisions-file");
+
+    await writeJson("decisions.json", { "creator-z": [decision()] });
+    expect((await run(rebuildArgs("c.json"))).code).toBe("unknown-creator-in-decisions");
+
+    for (const name of ["b.json", "c.json"]) expect(await exists(name)).toBe(false);
+  });
+
+  it("reports and skips a decision for a video that is not in the discovery file", async () => {
+    await seed({ "creator-a": [decision({ videoId: supportVid(55) })] });
+    const result = await run(rebuildArgs("d.json"));
+    expect(result.code).toBe("ok");
+    expect(result.lines.at(-1)).toContain("1 decision(s) were not applied");
+    expect((await readJson("d.json")).decisionsNotApplied).toEqual([
+      { creatorKey: "creator-a", videoId: supportVid(55), why: "video-not-in-discovery" },
+    ]);
+  });
+
+  it("rejects a file that is not a discovery file", async () => {
+    await writeJson("discovery.json", { creators: [] });
+    await writeJson("decisions.json", {});
+    expect((await run(rebuildArgs())).code).toBe("invalid-discovery-file");
+  });
+});
+
+describe("a creator whose key is named like an Object property", () => {
+  it("is discovered without a decisions file and with an empty one", async () => {
+    const registry = registryFor(true);
+    registry.creators[0].key = "constructor";
+    await writeJson("registry.json", registry);
+    const pages = [[{ videoId: vid(2), at: "2025-10-09T15:00:00Z" }]];
+    const videos = { [vid(2)]: videoJson(vid(2), { title: "NFL Week 6 best bets" }) };
+    const { fetchImpl } = fakeYoutube(videos, pages);
+    expect((await run(["discover", "--registry", path("registry.json"), "--output", path("one.json")], { fetchImpl })).code).toBe("ok");
+    await writeJson("empty.json", {});
+    const second = fakeYoutube(videos, pages);
+    expect(
+      (await run(["discover", "--registry", path("registry.json"), "--output", path("two.json"), "--decisions", path("empty.json")], { fetchImpl: second.fetchImpl })).code
+    ).toBe("ok");
+    expect((await readJson("two.json")).creators[0].key).toBe("constructor");
+    expect((await run(["rebuild", "--input", path("two.json"), "--decisions", path("empty.json"), "--output", path("three.json")])).code).toBe("ok");
+  });
+});
+
+describe("discover validates the decisions it is given", () => {
+  const pages = [[{ videoId: vid(2), at: "2025-10-09T15:00:00Z" }]];
+  const videos = { [vid(2)]: videoJson(vid(2), { title: "NFL Week 6 best bets" }) };
+  const event = (overrides: Record<string, unknown> = {}) => ({
+    videoId: vid(2), decision: "include", reason: "reason", ruleVersion: "v1", decidedAt: "2026-10-07T10:00:00.000Z", ...overrides,
+  });
+  const args = () => ["discover", "--registry", path("registry.json"), "--output", path("d.json"), "--decisions", path("decisions.json")];
+
+  it("stops before spending any quota when a decision names a creator that is not in the registry", async () => {
+    await writeJson("registry.json", registryFor(true));
+    await writeJson("decisions.json", { "creator-typo": [event()] });
+    const { calls, fetchImpl } = fakeYoutube(videos, pages);
+    expect((await run(args(), { fetchImpl })).code).toBe("unknown-creator-in-decisions");
+    expect(calls).toHaveLength(0);
+    expect(await exists("d.json")).toBe(false);
+  });
+
+  it("warns, and records why, when decisions could not be applied", async () => {
+    await writeJson("registry.json", registryFor(true));
+    await writeJson("decisions.json", { "creator-a": [event(), event({ videoId: vid(77) })] });
+    const { fetchImpl } = fakeYoutube(videos, pages);
+    const result = await run(args(), { fetchImpl });
+    expect(result.code).toBe("ok");
+    expect(result.lines.some((line) => line.includes("1 decision(s) were not applied"))).toBe(true);
+    const file = await readJson("d.json");
+    expect(file.decisionsNotApplied).toEqual([{ creatorKey: "creator-a", videoId: vid(77), why: "video-not-in-discovery" }]);
+    expect(file.creators[0].manifest.videos[0]).toMatchObject({ status: "present", decision: { decision: "include" } });
+  });
+
+  it("keeps decisions for a registered creator that was not discovered this run, and says so", async () => {
+    const registry = registryFor(true);
+    registry.creators.push({ ...registry.creators[0], key: "creator-b", channelId: "UC" + "b".repeat(22), uploadsPlaylistId: "UU" + "b".repeat(22), confirmed: false });
+    await writeJson("registry.json", registry);
+    await writeJson("decisions.json", { "creator-b": [event({ videoId: vid(5) })] });
+    const { fetchImpl } = fakeYoutube(videos, pages);
+    expect((await run(args(), { fetchImpl })).code).toBe("ok");
+    expect((await readJson("d.json")).decisionsNotApplied).toEqual([
+      { creatorKey: "creator-b", videoId: vid(5), why: "creator-not-discovered" },
+    ]);
+  });
+
+  it("prints no warning when every decision applied", async () => {
+    await writeJson("registry.json", registryFor(true));
+    await writeJson("decisions.json", { "creator-a": [event()] });
+    const { fetchImpl } = fakeYoutube(videos, pages);
+    const result = await run(args(), { fetchImpl });
+    expect(result.lines.some((line) => line.includes("were not applied"))).toBe(false);
+    expect((await readJson("d.json")).decisionsNotApplied).toEqual([]);
+  });
+});
+
+describe("discover with an event-log decisions file", () => {
+  it("honors the latest active decision and ignores a cleared one", async () => {
+    await writeJson("registry.json", registryFor(true));
+    const pages = [[{ videoId: vid(2), at: "2025-10-09T15:00:00Z" }]];
+    const videos = { [vid(2)]: videoJson(vid(2), { title: "NFL Week 6 best bets" }) };
+    const event = (decisionKind: string, at: string) => ({
+      videoId: vid(2), decision: decisionKind, reason: "reason", ruleVersion: "v1", decidedAt: at,
+    });
+    await writeJson("decisions.json", {
+      "creator-a": [event("exclude", "2026-10-07T10:00:00.000Z"), event("clear", "2026-10-07T11:00:00.000Z")],
+    });
+    const { fetchImpl } = fakeYoutube(videos, pages);
+    await run(["discover", "--registry", path("registry.json"), "--output", path("d1.json"), "--decisions", path("decisions.json")], { fetchImpl });
+    expect((await readJson("d1.json")).creators[0].manifest.videos[0]).toMatchObject({ status: "needs-review", decision: null });
+  });
+});
+
+describe("review", () => {
+  const seed = async () => {
+    await writeJson("discovery.json", discoveryFor([supportRecord(1)]));
+  };
+  const reviewArgs = (extra: string[] = []) => ["review", "--input", path("discovery.json"), "--decisions", path("decisions.json"), ...extra];
+
+  it("prints a fragment-token address, serves it while running, and stops cleanly", async () => {
+    await seed();
+    let stop!: () => void;
+    const stopped = new Promise<void>((resolve) => (stop = resolve));
+    const lines: string[] = [];
+    const running = run(reviewArgs(), {
+      waitForStop: () => stopped,
+      out: (line) => {
+        lines.push(line);
+      },
+    });
+    await vi.waitFor(() => expect(lines.some((line) => line.startsWith("http://127.0.0.1:"))).toBe(true));
+    const address = new URL(lines.find((line) => line.startsWith("http://"))!);
+    expect(address.search).toBe("");
+    const token = new URLSearchParams(address.hash.slice(1)).get("token")!;
+    const data = await fetch(`${address.origin}/api/data`, { headers: { Authorization: `Bearer ${token}` } });
+    expect(data.status).toBe(200);
+    expect((await fetch(`${address.origin}/api/data`)).status).toBe(401);
+    stop();
+    expect((await running).code).toBe("ok");
+    await expect(fetch(`${address.origin}/`)).rejects.toThrow();
+  });
+
+  it("serves the capture routes only when a captures log is given, and fails early on an unusable one", async () => {
+    await seed();
+    const serve = async (extra: string[]) => {
+      let stop!: () => void;
+      const stopped = new Promise<void>((resolve) => (stop = resolve));
+      const lines: string[] = [];
+      const running = run(reviewArgs(extra), { waitForStop: () => stopped, out: (line) => { lines.push(line); } });
+      await vi.waitFor(() => expect(lines.some((line) => line.startsWith("http://127.0.0.1:"))).toBe(true));
+      const address = new URL(lines.find((line) => line.startsWith("http://"))!);
+      const token = new URLSearchParams(address.hash.slice(1)).get("token")!;
+      const status = (await fetch(`${address.origin}/api/captures`, { headers: { Authorization: `Bearer ${token}` } })).status;
+      stop();
+      expect((await running).code).toBe("ok");
+      return status;
+    };
+    expect(await serve([])).toBe(404);
+    expect(await serve(["--captures", path("captures.jsonl")])).toBe(200);
+
+    const out = () => undefined;
+    expect((await run(reviewArgs(["--captures", path("captures.json")]), { out })).code).toBe("jsonl-file-required");
+    expect((await run(reviewArgs(["--captures", join(process.cwd(), "captures-test.jsonl")]), { out })).code).toBe("must-be-outside-repository");
+    await writeFile(path("bad.jsonl"), "{ not a capture\n", { mode: 0o600 });
+    expect((await run(reviewArgs(["--captures", path("bad.jsonl")]), { out })).code).toBe("invalid-captures-file");
+    expect(await readFile(path("bad.jsonl"), "utf8")).toBe("{ not a capture\n");
+    await writeFile(path("open.jsonl"), "", { mode: 0o644 });
+    await chmod(path("open.jsonl"), 0o644);
+    expect((await run(reviewArgs(["--captures", path("open.jsonl")]), { out })).code).toBe("insecure-file-permissions");
+  });
+
+  it("fails before starting for missing options, a bad port, an unusable decisions path or a bad file", async () => {
+    await seed();
+    const lines: string[] = [];
+    const out = (line: string) => {
+      lines.push(line);
+    };
+    expect((await run(["review"], { out })).code).toBe("input-and-decisions-required");
+    for (const port of ["80", "70000", "abc", "1.5", "-1"]) {
+      expect((await run(reviewArgs([`--port=${port}`]), { out })).code, port).toBe("invalid-port");
+    }
+    expect(
+      (await run(["review", "--input", path("discovery.json"), "--decisions", join(process.cwd(), "decisions.json")], { out })).code
+    ).toBe("must-be-outside-repository");
+    await writeFile(path("decisions.json"), "{ corrupt");
+    expect((await run(reviewArgs(), { out })).code).toBe("input-unreadable");
+    await writeJson("decisions.json", { "creator-a": [{ videoId: vid(1), decision: "include", reason: "old format" }] });
+    expect((await run(reviewArgs(), { out })).code).toBe("invalid-decisions-file");
+    await writeJson("bad-discovery.json", { creators: [] });
+    expect((await run(["review", "--input", path("bad-discovery.json"), "--decisions", path("fresh.json")], { out })).code).toBe(
+      "invalid-discovery-file"
+    );
+    expect(lines).toEqual([]);
+  });
+});
+
+describe("stale registry", () => {
+  it("is refused by discover before any API call, so saved channel details are refetched", async () => {
+    const stale = registryFor(true);
+    stale.creators[0].apiFetchedAt = "2026-08-01T00:00:00.000Z";
+    await writeJson("registry.json", stale);
+    const { calls, fetchImpl } = fakeYoutube({}, [[]]);
+    const result = await run(["discover", "--registry", path("registry.json"), "--output", path("d.json")], { fetchImpl });
+    expect(result.code).toBe("stale-registry-data");
+    expect(calls).toHaveLength(0);
+    expect(await exists("d.json")).toBe(false);
+  });
+});
+
+describe("purge", () => {
+  const FRESH = new Date("2026-10-20T12:00:00Z");
+  const STALE = new Date("2026-12-01T12:00:00Z");
+  const purge = (name: string, extra: string[] = [], now: Date = FRESH) =>
+    run(["purge", "--input", path(name), ...extra], { now: () => now });
+  const seedDiscovery = () => writeJson("discovery.json", discoveryFor([supportRecord(1, { title: "SENTINEL-PRIVATE-TITLE NFL props" })]));
+
+  it("reports a fresh file with its delete-by date and touches nothing in a dry run", async () => {
+    await seedDiscovery();
+    const result = await purge("discovery.json", ["--dry-run"]);
+    expect(result.code).toBe("ok");
+    expect(JSON.parse(result.lines[0])).toEqual({
+      kind: "discovery",
+      records: 2,
+      oldestFetchedAt: "2026-10-07T12:00:00.000Z",
+      deleteBy: "2026-11-06T12:00:00.000Z",
+      stale: false,
+      deleted: false,
+    });
+    expect(await exists("discovery.json")).toBe(true);
+  });
+
+  it("never prints titles or descriptions", async () => {
+    await seedDiscovery();
+    const result = await purge("discovery.json", ["--dry-run"]);
+    expect(result.lines.join("\n")).not.toContain("SENTINEL-PRIVATE-TITLE");
+  });
+
+  it("keeps a file that is still inside its retention period unless the owner forces deletion", async () => {
+    await seedDiscovery();
+    expect((await purge("discovery.json")).code).toBe("not-stale-yet");
+    expect(await exists("discovery.json")).toBe(true);
+    const forced = await purge("discovery.json", ["--force"]);
+    expect(forced.code).toBe("ok");
+    expect(JSON.parse(forced.lines[0]).deleted).toBe(true);
+    expect(await exists("discovery.json")).toBe(false);
+  });
+
+  it("deletes a discovery file once any record is past the retention limit", async () => {
+    await seedDiscovery();
+    const result = await purge("discovery.json", [], STALE);
+    expect(result.code).toBe("ok");
+    expect(JSON.parse(result.lines[0])).toMatchObject({ stale: true, deleted: true });
+    expect(await exists("discovery.json")).toBe(false);
+  });
+
+  it("handles saved channel details the same way", async () => {
+    await writeJson("registry.json", registryFor(true));
+    expect((await purge("registry.json")).code).toBe("not-stale-yet");
+    expect(JSON.parse((await purge("registry.json", ["--dry-run"])).lines[0])).toMatchObject({ kind: "registry", records: 1, stale: false });
+    expect((await purge("registry.json", [], STALE)).code).toBe("ok");
+    expect(await exists("registry.json")).toBe(false);
+  });
+
+  it("will not delete the owner's own records or any other file", async () => {
+    await writeJson("decisions.json", {
+      "creator-a": [{ videoId: vid(1), decision: "include", reason: "r", ruleVersion: "v1", decidedAt: "2026-10-07T10:00:00.000Z" }],
+    });
+    await writeJson("other.json", { anything: true });
+    await writeJson("empty-creators.json", { creators: [] });
+    for (const name of ["decisions.json", "other.json", "empty-creators.json"]) {
+      expect((await purge(name, ["--force"], STALE)).code, name).toBe("unrecognized-data-file");
+      expect(await exists(name), name).toBe(true);
+    }
+  });
+
+  it("applies the usual private-file rules and requires an input", async () => {
+    expect((await run(["purge"])).code).toBe("input-required");
+    expect((await run(["purge", "--input", join(process.cwd(), "package.json"), "--force"])).code).toBe("must-be-outside-repository");
+    await seedDiscovery();
+    await symlink(path("discovery.json"), path("alias.json"));
+    expect((await purge("alias.json", ["--force"], STALE)).code).toBe("symlink-not-allowed");
+    expect(await exists("discovery.json")).toBe(true);
+    expect((await run(["purge", "--input", path("missing.json")])).code).toBe("input-unreadable");
+  });
+});
+
+describe("screen and dispatch", () => {
+  it("prints coverage from a discovery file and refuses other files", async () => {
+    await writeJson("registry.json", registryFor(true));
+    const { fetchImpl } = fakeYoutube({ [vid(2)]: videoJson(vid(2)) }, [[{ videoId: vid(2), at: "2025-10-09T15:00:00Z" }]]);
+    await run(["discover", "--registry", path("registry.json"), "--output", path("discovery.json")], { fetchImpl });
+    const result = await run(["screen", "--input", path("discovery.json")]);
+    expect(result.code).toBe("ok");
+    expect(result.lines[0]).toContain("creator-a");
+    await writeJson("other.json", { creators: [{}] });
+    expect((await run(["screen", "--input", path("other.json")])).code).toBe("invalid-discovery-file");
+    expect((await run(["screen"])).code).toBe("input-required");
+  });
+
+  it("rejects an unknown command", async () => {
+    expect((await run(["frobnicate"])).code).toBe("unknown-command");
+    expect((await run([])).code).toBe("unknown-command");
+  });
+});
+
+describe("the real command line", () => {
+  const cli = (args: string[], env: Record<string, string>) =>
+    spawnSync(
+      process.execPath,
+      ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "scripts/creator-corpus/cli.ts", ...args],
+      { cwd: process.cwd(), env: { PATH: process.env.PATH ?? "", ...env } as unknown as NodeJS.ProcessEnv, encoding: "utf8" }
+    );
+
+  it("prints one fixed code and never the key, for a missing key or an unusable output directory", async () => {
+    await writeJson("creators.json", creatorsFile);
+    const noKey = cli(["resolve", "--creators", path("creators.json"), "--output", path("registry.json")], {});
+    expect(noKey.status).toBe(1);
+    expect(noKey.stdout).toBe("");
+    expect(noKey.stderr).toBe("creator-corpus: api-key-missing\n");
+
+    const badDirectory = cli(
+      ["resolve", "--creators", path("creators.json"), "--output", path("missing-dir/registry.json")],
+      { YOUTUBE_API_KEY: KEY }
+    );
+    expect(badDirectory.status).toBe(1);
+    expect(badDirectory.stderr).toBe("creator-corpus: directory-missing\n");
+    expect(badDirectory.stderr + badDirectory.stdout).not.toContain(KEY);
+  });
+
+  it("serves the review page from the real command and exits cleanly on Ctrl+C", async () => {
+    await writeJson("discovery.json", discoveryFor([supportRecord(1)]));
+    const child = spawn(
+      process.execPath,
+      ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "scripts/creator-corpus/cli.ts", "review", "--input", path("discovery.json"), "--decisions", path("decisions.json")],
+      { cwd: process.cwd(), env: { PATH: process.env.PATH ?? "" } as unknown as NodeJS.ProcessEnv }
+    );
+    try {
+      const exited = new Promise<number | null>((resolve) => child.on("exit", (code) => resolve(code)));
+      const address = await new Promise<string>((resolve, reject) => {
+        let output = "";
+        child.stdout.on("data", (chunk) => {
+          output += chunk;
+          const match = /http:\/\/127\.0\.0\.1:\d+\/#token=\S+/.exec(output);
+          if (match) resolve(match[0]);
+        });
+        child.on("exit", () => reject(new Error("exited before printing an address")));
+      });
+      const url = new URL(address);
+      expect((await fetch(url.origin + "/")).status).toBe(200);
+      child.kill("SIGINT");
+      expect(await exited).toBe(0);
+      await expect(fetch(url.origin + "/")).rejects.toThrow();
+    } finally {
+      child.kill("SIGKILL");
+    }
+  });
+
+  it("reports an unrecognised failure generically", () => {
+    const result = cli(["screen", "--input", join(directory, "nope.json")], {});
+    expect(result.stderr).toBe("creator-corpus: input-unreadable\n");
+  });
+});
