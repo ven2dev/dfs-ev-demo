@@ -18,6 +18,7 @@ import {
 import { DecisionsFileError, effectiveDecisions, eventsFor, parseDecisionsFile } from "../../src/lib/creatorDecisions.ts";
 import { InputError, isEndWeekClosed, loadRegistration, parseCreatorsFile } from "./creatorInputs.ts";
 import { parseDiscoveryFile } from "./discoveryFile.ts";
+import { readCapturesFile } from "./captureStore.ts";
 import { readDecisionsFile } from "./decisionStore.ts";
 import { isApiDataStale } from "../../src/lib/creatorCorpusManifest.ts";
 import { PrivateFileError, assertPrivateOutputAvailable, deletePrivateFile, readPrivateJson, writePrivateJson } from "./privateOutput.ts";
@@ -188,14 +189,21 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
   }
 
   if (command === "review") {
-    const values = parse({ input: { type: "string" }, decisions: { type: "string" }, port: { type: "string" } });
+    const values = parse({ input: { type: "string" }, decisions: { type: "string" }, captures: { type: "string" }, port: { type: "string" } });
     if (!values.input || !values.decisions) return usage("input-and-decisions-required");
     const port = values.port === undefined ? 0 : Number(values.port);
     if (!Number.isInteger(port) || (port !== 0 && (port < 1024 || port > 65535))) return usage("invalid-port");
     const discovery = parseDiscoveryFile(await readPrivateJson(values.input));
     // Fail now, not on the first click, if the decisions path is unusable.
     await readDecisionsFile(values.decisions);
-    const server = await startReviewServer({ discovery, decisionsPath: values.decisions, now: deps.now, port });
+    if (values.captures) await readCapturesFile(values.captures);
+    const server = await startReviewServer({
+      discovery,
+      decisionsPath: values.decisions,
+      capturesPath: values.captures,
+      now: deps.now,
+      port,
+    });
     deps.out("Open this address in your browser. It only works on this computer:");
     deps.out(server.url);
     deps.out("Press Ctrl+C to stop.");

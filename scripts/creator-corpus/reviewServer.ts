@@ -2,10 +2,14 @@ import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
+import type { CaptureAction, CaptureEvent } from "../../src/lib/creatorCaptures.ts";
 import type { DecisionKind } from "../../src/lib/creatorDecisions.ts";
+import { buildCaptureQueue, type QueueScope } from "./captureQueue.ts";
+import { createCaptureStore } from "./captureStore.ts";
 import { CommandError } from "./commands.ts";
 import { createDecisionStore } from "./decisionStore.ts";
 import type { DiscoveryFile } from "./discoveryFile.ts";
+import { PrivateFileError } from "./privateOutput.ts";
 import { buildReviewState } from "./reviewState.ts";
 
 // Local review page server. It listens on the loopback address only, so it is
@@ -14,6 +18,9 @@ import { buildReviewState } from "./reviewState.ts";
 // exact Host header (a defence against DNS rebinding) and, for changes, a
 // matching Origin. Failures return one fixed code, never a path or message.
 export const MAX_BODY_BYTES = 4096;
+// A transcript may be up to 512,000 bytes and JSON can double its line breaks,
+// so the capture route allows 1 MiB; no other route accepts more than 4 KiB.
+export const MAX_CAPTURE_BODY_BYTES = 1_048_576;
 export const LOOPBACK_ADDRESS = "127.0.0.1";
 
 const ASSETS = {
@@ -52,7 +59,25 @@ const VALIDATION_CODES = new Set([
   "invalid-decision",
   "invalid-video-id",
 ]);
-const CONFLICT_CODES = new Set(["stale-discovery-data", "nothing-to-clear"]);
+const CAPTURE_VALIDATION_CODES = new Set([
+  "invalid-creator-key",
+  "invalid-capture-action",
+  "transcript-empty",
+  "transcript-too-large",
+  "transcript-too-short",
+  "transcript-invalid-characters",
+  "invalid-published-date",
+  "invalid-caption-kind",
+  "note-too-long",
+]);
+const CONFLICT_CODES = new Set([
+  "stale-discovery-data",
+  "nothing-to-clear",
+  "already-captured",
+  "already-unavailable",
+  "nothing-to-replace",
+  "invalid-captures-file",
+]);
 
 const sha256 = (value: string) => createHash("sha256").update(value).digest();
 const tokenMatches = (supplied: string, expected: string): boolean =>
@@ -102,6 +127,63 @@ const parseDecisionRequest = (body: string): { creatorKey: string; videoId: stri
   return { creatorKey, videoId, decision: decision as DecisionKind, reason };
 };
 
+const QUEUE_SCOPES: readonly string[] = ["included", "included-and-flagged"];
+
+type CaptureBody = {
+  request: {
+    creatorKey: string;
+    videoId: string;
+    action: CaptureAction;
+    text?: string;
+    publishedDate?: string;
+    captionKind?: string;
+    note?: string;
+    reason?: string;
+    confirmShort?: boolean;
+  };
+  scope: QueueScope;
+};
+
+const CAPTURE_STRING_FIELDS = ["text", "publishedDate", "captionKind", "note", "reason"] as const;
+
+const parseCaptureRequest = (body: string): CaptureBody => {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    throw new HttpError(400, "invalid-request");
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) throw new HttpError(400, "invalid-request");
+  const { creatorKey, videoId, action, scope = "included", confirmShort, ...rest } = parsed as Record<string, unknown>;
+  const allowed = new Set<string>(CAPTURE_STRING_FIELDS);
+  if (
+    typeof creatorKey !== "string" ||
+    typeof videoId !== "string" ||
+    typeof action !== "string" ||
+    typeof scope !== "string" ||
+    !QUEUE_SCOPES.includes(scope) ||
+    (confirmShort !== undefined && typeof confirmShort !== "boolean") ||
+    Object.keys(rest).some((key) => !allowed.has(key)) ||
+    CAPTURE_STRING_FIELDS.some((field) => rest[field] !== undefined && typeof rest[field] !== "string")
+  ) {
+    throw new HttpError(400, "invalid-request");
+  }
+  const request: CaptureBody["request"] = { creatorKey, videoId, action: action as CaptureAction };
+  for (const field of CAPTURE_STRING_FIELDS) if (rest[field] !== undefined) request[field] = rest[field] as string;
+  if (confirmShort !== undefined) request.confirmShort = confirmShort;
+  return { request, scope: scope as QueueScope };
+};
+
+// What the browser is told about a saved capture: never the transcript itself.
+const captureReceipt = (event: CaptureEvent) => ({
+  creatorKey: event.creatorKey,
+  videoId: event.videoId,
+  event: event.event,
+  capturedAt: event.capturedAt,
+  characters: event.characters,
+  hash: event.sha256 === null ? null : event.sha256.slice(0, 12),
+});
+
 export type ReviewServer = {
   // The address the socket is actually bound to, for verification.
   address: string;
@@ -114,23 +196,39 @@ export type ReviewServer = {
 export const startReviewServer = async ({
   discovery,
   decisionsPath,
+  capturesPath,
   now,
+  lock,
   port = 0,
   token = randomBytes(32).toString("base64url"),
 }: {
   discovery: DiscoveryFile;
   decisionsPath: string;
+  // Enables the capture routes. Without it they do not exist.
+  capturesPath?: string;
   now: () => Date;
+  // How long a save waits for another process's lock before giving up.
+  lock?: { timeoutMs?: number; staleMs?: number };
   port?: number;
   token?: string;
 }): Promise<ReviewServer> => {
-  const store = createDecisionStore({ path: decisionsPath, discovery, now });
+  const store = createDecisionStore({ path: decisionsPath, discovery, now, lock });
   const assets = new Map<string, { body: string; type: string }>();
   for (const [route, { file, type }] of Object.entries(ASSETS)) {
     assets.set(route, { body: await readFile(new URL(`./review/${file}`, import.meta.url), "utf8"), type });
   }
 
+  const captureStore = capturesPath ? createCaptureStore({ path: capturesPath, discovery, now, lock }) : null;
+
   const state = async () => buildReviewState({ discovery, decisions: await store.read(), now: now() });
+  const queue = async (scope: QueueScope) =>
+    buildCaptureQueue({
+      discovery,
+      decisions: await store.read(),
+      captures: await (captureStore as NonNullable<typeof captureStore>).read(),
+      scope,
+      now: now(),
+    });
 
   const handle = async (request: IncomingMessage, response: ServerResponse, origin: string, host: string) => {
     if (request.headers.host !== host) throw new HttpError(403, "forbidden");
@@ -149,8 +247,20 @@ export const startReviewServer = async ({
       if (request.method !== "GET") throw new HttpError(405, "method-not-allowed");
       return send(response, 200, asset.type, asset.body);
     }
-    if (path !== "/api/data" && path !== "/api/decision") throw new HttpError(404, "not-found");
-    if ((path === "/api/data") !== (request.method === "GET")) throw new HttpError(405, "method-not-allowed");
+    const captureRoutes = captureStore !== null;
+    const routes: Record<string, { method: "GET" | "POST"; limit: number }> = {
+      "/api/data": { method: "GET", limit: 0 },
+      "/api/decision": { method: "POST", limit: MAX_BODY_BYTES },
+      ...(captureRoutes
+        ? {
+            "/api/captures": { method: "GET" as const, limit: 0 },
+            "/api/capture": { method: "POST" as const, limit: MAX_CAPTURE_BODY_BYTES },
+          }
+        : {}),
+    };
+    const route = Object.hasOwn(routes, path) ? routes[path] : undefined;
+    if (!route) throw new HttpError(404, "not-found");
+    if (route.method !== request.method) throw new HttpError(405, "method-not-allowed");
 
     // The page itself carries no data, so it needs no token; everything below does.
     const authorization = request.headers.authorization ?? "";
@@ -159,14 +269,25 @@ export const startReviewServer = async ({
     }
 
     if (path === "/api/data") return sendJson(response, 200, await state());
+    if (path === "/api/captures") {
+      const scope = new URL(request.url ?? "/", origin).searchParams.get("scope") ?? "included";
+      if (!QUEUE_SCOPES.includes(scope)) throw new HttpError(400, "invalid-request");
+      return sendJson(response, 200, await queue(scope as QueueScope));
+    }
 
     if (suppliedOrigin !== origin) throw new HttpError(403, "forbidden");
     if (!(request.headers["content-type"] ?? "").toLowerCase().startsWith("application/json")) {
       throw new HttpError(415, "unsupported-media-type");
     }
     const declared = Number(request.headers["content-length"]);
-    if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) throw new HttpError(413, "payload-too-large");
-    const event = await store.append(parseDecisionRequest(await readBody(request, MAX_BODY_BYTES)));
+    if (Number.isFinite(declared) && declared > route.limit) throw new HttpError(413, "payload-too-large");
+    const body = await readBody(request, route.limit);
+    if (path === "/api/capture") {
+      const { request: captureRequest, scope } = parseCaptureRequest(body);
+      const event = await (captureStore as NonNullable<typeof captureStore>).append(captureRequest);
+      return sendJson(response, 200, { receipt: captureReceipt(event), queue: await queue(scope) });
+    }
+    const event = await store.append(parseDecisionRequest(body));
     return sendJson(response, 200, { event, state: await state() });
   };
 
@@ -176,8 +297,9 @@ export const startReviewServer = async ({
     handle(request, response, `http://${host}`, host).catch((error: unknown) => {
       if (response.headersSent) return response.end();
       if (error instanceof HttpError) return sendJson(response, error.status, { error: error.code });
+      if (error instanceof PrivateFileError && error.code === "file-busy") return sendJson(response, 503, { error: "file-busy" });
       const code = error instanceof CommandError ? error.code : "";
-      if (VALIDATION_CODES.has(code)) return sendJson(response, 400, { error: code });
+      if (VALIDATION_CODES.has(code) || CAPTURE_VALIDATION_CODES.has(code)) return sendJson(response, 400, { error: code });
       if (CONFLICT_CODES.has(code)) return sendJson(response, 409, { error: code });
       return sendJson(response, 500, { error: "server-error" });
     });

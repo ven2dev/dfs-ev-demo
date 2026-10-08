@@ -427,6 +427,32 @@ describe("review", () => {
     await expect(fetch(`${address.origin}/`)).rejects.toThrow();
   });
 
+  it("serves the capture routes only when a captures log is given, and fails early on an unusable one", async () => {
+    await seed();
+    const serve = async (extra: string[]) => {
+      let stop!: () => void;
+      const stopped = new Promise<void>((resolve) => (stop = resolve));
+      const lines: string[] = [];
+      const running = run(reviewArgs(extra), { waitForStop: () => stopped, out: (line) => { lines.push(line); } });
+      await vi.waitFor(() => expect(lines.some((line) => line.startsWith("http://127.0.0.1:"))).toBe(true));
+      const address = new URL(lines.find((line) => line.startsWith("http://"))!);
+      const token = new URLSearchParams(address.hash.slice(1)).get("token")!;
+      const status = (await fetch(`${address.origin}/api/captures`, { headers: { Authorization: `Bearer ${token}` } })).status;
+      stop();
+      expect((await running).code).toBe("ok");
+      return status;
+    };
+    expect(await serve([])).toBe(404);
+    expect(await serve(["--captures", path("captures.jsonl")])).toBe(200);
+
+    const out = () => undefined;
+    expect((await run(reviewArgs(["--captures", path("captures.json")]), { out })).code).toBe("jsonl-file-required");
+    expect((await run(reviewArgs(["--captures", join(process.cwd(), "captures-test.jsonl")]), { out })).code).toBe("must-be-outside-repository");
+    await writeFile(path("bad.jsonl"), "{ not a capture\n");
+    expect((await run(reviewArgs(["--captures", path("bad.jsonl")]), { out })).code).toBe("invalid-captures-file");
+    expect(await readFile(path("bad.jsonl"), "utf8")).toBe("{ not a capture\n");
+  });
+
   it("fails before starting for missing options, a bad port, an unusable decisions path or a bad file", async () => {
     await seed();
     const lines: string[] = [];
