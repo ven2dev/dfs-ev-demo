@@ -183,7 +183,8 @@ describe("passing-yard application-data cutoff replay", () => {
     const former = schedule(40, "2026-10-05T17:00:00.000Z", "nfl:team:BUF", "nfl:team:NE");
     addCapture(dataset, "trade-game", [revision("trade-game", "schedule", former)]);
     const member = row(dataset, "member-synthetic-game-5") as Revision<"membership">;
-    addCapture(dataset, "trade-member", [revision("trade-member", "membership", { ...member.data, gameId: former.gameId, teamId: former.homeTeamId, rawTeam: "BUF" })]);
+    addCapture(dataset, "trade-member", [revision("trade-member", "membership", { ...member.data, gameId: former.gameId, teamId: former.homeTeamId, rawTeam: "BUF",
+      effectiveFrom: "2026-10-05T00:00:00.000Z", effectiveTo: "2026-10-06T00:00:00.000Z" })]);
     addCapture(dataset, "trade-completion", [revision("trade-completion", "completion", { gameId: former.gameId, state: "confirmed", bound: CAPTURE_A, boundKind: "completion-observed-at", evidenceVersion: "synthetic-complete-v1" })]);
     addCapture(dataset, "trade-participation", [revision("trade-participation", "participation", { gameId: former.gameId, playerId: PLAYER, state: "confirmed", evidenceVersion: "synthetic-offense-v1" })]);
     const base = { gameId: former.gameId, rawGameId: former.rawGameId, teamId: former.homeTeamId, rawTeam: "BUF", season: 2026, seasonType: "REG" as const, attempts: 10, passingYards: 60, missingReason: null };
@@ -312,6 +313,100 @@ describe("strict source and correction contracts", () => {
 });
 
 describe("feature-review regressions", () => {
+  const formerTeamGapFixture = () => {
+    const dataset = passingYardsFixture(false);
+    const former = schedule(40, "2025-12-07T17:00:00.000Z", "nfl:team:BUF", "nfl:team:NE", 2025);
+    const missing = schedule(41, "2025-12-14T17:00:00.000Z", former.homeTeamId, former.awayTeamId, 2025);
+    addCapture(dataset, "former-schedules", [revision("former-game", "schedule", former), revision("former-gap", "schedule", missing)]);
+    const original = row(dataset, "member-synthetic-game-5") as Revision<"membership">;
+    const member = revision("former-member", "membership", { ...original.data, gameId: former.gameId,
+      teamId: former.homeTeamId, rawTeam: "BUF", effectiveFrom: "2025-09-01T00:00:00.000Z", effectiveTo: "2025-12-31T00:00:00.000Z" });
+    addCapture(dataset, member.id, [member]);
+    addCapture(dataset, "former-completion", [revision("former-completion", "completion", {
+      gameId: former.gameId, state: "confirmed", bound: CAPTURE_A, boundKind: "completion-observed-at", evidenceVersion: "synthetic-v1",
+    })]);
+    addCapture(dataset, "former-participation", [revision("former-participation", "participation", {
+      gameId: former.gameId, playerId: PLAYER, state: "confirmed", evidenceVersion: "synthetic-v1",
+    })]);
+    const stats = { gameId: former.gameId, rawGameId: former.rawGameId, teamId: former.homeTeamId, rawTeam: "BUF",
+      season: former.season, seasonType: former.seasonType, attempts: 10, passingYards: 60, missingReason: null };
+    addCapture(dataset, "former-player", [revision("former-player", "player-passing", { ...stats, playerId: PLAYER, rawPlayerId: PLAYER })]);
+    addCapture(dataset, "former-team", [revision("former-team", "team-passing", stats)]);
+    addCapture(dataset, "former-coverage", [revision("former-coverage", "schedule-coverage", coverage(former.homeTeamId, [gameId(20), former.gameId, missing.gameId]))]);
+    return { dataset, former, missing, member };
+  };
+  it.each(["stats-v1:player_pass_yds", "player-opponent-v1:player_pass_yds"] as const)("keeps a former-team membership gap in the %s window", (candidate) => {
+    const { dataset, former, missing, member } = formerTeamGapFixture();
+    const result = buildPassingYardsBundle(dataset, { ...request(), candidate });
+    expect(result.scheduleCoverage.state).toBe("complete");
+    expect(result.status).toBe("unavailable-inputs"); expect(result.reasons).toContain("player-history-incomplete");
+    expect(result.player[1]).toMatchObject({ gameIds: [...PRIOR].reverse().concat(missing.gameId, former.gameId),
+      expectedGames: 7, observedGames: 6, unknownGames: 1, attemptsSum: 120, passingYardsSum: 810,
+      exclusions: [{ gameId: missing.gameId, reason: "membership-missing" }] });
+    expect(result.player[0]).toMatchObject({ observedGames: 4, passingYardsSum: 700, attemptsSum: 100 });
+    expect(result.dependencies.map((item) => item.observationId)).toEqual(expect.arrayContaining([member.id, "former-game", "former-gap", "former-coverage"]));
+  });
+  it.each([
+    ["2025-08-31T23:59:59.999Z", false],
+    ["2025-09-01T00:00:00.000Z", true],
+    ["2025-12-30T23:59:59.999Z", true],
+    ["2025-12-31T00:00:00.000Z", false],
+    ["2025-12-31T00:00:00.001Z", false],
+  ] as const)("uses inclusive-start/exclusive-end former-team ranges at %s", (kickoff, expected) => {
+    const { dataset, missing } = formerTeamGapFixture(); playerChanges(dataset, "former-gap", { kickoff });
+    const result = buildPassingYardsBundle(dataset, { ...request(), candidate: "stats-v1:player_pass_yds" });
+    expect(result.status).toBe(expected ? "unavailable-inputs" : "ready-inputs");
+    expect(result.player[1].gameIds.includes(missing.gameId)).toBe(expected);
+    // BUF faced the enriched opponent in 2026, outside this membership range.
+    expect(result.player[1].gameIds).not.toContain(gameId(20));
+  });
+  it("uses a former-team range only to retain a gap, never as per-game membership or participation", () => {
+    const { dataset, missing, member } = formerTeamGapFixture();
+    addCapture(dataset, "missing-member", [revision("missing-member", "membership", { ...member.data, gameId: missing.gameId })]);
+    addCapture(dataset, "missing-completion", [revision("missing-completion", "completion", {
+      gameId: missing.gameId, state: "confirmed", bound: CAPTURE_A, boundKind: "completion-observed-at", evidenceVersion: "synthetic-v1",
+    })]);
+    const stats = { gameId: missing.gameId, rawGameId: missing.rawGameId, teamId: missing.homeTeamId, rawTeam: "BUF",
+      season: missing.season, seasonType: missing.seasonType, attempts: 0, passingYards: 0, missingReason: null };
+    addCapture(dataset, "missing-player", [revision("missing-player", "player-passing", { ...stats, playerId: PLAYER, rawPlayerId: PLAYER })]);
+    const result = buildPassingYardsBundle(dataset, { ...request(), candidate: "stats-v1:player_pass_yds" });
+    expect(result.status).toBe("unavailable-inputs");
+    expect(result.player[1].exclusions).toContainEqual({ gameId: missing.gameId, reason: "participation-missing" });
+  });
+  it("uses a corrected former-team range only at the later cutoff", () => {
+    const { dataset, member, missing } = formerTeamGapFixture();
+    const query = { ...request(), candidate: "stats-v1:player_pass_yds" as const };
+    const before = buildPassingYardsBundle(dataset, query);
+    expect(before.status).toBe("unavailable-inputs"); expect(before.player[1].gameIds).toContain(missing.gameId);
+    addCapture(dataset, "former-member-B", [revision("former-member-B", "membership", {
+      ...member.data, effectiveTo: "2025-12-10T00:00:00.000Z",
+    }, member.id)], CAPTURE_B);
+    expect(buildPassingYardsBundle(dataset, query)).toEqual(before);
+    const after = buildPassingYardsBundle(dataset, { ...query, cutoff: CUTOFF_B });
+    expect(after.status).toBe("ready-inputs"); expect(after.player[1].gameIds).not.toContain(missing.gameId);
+  });
+  it("does not let a late former-team membership invent gaps at the earlier cutoff", () => {
+    const { dataset, missing, member } = formerTeamGapFixture();
+    dataset.captures.find((capture) => capture.artifactId === member.id)!.ingestedAt = CAPTURE_B;
+    const query = { ...request(), candidate: "stats-v1:player_pass_yds" as const };
+    const before = buildPassingYardsBundle(dataset, query);
+    expect(before.status).toBe("ready-inputs"); expect(before.player[1].gameIds).toEqual([...PRIOR].reverse());
+    const after = buildPassingYardsBundle(dataset, { ...query, cutoff: CUTOFF_B });
+    expect(after.status).toBe("unavailable-inputs");
+    expect(after.player[1].exclusions).toContainEqual({ gameId: missing.gameId, reason: "membership-missing" });
+  });
+  it("keeps conflicting former-team ranges unavailable and retains their gap evidence", () => {
+    const { dataset, missing, member } = formerTeamGapFixture();
+    addCapture(dataset, "former-member-conflict", [revision("former-member-conflict", "membership", {
+      ...member.data, effectiveTo: "2025-12-10T00:00:00.000Z",
+    })]);
+    const result = buildPassingYardsBundle(dataset, { ...request(), candidate: "stats-v1:player_pass_yds" });
+    expect(result.status).toBe("unavailable-inputs");
+    expect(result.player[1].exclusions).toEqual(expect.arrayContaining([
+      { gameId: member.data.gameId, reason: "membership-ambiguous" }, { gameId: missing.gameId, reason: "membership-missing" },
+    ]));
+    expect(result.dependencies.map((item) => item.observationId)).toContain("former-member-conflict");
+  });
   const addExpectedGame = (dataset: Dataset, team: string, id: string) => {
     const prior = row(dataset, "coverage-" + team) as Revision<"schedule-coverage">;
     addCapture(dataset, "coverage-added-" + team, [revision("coverage-added-" + team, "schedule-coverage", {

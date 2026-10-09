@@ -84,6 +84,13 @@ export const buildPassingYardsBundle = (dataset: Dataset, request: Request): Bun
     base.scheduleCoverage = context.coverage;
     for (const row of context.dependencies) dependencyRows.set(row.revision.id, row);
     context.reasons.forEach((reason) => reasons.add(reason));
+    const playerMembership = (game: Schedule) => {
+      const result = select("membership", game.gameId, request.playerId);
+      if (result.state === "missing") {
+        for (const row of context.playerMembershipDependencies.get(game.gameId) ?? []) dependencyRows.set(row.revision.id, row);
+      }
+      return result;
+    };
     excludedSchedule.push({ gameId: target.gameId, reason: "target-game" });
     const knownGames = context.games.filter((game) => game.gameId !== target.gameId);
     const upcoming = knownGames.filter((game) => instant(game.kickoff) >= cutoff && instant(game.kickoff) < instant(target.kickoff) &&
@@ -93,7 +100,7 @@ export const buildPassingYardsBundle = (dataset: Dataset, request: Request): Bun
       select("schedule", game.gameId);
       if ([game.homeTeamId, game.awayTeamId].includes(teamId!)) reasons.add("intervening-team-game");
       if (enrich && [game.homeTeamId, game.awayTeamId].includes(opponentId!)) reasons.add("intervening-opponent-game");
-      if (context.playerGameIds.has(game.gameId)) { reasons.add("intervening-player-game"); select("membership", game.gameId, request.playerId); }
+      if (context.playerGameIds.has(game.gameId)) { reasons.add("intervening-player-game"); playerMembership(game); }
       excludedSchedule.push({ gameId: game.gameId, reason: "intervening-game" });
     }
     const games = knownGames.filter((game) => game.seasonType === target.seasonType && instant(game.kickoff) < cutoff);
@@ -124,11 +131,11 @@ export const buildPassingYardsBundle = (dataset: Dataset, request: Request): Bun
     if (context.coverage.state === "complete") {
       const playerGames = games.filter((game) => {
         const membership = replay.select("membership", key("membership", game.gameId, request.playerId));
-        return membership.state !== "missing" || [game.homeTeamId, game.awayTeamId].includes(teamId!);
+        return membership.state !== "missing" || [game.homeTeamId, game.awayTeamId].includes(teamId!) || context.playerGameIds.has(game.gameId);
       }).slice(0, 16);
       for (const game of playerGames) {
         scheduleDependency(game);
-        const membership = select("membership", game.gameId, request.playerId);
+        const membership = playerMembership(game);
         const participation = select("participation", game.gameId, request.playerId);
         const dated = membership.observation?.revision.data;
         let reason = !dated ? "membership-" + membership.state : !applicableQuarterback(dated, game) ? "membership-inapplicable" : completed(game);

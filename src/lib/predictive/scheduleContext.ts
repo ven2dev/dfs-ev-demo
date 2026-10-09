@@ -1,5 +1,6 @@
 import type { Membership, Observation, Schedule } from "./types.ts";
 import type { createReplay } from "./replay.ts";
+import { applicableQuarterback } from "./identity.ts";
 import { compareText, instant } from "./validation.ts";
 
 type Replay = ReturnType<typeof createReplay>;
@@ -18,6 +19,8 @@ export const scheduleContext = (replay: Replay, target: Schedule, member: Member
   const teams = new Set([member.teamId]);
   if (enriched) teams.add(target.homeTeamId === member.teamId ? target.awayTeamId : target.homeTeamId);
   const playerGameIds = new Set<string>();
+  const membershipRanges: { data: Membership; dependencies: Observation[] }[] = [];
+  const playerMembershipDependencies = new Map<string, Observation[]>();
   const retain = (observations: Observation[]) => observations.forEach((row) => dependencies.set(row.revision.id, row));
   for (const key of replay.keys("membership")) {
     const selection = replay.select("membership", key);
@@ -31,6 +34,8 @@ export const scheduleContext = (replay: Replay, target: Schedule, member: Member
           retain(relevant); retain(replay.select("schedule", "schedule:" + game.gameId).dependencies);
         }
         teams.add(data.teamId); playerGameIds.add(game.gameId);
+        if (applicableQuarterback(data, game)) membershipRanges.push({ data,
+          dependencies: [...relevant, ...replay.select("schedule", "schedule:" + game.gameId).dependencies] });
       } else if (!game && instant(data.effectiveFrom) < instant(target.kickoff) &&
           instant(data.effectiveTo) > Date.UTC(target.season - 2, 0, 1)) {
         missingGameIds.add(data.gameId); reasons.add("player-schedule-missing"); retain(relevant);
@@ -39,6 +44,15 @@ export const scheduleContext = (replay: Replay, target: Schedule, member: Member
   }
   const games = [...rows.values()].filter((game) => inRange(game, target) &&
     ([...teams].some((team) => hasTeam(game, team)) || playerGameIds.has(game.gameId)));
+  // A dated range keeps otherwise missing former-team games in the expected
+  // chronology. It does not supply per-game membership or participation.
+  for (const game of games.filter((item) => instant(item.kickoff) < instant(target.kickoff))) {
+    const ranges = membershipRanges.filter(({ data }) => applicableQuarterback(data, game));
+    if (ranges.length) {
+      playerGameIds.add(game.gameId);
+      playerMembershipDependencies.set(game.gameId, ranges.flatMap((range) => range.dependencies));
+    }
+  }
   for (const result of selections.filter((item) => !item.observation)) {
     if (result.dependencies.some((row) => {
       if (row.revision.kind !== "schedule") return false;
@@ -68,6 +82,6 @@ export const scheduleContext = (replay: Replay, target: Schedule, member: Member
     }
   }
   games.sort((a, b) => instant(b.kickoff) - instant(a.kickoff) || compareText(a.gameId, b.gameId));
-  return { games, playerGameIds, dependencies: [...dependencies.values()], reasons: [...reasons].sort(),
+  return { games, playerGameIds, playerMembershipDependencies, dependencies: [...dependencies.values()], reasons: [...reasons].sort(),
     coverage: { state: reasons.size ? "unverified" as const : "complete" as const, missingGameIds: [...missingGameIds].sort(compareText) } };
 };
