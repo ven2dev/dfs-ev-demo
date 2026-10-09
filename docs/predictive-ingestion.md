@@ -1,6 +1,6 @@
-# Local predictive cutoff replay proof
+# Local predictive cutoff replay proofs
 
-This is delivery 1 of [#52's implementation proposal](https://github.com/ven2dev/dfs-ev-demo/issues/52#issuecomment-6054299022): executable contracts and a synthetic passing-yards replay. Review this result before implementing persistent ingestion. The [feature contract](predictive-feature-contract.md), [source decision](predictive-data-sources.md) and [operating policy](predictive-data-operations.md) continue to govern subsequent work.
+Deliveries 1 and 2 of [#52's implementation proposal](https://github.com/ven2dev/dfs-ev-demo/issues/52#issuecomment-6054299022) provide executable contracts, a synthetic passing-yards replay, and the same proof backed by private immutable artifacts and disposable PostgreSQL. Delivery 2 is a WIP review increment; real acquisition remains delivery 3. The [feature contract](predictive-feature-contract.md), [source decision](predictive-data-sources.md) and [operating policy](predictive-data-operations.md) continue to govern subsequent work.
 
 ## Run and review
 
@@ -25,6 +25,55 @@ The report contains `capturedA`, `replayA`, `laterB`, and `unavailable`. All pla
 Capture A is at 2026-10-07 12:00 UTC; correction B is at 2026-10-08 13:00 UTC. The target kickoff is 2026-10-11 17:00 UTC. Both queried cutoffs precede it. Synthetic completion evidence was first observed on Oct 7; the scheduled rest result is still 168 hours from kickoff to kickoff, not a duration starting at that late observation.
 
 Both usable bundles explicitly say `modelValidated: false`, `populationCoverage: unqualified` and `usage: synthetic-internal-research`. `ready-inputs` means only that the requested fixture inputs passed the contract. It supplies no projection, calibrated distribution, participation probability or opponent coefficient.
+
+### Persistent local proof
+
+Start the pinned disposable service in [the database testing guide](database-testing.md). `test:db:local` starts and removes it automatically for the full suite; the following manual workflow keeps it running for the proof. Supply an existing mode-0700 artifact directory outside the checkout. No API key is needed. Do not export application, Neon or remote database credentials into this shell.
+
+```sh
+docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml up -d --wait
+artifact_root=$(mktemp -d "${TMPDIR:-/tmp}/dfs-ev-52-proof.XXXXXX")
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test npm run predictive:local -- demo --artifact-root "$artifact_root"
+npm run test:db:down
+```
+
+The command accepts only the registered scratch harness and creates, migrates and removes fresh random databases in the disposable service. It refuses the shared primary database as a mutation target, unregistered targets and ambient application credentials. The supplied artifact directory survives database cleanup; keep it private. It contains a registration marker, exact source bytes addressed by SHA-256, and a content-addressed JSON journal of run IDs, capture metadata and artifact references. SQL stores relative content references, never this local directory path.
+
+The report adds `proof: synthetic-postgres-cutoff-replay-v1`, `schemaVersion: 3`, `earlierReplayUnchanged`, `restoredReplayUnchanged`, `archive` and `restored` to the A/B/unavailable scenarios above. It asserts equality between A before and after B, a different B digest, explicit unavailable completion, and exact A restoration into another fresh database. This proves application-data replay; the synthetic timestamps do not claim a historical production acquisition.
+
+To restore the journal later, start the same disposable service, retain all referenced source files, and substitute the archive reference and byte count printed by your report:
+
+```sh
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test npm run predictive:local -- restore --artifact-root "$artifact_root" --archive <sha256>.json --archive-bytes <byteSize>
+npm run test:db:down
+```
+
+Restoration verifies the journal and each referenced file's hash and byte size, republishes through the same validated transaction path and removes its scratch databases. Missing or changed bytes refuse the proof; they are never silently replaced. The journal restores these synthetic runs, not a PostgreSQL backup or a hosted recovery procedure.
+
+## Persistence contract
+
+The additive `0003_predictive_local_replay.sql` migration introduces seven tables. Existing v1/v2 migration files, independent historical SQL fixtures and catalog contracts remain unchanged. The generated schema reference, migration manifest, v3 catalog contract and readiness manifest bind the new tip. The application readiness minimum stays **2**; maximum-known becomes **3**, so a genuine v2 database remains application-ready.
+
+| Table | Stored truth |
+| --- | --- |
+| `predictive_ingestion_runs` | Terminal `published`, `incomplete` or `refused` result, request hash, code/adapter versions, timestamps, configured bounds and retained artifact/capture/unique-row counts |
+| `predictive_artifacts` | Immutable hash, byte size, relative storage reference and source/parser/schema/rights metadata |
+| `predictive_captures` | Run/artifact association, immutable capture/availability/ingestion times and optional source publication evidence |
+| `predictive_teams`, `predictive_games` | Stable canonical keys referenced by observations |
+| `predictive_observations` | Immutable revision, predecessor and correction reason; exact per-kind JSON data with generated identity columns and foreign keys |
+| `predictive_artifact_observations` | Immutable association between exact artifact bytes and validated revisions |
+
+Membership, participation, completion and independent schedule coverage use the validated observation envelope. JSON is checked against exact fields, types, enums, identity and missingness rules for each kind; extra fields are refused. Corrections must share their predecessor's natural key and cannot precede its usable capture or form a cycle. Database triggers refuse UPDATE, DELETE and TRUNCATE on all seven tables. Append-only constraints protect normal SQL operations; catalog verification remains necessary to detect changed triggers or schema.
+
+`ingestLocalDataset` injects the local store rather than fetching a source. Publication validates byte digests, schema and capture envelopes, writes exact bytes durably, then validates lineage against existing published observations inside one transaction. An advisory transaction lock serializes publication and retry checks. Run, capture, identity, revision and artifact associations become visible together at commit. A same-ID/same-request retry reuses its terminal result; an ID conflict rolls back. Files written before a refused SQL publication can remain unreferenced. There is no automatic orphan deletion.
+
+A partially acquired batch records `incomplete` with `partial-acquisition`, quarantines **every** capture and publishes no observations. A refused batch records the fixed `publication-refused` reason and retains only diagnostics whose routing metadata and exact bytes can be validated. Diagnostics never gain observation associations or replay visibility. Failure recording also requires a usable artifact store, database and valid run envelope; the orchestration does not promise a durable failure row when those prerequisites are unavailable. Terminal counts describe retained data, not an estimate of attempted downloads. Run timestamps describe the injected local publication invocation; they are not measured network acquisition durations.
+
+The private artifact store flushes temporary files, installs a new content address exclusively and syncs the directory. It checks the registered root, restrictive permissions, regular-file/link state, size and digest on reads and refuses replacing an existing address. Replay verifies exact stored-byte integrity and equality between parsed source revisions and SQL rows. `safeReplay` returns the fixed `persisted-replay-unavailable` result on storage/integrity/query failure, with no usable summaries or local path leakage.
+
+Replay uses a repeatable-read, read-only transaction. Indexed queries select cutoff-visible natural keys for the target, player's effective membership ranges, scoped team schedules, coverage, aliases and game entities. They then retrieve **all cutoff-visible revisions of each selected key**. A correction moving dates or schedule teams outside an original predicate must still supersede the old revision; selecting only currently matching rows would resurrect it. The natural-key, membership, schedule, entity, alias, capture-routing and reverse-association indexes support these reads. Dependencies and the digest still follow the selected relevant evidence, so unrelated schedule rows do not expand the manifest. This replaces fixture-wide membership selection without claiming a real-roster performance benchmark.
+
+The local bounds are 256 artifacts, 512 captures, 8,000,000 aggregate source bytes and 8,192 observation rows per publication; each artifact is at most 1,000,000 bytes and 2,048 parsed rows. Replay caps returned envelopes at 8,192, including repeated capture provenance and the aggregate query results. Schedule coverage lists at most 256 expected games per team/range; the restore journal permits at most 16 runs and shares the one-file byte limit. SQL operations use a 10-second statement timeout, 3-second lock timeout and 15-second idle transaction timeout. These are synthetic proof limits, not a qualified acquisition/storage retention budget.
 
 ## Executable semantics
 
@@ -84,16 +133,14 @@ For a known former team, cutoff-known QB membership ranges also establish expect
 
 ## Next review gate
 
-Owner review of this executable result precedes delivery 2: private content-addressed artifacts, atomic run publication and an additive v3 migration with PostgreSQL A/B replay and constraints. Persistence must retain immutable cutoff-routing metadata, quarantine failed diagnostic captures, validate candidate publication before exposing rows, retain independently versioned coverage manifests, and store only scoped dependency closures. Existing v1/v2 migrations and historical fixtures remain immutable. Readiness minimum stays v2 because app routes do not consume predictive tables; generated maximum-known advances only with the reviewed migration.
+Review delivery 2 before bounded real-source qualification. Focus on the migration's typed payload/lineage/immutability constraints, atomic publication and retry behavior, quarantine of partial/refused diagnostics, exact-byte verification, correction closure in scoped reads, and restoration into a fresh scratch database. The 12 mandatory predictive database cases join the existing lease/readiness report gates; missing, filtered, skipped, todo or failed cases cannot produce a passing DB run. Pure replay/storage cases remain in the Node Vitest suite.
 
-Delivery 2 must replace fixture-wide membership selection with indexed queries bounded by player, team and effective date ranges before real-source qualification. Scheduled rest remains the raw kickoff interval, including offseason gaps; any flagging or capping belongs to #54's reviewed modeling transformations.
+Delivery 3 must qualify the source adapters and evidence described above, measure request/byte/runtime/storage cost under a reviewed acquisition budget, and report missing completion, participation and membership enumeration before expanding capture. Synthetic passing tests do not qualify a real source, its rights, historical coverage or model population. Remaining markets/injury/depth feeds follow their own contracts. Scheduled rest remains the raw kickoff interval, including offseason gaps; flagging or capping belongs to #54's reviewed modeling transformations.
 
-Subsequent work includes bounded real-source qualification and the remaining markets/injury/depth feeds. Hosted schema activation remains separately gated by [#95](https://github.com/ven2dev/dfs-ev-demo/issues/95). This increment changes no app route, existing stats sync or remote schema, and does not require repeating the recovery drill.
+Hosted schema activation remains separately gated by [#95](https://github.com/ven2dev/dfs-ev-demo/issues/95). This increment supplies a local additive migration and changes no app route, existing stats sync or remote schema. Do not run Production `up` as part of either proof.
 
-Validation uses the nested Node Vitest discovery path for the pure replay/CLI cases, then the repository's app and disposable database CI checks. Future persistence tests must join the registered database harness and mandatory report contract; these pure tests create no Postgres tables.
+## Delivery 2 validation
 
-Initial WIP validation on 2026-10-08 with Node 24.18.1 passed: typecheck, lint, full app tests, Firestore rules emulator, CI-gate regression, DB target guards, disposable PostgreSQL suite (73 Node cases plus 17 Vitest cases), build, production dependency audit (zero vulnerabilities), local Markdown links and whitespace checks. The full app run passed 831 jsdom and 251 Node cases, including the initial 59 predictive cases. After initial contract refinements, all 63 predictive cases, TypeScript and targeted lint passed again. The existing loopback review-server tests needed the app test rerun outside the filesystem/network sandbox; no application code was changed to bypass them.
+On 2026-10-09, Node 24.18.1 validation passed typecheck, lint, all 831 jsdom + 302 Node tests (including 110 pure predictive/storage cases), the disposable PostgreSQL suite (74 mandatory Node + 29 Vitest tests, including all 12 predictive cases), catalog/artifact drift checks, Firestore rules, the CI gate, DB target/report guards and the production build. The production dependency audit reported zero vulnerabilities. Historical v1/v2 files/contracts, local Markdown links and whitespace were checked. These are local results; hosted CI still runs when a PR is opened.
 
-Branch-review follow-up on 2026-10-08 passed all 94 predictive cases, typecheck, lint, the full app suite (831 jsdom + 286 Node cases), Firestore rules, CI gate, DB guards and disposable PostgreSQL suite (73 + 17 cases), build, production audit (zero vulnerabilities) and local links/whitespace. The reviewer's original reproduction scenarios were rerun against the updated modules: earlier A survives later bad corrections/schema, unrelated schedule dependencies stay 47 → 47 with the same digest, POST rest is 168 hours, intervening/missing schedules withhold, and a confirmed oldest absence stays usable. Named-arrow functions are used throughout the predictive modules and fixtures/tests. Persistence remains the next reviewed delivery.
-
-Re-review follow-up on 2026-10-09 retained the owner's confirmed-absence decision, reproduced and fixed the known former-team membership gap, and merged `origin/main` at `33f537e`. The 105 predictive cases include both candidates, effective-date boundaries, unresolved per-game participation, conflicting membership heads and cutoff isolation for late ingestion/corrections. With the merged dependencies installed, typecheck, lint, all 831 jsdom + 297 Node cases, Firestore rules, CI gate, DB guards, disposable PostgreSQL (73 + 17 cases), build and production audit (zero vulnerabilities) passed. The local synthetic A/B proof and whitespace checks also passed. This follow-up changes no persistence schema.
+The saved local proof has 47 dependencies and input digest `68165324afe28b6cd202446af4261fae3cb9b2f8eabd9c9af3ac176a3fb1ff62` for initial A, A after B and restored A. Later B changes the digest to `b7aee90b12c3bd175718674be6270e3a070a8b7fa8c4bcc9495bb76f894069ef`. The subsequent unresolved-completion correction produces `unavailable-inputs`. The restore journal is `8b2db24ec36dbdc035930e07d2845e7186d1b3053ab303825d18cafc827c0e7f.json`, 6,524 bytes; its referenced private files must be retained for restoration.

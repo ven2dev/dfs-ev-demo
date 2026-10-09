@@ -4,6 +4,8 @@ Issue #45 runs the shared live-prop refresh SQL against a real disposable
 database. Production continues to use Neon; `pg` and `@types/pg` are exact-pinned
 development dependencies. Issue #60 supplies the shared migration bootstrap,
 catalog contracts and isolated migration proofs.
+Issue #52 adds the synthetic predictive persistence proof and additive migration
+v3. Application readiness still requires only v2; v3 is the maximum-known schema.
 
 ## Local commands
 
@@ -18,8 +20,8 @@ npm run test:db:local
 
 `test:db:local` starts `compose.test.yml`, waits up to 60 seconds for health,
 runs migration/reference/readiness artifact checks, all mandatory Node database
-checks, an independent catalog-contract drift check and the lease/readiness
-suite. It removes the
+checks, an independent catalog-contract drift check and the lease/readiness/
+predictive suite. It removes the
 service and its network even
 if startup or tests fail. It preserves failure exit codes. SIGINT/SIGTERM also
 request cleanup; a forced kill or machine shutdown can prevent cleanup. To
@@ -92,9 +94,9 @@ the bootstrap. An existing unversioned nonempty schema is refused without repair
 or adoption. Setup truncates only `live_prop_inputs_cache` between cases.
 Tracked database clients close after each case and suite.
 
-The runner also validates Vitest's JSON report: all 13 required #45 cases and
-four separate readiness cases must execute and pass, and skipped/todo or missing
-cases fail. The #45 contract
+The runner also validates Vitest's JSON report: all 13 required #45 cases,
+four readiness cases and 12 predictive persistence cases must execute and pass.
+Skipped/todo or missing cases fail. The #45 contract
 covers full-schema bootstrap, including ledger/data-preserving reruns, plus
 these lease scenarios:
 
@@ -143,6 +145,23 @@ databases and the actual runtime SQL. They preserve synthetic rows and history,
 refuse missing/behind/corrupt states and view substitutes, accept supported
 ahead history with a warning, and prove the read-only/timeout/history bounds.
 
+The predictive cases also use registered scratch databases; they never publish
+to the primary test target. They cover PostgreSQL A/B cutoff replay, corrections
+moving out of an indexed scope, former-team membership gaps and unrelated
+schedule isolation, exact retries and changed-byte recaptures, atomic visibility
+and concurrent retries, partial/refused diagnostic quarantine, conflict/lineage
+rollback, typed evidence and append-only SQL constraints, missing/tampered source
+bytes, indexed read-only membership queries, and journal restoration into fresh
+databases. Each case uses a private temporary artifact root and removes its own
+test files after closing clients and deleting the registered database. The
+[predictive ingestion guide](predictive-ingestion.md) also provides a manual
+proof command that preserves its artifact root for later restoration.
+
+Migration/catalog/plan checks retain independent immutable v1/v2 fixtures and
+contracts while validating the v3 tip. Genuine v2 remains application-ready.
+Synthetic pending/ahead migration scenarios now append v4 to the current tip;
+they do not redefine the historical v2 adoption evidence.
+
 `scripts/db-test-contract.mjs` contains the reviewed static list of required
 cases. The mandatory Node suite covers target/bootstrap/report guards and every
 catalog, contract, migration, plan and readiness-artifact unit/integration case.
@@ -151,8 +170,9 @@ consumes Node's documented test events and emits JSON alongside normal console
 output. Its gate requires the complete successful summary and each named case
 exactly once in its original file, with no skipped/todo/failed/cancelled results.
 Deleting or filtering a test cannot remove its requirement automatically. New
-mandatory cases need an explicit list update. The Vitest JSON gate retains all
-13 existing lease requirements and also refuses duplicate or incomplete results.
+mandatory cases need an explicit list update. The Vitest JSON gate independently
+retains all lease, readiness and predictive requirements and also refuses
+duplicate or incomplete results.
 Reports are written into a unique temporary directory and removed in finally.
 
 ## Repetition check
@@ -166,7 +186,7 @@ npm run test:db:repeat -- 20
 
 The default count is 20; an explicit integer from 1 through 100 is accepted.
 Filters are refused in repetition mode. Every iteration must satisfy the full
-Node and 13-case lease report contracts, plus both artifact drift checks. The
+Node, lease, readiness and predictive report contracts, plus both artifact drift checks. The
 runner stops at the first failure and removes the
 service after the run, including on failure or normal interruption.
 

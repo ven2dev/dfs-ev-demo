@@ -49,12 +49,12 @@ it("database readiness accepts migrated history and valid ahead history while pr
     await client.query("INSERT INTO creators (channel_name) VALUES ('Synthetic readiness')");
     const rows = (await client.query("SELECT * FROM creators")).rows;
     const history = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(await inspect(client)).toMatchObject({ status: "ready", schemaVersion: 2, warnings: [] });
+    expect(await inspect(client)).toMatchObject({ status: "ready", schemaVersion: DB_READINESS_MANIFEST.maximumKnownVersion, warnings: [] });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(history);
     await client.query(`INSERT INTO db_migrations (version, filename, sha256, runner_version, provenance)
-      VALUES (3, '0003_future.sql', $1, 1, 'executed')`, ["a".repeat(64)]);
+      VALUES (4, '0004_future.sql', $1, 1, 'executed')`, ["a".repeat(64)]);
     const ahead = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(await inspect(client)).toMatchObject({ status: "ready", schemaVersion: 3, warnings: ["schema-ahead"] });
+    expect(await inspect(client)).toMatchObject({ status: "ready", schemaVersion: 4, warnings: ["schema-ahead"] });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(ahead);
     expect((await client.query("SELECT * FROM creators")).rows).toEqual(rows);
   });
@@ -76,7 +76,7 @@ it("database readiness refuses behind, corrupt and missing-table states without 
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(corrupt);
     await client.query("UPDATE db_migrations SET sha256 = $1 WHERE version = 1", [DB_READINESS_MANIFEST.migrations[0].sha256]);
     await client.query("DROP TABLE sync_state");
-    expect(await inspect(client)).toMatchObject({ status: "not-ready", schemaVersion: 2, reasons: ["required-tables-missing"] });
+    expect(await inspect(client)).toMatchObject({ status: "not-ready", schemaVersion: DB_READINESS_MANIFEST.maximumKnownVersion, reasons: ["required-tables-missing"] });
     expect((await client.query("SELECT to_regclass('public.sync_state') AS relation")).rows[0].relation).toBeNull();
   });
 });
@@ -96,7 +96,7 @@ it("database readiness reads are bounded, enforced read-only and reject view sub
     } finally { await client.query("ROLLBACK"); }
     await client.query(`INSERT INTO db_migrations (version, filename, sha256, runner_version, provenance)
       SELECT n, lpad(n::text, 4, '0') || '_synthetic.sql', $1, 1, 'executed'
-      FROM generate_series(3, $2::integer) AS n`, ["a".repeat(64), DB_READINESS_HISTORY_LIMIT + 10]);
+      FROM generate_series(4, $2::integer) AS n`, ["a".repeat(64), DB_READINESS_HISTORY_LIMIT + 10]);
     const history = (await client.query(DB_READINESS_HISTORY_SQL, [DB_READINESS_HISTORY_LIMIT + 1])).rows;
     expect(history).toHaveLength(DB_READINESS_HISTORY_LIMIT + 1);
     expect(evaluateDatabaseReadiness({ ledgerPresent: true, requiredTablesPresent: true, history }).reasons)

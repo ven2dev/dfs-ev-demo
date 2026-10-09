@@ -132,16 +132,17 @@ const captureOrder = (a: Observation, b: Observation): number =>
 // rules. Replay supplies only published, cutoff-known captures to this check.
 const publishedObservations = (dataset: Dataset, revisions: Map<string, Revision[]>): Map<string, Observation> => {
   const artifacts = new Map(dataset.artifacts.map((item) => [item.id, item]));
+  return validateObservations(dataset.captures.flatMap((capture) => capture.state !== "published" ? [] :
+    revisions.get(capture.artifactId)!.map((revision) => ({ revision, capture, artifact: artifacts.get(capture.artifactId)! }))));
+};
+
+export const validateObservations = (rows: Observation[]): Map<string, Observation> => {
   const observations = new Map<string, Observation>();
-  for (const capture of dataset.captures) {
-    if (capture.state !== "published") continue;
-    const artifact = artifacts.get(capture.artifactId)!;
-    for (const revision of revisions.get(artifact.id)!) {
-      const row = { revision, capture, artifact };
-      const prior = observations.get(revision.id);
-      if (prior && canonical(prior.revision) !== canonical(revision)) refuse("observation-id-conflict");
-      if (!prior || captureOrder(row, prior) < 0) observations.set(revision.id, row);
-    }
+  for (const row of rows) {
+    const { revision } = row;
+    const prior = observations.get(revision.id);
+    if (prior && canonical(prior.revision) !== canonical(revision)) refuse("observation-id-conflict");
+    if (!prior || captureOrder(row, prior) < 0) observations.set(revision.id, row);
   }
   for (const row of observations.values()) {
     const revision = row.revision;

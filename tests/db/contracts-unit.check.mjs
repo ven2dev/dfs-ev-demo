@@ -15,9 +15,10 @@ const sources = await contractSources(files);
 const contracts = await loadCatalogContracts(files);
 
 test("contracts bind every immutable prefix, ledger DDL and inventory query and omit environment metadata", () => {
-  assert.equal(contracts.migrations.length, 2);
+  assert.equal(contracts.migrations.length, files.length);
   assert.equal(contracts.migrations[0].source.migrations.length, 1);
   assert.equal(contracts.migrations[1].source.migrations.length, 2);
+  assert.equal(contracts.migrations.at(-1).source.migrations.length, files.length);
   for (const [contract, source] of [[contracts.ledger, sources.ledger],
     ...contracts.migrations.map((contract, index) => [contract, sources.migrations[index]])]) {
     assert.doesNotThrow(() => validateCatalogContract(contract, source));
@@ -37,13 +38,12 @@ test("contracts bind every immutable prefix, ledger DDL and inventory query and 
 test("contract drift check reports all changed, missing and unexpected artifacts without writing", async () => {
   const directory = await mkdtemp(join(tmpdir(), "dfs-ev-contract-drift-"));
   try {
-    const artifacts = new Map([["0001.json", contractText(contracts.migrations[0])],
-      ["0002.json", contractText(contracts.migrations[1])], ["ledger.json", contractText(contracts.ledger)]]);
+    const artifacts = new Map([...contracts.migrations.map((contract, index) => [String(index + 1).padStart(4, "0") + ".json", contractText(contract)]), ["ledger.json", contractText(contracts.ledger)]]);
     await writeFile(join(directory, "0001.json"), "edited\n");
     await writeFile(join(directory, "unexpected.json"), "unexpected\n");
     await symlink(join(contractDirectory, "ledger.json"), join(directory, "ledger.json"));
     assert.deepEqual(await checkCatalogContractArtifacts(artifacts, directory), [
-      "Changed contract artifact: 0001.json", "Missing contract artifact: 0002.json",
+      "Changed contract artifact: 0001.json", "Missing contract artifact: 0002.json", "Missing contract artifact: 0003.json",
       "Unexpected contract artifact: ledger.json", "Unexpected contract artifact: unexpected.json",
     ]);
     assert.equal(await readFile(join(directory, "0001.json"), "utf8"), "edited\n");

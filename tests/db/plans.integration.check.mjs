@@ -39,9 +39,9 @@ test("read-only plans are deterministic, create no ledger and fresh approvals in
     assert.deepEqual(await readMigrationPlan(client, options), plan);
     assert.equal(plan.observed.schemaVersion, 0);
     assert.equal(plan.observed.ledger, "absent");
-    assert.deepEqual(actions(plan), [[1, "execute"], [2, "execute"]]);
+    assert.deepEqual(actions(plan), files.map((file) => [file.version, "execute"]));
     assert.equal(await readLedger(client, files), null);
-    assert.deepEqual((await applyPlan(client, options, plan)).executed, [1, 2]);
+    assert.deepEqual((await applyPlan(client, options, plan)).executed, files.map((file) => file.version));
     const history = await readLedger(client, files);
     await assert.rejects(applyPlan(client, options, plan), /approved-plan-changed/);
     const repeat = await readMigrationPlan(client, options);
@@ -59,7 +59,8 @@ test("verified seeded current adoption changes only ledger metadata and never re
     const catalog = await readCatalog(client, expected);
     const rows = (await client.query("SELECT * FROM creator_video_submissions")).rows;
     const sequence = (await client.query("SELECT last_value, is_called FROM creators_id_seq")).rows;
-    const options = optionsFor(expected);
+    const historical = await prepareMigrationContext(files.slice(0, 2), { ledger: contracts.ledger, migrations: contracts.migrations.slice(0, 2) });
+    const options = optionsFor(expected, { context: historical });
     const plan = await readMigrationPlan(client, options);
     assert.equal(plan.observed.schemaVersion, 2);
     assert.deepEqual(actions(plan), [[1, "adopt"], [2, "adopt"]]);
@@ -84,15 +85,15 @@ test("verified seeded pre-41 adoption records its baseline and executes addition
     await client.query("INSERT INTO creator_video_submissions (creator_id, video_url, transcript_text) SELECT id, 'https://example.invalid/legacy', 'synthetic legacy text' FROM creators");
     const rows = (await client.query("SELECT * FROM creator_video_submissions")).rows;
     const plan = await readMigrationPlan(client, optionsFor(expected));
-    assert.deepEqual(actions(plan), [[1, "adopt"], [2, "execute"]]);
+    assert.deepEqual(actions(plan), [[1, "adopt"], ...files.slice(1).map((file) => [file.version, "execute"])]);
     const observed = { query: async (sql, params) => {
       assert.notEqual(sql, files[0].sql, "Baseline SQL must never replay during adoption.");
       return client.query(sql, params);
     } };
     const result = await applyPlan(observed, optionsFor(expected), plan);
     assert.deepEqual(result.adopted, [1]);
-    assert.deepEqual(result.executed, [2]);
-    assert.deepEqual((await readLedger(client, files)).map((row) => row.provenance), ["adopted", "executed"]);
+    assert.deepEqual(result.executed, files.slice(1).map((file) => file.version));
+    assert.deepEqual((await readLedger(client, files)).map((row) => row.provenance), ["adopted", ...files.slice(1).map(() => "executed")]);
     assert.deepEqual((await client.query("SELECT * FROM creator_video_submissions")).rows, rows);
     assert.equal(Number((await client.query("INSERT INTO creators (channel_name) VALUES ('after adopted upgrade') RETURNING id")).rows[0].id), 2);
   });
@@ -105,7 +106,8 @@ test("approved recorded-baseline upgrades preserve existing ledger rows and exec
     await applyPlan(client, firstOptions, await readMigrationPlan(client, firstOptions));
     await client.query("INSERT INTO creators (channel_name) VALUES ('recorded baseline row')");
     const original = await readLedger(client, files);
-    const options = optionsFor(expected);
+    const pending = await prepareMigrationContext(files.slice(0, 2), { ledger: contracts.ledger, migrations: contracts.migrations.slice(0, 2) });
+    const options = optionsFor(expected, { context: pending });
     const plan = await readMigrationPlan(client, options);
     assert.equal(plan.observed.ledgerVersion, 1);
     assert.deepEqual(actions(plan), [[2, "execute"]]);
@@ -117,9 +119,9 @@ test("approved recorded-baseline upgrades preserve existing ledger rows and exec
 
 test("ambiguous unversioned catalogs never guess the latest version or adopt", async () => {
   const sql = "-- synthetic migration with no schema change\nSELECT 1;\n";
-  const ambiguousFiles = [...files, { version: 3, filename: "0003_synthetic_noop.sql", sql, sha256: fingerprint(sql) }];
+  const ambiguousFiles = [...files.slice(0, 2), { version: 3, filename: "0003_synthetic_noop.sql", sql, sha256: fingerprint(sql) }];
   const sources = await contractSources(ambiguousFiles);
-  const ambiguousContracts = { ...contracts, migrations: [...contracts.migrations,
+  const ambiguousContracts = { ...contracts, migrations: [...contracts.migrations.slice(0, 2),
     buildCatalogContract(contracts.migrations[1], sources.migrations[2])] };
   const ambiguousContext = await prepareMigrationContext(ambiguousFiles, ambiguousContracts);
   await harness.withDatabase(async (client, expected) => {
@@ -144,7 +146,7 @@ test("partial or mismatched unversioned schemas expose every candidate differenc
     assert.equal(plan.refusalCode, "unrecognized-unversioned-schema");
     assert.equal(plan.observed.schemaVersion, null);
     assert.deepEqual(plan.operations, []);
-    assert.equal(plan.verification.length, 2);
+    assert.equal(plan.verification.length, files.length);
     for (const report of plan.verification) {
       for (const prefix of ["Changed column:creators.channel_name / not_null", "Changed sequence:creators_id_seq / increment", "Unexpected relation:unreviewed"]) {
         assert.ok(report.differences.some((difference) => difference.startsWith(prefix)), prefix);
@@ -261,7 +263,7 @@ test("valid ledger rows with catalog drift produce a readable non-executable pla
     await client.query("ALTER TABLE db_migrations DROP CONSTRAINT db_migrations_sha256_check; ALTER TABLE creators ALTER COLUMN channel_name DROP NOT NULL");
     const plan = await readMigrationPlan(client, options);
     assert.equal(plan.observed.ledger, "valid");
-    assert.equal(plan.observed.ledgerVersion, 2);
+    assert.equal(plan.observed.ledgerVersion, files.length);
     assert.equal(plan.observed.schemaVersion, null);
     assert.equal(plan.refusalCode, "recorded-catalog-mismatch");
     assert.ok(plan.verification[0].differences.some((difference) => difference.startsWith("Missing constraint:db_migrations.db_migrations_sha256_check")));
@@ -275,7 +277,7 @@ test("valid ledger rows with catalog drift produce a readable non-executable pla
 test("incomplete or rewritten ledger results cannot commit after otherwise valid migration SQL", async () => {
   const baseline = await prepareMigrationContext(files.slice(0, 1), { ledger: contracts.ledger, migrations: contracts.migrations.slice(0, 1) });
   for (const [mutation, recordedBaseline, code] of [
-    ["DELETE FROM db_migrations WHERE version = 2", false, "incomplete-migration-history"],
+    ["DELETE FROM db_migrations WHERE version = 3", false, "incomplete-migration-history"],
     ["UPDATE db_migrations SET provenance = 'adopted' WHERE version = 2", false, "migration-history-result-mismatch"],
     ["UPDATE db_migrations SET applied_at = applied_at + interval '1 second' WHERE version = 1", true, "migration-history-result-mismatch"],
   ]) {
@@ -291,7 +293,7 @@ test("incomplete or rewritten ledger results cannot commit after otherwise valid
       const plan = await readMigrationPlan(client, options);
       const observed = { query: async (sql, params) => {
         const result = await client.query(sql, params);
-        if (sql.startsWith("INSERT INTO public.db_migrations") && params[0] === 2) await client.query(mutation);
+        if (sql.startsWith("INSERT INTO public.db_migrations") && params[0] === files.length) await client.query(mutation);
         return result;
       } };
       await assert.rejects(applyPlan(observed, options, plan), { message: code });
@@ -351,7 +353,7 @@ test("up takes the lock before reading history and concurrent adoption cannot do
       if (outcome.error) throw outcome.error;
       assert.deepEqual(outcome.result.adopted, [1, 2]);
       await assert.rejects(applyPlan(competitor, options, plan), /approved-plan-changed/);
-      assert.equal((await readLedger(client, files)).length, 2);
+      assert.equal((await readLedger(client, files)).length, files.length);
     } finally { await client.query("ROLLBACK"); await competitor.end(); }
   });
 });

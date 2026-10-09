@@ -32,12 +32,21 @@ export const bundleInputDigest = (bundle: Omit<Bundle, "inputDigest"> | Bundle) 
 };
 
 export const buildPassingYardsBundle = (dataset: Dataset, request: Request): Bundle => {
+  validatePassingYardsRequest(request);
+  return buildPassingYardsFromReplay(createReplay(dataset, request.cutoff), request);
+};
+
+export const validatePassingYardsRequest = (request: Request) => {
   exact(request, ["playerId", "gameId", "cutoff", "computedAt", "candidate"]);
   playerIdentity(request.playerId); gameIdentity(request.gameId);
   const cutoff = instant(request.cutoff);
   if (instant(request.computedAt) < cutoff) refuse("computation-before-cutoff");
   if (!["stats-v1:player_pass_yds", "player-opponent-v1:player_pass_yds"].includes(request.candidate)) refuse("unsupported-candidate");
-  const replay = createReplay(dataset, request.cutoff);
+  return cutoff;
+};
+
+export const buildPassingYardsFromReplay = (replay: ReturnType<typeof createReplay>, request: Request): Bundle => {
+  const cutoff = validatePassingYardsRequest(request);
   const dependencyRows = new Map<string, Observation>();
   const reasons = new Set<string>();
   const quality = new Set<string>(["synthetic-evidence-only", "injury-unverified", "depth-unverified", "population-unqualified", "model-unvalidated"]);

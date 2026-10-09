@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { NODE_REQUIRED_CASES, validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport } from "./db-test-contract.mjs";
+import { NODE_REQUIRED_CASES, validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport, validatePredictiveDbReport } from "./db-test-contract.mjs";
 import {
   assertNoApplicationCredentials,
   LOCAL_TEST_DATABASE_URL,
@@ -66,7 +66,8 @@ async function runSuite(environment, filters) {
     const report = JSON.parse(await readFile(reportPath, "utf8"));
     const leaseRequiredCases = validateLeaseDbReport(report);
     const readinessRequiredCases = validateReadinessDbReport(report);
-    console.log(JSON.stringify({ nodeRequiredCases, leaseRequiredCases, readinessRequiredCases, result: "verified" }));
+    const predictiveRequiredCases = validatePredictiveDbReport(report);
+    console.log(JSON.stringify({ nodeRequiredCases, leaseRequiredCases, readinessRequiredCases, predictiveRequiredCases, result: "verified" }));
     return 0;
   } finally {
     await rm(reportDir, { recursive: true, force: true });

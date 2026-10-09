@@ -15,17 +15,20 @@ describe("database readiness", () => {
     expect(evaluateDatabaseReadiness({ ...ready(), history: [] })).toMatchObject({
       status: "not-ready", schemaVersion: null, reasons: ["migration-history-invalid"],
     });
-    expect(evaluateDatabaseReadiness(ready())).toEqual({ status: "ready", schemaVersion: 2,
-      minimumVersion: 2, maximumKnownVersion: 2, reasons: [], warnings: [] });
+    expect(evaluateDatabaseReadiness(ready())).toEqual({ status: "ready", schemaVersion: 3,
+      minimumVersion: 2, maximumKnownVersion: 3, reasons: [], warnings: [] });
+    expect(evaluateDatabaseReadiness({ ...ready(), history: history().slice(0, 2) })).toMatchObject({
+      status: "ready", schemaVersion: 2, minimumVersion: 2, maximumKnownVersion: 3, reasons: [], warnings: [],
+    });
   });
 
   it("accepts valid newer history with an explicit schema-ahead warning", () => {
-    const rows = [...history(), { version: 3, filename: "0003_future.sql", sha256: "a".repeat(64),
+    const rows = [...history(), { version: 4, filename: "0004_future.sql", sha256: "a".repeat(64),
       runner_version: 1, provenance: "executed", applied_at: "2026-10-08T00:00:00.000Z" }];
     expect(evaluateDatabaseReadiness({ ...ready(), history: rows })).toMatchObject({
-      status: "ready", schemaVersion: 3, reasons: [], warnings: ["schema-ahead"],
+      status: "ready", schemaVersion: 4, reasons: [], warnings: ["schema-ahead"],
     });
-    rows[2].sha256 = "invalid";
+    rows[3].sha256 = "invalid";
     expect(evaluateDatabaseReadiness({ ...ready(), history: rows }).reasons).toEqual(["migration-history-invalid"]);
   });
 
@@ -34,7 +37,7 @@ describe("database readiness", () => {
       status: "not-ready", schemaVersion: 1, reasons: ["schema-behind"],
     });
     expect(evaluateDatabaseReadiness({ ...ready(), requiredTablesPresent: false })).toMatchObject({
-      status: "not-ready", schemaVersion: 2, reasons: ["required-tables-missing"],
+      status: "not-ready", schemaVersion: 3, reasons: ["required-tables-missing"],
     });
     expect(readinessRelations(DB_READINESS_MANIFEST.requiredTables.map((name) => ({ name, present: true }))))
       .toEqual({ ledgerPresent: false, requiredTablesPresent: true });

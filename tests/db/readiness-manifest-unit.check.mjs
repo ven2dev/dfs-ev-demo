@@ -13,11 +13,11 @@ test("readiness generation binds the explicit minimum to validated migration and
   const contracts = await loadCatalogContracts(files);
   const current = buildReadinessManifest(manifest, contracts, { minimumVersion: 2 });
   assert.equal(current.requiredTables.length, 17);
-  assert.equal(current.maximumKnownVersion, 2);
+  assert.equal(current.maximumKnownVersion, files.length);
   assert.deepEqual(current.migrations, manifest.migrations);
   const baseline = buildReadinessManifest(manifest, contracts, { minimumVersion: 1 });
   assert.equal(baseline.requiredTables.length, 8);
-  for (const minimumVersion of [undefined, 0, -1, 3, "2", 1.5]) {
+  for (const minimumVersion of [undefined, 0, -1, files.length + 1, "2", 1.5]) {
     assert.throws(() => buildReadinessManifest(manifest, contracts, { minimumVersion }));
   }
   assert.throws(() => buildReadinessManifest(manifest, contracts, { minimumVersion: 2, extra: true }));
@@ -32,7 +32,7 @@ test("readiness artifact checks reject missing or stale runtime manifests withou
     await readinessManifestArtifact("check", { outputPath });
     const good = await readFile(outputPath, "utf8");
     for (const bad of [good.replace('"minimumVersion": 2', '"minimumVersion": 1'),
-      good.replace('"maximumKnownVersion": 2', '"maximumKnownVersion": 3'), good + "// drift\n"]) {
+      good.replace('"maximumKnownVersion": 3', '"maximumKnownVersion": 4'), good + "// drift\n"]) {
       await writeFile(outputPath, bad);
       await assert.rejects(readinessManifestArtifact("check", { outputPath }), /readiness-manifest-drift/);
       assert.equal(await readFile(outputPath, "utf8"), bad);

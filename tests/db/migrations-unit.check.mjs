@@ -29,8 +29,8 @@ test("candidate artifacts preserve the authentic historical boundary and all sch
   assert.equal(fingerprint(legacy), "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98");
   assert.equal(fingerprint(original), "95c349dc4fb79a604ce3c38abe2d064673bd6d6a86e3cbed8a086744102a85c2");
   assert.equal(files[0].sql, legacy);
-  assert.equal(files.length, 2);
-  assert.equal(files.map((file) => file.sql).join("\n"), original);
+  assert.equal(files.length, 3);
+  assert.equal(files.slice(0, 2).map((file) => file.sql).join("\n"), original);
 });
 
 test("manifest rejects edited bytes, missing files, extra fields and unsupported runner versions", async () => {

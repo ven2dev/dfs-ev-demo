@@ -1,5 +1,5 @@
 import type { Dataset, Kind, Observation } from "./types.ts";
-import { datasetContainer, instant, object, revisionKey, validateDataset } from "./validation.ts";
+import { datasetContainer, instant, object, revisionKey, validateDataset, validateObservations } from "./validation.ts";
 
 export type Selection<K extends Kind> = ({ state: "selected"; observation: Observation<K> } |
   { state: "missing" | "ambiguous"; observation: null }) & { dependencies: Observation[] };
@@ -19,7 +19,13 @@ export const createReplay = (dataset: Dataset, cutoff: string) => {
   const artifacts = root.artifacts.filter((value) => value && typeof value === "object" &&
     !Array.isArray(value) && artifactIds.has((value as Record<string, unknown>).id));
   const validated = validateDataset({ formatVersion: 1, artifacts, captures });
-  const active = [...validated.observations.values()];
+  return replayObservations([...validated.observations.values()]);
+};
+
+// Persistent reads supply only validated, cutoff-visible observations and their
+// predecessor closure. They verify each row against its immutable artifact.
+export const replayObservations = (rows: Observation[]) => {
+  const active = [...validateObservations(rows).values()];
   const superseded = new Set(active.map((row) => row.revision.predecessorId));
   const heads = active.filter((row) => !superseded.has(row.revision.id));
   const aliasGames = new Map<string, Set<string>>();

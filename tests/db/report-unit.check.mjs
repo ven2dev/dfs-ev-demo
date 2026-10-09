@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { LEASE_REQUIRED_CASES, READINESS_REQUIRED_CASES, validateLeaseDbReport, validateNodeDbReport,
-  validateReadinessDbReport } from "../../scripts/db-test-contract.mjs";
+import { LEASE_REQUIRED_CASES, READINESS_REQUIRED_CASES, PREDICTIVE_REQUIRED_CASES, validateLeaseDbReport, validateNodeDbReport,
+  validateReadinessDbReport, validatePredictiveDbReport } from "../../scripts/db-test-contract.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const reporter = fileURLToPath(new URL("../../scripts/db-test-reporter.mjs", import.meta.url));
@@ -56,6 +56,20 @@ test("Vitest DB report requires the readiness cases independently of the existin
     const changed = { ...report, numPassedTests: remaining.length, testResults: [{ assertionResults: remaining }] };
     assert.equal(validateLeaseDbReport(changed), 13);
     assert.throws(() => validateReadinessDbReport(changed), /DB test contract failed/);
+  }
+});
+
+test("Vitest DB report requires every predictive persistence case independently of lease and readiness cases", () => {
+  const assertions = [...LEASE_REQUIRED_CASES, ...READINESS_REQUIRED_CASES, ...PREDICTIVE_REQUIRED_CASES]
+    .map((fullName) => ({ fullName, status: "passed" }));
+  const report = { success: true, numPassedTests: assertions.length, testResults: [{ assertionResults: assertions }] };
+  assert.equal(validatePredictiveDbReport(report), PREDICTIVE_REQUIRED_CASES.length);
+  for (const fullName of PREDICTIVE_REQUIRED_CASES) {
+    for (const status of ["missing", "skipped", "todo", "failed"]) {
+      const changed = assertions.flatMap((row) => row.fullName !== fullName ? [row] : status === "missing" ? [] : [{ ...row, status }]);
+      assert.throws(() => validatePredictiveDbReport({ ...report, numPassedTests: changed.length,
+        testResults: [{ assertionResults: changed }] }), /DB test contract failed/);
+    }
   }
 });
 

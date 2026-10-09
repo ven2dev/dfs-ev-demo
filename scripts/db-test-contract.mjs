@@ -22,6 +22,21 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
   "database readiness reads are bounded, enforced read-only and reject view substitutes",
 ]);
 
+export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "predictive PostgreSQL A/B replay preserves the earlier bundle and uses later corrections",
+  "predictive scoped reads retain corrections that move evidence out of the indexed scope",
+  "predictive persistence retains former-team membership gaps and ignores unrelated schedule dependencies",
+  "predictive retries and unchanged recaptures preserve immutable revisions and their earliest provenance",
+  "predictive publication is invisible until commit and concurrent retries publish one batch",
+  "predictive failed and partial publication quarantine diagnostics without exposing partial inputs",
+  "predictive publication rolls back conflicts and invalid correction lineage while retaining the earlier replay",
+  "predictive immutable rows, typed evidence and correction keys are enforced by PostgreSQL",
+  "predictive missing or tampered artifact bytes withhold replay without replacing stored evidence",
+  "predictive indexed membership reads are player-scoped and read transactions remain read-only",
+  "predictive archive restoration recreates the same cutoff bundles in fresh scratch databases",
+  "predictive v2 upgrade preserves application rows and no-op migrations preserve the new history",
+]);
+
 export const NODE_REQUIRED_CASES = Object.freeze({
   "tests/db/target.check.mjs": Object.freeze([
     "accepts only explicit loopback test connections",
@@ -36,6 +51,7 @@ export const NODE_REQUIRED_CASES = Object.freeze({
     "actual Node reports refuse zero, filtered, missing, skipped, todo and failed cases",
     "Vitest DB report preserves all required lease cases and refuses missing, skipped, todo or failed results",
     "Vitest DB report requires the readiness cases independently of the existing 13 lease cases",
+    "Vitest DB report requires every predictive persistence case independently of lease and readiness cases",
   ]),
   "tests/db/readiness-manifest-unit.check.mjs": Object.freeze([
     "readiness generation binds the explicit minimum to validated migration and table contracts",
@@ -150,3 +166,4 @@ export function validateLeaseDbReport(report, required = LEASE_REQUIRED_CASES) {
 }
 
 export const validateReadinessDbReport = (report) => validateLeaseDbReport(report, READINESS_REQUIRED_CASES);
+export const validatePredictiveDbReport = (report) => validateLeaseDbReport(report, PREDICTIVE_REQUIRED_CASES);
