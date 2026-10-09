@@ -24,7 +24,10 @@ const privateFile = async (path: string, limit: number): Promise<string> => {
 
 // The owner supplies an existing private directory outside the checkout. Only
 // a registered root is used; no recursive deletion or automatic orphan cleanup.
-export const openArtifactStore = async (directory: string): Promise<ArtifactStore> => {
+export const openArtifactStore = async (directory: string, maxFileBytes = 1_000_000): Promise<ArtifactStore> => {
+  // Larger private source bases are opt-in for the bounded qualification CLI.
+  // Synthetic publication keeps its independent one-million-byte schema cap.
+  if (!Number.isSafeInteger(maxFileBytes) || maxFileBytes < 1 || maxFileBytes > 8_000_000) refuse("artifact-size-bound-refused");
   const root = await realpath(directory);
   const repo = await realpath(repository);
   const within = relative(repo, root);
@@ -48,9 +51,9 @@ export const openArtifactStore = async (directory: string): Promise<ArtifactStor
   };
   const read: ArtifactStore["read"] = async (reference, sha256, byteSize) => {
     checkedDigest(sha256);
-    if (reference !== sha256 + ".json" || !Number.isSafeInteger(byteSize) || byteSize < 0 || byteSize > 1_000_000) refuse("artifact-reference-refused");
+    if (reference !== sha256 + ".json" || !Number.isSafeInteger(byteSize) || byteSize < 0 || byteSize > maxFileBytes) refuse("artifact-reference-refused");
     await checkRoot();
-    const bytes = await privateFile(join(root, reference), 1_000_000);
+    const bytes = await privateFile(join(root, reference), maxFileBytes);
     if (Buffer.byteLength(bytes) !== byteSize || digest(bytes) !== sha256) refuse("artifact-integrity-failed");
     return bytes;
   };
@@ -58,7 +61,7 @@ export const openArtifactStore = async (directory: string): Promise<ArtifactStor
     read,
     write: async (bytes, sha256) => {
       checkedDigest(sha256);
-      if (typeof bytes !== "string" || Buffer.byteLength(bytes) > 1_000_000 || digest(bytes) !== sha256) refuse("artifact-integrity-failed");
+      if (typeof bytes !== "string" || Buffer.byteLength(bytes) > maxFileBytes || digest(bytes) !== sha256) refuse("artifact-integrity-failed");
       await checkRoot();
       const reference = sha256 + ".json";
       const temporary = join(root, ".capture-" + randomUUID() + ".tmp");

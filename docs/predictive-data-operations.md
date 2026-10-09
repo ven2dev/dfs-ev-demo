@@ -489,6 +489,8 @@ and complete budget are approved; this document does not hide it in a $0 feed.
 
 ## Measurements and recheck triggers
 
+The [#52 bounded source prototype](predictive-source-prototype.md) records a local current-season capture under 28-request/20-MB/90-second ceilings, exact-byte offline verification, independent count parity and measured local storage/runtime/RSS. Its depth capture is incomplete, all QB participation remains unresolved and no real feature publication occurs. It supplies local sample evidence only; the hosting, population, rights and all-in cost gates below remain open.
+
 #52 must record a bounded local prototype and then an owner-approved hosted
 pilot before production activation: exact endpoints/sizes, changed-row rate,
 capture coverage/gaps, schema row/TOAST/index bytes, dependency/label/participation

@@ -76,3 +76,23 @@ consecutive complete disposable database runs, each requiring 74 Node checks
 and 29 Vitest tests. TypeScript and lint also passed. Test case counts were kept
 unchanged: the review strengthens the existing mandatory cases instead of
 inflating the count with duplicate scenarios.
+
+## Source prototype test reasoning
+
+Delivery 3 adds 72 cases; their fixtures and boundaries are separate from the
+synthetic SQL publication tests above. The [source prototype evidence](predictive-source-prototype.md#evidence-and-validation)
+records the live sample and an independent Python parity check.
+
+| Tests | Reasoning and independent expectation | Limit |
+| --- | --- | --- |
+| `sourceAdapters.test.ts` | Quoted delimiters/newlines/BOM must preserve selected values; planted fantasy/efficiency columns must be absent. Mutated headers, excess rows, malformed/large records and lossy numbers must fail. Known summer/winter UTC offsets and real DST transition dates supply the time oracle. | Registered sampled headers are a drift boundary, not source truth or rights clearance. |
+| `sourceQualification.test.ts` | Two hand-built QB candidates yield one stats match and one missing match, both participation-unknown. Missing/conflicting identifiers, roster/stat corrections and broken joins must leave explicit unresolved counts. Hand-set zero/signed/blank totals check sum parity without inferring completion. | Provider parity is not official reconciliation; candidate enumeration does not establish a complete market population. |
+| `sourceTransport.test.ts` | Controlled HTTP streams, monotonic time and sleeps establish exact request/byte/retry counts; hanging requests must abort. Redirect escape, permanent failures, malformed encoding, truncation and budget overflow must stop, with cancellation checked. Interrupted retry bytes remain charged. | Fake HTTP behavior checks client controls; it cannot measure actual network billing or prove a hard process-memory/watchdog ceiling. |
+| `sourcePrototype.test.ts` | Nine fixture rows must restore from exact private files. Probe/HTTP/header/digest/row failures cannot publish features. Fourteen independently rehashed journal corruptions must fail with the relevant schema/state/restoration code; source tampering and deletion must also fail. Invalid CLI input cannot register a directory. A 1,000,001-byte file proves the default synthetic cap is still active while an explicit research store can retain it. | Hash-addressed restoration checks integrity, not independent provenance authentication or a hosted backup. |
+
+The real sample's row counts, hashes, selected digest, QB match partition,
+player/team sums and Eastern kickoff were separately checked with Python's CSV,
+SHA-256 and ZoneInfo implementations. Those observed aggregates are recorded in
+the qualification document rather than used as synthetic NFL outcomes. The full
+application and mandatory disposable DB suites also passed; there is no claim
+that these tests qualify real participation, historical versions or publication.

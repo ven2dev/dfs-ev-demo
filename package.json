@@ -41,6 +41,7 @@
     "creators": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/creator-corpus/cli.ts",
     "predictive:demo": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/demo.ts",
     "predictive:local": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/local.ts",
+    "predictive:source": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/source.ts",
     "test:watch": "vitest --config vitest.config.ts"
   },
   "dependencies": {

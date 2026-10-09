@@ -1,6 +1,6 @@
 # Local predictive cutoff replay proofs
 
-Deliveries 1 and 2 of [#52's implementation proposal](https://github.com/ven2dev/dfs-ev-demo/issues/52#issuecomment-6054299022) provide executable contracts, a synthetic passing-yards replay, and the same proof backed by private immutable artifacts and disposable PostgreSQL. Delivery 2 is a WIP review increment; real acquisition remains delivery 3. The [feature contract](predictive-feature-contract.md), [source decision](predictive-data-sources.md) and [operating policy](predictive-data-operations.md) continue to govern subsequent work.
+Deliveries 1 and 2 of [#52's implementation proposal](https://github.com/ven2dev/dfs-ev-demo/issues/52#issuecomment-6054299022) provide executable contracts, a synthetic passing-yards replay, and the same proof backed by private immutable artifacts and disposable PostgreSQL. Delivery 3 now includes a [bounded public-source qualification prototype](predictive-source-prototype.md); real feature publication remains unavailable pending its reported evidence requirements. The [feature contract](predictive-feature-contract.md), [source decision](predictive-data-sources.md) and [operating policy](predictive-data-operations.md) continue to govern subsequent work.
 
 ## Run and review
 
@@ -109,7 +109,7 @@ Rest uses the immediately preceding target-team event before target kickoff with
 
 ## Adapter inventory and qualification work
 
-`RAW_ALLOWLISTS` and `validateRawHeader` execute all seven groups of `predictive-raw-allowlist-v1`. Extra columns, duplicate headers and absent required fields are refused. The only registered artifact parser is `synthetic-json-v1`; no CSV acquisition adapter is qualified by these tests. Passing a header allowlist is one check, not permission to treat a current download as historical evidence.
+`RAW_ALLOWLISTS` and `validateRawHeader` execute all seven groups of `predictive-raw-allowlist-v1`. Extra columns, duplicate headers and absent required fields are refused. The only registered **SQL publication** artifact parser remains `synthetic-json-v1`. The separate [source prototype](predictive-source-prototype.md) registers exact full CSV header profiles, projects the allowlist and stores research bases outside SQL; it does not qualify replay observations. Passing a header allowlist is one check, not permission to treat a current download as historical evidence.
 
 | Feed selected in #49 | Current proof / existing client | Before real capture |
 | --- | --- | --- |
@@ -133,7 +133,7 @@ For a known former team, cutoff-known QB membership ranges also establish expect
 
 ## Next review gate
 
-Review delivery 2 before bounded real-source qualification. Focus on the migration's typed payload/lineage/immutability constraints, atomic publication and retry behavior, quarantine of partial/refused diagnostics, exact-byte verification, correction closure in scoped reads, and restoration into a fresh scratch database. The 12 mandatory predictive database cases join the existing lease/readiness report gates; missing, filtered, skipped, todo or failed cases cannot produce a passing DB run. Pure replay/storage cases remain in the Node Vitest suite.
+The owner waived incremental review and authorized continuing delivery 3. The final branch review should still cover delivery 2's typed payload/lineage/immutability constraints, atomic publication and retry behavior, quarantine of partial/refused diagnostics, exact-byte verification, correction closure in scoped reads, and restoration into a fresh scratch database, plus delivery 3's acquisition limits and qualification boundaries. The 12 mandatory predictive database cases join the existing lease/readiness report gates; missing, filtered, skipped, todo or failed cases cannot produce a passing DB run. Pure replay/storage/source cases remain in the Node Vitest suite.
 
 The [test reasoning review](predictive-test-review.md) maps each new case to its contract and evidence, records the strengthened failure checks and isolated fault-injection results, and explains the limits of the synthetic proof.
 
