@@ -39,7 +39,7 @@ npm run test:db:down
 
 The command accepts only the registered scratch harness and creates, migrates and removes fresh random databases in the disposable service. It refuses the shared primary database as a mutation target, unregistered targets and ambient application credentials. The supplied artifact directory survives database cleanup; keep it private. It contains a registration marker, exact source bytes addressed by SHA-256, and a content-addressed JSON journal of run IDs, capture metadata and artifact references. SQL stores relative content references, never this local directory path.
 
-The report adds `proof: synthetic-postgres-cutoff-replay-v1`, `schemaVersion: 3`, `earlierReplayUnchanged`, `restoredReplayUnchanged`, `archive` and `restored` to the A/B/unavailable scenarios above. It asserts equality between A before and after B, a different B digest, explicit unavailable completion, and exact A restoration into another fresh database. This proves application-data replay; the synthetic timestamps do not claim a historical production acquisition.
+The report adds `proof: synthetic-postgres-cutoff-replay-v1`, `schemaVersion: 4`, `earlierReplayUnchanged`, `restoredReplayUnchanged`, `archive` and `restored` to the A/B/unavailable scenarios above. It asserts equality between A before and after B, a different B digest, explicit unavailable completion, and exact A restoration into another fresh database. This proves application-data replay; the synthetic timestamps do not claim a historical production acquisition. The earlier saved delivery-2 report used schema version 3.
 
 To restore the journal later, start the same disposable service, retain all referenced source files, and substitute the archive reference and byte count printed by your report:
 
@@ -52,7 +52,9 @@ Restoration verifies the journal and each referenced file's hash and byte size, 
 
 ## Persistence contract
 
-The additive `0003_predictive_local_replay.sql` migration introduces seven tables. Existing v1/v2 migration files, independent historical SQL fixtures and catalog contracts remain unchanged. The generated schema reference, migration manifest, v3 catalog contract and readiness manifest bind the new tip. The application readiness minimum stays **2**; maximum-known becomes **3**, so a genuine v2 database remains application-ready.
+The additive `0003_predictive_local_replay.sql` migration introduces seven tables. `0004_predictive_team_identity.sql` corrects the Rams identity constraint to accept the application's `nfl:team:LA`, with a database regression checking all 32 IDs against `NFL_TEAM_ABBREVIATIONS`. SQL remains an immutable snapshot; that comparison detects future registry drift. Registered v1/v2/v3 SQL and catalog contracts remain unchanged. The generated schema reference, appended migration manifest, v4 catalog contract and readiness manifest bind the new tip. The application readiness minimum stays **2**; maximum-known is **4**, so a genuine v2 database remains application-ready.
+
+V3 incorrectly allowed `nfl:team:LAR` while application validation only accepted `nfl:team:LA`. V4 validates existing rows when replacing the constraint. An old SQL-created `LAR` row refuses the upgrade and rolls back all DDL/ledger changes; it is not relabelled, deleted or granted an unqualified alias. Tests preserve valid v3 rows and replay results through the upgrade and verify the exact original catalog/history after a refused upgrade.
 
 | Table | Stored truth |
 | --- | --- |
@@ -133,7 +135,9 @@ For a known former team, cutoff-known QB membership ranges also establish expect
 
 ## Next review gate
 
-The owner waived incremental review and authorized continuing delivery 3. The final branch review should still cover delivery 2's typed payload/lineage/immutability constraints, atomic publication and retry behavior, quarantine of partial/refused diagnostics, exact-byte verification, correction closure in scoped reads, and restoration into a fresh scratch database, plus delivery 3's acquisition limits and qualification boundaries. The 12 mandatory predictive database cases join the existing lease/readiness report gates; missing, filtered, skipped, todo or failed cases cannot produce a passing DB run. Pure replay/storage/source cases remain in the Node Vitest suite.
+Owner decision on 2026-10-09 after branch review: **option B — hold delivery 2 off main until the real-source schema is designed**. Delivery 2's synthetic-only schema and delivery 3's source qualification remain WIP on the feature branch. Delivery 1 is complete; the current combined branch is not a merge-ready delivery-1/2 PR. The registered proof migrations are retained on the WIP branch under the repository's immutable-history checks; this decision does not approve them as the final product schema.
+
+The next merge gate is a reviewed real-source schema and an appropriate final PR scope. Review should still cover delivery 2's typed payload/lineage/immutability constraints, atomic publication and retry behavior, quarantine of partial/refused diagnostics, exact-byte verification, correction closure in scoped reads, restoration into a fresh scratch database and the v4 identity correction. The **14** mandatory predictive database cases join the existing lease/readiness report gates; missing, filtered, skipped, todo or failed cases cannot produce a passing DB run. Pure replay/storage/source cases remain in the Node Vitest suite.
 
 The [test reasoning review](predictive-test-review.md) maps each new case to its contract and evidence, records the strengthened failure checks and isolated fault-injection results, and explains the limits of the synthetic proof.
 
@@ -146,3 +150,5 @@ Hosted schema activation remains separately gated by [#95](https://github.com/ve
 On 2026-10-09, Node 24.18.1 validation passed typecheck, lint, all 831 jsdom + 302 Node tests (including 110 pure predictive/storage cases), the disposable PostgreSQL suite (74 mandatory Node + 29 Vitest tests, including all 12 predictive cases), catalog/artifact drift checks, Firestore rules, the CI gate, DB target/report guards and the production build. The production dependency audit reported zero vulnerabilities. Historical v1/v2 files/contracts, local Markdown links and whitespace were checked. These are local results; hosted CI still runs when a PR is opened.
 
 The saved local proof has 47 dependencies and input digest `68165324afe28b6cd202446af4261fae3cb9b2f8eabd9c9af3ac176a3fb1ff62` for initial A, A after B and restored A. Later B changes the digest to `b7aee90b12c3bd175718674be6270e3a070a8b7fa8c4bcc9495bb76f894069ef`. The subsequent unresolved-completion correction produces `unavailable-inputs`. The restore journal is `8b2db24ec36dbdc035930e07d2845e7186d1b3053ab303825d18cafc827c0e7f.json`, 6,524 bytes; its referenced private files must be retained for restoration.
+
+The later Rams-review regression first failed against v3's `predictive_teams_id_check`. After v4, the complete disposable database run passed 74 mandatory Node + 31 Vitest tests, including all 14 predictive cases, all-team SQL parity, Rams publication/replay, valid v3 upgrades and rollback for legacy `LAR`. Typecheck, lint, all 831 jsdom + 374 Node tests and the production build passed. The source qualification capture was not repeated for this schema fix.

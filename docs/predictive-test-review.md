@@ -96,3 +96,35 @@ SHA-256 and ZoneInfo implementations. Those observed aggregates are recorded in
 the qualification document rather than used as synthetic NFL outcomes. The full
 application and mandatory disposable DB suites also passed; there is no claim
 that these tests qualify real participation, historical versions or publication.
+
+## Rams identity regression and merge hold
+
+The branch review exposed v3 SQL accepting `LAR` while the application registry
+accepts `LA`. The new all-team case failed on real PostgreSQL before the fix:
+`predictive_teams_id_check` rejected an application-valid team. V4 corrects that
+frozen SQL list while retaining the registered v3 bytes and catalog contract.
+
+The first new mandatory case inserts all 32 app-registry IDs into PostgreSQL,
+compares the SQL constraint's full accepted list with the registry, and checks
+specific constraint failures for `LAR`, an unknown ID and a lowercase ID. Its
+Rams dataset passes pure validation, publishes through `ingestLocalDataset` and
+replays the same bundle, with hand-calculated last-4 totals of 100 attempts and
+700 yards. A future registry change now exposes SQL drift in the DB gate.
+
+The second case migrates a populated v3 proof to v4, checking all seven tables,
+original ledger rows, replay equality and no-op preservation. A separate v3
+database seeded with the previously SQL-valid `LAR` ID must refuse v4 with a
+check violation. Verification then confirms the complete v3 catalog and exact
+rows/history survived rollback. This avoids changing immutable provenance to
+make an invalid old identity appear canonical.
+
+Readiness-ahead fixtures now append beyond the generated known tip, rather than
+hard-coding version 4. The readiness artifact drift test also asserts its edited
+content differs from the original, so a new tip cannot make the corruption probe
+an accidental no-op. All 14 required predictive cases ran in the full DB suite:
+74 mandatory Node checks + 31 Vitest tests passed. Typecheck, lint and all 1,205
+app/Node tests passed. V1/v2/v3 migration SQL and catalog contracts are unchanged.
+
+The owner selected option B: delivery 2 stays off main until the real-source
+schema is designed. These are WIP proof repairs, not approval to merge the
+synthetic schema or include source qualification in a delivery-1/2 PR.

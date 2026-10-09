@@ -11,6 +11,7 @@ const request = (authorization?: string) => ({
 const history = () => DB_READINESS_MANIFEST.migrations.map((migration) => ({
   ...migration, runner_version: 1, provenance: "adopted", applied_at: "2026-10-07T00:00:00.000Z",
 }));
+const maximum = DB_READINESS_MANIFEST.maximumKnownVersion;
 beforeEach(() => {
   vi.stubEnv("DB_READINESS_SECRET", "readiness-secret");
   vi.stubEnv("DATABASE_URL", "synthetic-only-not-a-connection-string");
@@ -54,15 +55,15 @@ describe("GET /api/health/database", () => {
     const response = await GET(request("Bearer readiness-secret"));
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(await response.json()).toEqual({ status: "ready", schemaVersion: 3,
-      minimumVersion: 2, maximumKnownVersion: 3, reasons: [], warnings: [] });
+    expect(await response.json()).toEqual({ status: "ready", schemaVersion: maximum,
+      minimumVersion: 2, maximumKnownVersion: maximum, reasons: [], warnings: [] });
     snapshotMock.mockResolvedValueOnce({ ledgerPresent: true, requiredTablesPresent: true, history: [...history(), {
-      version: 4, filename: "0004_future.sql", sha256: "a".repeat(64), runner_version: 1,
+      version: maximum + 1, filename: String(maximum + 1).padStart(4, "0") + "_future.sql", sha256: "a".repeat(64), runner_version: 1,
       provenance: "executed", applied_at: "2026-10-08T00:00:00.000Z",
     }] });
     const ahead = await GET(request("Bearer readiness-secret"));
     expect(ahead.status).toBe(200);
-    expect(await ahead.json()).toMatchObject({ schemaVersion: 4, warnings: ["schema-ahead"] });
+    expect(await ahead.json()).toMatchObject({ schemaVersion: maximum + 1, warnings: ["schema-ahead"] });
   });
 
   it("returns 503 for absent, behind, corrupt and incomplete schema states", async () => {

@@ -23,6 +23,7 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "predictive PostgreSQL accepts every application team identity and publishes Rams replay inputs",
   "predictive PostgreSQL A/B replay preserves the earlier bundle and uses later corrections",
   "predictive scoped reads retain corrections that move evidence out of the indexed scope",
   "predictive persistence retains former-team membership gaps and ignores unrelated schedule dependencies",
@@ -35,6 +36,7 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive indexed membership reads are player-scoped and read transactions remain read-only",
   "predictive archive restoration recreates the same cutoff bundles in fresh scratch databases",
   "predictive v2 upgrade preserves application rows and no-op migrations preserve the new history",
+  "predictive v3 team identity upgrade preserves replay and refuses unqualified legacy Rams rows",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

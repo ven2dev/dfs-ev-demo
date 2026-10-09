@@ -12,6 +12,7 @@ import { createLocalPredictiveStore, MEMBERSHIP_READ_SQL, SCHEDULE_READ_SQL } fr
 import { ingestLocalDataset } from "../../src/lib/predictive/ingest.ts";
 import { runLocalProof } from "../../scripts/predictive/local.ts";
 import { digest } from "../../src/lib/predictive/validation.ts";
+import { NFL_TEAM_ABBREVIATIONS } from "../../src/lib/nflStadiums.ts";
 import type { Dataset } from "../../src/lib/predictive/types.ts";
 import { addCapture, CAPTURE_B, CUTOFF_B, coverage, gameId, passingYardsFixture, PLAYER, PRIOR, request, revision, schedule, TARGET, TEAM } from "../predictive/fixtures/passingYards.ts";
 import { backendPid, waitForBlocked } from "./leaseSupport";
@@ -34,20 +35,53 @@ const sqlProbe = async (client: Client, probe: () => Promise<void>) => {
 const withProof = async (run: (context: {
   client: Client; store: Awaited<ReturnType<typeof createLocalPredictiveStore>>; root: string;
   artifacts: Awaited<ReturnType<typeof openArtifactStore>>; target: { expected: object; assertTarget: (config: object) => void };
-}) => Promise<void>) => {
+}) => Promise<void>, migrationCount?: number) => {
   const harness = await createScratchHarness(process.env);
   const root = await realpath(await mkdtemp(join(tmpdir(), "dfs-ev-predictive-db-")));
   try {
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await harness.withDatabase(async (client: Client, expected: object) => {
       const target = { expected, assertTarget: harness.assertTarget };
-      await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
+      await runScratchMigrations(client, { ...target, files: files.slice(0, migrationCount), verify: createCatalogVerifier(contracts) });
       const artifacts = await openArtifactStore(root); const store = await createLocalPredictiveStore(client, target, artifacts);
       await run({ client, store, root, artifacts, target });
     });
   } finally { try { await harness.close(); } finally { await rm(root, { recursive: true, force: true }); } }
 };
 
+it("predictive PostgreSQL accepts every application team identity and publishes Rams replay inputs", async () => {
+  await withProof(async ({ client, store }) => {
+    const teamIds = [...new Set(Object.values(NFL_TEAM_ABBREVIATIONS))].sort().map((team) => "nfl:team:" + team);
+    expect(teamIds).toHaveLength(32); expect(teamIds).toContain("nfl:team:LA"); expect(teamIds).not.toContain("nfl:team:LAR");
+    await sqlProbe(client, async () => {
+      const inserted = await client.query("INSERT INTO predictive_teams (id) SELECT unnest($1::text[]) RETURNING id", [teamIds]);
+      expect(inserted.rows.map((row) => row.id).sort()).toEqual(teamIds);
+      // Compare the frozen SQL membership list with the app registry too, so a
+      // future app addition/removal cannot silently drift from the migration.
+      const definition = (await client.query(`SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint
+        WHERE conrelid = 'public.predictive_teams'::regclass AND conname = 'predictive_teams_id_check'`)).rows[0].definition;
+      const allowed = definition.match(/\^nfl:team:\(([^)]*)\)/)?.[1].split("|").map((team: string) => "nfl:team:" + team).sort();
+      expect(allowed).toEqual(teamIds);
+      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+    });
+    for (const refusedId of ["nfl:team:LAR", "nfl:team:XXX", "nfl:team:la"]) {
+      await sqlProbe(client, async () => {
+        await expect(client.query("INSERT INTO predictive_teams (id) VALUES ($1)", [refusedId]))
+          .rejects.toMatchObject({ code: "23514", constraint: "predictive_teams_id_check" });
+      });
+    }
+    const dataset = passingYardsFixture(false);
+    dataset.artifacts = dataset.artifacts.map((artifact) => {
+      const bytes = artifact.bytes.replaceAll('"nfl:team:PHI"', '"nfl:team:LA"').replaceAll('"PHI"', '"LA"');
+      return { ...artifact, bytes, sha256: digest(bytes) };
+    });
+    const pure = buildPassingYardsBundle(dataset, request()); expect(pure.status).toBe("ready-inputs");
+    expect(await ingestLocalDataset(store, "rams-A", dataset, NOW)).toMatchObject({ status: "published" });
+    expect((await client.query("SELECT id FROM predictive_teams WHERE id = 'nfl:team:LA'")).rows).toEqual([{ id: "nfl:team:LA" }]);
+    const replay = await store.replay(request()); expect(replay).toEqual(pure);
+    expect(replay.player[0]).toMatchObject({ observedGames: 4, attemptsSum: 100, passingYardsSum: 700, passingYardsPerAttempt: 7 });
+  });
+});
 it("predictive PostgreSQL A/B replay preserves the earlier bundle and uses later corrections", async () => {
   await withProof(async ({ store }) => {
     const a = passingYardsFixture(false); await store.publish("A", a, NOW);
@@ -390,7 +424,7 @@ it("predictive archive restoration recreates the same cutoff bundles in fresh sc
   const root = await realpath(await mkdtemp(join(tmpdir(), "dfs-ev-predictive-restore-")));
   try {
     const captured = await runLocalProof(["demo", "--artifact-root", root], process.env);
-    expect(captured).toMatchObject({ schemaVersion: 3, earlierReplayUnchanged: true, restoredReplayUnchanged: true });
+    expect(captured).toMatchObject({ schemaVersion: 4, earlierReplayUnchanged: true, restoredReplayUnchanged: true });
     const restored = await runLocalProof(["restore", "--artifact-root", root, "--archive", captured.archive.reference,
       "--archive-bytes", String(captured.archive.byteSize)], process.env);
     expect(restored.capturedA).toEqual(captured.capturedA); expect(restored.laterB).toEqual(captured.laterB);
@@ -406,12 +440,39 @@ it("predictive v2 upgrade preserves application rows and no-op migrations preser
       await client.query("INSERT INTO creators (channel_name) VALUES ('Synthetic v2 survivor')");
       const before = (await client.query("SELECT * FROM creators")).rows;
       const historical = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 3, executed: [3] });
+      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 4, executed: [3, 4] });
       expect((await client.query("SELECT * FROM creators")).rows).toEqual(before);
       const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-      expect(upgraded.slice(0, 2)).toEqual(historical); expect(upgraded).toHaveLength(3);
-      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 3, executed: [] });
+      expect(upgraded.slice(0, 2)).toEqual(historical); expect(upgraded).toHaveLength(4);
+      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 4, executed: [] });
       expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     });
   } finally { await harness.close(); }
+});
+it("predictive v3 team identity upgrade preserves replay and refuses unqualified legacy Rams rows", async () => {
+  const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
+  const verify = createCatalogVerifier(contracts);
+  await withProof(async ({ client, store, target }) => {
+    await store.publish("A", passingYardsFixture(false), NOW);
+    const before = await store.replay(request()); expect(before.status).toBe("ready-inputs");
+    const rows = await snapshot(client); const history = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    expect(await runScratchMigrations(client, { ...target, files, verify })).toEqual({ schemaVersion: 4, executed: [4] });
+    expect(await snapshot(client)).toEqual(rows);
+    const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    expect(upgraded.slice(0, 3)).toEqual(history);
+    expect(upgraded[3]).toMatchObject({ version: 4, filename: "0004_predictive_team_identity.sql", provenance: "executed" });
+    expect(await store.replay(request())).toEqual(before);
+    expect(await runScratchMigrations(client, { ...target, files, verify })).toEqual({ schemaVersion: 4, executed: [] });
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
+  }, 3);
+  await withProof(async ({ client, target }) => {
+    // LAR was permitted by v3 SQL but never by app validation. Its old immutable
+    // provenance cannot be silently relabelled by a constraint correction.
+    await client.query("INSERT INTO predictive_teams (id) VALUES ('nfl:team:LAR')");
+    const rows = await snapshot(client); const history = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    await expect(runScratchMigrations(client, { ...target, files, verify })).rejects.toMatchObject({ code: "23514" });
+    await verify(client, 3);
+    expect(await snapshot(client)).toEqual(rows);
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(history);
+  }, 3);
 });

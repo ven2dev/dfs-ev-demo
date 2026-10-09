@@ -277,7 +277,7 @@ test("valid ledger rows with catalog drift produce a readable non-executable pla
 test("incomplete or rewritten ledger results cannot commit after otherwise valid migration SQL", async () => {
   const baseline = await prepareMigrationContext(files.slice(0, 1), { ledger: contracts.ledger, migrations: contracts.migrations.slice(0, 1) });
   for (const [mutation, recordedBaseline, code] of [
-    ["DELETE FROM db_migrations WHERE version = 3", false, "incomplete-migration-history"],
+    [`DELETE FROM db_migrations WHERE version = ${files.length}`, false, "incomplete-migration-history"],
     ["UPDATE db_migrations SET provenance = 'adopted' WHERE version = 2", false, "migration-history-result-mismatch"],
     ["UPDATE db_migrations SET applied_at = applied_at + interval '1 second' WHERE version = 1", true, "migration-history-result-mismatch"],
   ]) {

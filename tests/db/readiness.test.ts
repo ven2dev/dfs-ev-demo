@@ -51,10 +51,11 @@ it("database readiness accepts migrated history and valid ahead history while pr
     const history = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(await inspect(client)).toMatchObject({ status: "ready", schemaVersion: DB_READINESS_MANIFEST.maximumKnownVersion, warnings: [] });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(history);
+    const future = DB_READINESS_MANIFEST.maximumKnownVersion + 1;
     await client.query(`INSERT INTO db_migrations (version, filename, sha256, runner_version, provenance)
-      VALUES (4, '0004_future.sql', $1, 1, 'executed')`, ["a".repeat(64)]);
+      VALUES ($1, $2, $3, 1, 'executed')`, [future, String(future).padStart(4, "0") + "_future.sql", "a".repeat(64)]);
     const ahead = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(await inspect(client)).toMatchObject({ status: "ready", schemaVersion: 4, warnings: ["schema-ahead"] });
+    expect(await inspect(client)).toMatchObject({ status: "ready", schemaVersion: future, warnings: ["schema-ahead"] });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(ahead);
     expect((await client.query("SELECT * FROM creators")).rows).toEqual(rows);
   });
@@ -96,7 +97,7 @@ it("database readiness reads are bounded, enforced read-only and reject view sub
     } finally { await client.query("ROLLBACK"); }
     await client.query(`INSERT INTO db_migrations (version, filename, sha256, runner_version, provenance)
       SELECT n, lpad(n::text, 4, '0') || '_synthetic.sql', $1, 1, 'executed'
-      FROM generate_series(4, $2::integer) AS n`, ["a".repeat(64), DB_READINESS_HISTORY_LIMIT + 10]);
+      FROM generate_series($2::integer, $3::integer) AS n`, ["a".repeat(64), DB_READINESS_MANIFEST.maximumKnownVersion + 1, DB_READINESS_HISTORY_LIMIT + 10]);
     const history = (await client.query(DB_READINESS_HISTORY_SQL, [DB_READINESS_HISTORY_LIMIT + 1])).rows;
     expect(history).toHaveLength(DB_READINESS_HISTORY_LIMIT + 1);
     expect(evaluateDatabaseReadiness({ ledgerPresent: true, requiredTablesPresent: true, history }).reasons)

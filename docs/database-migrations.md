@@ -351,7 +351,7 @@ EOF
 The endpoint imports a generated TypeScript manifest, never migration tooling
 or SQL files. `db/readiness.json` explicitly declares this application's minimum
 compatible version (currently 2). The generated manifest separately records
-the maximum known version (currently 2), known checksums/filenames/runner
+the maximum known version (currently 4 on the #52 WIP branch), known checksums/filenames/runner
 version and required tables from the minimum version's verified contract.
 Appending an unrelated migration need not raise the application minimum; a new
 application dependency on a later schema requires a reviewed minimum update.

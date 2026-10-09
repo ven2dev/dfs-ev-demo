@@ -32,7 +32,8 @@ test("readiness artifact checks reject missing or stale runtime manifests withou
     await readinessManifestArtifact("check", { outputPath });
     const good = await readFile(outputPath, "utf8");
     for (const bad of [good.replace('"minimumVersion": 2', '"minimumVersion": 1'),
-      good.replace('"maximumKnownVersion": 3', '"maximumKnownVersion": 4'), good + "// drift\n"]) {
+      good.replace(/"maximumKnownVersion": \d+/, '"maximumKnownVersion": 999'), good + "// drift\n"]) {
+      assert.notEqual(bad, good);
       await writeFile(outputPath, bad);
       await assert.rejects(readinessManifestArtifact("check", { outputPath }), /readiness-manifest-drift/);
       assert.equal(await readFile(outputPath, "utf8"), bad);

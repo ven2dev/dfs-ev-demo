@@ -43,7 +43,7 @@ test("contract drift check reports all changed, missing and unexpected artifacts
     await writeFile(join(directory, "unexpected.json"), "unexpected\n");
     await symlink(join(contractDirectory, "ledger.json"), join(directory, "ledger.json"));
     assert.deepEqual(await checkCatalogContractArtifacts(artifacts, directory), [
-      "Changed contract artifact: 0001.json", "Missing contract artifact: 0002.json", "Missing contract artifact: 0003.json",
+      "Changed contract artifact: 0001.json", ...files.slice(1).map((file) => "Missing contract artifact: " + String(file.version).padStart(4, "0") + ".json"),
       "Unexpected contract artifact: ledger.json", "Unexpected contract artifact: unexpected.json",
     ]);
     assert.equal(await readFile(join(directory, "0001.json"), "utf8"), "edited\n");
