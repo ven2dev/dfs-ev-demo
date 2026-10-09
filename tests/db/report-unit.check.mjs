@@ -65,8 +65,9 @@ test("Vitest DB report requires every predictive persistence case independently 
   const report = { success: true, numPassedTests: assertions.length, testResults: [{ assertionResults: assertions }] };
   assert.equal(validatePredictiveDbReport(report), PREDICTIVE_REQUIRED_CASES.length);
   for (const fullName of PREDICTIVE_REQUIRED_CASES) {
-    for (const status of ["missing", "skipped", "todo", "failed"]) {
-      const changed = assertions.flatMap((row) => row.fullName !== fullName ? [row] : status === "missing" ? [] : [{ ...row, status }]);
+    for (const status of ["missing", "skipped", "todo", "failed", "pending", "duplicate"]) {
+      const changed = assertions.flatMap((row) => row.fullName !== fullName ? [row] : status === "missing" ? [] :
+        status === "duplicate" ? [row, row] : [{ ...row, status }]);
       assert.throws(() => validatePredictiveDbReport({ ...report, numPassedTests: changed.length,
         testResults: [{ assertionResults: changed }] }), /DB test contract failed/);
     }

@@ -135,6 +135,8 @@ For a known former team, cutoff-known QB membership ranges also establish expect
 
 Review delivery 2 before bounded real-source qualification. Focus on the migration's typed payload/lineage/immutability constraints, atomic publication and retry behavior, quarantine of partial/refused diagnostics, exact-byte verification, correction closure in scoped reads, and restoration into a fresh scratch database. The 12 mandatory predictive database cases join the existing lease/readiness report gates; missing, filtered, skipped, todo or failed cases cannot produce a passing DB run. Pure replay/storage cases remain in the Node Vitest suite.
 
+The [test reasoning review](predictive-test-review.md) maps each new case to its contract and evidence, records the strengthened failure checks and isolated fault-injection results, and explains the limits of the synthetic proof.
+
 Delivery 3 must qualify the source adapters and evidence described above, measure request/byte/runtime/storage cost under a reviewed acquisition budget, and report missing completion, participation and membership enumeration before expanding capture. Synthetic passing tests do not qualify a real source, its rights, historical coverage or model population. Remaining markets/injury/depth feeds follow their own contracts. Scheduled rest remains the raw kickoff interval, including offseason gaps; flagging or capping belongs to #54's reviewed modeling transformations.
 
 Hosted schema activation remains separately gated by [#95](https://github.com/ven2dev/dfs-ev-demo/issues/95). This increment supplies a local additive migration and changes no app route, existing stats sync or remote schema. Do not run Production `up` as part of either proof.
