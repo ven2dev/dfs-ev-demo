@@ -71,8 +71,10 @@ readiness. Each nevertheless has its own field and sample-sufficiency gates.
 offensive-participation ledger currently establishes the complete eligible
 population, including real zero-opportunity games. Player-stat fields support
 prospective capture; that does not qualify population-complete outcomes or
-model validation. PFR snaps and official NFL participation evidence are
-conditional source routes, not a completed ledger. Individual verified labels
+model validation. Official NFL participation evidence is a conditional source
+route, not a completed ledger. PFR snaps are rejected for this use (see the
+2026-10-10 amendment below); a licensed provider snap count is the candidate
+route. Individual verified labels
 can be retained, but their subset must not stand in for every offensive
 participant. Missing zero games can bias distributions upward.
 
@@ -190,8 +192,31 @@ separate rights gate even after internal research eligibility.
 | `forecast_temperature_c`, `forecast_wind_mps`: environment | Forecast value for actual venue and kickoff; °F→°C, mph→m/s or km/h→m/s conversions recorded | Conditional new feature capture. Qualified Open-Meteo capture for non-commercial pilot → NWS for supported U.S. venue → MET Norway for supported venue → missing. Existing live values lack the required history envelope | Require forecast valid-time match and domain/roof checks. Do not use current observations or later runs. Unqualified alternatives are skipped with reasons; missing feature permits named stats candidate only. |
 | `forecast_precip_amount_mm`: amount enrichment | Provider accumulation amount and exact forecast interval, mm | Conditional. Qualified Open-Meteo interval → NWS amount with matched interval → MET amount with matched interval → missing | Amount over different intervals is not automatically comparable. No conversion from probability to amount; incompatible interval is unsupported and uses stats candidate or withholds. |
 | `forecast_precip_probability`: separate probability enrichment | Explicit probability and interval, fraction; normalize percent / 100 | Conditional. Qualified NWS probability → NOAA NDFD only after every decoder/availability gate passes → missing. No inspected MET probability fallback; existing app uses amount | A 12-hour probability is not an hourly value. All NDFD gates remain open, including nonzero scaling. Use a distinct versioned feature/schema or named stats candidate; never infer from mm. |
-| `prior_snap_share`, routes/personnel/charting | PFR snap counts/GSIS bridge; FTN play/player fields with denominators | Conditional PFR research; FTN enrichment deferred. No selected automatic fallback or integration | Rights/identity/timing gates must pass before an enriched feature is created. Required by neither stats candidate nor initial MVP ingestion list. |
+| `prior_snap_share`, `prior_targets_per_snap`, `prior_carries_per_snap`: rushing/receiving role (**required** for enriched RB/FB/WR/TE candidates; amended 2026-10-10) | Σ player `offense_snaps` / Σ team `offense_snaps`; Σ `targets` or `carries` / Σ `offense_snaps`; same eligible games and same provider, pooled fractions | Licensed provider snap count (candidate: SportsDataIO `PlayerGame`) → missing. PFR rejected for this use. Provider switching needs a recorded `snap-source-compatibility` decision | Without a qualified source, enriched rushing/receiving candidates return `unavailable-inputs` / `snap-share-source-unqualified`; never substitute target or carry share. Zero team snaps leave the ratio undefined. `stats-v1` candidates are unchanged. |
+| Routes, personnel, charting (`prior_targets_per_route`, `prior_route_share`) | Qualified routes source with route and dropback denominators | Optional; no qualified source. FTN enrichment deferred | Absent source yields unavailable for any candidate that names these features. |
 | Situation-neutral pace | Captured PBP possession/defense, clock, score, down and play flags; desired unit seconds per offensive snap | Deferred from the initial MVP feature set. PBP capture is selected research, but no clock/filter recipe is qualified as situation-neutral pace | Qualify clock stoppages, possession/quarter boundaries, kneels/spikes, neutral-score/time filters, coverage and versioned aggregation before reconsideration. Plays/game is not a fallback. Initial stats candidates omit pace explicitly. |
+
+### Amendment 2026-10-10: snap share and reserved candidate features
+
+Owner-approved, and recorded in full in
+[real-source schema revision 2](predictive-real-source-schema.md#7-snap-share-contract-amendment-proposed-for-49)
+(sections 7 and 7b). In summary:
+
+- Snap share and per-snap usage are **required** for enriched rushing and
+  receiving candidates (table row above). Positive provider offensive snaps are
+  also participation evidence for that individual label, never a complete
+  population.
+- **Reserved candidate features**, each behind its own source or evidence gate and
+  evaluated by #54 (never weighted by hand): `prior_usage_by_game_script`,
+  `depth_role`, `vacated_opportunity`, `qb_change`, `forecast_conditions`
+  (temperature bands, wind, precipitation amount and type including snow),
+  `venue_context` (roof and closure, surface, altitude, home/away/neutral,
+  stadium), `home_field_proxy`, and `defense_scheme_context`.
+- `defense_scheme_context` is a reserved slot that always returns
+  `unavailable-inputs` / `defense-scheme-source-unqualified` until a paid
+  charting source is priced and approved.
+- Play-by-play game-script aggregates, forecasts, surface and altitude have no
+  evidence kind in the v3 schema; they need a later additive migration.
 
 Conversions: `C = (F - 32) × 5/9`, `m/s = mph × 0.44704`,
 `m/s = km/h / 3.6`. Preserve original unit/product/interval. Temperature and wind
@@ -395,8 +420,9 @@ create a probability of participation.
 
 A missing row cannot prove DNP, zero participation or zero statistic. Player
 stats may omit players with no recorded usage; a complete eligible-population
-ledger therefore needs separately qualified participation evidence. PFR snaps
-and official gamebooks remain gated sources. #54 must report excluded/unknown
+ledger therefore needs separately qualified participation evidence. Official
+gamebooks remain a gated manual source, a licensed provider snap count is a
+candidate, and PFR snaps are rejected for this use. #54 must report excluded/unknown
 participants and test selection bias; it cannot validate a population of all
 offensive participants from only players with positive usage. This is a real
 label-coverage gate, not permission to drop inconvenient zero games silently.
