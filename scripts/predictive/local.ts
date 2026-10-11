@@ -11,7 +11,7 @@ import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { createLocalPredictiveStore } from "../../src/lib/predictive/persistence.ts";
 import { ingestLocalDataset } from "../../src/lib/predictive/ingest.ts";
 import { addCapture, CUTOFF_B, emptyDataset, passingYardsFixture, PRIOR, request, revision } from "../../tests/predictive/fixtures/passingYards.ts";
-import { ensureHarnessSession } from "./harness.ts";
+import { ensureHarnessSession, ensurePredictiveRoles } from "./harness.ts";
 import { archiveRuns, restoreRuns, type ArchivedRun, type ArchiveReference } from "./archive.ts";
 
 export const runLocalProof = async (args: string[], environment: NodeJS.ProcessEnv) => {
@@ -44,6 +44,7 @@ export const runLocalProof = async (args: string[], environment: NodeJS.ProcessE
     }
     const install = async (client: Client, expected: object) => {
       const target = { expected, assertTarget: harness.assertTarget };
+      await ensurePredictiveRoles(client);
       await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
       await ensureHarnessSession(client);
       return createLocalPredictiveStore(client, target, artifacts);

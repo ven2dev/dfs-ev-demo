@@ -6,7 +6,7 @@ import { expect, it } from "vitest";
 import { createCatalogVerifier, loadCatalogContracts } from "../../scripts/db-migrations/contracts.mjs";
 import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
 import { checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
-import { ensureHarnessSession } from "../../scripts/predictive/harness.ts";
+import { ensureHarnessSession, ensurePredictiveRoles } from "../../scripts/predictive/harness.ts";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { buildPassingYardsBundle } from "../../src/lib/predictive/passingYards.ts";
 import { createLocalPredictiveStore, MEMBERSHIP_READ_SQL, SCHEDULE_READ_SQL } from "../../src/lib/predictive/persistence.ts";
@@ -54,6 +54,7 @@ const withProof = async (run: (context: {
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await harness.withDatabase(async (client: Client, expected: object) => {
       const target = { expected, assertTarget: harness.assertTarget };
+      await ensurePredictiveRoles(client);
       await runScratchMigrations(client, { ...target, files: files.slice(0, migrationCount), verify: createCatalogVerifier(contracts) });
       await ensureHarnessSession(client);
       const artifacts = await openArtifactStore(root); const store = await createLocalPredictiveStore(client, target, artifacts);
@@ -405,6 +406,8 @@ it("predictive PostgreSQL enforces rights knowledge time, harness-only synthetic
       await outsider.query("BEGIN");
       try {
         await outsider.query("SET LOCAL SESSION AUTHORIZATION predictive_outsider_probe");
+        // A settable flag cannot stand in for harness role membership.
+        await outsider.query("SET LOCAL predictive.harness = 'on'");
         const runId = "outsider";
         await outsider.query(`INSERT INTO predictive_ingestion_runs (id,request_sha256,code_version,started_at,finished_at,status,failure_code,
           budget,requests,consumed_bytes,artifact_count,capture_count,row_count) VALUES ($1,$2,'probe',$3,$3,'refused','publication-refused','{}',0,0,0,1,0)`,
@@ -537,4 +540,86 @@ it("predictive evidence reset refuses databases recording the removed synthetic 
       expect((await client.query("SELECT to_regclass('public.predictive_observations') AS relation")).rows[0].relation).toBeNull();
     });
   } finally { await harness.close(); }
+});
+it("predictive roles hold only their granted privileges and PUBLIC cannot execute predictive functions", async () => {
+  await withProof(async ({ client, store }) => {
+    await store.publish("A", passingYardsFixture(false), NOW);
+    const before = await snapshot(client);
+    const functions = (await client.query(`SELECT p.proname, has_function_privilege('public', p.oid, 'EXECUTE') AS public_execute
+      FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname LIKE 'predictive\\_%'`)).rows;
+    expect(functions.length).toBeGreaterThan(10);
+    expect(functions.filter((row) => row.public_execute).map((row) => row.proname)).toEqual([]);
+    const as = (role: string, probe: () => Promise<void>) => sqlProbe(client, async () => { await client.query(`SET LOCAL ROLE ${role}`); await probe(); });
+    const denied = { code: "42501" };
+    // Ingest may append evidence through its grants alone, never change or remove it.
+    const correctionData = (await client.query("SELECT data FROM predictive_observations WHERE id='player-synthetic-game-5'")).rows[0].data;
+    await as("predictive_ingest", async () => {
+      await client.query(`INSERT INTO predictive_ingestion_runs (id,request_sha256,code_version,started_at,finished_at,status,budget,requests,consumed_bytes,
+        artifact_count,capture_count,row_count) VALUES ('ingest-role',$1,'probe',$2,$2,'published','{}',0,0,1,1,1)`, ["1".repeat(64), NOW]);
+      await client.query("INSERT INTO predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,2,'application/json',$2)", ["a".repeat(64), "a".repeat(64) + ".json"]);
+      await client.query(`INSERT INTO predictive_artifacts (id,blob_sha256,profile_id,retrieval_kind,origin,scope_kind)
+        VALUES ('ingest-artifact',$1,$2,'full','fixture://ingest-role','manual')`, ["a".repeat(64), PROFILE]);
+      await client.query(`INSERT INTO predictive_captures (id,run_id,artifact_id,captured_at,available_at,ingested_at,state,body_complete,header_verified,
+        parser_succeeded,parsed_rows) VALUES ('ingest-capture','ingest-role','ingest-artifact',$1,$1,$1,'published',true,true,true,1)`, [CAPTURE_B]);
+      await insertObservation(client, "ingest-correction", "player-game-stats", { ...correctionData, passingYards: 333 }, { predecessor: "player-synthetic-game-5" });
+      await client.query("INSERT INTO predictive_artifact_observations (artifact_id,observation_id) VALUES ('ingest-artifact','ingest-correction')");
+      await client.query("INSERT INTO predictive_run_rights (run_id,rights_decision_id) VALUES ('ingest-role',$1)", ["rights-" + PROFILE]);
+      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+    });
+    for (const sql of ["INSERT INTO predictive_teams (id) VALUES ('nfl:team:PHI')", "UPDATE predictive_observations SET id=id",
+      "DELETE FROM predictive_observations", "TRUNCATE predictive_observations"]) {
+      await as("predictive_ingest", async () => { await expect(client.query(sql)).rejects.toMatchObject(denied); });
+    }
+    // Replay reads and evaluates rights, and can write nothing.
+    await as("predictive_replay", async () => {
+      expect((await client.query("SELECT count(*)::integer AS count FROM predictive_observations")).rows[0].count).toBeGreaterThan(0);
+      expect((await client.query("SELECT predictive_rights_allow($1,$2,$2,'model-input') AS allowed", [PROFILE, NOW])).rows[0].allowed).toBe(true);
+    });
+    for (const sql of ["INSERT INTO predictive_games (id) VALUES ('00000000-0000-4000-8000-000000000099')",
+      "SELECT predictive_payload_valid('schedule', '{}'::jsonb)", "UPDATE predictive_captures SET id=id"]) {
+      await as("predictive_replay", async () => { await expect(client.query(sql)).rejects.toMatchObject(denied); });
+    }
+    // A role with no grants can neither read evidence nor call validators.
+    await client.query("DO $probe$ BEGIN CREATE ROLE predictive_outsider_probe NOLOGIN; EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL; END $probe$");
+    for (const sql of ["SELECT * FROM predictive_observations", "SELECT predictive_entity_key('schedule', '{}'::jsonb)"]) {
+      await as("predictive_outsider_probe", async () => { await expect(client.query(sql)).rejects.toMatchObject(denied); });
+    }
+    expect(await snapshot(client)).toEqual(before);
+  });
+});
+it("predictive trial, research-only, cross-profile and out-of-order rights cannot authorize publication or current use", async () => {
+  await withProof(async ({ client, store }) => {
+    // Trial data carries adapter-testing only: it can never be published as evidence.
+    const trial = passingYardsFixture(false); trial.rightsDecisions = [rights(PROFILE, { allowedUses: ["adapter-testing"] })];
+    await expect(store.publish("trial", trial, NOW)).rejects.toMatchObject({ code: "23514" });
+    expect((await client.query("SELECT count(*)::integer AS count FROM predictive_ingestion_runs")).rows[0].count).toBe(0);
+    // Research-only rights publish, but current model use stays blocked.
+    const research = passingYardsFixture(false); research.rightsDecisions = [rights(PROFILE, { allowedUses: ["internal-research"] })];
+    await store.publish("research", research, NOW);
+    const blocked = await store.replay(request());
+    expect(blocked.status).toBe("unavailable-inputs"); expect(blocked.reasons).toContain("rights-not-in-force");
+    const second = "synthetic-second-v1"; const other = emptyDataset();
+    other.profiles.push(profile(second)); other.rightsDecisions = [{ ...rights(PROFILE), allowedUses: ["internal-research"] }, rights(second)];
+    addCapture(other, "other", [revision("other-schedule", "schedule", schedule(79, "2026-09-14T00:15:00.000Z", "nfl:team:SEA", "nfl:team:ARI"))], CAPTURE_A, second);
+    await store.publish("other", other, NOW);
+    const insertDecision = (id: string, profileId: string, predecessor: string, decidedAt: string) => client.query(`INSERT INTO predictive_rights_decisions
+      (id,profile_id,predecessor_id,allowed_uses,effective_from,decided_at,evidence_kind,evidence_reference)
+      VALUES ($1,$2,$3,'{internal-research}',$4,$4,'synthetic','probe')`, [id, profileId, predecessor, decidedAt]);
+    // A predecessor from another profile violates the same-profile chain key.
+    await sqlProbe(client, async () => {
+      await expect(insertDecision("crossed", second, "rights-" + PROFILE, NOW)).rejects.toMatchObject({ code: "23503" });
+    });
+    // Knowledge time never moves backwards along a chain.
+    await sqlProbe(client, async () => {
+      await expect(insertDecision("earlier", PROFILE, "rights-" + PROFILE, "2025-01-01T00:00:00.000Z"))
+        .rejects.toMatchObject({ code: "23514", message: "predictive-rights-order-refused" });
+    });
+    // A later grant authorizes current use without rewriting the earlier audit row.
+    const grant = emptyDataset(); grant.rightsDecisions = [{ ...rights(PROFILE), allowedUses: ["internal-research"] },
+      rights(PROFILE, { id: "granted", predecessorId: "rights-" + PROFILE, decidedAt: "2026-10-08T23:00:00.000Z", effectiveFrom: "2026-10-08T23:00:00.000Z" })];
+    addCapture(grant, "grant-noop", [revision("grant-noop", "schedule", schedule(80, "2026-09-14T00:15:00.000Z", "nfl:team:SEA", "nfl:team:ARI"))], CAPTURE_A);
+    await store.publish("grant", grant, NOW);
+    expect((await store.replay(request())).status).toBe("ready-inputs");
+    expect((await client.query("SELECT rights_decision_id FROM predictive_run_rights WHERE run_id='research'")).rows).toEqual([{ rights_decision_id: "rights-" + PROFILE }]);
+  });
 });

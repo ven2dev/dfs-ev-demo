@@ -38,6 +38,8 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive archive restoration recreates the same cutoff bundles in fresh scratch databases",
   "predictive v2 upgrade preserves application rows and no-op migrations preserve the new history",
   "predictive evidence reset refuses databases recording the removed synthetic migrations without repair",
+  "predictive roles hold only their granted privileges and PUBLIC cannot execute predictive functions",
+  "predictive trial, research-only, cross-profile and out-of-order rights cannot authorize publication or current use",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({
