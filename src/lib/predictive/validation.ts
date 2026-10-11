@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { NFL_TEAM_ABBREVIATIONS } from "../nflStadiums.ts";
 import { KINDS, STAT_FIELDS, type Artifact, type Capture, type Dataset, type Kind, type Observation,
-  type Profile, type Revision, type RightsDecision, type Use } from "./types.ts";
+  type Profile, type Reconciliation, type Revision, type RightsDecision, type Use } from "./types.ts";
 
 export class PredictiveError extends Error {
   code: string;
@@ -246,10 +246,69 @@ const CAPTURE_FIELDS = ["id", "artifactId", "capturedAt", "availableAt", "ingest
   "bodyComplete", "headerVerified", "parserSucceeded", "parsedRows"];
 
 export const datasetContainer = (value: unknown) => {
-  const root = exact(value, ["formatVersion", "profiles", "rightsDecisions", "artifacts", "captures"]);
+  const root = exact(value, ["formatVersion", "profiles", "rightsDecisions", "artifacts", "captures", "decisions"]);
   if (root.formatVersion !== 2 || !Array.isArray(root.profiles) || !Array.isArray(root.rightsDecisions) ||
-      !Array.isArray(root.artifacts) || !Array.isArray(root.captures)) refuse("dataset-bounds-refused");
-  return { formatVersion: 2 as const, profiles: root.profiles, rightsDecisions: root.rightsDecisions, artifacts: root.artifacts, captures: root.captures };
+      !Array.isArray(root.artifacts) || !Array.isArray(root.captures) || !Array.isArray(root.decisions)) refuse("dataset-bounds-refused");
+  return { formatVersion: 2 as const, profiles: root.profiles, rightsDecisions: root.rightsDecisions, artifacts: root.artifacts,
+    captures: root.captures, decisions: root.decisions };
+};
+
+// Shape only; references are checked against stored or visible evidence by
+// validateDecisions, because a decision may cite evidence from earlier batches.
+export const validateDecisionShape = (value: unknown): Reconciliation => {
+  const row = exact(value, ["id", "kind", "entityKey", "policyId", "mode", "decidedAt", "predecessorId", "outcome", "inputs"]);
+  text(row.id); oneOf(row.kind, ["reconciliation"]); oneOf(row.policyId, ["reconciliation-v1"]);
+  oneOf(row.mode, ["production-research", "synthetic-proof"]); instant(row.decidedAt);
+  if (typeof row.entityKey !== "string" || !row.entityKey.startsWith("reconciliation:") || row.entityKey.length > 300) refuse("invalid-decision");
+  if (row.predecessorId !== null) text(row.predecessorId);
+  if (row.predecessorId === row.id) refuse("invalid-decision");
+  const outcome = exact(row.outcome, ["result", "selectedObservationId", "rule"]);
+  oneOf(outcome.result, ["selected", "conflict", "insufficient-sources"]);
+  oneOf(outcome.rule, ["single-source", "sources-agree", "material-discrepancy", "no-candidates"]);
+  if ((outcome.result === "selected") !== (outcome.selectedObservationId !== null)) refuse("invalid-decision");
+  if (outcome.selectedObservationId !== null) text(outcome.selectedObservationId);
+  if (!Array.isArray(row.inputs) || row.inputs.length > 16) refuse("invalid-decision");
+  for (const input of row.inputs) { const item = exact(input, ["observationId", "role"]); text(item.observationId); oneOf(item.role, ["candidate", "selected"]); }
+  if (new Set(row.inputs.map((input) => input.observationId)).size !== row.inputs.length) refuse("invalid-decision");
+  return value as Reconciliation;
+};
+
+// reconciliation-v1 rules, identical to predictive_decision_check() in 0003:
+// inputs are distinct provider heads for one fact, each usable by decidedAt;
+// the rule matches the evidence; synthetic evidence implies synthetic-proof.
+export const validateDecisions = (decisions: Reconciliation[], observations: Map<string, Observation>, profiles: Map<string, Profile>) => {
+  const byId = new Map<string, Reconciliation>(); const successors = new Set<string>();
+  for (const decision of decisions) {
+    if (byId.has(decision.id)) refuse("duplicate-decision");
+    byId.set(decision.id, decision);
+  }
+  for (const decision of decisions) {
+    const fact = decision.entityKey.slice("reconciliation:".length);
+    const rows = decision.inputs.map((input) => observations.get(input.observationId) ?? refuse("decision-input-missing"));
+    const decided = instant(decision.decidedAt);
+    for (const row of rows) {
+      if (row.entityKey !== fact) refuse("decision-entity-mismatch");
+      if (instant(row.capture.availableAt) > decided || instant(row.capture.ingestedAt) > decided) refuse("decision-input-after-decision");
+    }
+    if (new Set(rows.map((row) => row.sourceKey)).size !== rows.length) refuse("decision-duplicate-source");
+    const selected = decision.inputs.filter((input) => input.role === "selected");
+    const same = rows.length > 1 && rows.every((row) => canonical(row.revision.data) === canonical(rows[0].revision.data));
+    const { result, rule, selectedObservationId } = decision.outcome;
+    const consistent =
+      result === "selected" ? selected.length === 1 && selected[0].observationId === selectedObservationId &&
+        ((rule === "single-source" && rows.length === 1) || (rule === "sources-agree" && same)) :
+      result === "conflict" ? !selected.length && rule === "material-discrepancy" && rows.length > 1 && !same :
+      !rows.length && rule === "no-candidates";
+    if (!consistent) refuse("decision-rule-mismatch");
+    const synthetic = rows.some((row) => profiles.get(row.artifact.profileId)?.purpose === "synthetic-test");
+    if (synthetic !== (decision.mode === "synthetic-proof")) refuse("decision-mode-mismatch");
+    if (decision.predecessorId !== null) {
+      const prior = byId.get(decision.predecessorId) ?? refuse("decision-predecessor-missing");
+      if (prior.entityKey !== decision.entityKey || instant(prior.decidedAt) > decided) refuse("decision-lineage-invalid");
+      if (successors.has(prior.id)) refuse("decision-branch-refused");
+      successors.add(prior.id);
+    }
+  }
 };
 
 const captureOrder = (a: Observation, b: Observation): number =>
@@ -294,7 +353,9 @@ export const validateObservations = (rows: Observation[]): Map<string, Observati
 
 export const validateDataset = (value: unknown) => {
   const root = datasetContainer(value);
-  if (root.profiles.length > 64 || root.rightsDecisions.length > 256 || root.artifacts.length > 256 || root.captures.length > 512) refuse("dataset-bounds-refused");
+  if (root.profiles.length > 64 || root.rightsDecisions.length > 256 || root.artifacts.length > 256 || root.captures.length > 512 ||
+      root.decisions.length > 2048) refuse("dataset-bounds-refused");
+  const decisions = root.decisions.map(validateDecisionShape);
   const profiles = new Map<string, Profile>();
   for (const item of root.profiles) {
     const profile = validateProfile(item);
@@ -356,5 +417,5 @@ export const validateDataset = (value: unknown) => {
   const dataset = value as Dataset;
   const observations = validateObservations(dataset.captures.flatMap((capture) => capture.state !== "published" ? [] :
     revisions.get(capture.artifactId)!.map((revision) => observation(revision, capture, artifacts.get(capture.artifactId)!))));
-  return { dataset, profiles, rightsDecisions, revisions, observations };
+  return { dataset, profiles, rightsDecisions, revisions, observations, decisions };
 };

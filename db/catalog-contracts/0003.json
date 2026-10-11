@@ -1,5 +1,5 @@
 {
-  "catalogFingerprint": "5112679e4613be35b449139c7675506915d48b1e5bd9d8aa04e4731f3cbfc9cd",
+  "catalogFingerprint": "f082bdb3b38581affda6ebce6f13265fae3e28f759024b6ca90e8e740bb0b8b0",
   "contractVersion": 1,
   "formatVersion": 1,
   "objects": [
@@ -2316,6 +2316,162 @@
       },
       "kind": "column",
       "name": "predictive_captures.state"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_decision_inputs.decision_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_decision_inputs.observation_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_decision_inputs.role"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "predictive_decisions.decided_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_decisions.entity_key"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_decisions.id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_decisions.kind"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_decisions.mode"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "jsonb"
+      },
+      "kind": "column",
+      "name": "predictive_decisions.outcome"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_decisions.policy_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 9,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_decisions.predecessor_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_decisions.run_id"
     },
     {
       "definition": {
@@ -6971,6 +7127,558 @@
     },
     {
       "definition": {
+        "deferrable": true,
+        "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED",
+        "enforced": true,
+        "initially_deferred": true,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "t",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decision_inputs.predictive_check_decision_inputs"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (decision_id) REFERENCES predictive_decisions(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_decision_inputs",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_decision_inputs",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decision_inputs.predictive_decision_inputs_decision_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL decision_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decision_inputs.predictive_decision_inputs_decision_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (observation_id) REFERENCES predictive_observations(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_decision_inputs",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_decision_inputs",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_observations",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_observations",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decision_inputs.predictive_decision_inputs_observation_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL observation_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decision_inputs.predictive_decision_inputs_observation_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (decision_id, observation_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decision_inputs.predictive_decision_inputs_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (role = ANY (ARRAY['candidate'::text, 'selected'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decision_inputs.predictive_decision_inputs_role_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL role",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decision_inputs.predictive_decision_inputs_role_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": true,
+        "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED",
+        "enforced": true,
+        "initially_deferred": true,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "t",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_check_decisions"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (predictive_decision_valid(kind, outcome) IS TRUE)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (kind <> 'reconciliation'::text OR policy_id = 'reconciliation-v1'::text AND entity_key ~~ 'reconciliation:%'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (predecessor_id IS DISTINCT FROM id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_check2"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(decided_at) AND decided_at = date_trunc('milliseconds'::text, decided_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_decided_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL decided_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_decided_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (length(entity_key) >= 1 AND length(entity_key) <= 300)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_entity_key_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL entity_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_entity_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (length(id) >= 1 AND length(id) <= 256)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (id, kind, entity_key, policy_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_id_kind_entity_key_policy_id_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (kind = ANY (ARRAY['reconciliation'::text, 'completion'::text, 'participation'::text, 'snap-source-compatibility'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_kind_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL kind",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_kind_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (mode = ANY (ARRAY['production-research'::text, 'synthetic-proof'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_mode_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL mode",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_mode_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL outcome",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_outcome_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (policy_id ~ '^[a-z0-9-]+-v[0-9]+$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_policy_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL policy_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_policy_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": true,
+        "definition": "FOREIGN KEY (predecessor_id, kind, entity_key, policy_id) REFERENCES predictive_decisions(id, kind, entity_key, policy_id) DEFERRABLE INITIALLY DEFERRED",
+        "enforced": true,
+        "initially_deferred": true,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": true,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": true,
+            "table": "public.predictive_decisions",
+            "type": 5
+          },
+          {
+            "deferrable": true,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": true,
+            "table": "public.predictive_decisions",
+            "type": 17
+          },
+          {
+            "deferrable": true,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": true,
+            "table": "public.predictive_decisions",
+            "type": 9
+          },
+          {
+            "deferrable": true,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": true,
+            "table": "public.predictive_decisions",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_predecessor_id_kind_entity_key_policy_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (run_id) REFERENCES predictive_ingestion_runs(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_ingestion_runs",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_ingestion_runs",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_run_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL run_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_run_id_not_null"
+    },
+    {
+      "definition": {
         "deferrable": false,
         "definition": "CHECK (id::text ~ '^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'::text)",
         "enforced": true,
@@ -9557,6 +10265,114 @@
     },
     {
       "definition": {
+        "definition": "CREATE UNIQUE INDEX predictive_decision_inputs_pkey ON predictive_decision_inputs USING btree (decision_id, observation_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_decision_inputs",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_decision_inputs_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX predictive_decision_inputs_reverse_idx ON predictive_decision_inputs USING btree (observation_id, decision_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_decision_inputs",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_decision_inputs_reverse_idx"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX predictive_decisions_entity_idx ON predictive_decisions USING btree (kind, entity_key, policy_id, decided_at)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_decisions",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_decisions_entity_idx"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX predictive_decisions_id_kind_entity_key_policy_id_key ON predictive_decisions USING btree (id, kind, entity_key, policy_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_decisions",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_decisions_id_kind_entity_key_policy_id_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX predictive_decisions_one_successor ON predictive_decisions USING btree (predecessor_id) WHERE predecessor_id IS NOT NULL",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_decisions",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_decisions_one_successor"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX predictive_decisions_pkey ON predictive_decisions USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_decisions",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_decisions_pkey"
+    },
+    {
+      "definition": {
         "definition": "CREATE UNIQUE INDEX predictive_games_pkey ON predictive_games USING btree (id)",
         "exclusion": false,
         "immediate": true,
@@ -10270,6 +11086,40 @@
         "view_definition": null
       },
       "kind": "relation",
+      "name": "predictive_decision_inputs"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "predictive_decisions"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
       "name": "predictive_games"
     },
     {
@@ -10399,6 +11249,24 @@
       },
       "kind": "routine",
       "name": "predictive_append_only()"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_decision_check()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE target text; d public.predictive_decisions; fact text;\n  inputs integer; sources integer; selected integer; selected_id text; same boolean; synthetic boolean; consistent boolean;\nBEGIN\n  IF TG_TABLE_NAME = 'predictive_decisions' THEN target := NEW.id; ELSE target := NEW.decision_id; END IF;\n  SELECT * INTO d FROM public.predictive_decisions WHERE id = target;\n  IF (SELECT status FROM public.predictive_ingestion_runs WHERE id = d.run_id) <> 'published' THEN\n    RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';\n  END IF;\n  fact := substr(d.entity_key, length('reconciliation:') + 1);\n  SELECT count(*), count(DISTINCT o.source_key), count(*) FILTER (WHERE i.role = 'selected'),\n    min(i.observation_id) FILTER (WHERE i.role = 'selected'), count(DISTINCT o.data) <= 1, coalesce(bool_or(p.purpose = 'synthetic-test'), false)\n    INTO inputs, sources, selected, selected_id, same, synthetic\n    FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id\n    JOIN public.predictive_source_profiles p ON p.id = o.profile_id WHERE i.decision_id = target;\n  IF sources <> inputs OR EXISTS (SELECT 1 FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id\n      WHERE i.decision_id = target AND (o.entity_key <> fact OR NOT EXISTS (\n        SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n        JOIN public.predictive_ingestion_runs r ON r.id = c.run_id\n        WHERE l.observation_id = o.id AND c.state = 'published' AND r.status = 'published'\n          AND c.available_at <= d.decided_at AND c.ingested_at <= d.decided_at))) THEN\n    RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';\n  END IF;\n  consistent := CASE d.outcome->>'result'\n      WHEN 'selected' THEN selected = 1 AND selected_id = d.outcome->>'selectedObservationId'\n        AND ((d.outcome->>'rule' = 'single-source' AND inputs = 1) OR (d.outcome->>'rule' = 'sources-agree' AND inputs > 1 AND same))\n      WHEN 'conflict' THEN selected = 0 AND d.outcome->>'rule' = 'material-discrepancy' AND inputs > 1 AND NOT same\n      ELSE inputs = 0 AND d.outcome->>'rule' = 'no-candidates' END;\n  IF consistent IS NOT TRUE THEN\n    RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514';\n  END IF;\n  IF synthetic <> (d.mode = 'synthetic-proof') OR (d.mode = 'synthetic-proof' AND NOT public.predictive_harness_session()) THEN\n    RAISE EXCEPTION 'predictive-decision-mode-invalid' USING ERRCODE = '23514';\n  END IF;\n  IF d.predecessor_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.predictive_decisions p WHERE p.id = d.predecessor_id AND p.decided_at > d.decided_at) THEN\n    RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';\n  END IF;\n  RETURN NULL;\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "predictive_decision_check()"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_decision_valid(kind text, outcome jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\n IMMUTABLE STRICT\nAS $function$\nBEGIN\n  IF kind <> 'reconciliation' OR jsonb_typeof(outcome) <> 'object' OR\n    (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) IS DISTINCT FROM ARRAY['result','rule','selectedObservationId']\n    THEN RETURN false; END IF;\n  RETURN (outcome->>'result' IN ('selected','conflict','insufficient-sources')) IS TRUE\n    AND (outcome->>'rule' IN ('single-source','sources-agree','material-discrepancy','no-candidates')) IS TRUE\n    AND CASE WHEN outcome->>'result' = 'selected' THEN public.predictive_text(outcome->'selectedObservationId')\n      ELSE outcome->'selectedObservationId' = 'null'::jsonb END;\nEXCEPTION WHEN OTHERS THEN RETURN false;\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "predictive_decision_valid(kind text, outcome jsonb)"
     },
     {
       "definition": {
@@ -10663,6 +11531,54 @@
     },
     {
       "definition": {
+        "definition": "CREATE CONSTRAINT TRIGGER predictive_check_decision_inputs AFTER INSERT ON predictive_decision_inputs DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION predictive_decision_check()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_decision_inputs.predictive_check_decision_inputs"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_decision_inputs_immutable BEFORE DELETE OR UPDATE ON predictive_decision_inputs FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_decision_inputs.predictive_decision_inputs_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_decision_inputs_no_truncate BEFORE TRUNCATE ON predictive_decision_inputs FOR EACH STATEMENT EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_decision_inputs.predictive_decision_inputs_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE CONSTRAINT TRIGGER predictive_check_decisions AFTER INSERT ON predictive_decisions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION predictive_decision_check()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_decisions.predictive_check_decisions"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_decisions_immutable BEFORE DELETE OR UPDATE ON predictive_decisions FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_decisions.predictive_decisions_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_decisions_no_truncate BEFORE TRUNCATE ON predictive_decisions FOR EACH STATEMENT EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_decisions.predictive_decisions_no_truncate"
+    },
+    {
+      "definition": {
         "definition": "CREATE TRIGGER predictive_games_immutable BEFORE DELETE OR UPDATE ON predictive_games FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
         "enabled": "O"
       },
@@ -10807,7 +11723,7 @@
       },
       {
         "filename": "0003_predictive_evidence.sql",
-        "sha256": "438c682a84000012df394287951503a4c53fce145ca30b99c61d4eb2764ca2f5",
+        "sha256": "528f9ede4e8b7ca7e99061f5d58133f2e2bcea6b0922e93ebe20f9f5ccefc2ff",
         "version": 3
       }
     ]

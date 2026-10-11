@@ -40,6 +40,7 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive evidence reset refuses databases recording the removed synthetic migrations without repair",
   "predictive roles hold only their granted privileges and PUBLIC cannot execute predictive functions",
   "predictive trial, research-only, cross-profile and out-of-order rights cannot authorize publication or current use",
+  "predictive reconciliation decisions resolve only their exact provider heads and PostgreSQL refuses misstated evidence",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

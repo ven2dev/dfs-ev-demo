@@ -470,6 +470,99 @@ CREATE CONSTRAINT TRIGGER predictive_check_captures AFTER INSERT ON public.predi
 CREATE CONSTRAINT TRIGGER predictive_check_observations AFTER INSERT ON public.predictive_observations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_publication_check();
 CREATE CONSTRAINT TRIGGER predictive_check_links AFTER INSERT ON public.predictive_artifact_observations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_publication_check();
 
+-- Cross-source decisions. A decision never edits a provider's revision; it
+-- selects among provider heads for one fact, or records a conflict. Inputs must
+-- have been usable by decided_at. Mirrors validateDecisions() in code.
+CREATE FUNCTION public.predictive_decision_valid(kind text, outcome jsonb) RETURNS boolean
+LANGUAGE plpgsql IMMUTABLE STRICT AS $$
+BEGIN
+  IF kind <> 'reconciliation' OR jsonb_typeof(outcome) <> 'object' OR
+    (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) IS DISTINCT FROM ARRAY['result','rule','selectedObservationId']
+    THEN RETURN false; END IF;
+  RETURN (outcome->>'result' IN ('selected','conflict','insufficient-sources')) IS TRUE
+    AND (outcome->>'rule' IN ('single-source','sources-agree','material-discrepancy','no-candidates')) IS TRUE
+    AND CASE WHEN outcome->>'result' = 'selected' THEN public.predictive_text(outcome->'selectedObservationId')
+      ELSE outcome->'selectedObservationId' = 'null'::jsonb END;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END
+$$;
+
+CREATE TABLE public.predictive_decisions (
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  kind text NOT NULL CHECK (kind IN ('reconciliation','completion','participation','snap-source-compatibility')),
+  entity_key text NOT NULL CHECK (length(entity_key) BETWEEN 1 AND 300),
+  policy_id text NOT NULL CHECK (policy_id ~ '^[a-z0-9-]+-v[0-9]+$'),
+  mode text NOT NULL CHECK (mode IN ('production-research','synthetic-proof')),
+  outcome jsonb NOT NULL,
+  run_id text NOT NULL REFERENCES public.predictive_ingestion_runs(id),
+  decided_at timestamptz NOT NULL CHECK (isfinite(decided_at) AND decided_at = date_trunc('milliseconds', decided_at)),
+  predecessor_id text,
+  CHECK (public.predictive_decision_valid(kind, outcome) IS TRUE),
+  CHECK (kind <> 'reconciliation' OR (policy_id = 'reconciliation-v1' AND entity_key LIKE 'reconciliation:%')),
+  CHECK (predecessor_id IS DISTINCT FROM id),
+  UNIQUE (id, kind, entity_key, policy_id),
+  FOREIGN KEY (predecessor_id, kind, entity_key, policy_id)
+    REFERENCES public.predictive_decisions(id, kind, entity_key, policy_id) DEFERRABLE INITIALLY DEFERRED
+);
+CREATE UNIQUE INDEX predictive_decisions_one_successor ON public.predictive_decisions (predecessor_id) WHERE predecessor_id IS NOT NULL;
+CREATE INDEX predictive_decisions_entity_idx ON public.predictive_decisions (kind, entity_key, policy_id, decided_at);
+
+CREATE TABLE public.predictive_decision_inputs (
+  decision_id text NOT NULL REFERENCES public.predictive_decisions(id),
+  observation_id text NOT NULL REFERENCES public.predictive_observations(id),
+  role text NOT NULL CHECK (role IN ('candidate','selected')),
+  PRIMARY KEY (decision_id, observation_id)
+);
+CREATE INDEX predictive_decision_inputs_reverse_idx ON public.predictive_decision_inputs (observation_id, decision_id);
+
+CREATE TRIGGER predictive_decisions_immutable BEFORE UPDATE OR DELETE ON public.predictive_decisions FOR EACH ROW EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_decision_inputs_immutable BEFORE UPDATE OR DELETE ON public.predictive_decision_inputs FOR EACH ROW EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_decisions_no_truncate BEFORE TRUNCATE ON public.predictive_decisions FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_decision_inputs_no_truncate BEFORE TRUNCATE ON public.predictive_decision_inputs FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
+
+CREATE FUNCTION public.predictive_decision_check() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE target text; d public.predictive_decisions; fact text;
+  inputs integer; sources integer; selected integer; selected_id text; same boolean; synthetic boolean; consistent boolean;
+BEGIN
+  IF TG_TABLE_NAME = 'predictive_decisions' THEN target := NEW.id; ELSE target := NEW.decision_id; END IF;
+  SELECT * INTO d FROM public.predictive_decisions WHERE id = target;
+  IF (SELECT status FROM public.predictive_ingestion_runs WHERE id = d.run_id) <> 'published' THEN
+    RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';
+  END IF;
+  fact := substr(d.entity_key, length('reconciliation:') + 1);
+  SELECT count(*), count(DISTINCT o.source_key), count(*) FILTER (WHERE i.role = 'selected'),
+    min(i.observation_id) FILTER (WHERE i.role = 'selected'), count(DISTINCT o.data) <= 1, coalesce(bool_or(p.purpose = 'synthetic-test'), false)
+    INTO inputs, sources, selected, selected_id, same, synthetic
+    FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id
+    JOIN public.predictive_source_profiles p ON p.id = o.profile_id WHERE i.decision_id = target;
+  IF sources <> inputs OR EXISTS (SELECT 1 FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id
+      WHERE i.decision_id = target AND (o.entity_key <> fact OR NOT EXISTS (
+        SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
+        JOIN public.predictive_ingestion_runs r ON r.id = c.run_id
+        WHERE l.observation_id = o.id AND c.state = 'published' AND r.status = 'published'
+          AND c.available_at <= d.decided_at AND c.ingested_at <= d.decided_at))) THEN
+    RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';
+  END IF;
+  consistent := CASE d.outcome->>'result'
+      WHEN 'selected' THEN selected = 1 AND selected_id = d.outcome->>'selectedObservationId'
+        AND ((d.outcome->>'rule' = 'single-source' AND inputs = 1) OR (d.outcome->>'rule' = 'sources-agree' AND inputs > 1 AND same))
+      WHEN 'conflict' THEN selected = 0 AND d.outcome->>'rule' = 'material-discrepancy' AND inputs > 1 AND NOT same
+      ELSE inputs = 0 AND d.outcome->>'rule' = 'no-candidates' END;
+  IF consistent IS NOT TRUE THEN
+    RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514';
+  END IF;
+  IF synthetic <> (d.mode = 'synthetic-proof') OR (d.mode = 'synthetic-proof' AND NOT public.predictive_harness_session()) THEN
+    RAISE EXCEPTION 'predictive-decision-mode-invalid' USING ERRCODE = '23514';
+  END IF;
+  IF d.predecessor_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.predictive_decisions p WHERE p.id = d.predecessor_id AND p.decided_at > d.decided_at) THEN
+    RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';
+  END IF;
+  RETURN NULL;
+END
+$$;
+CREATE CONSTRAINT TRIGGER predictive_check_decisions AFTER INSERT ON public.predictive_decisions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_decision_check();
+CREATE CONSTRAINT TRIGGER predictive_check_decision_inputs AFTER INSERT ON public.predictive_decision_inputs DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_decision_check();
+
 -- Privileges. PostgreSQL grants EXECUTE on new functions to PUBLIC by default;
 -- every predictive function is revoked from PUBLIC. Role grants apply only where
 -- the roles exist (the disposable harness creates them; hosted role setup is #95).
@@ -477,7 +570,8 @@ REVOKE ALL ON FUNCTION public.predictive_text(jsonb), public.predictive_optional
   public.predictive_integer(jsonb, numeric, numeric), public.predictive_identity(jsonb, text), public.predictive_entity_key(text, jsonb),
   public.predictive_stats_valid(jsonb), public.predictive_payload_valid(text, jsonb), public.predictive_harness_session(),
   public.predictive_rights_in_force(text, timestamptz, timestamptz), public.predictive_rights_allow(text, timestamptz, timestamptz, text),
-  public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check() FROM PUBLIC;
+  public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check(),
+  public.predictive_decision_valid(text, jsonb), public.predictive_decision_check() FROM PUBLIC;
 DO $grants$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_ingest') THEN
@@ -485,10 +579,12 @@ BEGIN
       public.predictive_integer(jsonb, numeric, numeric), public.predictive_identity(jsonb, text), public.predictive_entity_key(text, jsonb),
       public.predictive_stats_valid(jsonb), public.predictive_payload_valid(text, jsonb), public.predictive_harness_session(),
       public.predictive_rights_in_force(text, timestamptz, timestamptz), public.predictive_rights_allow(text, timestamptz, timestamptz, text),
-      public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check() TO predictive_ingest;
+      public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check(),
+      public.predictive_decision_valid(text, jsonb), public.predictive_decision_check() TO predictive_ingest;
     GRANT SELECT, INSERT ON public.predictive_source_profiles, public.predictive_rights_decisions, public.predictive_blobs,
       public.predictive_ingestion_runs, public.predictive_run_rights, public.predictive_artifacts, public.predictive_captures,
-      public.predictive_games, public.predictive_observations, public.predictive_artifact_observations TO predictive_ingest;
+      public.predictive_games, public.predictive_observations, public.predictive_artifact_observations,
+      public.predictive_decisions, public.predictive_decision_inputs TO predictive_ingest;
     GRANT SELECT ON public.predictive_teams TO predictive_ingest;
   END IF;
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_replay') THEN
@@ -496,7 +592,8 @@ BEGIN
       public.predictive_rights_allow(text, timestamptz, timestamptz, text) TO predictive_replay;
     GRANT SELECT ON public.predictive_source_profiles, public.predictive_rights_decisions, public.predictive_blobs,
       public.predictive_ingestion_runs, public.predictive_run_rights, public.predictive_artifacts, public.predictive_captures,
-      public.predictive_teams, public.predictive_games, public.predictive_observations, public.predictive_artifact_observations TO predictive_replay;
+      public.predictive_teams, public.predictive_games, public.predictive_observations, public.predictive_artifact_observations,
+      public.predictive_decisions, public.predictive_decision_inputs TO predictive_replay;
   END IF;
 END
 $grants$;

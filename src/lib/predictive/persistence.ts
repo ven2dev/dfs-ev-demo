@@ -1,10 +1,10 @@
 import type { Client } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
 import type { ArtifactStore } from "./artifacts.ts";
-import type { Artifact, Capture, Dataset, Observation, Profile, Request, Revision, RightsDecision } from "./types.ts";
+import type { Artifact, Capture, Dataset, Observation, Profile, Reconciliation, Request, Revision, RightsDecision } from "./types.ts";
 import { buildPassingYardsFromReplay, validatePassingYardsRequest } from "./passingYards.ts";
 import { blockedProfiles, replayObservations } from "./replay.ts";
-import { canonical, digest, entityKey, instant, observation, refuse, sourceKey, validateDataset, validateObservations } from "./validation.ts";
+import { canonical, digest, entityKey, instant, observation, refuse, sourceKey, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
 
 export const PERSISTENCE_BOUNDS = { artifacts: 256, captures: 512, bytes: 8_000_000, rows: 8192 } as const;
 const LOCK_NAMESPACE = 520052;
@@ -53,6 +53,12 @@ const RIGHTS_SQL = `SELECT jsonb_build_object('id',id,'profileId',profile_id,'pr
   'effectiveFrom',${timestamp("effective_from")},'effectiveTo',${timestamp("effective_to")},'decidedAt',${timestamp("decided_at")},
   'evidenceKind',evidence_kind,'evidenceReference',evidence_reference) AS decision
   FROM public.predictive_rights_decisions WHERE profile_id=ANY($1::text[]) ORDER BY id`;
+const DECISION_SQL = `SELECT jsonb_build_object('id',d.id,'kind',d.kind,'entityKey',d.entity_key,'policyId',d.policy_id,'mode',d.mode,
+  'decidedAt',${timestamp("d.decided_at")},'predecessorId',d.predecessor_id,'outcome',d.outcome,
+  'inputs',coalesce((SELECT jsonb_agg(jsonb_build_object('observationId',i.observation_id,'role',i.role) ORDER BY i.observation_id COLLATE "C")
+    FROM public.predictive_decision_inputs i WHERE i.decision_id=d.id),'[]'::jsonb)) AS decision
+  FROM public.predictive_decisions d JOIN public.predictive_ingestion_runs r ON r.id=d.run_id
+  WHERE r.status='published' AND d.kind='reconciliation' AND d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz ORDER BY d.id`;
 
 // No remote session, primary test DB or unregistered scratch database can use
 // this local proof. The caller owns one session; operations are sequential.
@@ -73,7 +79,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         const { byteSize, storageRef, ...metadata } = row.artifact;
         const artifact: Artifact = { ...metadata, bytes: await artifacts.read(storageRef, metadata.sha256, byteSize) };
         // Every stored row is re-verified against its immutable source bytes.
-        const checked = validateDataset({ formatVersion: 2, profiles: [profiles.get(artifact.profileId)!], rightsDecisions: [], artifacts: [artifact], captures: [] });
+        const checked = validateDataset({ formatVersion: 2, profiles: [profiles.get(artifact.profileId)!], rightsDecisions: [], artifacts: [artifact], captures: [], decisions: [] });
         stored = { artifact, revisions: new Map(checked.revisions.get(artifact.id)!.map((revision) => [revision.id, revision])) };
         parsed.set(artifact.id, stored);
       }
@@ -176,6 +182,15 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       await persistRights(pending.splice(index === -1 ? 0 : index, 1)[0]);
     }
   };
+  const persistDecision = async (decision: Reconciliation, runId: string) => {
+    const existing = (await client.query(DECISION_SQL.replace("d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz", "d.id=$1"), [decision.id])).rows[0]?.decision;
+    if (existing) { if (canonical(existing) !== canonical({ ...decision, inputs: [...decision.inputs].sort((a, b) => a.observationId < b.observationId ? -1 : 1) })) refuse("decision-id-conflict"); return; }
+    await client.query(`INSERT INTO public.predictive_decisions (id,kind,entity_key,policy_id,mode,outcome,run_id,decided_at,predecessor_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [decision.id, decision.kind, decision.entityKey, decision.policyId, decision.mode, decision.outcome,
+      runId, decision.decidedAt, decision.predecessorId]);
+    for (const input of decision.inputs) await client.query("INSERT INTO public.predictive_decision_inputs (decision_id,observation_id,role) VALUES ($1,$2,$3)",
+      [decision.id, input.observationId, input.role]);
+  };
   // The decision each published capture relied on, recorded for audit. A missing
   // decision leaves no row, and the deferred publication check refuses commit.
   const recordRunRights = (runId: string) => client.query(`INSERT INTO public.predictive_run_rights (run_id,rights_decision_id)
@@ -192,7 +207,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const checked = validateDataset({ ...dataset, captures: dataset.captures.map((capture) => ({ ...capture, state: "incomplete" })) });
     const bytes = dataset.artifacts.reduce((sum, artifact) => sum + Buffer.byteLength(artifact.bytes), 0);
     if (bytes > PERSISTENCE_BOUNDS.bytes || [...checked.revisions.values()].reduce((sum, rows) => sum + rows.length, 0) > PERSISTENCE_BOUNDS.rows) refuse("publication-bounds-refused");
-    if (!dataset.captures.length || dataset.captures.some((capture) => instant(capture.ingestedAt) > instant(now))) refuse("publication-time-refused");
+    if ((!dataset.captures.length && !checked.decisions.length) || dataset.captures.some((capture) => instant(capture.ingestedAt) > instant(now)) ||
+        checked.decisions.some((decision) => instant(decision.decidedAt) > instant(now))) refuse("publication-time-refused");
     for (const capture of dataset.captures) {
       if (capture.state === "published" && (!capture.bodyComplete || !capture.headerVerified || !capture.parserSucceeded)) refuse("incomplete-capture-published");
       if (capture.state === "published" && capture.parsedRows !== checked.revisions.get(capture.artifactId)!.length) refuse("capture-row-count-mismatch");
@@ -214,14 +230,23 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       const byId = new Map(dataset.artifacts.map((artifact) => [artifact.id, artifact]));
       const incoming = dataset.captures.flatMap((capture) => checked.revisions.get(capture.artifactId)!.map((revision) =>
         observation(revision, capture, byId.get(capture.artifactId)!)));
-      const referenced = [...new Set(incoming.flatMap((row) => [row.revision.id, ...(row.revision.predecessorId ? [row.revision.predecessorId] : [])]))];
-      validateObservations([...await read(idReadSql, [now, referenced]), ...incoming]);
+      const referenced = [...new Set([...incoming.flatMap((row) => [row.revision.id, ...(row.revision.predecessorId ? [row.revision.predecessorId] : [])]),
+        ...checked.decisions.flatMap((decision) => decision.inputs.map((input) => input.observationId))])];
+      const known = validateObservations([...await read(idReadSql, [now, referenced]), ...incoming]);
+      if (checked.decisions.length) {
+        const profiles = new Map([...(await profilesFor([...new Set([...known.values()].map((row) => row.artifact.profileId))])), ...dataset.profiles]
+          .map((profile) => [profile.id, profile]));
+        const earlier = (await client.query(DECISION_SQL.replace("d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz", "d.id=ANY($1::text[])"),
+          [checked.decisions.flatMap((decision) => decision.predecessorId ? [decision.predecessorId] : [])])).rows.map((row) => row.decision as Reconciliation);
+        validateDecisions([...earlier.filter((item) => !checked.decisions.some((decision) => decision.id === item.id)), ...checked.decisions], known, profiles);
+      }
       await insertRun(id, requestHash, now, "published", null, counts, bytes);
       for (const artifact of dataset.artifacts) await persistArtifact(artifact);
       for (const capture of dataset.captures) await persistCapture(capture, id);
       for (const artifact of dataset.artifacts.filter((item) => dataset.captures.some((capture) => capture.artifactId === item.id))) {
         for (const revision of checked.revisions.get(artifact.id)!) await persistRevision(revision, artifact);
       }
+      for (const decision of checked.decisions) await persistDecision(decision, id);
       await recordRunRights(id);
       return { id, status: "published", failureCode: null, reused: false };
     });
@@ -241,7 +266,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         try {
           const captures = dataset.captures.filter((capture) => capture.artifactId === original.id).map((capture) => ({ ...capture, state: "incomplete" as const }));
           const envelope = validateDataset({ formatVersion: 2, profiles: dataset.profiles, rightsDecisions: [],
-            artifacts: [{ ...original, bytes: "[]", sha256: digest("[]") }], captures });
+            artifacts: [{ ...original, bytes: "[]", sha256: digest("[]") }], captures, decisions: [] });
           await artifacts.write(original.bytes, original.sha256);
           const artifact = { ...original, id: "diagnostic-artifact:" + digest(id + ":" + original.id) };
           profiles = [...envelope.profiles.values()];
@@ -294,10 +319,16 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       rows = [...initial, ...members, ...schedules, ...coverage, ...aliases, ...entities];
     }
     if (rows.length > PERSISTENCE_BOUNDS.rows) refuse("replay-row-bounds-refused");
-    // Current access: rights known and in force at computation time.
+    // Current access uses the database clock, never a caller-supplied time: an
+    // old computedAt cannot bypass a later revocation.
+    const clock = (await client.query(`SELECT ${timestamp("now()")} AS now`)).rows[0].now as string;
     const profileIds = [...new Set(rows.map((row) => row.artifact.profileId))];
-    const decisions = (await client.query(RIGHTS_SQL, [profileIds])).rows.map((row) => row.decision as RightsDecision);
-    return buildPassingYardsFromReplay(replayObservations(rows, blockedProfiles(decisions, profileIds, request.computedAt)), request);
+    const rights = (await client.query(RIGHTS_SQL, [profileIds])).rows.map((row) => row.decision as RightsDecision);
+    const visible = validateObservations(rows);
+    const decisions = (await client.query(DECISION_SQL, [request.cutoff, [...new Set([...visible.values()].map((row) => "reconciliation:" + row.entityKey))]]))
+      .rows.map((row) => row.decision as Reconciliation);
+    validateDecisions(decisions, visible, new Map((await profilesFor(profileIds)).map((profile) => [profile.id, profile])));
+    return buildPassingYardsFromReplay(replayObservations(rows, blockedProfiles(rights, profileIds, clock), decisions), request);
   }, true);
 
   // Artifact failures produce an explicit unavailable result, never usable

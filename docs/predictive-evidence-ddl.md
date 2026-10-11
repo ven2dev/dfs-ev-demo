@@ -616,3 +616,26 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
   mandatory predictive cases, 13 lease cases, 4 readiness cases and catalog
   contracts verified
 - the CI gate and DB guards
+
+### Step 4 additions (2026-10-10)
+
+- **`predictive_decisions` and `predictive_decision_inputs`,** with
+  `predictive_decision_valid` and the deferred `predictive_decision_check`.
+  Only `reconciliation-v1` outcomes are accepted so far; completion,
+  participation and snap-compatibility outcomes stay refused until their steps.
+- **Reconciliation rules:**
+  - A decision's inputs must be distinct provider heads for one fact, each usable
+    by `decided_at`.
+  - `single-source` or `sources-agree` selects one input.
+  - `material-discrepancy` records a conflict and selects nothing.
+  - Any synthetic input forces `synthetic-proof` mode, which needs the harness
+    role. Chains can't branch.
+- **Replay:**
+  - A decision resolves a fact only when its inputs exactly equal the current
+    provider heads and it was decided by the cutoff.
+  - A later correction or a new provider makes it stale, and the fact goes back
+    to ambiguous.
+  - Bundles list the decisions they used in `reconciliations`.
+- **Fix:** persisted replay checks current-access rights against the database
+  clock (`now()`), never the caller's `computedAt`. An old computation time can no
+  longer bypass a later revocation, and a DB case proves it.

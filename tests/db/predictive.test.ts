@@ -11,6 +11,8 @@ import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { buildPassingYardsBundle } from "../../src/lib/predictive/passingYards.ts";
 import { createLocalPredictiveStore, MEMBERSHIP_READ_SQL, SCHEDULE_READ_SQL } from "../../src/lib/predictive/persistence.ts";
 import { ingestLocalDataset } from "../../src/lib/predictive/ingest.ts";
+import { reconcileFact } from "../../src/lib/predictive/policies.ts";
+import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { runLocalProof } from "../../scripts/predictive/local.ts";
 import { digest, TEAM_IDS } from "../../src/lib/predictive/validation.ts";
 import type { Dataset, Revision } from "../../src/lib/predictive/types.ts";
@@ -366,15 +368,27 @@ it("predictive PostgreSQL enforces rights knowledge time, harness-only synthetic
     expect(before.predictive_rights_decisions).toHaveLength(0);
     await store.publish("A", passingYardsFixture(false), NOW);
     expect((await client.query("SELECT run_id,rights_decision_id FROM predictive_run_rights")).rows).toEqual([{ run_id: "A", rights_decision_id: "rights-" + PROFILE }]);
-    // A later revocation keeps the audit record and blocks current use only.
+    // Two providers' claims for one fact coexist as separate chains and replay
+    // as ambiguous until a reconciliation decision exists.
+    const second = "synthetic-second-v1"; const secondSource = emptyDataset();
+    secondSource.profiles.push(profile(second)); secondSource.rightsDecisions.push(rights(second));
+    const original = findRow(passingYardsFixture(false), "player-synthetic-game-5") as Revision<"player-game-stats">;
+    addCapture(secondSource, "second", [revision("second-player-5", "player-game-stats", { ...original.data, passingYards: 305 })], CAPTURE_A, second);
+    await store.publish("second", secondSource, NOW);
+    const ambiguous = await store.replay(request());
+    expect(ambiguous.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "player-stats-ambiguous" });
+    // A later revocation keeps the audit record and blocks current use. Current
+    // access uses the database clock, so an old caller-supplied computedAt (here
+    // before the revocation's effective time) cannot bypass it.
     const revocation = emptyDataset();
     revocation.rightsDecisions.push(rights(PROFILE, { id: "revoked", predecessorId: "rights-" + PROFILE, allowedUses: [],
       effectiveFrom: "2026-10-09T12:00:00.000Z", decidedAt: "2026-10-09T12:00:00.000Z" }));
     addCapture(revocation, "noop", [revision("noop-unrelated", "schedule", schedule(78, "2026-09-14T00:15:00.000Z", "nfl:team:SEA", "nfl:team:ARI"))]);
     await store.publish("revocation", revocation, NOW);
-    expect((await store.replay(request())).status).toBe("ready-inputs");
-    const now = await store.replay({ ...request(), computedAt: "2026-10-10T00:00:00.000Z" });
-    expect(now.status).toBe("unavailable-inputs"); expect(now.reasons).toContain("rights-not-in-force");
+    for (const computedAt of [request().computedAt, "2026-10-10T00:00:00.000Z"]) {
+      const blocked = await store.replay({ ...request(), computedAt });
+      expect(blocked.status).toBe("unavailable-inputs"); expect(blocked.reasons).toContain("rights-not-in-force");
+    }
     expect((await client.query("SELECT count(*)::integer AS count FROM predictive_run_rights WHERE run_id='A'")).rows[0].count).toBe(1);
     await sqlProbe(client, async () => {
       // Branching and cross-profile chains are refused by keys, not by code.
@@ -387,15 +401,6 @@ it("predictive PostgreSQL enforces rights knowledge time, harness-only synthetic
         VALUES ('display',$1,'revoked','{public-display}','2026-10-09T13:00:00Z','2026-10-09T13:00:00Z','synthetic','probe')`, [PROFILE]))
         .rejects.toMatchObject({ code: "23514", message: "predictive-synthetic-rights-refused" });
     });
-    // Two providers' claims for one fact coexist as separate chains and replay
-    // as ambiguous until a reconciliation decision exists.
-    const second = "synthetic-second-v1"; const secondSource = emptyDataset();
-    secondSource.profiles.push(profile(second)); secondSource.rightsDecisions.push(rights(second));
-    const original = findRow(passingYardsFixture(false), "player-synthetic-game-5") as Revision<"player-game-stats">;
-    addCapture(secondSource, "second", [revision("second-player-5", "player-game-stats", { ...original.data, passingYards: 305 })], CAPTURE_A, second);
-    await store.publish("second", secondSource, NOW);
-    const ambiguous = await store.replay(request());
-    expect(ambiguous.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "player-stats-ambiguous" });
     // Synthetic evidence outside the harness role is refused at commit.
     const outsider = new Client(target.expected);
     try {
@@ -621,5 +626,58 @@ it("predictive trial, research-only, cross-profile and out-of-order rights canno
     await store.publish("grant", grant, NOW);
     expect((await store.replay(request())).status).toBe("ready-inputs");
     expect((await client.query("SELECT rights_decision_id FROM predictive_run_rights WHERE run_id='research'")).rows).toEqual([{ rights_decision_id: "rights-" + PROFILE }]);
+  });
+});
+it("predictive reconciliation decisions resolve only their exact provider heads and PostgreSQL refuses misstated evidence", async () => {
+  await withProof(async ({ client, store }) => {
+    const second = "synthetic-second-v1"; const fact = "player-game-stats:" + PRIOR[4] + ":" + PLAYER; const DECIDED = "2026-10-07T18:00:00.000Z";
+    const dataset = passingYardsFixture(false); dataset.profiles.push(profile(second)); dataset.rightsDecisions.push(rights(second));
+    const original = findRow(dataset, "player-synthetic-game-5") as Revision<"player-game-stats">;
+    addCapture(dataset, "second-source", [revision("second-player-5", "player-game-stats", { ...original.data })], CAPTURE_A, second);
+    await store.publish("A", dataset, NOW);
+    expect((await store.replay(request())).status).toBe("unavailable-inputs");
+    const heads = createReplay(dataset, CUTOFF_B, request().computedAt).heads(fact);
+    const agree = reconcileFact("rec-agree", fact, heads, DECIDED, "synthetic-proof");
+    const decisions = { ...emptyDataset(), profiles: dataset.profiles, rightsDecisions: dataset.rightsDecisions, decisions: [agree] };
+    await store.publish("decide", decisions, NOW);
+    const withDecision = { ...dataset, decisions: [agree] };
+    const resolved = await store.replay(request());
+    expect(resolved).toEqual(buildPassingYardsBundle(withDecision, request()));
+    expect(resolved.status).toBe("ready-inputs");
+    expect(resolved.reconciliations).toEqual([{ decisionId: "rec-agree", entityKey: "reconciliation:" + fact, result: "selected", decidedAt: DECIDED }]);
+    // Before its decision time the decision does not exist for replay.
+    expect((await store.replay(request("2026-10-07T17:59:59.999Z"))).reconciliations).toEqual([]);
+    const insertDecision = async (id: string, outcome: object, inputs: [string, string][], decidedAt = DECIDED, mode = "synthetic-proof", predecessor: string | null = null) => {
+      await client.query(`INSERT INTO predictive_decisions (id,kind,entity_key,policy_id,mode,outcome,run_id,decided_at,predecessor_id)
+        VALUES ($1,'reconciliation',$2,'reconciliation-v1',$3,$4,'decide',$5,$6)`, [id, "reconciliation:" + fact, mode, outcome, decidedAt, predecessor]);
+      for (const [observation, role] of inputs) await client.query("INSERT INTO predictive_decision_inputs VALUES ($1,$2,$3)", [id, observation, role]);
+    };
+    const selected = { result: "selected", selectedObservationId: "player-synthetic-game-5", rule: "sources-agree" };
+    const pair: [string, string][] = [["player-synthetic-game-5", "selected"], ["second-player-5", "candidate"]];
+    // Valid control under the same deferred checks.
+    await sqlProbe(client, async () => { await insertDecision("probe-ok", selected, pair, DECIDED, "synthetic-proof", "rec-agree"); await client.query("SET CONSTRAINTS ALL IMMEDIATE"); });
+    const refusals: [string, () => Promise<void>, string][] = [
+      ["input usable only after the decision", () => insertDecision("probe", selected, pair, "2026-10-07T11:00:00.000Z"), "predictive-decision-invalid"],
+      ["input from another fact", () => insertDecision("probe", selected, [["player-synthetic-game-5", "selected"], ["player-synthetic-game-4", "candidate"]]), "predictive-decision-invalid"],
+      ["conflict claimed for agreeing sources", () => insertDecision("probe", { result: "conflict", selectedObservationId: null, rule: "material-discrepancy" },
+        [["player-synthetic-game-5", "candidate"], ["second-player-5", "candidate"]]), "predictive-decision-rule-invalid"],
+      ["selection naming an input not marked selected", () => insertDecision("probe", { ...selected, selectedObservationId: "second-player-5" }, pair), "predictive-decision-rule-invalid"],
+      ["synthetic evidence under production mode", () => insertDecision("probe", selected, pair, DECIDED, "production-research"), "predictive-decision-mode-invalid"],
+    ];
+    for (const [, insert, message] of refusals) await sqlProbe(client, async () => {
+      await insert();
+      await expect(client.query("SET CONSTRAINTS ALL IMMEDIATE")).rejects.toMatchObject({ code: "23514", message });
+    });
+    await sqlProbe(client, async () => {
+      await insertDecision("probe-a", selected, pair, DECIDED, "synthetic-proof", "rec-agree");
+      await expect(insertDecision("probe-b", selected, pair, DECIDED, "synthetic-proof", "rec-agree")).rejects.toMatchObject({ code: "23505", constraint: "predictive_decisions_one_successor" });
+    });
+    // A later correction to one provider makes the decision stale for later cutoffs only.
+    const correction = { ...emptyDataset(), profiles: dataset.profiles, rightsDecisions: dataset.rightsDecisions };
+    addCapture(correction, "first-correction", [revision("first-correction", "player-game-stats", { ...original.data }, original.id)], CAPTURE_B);
+    await store.publish("correction", correction, NOW);
+    expect((await store.replay(request())).status).toBe("ready-inputs");
+    const stale = await store.replay(request(CUTOFF_B));
+    expect(stale.status).toBe("unavailable-inputs"); expect(stale.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "player-stats-ambiguous" });
   });
 });

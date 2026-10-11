@@ -2,8 +2,9 @@ import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { buildPassingYardsBundle } from "../../src/lib/predictive/passingYards.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
+import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader } from "../../src/lib/predictive/validation.ts";
-import type { Dataset, Revision } from "../../src/lib/predictive/types.ts";
+import type { Dataset, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
 import { addCapture, artifact, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_A, CUTOFF_B, gameId, membership, OPPONENT,
   passingYardsFixture, PLAYER, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamStats } from "./fixtures/passingYards.ts";
 
@@ -654,6 +655,70 @@ describe("feature-review regressions", () => {
     const result = unavailable(dataset, "player-zero-or-missing-denominator");
     expect(result.reasons).not.toContain("player-history-incomplete");
     expect(result.player[0]).toMatchObject({ expectedGames: 4, observedGames: 0, excludedGames: 4, unknownGames: 0, passingYardsPerAttempt: null });
+  });
+});
+
+describe("reconciliation-v1 cross-source decisions", () => {
+  const second = "synthetic-second-v1";
+  const fact = "player-game-stats:" + PRIOR[4] + ":" + PLAYER;
+  const DECIDED = "2026-10-07T18:00:00.000Z";
+  const twoSources = (passingYards: number) => {
+    const dataset = passingYardsFixture(false); dataset.profiles.push(profile(second)); dataset.rightsDecisions.push(rights(second));
+    const original = row(dataset, "player-synthetic-game-5") as Revision<"player-game-stats">;
+    addCapture(dataset, "second-source", [revision("second-player-5", "player-game-stats", { ...original.data, passingYards })], CAPTURE_A, second);
+    return dataset;
+  };
+  const heads = (dataset: Dataset, at = CUTOFF_A) => createReplay(dataset, at, request().computedAt).heads(fact);
+  it("records disagreement as a conflict that keeps the fact unavailable", () => {
+    const dataset = twoSources(305);
+    const decision = reconcileFact("rec-conflict", fact, heads(dataset), DECIDED, "synthetic-proof");
+    expect(decision.outcome).toEqual({ result: "conflict", selectedObservationId: null, rule: "material-discrepancy" });
+    dataset.decisions.push(decision);
+    const result = unavailable(dataset, "player-history-incomplete");
+    expect(result.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "player-stats-ambiguous" });
+    expect(result.reconciliations).toEqual([]);
+  });
+  it("selects agreeing providers deterministically and binds the decision into the bundle", () => {
+    const dataset = twoSources(300);
+    const decision = reconcileFact("rec-agree", fact, heads(dataset), DECIDED, "synthetic-proof");
+    expect(decision.outcome).toEqual({ result: "selected", selectedObservationId: "player-synthetic-game-5", rule: "sources-agree" });
+    expect(bundle(dataset).status).toBe("unavailable-inputs");
+    dataset.decisions.push(decision);
+    const result = bundle(dataset);
+    expect(result.status).toBe("ready-inputs"); expect(result.player[0].passingYardsSum).toBe(700);
+    expect(result.reconciliations).toEqual([{ decisionId: "rec-agree", entityKey: "reconciliation:" + fact, result: "selected", decidedAt: DECIDED }]);
+    expect(result.dependencies.map((dep) => dep.observationId)).toEqual(expect.arrayContaining(["player-synthetic-game-5", "second-player-5"]));
+  });
+  it("applies a decision only from its decision time and only to the exact heads it judged", () => {
+    const dataset = twoSources(300);
+    dataset.decisions.push(reconcileFact("rec-late", fact, heads(dataset), CAPTURE_B, "synthetic-proof"));
+    expect(unavailable(dataset, "player-history-incomplete").reconciliations).toEqual([]);
+    expect(buildPassingYardsBundle(dataset, request(CUTOFF_B)).status).toBe("ready-inputs");
+    const stale = twoSources(300);
+    stale.decisions.push(reconcileFact("rec-stale", fact, heads(stale), DECIDED, "synthetic-proof"));
+    const original = row(stale, "player-synthetic-game-5") as Revision<"player-game-stats">;
+    addCapture(stale, "first-correction", [revision("first-correction", "player-game-stats", { ...original.data, passingYards: 300 }, original.id)], CAPTURE_B);
+    expect(bundle(stale).status).toBe("ready-inputs");
+    const later = buildPassingYardsBundle(stale, request(CUTOFF_B));
+    expect(later.status).toBe("unavailable-inputs"); expect(later.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "player-stats-ambiguous" });
+  });
+  it.each([
+    ["decision-input-after-decision", (decision: Reconciliation) => ({ ...decision, decidedAt: "2026-10-07T11:00:00.000Z" })],
+    ["decision-entity-mismatch", (decision: Reconciliation) => ({ ...decision, inputs: [...decision.inputs.slice(0, 1), { observationId: "player-synthetic-game-4", role: "candidate" as const }] })],
+    ["decision-mode-mismatch", (decision: Reconciliation) => ({ ...decision, mode: "production-research" as const })],
+    ["decision-rule-mismatch", (decision: Reconciliation) => ({ ...decision, outcome: { result: "selected" as const, selectedObservationId: "second-player-5", rule: "sources-agree" as const },
+      inputs: decision.inputs.map((input) => ({ ...input, role: input.observationId === "second-player-5" ? "selected" as const : "candidate" as const })) })],
+    ["decision-input-missing", (decision: Reconciliation) => ({ ...decision, inputs: [...decision.inputs, { observationId: "unknown", role: "candidate" as const }] })],
+  ] as const)("refuses a decision that misstates its evidence: %s", (code, change) => {
+    const dataset = twoSources(305);
+    dataset.decisions.push(change(reconcileFact("rec-bad", fact, heads(dataset), DECIDED, "synthetic-proof")));
+    expect(() => bundle(dataset)).toThrow(code);
+  });
+  it("refuses branching decision chains for one fact", () => {
+    const dataset = twoSources(305);
+    const first = reconcileFact("rec-first", fact, heads(dataset), DECIDED, "synthetic-proof");
+    dataset.decisions.push(first, { ...first, id: "rec-a", predecessorId: first.id }, { ...first, id: "rec-b", predecessorId: first.id });
+    expect(() => bundle(dataset)).toThrow("decision-branch-refused");
   });
 });
 

@@ -76,8 +76,18 @@ export type Capture = {
   publishedAt: string | null; publicationEvidence: string | null; state: "published" | "incomplete";
   bodyComplete: boolean; headerVerified: boolean; parserSucceeded: boolean; parsedRows: number;
 };
+// A cross-source selection, recorded by a versioned policy. It never edits a
+// provider's revision; it only chooses among provider heads or reports conflict.
+export type Reconciliation = {
+  id: string; kind: "reconciliation"; entityKey: string; policyId: "reconciliation-v1";
+  mode: "production-research" | "synthetic-proof"; decidedAt: string; predecessorId: string | null;
+  outcome: { result: "selected" | "conflict" | "insufficient-sources"; selectedObservationId: string | null;
+    rule: "single-source" | "sources-agree" | "material-discrepancy" | "no-candidates" };
+  inputs: { observationId: string; role: "candidate" | "selected" }[];
+};
 export type Dataset = {
   formatVersion: 2; profiles: Profile[]; rightsDecisions: RightsDecision[]; artifacts: Artifact[]; captures: Capture[];
+  decisions: Reconciliation[];
 };
 export type Observation<K extends Kind = Kind> = {
   revision: Revision<K>; capture: Capture; artifact: Artifact; entityKey: string; sourceKey: string;
@@ -112,5 +122,6 @@ export type Bundle = {
   player: Summary[]; team: Summary[] | null; opponent: Summary[] | null;
   scheduledRestHours: number | null; dependencyAvailableAt: string | null; dependencies: Dependency[];
   excludedSchedule: Exclusion[]; inputDigest: string;
+  reconciliations: { decisionId: string; entityKey: string; result: Reconciliation["outcome"]["result"]; decidedAt: string }[];
   scheduleCoverage: { state: "complete" | "unverified"; missingGameIds: string[] };
 };

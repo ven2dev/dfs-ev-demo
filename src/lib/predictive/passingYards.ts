@@ -93,7 +93,7 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
     computedAt: request.computedAt, status: "unavailable-inputs", reasons: [], quality: [],
     target, teamId, opponentId, availability: { injury: status.injury, depth: status.depth, participation: "future-unknown" },
     player: [], team: enrich ? [] : null, opponent: enrich ? [] : null, scheduledRestHours: null,
-    dependencyAvailableAt: null, dependencies: [], excludedSchedule,
+    dependencyAvailableAt: null, dependencies: [], excludedSchedule, reconciliations: [],
     scheduleCoverage: { state: "unverified", missingGameIds: [] },
   };
   if (target && member && !reasons.size) {
@@ -224,6 +224,8 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
   })).sort((a, b) => compareText(a.observationId, b.observationId));
   base.dependencies = dependencies;
   base.dependencyAvailableAt = dependencies.length ? new Date(Math.max(...dependencies.map((row) => instant(row.availableAt)))).toISOString() : null;
+  base.reconciliations = replay.usedDecisions().map((decision) => ({ decisionId: decision.id, entityKey: decision.entityKey,
+    result: decision.outcome.result, decidedAt: decision.decidedAt }));
   base.reasons = [...reasons].sort(); base.quality = [...quality].sort();
   base.excludedSchedule.sort((a, b) => compareText(a.gameId, b.gameId));
   base.status = reasons.size ? "unavailable-inputs" : "ready-inputs";

@@ -1,5 +1,5 @@
-import type { Dataset, Kind, Observation, RightsDecision } from "./types.ts";
-import { allows, datasetContainer, instant, object, rightsInForce, validateDataset, validateObservations } from "./validation.ts";
+import type { Dataset, Kind, Observation, Reconciliation, RightsDecision } from "./types.ts";
+import { allows, compareText, datasetContainer, instant, object, rightsInForce, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
 
 export type Selection<K extends Kind> = ({ state: "selected"; observation: Observation<K> } |
   { state: "missing" | "ambiguous"; observation: null }) & { dependencies: Observation[] };
@@ -25,18 +25,38 @@ export const createReplay = (dataset: Dataset, cutoff: string, accessAt: string)
   const artifactIds = new Set(captures.map((value) => object(value).artifactId));
   const artifacts = root.artifacts.filter((value) => value && typeof value === "object" &&
     !Array.isArray(value) && artifactIds.has((value as Record<string, unknown>).id));
-  const validated = validateDataset({ ...root, artifacts, captures });
+  // Only decisions known by the cutoff can resolve anything at that cutoff.
+  const decisions = root.decisions.filter((value) => instant(object(value).decidedAt) <= at);
+  const validated = validateDataset({ ...root, artifacts, captures, decisions });
+  validateDecisions(validated.decisions, validated.observations, validated.profiles);
   const rows = [...validated.observations.values()];
-  return replayObservations(rows, blockedProfiles(validated.rightsDecisions, new Set(rows.map((row) => row.artifact.profileId)), accessAt));
+  return replayObservations(rows, blockedProfiles(validated.rightsDecisions, new Set(rows.map((row) => row.artifact.profileId)), accessAt), validated.decisions);
 };
 
 // Persistent reads supply only validated, cutoff-visible source chains. Each
 // source chain contributes its head; one fact with several provider heads is
 // ambiguous until a reconciliation decision selects one.
-export const replayObservations = (rows: Observation[], blocked: Set<string>) => {
+export const replayObservations = (rows: Observation[], blocked: Set<string>, decisions: Reconciliation[] = []) => {
   const active = [...validateObservations(rows).values()].filter((row) => !blocked.has(row.artifact.profileId));
   const superseded = new Set(active.map((row) => row.revision.predecessorId));
   const heads = active.filter((row) => !superseded.has(row.revision.id));
+  const replacedDecisions = new Set(decisions.map((decision) => decision.predecessorId));
+  const decisionHeads = new Map<string, Reconciliation[]>();
+  for (const decision of decisions.filter((item) => !replacedDecisions.has(item.id))) {
+    decisionHeads.set(decision.entityKey, [...(decisionHeads.get(decision.entityKey) ?? []), decision]);
+  }
+  const used = new Map<string, Reconciliation>();
+  // A decision resolves a fact only for the exact provider heads it judged. A
+  // later correction or a new provider makes it stale, and the fact ambiguous.
+  const reconciled = (key: string, matches: Observation[]) => {
+    const latest = decisionHeads.get("reconciliation:" + key) ?? [];
+    if (latest.length !== 1 || latest[0].outcome.result !== "selected") return null;
+    const judged = latest[0].inputs.map((input) => input.observationId).sort(compareText);
+    const current = matches.map((row) => row.revision.id).sort(compareText);
+    if (judged.join("\n") !== current.join("\n")) return null;
+    used.set(latest[0].id, latest[0]);
+    return matches.find((row) => row.revision.id === latest[0].outcome.selectedObservationId) ?? null;
+  };
   const aliasGames = new Map<string, Set<string>>();
   for (const row of heads) {
     if (row.revision.kind !== "schedule") continue;
@@ -53,9 +73,16 @@ export const replayObservations = (rows: Observation[], blocked: Set<string>) =>
         const dependencies = heads.filter((row) => row.revision.kind === "schedule" && aliases.includes(row.revision.data.rawGameId));
         return { state: "ambiguous", observation: null, dependencies };
       }
+      if (matches.length > 1) {
+        const chosen = reconciled(key, matches);
+        if (chosen) return { state: "selected", observation: chosen as Observation<K>, dependencies: matches };
+      }
       return matches.length === 1 ? { state: "selected", observation: matches[0] as Observation<K>, dependencies: matches } :
         { state: matches.length ? "ambiguous" : "missing", observation: null, dependencies: matches };
     },
+    // Current provider heads for one fact, for producing reconciliation decisions.
+    heads: (key: string): Observation[] => heads.filter((row) => row.entityKey === key),
+    usedDecisions: () => [...used.values()].sort((a, b) => compareText(a.id, b.id)),
     // Enumerate cutoff-known facts only; a future capture cannot invent a
     // prior-game gap or reveal a future identity to an earlier replay.
     keys: (kind: Kind): string[] => [...new Set(heads.filter((row) => row.revision.kind === kind).map((row) => row.entityKey))].sort(),

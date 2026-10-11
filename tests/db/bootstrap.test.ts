@@ -28,6 +28,8 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
       "predictive_artifacts",
       "predictive_blobs",
       "predictive_captures",
+      "predictive_decision_inputs",
+      "predictive_decisions",
       "predictive_games",
       "predictive_ingestion_runs",
       "predictive_observations",

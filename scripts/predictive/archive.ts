@@ -17,9 +17,9 @@ export const restoreRuns = async (store: ArtifactStore, reference: ArchiveRefere
   const runs: ArchivedRun[] = [];
   for (const item of root.runs) {
     const row = exact(item, ["id", "dataset"]);
-    const dataset = exact(row.dataset, ["formatVersion", "profiles", "rightsDecisions", "artifacts", "captures"]);
+    const dataset = exact(row.dataset, ["formatVersion", "profiles", "rightsDecisions", "artifacts", "captures", "decisions"]);
     if (typeof row.id !== "string" || dataset.formatVersion !== 2 || !Array.isArray(dataset.profiles) || !Array.isArray(dataset.rightsDecisions) ||
-        !Array.isArray(dataset.artifacts) || !Array.isArray(dataset.captures) ||
+        !Array.isArray(dataset.artifacts) || !Array.isArray(dataset.captures) || !Array.isArray(dataset.decisions) ||
         dataset.artifacts.length > 256 || dataset.captures.length > 512) refuse("archive-refused");
     const artifacts: Artifact[] = [];
     for (const item of dataset.artifacts) {
@@ -30,7 +30,7 @@ export const restoreRuns = async (store: ArtifactStore, reference: ArchiveRefere
       artifacts.push({ ...artifact, bytes: await store.read(metadata.sha256 + ".json", metadata.sha256, byteSize as number) } as Artifact);
     }
     runs.push({ id: row.id, dataset: { formatVersion: 2, profiles: dataset.profiles, rightsDecisions: dataset.rightsDecisions,
-      artifacts, captures: dataset.captures } as Dataset });
+      artifacts, captures: dataset.captures, decisions: dataset.decisions } as Dataset });
   }
   return runs;
 };
