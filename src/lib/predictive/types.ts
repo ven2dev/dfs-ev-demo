@@ -1,9 +1,10 @@
 export type SeasonType = "REG" | "POST";
 export type Candidate = "stats-v1:player_pass_yds" | "player-opponent-v1:player_pass_yds";
 export type Kind = "schedule" | "schedule-coverage" | "membership" | "player-game-stats" | "team-game-stats" |
-  "event-state-marker" | "participation-evidence" | "availability";
+  "event-state-marker" | "participation-evidence" | "availability" | "source-row-absent";
 export const KINDS: readonly Kind[] = ["schedule", "schedule-coverage", "membership", "player-game-stats",
-  "team-game-stats", "event-state-marker", "participation-evidence", "availability"];
+  "team-game-stats", "event-state-marker", "participation-evidence", "availability", "source-row-absent"];
+export type ScopeKind = "season-file" | "week-file" | "game" | "all-seasons" | "manual";
 
 // The ten count fields behind the nine registry markets. Values are per game.
 export const STAT_FIELDS = ["attempts", "completions", "passingYards", "passingTds", "passingInterceptions",
@@ -43,10 +44,20 @@ export type Availability = {
   gameId: string; playerId: string; teamId: string;
   rawReportStatus: string | null; rawPracticeStatus: string | null; rawDepthRank: number | null;
 };
+// A row present in an earlier capture is missing from a later complete capture
+// that covers its scope. It joins the prior row's source chain as its head and
+// copies the prior row's routing fields so scoped reads still find it.
+export const ROUTING_FIELDS = ["gameId", "playerId", "teamId", "season", "seasonType"] as const;
+export type SourceRowAbsent = {
+  priorObservationId: string; priorEntityKey: string; coveringCaptureId: string;
+  scopeKind: ScopeKind; scopeSeason: number | null; scopeWeek: number | null; scopeFilter: string | null;
+  gameId?: string; playerId?: string; teamId?: string; season?: number; seasonType?: SeasonType;
+};
 export type DataByKind = {
   schedule: Schedule; "schedule-coverage": ScheduleCoverage; membership: Membership;
   "player-game-stats": PlayerGameStats; "team-game-stats": TeamGameStats;
   "event-state-marker": EventStateMarker; "participation-evidence": ParticipationEvidence; availability: Availability;
+  "source-row-absent": SourceRowAbsent;
 };
 export type Revision<K extends Kind = Kind> = K extends Kind ? {
   id: string; kind: K; sourceRecordId: string; predecessorId: string | null; correctionReason: string | null; data: DataByKind[K];
@@ -68,7 +79,7 @@ export type RightsDecision = {
 export type Artifact = {
   id: string; sha256: string; bytes: string; profileId: string; retrievalKind: "full" | "header-probe"; origin: string;
   providerEtag: string | null; providerLastModified: string | null; releaseUpdatedAt: string | null;
-  scopeKind: "season-file" | "week-file" | "game" | "all-seasons" | "manual";
+  scopeKind: ScopeKind;
   scopeSeason: number | null; scopeWeek: number | null; scopeFilter: string | null;
 };
 export type Capture = {

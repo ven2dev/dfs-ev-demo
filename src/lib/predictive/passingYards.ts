@@ -154,7 +154,7 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
         const dated = membership.observation?.revision.data;
         let reason = !dated ? "membership-" + membership.state : !applicableQuarterback(dated, game) ? "membership-inapplicable" : completed(game);
         const stats = !reason ? select("player-game-stats", game.gameId, request.playerId) : null;
-        if (!reason && stats!.state === "ambiguous") reason = "player-stats-ambiguous";
+        if (!reason && (stats!.state === "ambiguous" || stats!.state === "absent")) reason = "player-stats-" + stats!.state;
         if (!reason) {
           const participation = participationDecision(replay, game.gameId, request.playerId, stats?.observation?.revision.data ?? null, stats?.observation ?? null);
           retain(participation.inputs);
@@ -224,6 +224,7 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
   })).sort((a, b) => compareText(a.observationId, b.observationId));
   base.dependencies = dependencies;
   base.dependencyAvailableAt = dependencies.length ? new Date(Math.max(...dependencies.map((row) => instant(row.availableAt)))).toISOString() : null;
+  if (replay.disappearedFacts().length) reasons.add("required-input-disappeared");
   base.reconciliations = replay.usedDecisions().map((decision) => ({ decisionId: decision.id, entityKey: decision.entityKey,
     result: decision.outcome.result, decidedAt: decision.decidedAt }));
   base.reasons = [...reasons].sort(); base.quality = [...quality].sort();

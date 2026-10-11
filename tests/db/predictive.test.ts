@@ -681,3 +681,51 @@ it("predictive reconciliation decisions resolve only their exact provider heads 
     expect(stale.status).toBe("unavailable-inputs"); expect(stale.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "player-stats-ambiguous" });
   });
 });
+it("predictive coverage-aware absences block later cutoffs only and PostgreSQL refuses unproven disappearance", async () => {
+  await withProof(async ({ client, store }) => {
+    const seasonFile = { scopeKind: "season-file" as const, scopeSeason: 2026 };
+    const a = passingYardsFixture(false); Object.assign(a.artifacts.find((value) => value.id === "A-team-game-stats")!, seasonFile);
+    await store.publish("A", a, NOW); const before = await store.replay(request());
+    // A later complete season file no longer contains games 4 and 5; only game 5's absence is recorded here.
+    const later = emptyDataset(); const teamRows = JSON.parse(a.artifacts.find((value) => value.id === "A-team-game-stats")!.bytes) as Revision[];
+    addCapture(later, "covering-file", teamRows.filter((value) => !["team-synthetic-game-4", "team-synthetic-game-5"].includes(value.id)), CAPTURE_B);
+    Object.assign(later.artifacts[0], seasonFile);
+    const absenceFor = (priorId: string, number: number) => {
+      const prior = findRow(a, priorId) as Revision<"team-game-stats">;
+      return revision("absent-" + priorId, "source-row-absent", { priorObservationId: prior.id, priorEntityKey: "team-game-stats:" + gameId(number) + ":" + TEAM,
+        coveringCaptureId: "capture-covering-file", scopeKind: "season-file", scopeSeason: 2026, scopeWeek: null, scopeFilter: null,
+        gameId: prior.data.gameId, teamId: prior.data.teamId, season: prior.data.season, seasonType: prior.data.seasonType }, prior.id);
+    };
+    const absence = absenceFor("team-synthetic-game-5", 5);
+    addCapture(later, "absence-ledger", [absence], CAPTURE_B);
+    await store.publish("absence", later, NOW);
+    expect(await store.replay(request())).toEqual(before);
+    const full = { ...a, artifacts: [...a.artifacts, ...later.artifacts], captures: [...a.captures, ...later.captures] };
+    const blocked = await store.replay(request(CUTOFF_B));
+    expect(blocked).toEqual(buildPassingYardsBundle(full, request(CUTOFF_B)));
+    expect(blocked.reasons).toContain("required-input-disappeared");
+    // Copied routing populates the indexed columns, so scoped reads find the absence head.
+    expect((await client.query("SELECT team_id, game_id::text AS game_id, season FROM predictive_observations WHERE id=$1", [absence.id])).rows[0])
+      .toEqual({ team_id: TEAM, game_id: PRIOR[4], season: 2026 });
+    const probeData = absenceFor("team-synthetic-game-4", 4).data;
+    const probe = (data: object) => sqlProbe(client, async () => {
+      await insertObservation(client, "probe-absent", "source-row-absent", data, { predecessor: "team-synthetic-game-4" });
+      await client.query("INSERT INTO predictive_artifact_observations (artifact_id,observation_id) VALUES ('absence-ledger','probe-absent')");
+      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+    });
+    await probe(probeData);
+    for (const [change, label] of [[{ coveringCaptureId: "capture-unknown" }, "unknown covering capture"], [{ season: 2025 }, "routing that differs from the prior"],
+      [{ priorObservationId: "team-synthetic-game-3" }, "prior that is not the predecessor"],
+      [{ coveringCaptureId: "capture-A-team-game-stats" }, "covering capture that still contains the row"],
+      [{ scopeKind: "all-seasons", scopeSeason: null }, "scope that misstates the covering artifact"]] as const) {
+      await expect(probe({ ...probeData, ...change }), label).rejects.toMatchObject({ code: "23514", message: "predictive-absence-invalid" });
+    }
+    // The row reappears: the provider chain simply continues after the absence.
+    const back = emptyDataset(); const prior = findRow(a, "team-synthetic-game-5") as Revision<"team-game-stats">;
+    addCapture(back, "returned", [revision("team-5-returns", "team-game-stats", prior.data, absence.id)], "2026-10-08T15:00:00.000Z");
+    await store.publish("returned", back, NOW);
+    const returned = await store.replay(request("2026-10-08T16:00:00.000Z"));
+    expect(returned.reasons).not.toContain("required-input-disappeared");
+    expect(returned.team![0].games.map((game) => game.gameId)).toContain(PRIOR[4]);
+  });
+});

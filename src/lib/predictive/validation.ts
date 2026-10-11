@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { NFL_TEAM_ABBREVIATIONS } from "../nflStadiums.ts";
-import { KINDS, STAT_FIELDS, type Artifact, type Capture, type Dataset, type Kind, type Observation,
+import { KINDS, ROUTING_FIELDS, STAT_FIELDS, type Artifact, type Capture, type Dataset, type Kind, type Observation,
   type Profile, type Reconciliation, type Revision, type RightsDecision, type Use } from "./types.ts";
 
 export class PredictiveError extends Error {
@@ -72,6 +72,7 @@ const fields: Record<Kind, string[]> = {
   "event-state-marker": ["gameId", "markerType", "markerValue", "terminalPlayTimeOfDay"],
   "participation-evidence": ["gameId", "playerId", "teamId", "evidenceKind", "claim"],
   availability: ["gameId", "playerId", "teamId", "rawReportStatus", "rawPracticeStatus", "rawDepthRank"],
+  "source-row-absent": ["priorObservationId", "priorEntityKey", "coveringCaptureId", "scopeKind", "scopeSeason", "scopeWeek", "scopeFilter"],
 };
 const MARKERS = ["provider-final-status", "terminal-play", "final-team-totals", "suspension-notice", "postponement-notice"];
 
@@ -99,8 +100,18 @@ export const validateRevision = (value: unknown): Revision => {
   if (row.correctionReason !== null) text(row.correctionReason);
   if ((row.predecessorId === null) !== (row.correctionReason === null)) refuse("correction-lineage-required");
   const kind = row.kind as Kind;
-  const data = exact(row.data, fields[kind]);
-  if (kind !== "schedule-coverage") gameIdentity(data.gameId);
+  // An absence carries the fixed fields plus exactly the routing fields of the row it replaces.
+  const data = kind === "source-row-absent" ? object(row.data) : exact(row.data, fields[kind]);
+  if (kind === "source-row-absent") {
+    const keys = Object.keys(data);
+    if (fields[kind].some((key) => !keys.includes(key)) || keys.some((key) => !fields[kind].includes(key) && !(ROUTING_FIELDS as readonly string[]).includes(key))) refuse("schema-fields-refused");
+    text(data.priorObservationId); text(data.coveringCaptureId);
+    if (typeof data.priorEntityKey !== "string" || !data.priorEntityKey.includes(":") || data.priorEntityKey.length > 300 ||
+        data.priorEntityKey.startsWith("source-row-absent:")) refuse("invalid-identity");
+    oneOf(data.scopeKind, ["season-file", "week-file", "game", "all-seasons", "manual"]);
+    optionalInteger(data.scopeSeason, 1920, 9999); optionalInteger(data.scopeWeek, 1, 22); optionalText(data.scopeFilter);
+    if ("gameId" in data) gameIdentity(data.gameId);
+  } else if (kind !== "schedule-coverage") gameIdentity(data.gameId);
   if ("playerId" in data) playerIdentity(data.playerId);
   for (const key of ["rawGameId", "rawTeam", "rawHomeTeam", "rawAwayTeam", "position", "rosterStatus", "markerValue"]) if (key in data) text(data[key]);
   for (const key of ["teamId", "homeTeamId", "awayTeamId"]) if (key in data) teamIdentity(data[key]);
@@ -131,7 +142,7 @@ export const validateRevision = (value: unknown): Revision => {
     oneOf(data.evidenceKind, ["participation-feed", "official-inactive-list", "provider-snap-count"]);
     oneOf(data.claim, ["offensive-participant", "zero-offensive-participation", "inactive-or-dnp"]);
     if (data.evidenceKind === "official-inactive-list" && data.claim !== "inactive-or-dnp") refuse("invalid-participation-claim");
-  } else {
+  } else if (kind === "availability") {
     optionalText(data.rawReportStatus); optionalText(data.rawPracticeStatus); optionalInteger(data.rawDepthRank, 1, 20);
   }
   return value as Revision;
@@ -140,6 +151,7 @@ export const validateRevision = (value: unknown): Revision => {
 // Entity key: what the fact is about, never which provider said it. Identical
 // to public.predictive_entity_key in migration 0003.
 export const entityKey = (revision: Revision): string => {
+  if (revision.kind === "source-row-absent") return revision.data.priorEntityKey;
   if (revision.kind === "schedule-coverage") {
     const data = revision.data;
     return "schedule-coverage:" + data.teamId + ":" + data.fromSeason + ":" + data.throughSeason;
@@ -351,6 +363,41 @@ export const validateObservations = (rows: Observation[]): Map<string, Observati
   return observations;
 };
 
+// A later full capture covers an earlier row's scope when it is the same profile
+// and filter and the same or a strictly broader file. Manual scopes cover nothing.
+export const scopeCovers = (covering: Artifact, prior: Artifact) =>
+  covering.retrievalKind === "full" && covering.profileId === prior.profileId && covering.scopeFilter === prior.scopeFilter &&
+  covering.scopeKind !== "manual" && prior.scopeKind !== "manual" && (
+    covering.scopeKind === "all-seasons" ||
+    (covering.scopeKind === "season-file" && covering.scopeSeason === prior.scopeSeason && ["season-file", "week-file", "game"].includes(prior.scopeKind)) ||
+    (covering.scopeKind === "week-file" && ["week-file", "game"].includes(prior.scopeKind) && covering.scopeSeason === prior.scopeSeason && covering.scopeWeek === prior.scopeWeek) ||
+    (covering.scopeKind === "game" && prior.scopeKind === "game" && covering.scopeSeason === prior.scopeSeason));
+
+// absence-v1: a disappearance is evidence only when a complete, full capture of
+// the same profile covers the prior row's scope and no longer contains the row.
+// Mirrors the source-row-absent rules in predictive_publication_check().
+const validateAbsences = (observations: Map<string, Observation>, captures: Map<string, Capture>,
+  artifacts: Map<string, Artifact>, revisions: Map<string, Revision[]>) => {
+  for (const row of observations.values()) {
+    if (row.revision.kind !== "source-row-absent") continue;
+    const data = row.revision.data;
+    const prior = observations.get(row.revision.predecessorId ?? "");
+    if (!prior || prior.revision.id !== data.priorObservationId || prior.revision.kind === "source-row-absent" || prior.entityKey !== data.priorEntityKey) refuse("absence-prior-invalid");
+    for (const field of ROUTING_FIELDS) {
+      const priorData = prior.revision.data as Record<string, unknown>;
+      if ((field in priorData) !== (field in data) || priorData[field] !== (data as Record<string, unknown>)[field]) refuse("absence-routing-mismatch");
+    }
+    const covering = captures.get(data.coveringCaptureId);
+    const coveringArtifact = covering && artifacts.get(covering.artifactId);
+    if (!covering || !coveringArtifact || covering.state !== "published" || !covering.bodyComplete || !covering.headerVerified || !covering.parserSucceeded ||
+        coveringArtifact.profileId !== row.artifact.profileId || coveringArtifact.scopeKind !== data.scopeKind || coveringArtifact.scopeSeason !== data.scopeSeason ||
+        coveringArtifact.scopeWeek !== data.scopeWeek || coveringArtifact.scopeFilter !== data.scopeFilter || !scopeCovers(coveringArtifact, prior.artifact)) refuse("absence-coverage-refused");
+    if (revisions.get(coveringArtifact.id)!.some((revision) => sourceKey(revision, coveringArtifact.profileId) === row.sourceKey)) refuse("absence-row-still-present");
+    if (instant(covering.availableAt) < instant(prior.capture.availableAt) || instant(covering.ingestedAt) < instant(prior.capture.ingestedAt) ||
+        instant(row.capture.availableAt) < instant(covering.availableAt) || instant(row.capture.ingestedAt) < instant(covering.ingestedAt)) refuse("absence-time-order-refused");
+  }
+};
+
 export const validateDataset = (value: unknown) => {
   const root = datasetContainer(value);
   if (root.profiles.length > 64 || root.rightsDecisions.length > 256 || root.artifacts.length > 256 || root.captures.length > 512 ||
@@ -417,5 +464,6 @@ export const validateDataset = (value: unknown) => {
   const dataset = value as Dataset;
   const observations = validateObservations(dataset.captures.flatMap((capture) => capture.state !== "published" ? [] :
     revisions.get(capture.artifactId)!.map((revision) => observation(revision, capture, artifacts.get(capture.artifactId)!))));
+  validateAbsences(observations, new Map(dataset.captures.map((capture) => [capture.id, capture])), artifacts, revisions);
   return { dataset, profiles, rightsDecisions, revisions, observations, decisions };
 };

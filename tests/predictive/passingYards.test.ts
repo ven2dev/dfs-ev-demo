@@ -4,7 +4,7 @@ import { buildPassingYardsBundle } from "../../src/lib/predictive/passingYards.t
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader } from "../../src/lib/predictive/validation.ts";
-import type { Dataset, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
+import type { Artifact, Capture, Dataset, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
 import { addCapture, artifact, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_A, CUTOFF_B, gameId, membership, OPPONENT,
   passingYardsFixture, PLAYER, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamStats } from "./fixtures/passingYards.ts";
 
@@ -719,6 +719,79 @@ describe("reconciliation-v1 cross-source decisions", () => {
     const first = reconcileFact("rec-first", fact, heads(dataset), DECIDED, "synthetic-proof");
     dataset.decisions.push(first, { ...first, id: "rec-a", predecessorId: first.id }, { ...first, id: "rec-b", predecessorId: first.id });
     expect(() => bundle(dataset)).toThrow("decision-branch-refused");
+  });
+});
+
+describe("absence-v1 coverage-aware disappearance", () => {
+  const LATER = "2026-10-08T15:00:00.000Z";
+  // The team-stats file is a season file, so a later complete season file can cover it.
+  const scoped = (artifactId = "A-team-game-stats") => {
+    const dataset = passingYardsFixture(false);
+    Object.assign(dataset.artifacts.find((value) => value.id === artifactId)!, { scopeKind: "season-file", scopeSeason: 2026 });
+    return dataset;
+  };
+  const disappear = (dataset: Dataset, options: { artifact?: Partial<Artifact>; capture?: Partial<Capture>; keepRow?: boolean; at?: string; ledgerAt?: string;
+    sourceArtifact?: string; priorId?: string; fact?: string } = {}) => {
+    const sourceArtifact = options.sourceArtifact ?? "A-team-game-stats"; const priorId = options.priorId ?? "team-synthetic-game-5";
+    const at = options.at ?? CAPTURE_B;
+    const kept = (JSON.parse(dataset.artifacts.find((value) => value.id === sourceArtifact)!.bytes) as Revision[]).filter((value) => options.keepRow || value.id !== priorId);
+    const rows = options.artifact?.retrievalKind === "header-probe" ? [] : kept;
+    addCapture(dataset, "covering-file", rows, at);
+    const covering = dataset.artifacts.at(-1)!;
+    Object.assign(covering, { scopeKind: "season-file", scopeSeason: 2026, ...options.artifact });
+    Object.assign(dataset.captures.at(-1)!, options.capture);
+    const prior = row(dataset, priorId) as Revision<"team-game-stats">;
+    const routing = Object.fromEntries(["gameId", "playerId", "teamId", "season", "seasonType"].filter((field) => field in prior.data)
+      .map((field) => [field, (prior.data as Record<string, unknown>)[field]]));
+    const absence = revision("absent-" + priorId, "source-row-absent", { priorObservationId: prior.id,
+      priorEntityKey: options.fact ?? "team-game-stats:" + PRIOR[4] + ":" + TEAM, coveringCaptureId: "capture-covering-file",
+      scopeKind: covering.scopeKind, scopeSeason: covering.scopeSeason, scopeWeek: covering.scopeWeek, scopeFilter: covering.scopeFilter, ...routing }, prior.id);
+    addCapture(dataset, "absence-ledger", [absence], options.ledgerAt ?? at);
+    return absence;
+  };
+  it("keeps earlier cutoffs unchanged and withholds a disappeared required input afterwards", () => {
+    const dataset = scoped(); disappear(dataset);
+    expect(bundle(dataset)).toEqual(bundle(scoped()));
+    const later = buildPassingYardsBundle(dataset, request(CUTOFF_B));
+    expect(later.status).toBe("unavailable-inputs");
+    expect(later.reasons).toEqual(expect.arrayContaining(["required-input-disappeared", "team-history-incomplete"]));
+    expect(later.team![0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "team-stats-absent" });
+    expect(later.dependencies.map((dep) => dep.observationId)).toContain("absent-team-synthetic-game-5");
+  });
+  it("continues the same source chain when the row reappears in a later capture", () => {
+    const dataset = scoped(); const absence = disappear(dataset);
+    const prior = row(dataset, "team-synthetic-game-5") as Revision<"team-game-stats">;
+    addCapture(dataset, "returned", [revision("team-5-returns", "team-game-stats", prior.data, absence.id)], LATER);
+    expect(buildPassingYardsBundle(dataset, request(CUTOFF_B)).reasons).toContain("required-input-disappeared");
+    const returned = buildPassingYardsBundle(dataset, request("2026-10-08T16:00:00.000Z"));
+    expect(returned.status).toBe("ready-inputs"); expect(returned.team![0].passingYardsSum).toBe(869);
+  });
+  it("reports a disappeared player statistic as absent rather than as a participation gap", () => {
+    const dataset = scoped("A-player-game-stats");
+    disappear(dataset, { sourceArtifact: "A-player-game-stats", priorId: "player-synthetic-game-5", fact: "player-game-stats:" + PRIOR[4] + ":" + PLAYER });
+    const result = buildPassingYardsBundle(dataset, request(CUTOFF_B));
+    expect(result.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "player-stats-absent" });
+    expect(result.reasons).toContain("required-input-disappeared");
+  });
+  it.each([
+    ["an incomplete covering capture", { capture: { state: "incomplete" as const } }, "absence-coverage-refused"],
+    ["a header-only probe", { artifact: { retrievalKind: "header-probe" as const } }, "absence-coverage-refused"],
+    ["a changed filter", { artifact: { scopeFilter: "week=5" } }, "absence-coverage-refused"],
+    ["a narrower week file", { artifact: { scopeKind: "week-file" as const, scopeWeek: 5 } }, "absence-coverage-refused"],
+    ["a manual scope", { artifact: { scopeKind: "manual" as const, scopeSeason: null } }, "absence-coverage-refused"],
+    ["a capture that still contains the row", { keepRow: true }, "absence-row-still-present"],
+    ["an absence recorded before its covering capture", { ledgerAt: "2026-10-08T12:30:00.000Z" }, "absence-time-order-refused"],
+  ] as const)("refuses an absence proven by %s", (_label, options, code) => {
+    const dataset = scoped(); disappear(dataset, options);
+    expect(() => validateDataset(dataset)).toThrow(code);
+  });
+  it.each([
+    ["routing that differs from the prior row", { season: 2025 }, "absence-routing-mismatch"],
+    ["a prior that is not its predecessor", { priorObservationId: "team-synthetic-game-4" }, "absence-prior-invalid"],
+  ] as const)("refuses an absence with %s", (_label, change, code) => {
+    const dataset = scoped(); const absence = disappear(dataset);
+    playerChanges(dataset, absence.id, change);
+    expect(() => validateDataset(dataset)).toThrow(code);
   });
 });
 

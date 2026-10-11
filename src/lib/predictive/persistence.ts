@@ -165,7 +165,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (old && (old.profile_id !== artifact.profileId || canonical({ id: revision.id, kind: old.kind, sourceRecordId: old.source_record_id, data: old.data,
       predecessorId: old.predecessor_id, correctionReason: old.correction_reason }) !== canonical(revision))) refuse("observation-id-conflict");
     if (!old) {
-      const games = "gameId" in revision.data ? [revision.data.gameId] : revision.kind === "schedule-coverage" ? revision.data.gameIds : [];
+      const games = "gameId" in revision.data && revision.data.gameId ? [revision.data.gameId] : revision.kind === "schedule-coverage" ? revision.data.gameIds : [];
       for (const id of games) await client.query("INSERT INTO public.predictive_games (id) VALUES ($1) ON CONFLICT DO NOTHING", [id]);
       await client.query(`INSERT INTO public.predictive_observations (id,kind,profile_id,source_record_id,data,entity_key,source_key,predecessor_id,correction_reason)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [revision.id, revision.kind, artifact.profileId, revision.sourceRecordId, revision.data,
@@ -310,7 +310,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       const gameIds = new Set([request.gameId]);
       const rawIds = new Set<string>();
       for (const row of [...schedules, ...members, ...coverage]) {
-        if ("gameId" in row.revision.data) gameIds.add(row.revision.data.gameId);
+        if ("gameId" in row.revision.data && row.revision.data.gameId) gameIds.add(row.revision.data.gameId);
         if (row.revision.kind === "schedule") rawIds.add(row.revision.data.rawGameId);
         if (row.revision.kind === "schedule-coverage") row.revision.data.gameIds.forEach((value) => gameIds.add(value));
       }

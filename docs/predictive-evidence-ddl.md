@@ -639,3 +639,26 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
 - **Fix:** persisted replay checks current-access rights against the database
   clock (`now()`), never the caller's `computedAt`. An old computation time can no
   longer bypass a later revocation, and a DB case proves it.
+
+### Step 5 additions (2026-10-10)
+
+- **The `source-row-absent` evidence kind** (`absence-v1`):
+  - Payload: the fixed fields from section 6, plus exactly the routing fields
+    (`gameId`, `playerId`, `teamId`, `season`, `seasonType`) copied from the row
+    it replaces.
+  - Its entity key is `priorEntityKey`, it shares the prior row's source key, and
+    its predecessor is the prior row.
+- **Acceptance (`predictive_absence_valid` and the matching code validator):**
+  - a complete, published, `full` capture of the same profile and filter covers
+    the prior row's scope (the same file, or a strictly broader one; manual scopes
+    cover nothing)
+  - the covering capture no longer links that source chain
+  - times run prior capture ≤ covering capture ≤ absence capture
+- **Replay:**
+  - From the absence's availability onward, a fact whose provider chain ends in
+    an absence returns `absent`, and the bundle gains
+    `required-input-disappeared`. Earlier cutoffs are unchanged.
+  - A later reappearance is a normal revision whose predecessor is the absence.
+- **Still deferred to PR B:** automatically detecting absences from real file
+  recaptures. Step 5 supplies the contract and its enforcement; tests construct
+  absences directly.

@@ -2,7 +2,7 @@ import type { Dataset, Kind, Observation, Reconciliation, RightsDecision } from 
 import { allows, compareText, datasetContainer, instant, object, rightsInForce, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
 
 export type Selection<K extends Kind> = ({ state: "selected"; observation: Observation<K> } |
-  { state: "missing" | "ambiguous"; observation: null }) & { dependencies: Observation[] };
+  { state: "missing" | "ambiguous" | "absent"; observation: null }) & { dependencies: Observation[] };
 
 // Current access: evidence is usable now only while its profile's rights in
 // force now allow model input. Earlier authorization is audit, not permission.
@@ -46,6 +46,7 @@ export const replayObservations = (rows: Observation[], blocked: Set<string>, de
     decisionHeads.set(decision.entityKey, [...(decisionHeads.get(decision.entityKey) ?? []), decision]);
   }
   const used = new Map<string, Reconciliation>();
+  const disappeared = new Map<string, Observation[]>();
   // A decision resolves a fact only for the exact provider heads it judged. A
   // later correction or a new provider makes it stale, and the fact ambiguous.
   const reconciled = (key: string, matches: Observation[]) => {
@@ -67,6 +68,12 @@ export const replayObservations = (rows: Observation[], blocked: Set<string>, de
   return {
     blockedProfiles: [...blocked].sort(),
     select: <K extends Kind>(kind: K, key: string): Selection<K> => {
+      // absence-v1: a provider chain whose head is an absence withholds the fact.
+      const absent = heads.filter((row) => row.revision.kind === "source-row-absent" && row.entityKey === key);
+      if (absent.length) {
+        disappeared.set(key, absent);
+        return { state: "absent", observation: null, dependencies: heads.filter((row) => row.entityKey === key) };
+      }
       const matches = heads.filter((row) => row.revision.kind === kind && row.entityKey === key);
       if (matches.some((row) => row.revision.kind === "schedule" && aliasGames.get(row.revision.data.rawGameId)!.size > 1)) {
         const aliases = matches.flatMap((row) => row.revision.kind === "schedule" ? [row.revision.data.rawGameId] : []);
@@ -83,6 +90,7 @@ export const replayObservations = (rows: Observation[], blocked: Set<string>, de
     // Current provider heads for one fact, for producing reconciliation decisions.
     heads: (key: string): Observation[] => heads.filter((row) => row.entityKey === key),
     usedDecisions: () => [...used.values()].sort((a, b) => compareText(a.id, b.id)),
+    disappearedFacts: () => [...disappeared.keys()].sort(compareText),
     // Enumerate cutoff-known facts only; a future capture cannot invent a
     // prior-game gap or reveal a future identity to an earlier replay.
     keys: (kind: Kind): string[] => [...new Set(heads.filter((row) => row.revision.kind === kind).map((row) => row.entityKey))].sort(),

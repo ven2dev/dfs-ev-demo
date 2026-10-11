@@ -443,6 +443,7 @@ $$;
 CREATE FUNCTION public.predictive_entity_key(kind text, data jsonb) RETURNS text
 LANGUAGE sql IMMUTABLE STRICT AS $$
   SELECT CASE kind
+    WHEN 'source-row-absent' THEN data->>'priorEntityKey'
     WHEN 'schedule-coverage' THEN kind || ':' || (data->>'teamId') || ':' || (data->>'fromSeason') || ':' || (data->>'throughSeason')
     WHEN 'event-state-marker' THEN kind || ':' || (data->>'gameId') || ':' || (data->>'markerType')
     WHEN 'participation-evidence' THEN kind || ':' || (data->>'gameId') || ':' || (data->>'playerId') || ':' || (data->>'evidenceKind')
@@ -497,11 +498,16 @@ BEGIN
     WHEN 'event-state-marker' THEN ARRAY['gameId','markerType','markerValue','terminalPlayTimeOfDay']
     WHEN 'participation-evidence' THEN ARRAY['gameId','playerId','teamId','evidenceKind','claim']
     WHEN 'availability' THEN ARRAY['gameId','playerId','teamId','rawReportStatus','rawPracticeStatus','rawDepthRank']
+    WHEN 'source-row-absent' THEN ARRAY['priorObservationId','priorEntityKey','coveringCaptureId','scopeKind','scopeSeason','scopeWeek','scopeFilter']
     ELSE NULL END;
-  IF fields IS NULL OR jsonb_typeof(data) <> 'object' OR
-    (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(data) key) IS DISTINCT FROM
+  IF fields IS NULL OR jsonb_typeof(data) <> 'object' THEN RETURN false; END IF;
+  IF kind = 'source-row-absent' THEN
+    -- The fixed fields plus exactly the routing fields copied from the prior row.
+    IF NOT (SELECT array_agg(key) FROM jsonb_object_keys(data) key) @> fields OR EXISTS (SELECT 1 FROM jsonb_object_keys(data) key
+        WHERE key <> ALL(fields) AND key <> ALL(ARRAY['gameId','playerId','teamId','season','seasonType'])) THEN RETURN false; END IF;
+  ELSIF (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(data) key) IS DISTINCT FROM
     (SELECT array_agg(key ORDER BY key) FROM unnest(fields) key) THEN RETURN false; END IF;
-  IF kind <> 'schedule-coverage' AND NOT public.predictive_identity(data->'gameId', 'game') THEN RETURN false; END IF;
+  IF (kind NOT IN ('schedule-coverage','source-row-absent') OR data ? 'gameId') AND NOT public.predictive_identity(data->'gameId', 'game') THEN RETURN false; END IF;
   IF data ? 'playerId' AND NOT public.predictive_identity(data->'playerId', 'player') THEN RETURN false; END IF;
   FOREACH name IN ARRAY ARRAY['teamId','homeTeamId','awayTeamId'] LOOP
     IF data ? name AND NOT public.predictive_identity(data->name, 'team') THEN RETURN false; END IF;
@@ -546,6 +552,14 @@ BEGIN
       RETURN (data->>'evidenceKind' IN ('participation-feed','official-inactive-list','provider-snap-count')) IS TRUE
         AND (data->>'claim' IN ('offensive-participant','zero-offensive-participation','inactive-or-dnp')) IS TRUE
         AND (data->>'evidenceKind' <> 'official-inactive-list' OR data->>'claim' = 'inactive-or-dnp');
+    WHEN 'source-row-absent' THEN
+      RETURN public.predictive_text(data->'priorObservationId') AND public.predictive_text(data->'coveringCaptureId')
+        AND jsonb_typeof(data->'priorEntityKey') = 'string' AND length(data->>'priorEntityKey') <= 300 AND position(':' IN data->>'priorEntityKey') > 0
+        AND data->>'priorEntityKey' NOT LIKE 'source-row-absent:%'
+        AND (data->>'scopeKind' IN ('season-file','week-file','game','all-seasons','manual')) IS TRUE
+        AND (data->'scopeSeason' = 'null'::jsonb OR public.predictive_integer(data->'scopeSeason', 1920, 9999))
+        AND (data->'scopeWeek' = 'null'::jsonb OR public.predictive_integer(data->'scopeWeek', 1, 22))
+        AND public.predictive_optional_text(data->'scopeFilter');
     WHEN 'availability' THEN
       RETURN public.predictive_optional_text(data->'rawReportStatus') AND public.predictive_optional_text(data->'rawPracticeStatus')
         AND (data->'rawDepthRank' = 'null'::jsonb OR public.predictive_integer(data->'rawDepthRank', 1, 20));
@@ -576,8 +590,8 @@ CREATE TABLE public.predictive_source_profiles (
   allowlist_version text NOT NULL CHECK (length(allowlist_version) BETWEEN 1 AND 256),
   license text NOT NULL CHECK (length(license) BETWEEN 1 AND 256),
   attribution text CHECK (length(attribution) BETWEEN 1 AND 256),
-  evidence_kinds text[] NOT NULL CHECK (cardinality(evidence_kinds) BETWEEN 1 AND 8 AND evidence_kinds <@ ARRAY['schedule','schedule-coverage',
-    'membership','player-game-stats','team-game-stats','event-state-marker','participation-evidence','availability']::text[]),
+  evidence_kinds text[] NOT NULL CHECK (cardinality(evidence_kinds) BETWEEN 1 AND 9 AND evidence_kinds <@ ARRAY['schedule','schedule-coverage',
+    'membership','player-game-stats','team-game-stats','event-state-marker','participation-evidence','availability','source-row-absent']::text[]),
   registered_at timestamptz NOT NULL CHECK (isfinite(registered_at) AND registered_at = date_trunc('milliseconds', registered_at))
 );
 
@@ -736,7 +750,7 @@ CREATE TABLE public.predictive_observations (
   correction_reason text CHECK (length(correction_reason) BETWEEN 1 AND 256 AND correction_reason !~ '[[:cntrl:]]'),
   CHECK (entity_key = public.predictive_entity_key(kind, data)),
   CHECK (source_key = entity_key || '|' || profile_id || '|' || source_record_id),
-  CHECK (kind = split_part(entity_key, ':', 1)),
+  CHECK (kind = 'source-row-absent' OR kind = split_part(entity_key, ':', 1)),
   UNIQUE (id, source_key),
   -- A correction never crosses providers, profiles or facts.
   FOREIGN KEY (predecessor_id, source_key) REFERENCES public.predictive_observations(id, source_key) DEFERRABLE INITIALLY DEFERRED,
@@ -806,6 +820,48 @@ END
 $$;
 CREATE TRIGGER predictive_rights_validate BEFORE INSERT ON public.predictive_rights_decisions FOR EACH ROW EXECUTE FUNCTION public.predictive_rights_check();
 
+-- absence-v1, mirroring validateAbsences() in code: the prior row is the
+-- absence's predecessor with identical routing; a complete, full capture of the
+-- same profile and filter covers the prior row's scope and lacks the row; and
+-- times run prior capture <= covering capture <= absence capture.
+CREATE FUNCTION public.predictive_absence_valid(absence_id text) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE a public.predictive_observations; p public.predictive_observations; cov public.predictive_captures;
+  ca public.predictive_artifacts; pa public.predictive_artifacts; pc public.predictive_captures; ac public.predictive_captures; field text;
+BEGIN
+  SELECT * INTO a FROM public.predictive_observations WHERE id = absence_id;
+  SELECT * INTO p FROM public.predictive_observations WHERE id = a.predecessor_id;
+  IF p.id IS NULL OR p.id <> a.data->>'priorObservationId' OR p.kind = 'source-row-absent' OR p.entity_key <> a.data->>'priorEntityKey' THEN RETURN false; END IF;
+  FOREACH field IN ARRAY ARRAY['gameId','playerId','teamId','season','seasonType'] LOOP
+    IF (p.data ? field) <> (a.data ? field) OR (p.data->field) IS DISTINCT FROM (a.data->field) THEN RETURN false; END IF;
+  END LOOP;
+  SELECT c.* INTO cov FROM public.predictive_captures c JOIN public.predictive_ingestion_runs r ON r.id = c.run_id
+    WHERE c.id = a.data->>'coveringCaptureId' AND c.state = 'published' AND r.status = 'published'
+      AND c.body_complete AND c.header_verified AND c.parser_succeeded;
+  IF cov.id IS NULL THEN RETURN false; END IF;
+  SELECT * INTO ca FROM public.predictive_artifacts WHERE id = cov.artifact_id;
+  IF ca.profile_id <> a.profile_id OR ca.scope_kind <> a.data->>'scopeKind' OR ca.scope_season IS DISTINCT FROM (a.data->>'scopeSeason')::integer
+    OR ca.scope_week IS DISTINCT FROM (a.data->>'scopeWeek')::integer OR ca.scope_filter IS DISTINCT FROM a.data->>'scopeFilter' THEN RETURN false; END IF;
+  SELECT c.* INTO pc FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
+    JOIN public.predictive_ingestion_runs r ON r.id = c.run_id
+    WHERE l.observation_id = p.id AND c.state = 'published' AND r.status = 'published'
+    ORDER BY c.ingested_at, c.available_at, c.captured_at, c.id COLLATE "C" LIMIT 1;
+  SELECT * INTO pa FROM public.predictive_artifacts WHERE id = pc.artifact_id;
+  IF NOT (ca.retrieval_kind = 'full' AND ca.profile_id = pa.profile_id AND ca.scope_filter IS NOT DISTINCT FROM pa.scope_filter
+      AND ca.scope_kind <> 'manual' AND pa.scope_kind <> 'manual' AND (
+        ca.scope_kind = 'all-seasons'
+        OR (ca.scope_kind = 'season-file' AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season AND pa.scope_kind IN ('season-file','week-file','game'))
+        OR (ca.scope_kind = 'week-file' AND pa.scope_kind IN ('week-file','game') AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season
+          AND ca.scope_week IS NOT DISTINCT FROM pa.scope_week)
+        OR (ca.scope_kind = 'game' AND pa.scope_kind = 'game' AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season))) THEN RETURN false; END IF;
+  IF EXISTS (SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_observations o ON o.id = l.observation_id
+      WHERE l.artifact_id = ca.id AND o.source_key = a.source_key) THEN RETURN false; END IF;
+  SELECT c.* INTO ac FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
+    WHERE l.observation_id = a.id AND c.state = 'published' ORDER BY c.ingested_at, c.available_at, c.captured_at, c.id COLLATE "C" LIMIT 1;
+  RETURN cov.available_at >= pc.available_at AND cov.ingested_at >= pc.ingested_at
+    AND ac.available_at >= cov.available_at AND ac.ingested_at >= cov.ingested_at;
+END
+$$;
+
 CREATE FUNCTION public.predictive_publication_check() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE affected text[];
 BEGIN
@@ -841,6 +897,10 @@ BEGIN
       SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
       WHERE l.observation_id = o.id AND c.state = 'published')) THEN
     RAISE EXCEPTION 'predictive-publication-invalid' USING ERRCODE = '23514';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id = ANY(affected) AND o.kind = 'source-row-absent'
+      AND NOT public.predictive_absence_valid(o.id)) THEN
+    RAISE EXCEPTION 'predictive-absence-invalid' USING ERRCODE = '23514';
   END IF;
   -- Every correction's first usable capture must follow an independently
   -- usable predecessor in the same source chain.
@@ -968,7 +1028,7 @@ REVOKE ALL ON FUNCTION public.predictive_text(jsonb), public.predictive_optional
   public.predictive_stats_valid(jsonb), public.predictive_payload_valid(text, jsonb), public.predictive_harness_session(),
   public.predictive_rights_in_force(text, timestamptz, timestamptz), public.predictive_rights_allow(text, timestamptz, timestamptz, text),
   public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check(),
-  public.predictive_decision_valid(text, jsonb), public.predictive_decision_check() FROM PUBLIC;
+  public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text) FROM PUBLIC;
 DO $grants$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_ingest') THEN
@@ -977,7 +1037,7 @@ BEGIN
       public.predictive_stats_valid(jsonb), public.predictive_payload_valid(text, jsonb), public.predictive_harness_session(),
       public.predictive_rights_in_force(text, timestamptz, timestamptz), public.predictive_rights_allow(text, timestamptz, timestamptz, text),
       public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check(),
-      public.predictive_decision_valid(text, jsonb), public.predictive_decision_check() TO predictive_ingest;
+      public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text) TO predictive_ingest;
     GRANT SELECT, INSERT ON public.predictive_source_profiles, public.predictive_rights_decisions, public.predictive_blobs,
       public.predictive_ingestion_runs, public.predictive_run_rights, public.predictive_artifacts, public.predictive_captures,
       public.predictive_games, public.predictive_observations, public.predictive_artifact_observations,
