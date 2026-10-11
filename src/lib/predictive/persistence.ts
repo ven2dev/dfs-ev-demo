@@ -3,9 +3,11 @@ import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
 import type { ArtifactStore } from "./artifacts.ts";
 import type { Artifact, Capture, Dataset, Decision, Label, Observation, Profile, Request, Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
+import { validateParticipationDecisions } from "./participation.ts";
+import { featureRunRecord } from "./featureRuns.ts";
 import { buildPassingYardsFromReplay, validatePassingYardsRequest } from "./passingYards.ts";
 import { blockedProfiles, replayObservations } from "./replay.ts";
-import { canonical, digest, entityKey, instant, observation, refuse, sourceKey, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
+import { canonical, digest, entityKey, instant, observation, refuse, rightsInForce, sourceKey, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
 
 export const PERSISTENCE_BOUNDS = { artifacts: 256, captures: 512, bytes: 8_000_000, rows: 8192 } as const;
 const LOCK_NAMESPACE = 520052;
@@ -306,7 +308,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     });
   };
 
-  const replay = async (request: Request) => transaction(async () => {
+  const compute = async (request: Request) => transaction(async () => {
     validatePassingYardsRequest(request);
     const initial = await read(ENTITY_READ_SQL, [request.cutoff, [request.gameId], request.playerId]);
     // Discovery only; rights are applied to the complete row set below.
@@ -346,8 +348,48 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const profileMap = new Map((await profilesFor(profileIds)).map((profile) => [profile.id, profile]));
     validateDecisions(decisions, visible, profileMap);
     validateCompletionDecisions(decisions, visible, profileMap);
-    return buildPassingYardsFromReplay(replayObservations(rows, blockedProfiles(rights, profileIds, clock), decisions), request);
+    validateParticipationDecisions(decisions, visible, profileMap);
+    const bundle = buildPassingYardsFromReplay(replayObservations(rows, blockedProfiles(rights, profileIds, clock), decisions), request);
+    return { bundle, clock, rights, profileMap };
   }, true);
+  const replay = async (request: Request) => (await compute(request)).bundle;
+
+  // Save every run: compute in the read-only snapshot, then record the exact
+  // bundle and dependencies in a separate transaction as the recorder, without
+  // rereading evidence. A run that cannot be recorded is not returned as usable.
+  const replayAndRecord = async (request: Request) => {
+    const { bundle, clock, rights, profileMap } = await compute(request);
+    const profiles = [...new Set(bundle.dependencies.map((dependency) => dependency.profileId))];
+    const at = instant(clock);
+    const rightsAtAccess = new Map(profiles.map((id) => [id, rightsInForce(rights, id, at, at)?.id ?? null]));
+    const synthetic = profiles.some((id) => profileMap.get(id)?.purpose === "synthetic-test");
+    try {
+      return await transaction(async () => {
+        if ((await client.query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='predictive_recorder'")).rows.length) {
+          await client.query("SET LOCAL ROLE predictive_recorder");
+        }
+        const recordedAt = (await client.query(`SELECT ${timestamp("now()")} AS now`)).rows[0].now as string;
+        const record = featureRunRecord(bundle, { rightsInForce: rightsAtAccess, synthetic, recordedAt });
+        await artifacts.write(record.bundleBytes, record.bundleSha256);
+        await client.query(`INSERT INTO public.predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'application/json',$3)
+          ON CONFLICT (sha256) DO NOTHING`, [record.bundleSha256, Buffer.byteLength(record.bundleBytes), record.bundleSha256 + ".json"]);
+        await client.query(`INSERT INTO public.predictive_feature_runs (id,mode,feature_version,candidate,player_id,game_id,cutoff,computed_at,recorded_at,
+          code_version,status,reasons,input_digest,execution_digest,bundle_blob_sha256) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+        [record.id, record.mode, record.featureVersion, record.candidate, record.playerId, record.gameId, record.cutoff, record.computedAt, record.recordedAt,
+          record.codeVersion, record.status, record.reasons, record.inputDigest, record.executionDigest, record.bundleSha256]);
+        const columns = { observations: "observation_id", decisions: "decision_id", rightsDecisions: "rights_decision_id",
+          policies: "policy_id", featureDefinitions: "feature_definition_id" } as const;
+        for (const [group, column] of Object.entries(columns)) {
+          for (const value of record.dependencies[group as keyof typeof columns]) {
+            await client.query(`INSERT INTO public.predictive_feature_run_dependencies (feature_run_id,${column}) VALUES ($1,$2)`, [record.id, value]);
+          }
+        }
+        return { status: "recorded" as const, bundle, featureRunId: record.id, inputDigest: record.inputDigest, executionDigest: record.executionDigest };
+      });
+    } catch {
+      return { status: "unavailable" as const, reason: "feature-run-not-recorded" };
+    }
+  };
 
   // Artifact failures produce an explicit unavailable result, never usable
   // summaries with missing provenance. The fixed code reveals no file paths.
@@ -355,5 +397,5 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     try { return { status: "replayed" as const, bundle: await replay(request) }; }
     catch { return { status: "unavailable" as const, reason: "persisted-replay-unavailable" }; }
   };
-  return { publish, replay, safeReplay, recordRefusal };
+  return { publish, replay, replayAndRecord, safeReplay, recordRefusal };
 };

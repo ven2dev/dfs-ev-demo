@@ -835,3 +835,94 @@ it("predictive participation records and outcome labels enforce all eight bindin
     });
   });
 });
+it("predictive feature runs are recorded after read-only computation with exact dependencies, digests and retention", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    const a = passingYardsFixture(false); await store.publish("A", a, NOW);
+    const recorded = recordCompletion("completion-5", PRIOR[4], markerHeadsAt(validateDataset(a).observations.values(), PRIOR[4], instant(CAPTURE_A)), CAPTURE_A, "synthetic-proof");
+    const registrations = { profiles: a.profiles, rightsDecisions: a.rightsDecisions };
+    await store.publish("decide", { ...emptyDataset(), ...registrations, decisions: [recorded] }, NOW);
+    const first = await store.replayAndRecord(request());
+    if (first.status !== "recorded") throw new Error("expected a recorded run");
+    expect(first.bundle).toEqual(await store.replay(request()));
+    const run = (await client.query("SELECT * FROM predictive_feature_runs WHERE id=$1", [first.featureRunId])).rows[0];
+    expect(run).toMatchObject({ input_digest: first.bundle.inputDigest, status: "ready-inputs", mode: "synthetic-proof", feature_version: "passing-yards-replay-v3" });
+    const dependencies = (await client.query("SELECT * FROM predictive_feature_run_dependencies WHERE feature_run_id=$1", [first.featureRunId])).rows;
+    expect(dependencies.filter((row) => row.observation_id).map((row) => row.observation_id).sort()).toEqual(first.bundle.dependencies.map((row) => row.observationId).sort());
+    expect(dependencies.filter((row) => row.decision_id).map((row) => row.decision_id)).toEqual(["completion-5"]);
+    expect(dependencies.filter((row) => row.rights_decision_id).map((row) => row.rights_decision_id)).toEqual(["rights-" + PROFILE]);
+    expect(dependencies.filter((row) => row.feature_definition_id).map((row) => row.feature_definition_id)).toEqual(["passing-yards-replay-v3"]);
+    const blob = (await client.query("SELECT byte_size,storage_ref FROM predictive_blobs WHERE sha256=$1", [run.bundle_blob_sha256])).rows[0];
+    expect(JSON.parse(await artifacts.read(blob.storage_ref, run.bundle_blob_sha256, blob.byte_size))).toEqual(first.bundle);
+    // A renewed rights decision that still allows model input changes only the execution record.
+    const renewal = { ...emptyDataset(), profiles: a.profiles, rightsDecisions: [...a.rightsDecisions,
+      rights(PROFILE, { id: "rights-renewed", predecessorId: "rights-" + PROFILE, effectiveFrom: "2026-10-09T12:00:00.000Z", decidedAt: "2026-10-09T12:00:00.000Z" })] };
+    addCapture(renewal, "renewal-noop", [revision("renewal-noop", "schedule", schedule(81, "2026-09-14T00:15:00.000Z", "nfl:team:SEA", "nfl:team:ARI"))]);
+    await store.publish("renewal", renewal, NOW);
+    const second = await store.replayAndRecord(request());
+    if (second.status !== "recorded") throw new Error("expected a recorded run");
+    expect(second.inputDigest).toBe(first.inputDigest); expect(second.executionDigest).not.toBe(first.executionDigest);
+    expect((await client.query("SELECT rights_decision_id FROM predictive_feature_run_dependencies WHERE feature_run_id=$1 AND rights_decision_id IS NOT NULL",
+      [second.featureRunId])).rows).toEqual([{ rights_decision_id: "rights-renewed" }]);
+    // A run that cannot be recorded is reported unavailable, never returned as usable.
+    const failing = { query: async (sql: string, params?: unknown[]) => {
+      if (sql.startsWith("INSERT INTO public.predictive_feature_runs")) throw new Error("simulated recording failure");
+      return client.query(sql, params);
+    } } as unknown as Client;
+    const broken = await createLocalPredictiveStore(failing, target, artifacts);
+    expect(await broken.replayAndRecord(request())).toEqual({ status: "unavailable", reason: "feature-run-not-recorded" });
+    expect((await client.query("SELECT count(*)::integer AS count FROM predictive_feature_runs")).rows[0].count).toBe(2);
+    // The deferred checks, exercised as the recorder role on copies of a valid run.
+    const correction = passingYardsFixture();
+    await store.publish("B", { ...emptyDataset(), ...registrations, artifacts: correction.artifacts.filter((value) => value.id.startsWith("B-")),
+      captures: correction.captures.filter((value) => value.artifactId.startsWith("B-")) }, NOW);
+    const copy = async (filter: string, overrides = "", extra: [string, string] | null = null) => {
+      await client.query("SET LOCAL ROLE predictive_recorder");
+      await client.query(`INSERT INTO predictive_feature_runs (id,mode,feature_version,candidate,player_id,game_id,cutoff,computed_at,recorded_at,code_version,
+        status,reasons,input_digest,execution_digest,bundle_blob_sha256) SELECT 'probe', ${overrides || "mode"},feature_version,candidate,player_id,game_id,cutoff,
+        computed_at,recorded_at,code_version,status,reasons,input_digest,execution_digest,bundle_blob_sha256 FROM predictive_feature_runs WHERE id=$1`, [second.featureRunId]);
+      await client.query(`INSERT INTO predictive_feature_run_dependencies (feature_run_id,observation_id,decision_id,rights_decision_id,policy_id,feature_definition_id)
+        SELECT 'probe',observation_id,decision_id,rights_decision_id,policy_id,feature_definition_id FROM predictive_feature_run_dependencies
+        WHERE feature_run_id=$1 AND ${filter}`, [second.featureRunId]);
+      if (extra) await client.query(`INSERT INTO predictive_feature_run_dependencies (feature_run_id,${extra[0]}) VALUES ('probe',$1)`, [extra[1]]);
+    };
+    await sqlProbe(client, async () => { await copy("true"); await client.query("SET CONSTRAINTS ALL IMMEDIATE"); });
+    const refusals: [string, () => Promise<void>, string][] = [
+      ["a dependency usable only after the cutoff", () => copy("true", "", ["observation_id", "player-correction-B"]), "predictive-feature-run-dependency-after-cutoff"],
+      ["a decision whose inputs are not listed", () => copy("(observation_id IS NULL OR observation_id NOT LIKE 'terminal-%')"), "predictive-feature-run-inputs-incomplete"],
+      ["a ready run without model-input rights", () => copy("rights_decision_id IS NULL"), "predictive-feature-run-rights-not-in-force"],
+      ["no feature definition", () => copy("feature_definition_id IS NULL"), "predictive-feature-run-definition-missing"],
+      ["synthetic evidence under production mode", () => copy("true", "'production-research'"), "predictive-feature-run-mode-invalid"],
+    ];
+    for (const [label, run, message] of refusals) await sqlProbe(client, async () => {
+      await run();
+      await expect(client.query("SET CONSTRAINTS ALL IMMEDIATE"), label).rejects.toMatchObject({ code: "23514", message });
+    });
+    // A recorded run is sealed: its manifest cannot be extended later.
+    await sqlProbe(client, async () => {
+      await expect(client.query("INSERT INTO predictive_feature_run_dependencies (feature_run_id,policy_id) VALUES ($1,'extra-v1')", [first.featureRunId]))
+        .rejects.toMatchObject({ code: "23514", message: "predictive-feature-run-sealed" });
+    });
+    for (const [role, sql] of [["predictive_recorder", "INSERT INTO predictive_games (id) VALUES ('00000000-0000-4000-8000-000000000098')"],
+      ["predictive_replay", "INSERT INTO predictive_feature_run_pins (id,feature_run_id,reason,pinned_at) VALUES ('x','y','owner',now())"]]) {
+      await sqlProbe(client, async () => { await client.query(`SET LOCAL ROLE ${role}`); await expect(client.query(sql)).rejects.toMatchObject({ code: "42501" }); });
+    }
+    // Retention: unpinned runs expire after 90 days; a pin holds a run until unpinned.
+    const expired = async (id: string, at: string) => (await client.query("SELECT predictive_feature_run_expired($1,$2) AS expired", [id, at])).rows[0].expired;
+    const recordedAt = new Date(run.recorded_at).getTime();
+    const day = (days: number) => new Date(recordedAt + days * 86_400_000).toISOString();
+    expect(await expired(first.featureRunId, day(89))).toBe(false);
+    expect(await expired(first.featureRunId, day(91))).toBe(true);
+    await client.query("INSERT INTO predictive_feature_run_pins (id,feature_run_id,reason,pinned_at) VALUES ('pin-1',$1,'training',$2)", [first.featureRunId, day(1)]);
+    expect(await expired(first.featureRunId, day(91))).toBe(false);
+    await sqlProbe(client, async () => {
+      await expect(client.query("INSERT INTO predictive_feature_run_unpins (pin_id,unpinned_at) VALUES ('pin-1',$1)", [day(0)]))
+        .rejects.toMatchObject({ code: "23514", message: "predictive-unpin-before-pin" });
+    });
+    await client.query("INSERT INTO predictive_feature_run_unpins (pin_id,unpinned_at) VALUES ('pin-1',$1)", [day(95)]);
+    expect(await expired(first.featureRunId, day(94))).toBe(false);
+    expect(await expired(first.featureRunId, day(96))).toBe(true);
+    await sqlProbe(client, async () => {
+      await expect(client.query("INSERT INTO predictive_feature_run_unpins (pin_id,unpinned_at) VALUES ('pin-1',$1)", [day(97)])).rejects.toMatchObject({ code: "23505" });
+    });
+  });
+});

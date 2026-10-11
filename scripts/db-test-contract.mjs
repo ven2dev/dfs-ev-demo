@@ -44,6 +44,7 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive coverage-aware absences block later cutoffs only and PostgreSQL refuses unproven disappearance",
   "predictive completion records must cite exactly the marker heads known at their decision time and state the policy outcome",
   "predictive participation records and outcome labels enforce all eight binding checks in PostgreSQL",
+  "predictive feature runs are recorded after read-only computation with exact dependencies, digests and retention",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

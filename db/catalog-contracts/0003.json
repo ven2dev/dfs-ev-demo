@@ -1,5 +1,5 @@
 {
-  "catalogFingerprint": "e36979b164b7a842ae54cf561ed3bb61bd993158d259085cb3da8c7ce0fa5b7a",
+  "catalogFingerprint": "bbffead00b50217b6e80a7a62783a7674d6463583962852cf5278d29aff4fc01",
   "contractVersion": 1,
   "formatVersion": 1,
   "objects": [
@@ -2472,6 +2472,357 @@
       },
       "kind": "column",
       "name": "predictive_decisions.run_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_dependencies.decision_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 6,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_dependencies.feature_definition_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_dependencies.feature_run_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_dependencies.observation_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_dependencies.policy_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_dependencies.rights_decision_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_pins.feature_run_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_pins.id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_pins.pinned_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_pins.reason"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_unpins.pin_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "predictive_feature_run_unpins.unpinned_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 15,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.bundle_blob_sha256"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.candidate"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.code_version"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.computed_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.cutoff"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 14,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.execution_digest"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.feature_version"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "uuid"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.game_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 13,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.input_digest"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.mode"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.player_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "text[]"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.reasons"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.recorded_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_feature_runs.status"
     },
     {
       "definition": {
@@ -7968,6 +8319,1026 @@
     {
       "definition": {
         "deferrable": false,
+        "definition": "CHECK (num_nonnulls(observation_id, decision_id, rights_decision_id, policy_id, feature_definition_id) = 1)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_dependencies.predictive_feature_run_dependencies_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (decision_id) REFERENCES predictive_decisions(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_dependencies",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_dependencies",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_dependencies.predictive_feature_run_dependencies_decision_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (length(feature_definition_id) >= 1 AND length(feature_definition_id) <= 64)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_dependencies.predictive_feature_run_dependencies_feature_definition_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (feature_run_id) REFERENCES predictive_feature_runs(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_dependencies",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_dependencies",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_runs",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_runs",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_dependencies.predictive_feature_run_dependencies_feature_run_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL feature_run_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_dependencies.predictive_feature_run_dependencies_feature_run_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (observation_id) REFERENCES predictive_observations(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_dependencies",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_dependencies",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_observations",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_observations",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_dependencies.predictive_feature_run_dependencies_observation_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (policy_id ~ '^[a-z0-9-]+-v[0-9]+$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_dependencies.predictive_feature_run_dependencies_policy_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (rights_decision_id) REFERENCES predictive_rights_decisions(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_dependencies",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_dependencies",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_rights_decisions",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_rights_decisions",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_dependencies.predictive_feature_run_dependencies_rights_decision_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (feature_run_id) REFERENCES predictive_feature_runs(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_pins",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_pins",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_runs",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_runs",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_pins.predictive_feature_run_pins_feature_run_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL feature_run_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_pins.predictive_feature_run_pins_feature_run_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (length(id) >= 1 AND length(id) <= 256)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_pins.predictive_feature_run_pins_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_pins.predictive_feature_run_pins_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(pinned_at) AND pinned_at = date_trunc('milliseconds'::text, pinned_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_pins.predictive_feature_run_pins_pinned_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL pinned_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_pins.predictive_feature_run_pins_pinned_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_pins.predictive_feature_run_pins_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (reason = ANY (ARRAY['training'::text, 'serving'::text, 'evaluation'::text, 'owner'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_pins.predictive_feature_run_pins_reason_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL reason",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_pins.predictive_feature_run_pins_reason_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (pin_id) REFERENCES predictive_feature_run_pins(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_pins",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_pins",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_unpins",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_run_unpins",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_unpins.predictive_feature_run_unpins_pin_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL pin_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_unpins.predictive_feature_run_unpins_pin_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (pin_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_unpins.predictive_feature_run_unpins_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(unpinned_at) AND unpinned_at = date_trunc('milliseconds'::text, unpinned_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_unpins.predictive_feature_run_unpins_unpinned_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL unpinned_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_run_unpins.predictive_feature_run_unpins_unpinned_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": true,
+        "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED",
+        "enforced": true,
+        "initially_deferred": true,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "t",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_check_feature_runs"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (bundle_blob_sha256) REFERENCES predictive_blobs(sha256)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_blobs",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_blobs",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_runs",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_runs",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_bundle_blob_sha256_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL bundle_blob_sha256",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_bundle_blob_sha256_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (length(candidate) >= 1 AND length(candidate) <= 128)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_candidate_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL candidate",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_candidate_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(computed_at) AND computed_at = date_trunc('milliseconds'::text, computed_at) AND computed_at >= cutoff)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(recorded_at) AND recorded_at = date_trunc('milliseconds'::text, recorded_at) AND recorded_at >= computed_at)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((status = 'ready-inputs'::text) = (cardinality(reasons) = 0))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_check2"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (length(code_version) >= 1 AND length(code_version) <= 64)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_code_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL code_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_code_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL computed_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_computed_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(cutoff) AND cutoff = date_trunc('milliseconds'::text, cutoff))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_cutoff_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL cutoff",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_cutoff_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (execution_digest ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_execution_digest_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL execution_digest",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_execution_digest_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (length(feature_version) >= 1 AND length(feature_version) <= 64)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_feature_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL feature_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_feature_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (game_id) REFERENCES predictive_games(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_runs",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_feature_runs",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_games",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_games",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_game_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL game_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_game_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (length(id) >= 1 AND length(id) <= 256)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (input_digest ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_input_digest_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL input_digest",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_input_digest_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (mode = ANY (ARRAY['production-research'::text, 'synthetic-proof'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_mode_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL mode",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_mode_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (player_id ~ '^00-[0-9]{7}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_player_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL player_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_player_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL reasons",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_reasons_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL recorded_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_recorded_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (status = ANY (ARRAY['ready-inputs'::text, 'unavailable-inputs'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_status_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL status",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_feature_runs.predictive_feature_runs_status_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
         "definition": "CHECK (id::text ~ '^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'::text)",
         "enforced": true,
         "initially_deferred": false,
@@ -11471,6 +12842,96 @@
     },
     {
       "definition": {
+        "definition": "CREATE UNIQUE INDEX predictive_feature_run_dependencies_unique ON predictive_feature_run_dependencies USING btree (feature_run_id, COALESCE(observation_id, decision_id, rights_decision_id, policy_id, feature_definition_id))",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_feature_run_dependencies",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_feature_run_dependencies_unique"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX predictive_feature_run_pins_pkey ON predictive_feature_run_pins USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_feature_run_pins",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_feature_run_pins_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX predictive_feature_run_unpins_pkey ON predictive_feature_run_unpins USING btree (pin_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_feature_run_unpins",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_feature_run_unpins_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX predictive_feature_runs_pkey ON predictive_feature_runs USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_feature_runs",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_feature_runs_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX predictive_feature_runs_recorded_idx ON predictive_feature_runs USING btree (recorded_at)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_feature_runs",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_feature_runs_recorded_idx"
+    },
+    {
+      "definition": {
         "definition": "CREATE UNIQUE INDEX predictive_games_pkey ON predictive_games USING btree (id)",
         "exclusion": false,
         "immediate": true,
@@ -12290,6 +13751,74 @@
         "view_definition": null
       },
       "kind": "relation",
+      "name": "predictive_feature_run_dependencies"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "predictive_feature_run_pins"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "predictive_feature_run_unpins"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "predictive_feature_runs"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
       "name": "predictive_games"
     },
     {
@@ -12484,6 +14013,33 @@
     },
     {
       "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_feature_run_check()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE target text; f public.predictive_feature_runs; synthetic boolean;\nBEGIN\n  IF TG_TABLE_NAME = 'predictive_feature_runs' THEN target := NEW.id; ELSE target := NEW.feature_run_id; END IF;\n  SELECT * INTO f FROM public.predictive_feature_runs WHERE id = target;\n  IF EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d WHERE d.feature_run_id = target AND d.observation_id IS NOT NULL AND NOT EXISTS (\n      SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n      JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id WHERE l.observation_id = d.observation_id AND c.state = 'published'\n        AND ru.status = 'published' AND c.available_at <= f.cutoff AND c.ingested_at <= f.cutoff)) THEN\n    RAISE EXCEPTION 'predictive-feature-run-dependency-after-cutoff' USING ERRCODE = '23514';\n  END IF;\n  IF EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d JOIN public.predictive_decisions dc ON dc.id = d.decision_id\n      WHERE d.feature_run_id = target AND dc.decided_at > f.cutoff) THEN\n    RAISE EXCEPTION 'predictive-feature-run-dependency-after-cutoff' USING ERRCODE = '23514';\n  END IF;\n  IF EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d JOIN public.predictive_decision_inputs i ON i.decision_id = d.decision_id\n      WHERE d.feature_run_id = target AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies o\n        WHERE o.feature_run_id = target AND o.observation_id = i.observation_id)) THEN\n    RAISE EXCEPTION 'predictive-feature-run-inputs-incomplete' USING ERRCODE = '23514';\n  END IF;\n  IF NOT EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d WHERE d.feature_run_id = target AND d.feature_definition_id = f.feature_version) THEN\n    RAISE EXCEPTION 'predictive-feature-run-definition-missing' USING ERRCODE = '23514';\n  END IF;\n  IF f.status = 'ready-inputs' AND EXISTS (\n      WITH profiles AS (SELECT DISTINCT o.profile_id FROM public.predictive_feature_run_dependencies d\n        JOIN public.predictive_observations o ON o.id = d.observation_id WHERE d.feature_run_id = target)\n      SELECT 1 FROM profiles pr WHERE NOT EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies rd WHERE rd.feature_run_id = target\n        AND rd.rights_decision_id = public.predictive_rights_in_force(pr.profile_id, f.recorded_at, f.recorded_at)\n        AND public.predictive_rights_allow(pr.profile_id, f.recorded_at, f.recorded_at, 'model-input'))) THEN\n    RAISE EXCEPTION 'predictive-feature-run-rights-not-in-force' USING ERRCODE = '23514';\n  END IF;\n  synthetic := EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d JOIN public.predictive_observations o ON o.id = d.observation_id\n    JOIN public.predictive_source_profiles sp ON sp.id = o.profile_id WHERE d.feature_run_id = target AND sp.purpose = 'synthetic-test');\n  IF synthetic <> (f.mode = 'synthetic-proof') OR (f.mode = 'synthetic-proof' AND NOT public.predictive_harness_session()) THEN\n    RAISE EXCEPTION 'predictive-feature-run-mode-invalid' USING ERRCODE = '23514';\n  END IF;\n  RETURN NULL;\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "predictive_feature_run_check()"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_feature_run_dependency_guard()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NOT EXISTS (SELECT 1 FROM public.predictive_feature_runs f WHERE f.id = NEW.feature_run_id\n      AND f.xmin::text::bigint = pg_catalog.pg_current_xact_id()::text::bigint % 4294967296) THEN\n    RAISE EXCEPTION 'predictive-feature-run-sealed' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "predictive_feature_run_dependency_guard()"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_feature_run_expired(run_id text, t timestamp with time zone)\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT f.recorded_at + interval '90 days' <= t AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_run_pins p\n    WHERE p.feature_run_id = f.id AND p.pinned_at <= t AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_run_unpins u WHERE u.pin_id = p.id AND u.unpinned_at <= t))\n  FROM public.predictive_feature_runs f WHERE f.id = run_id\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "predictive_feature_run_expired(run_id text, t timestamp with time zone)"
+    },
+    {
+      "definition": {
         "definition": "CREATE OR REPLACE FUNCTION public.predictive_harness_session()\n RETURNS boolean\n LANGUAGE sql\n STABLE\nAS $function$\n  SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_harness')\n    AND pg_catalog.pg_has_role(session_user, 'predictive_harness', 'MEMBER')\n$function$\n",
         "kind": "f",
         "security_definer": false
@@ -12607,6 +14163,15 @@
       },
       "kind": "routine",
       "name": "predictive_text(value jsonb)"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_unpin_check()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF NEW.unpinned_at < (SELECT pinned_at FROM public.predictive_feature_run_pins WHERE id = NEW.pin_id) THEN\n    RAISE EXCEPTION 'predictive-unpin-before-pin' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "predictive_unpin_check()"
     },
     {
       "definition": {
@@ -12802,6 +14367,94 @@
     },
     {
       "definition": {
+        "definition": "CREATE TRIGGER predictive_feature_run_dependencies_immutable BEFORE DELETE OR UPDATE ON predictive_feature_run_dependencies FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_feature_run_dependencies.predictive_feature_run_dependencies_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_feature_run_dependencies_no_truncate BEFORE TRUNCATE ON predictive_feature_run_dependencies FOR EACH STATEMENT EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_feature_run_dependencies.predictive_feature_run_dependencies_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_feature_run_dependencies_sealed BEFORE INSERT ON predictive_feature_run_dependencies FOR EACH ROW EXECUTE FUNCTION predictive_feature_run_dependency_guard()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_feature_run_dependencies.predictive_feature_run_dependencies_sealed"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_feature_run_pins_immutable BEFORE DELETE OR UPDATE ON predictive_feature_run_pins FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_feature_run_pins.predictive_feature_run_pins_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_feature_run_pins_no_truncate BEFORE TRUNCATE ON predictive_feature_run_pins FOR EACH STATEMENT EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_feature_run_pins.predictive_feature_run_pins_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_feature_run_unpins_immutable BEFORE DELETE OR UPDATE ON predictive_feature_run_unpins FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_feature_run_unpins.predictive_feature_run_unpins_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_feature_run_unpins_no_truncate BEFORE TRUNCATE ON predictive_feature_run_unpins FOR EACH STATEMENT EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_feature_run_unpins.predictive_feature_run_unpins_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_unpin_validate BEFORE INSERT ON predictive_feature_run_unpins FOR EACH ROW EXECUTE FUNCTION predictive_unpin_check()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_feature_run_unpins.predictive_unpin_validate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE CONSTRAINT TRIGGER predictive_check_feature_runs AFTER INSERT ON predictive_feature_runs DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION predictive_feature_run_check()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_feature_runs.predictive_check_feature_runs"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_feature_runs_immutable BEFORE DELETE OR UPDATE ON predictive_feature_runs FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_feature_runs.predictive_feature_runs_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_feature_runs_no_truncate BEFORE TRUNCATE ON predictive_feature_runs FOR EACH STATEMENT EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_feature_runs.predictive_feature_runs_no_truncate"
+    },
+    {
+      "definition": {
         "definition": "CREATE TRIGGER predictive_games_immutable BEFORE DELETE OR UPDATE ON predictive_games FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
         "enabled": "O"
       },
@@ -12970,7 +14623,7 @@
       },
       {
         "filename": "0003_predictive_evidence.sql",
-        "sha256": "8b8fbfe08665943e265cbfaea31bf64db8282417b526b898171841374646646d",
+        "sha256": "4c5cc60ec85bf9f8ae8fd868add6de76e7e0b2f86f6be96d987b14a8bcfbfa5c",
         "version": 3
       }
     ]

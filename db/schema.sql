@@ -1238,6 +1238,138 @@ END
 $$;
 CREATE CONSTRAINT TRIGGER predictive_check_labels AFTER INSERT ON public.predictive_outcome_labels DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_label_check();
 
+-- Saved feature runs (feature-run-retention-v1). A run is computed in a
+-- read-only snapshot and recorded separately, with its full bundle as a blob and
+-- an exact dependency manifest. input_digest covers cutoff-time inputs only;
+-- execution_digest also covers rights, policies, code and timing.
+CREATE TABLE public.predictive_feature_runs (
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  mode text NOT NULL CHECK (mode IN ('production-research','synthetic-proof')),
+  feature_version text NOT NULL CHECK (length(feature_version) BETWEEN 1 AND 64),
+  candidate text NOT NULL CHECK (length(candidate) BETWEEN 1 AND 128),
+  player_id text NOT NULL CHECK (player_id ~ '^00-[0-9]{7}$'),
+  game_id uuid NOT NULL REFERENCES public.predictive_games(id),
+  cutoff timestamptz NOT NULL CHECK (isfinite(cutoff) AND cutoff = date_trunc('milliseconds', cutoff)),
+  computed_at timestamptz NOT NULL CHECK (isfinite(computed_at) AND computed_at = date_trunc('milliseconds', computed_at) AND computed_at >= cutoff),
+  recorded_at timestamptz NOT NULL CHECK (isfinite(recorded_at) AND recorded_at = date_trunc('milliseconds', recorded_at) AND recorded_at >= computed_at),
+  code_version text NOT NULL CHECK (length(code_version) BETWEEN 1 AND 64),
+  status text NOT NULL CHECK (status IN ('ready-inputs','unavailable-inputs')),
+  reasons text[] NOT NULL,
+  input_digest text NOT NULL CHECK (input_digest ~ '^[a-f0-9]{64}$'),
+  execution_digest text NOT NULL CHECK (execution_digest ~ '^[a-f0-9]{64}$'),
+  bundle_blob_sha256 text NOT NULL REFERENCES public.predictive_blobs(sha256),
+  CHECK ((status = 'ready-inputs') = (cardinality(reasons) = 0))
+);
+CREATE INDEX predictive_feature_runs_recorded_idx ON public.predictive_feature_runs (recorded_at);
+
+CREATE TABLE public.predictive_feature_run_dependencies (
+  feature_run_id text NOT NULL REFERENCES public.predictive_feature_runs(id),
+  observation_id text REFERENCES public.predictive_observations(id),
+  decision_id text REFERENCES public.predictive_decisions(id),
+  rights_decision_id text REFERENCES public.predictive_rights_decisions(id),
+  policy_id text CHECK (policy_id ~ '^[a-z0-9-]+-v[0-9]+$'),
+  feature_definition_id text CHECK (length(feature_definition_id) BETWEEN 1 AND 64),
+  CHECK (num_nonnulls(observation_id, decision_id, rights_decision_id, policy_id, feature_definition_id) = 1)
+);
+CREATE UNIQUE INDEX predictive_feature_run_dependencies_unique ON public.predictive_feature_run_dependencies
+  (feature_run_id, coalesce(observation_id, decision_id, rights_decision_id, policy_id, feature_definition_id));
+
+CREATE TABLE public.predictive_feature_run_pins (
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  feature_run_id text NOT NULL REFERENCES public.predictive_feature_runs(id),
+  reason text NOT NULL CHECK (reason IN ('training','serving','evaluation','owner')),
+  pinned_at timestamptz NOT NULL CHECK (isfinite(pinned_at) AND pinned_at = date_trunc('milliseconds', pinned_at))
+);
+-- Unpinning is its own append-only event; a pin row is never updated.
+CREATE TABLE public.predictive_feature_run_unpins (
+  pin_id text PRIMARY KEY REFERENCES public.predictive_feature_run_pins(id),
+  unpinned_at timestamptz NOT NULL CHECK (isfinite(unpinned_at) AND unpinned_at = date_trunc('milliseconds', unpinned_at))
+);
+
+CREATE TRIGGER predictive_feature_runs_immutable BEFORE UPDATE OR DELETE ON public.predictive_feature_runs FOR EACH ROW EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_feature_run_dependencies_immutable BEFORE UPDATE OR DELETE ON public.predictive_feature_run_dependencies FOR EACH ROW EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_feature_run_pins_immutable BEFORE UPDATE OR DELETE ON public.predictive_feature_run_pins FOR EACH ROW EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_feature_run_unpins_immutable BEFORE UPDATE OR DELETE ON public.predictive_feature_run_unpins FOR EACH ROW EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_feature_runs_no_truncate BEFORE TRUNCATE ON public.predictive_feature_runs FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_feature_run_dependencies_no_truncate BEFORE TRUNCATE ON public.predictive_feature_run_dependencies FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_feature_run_pins_no_truncate BEFORE TRUNCATE ON public.predictive_feature_run_pins FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_feature_run_unpins_no_truncate BEFORE TRUNCATE ON public.predictive_feature_run_unpins FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
+
+CREATE FUNCTION public.predictive_unpin_check() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.unpinned_at < (SELECT pinned_at FROM public.predictive_feature_run_pins WHERE id = NEW.pin_id) THEN
+    RAISE EXCEPTION 'predictive-unpin-before-pin' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END
+$$;
+CREATE TRIGGER predictive_unpin_validate BEFORE INSERT ON public.predictive_feature_run_unpins FOR EACH ROW EXECUTE FUNCTION public.predictive_unpin_check();
+
+-- Every dependency was usable at the cutoff; every decision's inputs are listed;
+-- a ready run had model-input rights in force when recorded for every evidence
+-- profile; the feature definition is named; the mode follows the evidence.
+CREATE FUNCTION public.predictive_feature_run_check() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE target text; f public.predictive_feature_runs; synthetic boolean;
+BEGIN
+  IF TG_TABLE_NAME = 'predictive_feature_runs' THEN target := NEW.id; ELSE target := NEW.feature_run_id; END IF;
+  SELECT * INTO f FROM public.predictive_feature_runs WHERE id = target;
+  IF EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d WHERE d.feature_run_id = target AND d.observation_id IS NOT NULL AND NOT EXISTS (
+      SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
+      JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id WHERE l.observation_id = d.observation_id AND c.state = 'published'
+        AND ru.status = 'published' AND c.available_at <= f.cutoff AND c.ingested_at <= f.cutoff)) THEN
+    RAISE EXCEPTION 'predictive-feature-run-dependency-after-cutoff' USING ERRCODE = '23514';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d JOIN public.predictive_decisions dc ON dc.id = d.decision_id
+      WHERE d.feature_run_id = target AND dc.decided_at > f.cutoff) THEN
+    RAISE EXCEPTION 'predictive-feature-run-dependency-after-cutoff' USING ERRCODE = '23514';
+  END IF;
+  IF EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d JOIN public.predictive_decision_inputs i ON i.decision_id = d.decision_id
+      WHERE d.feature_run_id = target AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies o
+        WHERE o.feature_run_id = target AND o.observation_id = i.observation_id)) THEN
+    RAISE EXCEPTION 'predictive-feature-run-inputs-incomplete' USING ERRCODE = '23514';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d WHERE d.feature_run_id = target AND d.feature_definition_id = f.feature_version) THEN
+    RAISE EXCEPTION 'predictive-feature-run-definition-missing' USING ERRCODE = '23514';
+  END IF;
+  IF f.status = 'ready-inputs' AND EXISTS (
+      WITH profiles AS (SELECT DISTINCT o.profile_id FROM public.predictive_feature_run_dependencies d
+        JOIN public.predictive_observations o ON o.id = d.observation_id WHERE d.feature_run_id = target)
+      SELECT 1 FROM profiles pr WHERE NOT EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies rd WHERE rd.feature_run_id = target
+        AND rd.rights_decision_id = public.predictive_rights_in_force(pr.profile_id, f.recorded_at, f.recorded_at)
+        AND public.predictive_rights_allow(pr.profile_id, f.recorded_at, f.recorded_at, 'model-input'))) THEN
+    RAISE EXCEPTION 'predictive-feature-run-rights-not-in-force' USING ERRCODE = '23514';
+  END IF;
+  synthetic := EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d JOIN public.predictive_observations o ON o.id = d.observation_id
+    JOIN public.predictive_source_profiles sp ON sp.id = o.profile_id WHERE d.feature_run_id = target AND sp.purpose = 'synthetic-test');
+  IF synthetic <> (f.mode = 'synthetic-proof') OR (f.mode = 'synthetic-proof' AND NOT public.predictive_harness_session()) THEN
+    RAISE EXCEPTION 'predictive-feature-run-mode-invalid' USING ERRCODE = '23514';
+  END IF;
+  RETURN NULL;
+END
+$$;
+CREATE CONSTRAINT TRIGGER predictive_check_feature_runs AFTER INSERT ON public.predictive_feature_runs DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_feature_run_check();
+-- A run and its manifest are written in one transaction and then sealed: a
+-- dependency for a run created in an earlier transaction is refused, so the
+-- single run-level deferred check above covers every dependency.
+CREATE FUNCTION public.predictive_feature_run_dependency_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.predictive_feature_runs f WHERE f.id = NEW.feature_run_id
+      AND f.xmin::text::bigint = pg_catalog.pg_current_xact_id()::text::bigint % 4294967296) THEN
+    RAISE EXCEPTION 'predictive-feature-run-sealed' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END
+$$;
+CREATE TRIGGER predictive_feature_run_dependencies_sealed BEFORE INSERT ON public.predictive_feature_run_dependencies FOR EACH ROW EXECUTE FUNCTION public.predictive_feature_run_dependency_guard();
+
+-- feature-run-retention-v1: an unpinned run expires 90 days after recording.
+-- A pin keeps it until an unpin event; provider deletions apply regardless.
+CREATE FUNCTION public.predictive_feature_run_expired(run_id text, t timestamptz) RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT f.recorded_at + interval '90 days' <= t AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_run_pins p
+    WHERE p.feature_run_id = f.id AND p.pinned_at <= t AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_run_unpins u WHERE u.pin_id = p.id AND u.unpinned_at <= t))
+  FROM public.predictive_feature_runs f WHERE f.id = run_id
+$$;
+
 -- Privileges. PostgreSQL grants EXECUTE on new functions to PUBLIC by default;
 -- every predictive function is revoked from PUBLIC. Role grants apply only where
 -- the roles exist (the disposable harness creates them; hosted role setup is #95).
@@ -1247,7 +1379,9 @@ REVOKE ALL ON FUNCTION public.predictive_text(jsonb), public.predictive_optional
   public.predictive_rights_in_force(text, timestamptz, timestamptz), public.predictive_rights_allow(text, timestamptz, timestamptz, text),
   public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check(),
   public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text),
-  public.predictive_decision_current(text, timestamptz), public.predictive_label_eligible_final_at(timestamptz), public.predictive_label_check() FROM PUBLIC;
+  public.predictive_decision_current(text, timestamptz), public.predictive_label_eligible_final_at(timestamptz), public.predictive_label_check(),
+  public.predictive_unpin_check(), public.predictive_feature_run_check(), public.predictive_feature_run_expired(text, timestamptz),
+  public.predictive_feature_run_dependency_guard() FROM PUBLIC;
 DO $grants$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_ingest') THEN
@@ -1271,6 +1405,22 @@ BEGIN
       public.predictive_ingestion_runs, public.predictive_run_rights, public.predictive_artifacts, public.predictive_captures,
       public.predictive_teams, public.predictive_games, public.predictive_observations, public.predictive_artifact_observations,
       public.predictive_decisions, public.predictive_decision_inputs, public.predictive_outcome_labels TO predictive_replay;
+  END IF;
+  -- The recorder saves feature runs: it reads evidence for the deferred checks and
+  -- writes only blobs and feature-run tables.
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_recorder') THEN
+    GRANT EXECUTE ON FUNCTION public.predictive_rights_in_force(text, timestamptz, timestamptz),
+      public.predictive_rights_allow(text, timestamptz, timestamptz, text), public.predictive_harness_session(),
+      public.predictive_feature_run_expired(text, timestamptz) TO predictive_recorder;
+    GRANT SELECT ON public.predictive_source_profiles, public.predictive_rights_decisions, public.predictive_ingestion_runs,
+      public.predictive_artifacts, public.predictive_captures, public.predictive_games, public.predictive_observations,
+      public.predictive_artifact_observations, public.predictive_decisions, public.predictive_decision_inputs TO predictive_recorder;
+    GRANT SELECT, INSERT ON public.predictive_blobs, public.predictive_feature_runs, public.predictive_feature_run_dependencies,
+      public.predictive_feature_run_pins, public.predictive_feature_run_unpins TO predictive_recorder;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_replay') THEN
+    GRANT SELECT ON public.predictive_feature_runs, public.predictive_feature_run_dependencies, public.predictive_feature_run_pins,
+      public.predictive_feature_run_unpins TO predictive_replay;
   END IF;
 END
 $grants$;

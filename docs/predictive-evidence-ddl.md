@@ -722,3 +722,40 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
   8. The mode is consistent with synthetic evidence; synthetic-proof labels need
      the harness role.
 - **Publication** refuses labels created after the publish time.
+
+### Step 8 additions (2026-10-10)
+
+- **Tables:** `predictive_feature_runs`, `predictive_feature_run_dependencies`
+  (exactly one of observation, decision, rights decision, policy or feature
+  definition per row), `predictive_feature_run_pins`, and append-only
+  `predictive_feature_run_unpins` (an unpin can't precede its pin; one per pin).
+- **Write path (`replayAndRecord`):**
+  - Compute in the read-only repeatable-read snapshot.
+  - Then, in a separate transaction as `predictive_recorder`, write the canonical
+    bundle blob, the run and its full manifest, without rereading evidence.
+  - Any failure returns `{ status: "unavailable", reason: "feature-run-not-recorded" }`.
+- **Digests (`featureRuns.ts`):** `input_digest` is the bundle's cutoff-time
+  digest. `execution_digest` also binds the rights decisions in force, policies,
+  code version and both times. The run ID is `feature-run:<execution_digest>`.
+- **Deferred run-level check** (`predictive_feature_run_check`):
+  - every observation dependency was usable at the cutoff, and every decision was
+    decided by it
+  - every cited decision's inputs are listed
+  - the feature definition is named
+  - a ready run lists a model-input rights decision in force at `recorded_at` for
+    every evidence profile
+  - the mode follows the evidence
+- **Sealing:** a dependency for a run created in an earlier transaction is refused
+  (`predictive-feature-run-sealed`), so the run-level check covers the whole
+  manifest at commit time. That also replaced a per-row check that took about 27
+  seconds on one case.
+- **Retention:** `predictive_feature_run_expired(run, t)`, under
+  `feature-run-retention-v1`, is true 90 days after recording unless a pin is
+  active at `t`. Deleting expired runs is part of step 10's retention operation.
+- **Roles:** `predictive_recorder` can read evidence for the checks and can write
+  only blobs and feature-run tables. `predictive_replay` can read feature runs.
+- **Known nuance:** `decided_at` on rights and decisions is an *asserted*
+  knowledge time. A decision inserted later with an earlier `decided_at` changes
+  what "known by t" evaluates to for earlier instants. Publication refuses future
+  times, but not backdating. PR B's real ingestion should stamp knowledge times
+  from the database clock, as current access already does.

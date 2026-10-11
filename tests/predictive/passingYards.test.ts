@@ -6,6 +6,7 @@ import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/completion.ts";
 import { participationHeadsAt, recordParticipation } from "../../src/lib/predictive/participation.ts";
 import { eligibleFinalAt, validateLabels } from "../../src/lib/predictive/labels.ts";
+import { featureRunRecord } from "../../src/lib/predictive/featureRuns.ts";
 import { digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader } from "../../src/lib/predictive/validation.ts";
 import type { Artifact, Capture, CompletionRecord, Dataset, Label, ParticipationRecord, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
 import { addCapture, artifact, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_A, CUTOFF_B, gameId, membership, OPPONENT,
@@ -936,6 +937,23 @@ describe("participation-v1 records and canonical outcome labels", () => {
     addCapture(dataset, "inactive-5", [revision("inactive-5", "participation-evidence",
       { gameId: PRIOR[4], playerId: PLAYER, teamId: TEAM, evidenceKind: "official-inactive-list", claim: "inactive-or-dnp" })]);
   };
+});
+
+describe("feature-run records", () => {
+  it("binds rights and timing into the execution digest while the input digest stays the cutoff-time digest", () => {
+    const result = bundle();
+    const base = featureRunRecord(result, { rightsInForce: new Map([[PROFILE, "rights-" + PROFILE]]), synthetic: true, recordedAt: "2026-10-10T00:00:00.000Z" });
+    expect(base.inputDigest).toBe(result.inputDigest);
+    expect(base.id).toBe("feature-run:" + base.executionDigest);
+    expect(base.dependencies.observations).toHaveLength(result.dependencies.length);
+    expect(base.dependencies.policies).toEqual(["availability-v1", "event-completion-v1", "participation-v1"]);
+    expect(base.dependencies.featureDefinitions).toEqual(["passing-yards-replay-v3"]);
+    const renewed = featureRunRecord(result, { rightsInForce: new Map([[PROFILE, "rights-renewed"]]), synthetic: true, recordedAt: "2026-10-10T00:00:00.000Z" });
+    expect(renewed.inputDigest).toBe(base.inputDigest); expect(renewed.executionDigest).not.toBe(base.executionDigest);
+    const later = featureRunRecord(result, { rightsInForce: new Map([[PROFILE, "rights-" + PROFILE]]), synthetic: true, recordedAt: "2026-10-11T00:00:00.000Z" });
+    expect(later.executionDigest).not.toBe(base.executionDigest);
+    expect(featureRunRecord(result, { rightsInForce: new Map([[PROFILE, "rights-" + PROFILE]]), synthetic: true, recordedAt: "2026-10-10T00:00:00.000Z" })).toEqual(base);
+  });
 });
 
 describe("local executable proof", () => {
