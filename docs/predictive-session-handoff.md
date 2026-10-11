@@ -1,77 +1,59 @@
 # #52 session handoff
 
-Updated 2026-10-09. The owner is stopping this session because credits are low.
-Resume from this state; do not restart the completed proof or repeat source
-downloads merely to recover context.
+Updated 2026-10-10 after PR A step 10. Resume from this state; do not restart the
+completed work or repeat source downloads merely to recover context.
 
-## Checkout and completed work
+## Current state: PR A implemented, awaiting review
 
-- Workspace: `/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-relay`.
-- Branch: `feature/dfsEV-52-predictive-cutoff-replay`.
-- Latest implementation commit: **`e963bba`**, pushed to origin. The working tree
-  was clean before this documentation handoff.
-- No PR has been opened for this work. Delivery 2 and delivery 3 remain WIP.
-- Delivery 1: synthetic QB passing-yards cutoff replay is complete. All six
-  original review findings and the former-team membership-gap finding are fixed.
-- Delivery 2: private immutable artifacts, atomic local PostgreSQL publication,
-  scoped read-only replay, quarantine, corrections and archive restoration are
-  implemented and tested. The schema still accepts only synthetic proof data.
-- Delivery 3: bounded public nflverse capture and offline qualification are
-  implemented. Six feeds were fully captured; depth has only a 4 KB header
-  probe. No real features, labels or SQL observations were published.
+- Workspace: `/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo`.
+- Branch: `feature/dfsEV-52-evidence-schema`, taken from the relay WIP tip
+  `1ef86ba` (the earlier synthetic-proof work was carried forward, not discarded).
+- PR A (real-source schema and replay core) is complete in ten committed steps.
+  No PR is open. The next action is the owner's `codex review --base main`.
+- The approved design is [`predictive-real-source-schema.md`](predictive-real-source-schema.md)
+  revision 2 and [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md)
+  revision 2. Section 14 of the DDL lists what each step built and every
+  refinement.
 
-Key commits: `6cf71c1` former-team gaps; `882e5fd` persistence;
-`52d853b` strengthened persistence assertions; `5e149a2` source prototype;
-`e963bba` Rams identity fix and merge hold.
+| Step | Commit | What it added |
+| --- | --- | --- |
+| 1 | `bcf3d37` | Migration reset: synthetic 0003/0004 replaced by the new 0003 |
+| 2 | `19da332` | Real-source envelope: profiles, rights, blobs, runs, artifacts, captures, 32 seeded teams, observations with entity/source keys |
+| 3 | `8707d1b` | Snap and participation evidence kinds |
+| 4 | `3acea3e` | Persisted reconciliation decisions; current access uses the database clock |
+| 5 | `0a923ff` | Coverage-aware source-row absences (`absence-v1`) |
+| 6 | `f0f37cb` | Completion decisions over exact marker heads |
+| 7 | `7aa9ad5` | Participation decisions and bound outcome labels (eight binding checks) |
+| 8 | `9da3e72` | Feature runs with sealed manifests and two digests |
+| 9 | `6f1bc3f` | Identity bridges with strict same-source ambiguity checks |
+| 10 | `2085bc1` | Owner-only scoped retention with audit and backup re-apply |
 
-## Owner decisions and boundaries
+Validation at step 10 on Node 24.18.1: 831 jsdom + 442 Node tests; the complete
+disposable PostgreSQL suite (74 Node checks + 42 Vitest tests, all **25**
+mandatory predictive cases); typecheck, lint, CI gate, DB guards, and the
+migration and readiness checks.
 
-1. **Confirmed absence keeps its chronological window slot.** Allow usable
-   observed history with an absence quality flag; absence contributes no numeric
-   statistic or denominator. Unknown participation still withholds. This was
-   explicitly approved and does not need reconfirmation.
-2. **Option B: hold delivery 2 off main until the real-source schema is designed.**
-   The current combined branch is not a merge-ready delivery-1/2 PR. Keep source
-   qualification WIP out of a delivery-1/2 PR. Do not open or merge a PR merely
-   because local checks pass.
-3. Registered migration SQL/checksums remain immutable. V3's Rams constraint
-   accepted `LAR`, while the app accepts `LA`. Additive v4 repairs the constraint;
-   v1/v2/v3 SQL and catalog contracts were preserved. This WIP repair is not
-   approval of the final real-source product schema.
-4. App readiness minimum remains **2**; this branch's maximum-known is **4**.
-   Production migrations/activation remain separately gated by #95. Do not run
-   Production `up`, activate hosted jobs or inspect application credentials.
-5. No API key is needed for the current public-source prototype. No paid access,
-   conditional PFR/FTN/official automated acquisition or public-data display has
-   been authorized by this work. Do not send issue comments or other messages
-   without explicit instructions.
-6. The owner waived incremental review and authorized iteration. Routine fixes
-   and tests can proceed; the recorded schema/rights/activation gates still apply.
+## Owner decisions still in force
 
-## Latest fix and validation
+1. Schema decisions F1–F6 (2026-10-10): JSONB payloads with typed routing
+   columns; coverage-aware absences that block; positive usage counts as
+   individual participation evidence; PFR rejected; two PRs; SportsDataIO only
+   after licensing qualification. Snap share is required for RB/WR/TE.
+2. Q1 scoped deletion of files and rows with a minimal audit record; Q2 save
+   every feature run, unpinned runs expire after 90 days; Q3 bridges are
+   evidence, with strict ambiguity validation. Step 6 recompute-and-cite.
+3. The §7b candidate features (weather, venue, depth/teammate absences,
+   targets per snap) and a defensive-scheme slot are reserved, not implemented.
+4. App readiness minimum remains **2**; this branch's maximum-known is **3**.
+   Production migrations, role setup and activation stay behind #95.
+5. No paid access, API key or issue comment is authorized by this work.
 
-The Rams regression failed against v3's `predictive_teams_id_check` before the
-fix. After v4, the mandatory DB cases check all 32 app team IDs against the SQL
-constraint, publish a Rams dataset and replay hand-calculated last-4 totals of
-100 attempts / 700 yards. Valid populated v3 data and exact historical ledger
-rows survive upgrading. A legacy SQL-created `LAR` row refuses upgrading and
-rolls back the entire DDL/ledger transaction, preserving the v3 catalog and data.
-No immutable identity is silently rewritten.
+## Next: PR B
 
-Latest checks passed on Node **24.18.1**:
-
-- 831 jsdom + 374 Node tests, including 182 predictive/storage/source tests.
-- Complete disposable PostgreSQL suite: 74 mandatory Node checks + 31 Vitest
-  tests, including all **14** mandatory predictive cases.
-- Typecheck, lint, production build, generated migration/catalog/readiness
-  checks, whitespace and local Markdown links.
-- Firestore rules, CI gate, DB guards and zero-vulnerability production audit
-  passed during the preceding prototype iteration. These were not rerun for the
-  Rams-only schema fix because their inputs did not change.
-
-Readiness-ahead tests now append beyond the generated tip, and the artifact
-drift test asserts its modified input differs from the original. Do not revert
-these to hard-coded version 4 fixtures.
+The first real-data slice: QB passing yards from nflverse through this schema,
+measuring correctness, memory and capture cost. PR B should stamp `decided_at`
+knowledge times from the database clock (DDL section 14, step 8 nuance) and own
+automatic absence detection from real files.
 
 ## Real-source findings and private evidence
 
@@ -96,7 +78,8 @@ current historical download cannot establish what was known at an earlier
 cutoff. Reports return `unavailable-inputs`, unqualified population and
 `modelValidated: false`; they always have `featuresPublished: false`.
 
-Retained private evidence (temporary storage is not a durable backup):
+Retained private evidence. **`/private/tmp` is not durable; the owner should copy
+it somewhere permanent outside the checkout.**
 
 - Directory: `/private/tmp/dfs-ev-52-source-proof.utpDdL`.
 - Journal: `f496e74d6823d5507b301568d2c9c1dbc6f562fe93c8cbb52f621bd6674a5b31.json`,
@@ -113,7 +96,7 @@ agree on the source hashes/counts, selected digest, roster partition, player/tea
 passing totals and target kickoff. Preserve real capture times; release
 `updated_at` is diagnostic metadata, never earlier row publication evidence.
 
-## Next session: real-source schema design
+## Earlier plan: real-source schema design (done in PR A)
 
 Start with a concrete, reviewable schema proposal covering passing, rushing and
 receiving, while retaining passing yards as the first end-to-end implementation

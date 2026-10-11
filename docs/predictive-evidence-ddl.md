@@ -1,6 +1,10 @@
 # `0003_predictive_evidence.sql`: column-level DDL, revision 2
 
-Status: **draft for owner approval. Not executable, not committed, no tests yet.**
+Status: **implemented in PR A** on `feature/dfsEV-52-evidence-schema` (steps 1–10,
+2026-10-10). Sections 1–13 are the approved design; section 14 records what each
+step built and where it refined the design. 0003 stays in its draft reset period
+until PR A passes review (section 12).
+
 Revision 2 consolidates the owner decisions of 2026-10-10 (scoped deletion, saving
 every feature run, bridges as evidence) and the second design review (rights
 knowledge time, the privilege boundary, absence routing, label binding, the
