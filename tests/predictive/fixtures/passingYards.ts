@@ -34,7 +34,7 @@ export const revision = <K extends Kind>(id: string, kind: K, data: DataByKind[K
 export const artifact = (id: string, rows: Revision[], profileId = PROFILE): Artifact => {
   const bytes = canonical(rows);
   return { id, bytes, sha256: digest(bytes), profileId, retrievalKind: "full", origin: "fixture://passing-yards/" + id,
-    providerEtag: null, providerLastModified: null, releaseUpdatedAt: null, scopeKind: "manual", scopeSeason: null, scopeWeek: null, scopeFilter: null };
+    providerEtag: null, providerLastModified: null, releaseUpdatedAt: null, scopeKind: "manual", scopeSeason: null, scopeWeek: null, scopeGameId: null, scopeFilter: null };
 };
 export const addCapture = (dataset: Dataset, id: string, rows: Revision[], at = CAPTURE_A, profileId = PROFILE) => {
   dataset.artifacts.push(artifact(id, rows, profileId));

@@ -1,5 +1,5 @@
 {
-  "catalogFingerprint": "34527f9f7b295759563e72ab68bdbe3da4db34895f7b14ab0523334ee01d1af6",
+  "catalogFingerprint": "85b7a7465cd53a31fab890c48b5f81a5d6e5c03ffa9343a2919bea7752e0eb82",
   "contractVersion": 1,
   "formatVersion": 1,
   "objects": [
@@ -2051,11 +2051,24 @@
         "generated": "",
         "identity": "",
         "not_null": false,
-        "position": 12,
+        "position": 13,
         "type": "text"
       },
       "kind": "column",
       "name": "predictive_artifacts.scope_filter"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 12,
+        "type": "uuid"
+      },
+      "kind": "column",
+      "name": "predictive_artifacts.scope_game_id"
     },
     {
       "definition": {
@@ -7094,7 +7107,7 @@
     {
       "definition": {
         "deferrable": false,
-        "definition": "CHECK ((scope_kind = 'week-file'::text) = (scope_week IS NOT NULL))",
+        "definition": "CHECK ((scope_kind = ANY (ARRAY['season-file'::text, 'week-file'::text, 'game'::text])) = (scope_season IS NOT NULL))",
         "enforced": true,
         "initially_deferred": false,
         "no_inherit": false,
@@ -7104,6 +7117,34 @@
       },
       "kind": "constraint",
       "name": "predictive_artifacts.predictive_artifacts_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((scope_kind = 'week-file'::text) = (scope_week IS NOT NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_artifacts.predictive_artifacts_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((scope_kind = 'game'::text) = (scope_game_id IS NOT NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_artifacts.predictive_artifacts_check2"
     },
     {
       "definition": {
@@ -7319,6 +7360,53 @@
       },
       "kind": "constraint",
       "name": "predictive_artifacts.predictive_artifacts_scope_filter_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (scope_game_id) REFERENCES predictive_games(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_artifacts",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_artifacts",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_games",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_games",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_artifacts.predictive_artifacts_scope_game_fk"
     },
     {
       "definition": {
@@ -14685,7 +14773,7 @@
     },
     {
       "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_absence_valid(absence_id text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE\nAS $function$\nDECLARE a public.predictive_observations; p public.predictive_observations; cov public.predictive_captures;\n  ca public.predictive_artifacts; pa public.predictive_artifacts; pc public.predictive_captures; ac public.predictive_captures; field text;\nBEGIN\n  SELECT * INTO a FROM public.predictive_observations WHERE id = absence_id;\n  SELECT * INTO p FROM public.predictive_observations WHERE id = a.predecessor_id;\n  IF p.id IS NULL OR p.id <> a.data->>'priorObservationId' OR p.kind = 'source-row-absent' OR p.entity_key <> a.data->>'priorEntityKey' THEN RETURN false; END IF;\n  FOREACH field IN ARRAY ARRAY['gameId','playerId','teamId','season','seasonType'] LOOP\n    IF (p.data ? field) <> (a.data ? field) OR (p.data->field) IS DISTINCT FROM (a.data->field) THEN RETURN false; END IF;\n  END LOOP;\n  SELECT c.* INTO cov FROM public.predictive_captures c JOIN public.predictive_ingestion_runs r ON r.id = c.run_id\n    WHERE c.id = a.data->>'coveringCaptureId' AND c.state = 'published' AND r.status = 'published'\n      AND c.body_complete AND c.header_verified AND c.parser_succeeded;\n  IF cov.id IS NULL THEN RETURN false; END IF;\n  SELECT * INTO ca FROM public.predictive_artifacts WHERE id = cov.artifact_id;\n  IF ca.profile_id <> a.profile_id OR ca.scope_kind <> a.data->>'scopeKind' OR ca.scope_season IS DISTINCT FROM (a.data->>'scopeSeason')::integer\n    OR ca.scope_week IS DISTINCT FROM (a.data->>'scopeWeek')::integer OR ca.scope_filter IS DISTINCT FROM a.data->>'scopeFilter' THEN RETURN false; END IF;\n  SELECT c.* INTO pc FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n    JOIN public.predictive_ingestion_runs r ON r.id = c.run_id\n    WHERE l.observation_id = p.id AND c.state = 'published' AND r.status = 'published'\n    ORDER BY c.ingested_at, c.available_at, c.captured_at, c.id COLLATE \"C\" LIMIT 1;\n  SELECT * INTO pa FROM public.predictive_artifacts WHERE id = pc.artifact_id;\n  IF NOT (ca.retrieval_kind = 'full' AND ca.profile_id = pa.profile_id AND ca.scope_filter IS NOT DISTINCT FROM pa.scope_filter\n      AND ca.scope_kind <> 'manual' AND pa.scope_kind <> 'manual' AND (\n        ca.scope_kind = 'all-seasons'\n        OR (ca.scope_kind = 'season-file' AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season AND pa.scope_kind IN ('season-file','week-file','game'))\n        OR (ca.scope_kind = 'week-file' AND pa.scope_kind IN ('week-file','game') AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season\n          AND ca.scope_week IS NOT DISTINCT FROM pa.scope_week)\n        OR (ca.scope_kind = 'game' AND pa.scope_kind = 'game' AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season))) THEN RETURN false; END IF;\n  IF EXISTS (SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_observations o ON o.id = l.observation_id\n      WHERE l.artifact_id = ca.id AND o.source_key = a.source_key) THEN RETURN false; END IF;\n  SELECT c.* INTO ac FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n    WHERE l.observation_id = a.id AND c.state = 'published' ORDER BY c.ingested_at, c.available_at, c.captured_at, c.id COLLATE \"C\" LIMIT 1;\n  RETURN cov.available_at >= pc.available_at AND cov.ingested_at >= pc.ingested_at\n    AND ac.available_at >= cov.available_at AND ac.ingested_at >= cov.ingested_at;\nEND\n$function$\n",
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_absence_valid(absence_id text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE\nAS $function$\nDECLARE a public.predictive_observations; p public.predictive_observations; cov public.predictive_captures;\n  ca public.predictive_artifacts; pa public.predictive_artifacts; pc public.predictive_captures; ac public.predictive_captures; field text;\nBEGIN\n  SELECT * INTO a FROM public.predictive_observations WHERE id = absence_id;\n  SELECT * INTO p FROM public.predictive_observations WHERE id = a.predecessor_id;\n  IF p.id IS NULL OR p.id <> a.data->>'priorObservationId' OR p.kind = 'source-row-absent' OR p.entity_key <> a.data->>'priorEntityKey' THEN RETURN false; END IF;\n  FOREACH field IN ARRAY ARRAY['gameId','playerId','teamId','season','seasonType'] LOOP\n    IF (p.data ? field) <> (a.data ? field) OR (p.data->field) IS DISTINCT FROM (a.data->field) THEN RETURN false; END IF;\n  END LOOP;\n  SELECT c.* INTO cov FROM public.predictive_captures c JOIN public.predictive_ingestion_runs r ON r.id = c.run_id\n    WHERE c.id = a.data->>'coveringCaptureId' AND c.state = 'published' AND r.status = 'published'\n      AND c.body_complete AND c.header_verified AND c.parser_succeeded;\n  IF cov.id IS NULL THEN RETURN false; END IF;\n  SELECT * INTO ca FROM public.predictive_artifacts WHERE id = cov.artifact_id;\n  IF ca.profile_id <> a.profile_id OR ca.scope_kind <> a.data->>'scopeKind' OR ca.scope_season IS DISTINCT FROM (a.data->>'scopeSeason')::integer\n    OR ca.scope_week IS DISTINCT FROM (a.data->>'scopeWeek')::integer OR ca.scope_game_id IS DISTINCT FROM (a.data->>'scopeGameId')::uuid\n    OR ca.scope_filter IS DISTINCT FROM a.data->>'scopeFilter' THEN RETURN false; END IF;\n  SELECT c.* INTO pc FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n    JOIN public.predictive_ingestion_runs r ON r.id = c.run_id\n    WHERE l.observation_id = p.id AND c.state = 'published' AND r.status = 'published'\n    ORDER BY c.ingested_at, c.available_at, c.captured_at, c.id COLLATE \"C\" LIMIT 1;\n  SELECT * INTO pa FROM public.predictive_artifacts WHERE id = pc.artifact_id;\n  IF NOT (ca.retrieval_kind = 'full' AND ca.profile_id = pa.profile_id AND ca.scope_filter IS NOT DISTINCT FROM pa.scope_filter\n      AND ca.scope_kind <> 'manual' AND pa.scope_kind <> 'manual' AND (\n        ca.scope_kind = 'all-seasons'\n        OR (ca.scope_kind = 'season-file' AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season AND pa.scope_kind IN ('season-file','week-file','game'))\n        OR (ca.scope_kind = 'week-file' AND pa.scope_kind IN ('week-file','game') AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season\n          AND ca.scope_week IS NOT DISTINCT FROM pa.scope_week)\n        OR (ca.scope_kind = 'game' AND pa.scope_kind = 'game' AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season\n          AND ca.scope_game_id IS NOT DISTINCT FROM pa.scope_game_id))) THEN RETURN false; END IF;\n  IF EXISTS (SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_observations o ON o.id = l.observation_id\n      WHERE l.artifact_id = ca.id AND o.source_key = a.source_key) THEN RETURN false; END IF;\n  SELECT c.* INTO ac FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n    WHERE l.observation_id = a.id AND c.state = 'published' ORDER BY c.ingested_at, c.available_at, c.captured_at, c.id COLLATE \"C\" LIMIT 1;\n  RETURN cov.available_at >= pc.available_at AND cov.ingested_at >= pc.ingested_at\n    AND ac.available_at >= cov.available_at AND ac.ingested_at >= cov.ingested_at;\nEND\n$function$\n",
         "kind": "f",
         "security_definer": false
       },
@@ -14829,7 +14917,7 @@
     },
     {
       "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_payload_valid(kind text, data jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\n IMMUTABLE STRICT\nAS $function$\nDECLARE fields text[]; name text; item jsonb;\n  stats text[] := ARRAY['gameId','rawGameId','teamId','rawTeam','season','seasonType','attempts','completions','passingYards',\n    'passingTds','passingInterceptions','carries','rushingYards','targets','receptions','receivingYards','missing'];\nBEGIN\n  fields := CASE kind\n    WHEN 'schedule' THEN ARRAY['gameId','rawGameId','season','seasonType','week','kickoff','rawGameday','rawGametime',\n      'homeTeamId','awayTeamId','rawHomeTeam','rawAwayTeam','rawRoof','rawSurface','rawStadiumId']\n    WHEN 'schedule-coverage' THEN ARRAY['teamId','fromSeason','throughSeason','gameIds','state']\n    WHEN 'membership' THEN ARRAY['gameId','playerId','teamId','rawTeam','position','rosterStatus','season','seasonType','week','effectiveFrom','effectiveTo']\n    WHEN 'player-game-stats' THEN stats || ARRAY['playerId']\n    WHEN 'team-game-stats' THEN stats\n    WHEN 'event-state-marker' THEN ARRAY['gameId','markerType','markerValue','terminalPlayTimeOfDay']\n    WHEN 'participation-evidence' THEN ARRAY['gameId','playerId','teamId','evidenceKind','claim']\n    WHEN 'availability' THEN ARRAY['gameId','playerId','teamId','rawReportStatus','rawPracticeStatus','rawDepthRank']\n    WHEN 'source-row-absent' THEN ARRAY['priorObservationId','priorEntityKey','coveringCaptureId','scopeKind','scopeSeason','scopeWeek','scopeFilter']\n    WHEN 'team-alias' THEN ARRAY['provider','rawAlias','teamId','effectiveFromSeason','effectiveToSeason']\n    WHEN 'game-bridge' THEN ARRAY['provider','rawGameId','gameId']\n    WHEN 'player-bridge' THEN ARRAY['provider','rawPlayerId','playerId','effectiveFrom','effectiveTo']\n    WHEN 'game-relation' THEN ARRAY['gameId','predecessorGameId','relation']\n    ELSE NULL END;\n  IF fields IS NULL OR jsonb_typeof(data) <> 'object' THEN RETURN false; END IF;\n  IF kind = 'source-row-absent' THEN\n    -- The fixed fields plus exactly the routing fields copied from the prior row.\n    IF NOT (SELECT array_agg(key) FROM jsonb_object_keys(data) key) @> fields OR EXISTS (SELECT 1 FROM jsonb_object_keys(data) key\n        WHERE key <> ALL(fields) AND key <> ALL(ARRAY['gameId','playerId','teamId','season','seasonType'])) THEN RETURN false; END IF;\n  ELSIF (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(data) key) IS DISTINCT FROM\n    (SELECT array_agg(key ORDER BY key) FROM unnest(fields) key) THEN RETURN false; END IF;\n  IF data ? 'gameId' AND NOT public.predictive_identity(data->'gameId', 'game') THEN RETURN false; END IF;\n  IF data ? 'playerId' AND NOT public.predictive_identity(data->'playerId', 'player') THEN RETURN false; END IF;\n  FOREACH name IN ARRAY ARRAY['teamId','homeTeamId','awayTeamId'] LOOP\n    IF data ? name AND NOT public.predictive_identity(data->name, 'team') THEN RETURN false; END IF;\n  END LOOP;\n  FOREACH name IN ARRAY ARRAY['rawGameId','rawTeam','rawHomeTeam','rawAwayTeam','position','rosterStatus','markerValue'] LOOP\n    IF data ? name AND NOT public.predictive_text(data->name) THEN RETURN false; END IF;\n  END LOOP;\n  IF data ? 'season' AND (NOT public.predictive_integer(data->'season', 1920, 9999)\n    OR (data->>'seasonType' IN ('REG','POST')) IS NOT TRUE) THEN RETURN false; END IF;\n  CASE kind\n    WHEN 'schedule' THEN\n      IF NOT public.predictive_integer(data->'week', 1, 22) OR NOT public.predictive_instant(data->>'kickoff')\n        OR data->>'homeTeamId' = data->>'awayTeamId' THEN RETURN false; END IF;\n      FOREACH name IN ARRAY ARRAY['rawRoof','rawSurface','rawStadiumId'] LOOP\n        IF NOT public.predictive_optional_text(data->name) THEN RETURN false; END IF;\n      END LOOP;\n      IF (data->'rawGameday' = 'null'::jsonb) <> (data->'rawGametime' = 'null'::jsonb) THEN RETURN false; END IF;\n      RETURN data->'rawGameday' = 'null'::jsonb OR (jsonb_typeof(data->'rawGameday') = 'string'\n        AND data->>'rawGameday' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' AND jsonb_typeof(data->'rawGametime') = 'string'\n        AND data->>'rawGametime' ~ '^[0-9]{2}:[0-9]{2}$');\n    WHEN 'schedule-coverage' THEN\n      IF NOT public.predictive_integer(data->'fromSeason', 1920, 9999) OR NOT public.predictive_integer(data->'throughSeason', 1920, 9999)\n        OR (data->>'throughSeason')::integer - (data->>'fromSeason')::integer <> 2\n        OR (data->>'state' IN ('complete','incomplete')) IS NOT TRUE OR jsonb_typeof(data->'gameIds') <> 'array'\n        OR jsonb_array_length(data->'gameIds') > 256 THEN RETURN false; END IF;\n      FOR item IN SELECT value FROM jsonb_array_elements(data->'gameIds') LOOP\n        IF NOT public.predictive_identity(item, 'game') THEN RETURN false; END IF;\n      END LOOP;\n      RETURN (SELECT count(*) = count(DISTINCT value) FROM jsonb_array_elements(data->'gameIds'));\n    WHEN 'membership' THEN\n      RETURN public.predictive_integer(data->'week', 1, 22) AND public.predictive_instant(data->>'effectiveFrom')\n        AND public.predictive_instant(data->>'effectiveTo') AND data->>'effectiveFrom' < data->>'effectiveTo';\n    WHEN 'player-game-stats', 'team-game-stats' THEN\n      RETURN public.predictive_stats_valid(data);\n    WHEN 'event-state-marker' THEN\n      IF (data->>'markerType' IN ('provider-final-status','terminal-play','final-team-totals','suspension-notice','postponement-notice')) IS NOT TRUE\n        THEN RETURN false; END IF;\n      RETURN CASE WHEN data->>'markerType' = 'terminal-play'\n        THEN jsonb_typeof(data->'terminalPlayTimeOfDay') = 'string' AND data->>'terminalPlayTimeOfDay' ~ '^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$'\n        ELSE data->'terminalPlayTimeOfDay' = 'null'::jsonb END;\n    WHEN 'participation-evidence' THEN\n      RETURN (data->>'evidenceKind' IN ('participation-feed','official-inactive-list','provider-snap-count')) IS TRUE\n        AND (data->>'claim' IN ('offensive-participant','zero-offensive-participation','inactive-or-dnp')) IS TRUE\n        AND (data->>'evidenceKind' <> 'official-inactive-list' OR data->>'claim' = 'inactive-or-dnp');\n    WHEN 'source-row-absent' THEN\n      RETURN public.predictive_text(data->'priorObservationId') AND public.predictive_text(data->'coveringCaptureId')\n        AND jsonb_typeof(data->'priorEntityKey') = 'string' AND length(data->>'priorEntityKey') <= 300 AND position(':' IN data->>'priorEntityKey') > 0\n        AND data->>'priorEntityKey' NOT LIKE 'source-row-absent:%'\n        AND (data->>'scopeKind' IN ('season-file','week-file','game','all-seasons','manual')) IS TRUE\n        AND (data->'scopeSeason' = 'null'::jsonb OR public.predictive_integer(data->'scopeSeason', 1920, 9999))\n        AND (data->'scopeWeek' = 'null'::jsonb OR public.predictive_integer(data->'scopeWeek', 1, 22))\n        AND public.predictive_optional_text(data->'scopeFilter');\n    WHEN 'team-alias' THEN\n      RETURN jsonb_typeof(data->'provider') = 'string' AND data->>'provider' ~ '^[a-z0-9][a-z0-9-]{0,31}$'\n        AND jsonb_typeof(data->'rawAlias') = 'string' AND data->>'rawAlias' ~ '^[A-Za-z0-9._-]{1,64}$'\n        AND public.predictive_integer(data->'effectiveFromSeason', 1920, 9999) AND public.predictive_integer(data->'effectiveToSeason', 1920, 9999)\n        AND (data->>'effectiveFromSeason')::integer <= (data->>'effectiveToSeason')::integer;\n    WHEN 'game-bridge' THEN\n      RETURN jsonb_typeof(data->'provider') = 'string' AND data->>'provider' ~ '^[a-z0-9][a-z0-9-]{0,31}$'\n        AND data->>'rawGameId' ~ '^[A-Za-z0-9._-]{1,64}$';\n    WHEN 'player-bridge' THEN\n      RETURN jsonb_typeof(data->'provider') = 'string' AND data->>'provider' ~ '^[a-z0-9][a-z0-9-]{0,31}$'\n        AND jsonb_typeof(data->'rawPlayerId') = 'string' AND data->>'rawPlayerId' ~ '^[A-Za-z0-9._-]{1,64}$'\n        AND public.predictive_instant(data->>'effectiveFrom') AND public.predictive_instant(data->>'effectiveTo')\n        AND data->>'effectiveFrom' < data->>'effectiveTo';\n    WHEN 'game-relation' THEN\n      RETURN public.predictive_identity(data->'predecessorGameId', 'game') AND data->>'relation' = 'replacement'\n        AND data->>'predecessorGameId' <> data->>'gameId';\n    WHEN 'availability' THEN\n      RETURN public.predictive_optional_text(data->'rawReportStatus') AND public.predictive_optional_text(data->'rawPracticeStatus')\n        AND (data->'rawDepthRank' = 'null'::jsonb OR public.predictive_integer(data->'rawDepthRank', 1, 20));\n    ELSE RETURN false;\n  END CASE;\nEXCEPTION WHEN OTHERS THEN RETURN false;\nEND\n$function$\n",
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_payload_valid(kind text, data jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\n IMMUTABLE STRICT\nAS $function$\nDECLARE fields text[]; name text; item jsonb;\n  stats text[] := ARRAY['gameId','rawGameId','teamId','rawTeam','season','seasonType','attempts','completions','passingYards',\n    'passingTds','passingInterceptions','carries','rushingYards','targets','receptions','receivingYards','missing'];\nBEGIN\n  fields := CASE kind\n    WHEN 'schedule' THEN ARRAY['gameId','rawGameId','season','seasonType','week','kickoff','rawGameday','rawGametime',\n      'homeTeamId','awayTeamId','rawHomeTeam','rawAwayTeam','rawRoof','rawSurface','rawStadiumId']\n    WHEN 'schedule-coverage' THEN ARRAY['teamId','fromSeason','throughSeason','gameIds','state']\n    WHEN 'membership' THEN ARRAY['gameId','playerId','teamId','rawTeam','position','rosterStatus','season','seasonType','week','effectiveFrom','effectiveTo']\n    WHEN 'player-game-stats' THEN stats || ARRAY['playerId']\n    WHEN 'team-game-stats' THEN stats\n    WHEN 'event-state-marker' THEN ARRAY['gameId','markerType','markerValue','terminalPlayTimeOfDay']\n    WHEN 'participation-evidence' THEN ARRAY['gameId','playerId','teamId','evidenceKind','claim']\n    WHEN 'availability' THEN ARRAY['gameId','playerId','teamId','rawReportStatus','rawPracticeStatus','rawDepthRank']\n    WHEN 'source-row-absent' THEN ARRAY['priorObservationId','priorEntityKey','coveringCaptureId','scopeKind','scopeSeason','scopeWeek','scopeGameId','scopeFilter']\n    WHEN 'team-alias' THEN ARRAY['provider','rawAlias','teamId','effectiveFromSeason','effectiveToSeason']\n    WHEN 'game-bridge' THEN ARRAY['provider','rawGameId','gameId']\n    WHEN 'player-bridge' THEN ARRAY['provider','rawPlayerId','playerId','effectiveFrom','effectiveTo']\n    WHEN 'game-relation' THEN ARRAY['gameId','predecessorGameId','relation']\n    ELSE NULL END;\n  IF fields IS NULL OR jsonb_typeof(data) <> 'object' THEN RETURN false; END IF;\n  IF kind = 'source-row-absent' THEN\n    -- The fixed fields plus exactly the routing fields copied from the prior row.\n    IF NOT (SELECT array_agg(key) FROM jsonb_object_keys(data) key) @> fields OR EXISTS (SELECT 1 FROM jsonb_object_keys(data) key\n        WHERE key <> ALL(fields) AND key <> ALL(ARRAY['gameId','playerId','teamId','season','seasonType'])) THEN RETURN false; END IF;\n  ELSIF (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(data) key) IS DISTINCT FROM\n    (SELECT array_agg(key ORDER BY key) FROM unnest(fields) key) THEN RETURN false; END IF;\n  IF data ? 'gameId' AND NOT public.predictive_identity(data->'gameId', 'game') THEN RETURN false; END IF;\n  IF data ? 'playerId' AND NOT public.predictive_identity(data->'playerId', 'player') THEN RETURN false; END IF;\n  FOREACH name IN ARRAY ARRAY['teamId','homeTeamId','awayTeamId'] LOOP\n    IF data ? name AND NOT public.predictive_identity(data->name, 'team') THEN RETURN false; END IF;\n  END LOOP;\n  FOREACH name IN ARRAY ARRAY['rawGameId','rawTeam','rawHomeTeam','rawAwayTeam','position','rosterStatus','markerValue'] LOOP\n    IF data ? name AND NOT public.predictive_text(data->name) THEN RETURN false; END IF;\n  END LOOP;\n  IF data ? 'season' AND (NOT public.predictive_integer(data->'season', 1920, 9999)\n    OR (data->>'seasonType' IN ('REG','POST')) IS NOT TRUE) THEN RETURN false; END IF;\n  CASE kind\n    WHEN 'schedule' THEN\n      IF NOT public.predictive_integer(data->'week', 1, 22) OR NOT public.predictive_instant(data->>'kickoff')\n        OR data->>'homeTeamId' = data->>'awayTeamId' THEN RETURN false; END IF;\n      FOREACH name IN ARRAY ARRAY['rawRoof','rawSurface','rawStadiumId'] LOOP\n        IF NOT public.predictive_optional_text(data->name) THEN RETURN false; END IF;\n      END LOOP;\n      IF (data->'rawGameday' = 'null'::jsonb) <> (data->'rawGametime' = 'null'::jsonb) THEN RETURN false; END IF;\n      RETURN data->'rawGameday' = 'null'::jsonb OR (jsonb_typeof(data->'rawGameday') = 'string'\n        AND data->>'rawGameday' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' AND jsonb_typeof(data->'rawGametime') = 'string'\n        AND data->>'rawGametime' ~ '^[0-9]{2}:[0-9]{2}$');\n    WHEN 'schedule-coverage' THEN\n      IF NOT public.predictive_integer(data->'fromSeason', 1920, 9999) OR NOT public.predictive_integer(data->'throughSeason', 1920, 9999)\n        OR (data->>'throughSeason')::integer - (data->>'fromSeason')::integer <> 2\n        OR (data->>'state' IN ('complete','incomplete')) IS NOT TRUE OR jsonb_typeof(data->'gameIds') <> 'array'\n        OR jsonb_array_length(data->'gameIds') > 256 THEN RETURN false; END IF;\n      FOR item IN SELECT value FROM jsonb_array_elements(data->'gameIds') LOOP\n        IF NOT public.predictive_identity(item, 'game') THEN RETURN false; END IF;\n      END LOOP;\n      RETURN (SELECT count(*) = count(DISTINCT value) FROM jsonb_array_elements(data->'gameIds'));\n    WHEN 'membership' THEN\n      RETURN public.predictive_integer(data->'week', 1, 22) AND public.predictive_instant(data->>'effectiveFrom')\n        AND public.predictive_instant(data->>'effectiveTo') AND data->>'effectiveFrom' < data->>'effectiveTo';\n    WHEN 'player-game-stats', 'team-game-stats' THEN\n      RETURN public.predictive_stats_valid(data);\n    WHEN 'event-state-marker' THEN\n      IF (data->>'markerType' IN ('provider-final-status','terminal-play','final-team-totals','suspension-notice','postponement-notice')) IS NOT TRUE\n        THEN RETURN false; END IF;\n      RETURN CASE WHEN data->>'markerType' = 'terminal-play'\n        THEN jsonb_typeof(data->'terminalPlayTimeOfDay') = 'string' AND data->>'terminalPlayTimeOfDay' ~ '^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$'\n        ELSE data->'terminalPlayTimeOfDay' = 'null'::jsonb END;\n    WHEN 'participation-evidence' THEN\n      RETURN (data->>'evidenceKind' IN ('participation-feed','official-inactive-list','provider-snap-count')) IS TRUE\n        AND (data->>'claim' IN ('offensive-participant','zero-offensive-participation','inactive-or-dnp')) IS TRUE\n        AND (data->>'evidenceKind' <> 'official-inactive-list' OR data->>'claim' = 'inactive-or-dnp');\n    WHEN 'source-row-absent' THEN\n      RETURN public.predictive_text(data->'priorObservationId') AND public.predictive_text(data->'coveringCaptureId')\n        AND jsonb_typeof(data->'priorEntityKey') = 'string' AND length(data->>'priorEntityKey') <= 300 AND position(':' IN data->>'priorEntityKey') > 0\n        AND data->>'priorEntityKey' NOT LIKE 'source-row-absent:%'\n        AND (data->>'scopeKind' IN ('season-file','week-file','game','all-seasons','manual')) IS TRUE\n        AND (data->'scopeSeason' = 'null'::jsonb OR public.predictive_integer(data->'scopeSeason', 1920, 9999))\n        AND (data->'scopeWeek' = 'null'::jsonb OR public.predictive_integer(data->'scopeWeek', 1, 22))\n        AND (data->'scopeGameId' = 'null'::jsonb OR public.predictive_identity(data->'scopeGameId', 'game'))\n        AND ((data->>'scopeKind' IN ('season-file','week-file','game')) = (data->'scopeSeason' <> 'null'::jsonb))\n        AND ((data->>'scopeKind' = 'week-file') = (data->'scopeWeek' <> 'null'::jsonb))\n        AND ((data->>'scopeKind' = 'game') = (data->'scopeGameId' <> 'null'::jsonb))\n        AND public.predictive_optional_text(data->'scopeFilter');\n    WHEN 'team-alias' THEN\n      RETURN jsonb_typeof(data->'provider') = 'string' AND data->>'provider' ~ '^[a-z0-9][a-z0-9-]{0,31}$'\n        AND jsonb_typeof(data->'rawAlias') = 'string' AND data->>'rawAlias' ~ '^[A-Za-z0-9._-]{1,64}$'\n        AND public.predictive_integer(data->'effectiveFromSeason', 1920, 9999) AND public.predictive_integer(data->'effectiveToSeason', 1920, 9999)\n        AND (data->>'effectiveFromSeason')::integer <= (data->>'effectiveToSeason')::integer;\n    WHEN 'game-bridge' THEN\n      RETURN jsonb_typeof(data->'provider') = 'string' AND data->>'provider' ~ '^[a-z0-9][a-z0-9-]{0,31}$'\n        AND data->>'rawGameId' ~ '^[A-Za-z0-9._-]{1,64}$';\n    WHEN 'player-bridge' THEN\n      RETURN jsonb_typeof(data->'provider') = 'string' AND data->>'provider' ~ '^[a-z0-9][a-z0-9-]{0,31}$'\n        AND jsonb_typeof(data->'rawPlayerId') = 'string' AND data->>'rawPlayerId' ~ '^[A-Za-z0-9._-]{1,64}$'\n        AND public.predictive_instant(data->>'effectiveFrom') AND public.predictive_instant(data->>'effectiveTo')\n        AND data->>'effectiveFrom' < data->>'effectiveTo';\n    WHEN 'game-relation' THEN\n      RETURN public.predictive_identity(data->'predecessorGameId', 'game') AND data->>'relation' = 'replacement'\n        AND data->>'predecessorGameId' <> data->>'gameId';\n    WHEN 'availability' THEN\n      RETURN public.predictive_optional_text(data->'rawReportStatus') AND public.predictive_optional_text(data->'rawPracticeStatus')\n        AND (data->'rawDepthRank' = 'null'::jsonb OR public.predictive_integer(data->'rawDepthRank', 1, 20));\n    ELSE RETURN false;\n  END CASE;\nEXCEPTION WHEN OTHERS THEN RETURN false;\nEND\n$function$\n",
         "kind": "f",
         "security_definer": false
       },
@@ -15408,7 +15496,7 @@
       },
       {
         "filename": "0003_predictive_evidence.sql",
-        "sha256": "2a548e54eac4295e3be6c8de6c6e092e7320a4e83f3be0232bd9222ff1af2b5a",
+        "sha256": "73d6ef5668f6dc2e29a0063972ec188849f8b6d74cd499f37077eaf40be1dfbf",
         "version": 3
       }
     ]

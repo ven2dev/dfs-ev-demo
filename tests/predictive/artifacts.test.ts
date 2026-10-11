@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it } from "vitest";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
-import { digest } from "../../src/lib/predictive/validation.ts";
+import { canonical, digest } from "../../src/lib/predictive/validation.ts";
 import { archiveRuns, restoreRuns } from "../../scripts/predictive/archive.ts";
 import { passingYardsFixture } from "./fixtures/passingYards.ts";
 
@@ -69,6 +69,10 @@ it("restores exact capture metadata and immutable source bytes from a private co
   const reference = await archiveRuns(store, runs);
   expect(await restoreRuns(store, reference)).toEqual(runs);
   expect(await restoreRuns(await openArtifactStore(directory), reference)).toEqual(runs);
+  const legacy = JSON.parse(await store.read(reference.reference, reference.sha256, reference.byteSize)); legacy.formatVersion = 2;
+  const legacyBytes = canonical(legacy); const legacySha = digest(legacyBytes); const legacyReference = await store.write(legacyBytes, legacySha);
+  await expect(restoreRuns(store, { reference: legacyReference, sha256: legacySha, byteSize: Buffer.byteLength(legacyBytes) }))
+    .rejects.toThrow("archive-refused");
   await expect(restoreRuns(store, { ...reference, reference: "../" + reference.reference })).rejects.toThrow("artifact-reference-refused");
   await expect(restoreRuns(store, { ...reference, byteSize: reference.byteSize + 1 })).rejects.toThrow("artifact-integrity-failed");
   const source = runs[0].dataset.artifacts[0]; const sourcePath = join(directory, source.sha256 + ".json");

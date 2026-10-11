@@ -701,7 +701,7 @@ it("predictive coverage-aware absences block later cutoffs only and PostgreSQL r
     const absenceFor = (priorId: string, number: number) => {
       const prior = findRow(a, priorId) as Revision<"team-game-stats">;
       return revision("absent-" + priorId, "source-row-absent", { priorObservationId: prior.id, priorEntityKey: "team-game-stats:" + gameId(number) + ":" + TEAM,
-        coveringCaptureId: "capture-covering-file", scopeKind: "season-file", scopeSeason: 2026, scopeWeek: null, scopeFilter: null,
+        coveringCaptureId: "capture-covering-file", scopeKind: "season-file", scopeSeason: 2026, scopeWeek: null, scopeGameId: null, scopeFilter: null,
         gameId: prior.data.gameId, teamId: prior.data.teamId, season: prior.data.season, seasonType: prior.data.seasonType }, prior.id);
     };
     const absence = absenceFor("team-synthetic-game-5", 5);
@@ -728,6 +728,32 @@ it("predictive coverage-aware absences block later cutoffs only and PostgreSQL r
       [{ scopeKind: "all-seasons", scopeSeason: null }, "scope that misstates the covering artifact"]] as const) {
       await expect(probe({ ...probeData, ...change }), label).rejects.toMatchObject({ code: "23514", message: "predictive-absence-invalid" });
     }
+    // A game-scoped capture proves absence only for that exact game. The season
+    // alone cannot make a different game's empty capture cover this source row.
+    const scopedGame = gameId(32); const original = findRow(a, "team-synthetic-game-5") as Revision<"team-game-stats">;
+    const scopedPrior = emptyDataset();
+    addCapture(scopedPrior, "game-scope-prior", [revision("game-scope-prior", "team-game-stats",
+      { ...original.data, gameId: scopedGame, rawGameId: "synthetic-game-32" }, null, "game-scope-proof")], CAPTURE_A);
+    Object.assign(scopedPrior.artifacts[0], { scopeKind: "game", scopeSeason: 2026, scopeGameId: scopedGame });
+    await store.publish("game-scope-prior", scopedPrior, NOW);
+    const coverings = emptyDataset();
+    addCapture(coverings, "game-cover-same", [], CAPTURE_B);
+    Object.assign(coverings.artifacts.at(-1)!, { scopeKind: "game", scopeSeason: 2026, scopeGameId: scopedGame });
+    addCapture(coverings, "game-cover-other", [], CAPTURE_B);
+    Object.assign(coverings.artifacts.at(-1)!, { scopeKind: "game", scopeSeason: 2026, scopeGameId: TARGET });
+    await store.publish("game-scope-coverings", coverings, NOW);
+    const gameScopeData = (coveringCaptureId: string, scopeGameId: string) => ({ priorObservationId: "game-scope-prior",
+      priorEntityKey: "team-game-stats:" + scopedGame + ":" + TEAM, coveringCaptureId, scopeKind: "game", scopeSeason: 2026,
+      scopeWeek: null, scopeGameId, scopeFilter: null, gameId: scopedGame, teamId: TEAM, season: 2026, seasonType: "REG" });
+    const gameScopeProbe = (data: object) => sqlProbe(client, async () => {
+      await insertObservation(client, "probe-game-absence", "source-row-absent", data,
+        { predecessor: "game-scope-prior", sourceRecordId: "game-scope-proof" });
+      await client.query("INSERT INTO predictive_artifact_observations (artifact_id,observation_id) VALUES ('absence-ledger','probe-game-absence')");
+      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+    });
+    await expect(gameScopeProbe(gameScopeData("capture-game-cover-other", TARGET)))
+      .rejects.toMatchObject({ code: "23514", message: "predictive-absence-invalid" });
+    await gameScopeProbe(gameScopeData("capture-game-cover-same", scopedGame));
     // The row reappears: the provider chain simply continues after the absence.
     const back = emptyDataset(); const prior = findRow(a, "team-synthetic-game-5") as Revision<"team-game-stats">;
     addCapture(back, "returned", [revision("team-5-returns", "team-game-stats", prior.data, absence.id)], "2026-10-08T15:00:00.000Z");

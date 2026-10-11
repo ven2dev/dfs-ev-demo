@@ -754,7 +754,8 @@ describe("absence-v1 coverage-aware disappearance", () => {
       .map((field) => [field, (prior.data as Record<string, unknown>)[field]]));
     const absence = revision("absent-" + priorId, "source-row-absent", { priorObservationId: prior.id,
       priorEntityKey: options.fact ?? "team-game-stats:" + PRIOR[4] + ":" + TEAM, coveringCaptureId: "capture-covering-file",
-      scopeKind: covering.scopeKind, scopeSeason: covering.scopeSeason, scopeWeek: covering.scopeWeek, scopeFilter: covering.scopeFilter, ...routing }, prior.id);
+      scopeKind: covering.scopeKind, scopeSeason: covering.scopeSeason, scopeWeek: covering.scopeWeek, scopeGameId: covering.scopeGameId,
+      scopeFilter: covering.scopeFilter, ...routing }, prior.id);
     addCapture(dataset, "absence-ledger", [absence], options.ledgerAt ?? at);
     return absence;
   };
@@ -781,6 +782,19 @@ describe("absence-v1 coverage-aware disappearance", () => {
     const result = buildPassingYardsBundle(dataset, request(CUTOFF_B));
     expect(result.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "player-stats-absent" });
     expect(result.reasons).toContain("required-input-disappeared");
+  });
+  it("requires game-scoped coverage to name the same game", () => {
+    const matching = scoped();
+    Object.assign(matching.artifacts.find((value) => value.id === "A-team-game-stats")!,
+      { scopeKind: "game", scopeSeason: 2026, scopeGameId: PRIOR[4] });
+    disappear(matching, { artifact: { scopeKind: "game", scopeSeason: 2026, scopeGameId: PRIOR[4] } });
+    expect(() => validateDataset(matching)).not.toThrow();
+
+    const different = scoped();
+    Object.assign(different.artifacts.find((value) => value.id === "A-team-game-stats")!,
+      { scopeKind: "game", scopeSeason: 2026, scopeGameId: PRIOR[4] });
+    disappear(different, { artifact: { scopeKind: "game", scopeSeason: 2026, scopeGameId: PRIOR[3] } });
+    expect(() => validateDataset(different)).toThrow("absence-coverage-refused");
   });
   it.each([
     ["an incomplete covering capture", { capture: { state: "incomplete" as const } }, "absence-coverage-refused"],
@@ -847,7 +861,7 @@ describe("event-completion-v1 recorded decisions", () => {
     Object.assign(dataset.artifacts.at(-1)!, { scopeKind: "season-file", scopeSeason: 2026 });
     addCapture(dataset, "marker-absence", [revision("absent-terminal-5", "source-row-absent", { priorObservationId: "terminal-synthetic-game-5",
       priorEntityKey: "event-state-marker:" + PRIOR[4] + ":terminal-play", coveringCaptureId: "capture-marker-file", scopeKind: "season-file",
-      scopeSeason: 2026, scopeWeek: null, scopeFilter: null, gameId: PRIOR[4] }, "terminal-synthetic-game-5")], CAPTURE_B);
+      scopeSeason: 2026, scopeWeek: null, scopeGameId: null, scopeFilter: null, gameId: PRIOR[4] }, "terminal-synthetic-game-5")], CAPTURE_B);
     const later = buildPassingYardsBundle(dataset, request(CUTOFF_B));
     expect(later.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-conflicting" });
   });

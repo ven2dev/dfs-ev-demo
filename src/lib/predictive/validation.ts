@@ -72,7 +72,7 @@ const fields: Record<Kind, string[]> = {
   "event-state-marker": ["gameId", "markerType", "markerValue", "terminalPlayTimeOfDay"],
   "participation-evidence": ["gameId", "playerId", "teamId", "evidenceKind", "claim"],
   availability: ["gameId", "playerId", "teamId", "rawReportStatus", "rawPracticeStatus", "rawDepthRank"],
-  "source-row-absent": ["priorObservationId", "priorEntityKey", "coveringCaptureId", "scopeKind", "scopeSeason", "scopeWeek", "scopeFilter"],
+  "source-row-absent": ["priorObservationId", "priorEntityKey", "coveringCaptureId", "scopeKind", "scopeSeason", "scopeWeek", "scopeGameId", "scopeFilter"],
   "team-alias": ["provider", "rawAlias", "teamId", "effectiveFromSeason", "effectiveToSeason"],
   "game-bridge": ["provider", "rawGameId", "gameId"],
   "player-bridge": ["provider", "rawPlayerId", "playerId", "effectiveFrom", "effectiveTo"],
@@ -117,6 +117,9 @@ export const validateRevision = (value: unknown): Revision => {
         data.priorEntityKey.startsWith("source-row-absent:")) refuse("invalid-identity");
     oneOf(data.scopeKind, ["season-file", "week-file", "game", "all-seasons", "manual"]);
     optionalInteger(data.scopeSeason, 1920, 9999); optionalInteger(data.scopeWeek, 1, 22); optionalText(data.scopeFilter);
+    if (data.scopeGameId !== null) gameIdentity(data.scopeGameId);
+    if (["season-file", "week-file", "game"].includes(String(data.scopeKind)) !== (data.scopeSeason !== null) ||
+        (data.scopeKind === "week-file") !== (data.scopeWeek !== null) || (data.scopeKind === "game") !== (data.scopeGameId !== null)) refuse("invalid-artifact-scope");
     if ("gameId" in data) gameIdentity(data.gameId);
   } else if (fields[kind].includes("gameId")) gameIdentity(data.gameId);
   if ("playerId" in data) playerIdentity(data.playerId);
@@ -276,7 +279,7 @@ export const rightsInForce = (decisions: RightsDecision[], profileId: string, e:
 export const allows = (decision: RightsDecision | null, use: Use) => decision !== null && decision.allowedUses.includes(use);
 
 const ARTIFACT_FIELDS = ["id", "sha256", "bytes", "profileId", "retrievalKind", "origin", "providerEtag", "providerLastModified",
-  "releaseUpdatedAt", "scopeKind", "scopeSeason", "scopeWeek", "scopeFilter"];
+  "releaseUpdatedAt", "scopeKind", "scopeSeason", "scopeWeek", "scopeGameId", "scopeFilter"];
 const CAPTURE_FIELDS = ["id", "artifactId", "capturedAt", "availableAt", "ingestedAt", "publishedAt", "publicationEvidence", "state",
   "bodyComplete", "headerVerified", "parserSucceeded", "parsedRows"];
 
@@ -431,7 +434,7 @@ export const scopeCovers = (covering: Artifact, prior: Artifact) =>
     covering.scopeKind === "all-seasons" ||
     (covering.scopeKind === "season-file" && covering.scopeSeason === prior.scopeSeason && ["season-file", "week-file", "game"].includes(prior.scopeKind)) ||
     (covering.scopeKind === "week-file" && ["week-file", "game"].includes(prior.scopeKind) && covering.scopeSeason === prior.scopeSeason && covering.scopeWeek === prior.scopeWeek) ||
-    (covering.scopeKind === "game" && prior.scopeKind === "game" && covering.scopeSeason === prior.scopeSeason));
+    (covering.scopeKind === "game" && prior.scopeKind === "game" && covering.scopeSeason === prior.scopeSeason && covering.scopeGameId === prior.scopeGameId));
 
 // absence-v1: a disappearance is evidence only when a complete, full capture of
 // the same profile covers the prior row's scope and no longer contains the row.
@@ -451,7 +454,8 @@ const validateAbsences = (observations: Map<string, Observation>, captures: Map<
     const coveringArtifact = covering && artifacts.get(covering.artifactId);
     if (!covering || !coveringArtifact || covering.state !== "published" || !covering.bodyComplete || !covering.headerVerified || !covering.parserSucceeded ||
         coveringArtifact.profileId !== row.artifact.profileId || coveringArtifact.scopeKind !== data.scopeKind || coveringArtifact.scopeSeason !== data.scopeSeason ||
-        coveringArtifact.scopeWeek !== data.scopeWeek || coveringArtifact.scopeFilter !== data.scopeFilter || !scopeCovers(coveringArtifact, prior.artifact)) refuse("absence-coverage-refused");
+        coveringArtifact.scopeWeek !== data.scopeWeek || coveringArtifact.scopeGameId !== data.scopeGameId || coveringArtifact.scopeFilter !== data.scopeFilter ||
+        !scopeCovers(coveringArtifact, prior.artifact)) refuse("absence-coverage-refused");
     if (revisions.get(coveringArtifact.id)!.some((revision) => sourceKey(revision, coveringArtifact.profileId) === row.sourceKey)) refuse("absence-row-still-present");
     if (instant(covering.availableAt) < instant(prior.capture.availableAt) || instant(covering.ingestedAt) < instant(prior.capture.ingestedAt) ||
         instant(row.capture.availableAt) < instant(covering.availableAt) || instant(row.capture.ingestedAt) < instant(covering.ingestedAt)) refuse("absence-time-order-refused");
@@ -505,7 +509,9 @@ export const validateDataset = (value: unknown) => {
     for (const key of ["providerEtag", "providerLastModified", "scopeFilter"]) optionalText(artifact[key]);
     if (artifact.releaseUpdatedAt !== null) instant(artifact.releaseUpdatedAt);
     optionalInteger(artifact.scopeSeason, 1920, 9999); optionalInteger(artifact.scopeWeek, 1, 22);
-    if ((artifact.scopeKind === "week-file") !== (artifact.scopeWeek !== null)) refuse("invalid-artifact-scope");
+    if (artifact.scopeGameId !== null) gameIdentity(artifact.scopeGameId);
+    if (["season-file", "week-file", "game"].includes(String(artifact.scopeKind)) !== (artifact.scopeSeason !== null) ||
+        (artifact.scopeKind === "week-file") !== (artifact.scopeWeek !== null) || (artifact.scopeKind === "game") !== (artifact.scopeGameId !== null)) refuse("invalid-artifact-scope");
     if (typeof artifact.bytes !== "string" || Buffer.byteLength(artifact.bytes) > 1_000_000 || artifact.sha256 !== digest(artifact.bytes)) refuse("artifact-integrity-failed");
     if (artifacts.has(String(artifact.id))) refuse("duplicate-artifact-id");
     artifacts.set(String(artifact.id), artifact as Artifact);

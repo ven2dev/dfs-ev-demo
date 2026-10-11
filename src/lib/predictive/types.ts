@@ -52,7 +52,7 @@ export type Availability = {
 export const ROUTING_FIELDS = ["gameId", "playerId", "teamId", "season", "seasonType"] as const;
 export type SourceRowAbsent = {
   priorObservationId: string; priorEntityKey: string; coveringCaptureId: string;
-  scopeKind: ScopeKind; scopeSeason: number | null; scopeWeek: number | null; scopeFilter: string | null;
+  scopeKind: ScopeKind; scopeSeason: number | null; scopeWeek: number | null; scopeGameId: string | null; scopeFilter: string | null;
   gameId?: string; playerId?: string; teamId?: string; season?: number; seasonType?: SeasonType;
 };
 // Identity bridges. Keys name the provider and its raw ID, the documented
@@ -90,7 +90,7 @@ export type Artifact = {
   id: string; sha256: string; bytes: string; profileId: string; retrievalKind: "full" | "header-probe"; origin: string;
   providerEtag: string | null; providerLastModified: string | null; releaseUpdatedAt: string | null;
   scopeKind: ScopeKind;
-  scopeSeason: number | null; scopeWeek: number | null; scopeFilter: string | null;
+  scopeSeason: number | null; scopeWeek: number | null; scopeGameId: string | null; scopeFilter: string | null;
 };
 export type Capture = {
   id: string; artifactId: string; capturedAt: string; availableAt: string; ingestedAt: string;

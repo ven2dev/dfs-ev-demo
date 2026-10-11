@@ -862,3 +862,13 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
 - Feature-run manifests now require every cited decision to remain current at
   the feature cutoff. A later correction cannot leave a run bound to a stale
   decision and its superseded inputs.
+
+### Review fixes (2026-10-10)
+
+- **Review fix 3 (typed game scope):** artifacts gain `scope_game_id` (FK to
+  games), and absence payloads gain `scopeGameId`. Season is required for
+  season-file, week-file and game scopes, week for week-file, and the game ID
+  for game scope, in SQL and TypeScript. Game coverage now compares the exact
+  game, so an unrelated game's empty capture can no longer prove an absence.
+  Persistence registers a game-scoped artifact's game before inserting it. The
+  archive journal moves to `formatVersion` 3 and refuses version 2.

@@ -26,7 +26,7 @@ const envelopeSql = `SELECT jsonb_build_object(
     'parserSucceeded',c.parser_succeeded,'parsedRows',c.parsed_rows),
   'artifact', jsonb_build_object('id',a.id,'profileId',a.profile_id,'retrievalKind',a.retrieval_kind,'origin',a.origin,
     'providerEtag',a.provider_etag,'providerLastModified',a.provider_last_modified,'releaseUpdatedAt',${timestamp("a.release_updated_at")},
-    'scopeKind',a.scope_kind,'scopeSeason',a.scope_season,'scopeWeek',a.scope_week,'scopeFilter',a.scope_filter,
+    'scopeKind',a.scope_kind,'scopeSeason',a.scope_season,'scopeWeek',a.scope_week,'scopeGameId',a.scope_game_id,'scopeFilter',a.scope_filter,
     'sha256',b.sha256,'byteSize',b.byte_size,'storageRef',b.storage_ref)) AS envelope
   FROM chosen o JOIN public.predictive_artifact_observations l ON l.observation_id=o.id
   JOIN public.predictive_artifacts a ON a.id=l.artifact_id JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256
@@ -160,13 +160,15 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const blob = (await client.query("SELECT byte_size,media_type FROM public.predictive_blobs WHERE sha256=$1", [artifact.sha256])).rows[0];
     if (blob.byte_size !== byteSize || blob.media_type !== "application/json") refuse("blob-conflict");
     const values = [artifact.id, artifact.sha256, artifact.profileId, artifact.retrievalKind, artifact.origin, artifact.providerEtag,
-      artifact.providerLastModified, artifact.releaseUpdatedAt, artifact.scopeKind, artifact.scopeSeason, artifact.scopeWeek, artifact.scopeFilter];
+      artifact.providerLastModified, artifact.releaseUpdatedAt, artifact.scopeKind, artifact.scopeSeason, artifact.scopeWeek, artifact.scopeGameId, artifact.scopeFilter];
     const row = (await client.query(`SELECT id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,provider_last_modified,
-      ${timestamp("release_updated_at")} AS release_updated_at,scope_kind,scope_season,scope_week,scope_filter
+      ${timestamp("release_updated_at")} AS release_updated_at,scope_kind,scope_season,scope_week,scope_game_id,scope_filter
       FROM public.predictive_artifacts WHERE id=$1`, [artifact.id])).rows[0];
     if (row) { if (canonical(Object.values(row)) !== canonical(values)) refuse("artifact-id-conflict"); return; }
+    // A game-scoped artifact names its game before any revision registers it.
+    if (artifact.scopeGameId) await client.query("INSERT INTO public.predictive_games (id) VALUES ($1) ON CONFLICT DO NOTHING", [artifact.scopeGameId]);
     await client.query(`INSERT INTO public.predictive_artifacts (id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,provider_last_modified,
-      release_updated_at,scope_kind,scope_season,scope_week,scope_filter) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`, values);
+      release_updated_at,scope_kind,scope_season,scope_week,scope_game_id,scope_filter) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, values);
   };
   const persistCapture = async (capture: Capture, runId: string) => {
     const existing = (await client.query(`SELECT jsonb_build_object('id',id,'artifactId',artifact_id,'capturedAt',${timestamp("captured_at")},

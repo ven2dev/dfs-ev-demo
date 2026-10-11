@@ -105,7 +105,7 @@ BEGIN
     WHEN 'event-state-marker' THEN ARRAY['gameId','markerType','markerValue','terminalPlayTimeOfDay']
     WHEN 'participation-evidence' THEN ARRAY['gameId','playerId','teamId','evidenceKind','claim']
     WHEN 'availability' THEN ARRAY['gameId','playerId','teamId','rawReportStatus','rawPracticeStatus','rawDepthRank']
-    WHEN 'source-row-absent' THEN ARRAY['priorObservationId','priorEntityKey','coveringCaptureId','scopeKind','scopeSeason','scopeWeek','scopeFilter']
+    WHEN 'source-row-absent' THEN ARRAY['priorObservationId','priorEntityKey','coveringCaptureId','scopeKind','scopeSeason','scopeWeek','scopeGameId','scopeFilter']
     WHEN 'team-alias' THEN ARRAY['provider','rawAlias','teamId','effectiveFromSeason','effectiveToSeason']
     WHEN 'game-bridge' THEN ARRAY['provider','rawGameId','gameId']
     WHEN 'player-bridge' THEN ARRAY['provider','rawPlayerId','playerId','effectiveFrom','effectiveTo']
@@ -170,6 +170,10 @@ BEGIN
         AND (data->>'scopeKind' IN ('season-file','week-file','game','all-seasons','manual')) IS TRUE
         AND (data->'scopeSeason' = 'null'::jsonb OR public.predictive_integer(data->'scopeSeason', 1920, 9999))
         AND (data->'scopeWeek' = 'null'::jsonb OR public.predictive_integer(data->'scopeWeek', 1, 22))
+        AND (data->'scopeGameId' = 'null'::jsonb OR public.predictive_identity(data->'scopeGameId', 'game'))
+        AND ((data->>'scopeKind' IN ('season-file','week-file','game')) = (data->'scopeSeason' <> 'null'::jsonb))
+        AND ((data->>'scopeKind' = 'week-file') = (data->'scopeWeek' <> 'null'::jsonb))
+        AND ((data->>'scopeKind' = 'game') = (data->'scopeGameId' <> 'null'::jsonb))
         AND public.predictive_optional_text(data->'scopeFilter');
     WHEN 'team-alias' THEN
       RETURN jsonb_typeof(data->'provider') = 'string' AND data->>'provider' ~ '^[a-z0-9][a-z0-9-]{0,31}$'
@@ -312,8 +316,11 @@ CREATE TABLE public.predictive_artifacts (
   scope_kind text NOT NULL CHECK (scope_kind IN ('season-file','week-file','game','all-seasons','manual')),
   scope_season integer CHECK (scope_season BETWEEN 1920 AND 9999),
   scope_week integer CHECK (scope_week BETWEEN 1 AND 22),
+  scope_game_id uuid,
   scope_filter text CHECK (length(scope_filter) BETWEEN 1 AND 256),
-  CHECK ((scope_kind = 'week-file') = (scope_week IS NOT NULL))
+  CHECK ((scope_kind IN ('season-file','week-file','game')) = (scope_season IS NOT NULL)),
+  CHECK ((scope_kind = 'week-file') = (scope_week IS NOT NULL)),
+  CHECK ((scope_kind = 'game') = (scope_game_id IS NOT NULL))
 );
 CREATE INDEX predictive_artifacts_blob_idx ON public.predictive_artifacts (blob_sha256);
 
@@ -354,6 +361,8 @@ INSERT INTO public.predictive_teams (id) VALUES ('nfl:team:ARI'),('nfl:team:ATL'
 CREATE TABLE public.predictive_games (
   id uuid PRIMARY KEY CHECK (id::text ~ '^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$')
 );
+ALTER TABLE public.predictive_artifacts ADD CONSTRAINT predictive_artifacts_scope_game_fk
+  FOREIGN KEY (scope_game_id) REFERENCES public.predictive_games(id);
 
 -- One envelope for every evidence kind: strict per-kind JSON plus typed routing
 -- columns. The source key keeps each provider's correction chain separate.
@@ -475,7 +484,8 @@ BEGIN
   IF cov.id IS NULL THEN RETURN false; END IF;
   SELECT * INTO ca FROM public.predictive_artifacts WHERE id = cov.artifact_id;
   IF ca.profile_id <> a.profile_id OR ca.scope_kind <> a.data->>'scopeKind' OR ca.scope_season IS DISTINCT FROM (a.data->>'scopeSeason')::integer
-    OR ca.scope_week IS DISTINCT FROM (a.data->>'scopeWeek')::integer OR ca.scope_filter IS DISTINCT FROM a.data->>'scopeFilter' THEN RETURN false; END IF;
+    OR ca.scope_week IS DISTINCT FROM (a.data->>'scopeWeek')::integer OR ca.scope_game_id IS DISTINCT FROM (a.data->>'scopeGameId')::uuid
+    OR ca.scope_filter IS DISTINCT FROM a.data->>'scopeFilter' THEN RETURN false; END IF;
   SELECT c.* INTO pc FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
     JOIN public.predictive_ingestion_runs r ON r.id = c.run_id
     WHERE l.observation_id = p.id AND c.state = 'published' AND r.status = 'published'
@@ -487,7 +497,8 @@ BEGIN
         OR (ca.scope_kind = 'season-file' AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season AND pa.scope_kind IN ('season-file','week-file','game'))
         OR (ca.scope_kind = 'week-file' AND pa.scope_kind IN ('week-file','game') AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season
           AND ca.scope_week IS NOT DISTINCT FROM pa.scope_week)
-        OR (ca.scope_kind = 'game' AND pa.scope_kind = 'game' AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season))) THEN RETURN false; END IF;
+        OR (ca.scope_kind = 'game' AND pa.scope_kind = 'game' AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season
+          AND ca.scope_game_id IS NOT DISTINCT FROM pa.scope_game_id))) THEN RETURN false; END IF;
   IF EXISTS (SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_observations o ON o.id = l.observation_id
       WHERE l.artifact_id = ca.id AND o.source_key = a.source_key) THEN RETURN false; END IF;
   SELECT c.* INTO ac FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
