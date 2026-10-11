@@ -444,6 +444,10 @@ CREATE FUNCTION public.predictive_entity_key(kind text, data jsonb) RETURNS text
 LANGUAGE sql IMMUTABLE STRICT AS $$
   SELECT CASE kind
     WHEN 'source-row-absent' THEN data->>'priorEntityKey'
+    WHEN 'team-alias' THEN kind || ':' || (data->>'provider') || ':' || (data->>'rawAlias')
+    WHEN 'game-bridge' THEN kind || ':' || (data->>'provider') || ':' || (data->>'rawGameId')
+    WHEN 'player-bridge' THEN kind || ':' || (data->>'provider') || ':' || (data->>'rawPlayerId')
+    WHEN 'game-relation' THEN kind || ':' || (data->>'gameId')
     WHEN 'schedule-coverage' THEN kind || ':' || (data->>'teamId') || ':' || (data->>'fromSeason') || ':' || (data->>'throughSeason')
     WHEN 'event-state-marker' THEN kind || ':' || (data->>'gameId') || ':' || (data->>'markerType')
     WHEN 'participation-evidence' THEN kind || ':' || (data->>'gameId') || ':' || (data->>'playerId') || ':' || (data->>'evidenceKind')
@@ -499,6 +503,10 @@ BEGIN
     WHEN 'participation-evidence' THEN ARRAY['gameId','playerId','teamId','evidenceKind','claim']
     WHEN 'availability' THEN ARRAY['gameId','playerId','teamId','rawReportStatus','rawPracticeStatus','rawDepthRank']
     WHEN 'source-row-absent' THEN ARRAY['priorObservationId','priorEntityKey','coveringCaptureId','scopeKind','scopeSeason','scopeWeek','scopeFilter']
+    WHEN 'team-alias' THEN ARRAY['provider','rawAlias','teamId','effectiveFromSeason','effectiveToSeason']
+    WHEN 'game-bridge' THEN ARRAY['provider','rawGameId','gameId']
+    WHEN 'player-bridge' THEN ARRAY['provider','rawPlayerId','playerId','effectiveFrom','effectiveTo']
+    WHEN 'game-relation' THEN ARRAY['gameId','predecessorGameId','relation']
     ELSE NULL END;
   IF fields IS NULL OR jsonb_typeof(data) <> 'object' THEN RETURN false; END IF;
   IF kind = 'source-row-absent' THEN
@@ -507,7 +515,7 @@ BEGIN
         WHERE key <> ALL(fields) AND key <> ALL(ARRAY['gameId','playerId','teamId','season','seasonType'])) THEN RETURN false; END IF;
   ELSIF (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(data) key) IS DISTINCT FROM
     (SELECT array_agg(key ORDER BY key) FROM unnest(fields) key) THEN RETURN false; END IF;
-  IF (kind NOT IN ('schedule-coverage','source-row-absent') OR data ? 'gameId') AND NOT public.predictive_identity(data->'gameId', 'game') THEN RETURN false; END IF;
+  IF data ? 'gameId' AND NOT public.predictive_identity(data->'gameId', 'game') THEN RETURN false; END IF;
   IF data ? 'playerId' AND NOT public.predictive_identity(data->'playerId', 'player') THEN RETURN false; END IF;
   FOREACH name IN ARRAY ARRAY['teamId','homeTeamId','awayTeamId'] LOOP
     IF data ? name AND NOT public.predictive_identity(data->name, 'team') THEN RETURN false; END IF;
@@ -560,6 +568,22 @@ BEGIN
         AND (data->'scopeSeason' = 'null'::jsonb OR public.predictive_integer(data->'scopeSeason', 1920, 9999))
         AND (data->'scopeWeek' = 'null'::jsonb OR public.predictive_integer(data->'scopeWeek', 1, 22))
         AND public.predictive_optional_text(data->'scopeFilter');
+    WHEN 'team-alias' THEN
+      RETURN jsonb_typeof(data->'provider') = 'string' AND data->>'provider' ~ '^[a-z0-9][a-z0-9-]{0,31}$'
+        AND jsonb_typeof(data->'rawAlias') = 'string' AND data->>'rawAlias' ~ '^[A-Za-z0-9._-]{1,64}$'
+        AND public.predictive_integer(data->'effectiveFromSeason', 1920, 9999) AND public.predictive_integer(data->'effectiveToSeason', 1920, 9999)
+        AND (data->>'effectiveFromSeason')::integer <= (data->>'effectiveToSeason')::integer;
+    WHEN 'game-bridge' THEN
+      RETURN jsonb_typeof(data->'provider') = 'string' AND data->>'provider' ~ '^[a-z0-9][a-z0-9-]{0,31}$'
+        AND data->>'rawGameId' ~ '^[A-Za-z0-9._-]{1,64}$';
+    WHEN 'player-bridge' THEN
+      RETURN jsonb_typeof(data->'provider') = 'string' AND data->>'provider' ~ '^[a-z0-9][a-z0-9-]{0,31}$'
+        AND jsonb_typeof(data->'rawPlayerId') = 'string' AND data->>'rawPlayerId' ~ '^[A-Za-z0-9._-]{1,64}$'
+        AND public.predictive_instant(data->>'effectiveFrom') AND public.predictive_instant(data->>'effectiveTo')
+        AND data->>'effectiveFrom' < data->>'effectiveTo';
+    WHEN 'game-relation' THEN
+      RETURN public.predictive_identity(data->'predecessorGameId', 'game') AND data->>'relation' = 'replacement'
+        AND data->>'predecessorGameId' <> data->>'gameId';
     WHEN 'availability' THEN
       RETURN public.predictive_optional_text(data->'rawReportStatus') AND public.predictive_optional_text(data->'rawPracticeStatus')
         AND (data->'rawDepthRank' = 'null'::jsonb OR public.predictive_integer(data->'rawDepthRank', 1, 20));
@@ -590,8 +614,9 @@ CREATE TABLE public.predictive_source_profiles (
   allowlist_version text NOT NULL CHECK (length(allowlist_version) BETWEEN 1 AND 256),
   license text NOT NULL CHECK (length(license) BETWEEN 1 AND 256),
   attribution text CHECK (length(attribution) BETWEEN 1 AND 256),
-  evidence_kinds text[] NOT NULL CHECK (cardinality(evidence_kinds) BETWEEN 1 AND 9 AND evidence_kinds <@ ARRAY['schedule','schedule-coverage',
-    'membership','player-game-stats','team-game-stats','event-state-marker','participation-evidence','availability','source-row-absent']::text[]),
+  evidence_kinds text[] NOT NULL CHECK (cardinality(evidence_kinds) BETWEEN 1 AND 13 AND evidence_kinds <@ ARRAY['schedule','schedule-coverage',
+    'membership','player-game-stats','team-game-stats','event-state-marker','participation-evidence','availability','source-row-absent',
+    'team-alias','game-bridge','player-bridge','game-relation']::text[]),
   registered_at timestamptz NOT NULL CHECK (isfinite(registered_at) AND registered_at = date_trunc('milliseconds', registered_at))
 );
 
@@ -897,6 +922,18 @@ BEGIN
       SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
       WHERE l.observation_id = o.id AND c.state = 'published')) THEN
     RAISE EXCEPTION 'predictive-publication-invalid' USING ERRCODE = '23514';
+  END IF;
+  -- bridge-v1 (validateBridges in code): within one source, a provider's player
+  -- or game maps from one raw ID at a time; team aliases may be many-to-one.
+  IF EXISTS (SELECT 1 FROM public.predictive_observations o JOIN public.predictive_observations h
+      ON h.kind = o.kind AND h.profile_id = o.profile_id AND h.id <> o.id AND h.entity_key <> o.entity_key AND h.data->>'provider' = o.data->>'provider'
+      WHERE o.id = ANY(affected) AND o.kind IN ('player-bridge','game-bridge')
+        AND NOT EXISTS (SELECT 1 FROM public.predictive_observations n WHERE n.predecessor_id = h.id)
+        AND NOT EXISTS (SELECT 1 FROM public.predictive_observations n WHERE n.predecessor_id = o.id)
+        AND ((o.kind = 'game-bridge' AND h.data->>'gameId' = o.data->>'gameId')
+          OR (o.kind = 'player-bridge' AND h.data->>'playerId' = o.data->>'playerId'
+            AND h.data->>'effectiveFrom' < o.data->>'effectiveTo' AND o.data->>'effectiveFrom' < h.data->>'effectiveTo'))) THEN
+    RAISE EXCEPTION 'predictive-bridge-ambiguous' USING ERRCODE = '23514';
   END IF;
   IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id = ANY(affected) AND o.kind = 'source-row-absent'
       AND NOT public.predictive_absence_valid(o.id)) THEN

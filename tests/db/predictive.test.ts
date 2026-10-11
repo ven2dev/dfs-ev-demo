@@ -926,3 +926,40 @@ it("predictive feature runs are recorded after read-only computation with exact 
     });
   });
 });
+it("predictive identity bridges refuse same-source ambiguity at write and keep corrections in their chain", async () => {
+  await withProof(async ({ client, store }) => {
+    const bridges = emptyDataset();
+    const playerBridge = (id: string, raw: string, playerId: string, from = "2026-01-01T00:00:00.000Z", to = "2027-01-01T00:00:00.000Z", predecessor: string | null = null) =>
+      revision(id, "player-bridge", { provider: "provider-x", rawPlayerId: raw, playerId, effectiveFrom: from, effectiveTo: to }, predecessor);
+    addCapture(bridges, "bridges", [playerBridge("bridge-a", "p123", PLAYER, "2026-01-01T00:00:00.000Z", "2026-05-01T00:00:00.000Z"),
+      playerBridge("bridge-b", "p456", PLAYER, "2026-05-01T00:00:00.000Z"),
+      revision("alias-lar", "team-alias", { provider: "provider-x", rawAlias: "LAR", teamId: "nfl:team:LA", effectiveFromSeason: 2016, effectiveToSeason: 2026 }),
+      revision("alias-la", "team-alias", { provider: "provider-x", rawAlias: "LA", teamId: "nfl:team:LA", effectiveFromSeason: 2016, effectiveToSeason: 2026 }),
+      revision("game-bridge", "game-bridge", { provider: "provider-x", rawGameId: "evt-9", gameId: TARGET }),
+      revision("relation", "game-relation", { gameId: TARGET, predecessorGameId: gameId(99), relation: "replacement" })]);
+    await store.publish("bridges", bridges, NOW);
+    expect((await client.query("SELECT entity_key, player_id, team_id FROM predictive_observations WHERE id IN ('bridge-a','alias-lar') ORDER BY id")).rows).toEqual([
+      { entity_key: "team-alias:provider-x:LAR", player_id: null, team_id: "nfl:team:LA" },
+      { entity_key: "player-bridge:provider-x:p123", player_id: PLAYER, team_id: null }]);
+    expect((await client.query("SELECT count(*)::integer AS count FROM predictive_games WHERE id=$1", [gameId(99)])).rows[0].count).toBe(1);
+    const probe = (row: Revision) => sqlProbe(client, async () => {
+      await insertObservation(client, row.id, row.kind, row.data, row.predecessorId ? { predecessor: row.predecessorId } : {});
+      await client.query("INSERT INTO predictive_artifact_observations (artifact_id,observation_id) VALUES ('bridges',$1)", [row.id]);
+      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+    });
+    // A third raw ID for the same player overlapping an existing mapping is refused,
+    // as is a second raw game ID for one game. A further team alias is fine.
+    await expect(probe(playerBridge("bridge-c", "p789", PLAYER, "2026-06-01T00:00:00.000Z"))).rejects.toMatchObject({ code: "23514", message: "predictive-bridge-ambiguous" });
+    await expect(probe(revision("game-bridge-2", "game-bridge", { provider: "provider-x", rawGameId: "evt-10", gameId: TARGET })))
+      .rejects.toMatchObject({ code: "23514", message: "predictive-bridge-ambiguous" });
+    await probe(revision("alias-stl", "team-alias", { provider: "provider-x", rawAlias: "STL", teamId: "nfl:team:LA", effectiveFromSeason: 2016, effectiveToSeason: 2016 }));
+    // Correcting a mapping stays inside its own chain and is accepted.
+    await probe(playerBridge("bridge-b-fix", "p456", PLAYER, "2026-05-01T00:00:00.000Z", "2026-12-01T00:00:00.000Z", "bridge-b"));
+    for (const bad of [{ rawPlayerId: "p:1" }, { effectiveTo: "2025-01-01T00:00:00.000Z" }]) {
+      await sqlProbe(client, async () => {
+        await expect(insertObservation(client, "bad", "player-bridge", { provider: "provider-x", rawPlayerId: "p1", playerId: PLAYER,
+          effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-01-01T00:00:00.000Z", ...bad }, { sourceRecordId: "x" })).rejects.toMatchObject({ code: "23514" });
+      });
+    }
+  });
+});

@@ -1,4 +1,4 @@
-import type { Availability, Observation, PlayerGameStats, Reconciliation } from "./types.ts";
+import type { Availability, Observation, Reconciliation } from "./types.ts";
 import type { Replay } from "./replay.ts";
 import { canonical, compareText } from "./validation.ts";
 

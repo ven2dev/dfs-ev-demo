@@ -1,9 +1,11 @@
 export type SeasonType = "REG" | "POST";
 export type Candidate = "stats-v1:player_pass_yds" | "player-opponent-v1:player_pass_yds";
 export type Kind = "schedule" | "schedule-coverage" | "membership" | "player-game-stats" | "team-game-stats" |
-  "event-state-marker" | "participation-evidence" | "availability" | "source-row-absent";
+  "event-state-marker" | "participation-evidence" | "availability" | "source-row-absent" |
+  "team-alias" | "game-bridge" | "player-bridge" | "game-relation";
 export const KINDS: readonly Kind[] = ["schedule", "schedule-coverage", "membership", "player-game-stats",
-  "team-game-stats", "event-state-marker", "participation-evidence", "availability", "source-row-absent"];
+  "team-game-stats", "event-state-marker", "participation-evidence", "availability", "source-row-absent",
+  "team-alias", "game-bridge", "player-bridge", "game-relation"];
 export type ScopeKind = "season-file" | "week-file" | "game" | "all-seasons" | "manual";
 
 // The ten count fields behind the nine registry markets. Values are per game.
@@ -53,11 +55,19 @@ export type SourceRowAbsent = {
   scopeKind: ScopeKind; scopeSeason: number | null; scopeWeek: number | null; scopeFilter: string | null;
   gameId?: string; playerId?: string; teamId?: string; season?: number; seasonType?: SeasonType;
 };
+// Identity bridges. Keys name the provider and its raw ID, the documented
+// exception to provider-free entity keys: a raw ID only means something inside
+// its provider. Mappings are dated where membership can change.
+export type TeamAlias = { provider: string; rawAlias: string; teamId: string; effectiveFromSeason: number; effectiveToSeason: number };
+export type GameBridge = { provider: string; rawGameId: string; gameId: string };
+export type PlayerBridge = { provider: string; rawPlayerId: string; playerId: string; effectiveFrom: string; effectiveTo: string };
+export type GameRelation = { gameId: string; predecessorGameId: string; relation: "replacement" };
 export type DataByKind = {
   schedule: Schedule; "schedule-coverage": ScheduleCoverage; membership: Membership;
   "player-game-stats": PlayerGameStats; "team-game-stats": TeamGameStats;
   "event-state-marker": EventStateMarker; "participation-evidence": ParticipationEvidence; availability: Availability;
   "source-row-absent": SourceRowAbsent;
+  "team-alias": TeamAlias; "game-bridge": GameBridge; "player-bridge": PlayerBridge; "game-relation": GameRelation;
 };
 export type Revision<K extends Kind = Kind> = K extends Kind ? {
   id: string; kind: K; sourceRecordId: string; predecessorId: string | null; correctionReason: string | null; data: DataByKind[K];

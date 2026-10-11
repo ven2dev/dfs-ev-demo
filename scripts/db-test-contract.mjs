@@ -45,6 +45,7 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive completion records must cite exactly the marker heads known at their decision time and state the policy outcome",
   "predictive participation records and outcome labels enforce all eight binding checks in PostgreSQL",
   "predictive feature runs are recorded after read-only computation with exact dependencies, digests and retention",
+  "predictive identity bridges refuse same-source ambiguity at write and keep corrections in their chain",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

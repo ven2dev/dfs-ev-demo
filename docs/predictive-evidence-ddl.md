@@ -759,3 +759,25 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
   what "known by t" evaluates to for earlier instants. Publication refuses future
   times, but not backdating. PR B's real ingestion should stamp knowledge times
   from the database clock, as current access already does.
+
+### Step 9 additions (2026-10-10)
+
+- **Kinds (`bridge-v1`):** `team-alias` (`provider`, `rawAlias`, `teamId`,
+  effective seasons), `game-bridge` (`provider`, `rawGameId`, `gameId`),
+  `player-bridge` (`provider`, `rawPlayerId`, `playerId`, effective instants) and
+  `game-relation` (`gameId`, `predecessorGameId`, `relation = 'replacement'`).
+  Bridges are evidence, so rights, captures, chains and replay apply to them as to
+  any other observation. Profiles may now declare up to 13 evidence kinds.
+- **Entity keys:** `team-alias:<provider>:<raw>`, `game-bridge:<provider>:<raw>`,
+  `player-bridge:<provider>:<raw>` and `game-relation:<gameId>`. Provider names
+  match `^[a-z0-9][a-z0-9-]{0,31}$`, raw identifiers `^[A-Za-z0-9._-]{1,64}$`.
+  The generic game-ID check now applies to any payload that carries `gameId`.
+- **Strict ambiguity at write:** within one source profile and provider, the
+  publication check raises `predictive-bridge-ambiguous` when two current heads
+  map different raw IDs to one game, or to one player over overlapping effective
+  windows. Team aliases may be many-to-one. A correction in the same chain is
+  accepted. Mirrored by `validateBridges`.
+- **Cross-source disagreement at replay:** `resolvePlayer`, `resolveTeam`,
+  `resolveGame` and `replacementOf` return `identity-bridge-missing` or
+  `identity-bridge-conflict` rather than picking a mapping.
+- **Games:** publishing a `game-relation` also inserts its predecessor game.

@@ -120,6 +120,19 @@ export const replayObservations = (rows: Observation[], blocked: Set<string>, de
       if (latest.length === 1 && sameIds(latest[0], scope) && canonical(latest[0].outcome) === canonical(outcome)) citedParticipation.set(latest[0].id, latest[0]);
       return { ...outcome, inputs: scope };
     },
+    // bridge-v1 resolution: one canonical identity from the current heads for a
+    // provider's raw ID, effective at the requested time. Disagreeing providers
+    // or a disappeared mapping resolve as unresolved, never by choosing one.
+    resolvePlayer: (provider: string, rawPlayerId: string, at: string) => resolveBridge(heads, "player-bridge:" + provider + ":" + rawPlayerId,
+      (row) => row.revision.kind === "player-bridge" && instant(row.revision.data.effectiveFrom) <= instant(at) && instant(at) < instant(row.revision.data.effectiveTo),
+      (row) => (row.revision.data as { playerId: string }).playerId),
+    resolveTeam: (provider: string, rawAlias: string, season: number) => resolveBridge(heads, "team-alias:" + provider + ":" + rawAlias,
+      (row) => row.revision.kind === "team-alias" && row.revision.data.effectiveFromSeason <= season && season <= row.revision.data.effectiveToSeason,
+      (row) => (row.revision.data as { teamId: string }).teamId),
+    resolveGame: (provider: string, rawGameId: string) => resolveBridge(heads, "game-bridge:" + provider + ":" + rawGameId,
+      (row) => row.revision.kind === "game-bridge", (row) => (row.revision.data as { gameId: string }).gameId),
+    replacementOf: (gameId: string) => resolveBridge(heads, "game-relation:" + gameId,
+      (row) => row.revision.kind === "game-relation", (row) => (row.revision.data as { predecessorGameId: string }).predecessorGameId),
     citedParticipations: () => [...citedParticipation.values()].sort((a, b) => compareText(a.id, b.id)),
     disappearedFacts: () => [...disappeared.keys()].sort(compareText),
     // Enumerate cutoff-known facts only; a future capture cannot invent a
@@ -128,3 +141,14 @@ export const replayObservations = (rows: Observation[], blocked: Set<string>, de
   };
 };
 export type Replay = ReturnType<typeof replayObservations>;
+
+export type BridgeResolution = { state: "resolved"; value: string; dependencies: Observation[] } |
+  { state: "missing" | "unresolved"; value: null; reason: "identity-bridge-missing" | "identity-bridge-conflict"; dependencies: Observation[] };
+const resolveBridge = (heads: Observation[], key: string, applies: (row: Observation) => boolean, value: (row: Observation) => string): BridgeResolution => {
+  const rows = heads.filter((row) => row.entityKey === key);
+  if (rows.some((row) => row.revision.kind === "source-row-absent")) return { state: "unresolved", value: null, reason: "identity-bridge-conflict", dependencies: rows };
+  const values = [...new Set(rows.filter(applies).map(value))];
+  if (values.length === 1) return { state: "resolved", value: values[0], dependencies: rows };
+  return values.length ? { state: "unresolved", value: null, reason: "identity-bridge-conflict", dependencies: rows } :
+    { state: "missing", value: null, reason: "identity-bridge-missing", dependencies: rows };
+};

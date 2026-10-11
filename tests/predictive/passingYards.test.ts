@@ -956,6 +956,63 @@ describe("feature-run records", () => {
   });
 });
 
+describe("bridge-v1 identity bridges", () => {
+  const second = "synthetic-second-v1";
+  const playerBridge = (id: string, raw: string, playerId: string, from = "2026-01-01T00:00:00.000Z", to = "2027-01-01T00:00:00.000Z", predecessor: string | null = null) =>
+    revision(id, "player-bridge", { provider: "provider-x", rawPlayerId: raw, playerId, effectiveFrom: from, effectiveTo: to }, predecessor);
+  const replayOf = (dataset: Dataset, cutoff = CUTOFF_A) => createReplay(dataset, cutoff, request().computedAt);
+  it("resolves a provider's raw IDs to canonical identities, effective by date", () => {
+    const dataset = passingYardsFixture(false);
+    addCapture(dataset, "bridges", [playerBridge("bridge-a", "p123", PLAYER, "2026-01-01T00:00:00.000Z", "2026-06-01T00:00:00.000Z"),
+      revision("alias-la", "team-alias", { provider: "provider-x", rawAlias: "LAR", teamId: "nfl:team:LA", effectiveFromSeason: 2016, effectiveToSeason: 2026 }),
+      revision("alias-la-2", "team-alias", { provider: "provider-x", rawAlias: "LA", teamId: "nfl:team:LA", effectiveFromSeason: 2016, effectiveToSeason: 2026 }),
+      revision("game-bridge", "game-bridge", { provider: "provider-x", rawGameId: "evt-9", gameId: TARGET }),
+      revision("relation", "game-relation", { gameId: TARGET, predecessorGameId: gameId(99), relation: "replacement" })]);
+    const replay = replayOf(dataset);
+    expect(replay.resolvePlayer("provider-x", "p123", "2026-03-01T00:00:00.000Z")).toMatchObject({ state: "resolved", value: PLAYER });
+    expect(replay.resolvePlayer("provider-x", "p123", "2026-07-01T00:00:00.000Z")).toMatchObject({ state: "missing", reason: "identity-bridge-missing" });
+    expect(replay.resolveTeam("provider-x", "LAR", 2024)).toMatchObject({ state: "resolved", value: "nfl:team:LA" });
+    expect(replay.resolveTeam("provider-x", "LA", 2024)).toMatchObject({ state: "resolved", value: "nfl:team:LA" });
+    expect(replay.resolveTeam("provider-x", "LA", 2015)).toMatchObject({ state: "missing" });
+    expect(replay.resolveGame("provider-x", "evt-9")).toMatchObject({ state: "resolved", value: TARGET });
+    expect(replay.replacementOf(TARGET)).toMatchObject({ state: "resolved", value: gameId(99) });
+  });
+  it("resolves disagreeing providers as unresolved and applies a correction only at later cutoffs", () => {
+    const dataset = passingYardsFixture(false); dataset.profiles.push(profile(second)); dataset.rightsDecisions.push(rights(second));
+    addCapture(dataset, "bridge-1", [playerBridge("bridge-1", "p123", PLAYER)]);
+    expect(replayOf(dataset).resolvePlayer("provider-x", "p123", CUTOFF_A)).toMatchObject({ state: "resolved" });
+    addCapture(dataset, "bridge-2", [playerBridge("bridge-2", "p123", "00-0000002")], CAPTURE_A, second);
+    expect(replayOf(dataset).resolvePlayer("provider-x", "p123", CUTOFF_A)).toMatchObject({ state: "unresolved", reason: "identity-bridge-conflict" });
+    const corrected = passingYardsFixture(false);
+    addCapture(corrected, "bridge-1", [playerBridge("bridge-1", "p123", PLAYER)]);
+    addCapture(corrected, "bridge-fix", [playerBridge("bridge-fix", "p123", "00-0000002", undefined, undefined, "bridge-1")], CAPTURE_B);
+    expect(replayOf(corrected).resolvePlayer("provider-x", "p123", CUTOFF_A)).toMatchObject({ state: "resolved", value: PLAYER });
+    expect(replayOf(corrected, CUTOFF_B).resolvePlayer("provider-x", "p123", CUTOFF_A)).toMatchObject({ state: "resolved", value: "00-0000002" });
+  });
+  it("refuses one source mapping two raw IDs to one player over overlapping dates, or two raw game IDs to one game", () => {
+    const overlap = passingYardsFixture(false);
+    addCapture(overlap, "bridges", [playerBridge("bridge-a", "p123", PLAYER), playerBridge("bridge-b", "p456", PLAYER, "2026-05-01T00:00:00.000Z")]);
+    expect(() => validateDataset(overlap)).toThrow("bridge-ambiguous");
+    const sequential = passingYardsFixture(false);
+    addCapture(sequential, "bridges", [playerBridge("bridge-a", "p123", PLAYER, "2026-01-01T00:00:00.000Z", "2026-05-01T00:00:00.000Z"),
+      playerBridge("bridge-b", "p456", PLAYER, "2026-05-01T00:00:00.000Z")]);
+    expect(() => validateDataset(sequential)).not.toThrow();
+    const games = passingYardsFixture(false);
+    addCapture(games, "games", [revision("g1", "game-bridge", { provider: "provider-x", rawGameId: "evt-1", gameId: TARGET }),
+      revision("g2", "game-bridge", { provider: "provider-x", rawGameId: "evt-2", gameId: TARGET })]);
+    expect(() => validateDataset(games)).toThrow("bridge-ambiguous");
+  });
+  it.each([
+    ["a raw ID containing a key separator", revision("bad", "player-bridge", { provider: "provider-x", rawPlayerId: "p:1", playerId: PLAYER, effectiveFrom: CAPTURE_A, effectiveTo: CAPTURE_B })],
+    ["reversed alias seasons", revision("bad", "team-alias", { provider: "provider-x", rawAlias: "LA", teamId: "nfl:team:LA", effectiveFromSeason: 2026, effectiveToSeason: 2016 })],
+    ["an unknown canonical team", revision("bad", "team-alias", { provider: "provider-x", rawAlias: "LA", teamId: "nfl:team:LAR", effectiveFromSeason: 2016, effectiveToSeason: 2026 })],
+    ["a game replacing itself", revision("bad", "game-relation", { gameId: TARGET, predecessorGameId: TARGET, relation: "replacement" })],
+  ])("refuses a bridge with %s", (_label, bad) => {
+    const dataset = passingYardsFixture(false); addCapture(dataset, "bad", [bad]);
+    expect(() => validateDataset(dataset)).toThrow();
+  });
+});
+
 describe("local executable proof", () => {
   const run = (extra: Partial<NodeJS.ProcessEnv> = {}) => {
     const env = { NODE_ENV: "test" as const, PATH: process.env.PATH, ...extra };

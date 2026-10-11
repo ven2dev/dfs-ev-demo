@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { NFL_TEAM_ABBREVIATIONS } from "../nflStadiums.ts";
 import { KINDS, ROUTING_FIELDS, STAT_FIELDS, type Artifact, type Capture, type Dataset, type Kind, type Observation,
-  type Decision, type Profile, type Reconciliation, type Revision, type RightsDecision, type Use } from "./types.ts";
+  type Decision, type Profile, type Revision, type RightsDecision, type Use } from "./types.ts";
 
 export class PredictiveError extends Error {
   code: string;
@@ -73,7 +73,14 @@ const fields: Record<Kind, string[]> = {
   "participation-evidence": ["gameId", "playerId", "teamId", "evidenceKind", "claim"],
   availability: ["gameId", "playerId", "teamId", "rawReportStatus", "rawPracticeStatus", "rawDepthRank"],
   "source-row-absent": ["priorObservationId", "priorEntityKey", "coveringCaptureId", "scopeKind", "scopeSeason", "scopeWeek", "scopeFilter"],
+  "team-alias": ["provider", "rawAlias", "teamId", "effectiveFromSeason", "effectiveToSeason"],
+  "game-bridge": ["provider", "rawGameId", "gameId"],
+  "player-bridge": ["provider", "rawPlayerId", "playerId", "effectiveFrom", "effectiveTo"],
+  "game-relation": ["gameId", "predecessorGameId", "relation"],
 };
+// Provider names and raw IDs appear inside keys, so they exclude key separators.
+const providerName = (value: unknown) => { if (typeof value !== "string" || !/^[a-z0-9][a-z0-9-]{0,31}$/.test(value)) refuse("invalid-identity"); };
+const rawIdentifier = (value: unknown) => { if (typeof value !== "string" || !/^[A-Za-z0-9._-]{1,64}$/.test(value)) refuse("invalid-identity"); };
 const MARKERS = ["provider-final-status", "terminal-play", "final-team-totals", "suspension-notice", "postponement-notice"];
 
 const validateStats = (data: Record<string, unknown>) => {
@@ -111,9 +118,10 @@ export const validateRevision = (value: unknown): Revision => {
     oneOf(data.scopeKind, ["season-file", "week-file", "game", "all-seasons", "manual"]);
     optionalInteger(data.scopeSeason, 1920, 9999); optionalInteger(data.scopeWeek, 1, 22); optionalText(data.scopeFilter);
     if ("gameId" in data) gameIdentity(data.gameId);
-  } else if (kind !== "schedule-coverage") gameIdentity(data.gameId);
+  } else if (fields[kind].includes("gameId")) gameIdentity(data.gameId);
   if ("playerId" in data) playerIdentity(data.playerId);
-  for (const key of ["rawGameId", "rawTeam", "rawHomeTeam", "rawAwayTeam", "position", "rosterStatus", "markerValue"]) if (key in data) text(data[key]);
+  const bridge = kind === "team-alias" || kind === "game-bridge" || kind === "player-bridge";
+  for (const key of ["rawGameId", "rawTeam", "rawHomeTeam", "rawAwayTeam", "position", "rosterStatus", "markerValue"]) if (key in data && !bridge) text(data[key]);
   for (const key of ["teamId", "homeTeamId", "awayTeamId"]) if (key in data) teamIdentity(data[key]);
   if ("season" in data) { integer(data.season, 1920, 9999); oneOf(data.seasonType, ["REG", "POST"]); }
   if (kind === "schedule") {
@@ -142,6 +150,17 @@ export const validateRevision = (value: unknown): Revision => {
     oneOf(data.evidenceKind, ["participation-feed", "official-inactive-list", "provider-snap-count"]);
     oneOf(data.claim, ["offensive-participant", "zero-offensive-participation", "inactive-or-dnp"]);
     if (data.evidenceKind === "official-inactive-list" && data.claim !== "inactive-or-dnp") refuse("invalid-participation-claim");
+  } else if (bridge) {
+    providerName(data.provider);
+    rawIdentifier(kind === "team-alias" ? data.rawAlias : kind === "game-bridge" ? data.rawGameId : data.rawPlayerId);
+    if (kind === "team-alias") {
+      integer(data.effectiveFromSeason, 1920, 9999); integer(data.effectiveToSeason, 1920, 9999);
+      if (Number(data.effectiveFromSeason) > Number(data.effectiveToSeason)) refuse("invalid-effective-bounds");
+    }
+    if (kind === "player-bridge" && instant(data.effectiveFrom) >= instant(data.effectiveTo)) refuse("invalid-effective-bounds");
+  } else if (kind === "game-relation") {
+    gameIdentity(data.predecessorGameId); oneOf(data.relation, ["replacement"]);
+    if (data.predecessorGameId === data.gameId) refuse("invalid-game-relation");
   } else if (kind === "availability") {
     optionalText(data.rawReportStatus); optionalText(data.rawPracticeStatus); optionalInteger(data.rawDepthRank, 1, 20);
   }
@@ -152,6 +171,10 @@ export const validateRevision = (value: unknown): Revision => {
 // to public.predictive_entity_key in migration 0003.
 export const entityKey = (revision: Revision): string => {
   if (revision.kind === "source-row-absent") return revision.data.priorEntityKey;
+  if (revision.kind === "team-alias") return "team-alias:" + revision.data.provider + ":" + revision.data.rawAlias;
+  if (revision.kind === "game-bridge") return "game-bridge:" + revision.data.provider + ":" + revision.data.rawGameId;
+  if (revision.kind === "player-bridge") return "player-bridge:" + revision.data.provider + ":" + revision.data.rawPlayerId;
+  if (revision.kind === "game-relation") return "game-relation:" + revision.data.gameId;
   if (revision.kind === "schedule-coverage") {
     const data = revision.data;
     return "schedule-coverage:" + data.teamId + ":" + data.fromSeason + ":" + data.throughSeason;
@@ -426,6 +449,28 @@ const validateAbsences = (observations: Map<string, Observation>, captures: Map<
   }
 };
 
+// bridge-v1, mirrored by the bridge rule in predictive_publication_check():
+// within one source, a provider's canonical player or game maps from one raw ID
+// at a time. Team aliases are many-to-one by design (LA, LAR and STL may all
+// name one franchise). Disagreement across sources is resolved at replay.
+const validateBridges = (observations: Map<string, Observation>) => {
+  const superseded = new Set([...observations.values()].map((row) => row.revision.predecessorId));
+  const heads = [...observations.values()].filter((row) => !superseded.has(row.revision.id));
+  for (const row of heads) {
+    if (row.revision.kind !== "player-bridge" && row.revision.kind !== "game-bridge") continue;
+    const data = row.revision.data;
+    const clash = heads.some((other) => {
+      if (other === row || other.revision.kind !== row.revision.kind || other.artifact.profileId !== row.artifact.profileId) return false;
+      const theirs = other.revision.data as typeof data;
+      if (theirs.provider !== data.provider || other.entityKey === row.entityKey) return false;
+      if (row.revision.kind === "game-bridge") return (theirs as { gameId: string }).gameId === (data as { gameId: string }).gameId;
+      const mine = data as { playerId: string; effectiveFrom: string; effectiveTo: string }; const other2 = theirs as typeof mine;
+      return other2.playerId === mine.playerId && instant(other2.effectiveFrom) < instant(mine.effectiveTo) && instant(mine.effectiveFrom) < instant(other2.effectiveTo);
+    });
+    if (clash) refuse("bridge-ambiguous");
+  }
+};
+
 export const validateDataset = (value: unknown) => {
   const root = datasetContainer(value);
   if (root.profiles.length > 64 || root.rightsDecisions.length > 256 || root.artifacts.length > 256 || root.captures.length > 512 ||
@@ -493,5 +538,6 @@ export const validateDataset = (value: unknown) => {
   const observations = validateObservations(dataset.captures.flatMap((capture) => capture.state !== "published" ? [] :
     revisions.get(capture.artifactId)!.map((revision) => observation(revision, capture, artifacts.get(capture.artifactId)!))));
   validateAbsences(observations, new Map(dataset.captures.map((capture) => [capture.id, capture])), artifacts, revisions);
+  validateBridges(observations);
   return { dataset, profiles, rightsDecisions, revisions, observations, decisions };
 };
