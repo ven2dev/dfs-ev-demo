@@ -58,12 +58,15 @@ const RIGHTS_SQL = `SELECT jsonb_build_object('id',id,'profileId',profile_id,'pr
   'effectiveFrom',${timestamp("effective_from")},'effectiveTo',${timestamp("effective_to")},'decidedAt',${timestamp("decided_at")},
   'evidenceKind',evidence_kind,'evidenceReference',evidence_reference) AS decision
   FROM public.predictive_rights_decisions WHERE profile_id=ANY($1::text[]) ORDER BY id`;
-const DECISION_SQL = `SELECT jsonb_build_object('id',d.id,'kind',d.kind,'entityKey',d.entity_key,'policyId',d.policy_id,'mode',d.mode,
+const decisionSql = (predicate: string) => `SELECT jsonb_build_object('id',d.id,'kind',d.kind,'entityKey',d.entity_key,'policyId',d.policy_id,'mode',d.mode,
   'decidedAt',${timestamp("d.decided_at")},'predecessorId',d.predecessor_id,'outcome',d.outcome,
   'inputs',coalesce((SELECT jsonb_agg(jsonb_build_object('observationId',i.observation_id,'role',i.role) ORDER BY i.observation_id COLLATE "C")
     FROM public.predictive_decision_inputs i WHERE i.decision_id=d.id),'[]'::jsonb)) AS decision
   FROM public.predictive_decisions d JOIN public.predictive_ingestion_runs r ON r.id=d.run_id
-  WHERE r.status='published' AND d.kind IN ('reconciliation','completion') AND d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz ORDER BY d.id`;
+  WHERE r.status='published' AND d.kind IN ('reconciliation','completion','participation') AND ${predicate} ORDER BY d.id`;
+const DECISION_SQL = decisionSql("d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz");
+const DECISION_BY_ID_SQL = decisionSql("d.id=$1");
+const DECISIONS_BY_ID_SQL = decisionSql("d.id=ANY($1::text[])");
 
 const decisionScope = (decision: Decision) => {
   if (decision.kind === "reconciliation") {
@@ -200,7 +203,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
   };
   const persistDecision = async (decision: Decision, runId: string) => {
-    const existing = (await client.query(DECISION_SQL.replace("d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz", "d.id=$1"), [decision.id])).rows[0]?.decision;
+    const existing = (await client.query(DECISION_BY_ID_SQL, [decision.id])).rows[0]?.decision;
     if (existing) { if (canonical(existing) !== canonical({ ...decision, inputs: [...decision.inputs].sort((a, b) => a.observationId < b.observationId ? -1 : 1) })) refuse("decision-id-conflict"); return; }
     await client.query(`INSERT INTO public.predictive_decisions (id,kind,entity_key,policy_id,mode,outcome,run_id,decided_at,predecessor_id)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [decision.id, decision.kind, decision.entityKey, decision.policyId, decision.mode, decision.outcome,
@@ -278,7 +281,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       if (checked.decisions.length) {
         const profiles = new Map([...(await profilesFor([...new Set([...known.values()].map((row) => row.artifact.profileId))])), ...dataset.profiles]
           .map((profile) => [profile.id, profile]));
-        const earlier = (await client.query(DECISION_SQL.replace("d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz", "d.id=ANY($1::text[])"),
+        const earlier = (await client.query(DECISIONS_BY_ID_SQL,
           [checked.decisions.flatMap((decision) => decision.predecessorId ? [decision.predecessorId] : [])])).rows.map((row) => row.decision as Decision);
         const all = [...earlier.filter((item) => !checked.decisions.some((decision) => decision.id === item.id)), ...checked.decisions];
         validateDecisions(all, known, profiles);
@@ -370,7 +373,9 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const rights = (await client.query(RIGHTS_SQL, [profileIds])).rows.map((row) => row.decision as RightsDecision);
     const visible = validateObservations(rows);
     const decisionKeys = new Set([...visible.values()].flatMap((row) => ["reconciliation:" + row.entityKey,
-      ...("gameId" in row.revision.data && row.revision.data.gameId ? ["completion:" + row.revision.data.gameId] : [])]));
+      ...("gameId" in row.revision.data && row.revision.data.gameId ? ["completion:" + row.revision.data.gameId] : []),
+      ...("gameId" in row.revision.data && row.revision.data.gameId && "playerId" in row.revision.data && row.revision.data.playerId === request.playerId
+        ? ["participation:" + row.revision.data.gameId + ":" + request.playerId] : [])]));
     const decisions = (await client.query(DECISION_SQL, [request.cutoff, [...decisionKeys]])).rows.map((row) => row.decision as Decision);
     const profileMap = new Map((await profilesFor(profileIds)).map((profile) => [profile.id, profile]));
     validateDecisions(decisions, visible, profileMap);

@@ -8,7 +8,7 @@ import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
 import { checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
 import { ensureHarnessSession, ensurePredictiveRoles } from "../../scripts/predictive/harness.ts";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
-import { buildPassingYardsBundle } from "../../src/lib/predictive/passingYards.ts";
+import { buildPassingYardsBundle, buildPassingYardsFromReplay } from "../../src/lib/predictive/passingYards.ts";
 import { createLocalPredictiveStore, MEMBERSHIP_READ_SQL, SCHEDULE_READ_SQL } from "../../src/lib/predictive/persistence.ts";
 import { ingestLocalDataset } from "../../src/lib/predictive/ingest.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
@@ -843,17 +843,24 @@ it("predictive participation records and outcome labels enforce all eight bindin
 it("predictive feature runs are recorded after read-only computation with exact dependencies, digests and retention", async () => {
   await withProof(async ({ client, store, target, artifacts }) => {
     const a = passingYardsFixture(false); await store.publish("A", a, NOW);
-    const recorded = recordCompletion("completion-5", PRIOR[4], markerHeadsAt(validateDataset(a).observations.values(), PRIOR[4], instant(CAPTURE_A)), CAPTURE_A, "synthetic-proof");
+    const observations = validateDataset(a).observations;
+    const recorded = recordCompletion("completion-5", PRIOR[4], markerHeadsAt(observations.values(), PRIOR[4], instant(CAPTURE_A)), CAPTURE_A, "synthetic-proof");
+    const participation = recordParticipation("participation-5", PRIOR[4], PLAYER,
+      participationHeadsAt(observations.values(), PRIOR[4], PLAYER, instant(CAPTURE_A)), CAPTURE_A, "synthetic-proof");
     const registrations = { profiles: a.profiles, rightsDecisions: a.rightsDecisions };
-    await store.publish("decide", { ...emptyDataset(), ...registrations, decisions: [recorded] }, NOW);
+    await store.publish("decide", { ...emptyDataset(), ...registrations, decisions: [recorded, participation] }, NOW);
+    const pureDataset = { ...a, decisions: [recorded, participation] };
+    const pure = buildPassingYardsFromReplay(createReplay(pureDataset, request().cutoff, request().computedAt), request());
+    expect(await store.replay(request())).toEqual(pure);
+    expect(pure.participations).toEqual([{ decisionId: "participation-5", gameId: PRIOR[4], state: "offensive-participant", decidedAt: CAPTURE_A }]);
     const first = await store.replayAndRecord(request());
     if (first.status !== "recorded") throw new Error("expected a recorded run");
-    expect(first.bundle).toEqual(await store.replay(request()));
+    expect(first.bundle).toEqual(pure);
     const run = (await client.query("SELECT * FROM predictive_feature_runs WHERE id=$1", [first.featureRunId])).rows[0];
     expect(run).toMatchObject({ input_digest: first.bundle.inputDigest, status: "ready-inputs", mode: "synthetic-proof", feature_version: "passing-yards-replay-v3" });
     const dependencies = (await client.query("SELECT * FROM predictive_feature_run_dependencies WHERE feature_run_id=$1", [first.featureRunId])).rows;
     expect(dependencies.filter((row) => row.observation_id).map((row) => row.observation_id).sort()).toEqual(first.bundle.dependencies.map((row) => row.observationId).sort());
-    expect(dependencies.filter((row) => row.decision_id).map((row) => row.decision_id)).toEqual(["completion-5"]);
+    expect(dependencies.filter((row) => row.decision_id).map((row) => row.decision_id).sort()).toEqual(["completion-5", "participation-5"]);
     expect(dependencies.filter((row) => row.rights_decision_id).map((row) => row.rights_decision_id)).toEqual(["rights-" + PROFILE]);
     expect(dependencies.filter((row) => row.feature_definition_id).map((row) => row.feature_definition_id)).toEqual(["passing-yards-replay-v3"]);
     const blob = (await client.query("SELECT byte_size,storage_ref FROM predictive_blobs WHERE sha256=$1", [run.bundle_blob_sha256])).rows[0];

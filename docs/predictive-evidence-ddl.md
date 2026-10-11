@@ -849,3 +849,10 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
 - Publication loads every stored source chain in each decision's evidence scope
   before validation. Loading only the cited IDs would let an omitted provider
   head evade the code validator even though PostgreSQL could see it.
+
+### Review fix 6 (2026-10-10)
+
+- Persisted replay loads participation decisions for every player-game in the
+  requested player's evidence scope. Replay cites only records that bind the
+  current participation inputs, and saved feature runs retain those decision
+  IDs.
