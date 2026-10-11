@@ -30,7 +30,7 @@ export const exact = (value: unknown, keys: string[]) => {
   if (Object.keys(row).sort().join(",") !== [...keys].sort().join(",")) refuse("schema-fields-refused");
   return row;
 };
-const text = (value: unknown) => { if (typeof value !== "string" || !value.trim() || value.length > 256 || /[\u0000-\u001f]/.test(value)) refuse("invalid-identity"); };
+const text = (value: unknown) => { if (typeof value !== "string" || !value.trim() || value.length > 256 || /[\u0000-\u001f\u007f]/.test(value)) refuse("invalid-identity"); };
 const optionalText = (value: unknown) => { if (value !== null) text(value); };
 const oneOf = (value: unknown, choices: readonly unknown[]) => { if (!choices.includes(value)) refuse("invalid-enum"); };
 const boolean = (value: unknown) => { if (typeof value !== "boolean") refuse("invalid-enum"); };

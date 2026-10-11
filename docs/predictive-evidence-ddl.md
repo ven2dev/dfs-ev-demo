@@ -863,12 +863,26 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
   the feature cutoff. A later correction cannot leave a run bound to a stale
   decision and its superseded inputs.
 
-### Review fixes (2026-10-10)
+### Review fix 3 (2026-10-10)
 
-- **Review fix 3 (typed game scope):** artifacts gain `scope_game_id` (FK to
+- **Typed game scope:** artifacts gain `scope_game_id` (FK to
   games), and absence payloads gain `scopeGameId`. Season is required for
   season-file, week-file and game scopes, week for week-file, and the game ID
   for game scope, in SQL and TypeScript. Game coverage now compares the exact
   game, so an unrelated game's empty capture can no longer prove an absence.
   Persistence registers a game-scoped artifact's game before inserting it. The
   archive journal moves to `formatVersion` 3 and refuses version 2.
+
+### Review fix 8 (2026-10-10)
+
+- **Unambiguous retention digest:** `removed_ids_digest` is now the SHA-256 of the
+  canonical JSON array of `{"id","kind"}` pairs ordered by kind then ID (C
+  collation), built with JSON escaping. `retentionIdsDigest()` in
+  `persistence.ts` mirrors it. Before this, `kind:id` lines joined by newlines
+  could serialize two different ID sets identically.
+- **No control characters in IDs:** every text primary key in 0003 refuses
+  `\x01-\x1f` and `\x7f`, and TypeScript identity validation refuses the same
+  set.
+- The function builds the removed set in parallel arrays, never a temp table,
+  because a caller could pre-create a `pg_temp` relation that the definer
+  function would then use.

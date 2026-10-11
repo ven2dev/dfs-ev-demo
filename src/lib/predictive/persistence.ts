@@ -79,6 +79,11 @@ const decisionScope = (decision: Decision) => {
   return { exact: ["player-game-stats:" + gameId + ":" + playerId], prefixes: ["participation-evidence:" + gameId + ":" + playerId + ":%"] };
 };
 
+// retention-policy-v1 removed_ids_digest: SHA-256 of the canonical JSON array of
+// {id, kind} pairs ordered by kind then id. Mirrors predictive_retention_execute().
+export const retentionIdsDigest = (removed: { kind: string; id: string }[]) =>
+  digest(canonical([...removed].sort((a, b) => compareText(a.kind, b.kind) || compareText(a.id, b.id)).map(({ kind, id }) => ({ id, kind }))));
+
 // No remote session, primary test DB or unregistered scratch database can use
 // this local proof. The caller owns one session; operations are sequential.
 export const createLocalPredictiveStore = async (client: Client, target: Target, artifacts: ArtifactStore) => {

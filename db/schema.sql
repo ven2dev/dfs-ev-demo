@@ -627,7 +627,7 @@ CREATE TABLE public.predictive_source_profiles (
 -- Rights decisions form one linear chain per profile. effective_* is when the
 -- terms apply; decided_at is when this system knew them.
 CREATE TABLE public.predictive_rights_decisions (
-  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[\x01-\x1f\x7f]'),
   profile_id text NOT NULL REFERENCES public.predictive_source_profiles(id),
   predecessor_id text,
   allowed_uses text[] NOT NULL CHECK (allowed_uses <@ ARRAY['adapter-testing','internal-research','model-input',
@@ -675,7 +675,7 @@ CREATE TABLE public.predictive_blobs (
 );
 
 CREATE TABLE public.predictive_ingestion_runs (
-  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[\x01-\x1f\x7f]'),
   request_sha256 text NOT NULL CHECK (request_sha256 ~ '^[a-f0-9]{64}$'),
   code_version text NOT NULL CHECK (length(code_version) BETWEEN 1 AND 256),
   started_at timestamptz NOT NULL CHECK (isfinite(started_at)),
@@ -701,7 +701,7 @@ CREATE TABLE public.predictive_run_rights (
 );
 
 CREATE TABLE public.predictive_artifacts (
-  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[\x01-\x1f\x7f]'),
   blob_sha256 text NOT NULL REFERENCES public.predictive_blobs(sha256),
   profile_id text NOT NULL REFERENCES public.predictive_source_profiles(id),
   retrieval_kind text NOT NULL CHECK (retrieval_kind IN ('full','header-probe')),
@@ -722,7 +722,7 @@ CREATE TABLE public.predictive_artifacts (
 CREATE INDEX predictive_artifacts_blob_idx ON public.predictive_artifacts (blob_sha256);
 
 CREATE TABLE public.predictive_captures (
-  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[\x01-\x1f\x7f]'),
   run_id text NOT NULL REFERENCES public.predictive_ingestion_runs(id),
   artifact_id text NOT NULL REFERENCES public.predictive_artifacts(id),
   captured_at timestamptz NOT NULL CHECK (isfinite(captured_at) AND captured_at = date_trunc('milliseconds', captured_at)),
@@ -764,7 +764,7 @@ ALTER TABLE public.predictive_artifacts ADD CONSTRAINT predictive_artifacts_scop
 -- One envelope for every evidence kind: strict per-kind JSON plus typed routing
 -- columns. The source key keeps each provider's correction chain separate.
 CREATE TABLE public.predictive_observations (
-  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[\x01-\x1f\x7f]'),
   kind text NOT NULL,
   profile_id text NOT NULL REFERENCES public.predictive_source_profiles(id),
   source_record_id text NOT NULL DEFAULT '' CHECK (length(source_record_id) <= 256 AND source_record_id !~ '[[:cntrl:]|]'),
@@ -1012,7 +1012,7 @@ END
 $$;
 
 CREATE TABLE public.predictive_decisions (
-  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[\x01-\x1f\x7f]'),
   kind text NOT NULL CHECK (kind IN ('reconciliation','completion','participation','snap-source-compatibility')),
   entity_key text NOT NULL CHECK (length(entity_key) BETWEEN 1 AND 300),
   policy_id text NOT NULL CHECK (policy_id ~ '^[a-z0-9-]+-v[0-9]+$'),
@@ -1188,7 +1188,7 @@ END
 $$;
 
 CREATE TABLE public.predictive_outcome_labels (
-  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[\x01-\x1f\x7f]'),
   player_id text NOT NULL CHECK (player_id ~ '^00-[0-9]{7}$'),
   game_id uuid NOT NULL REFERENCES public.predictive_games(id),
   season_type text NOT NULL CHECK (season_type IN ('REG','POST')),
@@ -1301,7 +1301,7 @@ CREATE CONSTRAINT TRIGGER predictive_check_labels AFTER INSERT ON public.predict
 -- an exact dependency manifest. input_digest covers cutoff-time inputs only;
 -- execution_digest also covers rights, policies, code and timing.
 CREATE TABLE public.predictive_feature_runs (
-  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[\x01-\x1f\x7f]'),
   mode text NOT NULL CHECK (mode IN ('production-research','synthetic-proof')),
   feature_version text NOT NULL CHECK (length(feature_version) BETWEEN 1 AND 64),
   candidate text NOT NULL CHECK (length(candidate) BETWEEN 1 AND 128),
@@ -1333,7 +1333,7 @@ CREATE UNIQUE INDEX predictive_feature_run_dependencies_unique ON public.predict
   (feature_run_id, coalesce(observation_id, decision_id, rights_decision_id, policy_id, feature_definition_id));
 
 CREATE TABLE public.predictive_feature_run_pins (
-  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[\x01-\x1f\x7f]'),
   feature_run_id text NOT NULL REFERENCES public.predictive_feature_runs(id),
   reason text NOT NULL CHECK (reason IN ('training','serving','evaluation','owner')),
   pinned_at timestamptz NOT NULL CHECK (isfinite(pinned_at) AND pinned_at = date_trunc('milliseconds', pinned_at))
@@ -1459,7 +1459,7 @@ END
 $$;
 
 CREATE TABLE public.predictive_retention_events (
-  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[[:cntrl:]]'),
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[\x01-\x1f\x7f]'),
   reason text NOT NULL CHECK (reason IN ('expiry','rights-revoked','provider-request','owner-request')),
   authority text NOT NULL CHECK (length(authority) BETWEEN 1 AND 256 AND authority !~ '[[:cntrl:]]'),
   decided_at timestamptz NOT NULL CHECK (isfinite(decided_at) AND decided_at = date_trunc('milliseconds', decided_at)),
@@ -1507,7 +1507,7 @@ DECLARE
   profiles text[]; captured_from timestamptz; captured_before timestamptz; as_of timestamptz;
   arts text[] := '{}'; caps text[] := '{}'; obs text[] := '{}'; decs text[] := '{}'; labs text[] := '{}';
   runs text[] := '{}'; pins text[] := '{}'; blobs text[] := '{}'; refs text[];
-  removed text[]; counts jsonb; ids_digest text; links integer; inputs integer; dependencies integer; unpins integer;
+  removed_kinds text[]; removed_ids text[]; counts jsonb; ids_digest text; links integer; inputs integer; dependencies integer; unpins integer;
 BEGIN
   IF NOT pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER') THEN
     RAISE EXCEPTION 'predictive-retention-not-authorized' USING ERRCODE = '42501';
@@ -1555,12 +1555,20 @@ BEGIN
       AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_runs f WHERE f.bundle_blob_sha256 = b.sha256 AND NOT f.id = ANY(runs)));
   refs := ARRAY(SELECT b.storage_ref FROM public.predictive_blobs b WHERE b.sha256 = ANY(blobs) ORDER BY b.storage_ref COLLATE "C");
 
-  removed := ARRAY(SELECT x FROM (
-      SELECT 'observation:' || v FROM unnest(obs) v UNION ALL SELECT 'artifact:' || v FROM unnest(arts) v
-      UNION ALL SELECT 'capture:' || v FROM unnest(caps) v UNION ALL SELECT 'decision:' || v FROM unnest(decs) v
-      UNION ALL SELECT 'label:' || v FROM unnest(labs) v UNION ALL SELECT 'feature-run:' || v FROM unnest(runs) v
-      UNION ALL SELECT 'pin:' || v FROM unnest(pins) v UNION ALL SELECT 'blob:' || v FROM unnest(blobs) v) t(x) ORDER BY x COLLATE "C");
-  ids_digest := encode(sha256(convert_to(array_to_string(removed, E'\n'), 'UTF8')), 'hex');
+  -- Parallel arrays, never a temp table: a caller could pre-create a pg_temp
+  -- relation that this definer function would then use.
+  SELECT coalesce(array_agg(k ORDER BY k COLLATE "C", v COLLATE "C"), '{}'), coalesce(array_agg(v ORDER BY k COLLATE "C", v COLLATE "C"), '{}')
+    INTO removed_kinds, removed_ids FROM (
+      SELECT 'observation', v FROM unnest(obs) v UNION ALL SELECT 'artifact', v FROM unnest(arts) v
+      UNION ALL SELECT 'capture', v FROM unnest(caps) v UNION ALL SELECT 'decision', v FROM unnest(decs) v
+      UNION ALL SELECT 'label', v FROM unnest(labs) v UNION ALL SELECT 'feature-run', v FROM unnest(runs) v
+      UNION ALL SELECT 'pin', v FROM unnest(pins) v UNION ALL SELECT 'blob', v FROM unnest(blobs) v) t(k, v);
+  -- The canonical JSON array of {"id","kind"} pairs ordered by (kind, id),
+  -- mirrored by retentionIdsDigest() in persistence.ts. JSON escaping keeps it
+  -- unambiguous whatever an identifier contains.
+  SELECT encode(sha256(convert_to('[' || coalesce(string_agg('{"id":' || to_json(r.v)::text || ',"kind":' || to_json(r.k)::text || '}', ','
+      ORDER BY r.n), '') || ']', 'UTF8')), 'hex')
+    INTO ids_digest FROM unnest(removed_kinds, removed_ids) WITH ORDINALITY r(k, v, n);
   SELECT count(*) INTO links FROM public.predictive_artifact_observations l WHERE l.observation_id = ANY(obs) OR l.artifact_id = ANY(arts);
   SELECT count(*) INTO inputs FROM public.predictive_decision_inputs i WHERE i.decision_id = ANY(decs);
   SELECT count(*) INTO dependencies FROM public.predictive_feature_run_dependencies d WHERE d.feature_run_id = ANY(runs);
@@ -1586,7 +1594,7 @@ BEGIN
   DELETE FROM public.predictive_blobs WHERE sha256 = ANY(blobs);
   IF event_audit_level = 'full' THEN
     INSERT INTO public.predictive_retention_tombstones (retention_event_id, target_kind, target_id)
-      SELECT event_id, split_part(x, ':', 1), substr(x, length(split_part(x, ':', 1)) + 2) FROM unnest(removed) x;
+      SELECT event_id, r.k, r.v FROM unnest(removed_kinds, removed_ids) r(k, v);
   END IF;
   DELETE FROM public.predictive_retention_authorizations WHERE txid = pg_catalog.pg_current_xact_id();
   -- Blob references are returned to the caller for file removal, never stored

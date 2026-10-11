@@ -9,7 +9,7 @@ import { checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
 import { ensureHarnessSession, ensurePredictiveRoles } from "../../scripts/predictive/harness.ts";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { buildPassingYardsBundle, buildPassingYardsFromReplay } from "../../src/lib/predictive/passingYards.ts";
-import { createLocalPredictiveStore, MEMBERSHIP_READ_SQL, SCHEDULE_READ_SQL } from "../../src/lib/predictive/persistence.ts";
+import { createLocalPredictiveStore, MEMBERSHIP_READ_SQL, retentionIdsDigest, SCHEDULE_READ_SQL } from "../../src/lib/predictive/persistence.ts";
 import { ingestLocalDataset } from "../../src/lib/predictive/ingest.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/completion.ts";
@@ -1060,7 +1060,8 @@ it("predictive retention removes a source scope with chain descendants and deriv
       decisions: 3, labels: 1, featureRuns: 1 });
     const tombstones = (await client.query("SELECT target_kind || ':' || target_id AS id FROM predictive_retention_tombstones ORDER BY target_kind || ':' || target_id COLLATE \"C\"")).rows.map((row) => row.id);
     expect(tombstones).toEqual(expect.arrayContaining(["observation:player-correction-B", "decision:completion-5", "label:label-5-v1", "feature-run:" + run.featureRunId]));
-    expect(recorded.removedIdsDigest).toBe(digest(tombstones.join("\n")));
+    const removed = (await client.query("SELECT target_kind AS kind, target_id AS id FROM predictive_retention_tombstones")).rows;
+    expect(recorded.removedIdsDigest).toBe(retentionIdsDigest(removed));
     // Blob files go after commit; a blob still referenced elsewhere stays.
     await expect(artifacts.read(aBlob.storage_ref, aBlob.sha256, aBlob.byte_size)).rejects.toThrow();
     expect(await artifacts.read(bBlob.storage_ref, bBlob.sha256, bBlob.byte_size)).toContain("player-correction-B");
@@ -1100,7 +1101,14 @@ it("predictive retention expires unpinned feature runs with digest-only audit an
     expect(result.removedCounts).toMatchObject({ featureRuns: 2, pins: 1, unpins: 1, featureRunDependencies: 2, blobs: 0, observations: 0 });
     // The own blob is still used by the recent run and the shared one by the pinned run.
     expect(result.removedBlobRefs).toEqual([]);
-    expect(result.removedIdsDigest).toBe(digest(["feature-run:old-released", "feature-run:old-unpinned", "pin:pin-released"].join("\n")));
+    expect(result.removedIdsDigest).toBe(retentionIdsDigest([{ kind: "pin", id: "pin-released" }, { kind: "feature-run", id: "old-unpinned" },
+      { kind: "feature-run", id: "old-released" }]));
+    expect(retentionIdsDigest([])).toBe(digest("[]"));
+    // Identifiers can't carry control characters, so no ID can imitate a separator.
+    for (const id of ["a\nb", "a\u007fb"]) await sqlProbe(client, async () => {
+      await expect(client.query("INSERT INTO predictive_feature_run_pins (id,feature_run_id,reason,pinned_at) VALUES ($1,'old-pinned','owner',now())", [id]))
+        .rejects.toMatchObject({ code: "23514" });
+    });
     // digest-only keeps counts, the digest and the descriptor, but no identifiers.
     expect((await client.query("SELECT count(*)::integer AS count FROM predictive_retention_tombstones")).rows[0].count).toBe(0);
     expect((await store.retentionEvents())[0]).toMatchObject({ id: "expiry-1", scope: expiry.scope, removedIdsDigest: result.removedIdsDigest });
