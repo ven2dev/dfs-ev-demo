@@ -1087,3 +1087,26 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
   write/read/reopen/refusal, aged untracked CSV removal, preserved committed CSV,
   and CSV retention plus failed-unlink/resume through the non-superuser
   execute-only owner login. Root journal copies survive both paths.
+
+### Exact file reference review follow-up (2026-10-11)
+
+- `predictive_blob_referenced(reference)` checks `storage_ref = reference`.
+  A committed JSON file does not protect a CSV sibling with the same digest,
+  and the inverse also holds. Queue recovery and final orphan cleanup pass the
+  actual reference; the current JSON publication paths check their JSON address.
+- `predictive_blob_lock_guard(digest)` validates role membership, a canonical
+  digest, READ COMMITTED isolation and the held session lock without querying
+  ownership. Temporary orphan cleanup calls it separately; SQL never owns a
+  temporary filename. The internal reference guard uses the same lock guard.
+  PUBLIC execution is revoked; only the retention owner has direct execution
+  for the sweep. Its table privileges remain unchanged.
+- Both directional regressions fail against the previous SQL, which incorrectly
+  reports the unreferenced sibling as owned. They then prove sweep and queued
+  recovery through a retention-only non-superuser login, including republication
+  under the opposite media type after an unlink failure. A failed JSON diagnostic
+  removes its JSON bytes while preserving an already committed CSV sibling.
+  Committed files and separate root journals survive.
+- This follow-up resets only draft 0003 and its generated contracts using the
+  [approved procedure](database-migrations.md#pr-a-draft-period-reset-of-migration-0003).
+  Released v1/v2 and readiness minimum 2 remain intact. No hosted database is
+  migrated; real CSV parser qualification remains PR B work.

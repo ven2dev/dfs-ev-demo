@@ -1841,7 +1841,7 @@ $$;
 -- Execute-only filesystem cleanup boundary. No retention caller receives table
 -- privileges. Rechecks and acknowledgements require the same session digest lock
 -- as publishers; a fresh READ COMMITTED statement sees a completed publisher.
-CREATE FUNCTION public.predictive_blob_reference_guard(reference text) RETURNS void
+CREATE FUNCTION public.predictive_blob_lock_guard(digest text) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
   IF NOT (pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER')
@@ -1849,24 +1849,33 @@ BEGIN
       OR pg_catalog.pg_has_role(session_user, 'predictive_recorder', 'MEMBER')) THEN
     RAISE EXCEPTION 'predictive-blob-cleanup-role-refused' USING ERRCODE = '42501';
   END IF;
-  IF reference IS NULL OR reference !~ '^[a-f0-9]{64}\.(json|csv)$' THEN
+  IF digest IS NULL OR digest !~ '^[a-f0-9]{64}$' THEN
     RAISE EXCEPTION 'predictive-blob-reference-refused' USING ERRCODE = '23514';
   END IF;
   IF current_setting('transaction_isolation') <> 'read committed' THEN
     RAISE EXCEPTION 'predictive-blob-cleanup-isolation-refused' USING ERRCODE = '25001';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_locks WHERE locktype = 'advisory' AND pid = pg_catalog.pg_backend_pid()
-      AND classid = 520054::oid AND objid = (('x' || substr(reference, 1, 8))::bit(32)::bigint)::oid
+      AND classid = 520054::oid AND objid = (('x' || substr(digest, 1, 8))::bit(32)::bigint)::oid
       AND objsubid = 2 AND mode = 'ExclusiveLock' AND granted) THEN
     RAISE EXCEPTION 'predictive-blob-lock-required' USING ERRCODE = '55000';
   END IF;
+END
+$$;
+CREATE FUNCTION public.predictive_blob_reference_guard(reference text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+BEGIN
+  IF reference IS NULL OR reference !~ '^[a-f0-9]{64}\.(json|csv)$' THEN
+    RAISE EXCEPTION 'predictive-blob-reference-refused' USING ERRCODE = '23514';
+  END IF;
+  PERFORM public.predictive_blob_lock_guard(substr(reference, 1, 64));
 END
 $$;
 CREATE FUNCTION public.predictive_blob_referenced(reference text) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
   PERFORM public.predictive_blob_reference_guard(reference);
-  RETURN EXISTS (SELECT 1 FROM public.predictive_blobs WHERE sha256 = substr(reference, 1, 64));
+  RETURN EXISTS (SELECT 1 FROM public.predictive_blobs WHERE storage_ref = reference);
 END
 $$;
 CREATE FUNCTION public.predictive_pending_blob_removals() RETURNS SETOF text
@@ -1897,7 +1906,7 @@ BEGIN
   RETURN QUERY SELECT * FROM public.predictive_retention_events ORDER BY executed_at, id COLLATE "C";
 END
 $$;
-REVOKE ALL ON FUNCTION public.predictive_blob_reference_guard(text), public.predictive_blob_referenced(text),
+REVOKE ALL ON FUNCTION public.predictive_blob_lock_guard(text), public.predictive_blob_reference_guard(text), public.predictive_blob_referenced(text),
   public.predictive_pending_blob_removals(), public.predictive_ack_blob_removal(text), public.predictive_retention_history() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION public.predictive_text(jsonb), public.predictive_optional_text(jsonb), public.predictive_instant(text),
@@ -1963,7 +1972,7 @@ BEGIN
   -- table privilege, and no role holds UPDATE, DELETE or TRUNCATE.
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_retention_owner') THEN
     GRANT EXECUTE ON FUNCTION public.predictive_retention_execute(text, text, text, timestamptz, jsonb, text),
-      public.predictive_pending_blob_removals(), public.predictive_blob_referenced(text),
+      public.predictive_pending_blob_removals(), public.predictive_blob_referenced(text), public.predictive_blob_lock_guard(text),
       public.predictive_ack_blob_removal(text), public.predictive_retention_history() TO predictive_retention_owner;
   END IF;
 END

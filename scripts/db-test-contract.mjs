@@ -52,6 +52,8 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive blob cleanup and publication serialize on the blob digest in both orders and cleanup resumes after a failed removal",
   "predictive retention drains and resumes blob removals through an execute-only non-superuser login",
   "predictive rollback removes unpublished bytes and orphan recovery preserves committed blobs and journals",
+  "predictive blob reference identity preserves committed application/json and removes its unreferenced sibling",
+  "predictive blob reference identity preserves committed text/csv and removes its unreferenced sibling",
   "predictive final labels bind exact raw identity and retaining their bridge removes later label versions",
 ]);
 

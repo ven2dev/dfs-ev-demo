@@ -156,8 +156,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       for (const key of held.reverse()) await client.query("SELECT pg_advisory_unlock($1,$2)", [BLOB_LOCK_NAMESPACE, key]);
     }
   };
-  const blobReferenced = async (sha256: string): Promise<boolean> =>
-    (await client.query("SELECT public.predictive_blob_referenced($1) AS referenced", [sha256 + ".json"])).rows[0].referenced;
+  const blobReferenced = async (reference: string): Promise<boolean> =>
+    (await client.query("SELECT public.predictive_blob_referenced($1) AS referenced", [reference])).rows[0].referenced;
   // Files precede the SQL commit. After success or rollback, remove only bytes
   // that the committed database does not own, while retaining the digest locks.
   // A disconnected/crashed process leaves files for the bounded-age orphan sweep.
@@ -165,7 +165,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     try { return await work(); }
     finally {
       for (const sha256 of new Set(digests.filter((value) => /^[a-f0-9]{64}$/.test(value)))) {
-        if (!await blobReferenced(sha256)) await artifacts.remove(sha256 + ".json", sha256);
+        const reference = sha256 + ".json"; // These publication paths write JSON.
+        if (!await blobReferenced(reference)) await artifacts.remove(reference, sha256);
       }
     }
   });
@@ -511,7 +512,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const removeQueuedBlob = async (reference: string) => {
     const sha256 = reference.slice(0, 64);
     await withBlobLocks([sha256], async () => {
-      const referenced = await blobReferenced(sha256);
+      const referenced = await blobReferenced(reference);
       if (!referenced) await artifacts.remove(reference, sha256);
       await client.query("SELECT public.predictive_ack_blob_removal($1)", [reference]);
     });
@@ -529,11 +530,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const before = Number((await client.query("SELECT extract(epoch FROM clock_timestamp()) * 1000 AS now")).rows[0].now) - graceMs;
     const removed: string[] = [];
     for (const candidate of await artifacts.candidates(before)) await withBlobLocks([candidate.sha256], async () => {
-      // The role-checked query also confirms this session still holds the lock.
-      // Committed rows protect final bytes, never temporary filenames. Both
-      // kinds wait for any live writer and recheck filesystem age under the lock.
-      const referenced = await blobReferenced(candidate.sha256);
-      if ((candidate.kind === "temporary" || !referenced) && await artifacts.removeOrphan(candidate, before)) removed.push(candidate.reference);
+      // Both role-checked APIs confirm the lock. Temporary names are never
+      // referenced; final ownership binds the exact address, including suffix.
+      if (candidate.kind === "temporary") await client.query("SELECT public.predictive_blob_lock_guard($1)", [candidate.sha256]);
+      else if (await blobReferenced(candidate.reference)) return;
+      if (await artifacts.removeOrphan(candidate, before)) removed.push(candidate.reference);
     });
     return removed;
   };

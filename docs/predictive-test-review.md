@@ -9,7 +9,7 @@ local persistence behavior, not real-source qualification or model validity.
 ## Second implementation review regressions (2026-10-11)
 
 These checks address the reported failures without using a shared pure function
-as their sole oracle. The mandatory database report now requires all 30
+as their sole oracle. The mandatory database report now requires all 32
 predictive cases.
 
 | Case | Contract and independent evidence |
@@ -21,6 +21,7 @@ predictive cases.
 | Label retention closure | A final label cites the removed bridge; its successor cites a different bridge in a surviving profile. Retention removes both labels while keeping that surviving bridge and the earlier unbridged provisional label. This distinguishes transitive label-lineage deletion from direct references alone. |
 | Private database namespace | A symlinked/insecure `.db-blobs/` is refused when opened. Replacing it after registration makes reads and sweeps refuse while the original bytes remain intact. |
 | CSV address parity | An independently computed digest plus the SQL media-type rule defines the expected `.csv` address. Write/read/reopen preserve exact bytes; removal succeeds. Traversal, wrong suffix/case/digest and unknown media types fail specifically with `artifact-reference-refused`. The regression produced `.json` on the old implementation. The stale committed-digest temp regression independently failed before its fix. |
+| Exact final-file ownership (both media types) | Identical bytes (`123` plus a newline, valid JSON and CSV) have one digest but two filesystem addresses. Direct SQL must return true only for the registered `storage_ref`. Both regressions fail on the previous SQL with `sibling: true`. A retention-only non-superuser sweeps the aged sibling and temp while preserving the committed file and both root journals. After retention commits and unlink fails, registering the same digest under the opposite media type must let resume remove the previous address without removing the new one. A failed JSON diagnostic against committed CSV removes only its unpublished JSON file. The separate temp lock guard refuses missing locks and malformed digests; the existing reference-isolation check exercises the same guard. These are schema-valid diagnostic blobs, with no claim of real parser qualification. |
 
 These proofs use disposable PostgreSQL and synthetic evidence. They do not
 qualify hosted role provisioning, filesystem/backup operations under actual

@@ -1431,6 +1431,8 @@ it("predictive retention drains and resumes blob removals through an execute-onl
       await owner.query("RESET ROLE");
       const sha = a.artifacts[0].sha256; const ref = sha + ".json";
       await expect(owner.query("SELECT public.predictive_blob_referenced($1)", [ref])).rejects.toMatchObject({ code: "55000" });
+      await expect(owner.query("SELECT public.predictive_blob_lock_guard($1)", [sha])).rejects.toMatchObject({ code: "55000" });
+      await expect(owner.query("SELECT public.predictive_blob_lock_guard($1)", [sha + ".json"])).rejects.toMatchObject({ code: "23514" });
       await expect(owner.query("SELECT public.predictive_blob_referenced($1)", ["../" + ref])).rejects.toMatchObject({ code: "23514" });
       await expect(owner.query("SELECT public.predictive_ack_blob_removal($1)", [ref])).rejects.toMatchObject({ code: "55000" });
       const key = Number.parseInt(sha.slice(0, 8), 16) | 0;
@@ -1525,6 +1527,74 @@ it("predictive rollback removes unpublished bytes and orphan recovery preserves 
     expect(await artifacts.database.read(freshSha + ".json", freshSha, Buffer.byteLength(fresh))).toBe(fresh);
     expect(await artifacts.database.read(a.artifacts[0].sha256 + ".json", a.artifacts[0].sha256, Buffer.byteLength(a.artifacts[0].bytes))).toBe(a.artifacts[0].bytes);
     await expect(store.sweepOrphanBlobs(0)).rejects.toThrow("blob-grace-refused");
+  });
+});
+
+it.each(["application/json", "text/csv"] as const)("predictive blob reference identity preserves committed %s and removes its unreferenced sibling", async (mediaType) => {
+  await withProof(async ({ client, store, artifacts, target, root }) => {
+    await store.publish("suffix-A", passingYardsFixture(false), NOW);
+    // A numeric scalar is valid JSON and a one-column CSV record. Identical
+    // bytes deliberately produce the same digest; ownership is a file address.
+    const bytes = "123\n"; const sha = digest(bytes); const size = Buffer.byteLength(bytes);
+    const siblingType = mediaType === "application/json" ? "text/csv" : "application/json";
+    const ref = await artifacts.database.write(bytes, sha, mediaType);
+    const sibling = await artifacts.database.write(bytes, sha, siblingType);
+    const register = async (type: typeof mediaType, reference: string) => {
+      await client.query("INSERT INTO predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,$3,$4)", [sha, size, type, reference]);
+      await client.query(`INSERT INTO predictive_artifacts (id,blob_sha256,profile_id,retrieval_kind,origin,scope_kind)
+        VALUES ('suffix-proof',$1,$2,'full','fixture://suffix-proof','manual')`, [sha, PROFILE]);
+      await client.query(`INSERT INTO predictive_captures (id,run_id,artifact_id,captured_at,available_at,ingested_at,state,
+        body_complete,header_verified,parser_succeeded,parsed_rows)
+        VALUES ('suffix-capture','suffix-A','suffix-proof',$1,$1,$1,'incomplete',true,false,false,0)`, [NOW]);
+    };
+    await register(mediaType, ref);
+    const old = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    const temporary = ".capture-" + sha + "-00000000-0000-4000-8000-000000000003.tmp";
+    await writeFile(join(root, ".db-blobs", temporary), "partial recapture", { mode: 0o600 });
+    for (const name of [ref, sibling, temporary]) await utimes(join(root, ".db-blobs", name), old, old);
+    await artifacts.write(bytes, sha, mediaType); await artifacts.write(bytes, sha, siblingType);
+    const login = "dfs52_suffix_" + randomBytes(8).toString("hex");
+    await client.query(`CREATE ROLE ${login} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD 'disposable-owner-test'`);
+    await client.query(`GRANT predictive_retention_owner TO ${login}`);
+    const expected = { ...target.expected, user: login, password: "disposable-owner-test" };
+    const owner = new Client(expected);
+    const ownerTarget = { expected, assertTarget: (config: object) => { expect(config).toEqual(expected); target.assertTarget(target.expected); } };
+    try {
+      await owner.connect();
+      const key = Number.parseInt(sha.slice(0, 8), 16) | 0;
+      await owner.query("SELECT pg_advisory_lock(520054,$1)", [key]);
+      try {
+        expect((await owner.query(`SELECT public.predictive_blob_referenced($1) AS committed,
+          public.predictive_blob_referenced($2) AS sibling`, [ref, sibling])).rows[0]).toEqual({ committed: true, sibling: false });
+      } finally { await owner.query("SELECT pg_advisory_unlock(520054,$1)", [key]); }
+      const ownerStore = await createLocalPredictiveStore(owner, ownerTarget, artifacts);
+      expect((await ownerStore.sweepOrphanBlobs()).sort()).toEqual([sibling, temporary].sort());
+      expect(await artifacts.database.read(ref, sha, size)).toBe(bytes);
+      await expect(artifacts.database.read(sibling, sha, size)).rejects.toMatchObject({ code: "ENOENT" });
+      expect(await artifacts.read(ref, sha, size)).toBe(bytes); expect(await artifacts.read(sibling, sha, size)).toBe(bytes);
+      if (mediaType === "text/csv") {
+        // Current publication writes JSON only. A committed CSV digest must
+        // survive a refused JSON diagnostic, while its new JSON file is removed.
+        const diagnostic = passingYardsFixture(false); const original = diagnostic.artifacts[0];
+        diagnostic.artifacts = [{ ...original, bytes, sha256: sha }];
+        diagnostic.captures = diagnostic.captures.filter((capture) => capture.artifactId === original.id);
+        await expect(store.recordRefusal("suffix-rollback", diagnostic, NOW)).rejects.toThrow("blob-conflict");
+        await expect(artifacts.database.read(sibling, sha, size)).rejects.toMatchObject({ code: "ENOENT" });
+        expect(await artifacts.database.read(ref, sha, size)).toBe(bytes);
+      }
+      // Retention commits but unlink fails. Republishing the same digest under
+      // the other media type must not protect the queued, previous address.
+      const failed = await createLocalPredictiveStore(owner, ownerTarget, { ...artifacts, database: { ...artifacts.database,
+        remove: async () => { throw new Error("suffix unlink interrupted"); } } });
+      await expect(failed.retain({ id: "suffix-retain", reason: "provider-request", authority: "synthetic provider request", decidedAt: NOW,
+        scope: { kind: "source", profileIds: [PROFILE], capturedFrom: NOW, capturedBefore: null }, auditLevel: "full" })).rejects.toThrow("suffix unlink interrupted");
+      expect((await owner.query("SELECT public.predictive_pending_blob_removals() AS ref")).rows).toContainEqual({ ref });
+      await artifacts.database.write(bytes, sha, siblingType); await register(siblingType, sibling);
+      expect(await ownerStore.resumeBlobRemovals()).toContain(ref);
+      await expect(artifacts.database.read(ref, sha, size)).rejects.toMatchObject({ code: "ENOENT" });
+      expect(await artifacts.database.read(sibling, sha, size)).toBe(bytes);
+      expect(await ownerStore.resumeBlobRemovals()).toEqual([]);
+    } finally { await owner.end(); await client.query(`DROP ROLE ${login}`); }
   });
 });
 

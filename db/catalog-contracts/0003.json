@@ -1,5 +1,5 @@
 {
-  "catalogFingerprint": "ca47d072c82f8a676b8f4d4cef29ced5a47f8c6ac6050f105158f04126ad1616",
+  "catalogFingerprint": "ec9ac8fc4d52f994e567d5764161e860c1057b8b7dc5490c87e1ff3a92bd9e9f",
   "contractVersion": 1,
   "formatVersion": 1,
   "objects": [
@@ -15385,7 +15385,16 @@
     },
     {
       "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_blob_reference_guard(reference text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pg_temp'\nAS $function$\nBEGIN\n  IF NOT (pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER')\n      OR pg_catalog.pg_has_role(session_user, 'predictive_ingest', 'MEMBER')\n      OR pg_catalog.pg_has_role(session_user, 'predictive_recorder', 'MEMBER')) THEN\n    RAISE EXCEPTION 'predictive-blob-cleanup-role-refused' USING ERRCODE = '42501';\n  END IF;\n  IF reference IS NULL OR reference !~ '^[a-f0-9]{64}\\.(json|csv)$' THEN\n    RAISE EXCEPTION 'predictive-blob-reference-refused' USING ERRCODE = '23514';\n  END IF;\n  IF current_setting('transaction_isolation') <> 'read committed' THEN\n    RAISE EXCEPTION 'predictive-blob-cleanup-isolation-refused' USING ERRCODE = '25001';\n  END IF;\n  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_locks WHERE locktype = 'advisory' AND pid = pg_catalog.pg_backend_pid()\n      AND classid = 520054::oid AND objid = (('x' || substr(reference, 1, 8))::bit(32)::bigint)::oid\n      AND objsubid = 2 AND mode = 'ExclusiveLock' AND granted) THEN\n    RAISE EXCEPTION 'predictive-blob-lock-required' USING ERRCODE = '55000';\n  END IF;\nEND\n$function$\n",
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_blob_lock_guard(digest text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pg_temp'\nAS $function$\nBEGIN\n  IF NOT (pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER')\n      OR pg_catalog.pg_has_role(session_user, 'predictive_ingest', 'MEMBER')\n      OR pg_catalog.pg_has_role(session_user, 'predictive_recorder', 'MEMBER')) THEN\n    RAISE EXCEPTION 'predictive-blob-cleanup-role-refused' USING ERRCODE = '42501';\n  END IF;\n  IF digest IS NULL OR digest !~ '^[a-f0-9]{64}$' THEN\n    RAISE EXCEPTION 'predictive-blob-reference-refused' USING ERRCODE = '23514';\n  END IF;\n  IF current_setting('transaction_isolation') <> 'read committed' THEN\n    RAISE EXCEPTION 'predictive-blob-cleanup-isolation-refused' USING ERRCODE = '25001';\n  END IF;\n  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_locks WHERE locktype = 'advisory' AND pid = pg_catalog.pg_backend_pid()\n      AND classid = 520054::oid AND objid = (('x' || substr(digest, 1, 8))::bit(32)::bigint)::oid\n      AND objsubid = 2 AND mode = 'ExclusiveLock' AND granted) THEN\n    RAISE EXCEPTION 'predictive-blob-lock-required' USING ERRCODE = '55000';\n  END IF;\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": true
+      },
+      "kind": "routine",
+      "name": "predictive_blob_lock_guard(digest text)"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_blob_reference_guard(reference text)\n RETURNS void\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pg_temp'\nAS $function$\nBEGIN\n  IF reference IS NULL OR reference !~ '^[a-f0-9]{64}\\.(json|csv)$' THEN\n    RAISE EXCEPTION 'predictive-blob-reference-refused' USING ERRCODE = '23514';\n  END IF;\n  PERFORM public.predictive_blob_lock_guard(substr(reference, 1, 64));\nEND\n$function$\n",
         "kind": "f",
         "security_definer": true
       },
@@ -15394,7 +15403,7 @@
     },
     {
       "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_blob_referenced(reference text)\n RETURNS boolean\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pg_temp'\nAS $function$\nBEGIN\n  PERFORM public.predictive_blob_reference_guard(reference);\n  RETURN EXISTS (SELECT 1 FROM public.predictive_blobs WHERE sha256 = substr(reference, 1, 64));\nEND\n$function$\n",
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_blob_referenced(reference text)\n RETURNS boolean\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pg_temp'\nAS $function$\nBEGIN\n  PERFORM public.predictive_blob_reference_guard(reference);\n  RETURN EXISTS (SELECT 1 FROM public.predictive_blobs WHERE storage_ref = reference);\nEND\n$function$\n",
         "kind": "f",
         "security_definer": true
       },
@@ -16169,7 +16178,7 @@
       },
       {
         "filename": "0003_predictive_evidence.sql",
-        "sha256": "c70a15011722c8411787d30769f1bd42ab94d6324a9f605c7053fe63dc5f466b",
+        "sha256": "ec72796bc69169e8a8a487c2dfd2240c86a4dc94c4ab74b29e4c05c83df9e695",
         "version": 3
       }
     ]
