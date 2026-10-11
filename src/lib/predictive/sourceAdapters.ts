@@ -1,6 +1,6 @@
 import { Readable } from "node:stream";
 import { parse } from "csv-parse";
-import { RAW_ALLOWLISTS, canonical, digest, refuse } from "./validation.ts";
+import { RAW_ALLOWLISTS, canonical, digest, easternKickoff, refuse } from "./validation.ts";
 import { SOURCE_HEADERS } from "./sourceHeaders.ts";
 
 export type SourceFeed = keyof typeof SOURCE_HEADERS;
@@ -61,18 +61,5 @@ export const sourceInteger = (value: string, minimum: number, maximum: number) =
 
 // gametime is Eastern time, regardless of venue. Enumerating both possible
 // offsets and round-tripping through IANA refuses missing or repeated DST times.
-export const easternKickoff = (day: string, time: string): string | null => {
-  if (!day || !time) return null;
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !/^\d{2}:\d{2}$/.test(time)) refuse("source-kickoff-refused");
-  const formatter = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit",
-    day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-  const matches = [4, 5].map((offset) => {
-    const value = Date.parse(`${day}T${time}:00.000Z`) + offset * 3_600_000;
-    if (!Number.isFinite(value)) return null;
-    const fields = Object.fromEntries(formatter.formatToParts(new Date(value)).map((part) => [part.type, part.value]));
-    return `${fields.year}-${fields.month}-${fields.day}T${fields.hour}:${fields.minute}` === `${day}T${time}`
-      ? new Date(value).toISOString() : null;
-  }).filter((value): value is string => value !== null);
-  if (matches.length !== 1) refuse("source-kickoff-refused");
-  return matches[0];
-};
+// Shared with the schedule evidence validator so both use one conversion.
+export { easternKickoff };

@@ -4,10 +4,10 @@ Issue #45 runs the shared live-prop refresh SQL against a real disposable
 database. Production continues to use Neon; `pg` and `@types/pg` are exact-pinned
 development dependencies. Issue #60 supplies the shared migration bootstrap,
 catalog contracts and isolated migration proofs.
-Issue #52 adds the synthetic predictive persistence proof in v3 and the Rams
-identity correction in v4. Application readiness still requires only v2; v4 is
-the maximum-known schema on this WIP branch. Delivery 2 remains off main pending
-the owner's real-source schema design gate.
+Issue #52 adds the real-source predictive evidence schema as v3
+(`0003_predictive_evidence.sql`), replacing the branch-only synthetic v3/v4 proof
+migrations (see the reset in [database migrations](database-migrations.md#pr-a-draft-period-reset-of-migration-0003)).
+Application readiness still requires only v2; v3 is the maximum-known schema.
 
 ## Local commands
 
@@ -97,7 +97,7 @@ or adoption. Setup truncates only `live_prop_inputs_cache` between cases.
 Tracked database clients close after each case and suite.
 
 The runner also validates Vitest's JSON report: all 13 required #45 cases,
-four readiness cases and 14 predictive persistence cases must execute and pass.
+four readiness cases and 15 predictive persistence cases must execute and pass.
 Skipped/todo or missing cases fail. The #45 contract
 covers full-schema bootstrap, including ledger/data-preserving reruns, plus
 these lease scenarios:
@@ -154,15 +154,18 @@ schedule isolation, exact retries and changed-byte recaptures, atomic visibility
 and concurrent retries, partial/refused diagnostic quarantine, conflict/lineage
 rollback, typed evidence and append-only SQL constraints, missing/tampered source
 bytes, indexed read-only membership queries, journal restoration into fresh
-databases, all-32-team SQL/app parity and Rams publication/replay, plus v3-to-v4
-data preservation and rollback for an unmapped legacy `LAR` row. Each case uses a private temporary artifact root and removes its own
+databases, the exact 32 seeded teams with SQL/app parity and Rams publication/replay,
+rights knowledge time, harness-only synthetic evidence and per-provider chains,
+v2-to-v3 upgrades, and refusal of databases that recorded the removed synthetic
+migrations. Synthetic-test evidence requires the disposable `predictive_harness`
+role, which the harness creates; it never exists on a hosted database. Each case uses a private temporary artifact root and removes its own
 test files after closing clients and deleting the registered database. The
 [predictive ingestion guide](predictive-ingestion.md) also provides a manual
 proof command that preserves its artifact root for later restoration.
 
 Migration/catalog/plan checks retain independent immutable v1/v2 fixtures and
-contracts while preserving v3 and validating the v4 tip. Genuine v2 remains application-ready.
-Synthetic pending/ahead migration scenarios now append v5 to the current tip;
+contracts and validate the v3 tip. Genuine v2 remains application-ready.
+Synthetic pending/ahead migration scenarios append beyond the current tip;
 they do not redefine the historical v2 adoption evidence.
 
 `scripts/db-test-contract.mjs` contains the reviewed static list of required

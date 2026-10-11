@@ -99,6 +99,9 @@ that these tests qualify real participation, historical versions or publication.
 
 ## Rams identity regression and merge hold
 
+**Superseded by the 2026-10-10 migration reset** (the v3/v4 proof migrations below no longer exist; the
+new v3 seeds exactly 32 teams and refuses inserts). Historical record follows.
+
 The branch review exposed v3 SQL accepting `LAR` while the application registry
 accepts `LA`. The new all-team case failed on real PostgreSQL before the fix:
 `predictive_teams_id_check` rejected an application-valid team. V4 corrects that

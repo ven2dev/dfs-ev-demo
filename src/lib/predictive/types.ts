@@ -1,66 +1,92 @@
 export type SeasonType = "REG" | "POST";
 export type Candidate = "stats-v1:player_pass_yds" | "player-opponent-v1:player_pass_yds";
-export type Kind = "schedule" | "membership" | "player-passing" | "team-passing" |
-  "completion" | "participation" | "availability" | "schedule-coverage";
+export type Kind = "schedule" | "schedule-coverage" | "membership" | "player-game-stats" | "team-game-stats" |
+  "event-state-marker" | "participation-evidence" | "availability";
+export const KINDS: readonly Kind[] = ["schedule", "schedule-coverage", "membership", "player-game-stats",
+  "team-game-stats", "event-state-marker", "participation-evidence", "availability"];
+
+// The ten count fields behind the nine registry markets. Values are per game.
+export const STAT_FIELDS = ["attempts", "completions", "passingYards", "passingTds", "passingInterceptions",
+  "carries", "rushingYards", "targets", "receptions", "receivingYards"] as const;
+export type StatField = typeof STAT_FIELDS[number];
+export type MissingReason = "source-blank" | "source-missing";
+type StatValues = { [F in StatField]: number | null };
 
 export type Schedule = {
-  gameId: string; rawGameId: string; season: number; seasonType: SeasonType; week: number;
-  kickoff: string; homeTeamId: string; awayTeamId: string;
-  rawHomeTeam: string; rawAwayTeam: string; mappingVersion: string;
+  gameId: string; rawGameId: string; season: number; seasonType: SeasonType; week: number; kickoff: string;
+  rawGameday: string | null; rawGametime: string | null;
+  homeTeamId: string; awayTeamId: string; rawHomeTeam: string; rawAwayTeam: string;
+  rawRoof: string | null; rawSurface: string | null; rawStadiumId: string | null;
 };
 // Independent enumeration evidence for a team's complete REG + POST schedule
 // across the requested seasons. Missing rows cannot shrink this expected set.
 export type ScheduleCoverage = {
-  teamId: string; fromSeason: number; throughSeason: number; gameIds: string[];
-  state: "complete" | "incomplete"; evidenceVersion: string;
+  teamId: string; fromSeason: number; throughSeason: number; gameIds: string[]; state: "complete" | "incomplete";
 };
 export type Membership = {
-  gameId: string; playerId: string; rawPlayerId: string; teamId: string; rawTeam: string;
-  position: string; effectiveFrom: string; effectiveTo: string; mappingVersion: string;
+  gameId: string; playerId: string; teamId: string; rawTeam: string; position: string; rosterStatus: string;
+  season: number; seasonType: SeasonType; week: number; effectiveFrom: string; effectiveTo: string;
 };
-export type Passing = {
-  gameId: string; rawGameId: string; teamId: string; rawTeam: string;
-  season: number; seasonType: SeasonType; attempts: number | null; passingYards: number | null;
-  missingReason: "source-blank" | "source-missing" | null;
+export type TeamGameStats = StatValues & {
+  gameId: string; rawGameId: string; teamId: string; rawTeam: string; season: number; seasonType: SeasonType;
+  missing: Partial<Record<StatField, MissingReason>>;
 };
-export type PlayerPassing = Passing & { playerId: string; rawPlayerId: string };
-export type Completion = {
-  gameId: string; state: "confirmed" | "unresolved"; bound: string | null;
-  boundKind: "actual-end" | "completion-observed-at" | null; evidenceVersion: string;
-};
-export type Participation = {
-  gameId: string; playerId: string; state: "confirmed" | "absent" | "unresolved"; evidenceVersion: string;
+export type PlayerGameStats = TeamGameStats & { playerId: string };
+export type MarkerType = "provider-final-status" | "terminal-play" | "final-team-totals" | "suspension-notice" | "postponement-notice";
+export type EventStateMarker = { gameId: string; markerType: MarkerType; markerValue: string; terminalPlayTimeOfDay: string | null };
+export type ParticipationEvidence = {
+  gameId: string; playerId: string; teamId: string;
+  evidenceKind: "participation-feed" | "official-inactive-list" | "provider-snap-count";
+  claim: "offensive-participant" | "zero-offensive-participation" | "inactive-or-dnp";
 };
 export type Availability = {
-  gameId: string; playerId: string; injury: "unknown" | "eligible" | "excluded";
-  depth: "unknown" | "observed"; evidenceVersion: string;
+  gameId: string; playerId: string; teamId: string;
+  rawReportStatus: string | null; rawPracticeStatus: string | null; rawDepthRank: number | null;
 };
 export type DataByKind = {
-  schedule: Schedule; membership: Membership; "player-passing": PlayerPassing; "team-passing": Passing;
-  completion: Completion; participation: Participation; availability: Availability;
-  "schedule-coverage": ScheduleCoverage;
+  schedule: Schedule; "schedule-coverage": ScheduleCoverage; membership: Membership;
+  "player-game-stats": PlayerGameStats; "team-game-stats": TeamGameStats;
+  "event-state-marker": EventStateMarker; "participation-evidence": ParticipationEvidence; availability: Availability;
 };
 export type Revision<K extends Kind = Kind> = K extends Kind ? {
-  id: string; kind: K; predecessorId: string | null; correctionReason: string | null; data: DataByKind[K];
+  id: string; kind: K; sourceRecordId: string; predecessorId: string | null; correctionReason: string | null; data: DataByKind[K];
 } : never;
+
+export type Use = "adapter-testing" | "internal-research" | "model-input" | "outcome-label" | "public-display";
+export type Profile = {
+  id: string; purpose: "source" | "owner-decision" | "synthetic-test"; provider: string; feed: string;
+  releaseTag: string | null; assetPattern: string | null; headerProfileSha256: string | null;
+  parserVersion: string; allowlistVersion: string; license: string; attribution: string | null;
+  evidenceKinds: Kind[]; registeredAt: string;
+};
+export type RightsDecision = {
+  id: string; profileId: string; predecessorId: string | null; allowedUses: Use[];
+  effectiveFrom: string; effectiveTo: string | null; decidedAt: string;
+  evidenceKind: "terms-review" | "written-confirmation" | "license-file" | "revocation" | "synthetic";
+  evidenceReference: string;
+};
 export type Artifact = {
-  id: string; sha256: string; bytes: string; source: "synthetic"; origin: string; feed: Kind;
-  schemaVersion: "predictive-proof-v1"; parserVersion: "synthetic-json-v1"; rightsReviewVersion: "synthetic-only-v1";
+  id: string; sha256: string; bytes: string; profileId: string; retrievalKind: "full" | "header-probe"; origin: string;
+  providerEtag: string | null; providerLastModified: string | null; releaseUpdatedAt: string | null;
+  scopeKind: "season-file" | "week-file" | "game" | "all-seasons" | "manual";
+  scopeSeason: number | null; scopeWeek: number | null; scopeFilter: string | null;
 };
 export type Capture = {
   id: string; artifactId: string; capturedAt: string; availableAt: string; ingestedAt: string;
   publishedAt: string | null; publicationEvidence: string | null; state: "published" | "incomplete";
+  bodyComplete: boolean; headerVerified: boolean; parserSucceeded: boolean; parsedRows: number;
 };
-export type Dataset = { formatVersion: 1; artifacts: Artifact[]; captures: Capture[] };
+export type Dataset = {
+  formatVersion: 2; profiles: Profile[]; rightsDecisions: RightsDecision[]; artifacts: Artifact[]; captures: Capture[];
+};
 export type Observation<K extends Kind = Kind> = {
-  revision: Revision<K>; capture: Capture; artifact: Artifact;
+  revision: Revision<K>; capture: Capture; artifact: Artifact; entityKey: string; sourceKey: string;
 };
 export type Dependency = {
-  observationId: string; predecessorId: string | null; correctionReason: string | null;
-  kind: Kind; captureId: string; artifactId: string; artifactSha256: string;
-  source: string; origin: string; schemaVersion: string; parserVersion: string;
-  rightsReviewVersion: string; publishedAt: string | null; publicationEvidence: string | null;
-  capturedAt: string; availableAt: string; ingestedAt: string; mappingVersion: string | null;
+  observationId: string; predecessorId: string | null; correctionReason: string | null; kind: Kind;
+  entityKey: string; sourceKey: string; profileId: string; captureId: string; artifactId: string; artifactSha256: string;
+  origin: string; publishedAt: string | null; publicationEvidence: string | null;
+  capturedAt: string; availableAt: string; ingestedAt: string;
 };
 export type Request = { playerId: string; gameId: string; cutoff: string; computedAt: string; candidate: Candidate };
 export type Exclusion = { gameId: string; reason: string };
@@ -75,13 +101,14 @@ export type Summary = {
   attemptsPerGame: number | null; passingYardsPerAttempt: number | null;
 };
 export type Bundle = {
-  formatVersion: 1; featureVersion: "passing-yards-replay-v2"; readMode: "application-data-replay";
+  formatVersion: 1; featureVersion: "passing-yards-replay-v3"; readMode: "application-data-replay";
   usage: "synthetic-internal-research"; modelValidated: false; populationCoverage: "unqualified";
   units: { attempts: "attempts"; passingYards: "yards"; attemptsPerGame: "attempts/game";
     passingYardsPerAttempt: "yards/attempt"; scheduledRestHours: "hours" };
+  policies: { completion: "event-completion-v1"; participation: "participation-v1"; availability: "availability-v1" };
   request: Omit<Request, "computedAt">; computedAt: string; status: "ready-inputs" | "unavailable-inputs";
   reasons: string[]; quality: string[]; target: Schedule | null; teamId: string | null; opponentId: string | null;
-  availability: { injury: Availability["injury"]; depth: Availability["depth"]; participation: "future-unknown" };
+  availability: { injury: "unknown" | "excluded"; depth: "unknown" | "observed"; participation: "future-unknown" };
   player: Summary[]; team: Summary[] | null; opponent: Summary[] | null;
   scheduledRestHours: number | null; dependencyAvailableAt: string | null; dependencies: Dependency[];
   excludedSchedule: Exclusion[]; inputDigest: string;

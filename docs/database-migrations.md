@@ -145,6 +145,28 @@ are immutable; corrections require a new forward migration. These commands do
 not connect to any database. The mandatory disposable DB command runs this
 artifact check in CI before the database cases.
 
+## PR A draft-period reset of migration 0003
+
+Issue #52's branch-only synthetic migrations `0003_predictive_local_replay.sql`
+and `0004_predictive_team_identity.sql` were replaced on 2026-10-10 by
+`0003_predictive_evidence.sql`. That was allowed only because neither was ever
+on `main` or applied outside disposable test databases (confirmed by Codex's
+execution history and by the owner). The generator's history guard and the
+runner's checksum protection were **not** changed.
+
+Until PR A passes review, every edit to `0003_predictive_evidence.sql` follows
+this procedure, and the commit message names the reset:
+
+1. `git show origin/main:db/migration-manifest.json > db/migration-manifest.json`
+2. remove `db/catalog-contracts/0003.json`
+3. `npm run db:migrations:generate`, then `npm run db:contracts:generate` against
+   the disposable database, then `npm run db:readiness:generate`
+4. `npm run test:db:down` and recreate disposable databases with `npm run test:db:local`
+
+Any local database that recorded the old synthetic v3/v4 must be recreated; the
+runner refuses it (a mandatory DB case checks this). Migration 0003 is frozen
+when PR A passes review, after which changes are new forward migrations.
+
 ## Generated catalog contracts
 
 `db/catalog-contracts/0001.json` and `0002.json` describe the application catalog

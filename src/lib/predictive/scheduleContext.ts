@@ -1,9 +1,8 @@
 import type { Membership, Observation, Schedule } from "./types.ts";
-import type { createReplay } from "./replay.ts";
+import type { Replay } from "./replay.ts";
 import { applicableQuarterback } from "./identity.ts";
 import { compareText, instant } from "./validation.ts";
 
-type Replay = ReturnType<typeof createReplay>;
 const inRange = (game: Schedule, target: Schedule) => game.season >= target.season - 2 && game.season <= target.season;
 const hasTeam = (game: Schedule, team: string) => game.homeTeamId === team || game.awayTeamId === team;
 

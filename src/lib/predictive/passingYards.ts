@@ -1,13 +1,17 @@
 import type { Bundle, Dataset, Dependency, Exclusion, Kind, Observation,
-  Passing, PassingGame, Request, Schedule, Summary } from "./types.ts";
-import { createReplay } from "./replay.ts";
+  PassingGame, Request, Schedule, Summary, TeamGameStats } from "./types.ts";
+import { createReplay, type Replay } from "./replay.ts";
 import { applicableQuarterback } from "./identity.ts";
+import { availabilityState, completionDecision, participationDecision } from "./policies.ts";
 import { scheduleContext } from "./scheduleContext.ts";
 import { canonical, compareText, digest, exact, gameIdentity, instant, playerIdentity, refuse } from "./validation.ts";
 
 const WINDOWS = [4, 8, 16] as const;
 const key = (kind: Kind, game: string, entity?: string) => kind + ":" + game + (entity ? ":" + entity : "");
 type Slot = { schedule: Schedule; game: PassingGame | null; reason: string | null };
+// Confirmed non-participation is a known exclusion: the slot is kept and the
+// bundle stays usable with a quality flag. Anything unresolved withholds.
+const KNOWN_EXCLUSIONS = new Set(["participation-inactive-or-dnp", "participation-zero-offensive-participation"]);
 
 const summarize = (slots: Slot[], window: number): Summary => {
   const selected = slots.slice(0, window);
@@ -16,7 +20,7 @@ const summarize = (slots: Slot[], window: number): Summary => {
   const attemptsSum = games.reduce((sum, game) => sum + game.attempts, 0);
   const passingYardsSum = games.reduce((sum, game) => sum + game.passingYards, 0);
   return { window, expectedGames: selected.length, observedGames: games.length, excludedGames: exclusions.length,
-    unknownGames: exclusions.filter((item) => item.reason !== "participation-absent").length,
+    unknownGames: exclusions.filter((item) => !KNOWN_EXCLUSIONS.has(item.reason)).length,
     gameIds: selected.map((slot) => slot.schedule.gameId), dateRange: selected.length ?
       [selected.at(-1)!.schedule.kickoff, selected[0].schedule.kickoff] : null,
     games, exclusions, attemptsSum, passingYardsSum, attemptsPerGame: games.length ? attemptsSum / games.length : null,
@@ -33,7 +37,7 @@ export const bundleInputDigest = (bundle: Omit<Bundle, "inputDigest"> | Bundle) 
 
 export const buildPassingYardsBundle = (dataset: Dataset, request: Request): Bundle => {
   validatePassingYardsRequest(request);
-  return buildPassingYardsFromReplay(createReplay(dataset, request.cutoff), request);
+  return buildPassingYardsFromReplay(createReplay(dataset, request.cutoff, request.computedAt), request);
 };
 
 export const validatePassingYardsRequest = (request: Request) => {
@@ -45,7 +49,7 @@ export const validatePassingYardsRequest = (request: Request) => {
   return cutoff;
 };
 
-export const buildPassingYardsFromReplay = (replay: ReturnType<typeof createReplay>, request: Request): Bundle => {
+export const buildPassingYardsFromReplay = (replay: Replay, request: Request): Bundle => {
   const cutoff = validatePassingYardsRequest(request);
   const dependencyRows = new Map<string, Observation>();
   const reasons = new Set<string>();
@@ -57,12 +61,16 @@ export const buildPassingYardsFromReplay = (replay: ReturnType<typeof createRepl
     for (const row of result.dependencies) dependencyRows.set(row.revision.id, row);
     return result;
   };
+  const retain = (rows: Observation[]) => rows.forEach((row) => dependencyRows.set(row.revision.id, row));
+  if (replay.blockedProfiles.length) reasons.add("rights-not-in-force");
   const targetResult = select("schedule", request.gameId);
   const target = targetResult.observation?.revision.data ?? null;
   if (!target) reasons.add("target-schedule-" + targetResult.state);
   if (target && instant(target.kickoff) <= cutoff) reasons.add("target-not-pregame");
-  const targetCompletion = select("completion", request.gameId);
-  if (targetCompletion.state === "ambiguous" || targetCompletion.observation?.revision.data.state === "confirmed") reasons.add("target-started-or-completed");
+  const targetCompletion = completionDecision(replay, request.gameId);
+  retain(targetCompletion.inputs);
+  if (targetCompletion.state === "postponed") reasons.add("target-postponed");
+  else if (targetCompletion.state !== "scheduled") reasons.add("target-started-or-completed");
   const targetMember = select("membership", request.gameId, request.playerId);
   const member = targetMember.observation?.revision.data ?? null;
   if (!member) reasons.add("target-membership-" + targetMember.state);
@@ -71,19 +79,19 @@ export const buildPassingYardsFromReplay = (replay: ReturnType<typeof createRepl
   const opponentId = target && teamId && [target.homeTeamId, target.awayTeamId].includes(teamId) ?
     (target.homeTeamId === teamId ? target.awayTeamId : target.homeTeamId) : null;
   const availability = select("availability", request.gameId, request.playerId);
-  const status = availability.observation?.revision.data;
+  const status = availabilityState(availability.observation?.revision.data ?? null);
   if (availability.state === "ambiguous") reasons.add("availability-ambiguous");
-  if (status?.injury === "excluded") reasons.add("player-excluded");
-  if (status?.injury === "eligible") quality.delete("injury-unverified");
-  if (status?.depth === "observed") quality.delete("depth-unverified");
+  if (status.injury === "excluded") reasons.add("player-excluded");
+  if (status.depth === "observed") quality.delete("depth-unverified");
   const base: Omit<Bundle, "inputDigest"> = {
-    formatVersion: 1, featureVersion: "passing-yards-replay-v2", readMode: "application-data-replay",
+    formatVersion: 1, featureVersion: "passing-yards-replay-v3", readMode: "application-data-replay",
     usage: "synthetic-internal-research", modelValidated: false, populationCoverage: "unqualified",
     units: { attempts: "attempts", passingYards: "yards", attemptsPerGame: "attempts/game",
       passingYardsPerAttempt: "yards/attempt", scheduledRestHours: "hours" },
+    policies: { completion: "event-completion-v1", participation: "participation-v1", availability: "availability-v1" },
     request: { playerId: request.playerId, gameId: request.gameId, cutoff: request.cutoff, candidate: request.candidate },
     computedAt: request.computedAt, status: "unavailable-inputs", reasons: [], quality: [],
-    target, teamId, opponentId, availability: { injury: status?.injury ?? "unknown", depth: status?.depth ?? "unknown", participation: "future-unknown" },
+    target, teamId, opponentId, availability: { injury: status.injury, depth: status.depth, participation: "future-unknown" },
     player: [], team: enrich ? [] : null, opponent: enrich ? [] : null, scheduledRestHours: null,
     dependencyAvailableAt: null, dependencies: [], excludedSchedule,
     scheduleCoverage: { state: "unverified", missingGameIds: [] },
@@ -116,24 +124,22 @@ export const buildPassingYardsFromReplay = (replay: ReturnType<typeof createRepl
     const playerSlots: Slot[] = [], teamSlots: Slot[] = [], opponentSlots: Slot[] = [];
     const scheduleDependency = (game: Schedule) => { select("schedule", game.gameId); };
     const completed = (game: Schedule): string | null => {
-      const completion = select("completion", game.gameId);
-      if (!completion.observation) return "completion-" + completion.state;
-      if (completion.observation.revision.data.state !== "confirmed") return "completion-unresolved";
-      const data = completion.observation.revision.data;
-      // This proof has no separately qualified earlier observation archive.
-      // A conservative observed bound is the confirming capture itself.
-      if (data.boundKind === "completion-observed-at" && data.bound !== completion.observation.capture.capturedAt) return "completion-bound-unverified";
-      if (instant(data.bound!) <= instant(game.kickoff) || instant(data.bound!) >= cutoff ||
-          instant(data.bound!) > instant(completion.observation.capture.capturedAt)) return "completion-not-before-cutoff";
+      const completion = completionDecision(replay, game.gameId);
+      retain(completion.inputs);
+      if (completion.state !== "completed") return "completion-" + completion.state;
+      // The conservative bound is the first capture of qualified completion
+      // markers. It must follow kickoff and strictly precede the cutoff.
+      const observed = instant(completion.completionObservedAt!);
+      if (observed <= instant(game.kickoff) || observed >= cutoff) return "completion-not-before-cutoff";
       return null;
     };
-    const values = (game: Schedule, stats: Passing, expectedTeam: string): string | null => {
+    const values = (game: Schedule, stats: TeamGameStats, expectedTeam: string): string | null => {
       if (stats.rawGameId !== game.rawGameId || stats.teamId !== expectedTeam || stats.season !== game.season || stats.seasonType !== game.seasonType ||
           stats.rawTeam !== (expectedTeam === game.homeTeamId ? game.rawHomeTeam : game.rawAwayTeam)) return "stat-identity-mismatch";
-      if (stats.attempts === null || stats.passingYards === null) return stats.missingReason;
+      if (stats.attempts === null || stats.passingYards === null) return stats.missing.attempts ?? stats.missing.passingYards!;
       return null;
     };
-    const passingGame = (game: Schedule, stats: Passing): PassingGame => {
+    const passingGame = (game: Schedule, stats: TeamGameStats): PassingGame => {
       return { gameId: game.gameId, season: game.season, seasonType: game.seasonType, kickoff: game.kickoff,
         teamId: stats.teamId, attempts: stats.attempts!, passingYards: stats.passingYards! };
     };
@@ -145,14 +151,18 @@ export const buildPassingYardsFromReplay = (replay: ReturnType<typeof createRepl
       for (const game of playerGames) {
         scheduleDependency(game);
         const membership = playerMembership(game);
-        const participation = select("participation", game.gameId, request.playerId);
         const dated = membership.observation?.revision.data;
         let reason = !dated ? "membership-" + membership.state : !applicableQuarterback(dated, game) ? "membership-inapplicable" : completed(game);
-        if (!reason && participation.observation?.revision.data.state !== "confirmed") reason = "participation-" + (participation.observation?.revision.data.state ?? participation.state);
-        const stats = !reason ? select("player-passing", game.gameId, request.playerId) : null;
+        const stats = !reason ? select("player-game-stats", game.gameId, request.playerId) : null;
+        if (!reason && stats!.state === "ambiguous") reason = "player-stats-ambiguous";
+        if (!reason) {
+          const participation = participationDecision(replay, game.gameId, request.playerId, stats?.observation?.revision.data ?? null, stats?.observation ?? null);
+          retain(participation.inputs);
+          if (participation.state !== "offensive-participant") reason = "participation-" + participation.state;
+        }
         if (!reason) reason = stats?.observation ? values(game, stats.observation.revision.data, dated!.teamId) : "player-stats-" + stats!.state;
         if (!reason && stats?.observation && enrich) {
-          const own = select("team-passing", game.gameId, dated!.teamId);
+          const own = select("team-game-stats", game.gameId, dated!.teamId);
           if (!own.observation || values(game, own.observation.revision.data, dated!.teamId)) reason = "paired-team-stats-unavailable";
           else if (own.observation && stats.observation.revision.data.attempts! > own.observation.revision.data.attempts!) reason = "player-team-count-conflict";
         }
@@ -164,7 +174,7 @@ export const buildPassingYardsFromReplay = (replay: ReturnType<typeof createRepl
         return selected.map((game) => {
           scheduleDependency(game);
           const offense = against ? (game.homeTeamId === team ? game.awayTeamId : game.homeTeamId) : team;
-          const stats = select("team-passing", game.gameId, offense);
+          const stats = select("team-game-stats", game.gameId, offense);
           const reason = completed(game) ?? (stats.observation ? values(game, stats.observation.revision.data, offense) : "team-stats-" + stats.state);
           return { schedule: game, game: reason || !stats.observation ? null : passingGame(game, stats.observation.revision.data), reason };
         });
@@ -205,14 +215,12 @@ export const buildPassingYardsFromReplay = (replay: ReturnType<typeof createRepl
     }
     if (enrich && base.scheduledRestHours === null) quality.add("scheduled-rest-unavailable");
   }
-  const dependencies: Dependency[] = [...dependencyRows.values()].map(({ revision, capture, artifact }) => ({
+  const dependencies: Dependency[] = [...dependencyRows.values()].map(({ revision, capture, artifact, entityKey, sourceKey }) => ({
     observationId: revision.id, predecessorId: revision.predecessorId, correctionReason: revision.correctionReason,
-    kind: revision.kind, captureId: capture.id, artifactId: artifact.id, artifactSha256: artifact.sha256,
-    source: artifact.source, origin: artifact.origin, schemaVersion: artifact.schemaVersion,
-    parserVersion: artifact.parserVersion, rightsReviewVersion: artifact.rightsReviewVersion,
+    kind: revision.kind, entityKey, sourceKey, profileId: artifact.profileId, captureId: capture.id,
+    artifactId: artifact.id, artifactSha256: artifact.sha256, origin: artifact.origin,
     publishedAt: capture.publishedAt, publicationEvidence: capture.publicationEvidence, capturedAt: capture.capturedAt,
     availableAt: capture.availableAt, ingestedAt: capture.ingestedAt,
-    mappingVersion: "mappingVersion" in revision.data ? revision.data.mappingVersion : null,
   })).sort((a, b) => compareText(a.observationId, b.observationId));
   base.dependencies = dependencies;
   base.dependencyAvailableAt = dependencies.length ? new Date(Math.max(...dependencies.map((row) => instant(row.availableAt)))).toISOString() : null;

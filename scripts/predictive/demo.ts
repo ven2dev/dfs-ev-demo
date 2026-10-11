@@ -10,9 +10,11 @@ try {
   const dataset = passingYardsFixture();
   const replayA = buildPassingYardsBundle(dataset, request());
   const laterB = buildPassingYardsBundle(dataset, request(CUTOFF_B));
-  addCapture(dataset, "unresolved-completion", [revision("completion-unresolved", "completion", {
-    gameId: PRIOR[4], state: "unresolved", bound: null, boundKind: null, evidenceVersion: "synthetic-suspended-v1",
-  }, "complete-synthetic-game-5")], "2026-10-08T13:30:00.000Z");
+  // A later suspension notice contradicts the earlier final status: the game
+  // becomes conflicting at the later cutoff and its slot withholds.
+  addCapture(dataset, "suspension-notice", [revision("suspension-synthetic-game-5", "event-state-marker", {
+    gameId: PRIOR[4], markerType: "suspension-notice", markerValue: "suspended", terminalPlayTimeOfDay: null,
+  })], "2026-10-08T13:30:00.000Z");
   const unavailable = buildPassingYardsBundle(dataset, request(CUTOFF_B));
   assert.equal(capturedA.status, "ready-inputs");
   assert.equal(replayA.inputDigest, capturedA.inputDigest);

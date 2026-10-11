@@ -10,7 +10,8 @@ import { runScratchMigrations } from "../db-migrations/core.mjs";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { createLocalPredictiveStore } from "../../src/lib/predictive/persistence.ts";
 import { ingestLocalDataset } from "../../src/lib/predictive/ingest.ts";
-import { addCapture, CUTOFF_B, passingYardsFixture, PRIOR, request, revision } from "../../tests/predictive/fixtures/passingYards.ts";
+import { addCapture, CUTOFF_B, emptyDataset, passingYardsFixture, PRIOR, request, revision } from "../../tests/predictive/fixtures/passingYards.ts";
+import { ensureHarnessSession } from "./harness.ts";
 import { archiveRuns, restoreRuns, type ArchivedRun, type ArchiveReference } from "./archive.ts";
 
 export const runLocalProof = async (args: string[], environment: NodeJS.ProcessEnv) => {
@@ -29,10 +30,10 @@ export const runLocalProof = async (args: string[], environment: NodeJS.ProcessE
     if (mode === "demo") {
       const a = passingYardsFixture(false); const b = passingYardsFixture();
       const correction = { ...b, artifacts: b.artifacts.filter((artifact) => artifact.id.startsWith("B-")), captures: b.captures.filter((capture) => capture.artifactId.startsWith("B-")) };
-      const unavailable = { formatVersion: 1 as const, artifacts: [], captures: [] };
-      addCapture(unavailable, "unresolved-completion", [revision("completion-unresolved", "completion", {
-        gameId: PRIOR[4], state: "unresolved", bound: null, boundKind: null, evidenceVersion: "synthetic-suspended-v1",
-      }, "complete-synthetic-game-5")], "2026-10-08T13:30:00.000Z");
+      const unavailable = emptyDataset();
+      addCapture(unavailable, "suspension-notice", [revision("suspension-synthetic-game-5", "event-state-marker", {
+        gameId: PRIOR[4], markerType: "suspension-notice", markerValue: "suspended", terminalPlayTimeOfDay: null,
+      })], "2026-10-08T13:30:00.000Z");
       runs = [{ id: "A", dataset: a }, { id: "B", dataset: correction }, { id: "unavailable", dataset: unavailable }];
       for (const run of runs) for (const artifact of run.dataset.artifacts) await artifacts.write(artifact.bytes, artifact.sha256);
       archive = await archiveRuns(artifacts, runs);
@@ -44,6 +45,7 @@ export const runLocalProof = async (args: string[], environment: NodeJS.ProcessE
     const install = async (client: Client, expected: object) => {
       const target = { expected, assertTarget: harness.assertTarget };
       await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
+      await ensureHarnessSession(client);
       return createLocalPredictiveStore(client, target, artifacts);
     };
     const report = await harness.withDatabase(async (client: Client, expected: object) => {

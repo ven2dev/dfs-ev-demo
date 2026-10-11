@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import { buildPassingYardsBundle } from "../../src/lib/predictive/passingYards.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader } from "../../src/lib/predictive/validation.ts";
-import type { Dataset, Kind, Revision } from "../../src/lib/predictive/types.ts";
-import { addCapture, artifact, CAPTURE_A, CAPTURE_B, coverage, CUTOFF_A, CUTOFF_B, gameId, OPPONENT, passingYardsFixture, PLAYER, PRIOR, request, revision, schedule, TARGET, TEAM } from "./fixtures/passingYards.ts";
+import type { Dataset, Revision } from "../../src/lib/predictive/types.ts";
+import { addCapture, artifact, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_A, CUTOFF_B, gameId, membership, OPPONENT,
+  passingYardsFixture, PLAYER, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamStats } from "./fixtures/passingYards.ts";
 
 const row = (dataset: Dataset, id: string): Revision => {
   return dataset.artifacts.flatMap((item) => JSON.parse(item.bytes) as Revision[]).find((item) => item.id === id)!;
@@ -22,8 +23,9 @@ const edit = (dataset: Dataset, id: string, change: (value: Revision) => void) =
 };
 const omit = (dataset: Dataset, id: string) => {
   for (const item of dataset.artifacts) {
-    item.bytes = JSON.stringify((JSON.parse(item.bytes) as Revision[]).filter((value) => value.id !== id));
-    item.sha256 = digest(item.bytes);
+    const rows = (JSON.parse(item.bytes) as Revision[]).filter((value) => value.id !== id);
+    item.bytes = JSON.stringify(rows); item.sha256 = digest(item.bytes);
+    for (const capture of dataset.captures) if (capture.artifactId === item.id) capture.parsedRows = rows.length;
   }
 };
 const bundle = (dataset = passingYardsFixture(false)) => buildPassingYardsBundle(dataset, request());
@@ -33,6 +35,19 @@ const unavailable = (dataset: Dataset, reason: string) => {
 };
 const playerChanges = (dataset: Dataset, id: string, values: Record<string, unknown>) => {
   edit(dataset, id, (value) => Object.assign(value.data, values));
+};
+const game = (number: number) => row(passingYardsFixture(false), "schedule-synthetic-game-" + number).data as ReturnType<typeof schedule>;
+const evidence = (id: string, number: number, evidenceKind: "participation-feed" | "official-inactive-list",
+  claim: "offensive-participant" | "inactive-or-dnp" | "zero-offensive-participation") =>
+  revision(id, "participation-evidence", { gameId: gameId(number), playerId: PLAYER, teamId: TEAM, evidenceKind, claim });
+const markOut = (dataset: Dataset, number: number) => {
+  // A confirmed inactive player has no usage row; the official list supplies the claim.
+  omit(dataset, "player-synthetic-game-" + number);
+  addCapture(dataset, "inactive-" + number, [evidence("inactive-" + number, number, "official-inactive-list", "inactive-or-dnp")]);
+};
+const replaceMarkers = (dataset: Dataset, number: number, at: string) => {
+  omit(dataset, "final-synthetic-game-" + number); omit(dataset, "terminal-synthetic-game-" + number);
+  addCapture(dataset, "markers-" + number + "-" + at, completionMarkers(game(number), at).map((value) => ({ ...value, id: value.id + "-" + at })), at);
 };
 
 describe("passing-yard application-data cutoff replay", () => {
@@ -45,12 +60,14 @@ describe("passing-yard application-data cutoff replay", () => {
     expect(result.player[1]).toMatchObject({ expectedGames: 5, attemptsSum: 110, passingYardsSum: 750 });
     expect(result.team![0]).toMatchObject({ attemptsSum: 119, passingYardsSum: 869 });
     expect(result.opponent![0]).toMatchObject({ attemptsSum: 100, passingYardsSum: 700, passingYardsPerAttempt: 7 });
-    expect(result.opponent![0].games.every((game) => game.teamId !== OPPONENT)).toBe(true);
+    expect(result.opponent![0].games.every((value) => value.teamId !== OPPONENT)).toBe(true);
     expect(result.dependencies.some((dep) => dep.observationId.startsWith("opponent-offense"))).toBe(false);
     expect(result.scheduledRestHours).toBe(168);
     expect(result.availability).toEqual({ injury: "unknown", depth: "unknown", participation: "future-unknown" });
     expect(result.quality).toEqual(expect.arrayContaining(["injury-unverified", "depth-unverified", "player-short-history"]));
+    expect(result.policies).toEqual({ completion: "event-completion-v1", participation: "participation-v1", availability: "availability-v1" });
     expect(result.modelValidated).toBe(false); expect(result.populationCoverage).toBe("unqualified");
+    expect(new Set(result.dependencies.map((dep) => dep.profileId))).toEqual(new Set([PROFILE]));
   });
   it("reproduces A after correction B and uses B only at a later cutoff", () => {
     const before = bundle(); const after = bundle(passingYardsFixture());
@@ -62,14 +79,14 @@ describe("passing-yard application-data cutoff replay", () => {
   });
   it.each([-1, 0, 1])("compares cutoff to availability and ingestion at %+d ms", (offset) => {
     const dataset = passingYardsFixture(false);
-    const capture = dataset.captures.find((value) => value.artifactId === "A-player-passing")!;
+    const capture = dataset.captures.find((value) => value.artifactId === "A-player-game-stats")!;
     capture.availableAt = capture.ingestedAt = new Date(instant(CUTOFF_A) + offset).toISOString();
     const result = bundle(dataset);
     expect(result.status).toBe(offset <= 0 ? "ready-inputs" : "unavailable-inputs");
   });
   it("does not backdate a late ingestion from a known publication date", () => {
     const dataset = passingYardsFixture(false);
-    const capture = dataset.captures.find((value) => value.artifactId === "A-player-passing")!;
+    const capture = dataset.captures.find((value) => value.artifactId === "A-player-game-stats")!;
     capture.publishedAt = "2026-10-06T12:00:00.000Z"; capture.publicationEvidence = "synthetic-publication-v1";
     capture.ingestedAt = CAPTURE_B;
     unavailable(dataset, "player-history-incomplete");
@@ -78,7 +95,7 @@ describe("passing-yard application-data cutoff replay", () => {
     const dataset = passingYardsFixture();
     for (const capture of dataset.captures.filter((value) => value.artifactId.startsWith("B-"))) capture.state = "incomplete";
     expect(buildPassingYardsBundle(dataset, request(CUTOFF_B)).player[0].passingYardsSum).toBe(700);
-    dataset.captures.find((value) => value.artifactId === "A-team-passing")!.state = "incomplete";
+    dataset.captures.find((value) => value.artifactId === "A-team-game-stats")!.state = "incomplete";
     unavailable(dataset, "opponent-history-incomplete");
   });
   it("is idempotent across duplicate captures and deterministic across capture/artifact ordering", () => {
@@ -98,7 +115,7 @@ describe("passing-yard application-data cutoff replay", () => {
   });
   it("never selects planted target-game outcomes or other season types/ranges", () => {
     const result = bundle();
-    expect(result.player.flatMap((summary) => summary.games).some((game) => game.gameId === TARGET)).toBe(false);
+    expect(result.player.flatMap((summary) => summary.games).some((value) => value.gameId === TARGET)).toBe(false);
     expect(result.excludedSchedule).toEqual([{ gameId: TARGET, reason: "target-game" }]);
     for (const id of [gameId(30), gameId(31), gameId(32)]) {
       expect(result.player[2].gameIds).not.toContain(id);
@@ -116,63 +133,88 @@ describe("passing-yard application-data cutoff replay", () => {
   it("keeps confirmed zero attempts in volume and refuses zero pooled denominators", () => {
     const dataset = passingYardsFixture(false);
     for (let i = 1; i <= 5; i++) playerChanges(dataset, "player-synthetic-game-" + i, { attempts: 0, passingYards: 0 });
+    // Zero usage is not participation evidence; an independent feed confirms it.
+    addCapture(dataset, "feed", [1, 2, 3, 4, 5].map((i) => evidence("feed-" + i, i, "participation-feed", "offensive-participant")));
     const result = unavailable(dataset, "player-zero-or-missing-denominator");
     expect(result.player[0]).toMatchObject({ observedGames: 4, excludedGames: 0, attemptsSum: 0, attemptsPerGame: 0, passingYardsPerAttempt: null });
   });
+  it("leaves a zero-usage game unresolved without independent participation evidence", () => {
+    const dataset = passingYardsFixture(false);
+    playerChanges(dataset, "player-synthetic-game-5", { attempts: 0, passingYards: 0 });
+    const result = unavailable(dataset, "player-history-incomplete");
+    expect(result.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "participation-unresolved" });
+  });
   it("treats blank as missing and never fills the newest gap with an older fifth game", () => {
     const dataset = passingYardsFixture(false);
-    playerChanges(dataset, "player-synthetic-game-5", { passingYards: null, missingReason: "source-blank" });
+    playerChanges(dataset, "player-synthetic-game-5", { passingYards: null, missing: { passingYards: "source-blank" } });
     const result = unavailable(dataset, "player-history-incomplete");
     expect(result.player[0]).toMatchObject({ expectedGames: 4, observedGames: 3, passingYardsSum: 400,
       exclusions: [{ gameId: PRIOR[4], reason: "source-blank" }] });
     expect(result.player[0].gameIds).not.toContain(PRIOR[0]);
   });
-  it.each(["missing", "unresolved"] as const)("does not substitute roster membership for %s participation", (state) => {
-    const dataset = passingYardsFixture(false); playerChanges(dataset, "participation-synthetic-game-5", { state });
-    if (state === "missing") omit(dataset, "participation-synthetic-game-5");
-    const result = unavailable(dataset, "player-history-incomplete");
-    expect(result.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "participation-" + state });
-  });
-  it.each(["missing", "unresolved"])("withholds %s completion without guessing elapsed game time", (state) => {
+  it("accepts positive usage as participation but withholds it when independent evidence disagrees", () => {
     const dataset = passingYardsFixture(false);
-    if (state === "missing") omit(dataset, "complete-synthetic-game-5");
-    else playerChanges(dataset, "complete-synthetic-game-5", { state: "unresolved", bound: null, boundKind: null });
+    expect(bundle(dataset).status).toBe("ready-inputs");
+    addCapture(dataset, "inactive-conflict", [evidence("inactive-conflict", 5, "official-inactive-list", "inactive-or-dnp")]);
+    const result = unavailable(dataset, "player-history-incomplete");
+    expect(result.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "participation-conflicting" });
+  });
+  it.each([
+    ["scheduled", ["final", "terminal"]],
+    ["in-progress", ["terminal"]],
+  ] as const)("withholds %s completion without guessing elapsed game time", (state, removed) => {
+    const dataset = passingYardsFixture(false);
+    for (const prefix of removed) omit(dataset, prefix + "-synthetic-game-5");
     const result = unavailable(dataset, "player-history-incomplete");
     expect(result.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-" + state });
   });
-  it.each([-1, 0, 1])("requires completion strictly before cutoff (%+d ms)", (offset) => {
+  it.each(["suspension-notice", "postponement-notice"] as const)("treats a final status contradicted by a %s as conflicting", (markerType) => {
     const dataset = passingYardsFixture(false);
-    const original = row(dataset, "complete-synthetic-game-5") as Revision<"completion">;
-    addCapture(dataset, "cutoff-completion", [revision("cutoff-completion", "completion", {
-      ...original.data, bound: new Date(instant(CUTOFF_A) + offset).toISOString(), boundKind: "actual-end",
-    }, original.id)], CUTOFF_A);
-    expect(bundle(dataset).status).toBe(offset < 0 ? "ready-inputs" : "unavailable-inputs");
-  });
-  it("refuses a completion bound after capture or before kickoff", () => {
-    for (const bound of ["2026-10-07T12:00:00.001Z", "2026-10-04T17:00:00.000Z"]) {
-      const dataset = passingYardsFixture(false); playerChanges(dataset, "complete-synthetic-game-5", { bound });
-      unavailable(dataset, "player-history-incomplete");
-    }
-  });
-  it("does not backdate first-observed completion from an unqualified earlier timestamp", () => {
-    const dataset = passingYardsFixture(false);
-    playerChanges(dataset, "complete-synthetic-game-5", { bound: "2026-10-06T12:00:00.000Z" });
+    addCapture(dataset, "stopped", [revision("stopped", "event-state-marker", { gameId: PRIOR[4], markerType, markerValue: "notice", terminalPlayTimeOfDay: null })]);
     const result = unavailable(dataset, "player-history-incomplete");
-    expect(result.player[0].exclusions[0].reason).toBe("completion-bound-unverified");
+    expect(result.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-conflicting" });
+  });
+  it("keeps a suspended game provisional and never reads its partial totals as final", () => {
+    const dataset = passingYardsFixture(false);
+    omit(dataset, "final-synthetic-game-5"); omit(dataset, "terminal-synthetic-game-5");
+    addCapture(dataset, "suspended", [revision("suspended", "event-state-marker", { gameId: PRIOR[4], markerType: "suspension-notice", markerValue: "suspended", terminalPlayTimeOfDay: null })]);
+    const result = unavailable(dataset, "player-history-incomplete");
+    expect(result.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-suspended" });
+  });
+  it.each([-1, 0, 1])("requires the completion markers' capture strictly before cutoff (%+d ms)", (offset) => {
+    const dataset = passingYardsFixture(false);
+    replaceMarkers(dataset, 5, new Date(instant(CUTOFF_A) + offset).toISOString());
+    const result = bundle(dataset);
+    expect(result.status).toBe(offset < 0 ? "ready-inputs" : "unavailable-inputs");
+    if (offset === 0) expect(result.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-not-before-cutoff" });
+  });
+  it("refuses completion evidence first captured before kickoff", () => {
+    const dataset = passingYardsFixture(false); replaceMarkers(dataset, 5, "2026-10-04T17:00:00.000Z");
+    unavailable(dataset, "player-history-incomplete");
+  });
+  it("dates completion at the later of the final status and its first confirming marker", () => {
+    const dataset = passingYardsFixture(false);
+    omit(dataset, "terminal-synthetic-game-5");
+    addCapture(dataset, "late-terminal", [completionMarkers(game(5), CAPTURE_B)[1]], CAPTURE_B);
+    expect(unavailable(dataset, "player-history-incomplete").player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-in-progress" });
+    expect(buildPassingYardsBundle(dataset, request(CUTOFF_B)).status).toBe("ready-inputs");
   });
   it.each(["schedule-synthetic-game-10", "member-synthetic-game-10"])("reports missing target dependency %s explicitly", (id) => {
     const dataset = passingYardsFixture(false); omit(dataset, id);
     const result = unavailable(dataset, id.startsWith("schedule") ? "target-schedule-missing" : "target-membership-missing");
     expect(result.player).toEqual([]);
   });
-  it("withholds excluded players and cutoff-known identity conflicts", () => {
+  it("withholds an explicit Out report and cutoff-known identity conflicts", () => {
     const dataset = passingYardsFixture(false);
-    playerChanges(dataset, "availability-target", { injury: "excluded" }); unavailable(dataset, "player-excluded");
-    playerChanges(dataset, "availability-target", { injury: "unknown" });
-    const membership = row(dataset, "member-synthetic-game-10") as Revision<"membership">;
-    addCapture(dataset, "conflicting-membership", [revision("conflicting-member", "membership", { ...membership.data, teamId: OPPONENT, rawTeam: "DAL" })]);
+    playerChanges(dataset, "availability-target", { rawReportStatus: "Out" }); unavailable(dataset, "player-excluded");
+    playerChanges(dataset, "availability-target", { rawReportStatus: "Questionable", rawDepthRank: 1 });
+    const usable = bundle(dataset);
+    expect(usable.availability).toEqual({ injury: "unknown", depth: "observed", participation: "future-unknown" });
+    expect(usable.quality).toContain("injury-unverified"); expect(usable.quality).not.toContain("depth-unverified");
+    const original = row(dataset, "member-synthetic-game-10") as Revision<"membership">;
+    addCapture(dataset, "conflicting-membership", [revision("conflicting-member", "membership", { ...original.data, teamId: OPPONENT, rawTeam: "DAL" })]);
     const result = unavailable(dataset, "target-membership-ambiguous");
-    expect(result.dependencies.map((value) => value.observationId)).toEqual(expect.arrayContaining([membership.id, "conflicting-member"]));
+    expect(result.dependencies.map((value) => value.observationId)).toEqual(expect.arrayContaining([original.id, "conflicting-member"]));
   });
   it.each([{ rawTeam: "DAL" }, { effectiveTo: "2026-10-11T17:00:00.000Z" }, { position: "WR" }])("requires raw and dated target membership: %j", (values) => {
     const dataset = passingYardsFixture(false); playerChanges(dataset, "member-synthetic-game-10", values);
@@ -182,14 +224,11 @@ describe("passing-yard application-data cutoff replay", () => {
     const dataset = passingYardsFixture(false);
     const former = schedule(40, "2026-10-05T17:00:00.000Z", "nfl:team:BUF", "nfl:team:NE");
     addCapture(dataset, "trade-game", [revision("trade-game", "schedule", former)]);
-    const member = row(dataset, "member-synthetic-game-5") as Revision<"membership">;
-    addCapture(dataset, "trade-member", [revision("trade-member", "membership", { ...member.data, gameId: former.gameId, teamId: former.homeTeamId, rawTeam: "BUF",
-      effectiveFrom: "2026-10-05T00:00:00.000Z", effectiveTo: "2026-10-06T00:00:00.000Z" })]);
-    addCapture(dataset, "trade-completion", [revision("trade-completion", "completion", { gameId: former.gameId, state: "confirmed", bound: CAPTURE_A, boundKind: "completion-observed-at", evidenceVersion: "synthetic-complete-v1" })]);
-    addCapture(dataset, "trade-participation", [revision("trade-participation", "participation", { gameId: former.gameId, playerId: PLAYER, state: "confirmed", evidenceVersion: "synthetic-offense-v1" })]);
-    const base = { gameId: former.gameId, rawGameId: former.rawGameId, teamId: former.homeTeamId, rawTeam: "BUF", season: 2026, seasonType: "REG" as const, attempts: 10, passingYards: 60, missingReason: null };
-    addCapture(dataset, "trade-player", [revision("trade-player", "player-passing", { ...base, playerId: PLAYER, rawPlayerId: PLAYER })]);
-    addCapture(dataset, "trade-team", [revision("trade-team", "team-passing", base)]);
+    addCapture(dataset, "trade-member", [revision("trade-member", "membership", membership(former, { teamId: former.homeTeamId, rawTeam: "BUF",
+      effectiveFrom: "2026-10-05T00:00:00.000Z", effectiveTo: "2026-10-06T00:00:00.000Z" }))]);
+    addCapture(dataset, "trade-completion", completionMarkers(former));
+    addCapture(dataset, "trade-player", [revision("trade-player", "player-game-stats", playerStats(former, 10, 60, former.homeTeamId, "BUF"))]);
+    addCapture(dataset, "trade-team", [revision("trade-team", "team-game-stats", teamStats(former, former.homeTeamId, "BUF", 10, 60))]);
     addCapture(dataset, "trade-coverage", [revision("trade-coverage", "schedule-coverage", coverage(former.homeTeamId, [gameId(20), former.gameId]))]);
     const result = bundle(dataset); expect(result.status).toBe("ready-inputs");
     expect(result.player[0].gameIds[0]).toBe(former.gameId);
@@ -213,7 +252,7 @@ describe("passing-yard application-data cutoff replay", () => {
     unavailable(dataset, "opponent-history-incomplete");
     const reduced = buildPassingYardsBundle(dataset, { ...request(), candidate: "stats-v1:player_pass_yds" });
     expect(reduced.status).toBe("ready-inputs"); expect(reduced.team).toBeNull(); expect(reduced.opponent).toBeNull();
-    expect(reduced.dependencies.some((value) => value.kind === "team-passing")).toBe(false);
+    expect(reduced.dependencies.some((value) => value.kind === "team-game-stats")).toBe(false);
   });
   it("refuses mismatched raw stats identity and impossible paired attempt counts", () => {
     const dataset = passingYardsFixture(false); playerChanges(dataset, "player-synthetic-game-5", { rawGameId: "wrong-game" });
@@ -225,16 +264,16 @@ describe("passing-yard application-data cutoff replay", () => {
     const dataset = passingYardsFixture(false); playerChanges(dataset, "schedule-synthetic-game-4", { kickoff: "2026-10-04T17:00:00.000Z" });
     unavailable(dataset, "player-game-order-ambiguous");
   });
-  it("requires a pregame target and does not treat confirmed target completion as a prior input", () => {
+  it("requires a pregame target and does not treat target completion markers as a prior input", () => {
     const dataset = passingYardsFixture(false); playerChanges(dataset, "schedule-synthetic-game-10", { kickoff: CUTOFF_A });
     unavailable(dataset, "target-not-pregame");
     playerChanges(dataset, "schedule-synthetic-game-10", { kickoff: "2026-10-11T17:00:00.000Z" });
-    addCapture(dataset, "target-complete", [revision("target-complete", "completion", { gameId: TARGET, state: "confirmed", bound: CAPTURE_A, boundKind: "completion-observed-at", evidenceVersion: "synthetic-v1" })]);
+    addCapture(dataset, "target-complete", completionMarkers(game(10)));
     unavailable(dataset, "target-started-or-completed");
   });
 });
 
-describe("strict source and correction contracts", () => {
+describe("strict source, rights and correction contracts", () => {
   it.each(Object.keys(RAW_ALLOWLISTS) as (keyof typeof RAW_ALLOWLISTS)[])("executes %s raw allowlist and refuses forbidden, duplicate, or missing fields", (feed) => {
     const allowed = [...RAW_ALLOWLISTS[feed]];
     expect(() => validateRawHeader(feed, allowed, [allowed[0]])).not.toThrow();
@@ -244,25 +283,31 @@ describe("strict source and correction contracts", () => {
     expect(() => validateRawHeader(feed, [...allowed, allowed[0]], [])).toThrow("raw-header-refused");
     expect(() => validateRawHeader(feed, allowed.slice(1), [allowed[0]])).toThrow("raw-header-refused");
   });
-  it("verifies bytes before replay and refuses external adapters or extra payload fields", () => {
+  it("verifies bytes before replay and refuses unregistered profiles or extra payload fields", () => {
     const dataset = passingYardsFixture(false); dataset.artifacts[0].bytes += " ";
     expect(() => bundle(dataset)).toThrow("artifact-integrity-failed");
     dataset.artifacts[0].sha256 = digest(dataset.artifacts[0].bytes);
-    Object.assign(dataset.artifacts[0], { source: "nflverse" }); expect(() => bundle(dataset)).toThrow("unqualified-source-adapter");
-    Object.assign(dataset.artifacts[0], { source: "synthetic" });
-    Object.assign(dataset.artifacts[0], { parserVersion: "unregistered-parser" }); expect(() => bundle(dataset)).toThrow("unqualified-source-adapter");
-    Object.assign(dataset.artifacts[0], { parserVersion: "synthetic-json-v1" });
+    Object.assign(dataset.artifacts[0], { profileId: "unregistered-profile" }); expect(() => bundle(dataset)).toThrow("profile-missing");
+    Object.assign(dataset.artifacts[0], { profileId: PROFILE });
     playerChanges(dataset, "player-synthetic-game-5", { fantasy_points: 20 }); expect(() => bundle(dataset)).toThrow("schema-fields-refused");
   });
-  it.each([{ attempts: -1 }, { attempts: 1.2 }, { passingYards: "0" }, { passingYards: null, missingReason: null }])("refuses malformed numeric/missing values %j", (values) => {
+  it.each([{ attempts: -1 }, { attempts: 1.2 }, { passingYards: "0" }, { passingYards: null }, { completions: 41 },
+    { missing: { attempts: "source-blank" } }])("refuses malformed numeric, missing or inconsistent values %j", (values) => {
     const dataset = passingYardsFixture(false); playerChanges(dataset, "player-synthetic-game-5", values);
     expect(() => bundle(dataset)).toThrow();
   });
-  it("refuses unknown GSIS/team identity and unqualified player bridges", () => {
+  it("refuses unknown GSIS and team identities", () => {
     const dataset = passingYardsFixture(false);
     expect(() => buildPassingYardsBundle(dataset, { ...request(), playerId: "player-name" })).toThrow("invalid-player-identity");
-    playerChanges(dataset, "member-synthetic-game-10", { rawPlayerId: "00-0000002" }); expect(() => bundle(dataset)).toThrow("unqualified-player-bridge");
-    playerChanges(dataset, "member-synthetic-game-10", { rawPlayerId: PLAYER, teamId: "nfl:team:unknown" }); expect(() => bundle(dataset)).toThrow("invalid-team-identity");
+    playerChanges(dataset, "member-synthetic-game-10", { teamId: "nfl:team:unknown" }); expect(() => bundle(dataset)).toThrow("invalid-team-identity");
+    playerChanges(dataset, "member-synthetic-game-10", { teamId: "nfl:team:LAR" }); expect(() => bundle(dataset)).toThrow("invalid-team-identity");
+  });
+  it("validates Eastern schedule strings against the stored kickoff instant", () => {
+    const dataset = passingYardsFixture(false);
+    playerChanges(dataset, "schedule-synthetic-game-10", { rawGameday: "2026-10-11", rawGametime: "13:00" });
+    expect(bundle(dataset).status).toBe("ready-inputs");
+    playerChanges(dataset, "schedule-synthetic-game-10", { rawGametime: "13:05" }); expect(() => bundle(dataset)).toThrow("source-kickoff-refused");
+    playerChanges(dataset, "schedule-synthetic-game-10", { rawGametime: null }); expect(() => bundle(dataset)).toThrow("source-kickoff-refused");
   });
   it("refuses changed observation IDs, missing predecessors and backward corrections", () => {
     const dataset = passingYardsFixture();
@@ -274,41 +319,90 @@ describe("strict source and correction contracts", () => {
     expect(bundle(missing)).toEqual(bundle());
     expect(() => validateDataset(missing)).toThrow("invalid-correction-lineage");
     expect(() => buildPassingYardsBundle(missing, request(CUTOFF_B))).toThrow("invalid-correction-lineage");
-    const backward = passingYardsFixture(); backward.captures.find((value) => value.artifactId === "B-player")!.capturedAt = "2026-10-06T12:00:00.000Z";
-    backward.captures.find((value) => value.artifactId === "B-player")!.availableAt = "2026-10-06T12:00:00.000Z";
-    backward.captures.find((value) => value.artifactId === "B-player")!.ingestedAt = "2026-10-06T12:00:00.000Z";
+    const backward = passingYardsFixture(); const capture = backward.captures.find((value) => value.artifactId === "B-player")!;
+    capture.capturedAt = capture.availableAt = capture.ingestedAt = "2026-10-06T12:00:00.000Z";
     expect(() => bundle(backward)).toThrow("invalid-correction-lineage");
   });
-  it("refuses correction cycles and treats branching heads as ambiguous", () => {
+  it("refuses correction cycles and branching chains instead of choosing a head", () => {
     const dataset = passingYardsFixture(false);
     edit(dataset, "player-synthetic-game-5", (value) => { value.predecessorId = "player-synthetic-game-5"; value.correctionReason = "cycle"; });
     expect(() => bundle(dataset)).toThrow("cyclic-correction-lineage");
-    const branch = passingYardsFixture(); const original = row(branch, "player-synthetic-game-5") as Revision<"player-passing">;
-    addCapture(branch, "branch", [revision("branch-player", "player-passing", { ...original.data, passingYards: 310 }, original.id)], CAPTURE_B);
-    expect(buildPassingYardsBundle(branch, request(CUTOFF_B)).status).toBe("unavailable-inputs");
+    const branch = passingYardsFixture(); const original = row(branch, "player-synthetic-game-5") as Revision<"player-game-stats">;
+    addCapture(branch, "branch", [revision("branch-player", "player-game-stats", { ...original.data, passingYards: 310 }, original.id)], CAPTURE_B);
+    expect(bundle(branch)).toEqual(bundle());
+    expect(() => buildPassingYardsBundle(branch, request(CUTOFF_B))).toThrow("correction-branch-refused");
+  });
+  it("keeps two providers' claims as separate chains: disagreement is ambiguous and never a correction", () => {
+    const second = "synthetic-second-v1";
+    const dataset = passingYardsFixture(false); dataset.profiles.push(profile(second)); dataset.rightsDecisions.push(rights(second));
+    const original = row(dataset, "player-synthetic-game-5") as Revision<"player-game-stats">;
+    addCapture(dataset, "second-source", [revision("second-player-5", "player-game-stats", { ...original.data, passingYards: 305 })], CAPTURE_A, second);
+    const result = unavailable(dataset, "player-history-incomplete");
+    expect(result.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "player-stats-ambiguous" });
+    const crossed = passingYardsFixture(false); crossed.profiles.push(profile(second)); crossed.rightsDecisions.push(rights(second));
+    addCapture(crossed, "crossed", [revision("crossed-player-5", "player-game-stats", { ...original.data, passingYards: 305 }, original.id)], CAPTURE_B, second);
+    expect(() => buildPassingYardsBundle(crossed, request(CUTOFF_B))).toThrow("invalid-correction-lineage");
+  });
+  it("authorizes publication only with rights known when the bytes were captured", () => {
+    const none = passingYardsFixture(false); none.rightsDecisions = [];
+    expect(() => validateDataset(none)).toThrow("rights-not-in-force");
+    const backdated = passingYardsFixture(false); backdated.rightsDecisions = [rights(PROFILE, { decidedAt: CAPTURE_B })];
+    expect(() => validateDataset(backdated)).toThrow("rights-not-in-force");
+    const trial = passingYardsFixture(false); trial.rightsDecisions = [rights(PROFILE, { allowedUses: ["adapter-testing"] })];
+    expect(() => validateDataset(trial)).toThrow("rights-not-in-force");
+  });
+  it("blocks current use after a later revocation without rewriting the historical authorization", () => {
+    const dataset = passingYardsFixture(false);
+    dataset.rightsDecisions.push(rights(PROFILE, { id: "revoked", predecessorId: "rights-" + PROFILE, allowedUses: [],
+      effectiveFrom: "2026-10-09T12:00:00.000Z", decidedAt: "2026-10-09T12:00:00.000Z", evidenceKind: "synthetic" }));
+    expect(() => validateDataset(dataset)).not.toThrow();
+    expect(bundle(dataset).status).toBe("ready-inputs");
+    const now = buildPassingYardsBundle(dataset, { ...request(), computedAt: "2026-10-10T00:00:00.000Z" });
+    expect(now.status).toBe("unavailable-inputs"); expect(now.reasons).toContain("rights-not-in-force");
+  });
+  it("refuses branching, cross-profile and out-of-order rights chains", () => {
+    const branch = passingYardsFixture(false);
+    branch.rightsDecisions.push(rights(PROFILE, { id: "a", predecessorId: "rights-" + PROFILE }), rights(PROFILE, { id: "b", predecessorId: "rights-" + PROFILE }));
+    expect(() => validateDataset(branch)).toThrow("rights-chain-branch-refused");
+    const crossed = passingYardsFixture(false); crossed.profiles.push(profile("synthetic-second-v1"));
+    crossed.rightsDecisions.push(rights("synthetic-second-v1", { id: "other", predecessorId: "rights-" + PROFILE }));
+    expect(() => validateDataset(crossed)).toThrow("rights-predecessor-profile-refused");
+    const order = passingYardsFixture(false);
+    order.rightsDecisions.push(rights(PROFILE, { id: "earlier", predecessorId: "rights-" + PROFILE, decidedAt: "2025-01-01T00:00:00.000Z" }));
+    expect(() => validateDataset(order)).toThrow("rights-decision-order-refused");
+  });
+  it("never lets a synthetic profile claim public display or a real profile claim synthetic evidence", () => {
+    const display = passingYardsFixture(false); display.rightsDecisions = [rights(PROFILE, { allowedUses: ["internal-research", "public-display"] })];
+    expect(() => validateDataset(display)).toThrow("synthetic-rights-refused");
+    const real = passingYardsFixture(false); real.profiles = [{ ...profile(), purpose: "source" }];
+    expect(() => validateDataset(real)).toThrow("synthetic-rights-refused");
   });
   it("keeps later membership correction from resolving earlier ambiguity", () => {
     const dataset = passingYardsFixture(false); const original = row(dataset, "member-synthetic-game-10") as Revision<"membership">;
-    addCapture(dataset, "identity-B", [revision("member-B", "membership", { ...original.data, teamId: OPPONENT, rawTeam: "DAL", mappingVersion: "synthetic-identity-v2" }, original.id)], CAPTURE_B);
+    addCapture(dataset, "identity-B", [revision("member-B", "membership", { ...original.data, teamId: OPPONENT, rawTeam: "DAL" }, original.id)], CAPTURE_B);
     expect(bundle(dataset).teamId).toBe(TEAM);
     expect(buildPassingYardsBundle(dataset, request(CUTOFF_B)).teamId).toBe(OPPONENT);
   });
-  it("refuses invalid timestamps, inconsistent publication/capture identity, and oversized artifacts", () => {
+  it("refuses invalid timestamps, inconsistent publication/capture identity, incomplete publication and oversized artifacts", () => {
     for (const date of ["2026-10-08", "2026-02-30T00:00:00.000Z", "2026-10-08T12:00:00Z"]) expect(() => instant(date)).toThrow("invalid-utc-instant");
     const dataset = passingYardsFixture(false); dataset.captures[0].publishedAt = CAPTURE_B; dataset.captures[0].publicationEvidence = "synthetic";
     expect(() => validateDataset(dataset)).toThrow("publication-time-refused");
     dataset.captures[0].publishedAt = null; dataset.captures[0].publicationEvidence = null;
     dataset.captures.push({ ...dataset.captures[0], ingestedAt: CAPTURE_B }); expect(() => validateDataset(dataset)).toThrow("capture-id-conflict");
-    dataset.captures.pop(); dataset.artifacts[0].bytes = " ".repeat(1_000_001); dataset.artifacts[0].sha256 = digest(dataset.artifacts[0].bytes);
+    dataset.captures.pop(); dataset.captures[0].parserSucceeded = false; expect(() => validateDataset(dataset)).toThrow("incomplete-capture-published");
+    dataset.captures[0].parserSucceeded = true; dataset.captures[0].parsedRows += 1; expect(() => validateDataset(dataset)).toThrow("capture-row-count-mismatch");
+    dataset.captures[0].parsedRows -= 1;
+    dataset.artifacts[0].bytes = " ".repeat(1_000_001); dataset.artifacts[0].sha256 = digest(dataset.artifacts[0].bytes);
     expect(() => validateDataset(dataset)).toThrow("artifact-integrity-failed");
   });
-  it("refuses cross-kind artifacts and retains exact raw bytes", () => {
-    const dataset = passingYardsFixture(false);
-    dataset.artifacts.push(artifact("bad-feed", "schedule" as Kind, [row(dataset, "member-synthetic-game-10")]));
-    expect(() => validateDataset(dataset)).toThrow("artifact-feed-mismatch");
+  it("refuses evidence kinds outside the artifact profile's registration", () => {
+    const dataset = passingYardsFixture(false); dataset.profiles.push({ ...profile("synthetic-schedule-v1"), evidenceKinds: ["schedule"] });
+    dataset.rightsDecisions.push(rights("synthetic-schedule-v1"));
+    dataset.artifacts.push(artifact("bad-kind", [row(dataset, "member-synthetic-game-10")], "synthetic-schedule-v1"));
+    expect(() => validateDataset(dataset)).toThrow("artifact-kind-not-in-profile");
     expect(bundle(dataset)).toEqual(bundle());
-    dataset.captures.push({ ...dataset.captures[0], id: "bad-feed-capture", artifactId: "bad-feed" });
-    expect(() => createReplay(dataset, CUTOFF_A)).toThrow("artifact-feed-mismatch");
+    dataset.captures.push({ ...dataset.captures[0], id: "bad-kind-capture", artifactId: "bad-kind", parsedRows: 1 });
+    expect(() => createReplay(dataset, CUTOFF_A, request().computedAt)).toThrow("artifact-kind-not-in-profile");
   });
 });
 
@@ -318,20 +412,12 @@ describe("feature-review regressions", () => {
     const former = schedule(40, "2025-12-07T17:00:00.000Z", "nfl:team:BUF", "nfl:team:NE", 2025);
     const missing = schedule(41, "2025-12-14T17:00:00.000Z", former.homeTeamId, former.awayTeamId, 2025);
     addCapture(dataset, "former-schedules", [revision("former-game", "schedule", former), revision("former-gap", "schedule", missing)]);
-    const original = row(dataset, "member-synthetic-game-5") as Revision<"membership">;
-    const member = revision("former-member", "membership", { ...original.data, gameId: former.gameId,
-      teamId: former.homeTeamId, rawTeam: "BUF", effectiveFrom: "2025-09-01T00:00:00.000Z", effectiveTo: "2025-12-31T00:00:00.000Z" });
+    const member = revision("former-member", "membership", membership(former, { teamId: former.homeTeamId, rawTeam: "BUF",
+      effectiveFrom: "2025-09-01T00:00:00.000Z", effectiveTo: "2025-12-31T00:00:00.000Z" }));
     addCapture(dataset, member.id, [member]);
-    addCapture(dataset, "former-completion", [revision("former-completion", "completion", {
-      gameId: former.gameId, state: "confirmed", bound: CAPTURE_A, boundKind: "completion-observed-at", evidenceVersion: "synthetic-v1",
-    })]);
-    addCapture(dataset, "former-participation", [revision("former-participation", "participation", {
-      gameId: former.gameId, playerId: PLAYER, state: "confirmed", evidenceVersion: "synthetic-v1",
-    })]);
-    const stats = { gameId: former.gameId, rawGameId: former.rawGameId, teamId: former.homeTeamId, rawTeam: "BUF",
-      season: former.season, seasonType: former.seasonType, attempts: 10, passingYards: 60, missingReason: null };
-    addCapture(dataset, "former-player", [revision("former-player", "player-passing", { ...stats, playerId: PLAYER, rawPlayerId: PLAYER })]);
-    addCapture(dataset, "former-team", [revision("former-team", "team-passing", stats)]);
+    addCapture(dataset, "former-completion", completionMarkers(former));
+    addCapture(dataset, "former-player", [revision("former-player", "player-game-stats", playerStats(former, 10, 60, former.homeTeamId, "BUF"))]);
+    addCapture(dataset, "former-team", [revision("former-team", "team-game-stats", teamStats(former, former.homeTeamId, "BUF", 10, 60))]);
     addCapture(dataset, "former-coverage", [revision("former-coverage", "schedule-coverage", coverage(former.homeTeamId, [gameId(20), former.gameId, missing.gameId]))]);
     return { dataset, former, missing, member };
   };
@@ -363,15 +449,11 @@ describe("feature-review regressions", () => {
   it("uses a former-team range only to retain a gap, never as per-game membership or participation", () => {
     const { dataset, missing, member } = formerTeamGapFixture();
     addCapture(dataset, "missing-member", [revision("missing-member", "membership", { ...member.data, gameId: missing.gameId })]);
-    addCapture(dataset, "missing-completion", [revision("missing-completion", "completion", {
-      gameId: missing.gameId, state: "confirmed", bound: CAPTURE_A, boundKind: "completion-observed-at", evidenceVersion: "synthetic-v1",
-    })]);
-    const stats = { gameId: missing.gameId, rawGameId: missing.rawGameId, teamId: missing.homeTeamId, rawTeam: "BUF",
-      season: missing.season, seasonType: missing.seasonType, attempts: 0, passingYards: 0, missingReason: null };
-    addCapture(dataset, "missing-player", [revision("missing-player", "player-passing", { ...stats, playerId: PLAYER, rawPlayerId: PLAYER })]);
+    addCapture(dataset, "missing-completion", completionMarkers(missing));
+    addCapture(dataset, "missing-player", [revision("missing-player", "player-game-stats", playerStats(missing, 0, 0, missing.homeTeamId, "BUF"))]);
     const result = buildPassingYardsBundle(dataset, { ...request(), candidate: "stats-v1:player_pass_yds" });
     expect(result.status).toBe("unavailable-inputs");
-    expect(result.player[1].exclusions).toContainEqual({ gameId: missing.gameId, reason: "participation-missing" });
+    expect(result.player[1].exclusions).toContainEqual({ gameId: missing.gameId, reason: "participation-unresolved" });
   });
   it("uses a corrected former-team range only at the later cutoff", () => {
     const { dataset, member, missing } = formerTeamGapFixture();
@@ -434,7 +516,7 @@ describe("feature-review regressions", () => {
   it("applies byte/capture bounds to the visible replay rather than the later repository", () => {
     const dataset = passingYardsFixture(false);
     for (let i = 0; i < 260; i++) {
-      addCapture(dataset, "future-" + i, [revision("future-" + i, "completion", { gameId: gameId(90), state: "unresolved", bound: null, boundKind: null, evidenceVersion: "synthetic-v1" })], CAPTURE_B);
+      addCapture(dataset, "future-" + i, [revision("future-" + i, "event-state-marker", { gameId: gameId(90), markerType: "suspension-notice", markerValue: "notice-" + i, terminalPlayTimeOfDay: null }, i ? "future-" + (i - 1) : null)], CAPTURE_B);
     }
     expect(bundle(dataset)).toEqual(bundle());
     expect(() => validateDataset(dataset)).toThrow("dataset-bounds-refused");
@@ -452,9 +534,7 @@ describe("feature-review regressions", () => {
   it("measures POST target rest from the preceding REG game and keeps history windows separate", () => {
     const dataset = passingYardsFixture(false);
     playerChanges(dataset, "schedule-synthetic-game-10", { seasonType: "POST" });
-    addCapture(dataset, "old-playoff-complete", [revision("old-playoff-complete", "completion", {
-      gameId: gameId(30), state: "confirmed", bound: CAPTURE_A, boundKind: "completion-observed-at", evidenceVersion: "synthetic-v1",
-    })]);
+    addCapture(dataset, "old-playoff-complete", completionMarkers(schedule(30, "2026-01-11T17:00:00.000Z", TEAM, OPPONENT, 2025, "POST")));
     const result = bundle(dataset);
     expect(result.scheduledRestHours).toBe(168);
     expect(result.player[0].gameIds).toEqual([gameId(30)]);
@@ -469,7 +549,7 @@ describe("feature-review regressions", () => {
   it("does not use confirmed absence to resolve an ambiguous chronological order", () => {
     const dataset = passingYardsFixture(false);
     playerChanges(dataset, "schedule-synthetic-game-4", { kickoff: "2026-10-04T17:00:00.000Z" });
-    playerChanges(dataset, "participation-synthetic-game-4", { state: "absent" });
+    markOut(dataset, 4);
     unavailable(dataset, "player-game-order-ambiguous");
   });
   it.each(["stats-v1:player_pass_yds", "player-opponent-v1:player_pass_yds"] as const)("withholds %s for an intervening team game without inferring future participation", (candidate) => {
@@ -490,13 +570,10 @@ describe("feature-review regressions", () => {
     addExpectedGame(dataset, TEAM, upcoming.gameId);
     expect(unavailable(dataset, "intervening-team-game").scheduledRestHours).toBeNull();
     const at = "2026-10-09T04:00:00.000Z";
-    const member = row(dataset, "member-synthetic-game-5") as Revision<"membership">;
-    addCapture(dataset, "upcoming-member", [revision("upcoming-member", "membership", { ...member.data, gameId: upcoming.gameId })], at);
-    addCapture(dataset, "upcoming-participant", [revision("upcoming-participant", "participation", { gameId: upcoming.gameId, playerId: PLAYER, state: "confirmed", evidenceVersion: "synthetic-v1" })], at);
-    addCapture(dataset, "upcoming-complete", [revision("upcoming-complete", "completion", { gameId: upcoming.gameId, state: "confirmed", bound: at, boundKind: "completion-observed-at", evidenceVersion: "synthetic-v1" })], at);
-    const stats = { gameId: upcoming.gameId, rawGameId: upcoming.rawGameId, teamId: TEAM, rawTeam: "PHI", season: 2026, seasonType: "REG" as const, attempts: 20, passingYards: 120, missingReason: null };
-    addCapture(dataset, "upcoming-player", [revision("upcoming-player", "player-passing", { ...stats, playerId: PLAYER, rawPlayerId: PLAYER })], at);
-    addCapture(dataset, "upcoming-team", [revision("upcoming-team", "team-passing", stats)], at);
+    addCapture(dataset, "upcoming-member", [revision("upcoming-member", "membership", membership(upcoming))], at);
+    addCapture(dataset, "upcoming-complete", completionMarkers(upcoming, at), at);
+    addCapture(dataset, "upcoming-player", [revision("upcoming-player", "player-game-stats", playerStats(upcoming, 20, 120))], at);
+    addCapture(dataset, "upcoming-team", [revision("upcoming-team", "team-game-stats", teamStats(upcoming, TEAM, "PHI", 20, 120))], at);
     const result = buildPassingYardsBundle(dataset, { ...request("2026-10-09T05:00:00.000Z"), computedAt: "2026-10-10T00:00:00.000Z" });
     expect(result.status).toBe("ready-inputs"); expect(result.scheduledRestHours).toBe(64.75);
     expect(result.player[0].gameIds[0]).toBe(upcoming.gameId);
@@ -516,7 +593,7 @@ describe("feature-review regressions", () => {
   });
   it("detects an omitted whole game from independent coverage even when all its other records are absent", () => {
     const dataset = passingYardsFixture(false);
-    for (const prefix of ["schedule", "member", "participation", "complete", "player", "team"]) omit(dataset, prefix + "-synthetic-game-5");
+    for (const prefix of ["schedule", "member", "final", "terminal", "player", "team"]) omit(dataset, prefix + "-synthetic-game-5");
     expect(unavailable(dataset, "schedule-row-missing").scheduleCoverage.missingGameIds).toEqual([PRIOR[4]]);
   });
   it.each(["missing", "incomplete", "late", "ambiguous"])("requires explicit %s schedule coverage rather than guessing from week numbers", (state) => {
@@ -543,10 +620,9 @@ describe("feature-review regressions", () => {
     unavailable(dataset, "schedule-coverage-mismatch");
   });
   it("binds the evidence that causes a missing former-team scope or coverage conflict", () => {
-    const dataset = passingYardsFixture(false); const game = schedule(40, "2026-10-05T17:00:00.000Z", "nfl:team:BUF", "nfl:team:NE");
-    addCapture(dataset, "former-game", [revision("former-game", "schedule", game)]);
-    const prior = row(dataset, "member-synthetic-game-5") as Revision<"membership">;
-    addCapture(dataset, "former-member", [revision("former-member", "membership", { ...prior.data, gameId: game.gameId, teamId: game.homeTeamId, rawTeam: "BUF" })]);
+    const dataset = passingYardsFixture(false); const former = schedule(40, "2026-10-05T17:00:00.000Z", "nfl:team:BUF", "nfl:team:NE");
+    addCapture(dataset, "former-game", [revision("former-game", "schedule", former)]);
+    addCapture(dataset, "former-member", [revision("former-member", "membership", membership(former, { teamId: former.homeTeamId, rawTeam: "BUF" }))]);
     const result = unavailable(dataset, "schedule-coverage-missing");
     expect(result.dependencies.map((item) => item.observationId)).toEqual(expect.arrayContaining(["former-member", "former-game"]));
     const conflict = passingYardsFixture(false); const coverageRow = row(conflict, "coverage-" + TEAM) as Revision<"schedule-coverage">;
@@ -564,18 +640,17 @@ describe("feature-review regressions", () => {
     expect(buildPassingYardsBundle(dataset, request(CUTOFF_B)).reasons).toContain("schedule-row-missing");
   });
   it.each([1, 5])("retains confirmed absence in slot %d while allowing usable history and recording quality", (number) => {
-    const dataset = passingYardsFixture(false); playerChanges(dataset, "participation-synthetic-game-" + number, { state: "absent" });
-    omit(dataset, "player-synthetic-game-" + number);
+    const dataset = passingYardsFixture(false); markOut(dataset, number);
     const result = bundle(dataset); expect(result.status).toBe("ready-inputs"); expect(result.quality).toContain("player-known-absences");
     expect(result.player[2]).toMatchObject({ expectedGames: 5, observedGames: 4, excludedGames: 1, unknownGames: 0 });
-    expect(result.player[2].games.map((game) => game.gameId)).not.toContain(gameId(number));
+    expect(result.player[2].games.map((value) => value.gameId)).not.toContain(gameId(number));
     if (number === 5) {
       expect(result.player[0]).toMatchObject({ gameIds: [...PRIOR].reverse().slice(0, 4), observedGames: 3, attemptsSum: 60, passingYardsSum: 400, attemptsPerGame: 20 });
       expect(result.player[0].gameIds).not.toContain(PRIOR[0]);
     } else expect(result.player[0]).toMatchObject({ observedGames: 4, passingYardsSum: 700, attemptsSum: 100 });
   });
   it("withholds an all-absent window for its missing denominator, not for a known absence alone", () => {
-    const dataset = passingYardsFixture(false); for (let i = 2; i <= 5; i++) playerChanges(dataset, "participation-synthetic-game-" + i, { state: "absent" });
+    const dataset = passingYardsFixture(false); for (let i = 2; i <= 5; i++) markOut(dataset, i);
     const result = unavailable(dataset, "player-zero-or-missing-denominator");
     expect(result.reasons).not.toContain("player-history-incomplete");
     expect(result.player[0]).toMatchObject({ expectedGames: 4, observedGames: 0, excludedGames: 4, unknownGames: 0, passingYardsPerAttempt: null });

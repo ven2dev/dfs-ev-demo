@@ -6,31 +6,43 @@ import { expect, it } from "vitest";
 import { createCatalogVerifier, loadCatalogContracts } from "../../scripts/db-migrations/contracts.mjs";
 import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
 import { checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
+import { ensureHarnessSession } from "../../scripts/predictive/harness.ts";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { buildPassingYardsBundle } from "../../src/lib/predictive/passingYards.ts";
 import { createLocalPredictiveStore, MEMBERSHIP_READ_SQL, SCHEDULE_READ_SQL } from "../../src/lib/predictive/persistence.ts";
 import { ingestLocalDataset } from "../../src/lib/predictive/ingest.ts";
 import { runLocalProof } from "../../scripts/predictive/local.ts";
-import { digest } from "../../src/lib/predictive/validation.ts";
-import { NFL_TEAM_ABBREVIATIONS } from "../../src/lib/nflStadiums.ts";
-import type { Dataset } from "../../src/lib/predictive/types.ts";
-import { addCapture, CAPTURE_B, CUTOFF_B, coverage, gameId, passingYardsFixture, PLAYER, PRIOR, request, revision, schedule, TARGET, TEAM } from "../predictive/fixtures/passingYards.ts";
+import { digest, TEAM_IDS } from "../../src/lib/predictive/validation.ts";
+import type { Dataset, Revision } from "../../src/lib/predictive/types.ts";
+import { addCapture, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_B, emptyDataset, gameId, membership, passingYardsFixture,
+  PLAYER, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM } from "../predictive/fixtures/passingYards.ts";
 import { backendPid, waitForBlocked } from "./leaseSupport";
 import { createScratchHarness } from "./scratch.mjs";
 
 const NOW = "2026-10-09T00:00:00.000Z";
-const tables = ["predictive_ingestion_runs", "predictive_artifacts", "predictive_captures", "predictive_teams",
-  "predictive_games", "predictive_observations", "predictive_artifact_observations"] as const;
+const tables = ["predictive_source_profiles", "predictive_rights_decisions", "predictive_blobs", "predictive_ingestion_runs",
+  "predictive_run_rights", "predictive_artifacts", "predictive_captures", "predictive_teams", "predictive_games",
+  "predictive_observations", "predictive_artifact_observations"] as const;
+const keyColumn: Record<string, string> = { predictive_blobs: "sha256", predictive_run_rights: "run_id", predictive_artifact_observations: "artifact_id" };
 const snapshot = async (client: Client) => {
   const rows: Record<string, unknown[]> = {};
   for (const table of tables) rows[table] = (await client.query(`SELECT * FROM ${table} t ORDER BY to_jsonb(t)::text`)).rows;
   return rows;
 };
+const rowsOf = (dataset: Dataset) => dataset.artifacts.flatMap((artifact) => JSON.parse(artifact.bytes) as Revision[]);
+const findRow = (dataset: Dataset, id: string) => rowsOf(dataset).find((row) => row.id === id)!;
 // Direct SQL probes roll back even when an assertion fails. Valid controls force
 // deferred checks before rollback, so unrelated publication errors cannot pass.
 const sqlProbe = async (client: Client, probe: () => Promise<void>) => {
   await client.query("BEGIN");
   try { await probe(); } finally { await client.query("ROLLBACK"); }
+};
+// Inserts one observation directly, computing its keys the way publication does.
+const insertObservation = (client: Client, id: string, kind: string, data: unknown, options: { predecessor?: string; sourceRecordId?: string; profileId?: string } = {}) => {
+  const profileId = options.profileId ?? PROFILE; const record = options.sourceRecordId ?? "";
+  return client.query(`INSERT INTO predictive_observations (id,kind,profile_id,source_record_id,data,entity_key,source_key,predecessor_id,correction_reason)
+    VALUES ($1,$2,$3,$4,$5,predictive_entity_key($2,$5),predictive_entity_key($2,$5)||'|'||$3||'|'||$4,$6,$7)`,
+  [id, kind, profileId, record, data, options.predecessor ?? null, options.predecessor ? "SQL constraint probe" : null]);
 };
 const withProof = async (run: (context: {
   client: Client; store: Awaited<ReturnType<typeof createLocalPredictiveStore>>; root: string;
@@ -43,31 +55,24 @@ const withProof = async (run: (context: {
     await harness.withDatabase(async (client: Client, expected: object) => {
       const target = { expected, assertTarget: harness.assertTarget };
       await runScratchMigrations(client, { ...target, files: files.slice(0, migrationCount), verify: createCatalogVerifier(contracts) });
+      await ensureHarnessSession(client);
       const artifacts = await openArtifactStore(root); const store = await createLocalPredictiveStore(client, target, artifacts);
       await run({ client, store, root, artifacts, target });
     });
   } finally { try { await harness.close(); } finally { await rm(root, { recursive: true, force: true }); } }
 };
 
-it("predictive PostgreSQL accepts every application team identity and publishes Rams replay inputs", async () => {
+it("predictive PostgreSQL seeds exactly the application team identities, refuses others and publishes Rams replay inputs", async () => {
   await withProof(async ({ client, store }) => {
-    const teamIds = [...new Set(Object.values(NFL_TEAM_ABBREVIATIONS))].sort().map((team) => "nfl:team:" + team);
-    expect(teamIds).toHaveLength(32); expect(teamIds).toContain("nfl:team:LA"); expect(teamIds).not.toContain("nfl:team:LAR");
-    await sqlProbe(client, async () => {
-      const inserted = await client.query("INSERT INTO predictive_teams (id) SELECT unnest($1::text[]) RETURNING id", [teamIds]);
-      expect(inserted.rows.map((row) => row.id).sort()).toEqual(teamIds);
-      // Compare the frozen SQL membership list with the app registry too, so a
-      // future app addition/removal cannot silently drift from the migration.
-      const definition = (await client.query(`SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint
-        WHERE conrelid = 'public.predictive_teams'::regclass AND conname = 'predictive_teams_id_check'`)).rows[0].definition;
-      const allowed = definition.match(/\^nfl:team:\(([^)]*)\)/)?.[1].split("|").map((team: string) => "nfl:team:" + team).sort();
-      expect(allowed).toEqual(teamIds);
-      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
-    });
-    for (const refusedId of ["nfl:team:LAR", "nfl:team:XXX", "nfl:team:la"]) {
+    expect(TEAM_IDS).toHaveLength(32); expect(TEAM_IDS).toContain("nfl:team:LA"); expect(TEAM_IDS).not.toContain("nfl:team:LAR");
+    expect((await client.query("SELECT id FROM predictive_teams ORDER BY id COLLATE \"C\"")).rows.map((row) => row.id)).toEqual(TEAM_IDS);
+    // The frozen SQL list must equal the app registry, so neither can drift alone.
+    const definition = (await client.query(`SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint
+      WHERE conrelid = 'public.predictive_teams'::regclass AND contype = 'c'`)).rows[0].definition as string;
+    expect([...definition.matchAll(/'(nfl:team:[A-Z]+)'/g)].map((match) => match[1]).sort()).toEqual([...TEAM_IDS].sort());
+    for (const [refusedId, code] of [["nfl:team:LAR", "23514"], ["nfl:team:XXX", "23514"], ["nfl:team:la", "23514"], ["nfl:team:PHI", "23505"]]) {
       await sqlProbe(client, async () => {
-        await expect(client.query("INSERT INTO predictive_teams (id) VALUES ($1)", [refusedId]))
-          .rejects.toMatchObject({ code: "23514", constraint: "predictive_teams_id_check" });
+        await expect(client.query("INSERT INTO predictive_teams (id) VALUES ($1)", [refusedId])).rejects.toMatchObject({ code });
       });
     }
     const dataset = passingYardsFixture(false);
@@ -77,8 +82,8 @@ it("predictive PostgreSQL accepts every application team identity and publishes 
     });
     const pure = buildPassingYardsBundle(dataset, request()); expect(pure.status).toBe("ready-inputs");
     expect(await ingestLocalDataset(store, "rams-A", dataset, NOW)).toMatchObject({ status: "published" });
-    expect((await client.query("SELECT id FROM predictive_teams WHERE id = 'nfl:team:LA'")).rows).toEqual([{ id: "nfl:team:LA" }]);
     const replay = await store.replay(request()); expect(replay).toEqual(pure);
+    expect(replay.teamId).toBe("nfl:team:LA");
     expect(replay.player[0]).toMatchObject({ observedGames: 4, attemptsSum: 100, passingYardsSum: 700, passingYardsPerAttempt: 7 });
   });
 });
@@ -104,7 +109,7 @@ it("predictive PostgreSQL A/B replay preserves the earlier bundle and uses later
     expect(later.player[0]).toMatchObject({ attemptsSum: 100, passingYardsSum: 720, passingYardsPerAttempt: 7.2 });
     expect(later.team![0].passingYardsSum).toBe(889);
     expect(later.dependencies.find((row) => row.observationId === "player-correction-B")).toMatchObject({
-      predecessorId: "player-synthetic-game-5", artifactId: "B-player", availableAt: CAPTURE_B, ingestedAt: CAPTURE_B,
+      predecessorId: "player-synthetic-game-5", artifactId: "B-player", availableAt: CAPTURE_B, ingestedAt: CAPTURE_B, profileId: PROFILE,
     });
     expect(later.inputDigest).not.toBe(before.inputDigest);
     const justBeforeB = await store.replay(request("2026-10-08T12:59:59.999Z"));
@@ -117,11 +122,11 @@ it("predictive PostgreSQL A/B replay preserves the earlier bundle and uses later
 it("predictive scoped reads retain corrections that move evidence out of the indexed scope", async () => {
   await withProof(async ({ client, store }) => {
     const dataset = passingYardsFixture(false); await store.publish("A", dataset, NOW); const before = await store.replay(request());
-    const membership = dataset.artifacts.flatMap((artifact) => JSON.parse(artifact.bytes)).find((row) => row.id === "member-synthetic-game-5");
-    const correction = { formatVersion: 1 as const, artifacts: [], captures: [] };
-    addCapture(correction, "moved-member", [revision("moved-member", "membership", { ...membership.data,
+    const member = findRow(dataset, "member-synthetic-game-5") as Revision<"membership">;
+    const correction = emptyDataset();
+    addCapture(correction, "moved-member", [revision("moved-member", "membership", { ...member.data,
       effectiveFrom: "2023-01-01T00:00:00.000Z", effectiveTo: "2023-02-01T00:00:00.000Z",
-    }, membership.id)], CAPTURE_B);
+    }, member.id)], CAPTURE_B);
     await store.publish("moved", correction, NOW);
     const membershipRows = (await client.query(MEMBERSHIP_READ_SQL, [CUTOFF_B, PLAYER,
       "2026-10-11T17:00:00.000Z", "2024-01-01T00:00:00.000Z"])).rows;
@@ -132,8 +137,8 @@ it("predictive scoped reads retain corrections that move evidence out of the ind
     const membershipLater = await store.replay(request(CUTOFF_B));
     expect(membershipLater).toEqual(buildPassingYardsBundle(full, request(CUTOFF_B)));
     expect(membershipLater.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "membership-inapplicable" });
-    const movedSchedule = { formatVersion: 1 as const, artifacts: [], captures: [] };
-    const oldSchedule = dataset.artifacts.flatMap((artifact) => JSON.parse(artifact.bytes)).find((row) => row.id === "schedule-synthetic-game-5");
+    const movedSchedule = emptyDataset();
+    const oldSchedule = findRow(dataset, "schedule-synthetic-game-5") as Revision<"schedule">;
     addCapture(movedSchedule, "moved-schedule", [revision("moved-schedule", "schedule", {
       ...oldSchedule.data, homeTeamId: "nfl:team:SEA", rawHomeTeam: "SEA",
     }, oldSchedule.id)], CAPTURE_B);
@@ -151,7 +156,7 @@ it("predictive persistence retains former-team membership gaps and ignores unrel
   await withProof(async ({ store }) => {
     await store.publish("A", passingYardsFixture(false), NOW);
     const before = await store.replay(request()); expect(before.status).toBe("ready-inputs");
-    const unrelated = { formatVersion: 1 as const, artifacts: [], captures: [] };
+    const unrelated = emptyDataset();
     addCapture(unrelated, "unrelated", [revision("unrelated", "schedule", schedule(77, "2026-09-14T00:15:00.000Z", "nfl:team:SEA", "nfl:team:ARI"))]);
     await store.publish("unrelated", unrelated, NOW);
     expect(await store.replay(request())).toEqual(before);
@@ -160,19 +165,17 @@ it("predictive persistence retains former-team membership gaps and ignores unrel
     const dataset = passingYardsFixture(false); const former = schedule(40, "2025-12-07T17:00:00.000Z", "nfl:team:BUF", "nfl:team:NE", 2025);
     const gap = schedule(41, "2025-12-14T17:00:00.000Z", former.homeTeamId, former.awayTeamId, 2025);
     addCapture(dataset, "former-schedules", [revision("former-schedule", "schedule", former), revision("former-gap", "schedule", gap)]);
-    addCapture(dataset, "former-member", [revision("former-member", "membership", { gameId: former.gameId, playerId: PLAYER, rawPlayerId: PLAYER,
-      teamId: former.homeTeamId, rawTeam: "BUF", position: "QB", effectiveFrom: "2025-09-01T00:00:00.000Z", effectiveTo: "2025-12-31T00:00:00.000Z", mappingVersion: "synthetic-v1" })]);
-    addCapture(dataset, "former-complete", [revision("former-complete", "completion", { gameId: former.gameId, state: "confirmed", bound: "2026-10-07T12:00:00.000Z", boundKind: "completion-observed-at", evidenceVersion: "synthetic-v1" })]);
-    addCapture(dataset, "former-participant", [revision("former-participant", "participation", { gameId: former.gameId, playerId: PLAYER, state: "confirmed", evidenceVersion: "synthetic-v1" })]);
-    addCapture(dataset, "former-stats", [revision("former-stats", "player-passing", { gameId: former.gameId, rawGameId: former.rawGameId, teamId: former.homeTeamId,
-      rawTeam: "BUF", season: 2025, seasonType: "REG", playerId: PLAYER, rawPlayerId: PLAYER, attempts: 10, passingYards: 60, missingReason: null })]);
+    addCapture(dataset, "former-member", [revision("former-member", "membership", membership(former, { teamId: former.homeTeamId, rawTeam: "BUF",
+      effectiveFrom: "2025-09-01T00:00:00.000Z", effectiveTo: "2025-12-31T00:00:00.000Z" }))]);
+    addCapture(dataset, "former-complete", completionMarkers(former));
+    addCapture(dataset, "former-stats", [revision("former-stats", "player-game-stats", playerStats(former, 10, 60, former.homeTeamId, "BUF"))]);
     addCapture(dataset, "former-coverage", [revision("former-coverage", "schedule-coverage", coverage(former.homeTeamId, [gameId(20), former.gameId, gap.gameId]))]);
     await store.publish("A", dataset, NOW); const query = { ...request(), candidate: "stats-v1:player_pass_yds" as const };
     const before = await store.replay(query); expect(before).toEqual(buildPassingYardsBundle(dataset, query));
     expect(before.status).toBe("unavailable-inputs"); expect(before.player[1].exclusions).toContainEqual({ gameId: gap.gameId, reason: "membership-missing" });
     expect(before.player[1]).toMatchObject({ expectedGames: 7, observedGames: 6, excludedGames: 1, unknownGames: 1,
       gameIds: [...PRIOR].reverse().concat([gap.gameId, former.gameId]), attemptsSum: 120, passingYardsSum: 810 });
-    const unrelated = { formatVersion: 1 as const, artifacts: [], captures: [] };
+    const unrelated = emptyDataset();
     addCapture(unrelated, "unrelated", [revision("unrelated", "schedule", schedule(77, "2026-09-14T00:15:00.000Z", "nfl:team:SEA", "nfl:team:ARI"))]);
     await store.publish("unrelated", unrelated, NOW); expect(await store.replay(query)).toEqual(before);
   });
@@ -199,6 +202,7 @@ it("predictive retries and unchanged recaptures preserve immutable revisions and
     expect(await store.replay(request(CUTOFF_B))).toEqual(laterBefore);
     expect((await client.query("SELECT count(*)::integer AS count FROM predictive_captures")).rows[0].count).toBe(3 * counts[0].captures);
     expect((await client.query("SELECT count(*)::integer AS count FROM predictive_artifacts")).rows[0].count).toBe(2 * dataset.artifacts.length);
+    expect((await client.query("SELECT count(*)::integer AS count FROM predictive_blobs")).rows[0].count).toBe(2 * dataset.artifacts.length);
     expect((await client.query("SELECT count(*)::integer AS count FROM predictive_observations")).rows[0].count).toBe(counts[0].revisions);
   });
 });
@@ -223,7 +227,8 @@ it("predictive publication is invisible until commit and concurrent retries publ
       // Attach rejection handlers immediately, including on assertion failures.
       first = publisher.publish("racing-A", dataset, NOW).then((value) => ({ value }), (error) => ({ error }));
       await Promise.race([held.promise, first.then(() => { throw new Error("Publisher finished before the held insertion"); })]);
-      for (const rows of Object.values(await snapshot(monitor))) expect(rows).toHaveLength(0);
+      // Only the 32 migration-seeded teams are visible before commit.
+      for (const [table, rows] of Object.entries(await snapshot(monitor))) expect(rows).toHaveLength(table === "predictive_teams" ? 32 : 0);
       second = competitor.publish("racing-A", dataset, NOW).then((value) => ({ value }), (error) => ({ error }));
       // Releasing immediately could turn this into two sequential calls. Require
       // PostgreSQL itself to observe the contender waiting behind the holder.
@@ -265,36 +270,36 @@ it("predictive publication rolls back conflicts and invalid correction lineage w
   await withProof(async ({ client, store }) => {
     const dataset = passingYardsFixture(false); await store.publish("A", dataset, NOW); const before = await store.replay(request());
     const storedBefore = await snapshot(client);
-    const changed = passingYardsFixture(false); const artifact = changed.artifacts.find((artifact) => artifact.feed === "player-passing")!;
+    const changed = passingYardsFixture(false); const artifact = changed.artifacts.find((value) => value.id === "A-player-game-stats")!;
     const rows = JSON.parse(artifact.bytes); rows[0].data.passingYards = 777; artifact.bytes = JSON.stringify(rows); artifact.sha256 = digest(artifact.bytes);
     await expect(store.publish("conflict", changed, NOW)).rejects.toThrow("observation-id-conflict");
     expect(await snapshot(client)).toEqual(storedBefore);
-    const valid: Dataset = { formatVersion: 1, artifacts: [], captures: [] };
+    const valid = emptyDataset();
     const predecessor = JSON.parse(artifact.bytes).find((row: { id: string }) => row.id === "player-synthetic-game-5");
-    addCapture(valid, "capture-conflict", [revision("new-correction", "player-passing", {
+    addCapture(valid, "capture-conflict", [revision("new-correction", "player-game-stats", {
       ...predecessor.data, passingYards: 321,
     }, predecessor.id)], CAPTURE_B);
-    valid.captures[0].id = "capture-A-player-passing";
-    // This conflict occurs after run/artifact INSERTs, so equality of all seven
-    // tables proves rollback rather than only refusal before any writes.
+    valid.captures[0].id = "capture-A-player-game-stats";
+    // This conflict occurs after run/artifact INSERTs, so equality of every
+    // predictive table proves rollback rather than only refusal before writes.
     await expect(store.publish("late-conflict", valid, NOW)).rejects.toThrow("capture-id-conflict");
     expect(await snapshot(client)).toEqual(storedBefore);
     const retry = { ...dataset, captures: dataset.captures.map((capture) => ({ ...capture, id: "retry:" + capture.id })) };
     await expect(store.publish("A", retry, NOW)).rejects.toThrow("run-id-conflict");
     expect(await snapshot(client)).toEqual(storedBefore);
-    const bad = passingYardsFixture(); const correction = bad.artifacts.find((artifact) => artifact.id === "B-player")!;
+    const bad = passingYardsFixture(); const correction = bad.artifacts.find((value) => value.id === "B-player")!;
     const revisions = JSON.parse(correction.bytes); revisions[0].predecessorId = "missing"; correction.bytes = JSON.stringify(revisions); correction.sha256 = digest(correction.bytes);
     await expect(store.publish("bad-lineage", bad, NOW)).rejects.toThrow("invalid-correction-lineage");
     expect(await snapshot(client)).toEqual(storedBefore);
     expect(await store.replay(request())).toEqual(before);
   });
 });
-it("predictive immutable rows, typed evidence and correction keys are enforced by PostgreSQL", async () => {
+it("predictive immutable rows, typed evidence and source-chain keys are enforced by PostgreSQL", async () => {
   await withProof(async ({ client, store }) => {
     await store.publish("A", passingYardsFixture(false), NOW);
     const before = await snapshot(client);
     for (const table of tables) {
-      const column = table === "predictive_artifact_observations" ? "artifact_id" : "id";
+      const column = keyColumn[table] ?? "id";
       for (const sql of [`UPDATE ${table} SET ${column}=${column}`, `DELETE FROM ${table}`, `TRUNCATE ${table} CASCADE`]) {
         await expect(client.query(sql)).rejects.toMatchObject({ code: "23514", message: "predictive-append-only" });
       }
@@ -302,55 +307,123 @@ it("predictive immutable rows, typed evidence and correction keys are enforced b
     const originalRows = (await client.query(`SELECT DISTINCT ON (o.kind) o.kind,o.data,l.artifact_id FROM predictive_observations o
       JOIN predictive_artifact_observations l ON l.observation_id=o.id ORDER BY o.kind,o.id`)).rows;
     const originals = Object.fromEntries(originalRows.map((row) => [row.kind, row]));
-    expect(originalRows).toHaveLength(8);
-    const insert = (kind: string, data: unknown, predecessor: string | null = null) => client.query(
-      "INSERT INTO predictive_observations (id,kind,data,predecessor_id,correction_reason) VALUES ('sql-probe',$1,$2,$3,$4)",
-      [kind, data, predecessor, predecessor ? "SQL constraint probe" : null]);
+    expect(originalRows).toHaveLength(7);
     // Valid controls must pass the same INSERT and deferred publication checks.
-    for (const row of originalRows) await sqlProbe(client, async () => {
-      await insert(row.kind, row.data);
-      await client.query("INSERT INTO predictive_artifact_observations VALUES ($1,'sql-probe')", [row.artifact_id]);
+    const valid = async (kind: string, data: unknown, options: Parameters<typeof insertObservation>[4] = { sourceRecordId: "probe" }) => sqlProbe(client, async () => {
+      await insertObservation(client, "sql-probe", kind, data, options);
+      await client.query("INSERT INTO predictive_artifact_observations VALUES ($1,'sql-probe')", [originals[kind].artifact_id]);
       await client.query("SET CONSTRAINTS ALL IMMEDIATE");
     });
-    const player = originals["player-passing"].data;
+    for (const row of originalRows) await valid(row.kind, row.data);
+    const player = originals["player-game-stats"].data;
     for (const data of [{ ...player, attempts: 0, passingYards: 0 }, { ...player, passingYards: -5 },
-      { ...player, attempts: null, passingYards: null, missingReason: "source-blank" }]) await sqlProbe(client, async () => {
-      await insert("player-passing", data);
-      await client.query("INSERT INTO predictive_artifact_observations VALUES ($1,'sql-probe')", [originals["player-passing"].artifact_id]);
-      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
-    });
+      { ...player, attempts: null, passingYards: null, missing: { attempts: "source-blank", passingYards: "source-missing" } }]) await valid("player-game-stats", data);
     const invalid: [string, object][] = [
       ["schedule", { kickoff: "2026-02-30T17:00:00.000Z" }], ["schedule", { homeTeamId: originals.schedule.data.awayTeamId }],
-      ["membership", { effectiveTo: originals.membership.data.effectiveFrom }],
-      ["player-passing", { extra: 1 }], ["player-passing", { attempts: -1 }], ["player-passing", { seasonType: null }],
-      ["player-passing", { attempts: null }], ["player-passing", { passingYards: 0.5 }], ["team-passing", { attempts: "10" }],
-      ["completion", { boundKind: null }], ["participation", { state: "inactive" }], ["availability", { injury: "probable" }],
-      ["schedule-coverage", { gameIds: [TARGET, TARGET] }], ["schedule-coverage", { state: "assumed-complete" }],
+      ["schedule", { rawGameday: "2026-10-11" }], ["membership", { effectiveTo: originals.membership.data.effectiveFrom }],
+      ["player-game-stats", { extra: 1 }], ["player-game-stats", { attempts: -1 }], ["player-game-stats", { seasonType: null }],
+      ["player-game-stats", { attempts: null }], ["player-game-stats", { passingYards: 0.5 }], ["player-game-stats", { completions: 11 }],
+      ["player-game-stats", { missing: { attempts: "source-blank" } }], ["team-game-stats", { attempts: "10" }],
+      ["event-state-marker", { markerType: "halftime" }], ["event-state-marker", { terminalPlayTimeOfDay: "20:00:00" }],
+      ["availability", { rawDepthRank: 0 }], ["schedule-coverage", { gameIds: [TARGET, TARGET] }], ["schedule-coverage", { state: "assumed-complete" }],
     ];
     for (const [kind, changes] of invalid) await sqlProbe(client, async () => {
-      await expect(insert(kind, { ...originals[kind].data, ...changes })).rejects.toMatchObject({
-        code: "23514", constraint: "predictive_observations_check",
-      });
+      const error = await insertObservation(client, "sql-probe", kind, { ...originals[kind].data, ...changes }, { sourceRecordId: "probe" }).then(() => null, (value) => value);
+      expect(error).toMatchObject({ code: "23514" }); expect(error.constraint).toMatch(/^predictive_observations_check/);
     });
     const correctionData = (await client.query("SELECT data FROM predictive_observations WHERE id='player-synthetic-game-5'")).rows[0].data;
-    for (const predecessor of ["schedule-synthetic-game-5", "player-synthetic-game-1"]) await sqlProbe(client, async () => {
-      await insert("player-passing", correctionData, predecessor);
-      await expect(client.query("SET CONSTRAINTS predictive_observations_predecessor_id_kind_natural_key_fkey IMMEDIATE"))
-        .rejects.toMatchObject({ code: "23503", constraint: "predictive_observations_predecessor_id_kind_natural_key_fkey" });
+    // A predecessor from another fact, or the same fact under another provider's
+    // source key, violates the source-chain foreign key.
+    for (const options of [{ predecessor: "schedule-synthetic-game-5" }, { predecessor: "player-synthetic-game-1" },
+      { predecessor: "player-synthetic-game-5", sourceRecordId: "other-record" }]) await sqlProbe(client, async () => {
+      await insertObservation(client, "sql-probe", "player-game-stats", correctionData, options);
+      await expect(client.query("SET CONSTRAINTS predictive_observations_predecessor_id_source_key_fkey IMMEDIATE"))
+        .rejects.toMatchObject({ code: "23503", constraint: "predictive_observations_predecessor_id_source_key_fkey" });
+    });
+    await valid("player-game-stats", correctionData, { predecessor: "player-synthetic-game-5" });
+    await sqlProbe(client, async () => {
+      await insertObservation(client, "sql-probe", "player-game-stats", correctionData, { predecessor: "player-synthetic-game-5" });
+      await expect(insertObservation(client, "sql-branch", "player-game-stats", { ...correctionData, passingYards: 1 }, { predecessor: "player-synthetic-game-5" }))
+        .rejects.toMatchObject({ code: "23505", constraint: "predictive_observations_one_successor" });
     });
     await sqlProbe(client, async () => {
-      await insert("player-passing", correctionData, "player-synthetic-game-5");
-      await client.query("INSERT INTO predictive_artifact_observations VALUES ($1,'sql-probe')", [originals["player-passing"].artifact_id]);
-      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+      await expect(client.query(`INSERT INTO predictive_observations (id,kind,profile_id,source_record_id,data,entity_key,source_key)
+        VALUES ('bad-key','player-game-stats',$1,'',$2,'player-game-stats:wrong','player-game-stats:wrong|${PROFILE}|')`, [PROFILE, correctionData]))
+        .rejects.toMatchObject({ code: "23514" });
     });
     expect(await snapshot(client)).toEqual(before);
     expect((await store.replay(request())).status).toBe("ready-inputs");
   });
 });
+it("predictive PostgreSQL enforces rights knowledge time, harness-only synthetic evidence and per-provider chains", async () => {
+  await withProof(async ({ client, store, target }) => {
+    // A rights decision recorded after the capture cannot authorize it, even
+    // with a backdated effective date.
+    const backdated = passingYardsFixture(false); backdated.rightsDecisions = [rights(PROFILE, { decidedAt: CAPTURE_B })];
+    await expect(store.publish("backdated", backdated, NOW)).rejects.toMatchObject({ code: "23514" });
+    const before = await snapshot(client);
+    expect(before.predictive_rights_decisions).toHaveLength(0);
+    await store.publish("A", passingYardsFixture(false), NOW);
+    expect((await client.query("SELECT run_id,rights_decision_id FROM predictive_run_rights")).rows).toEqual([{ run_id: "A", rights_decision_id: "rights-" + PROFILE }]);
+    // A later revocation keeps the audit record and blocks current use only.
+    const revocation = emptyDataset();
+    revocation.rightsDecisions.push(rights(PROFILE, { id: "revoked", predecessorId: "rights-" + PROFILE, allowedUses: [],
+      effectiveFrom: "2026-10-09T12:00:00.000Z", decidedAt: "2026-10-09T12:00:00.000Z" }));
+    addCapture(revocation, "noop", [revision("noop-unrelated", "schedule", schedule(78, "2026-09-14T00:15:00.000Z", "nfl:team:SEA", "nfl:team:ARI"))]);
+    await store.publish("revocation", revocation, NOW);
+    expect((await store.replay(request())).status).toBe("ready-inputs");
+    const now = await store.replay({ ...request(), computedAt: "2026-10-10T00:00:00.000Z" });
+    expect(now.status).toBe("unavailable-inputs"); expect(now.reasons).toContain("rights-not-in-force");
+    expect((await client.query("SELECT count(*)::integer AS count FROM predictive_run_rights WHERE run_id='A'")).rows[0].count).toBe(1);
+    await sqlProbe(client, async () => {
+      // Branching and cross-profile chains are refused by keys, not by code.
+      await expect(client.query(`INSERT INTO predictive_rights_decisions (id,profile_id,predecessor_id,allowed_uses,effective_from,decided_at,evidence_kind,evidence_reference)
+        VALUES ('branch',$1,'rights-${PROFILE}','{}','2026-10-09T12:00:00Z','2026-10-09T12:00:00Z','synthetic','probe')`, [PROFILE]))
+        .rejects.toMatchObject({ code: "23505" });
+    });
+    await sqlProbe(client, async () => {
+      await expect(client.query(`INSERT INTO predictive_rights_decisions (id,profile_id,predecessor_id,allowed_uses,effective_from,decided_at,evidence_kind,evidence_reference)
+        VALUES ('display',$1,'revoked','{public-display}','2026-10-09T13:00:00Z','2026-10-09T13:00:00Z','synthetic','probe')`, [PROFILE]))
+        .rejects.toMatchObject({ code: "23514", message: "predictive-synthetic-rights-refused" });
+    });
+    // Two providers' claims for one fact coexist as separate chains and replay
+    // as ambiguous until a reconciliation decision exists.
+    const second = "synthetic-second-v1"; const secondSource = emptyDataset();
+    secondSource.profiles.push(profile(second)); secondSource.rightsDecisions.push(rights(second));
+    const original = findRow(passingYardsFixture(false), "player-synthetic-game-5") as Revision<"player-game-stats">;
+    addCapture(secondSource, "second", [revision("second-player-5", "player-game-stats", { ...original.data, passingYards: 305 })], CAPTURE_A, second);
+    await store.publish("second", secondSource, NOW);
+    const ambiguous = await store.replay(request());
+    expect(ambiguous.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "player-stats-ambiguous" });
+    // Synthetic evidence outside the harness role is refused at commit.
+    const outsider = new Client(target.expected);
+    try {
+      await outsider.connect();
+      await outsider.query("CREATE ROLE predictive_outsider_probe NOLOGIN").catch(() => undefined);
+      await outsider.query("GRANT ALL ON ALL TABLES IN SCHEMA public TO predictive_outsider_probe");
+      await outsider.query("GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO predictive_outsider_probe");
+      await outsider.query("BEGIN");
+      try {
+        await outsider.query("SET LOCAL SESSION AUTHORIZATION predictive_outsider_probe");
+        const runId = "outsider";
+        await outsider.query(`INSERT INTO predictive_ingestion_runs (id,request_sha256,code_version,started_at,finished_at,status,failure_code,
+          budget,requests,consumed_bytes,artifact_count,capture_count,row_count) VALUES ($1,$2,'probe',$3,$3,'refused','publication-refused','{}',0,0,0,1,0)`,
+        [runId, "0".repeat(64), NOW]);
+        await outsider.query(`INSERT INTO predictive_captures (id,run_id,artifact_id,captured_at,available_at,ingested_at,state,body_complete,header_verified,parser_succeeded,parsed_rows)
+          VALUES ('outsider-capture',$1,'A-schedule',$2,$2,$2,'incomplete',true,true,true,0)`, [runId, CAPTURE_A]);
+        await expect(outsider.query("SET CONSTRAINTS ALL IMMEDIATE")).rejects.toMatchObject({ code: "23514", message: "predictive-synthetic-outside-harness" });
+      } finally { await outsider.query("ROLLBACK"); }
+    } finally {
+      await outsider.query("REVOKE ALL ON ALL TABLES IN SCHEMA public FROM predictive_outsider_probe").catch(() => undefined);
+      await outsider.query("REVOKE ALL ON ALL FUNCTIONS IN SCHEMA public FROM predictive_outsider_probe").catch(() => undefined);
+      await outsider.end();
+    }
+  });
+});
 it("predictive missing or tampered artifact bytes withhold replay without replacing stored evidence", async () => {
   await withProof(async ({ store, root, client, artifacts }) => {
     const dataset = passingYardsFixture(false); await store.publish("A", dataset, NOW);
-    const artifact = dataset.artifacts.find((artifact) => artifact.feed === "player-passing")!; const path = join(root, artifact.sha256 + ".json");
+    const artifact = dataset.artifacts.find((value) => value.id === "A-player-game-stats")!; const path = join(root, artifact.sha256 + ".json");
     const before = await store.replay(request()); expect(before.status).toBe("ready-inputs");
     const original = await readFile(path, "utf8"); const tampered = original.replace('"passingYards":50', '"passingYards":51');
     expect(tampered).not.toBe(original); expect(Buffer.byteLength(tampered)).toBe(Buffer.byteLength(original));
@@ -366,7 +439,7 @@ it("predictive missing or tampered artifact bytes withhold replay without replac
     const data = JSON.parse(original)[0].data;
     await client.query("BEGIN");
     try {
-      await client.query("INSERT INTO predictive_observations (id,kind,data) VALUES ('not-in-source','player-passing',$1)", [data]);
+      await insertObservation(client, "not-in-source", "player-game-stats", data, { sourceRecordId: "not-in-source" });
       await client.query("INSERT INTO predictive_artifact_observations VALUES ($1,'not-in-source')", [artifact.id]);
       await client.query("COMMIT");
     } catch (error) { await client.query("ROLLBACK"); throw error; }
@@ -377,10 +450,8 @@ it("predictive missing or tampered artifact bytes withhold replay without replac
 it("predictive indexed membership reads are player-scoped and read transactions remain read-only", async () => {
   await withProof(async ({ client, store, target, artifacts }) => {
     const dataset = passingYardsFixture(false);
-    const member = dataset.artifacts.flatMap((artifact) => JSON.parse(artifact.bytes)).find((row) => row.id === "member-synthetic-game-1");
-    addCapture(dataset, "other-player", [revision("other-player", "membership", {
-      ...member.data, playerId: "00-0000002", rawPlayerId: "00-0000002",
-    })]);
+    const member = findRow(dataset, "member-synthetic-game-1") as Revision<"membership">;
+    addCapture(dataset, "other-player", [revision("other-player", "membership", { ...member.data, playerId: "00-0000002" })]);
     addCapture(dataset, "old-range", [revision("old-range", "membership", {
       ...member.data, gameId: gameId(77), effectiveFrom: "2023-01-01T00:00:00.000Z", effectiveTo: "2023-02-01T00:00:00.000Z",
     })]);
@@ -424,7 +495,7 @@ it("predictive archive restoration recreates the same cutoff bundles in fresh sc
   const root = await realpath(await mkdtemp(join(tmpdir(), "dfs-ev-predictive-restore-")));
   try {
     const captured = await runLocalProof(["demo", "--artifact-root", root], process.env);
-    expect(captured).toMatchObject({ schemaVersion: 4, earlierReplayUnchanged: true, restoredReplayUnchanged: true });
+    expect(captured).toMatchObject({ schemaVersion: 3, earlierReplayUnchanged: true, restoredReplayUnchanged: true });
     const restored = await runLocalProof(["restore", "--artifact-root", root, "--archive", captured.archive.reference,
       "--archive-bytes", String(captured.archive.byteSize)], process.env);
     expect(restored.capturedA).toEqual(captured.capturedA); expect(restored.laterB).toEqual(captured.laterB);
@@ -440,39 +511,30 @@ it("predictive v2 upgrade preserves application rows and no-op migrations preser
       await client.query("INSERT INTO creators (channel_name) VALUES ('Synthetic v2 survivor')");
       const before = (await client.query("SELECT * FROM creators")).rows;
       const historical = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 4, executed: [3, 4] });
+      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 3, executed: [3] });
       expect((await client.query("SELECT * FROM creators")).rows).toEqual(before);
       const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-      expect(upgraded.slice(0, 2)).toEqual(historical); expect(upgraded).toHaveLength(4);
-      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 4, executed: [] });
+      expect(upgraded.slice(0, 2)).toEqual(historical); expect(upgraded).toHaveLength(3);
+      expect(upgraded[2]).toMatchObject({ version: 3, filename: "0003_predictive_evidence.sql", provenance: "executed" });
+      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 3, executed: [] });
       expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     });
   } finally { await harness.close(); }
 });
-it("predictive v3 team identity upgrade preserves replay and refuses unqualified legacy Rams rows", async () => {
-  const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
-  const verify = createCatalogVerifier(contracts);
-  await withProof(async ({ client, store, target }) => {
-    await store.publish("A", passingYardsFixture(false), NOW);
-    const before = await store.replay(request()); expect(before.status).toBe("ready-inputs");
-    const rows = await snapshot(client); const history = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(await runScratchMigrations(client, { ...target, files, verify })).toEqual({ schemaVersion: 4, executed: [4] });
-    expect(await snapshot(client)).toEqual(rows);
-    const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 3)).toEqual(history);
-    expect(upgraded[3]).toMatchObject({ version: 4, filename: "0004_predictive_team_identity.sql", provenance: "executed" });
-    expect(await store.replay(request())).toEqual(before);
-    expect(await runScratchMigrations(client, { ...target, files, verify })).toEqual({ schemaVersion: 4, executed: [] });
-    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
-  }, 3);
-  await withProof(async ({ client, target }) => {
-    // LAR was permitted by v3 SQL but never by app validation. Its old immutable
-    // provenance cannot be silently relabelled by a constraint correction.
-    await client.query("INSERT INTO predictive_teams (id) VALUES ('nfl:team:LAR')");
-    const rows = await snapshot(client); const history = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    await expect(runScratchMigrations(client, { ...target, files, verify })).rejects.toMatchObject({ code: "23514" });
-    await verify(client, 3);
-    expect(await snapshot(client)).toEqual(rows);
-    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(history);
-  }, 3);
+it("predictive evidence reset refuses databases recording the removed synthetic migrations without repair", async () => {
+  const harness = await createScratchHarness(process.env); const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
+  try {
+    await harness.withDatabase(async (client: Client, expected: object) => {
+      const options = { expected, assertTarget: harness.assertTarget, files, verify: createCatalogVerifier(contracts) };
+      await runScratchMigrations(client, { ...options, files: files.slice(0, 2) });
+      // The pre-reset synthetic v3 was only ever applied to disposable databases.
+      // A database still recording it must be recreated, never relabelled.
+      await client.query(`INSERT INTO db_migrations (version,filename,sha256,runner_version,provenance)
+        VALUES (3,'0003_predictive_local_replay.sql','33c06dcc54dea80ab7e7cc9c6071f420dee184ca81608f618d7cff366b338bad',1,'executed')`);
+      const history = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+      await expect(runScratchMigrations(client, options)).rejects.toThrow();
+      expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(history);
+      expect((await client.query("SELECT to_regclass('public.predictive_observations') AS relation")).rows[0].relation).toBeNull();
+    });
+  } finally { await harness.close(); }
 });

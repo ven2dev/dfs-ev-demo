@@ -557,3 +557,62 @@ Revision 1's list, with these changes and additions:
 - **Retention:** chain descendants and derived rows are deleted; a shared blob is
   kept; an incomplete closure fails on the FKs; `digest-only` keeps no IDs; a
   restored backup re-applies the scope descriptor; unpin events expire runs.
+
+## 14. Step 2 implementation notes (2026-10-10)
+
+Step 2 of PR A implements the parts of this DDL the adapted passing-yards proof
+needs. Each later step regenerates migration 0003 using the section 12 procedure.
+
+**Built in step 2:**
+- helpers and per-kind validators
+- source profiles, with an added `evidence_kinds` column limiting which kinds
+  a profile may emit
+- rights decisions, with `predictive_rights_in_force` returning the decision
+  ID and `predictive_rights_allow`
+- blobs (`storage_ref` is `sha256.json` or `sha256.csv` by media type) and
+  artifacts with scope fields
+- runs, run rights, and captures with completeness
+- the 32 seeded teams, and games
+- observations with entity and source keys, the no-branch index and
+  source-chain foreign key
+- artifact links, append-only triggers, and deferred publication checks
+  (historical rights, run rights recorded, kind allowed by profile,
+  `full` retrieval only, correction timing, cycles)
+- `predictive_harness_session()`
+- `REVOKE … FROM PUBLIC` on every function, with conditional grants to
+  `predictive_ingest` and `predictive_replay`
+
+**Deferred to steps 3–10, as planned:**
+- the persisted decisions table and decision inputs. Step 2 computes
+  completion (`event-completion-v1`) and participation (`participation-v1`) at
+  replay from cutoff-visible evidence, with the same rules.
+- outcome labels; feature runs, pins and unpins
+- snap kinds, bridge kinds and `source-row-absent`
+- retention, and the recorder and retention-owner roles
+
+**Payload refinements to section 11, made during implementation:**
+- `schedule` stores `rawGameday`, `rawGametime`, `rawRoof`, `rawSurface` and
+  `rawStadiumId`, each nullable. The Eastern conversion is always
+  `America/New_York` and is round-trip checked in code; SQL checks formats.
+- `membership` keeps `effectiveFrom` and `effectiveTo`, which the former-team
+  gap rule needs, and adds `rosterStatus`, `season`, `seasonType` and `week`.
+- Player and team game stats carry all ten counts plus a `missing` object
+  mapping each null field to `source-blank` or `source-missing`. A non-null
+  value may not have a missing reason.
+- `participation-evidence` stores `participation-feed`,
+  `official-inactive-list` and `provider-snap-count` claims. Positive usage is
+  derived from the stats row by `participation-v1` and is not stored separately.
+- `availability` stores raw report/practice status and depth rank.
+  `availability-v1` withholds only on an explicit `Out` report; blank or missing
+  reports stay unknown.
+- Entity keys: `event-state-marker:<gameId>:<markerType>` and
+  `participation-evidence:<gameId>:<playerId>:<evidenceKind>`.
+
+**Validation (2026-10-10, Node 24.21.0, PostgreSQL 18.6):**
+- typecheck and lint
+- 831 jsdom + 385 Node tests, including 193 pure predictive, storage and source
+  tests
+- the full disposable DB suite: 74 Node + 32 Vitest cases, with all 15
+  mandatory predictive cases, 13 lease cases, 4 readiness cases and catalog
+  contracts verified
+- the CI gate and DB guards

@@ -1,10 +1,17 @@
-import type { Dataset, Kind, Observation } from "./types.ts";
-import { datasetContainer, instant, object, revisionKey, validateDataset, validateObservations } from "./validation.ts";
+import type { Dataset, Kind, Observation, RightsDecision } from "./types.ts";
+import { allows, datasetContainer, instant, object, rightsInForce, validateDataset, validateObservations } from "./validation.ts";
 
 export type Selection<K extends Kind> = ({ state: "selected"; observation: Observation<K> } |
   { state: "missing" | "ambiguous"; observation: null }) & { dependencies: Observation[] };
 
-export const createReplay = (dataset: Dataset, cutoff: string) => {
+// Current access: evidence is usable now only while its profile's rights in
+// force now allow model input. Earlier authorization is audit, not permission.
+export const blockedProfiles = (decisions: RightsDecision[], profileIds: Iterable<string>, accessAt: string) => {
+  const at = instant(accessAt);
+  return new Set([...profileIds].filter((id) => !allows(rightsInForce(decisions, id, at, at), "model-input")));
+};
+
+export const createReplay = (dataset: Dataset, cutoff: string, accessAt: string) => {
   const at = instant(cutoff);
   const root = datasetContainer(dataset);
   // Filter on the trusted capture routing envelope before parsing source bytes
@@ -18,14 +25,16 @@ export const createReplay = (dataset: Dataset, cutoff: string) => {
   const artifactIds = new Set(captures.map((value) => object(value).artifactId));
   const artifacts = root.artifacts.filter((value) => value && typeof value === "object" &&
     !Array.isArray(value) && artifactIds.has((value as Record<string, unknown>).id));
-  const validated = validateDataset({ formatVersion: 1, artifacts, captures });
-  return replayObservations([...validated.observations.values()]);
+  const validated = validateDataset({ ...root, artifacts, captures });
+  const rows = [...validated.observations.values()];
+  return replayObservations(rows, blockedProfiles(validated.rightsDecisions, new Set(rows.map((row) => row.artifact.profileId)), accessAt));
 };
 
-// Persistent reads supply only validated, cutoff-visible observations and their
-// predecessor closure. They verify each row against its immutable artifact.
-export const replayObservations = (rows: Observation[]) => {
-  const active = [...validateObservations(rows).values()];
+// Persistent reads supply only validated, cutoff-visible source chains. Each
+// source chain contributes its head; one fact with several provider heads is
+// ambiguous until a reconciliation decision selects one.
+export const replayObservations = (rows: Observation[], blocked: Set<string>) => {
+  const active = [...validateObservations(rows).values()].filter((row) => !blocked.has(row.artifact.profileId));
   const superseded = new Set(active.map((row) => row.revision.predecessorId));
   const heads = active.filter((row) => !superseded.has(row.revision.id));
   const aliasGames = new Map<string, Set<string>>();
@@ -36,8 +45,9 @@ export const replayObservations = (rows: Observation[]) => {
     games.add(data.gameId); aliasGames.set(data.rawGameId, games);
   }
   return {
+    blockedProfiles: [...blocked].sort(),
     select: <K extends Kind>(kind: K, key: string): Selection<K> => {
-      const matches = heads.filter((row) => row.revision.kind === kind && revisionKey(row.revision) === key);
+      const matches = heads.filter((row) => row.revision.kind === kind && row.entityKey === key);
       if (matches.some((row) => row.revision.kind === "schedule" && aliasGames.get(row.revision.data.rawGameId)!.size > 1)) {
         const aliases = matches.flatMap((row) => row.revision.kind === "schedule" ? [row.revision.data.rawGameId] : []);
         const dependencies = heads.filter((row) => row.revision.kind === "schedule" && aliases.includes(row.revision.data.rawGameId));
@@ -46,8 +56,9 @@ export const replayObservations = (rows: Observation[]) => {
       return matches.length === 1 ? { state: "selected", observation: matches[0] as Observation<K>, dependencies: matches } :
         { state: matches.length ? "ambiguous" : "missing", observation: null, dependencies: matches };
     },
-    // Enumerate cutoff-known schedules only; a future capture cannot invent a
+    // Enumerate cutoff-known facts only; a future capture cannot invent a
     // prior-game gap or reveal a future identity to an earlier replay.
-    keys: (kind: Kind): string[] => [...new Set(heads.filter((row) => row.revision.kind === kind).map((row) => revisionKey(row.revision)))].sort(),
+    keys: (kind: Kind): string[] => [...new Set(heads.filter((row) => row.revision.kind === kind).map((row) => row.entityKey))].sort(),
   };
 };
+export type Replay = ReturnType<typeof replayObservations>;
