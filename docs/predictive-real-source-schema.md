@@ -1,7 +1,8 @@
-# #52 real-source schema proposal — revision 2 (draft for owner review)
+# #52 real-source schema proposal — revision 2
 
 Status: **revision 2 approved by the owner (2026-10-09), including the snap-share
-amendment. No code written.** The column-level DDL is in
+amendment, and implemented in PR A** on `feature/dfsEV-52-evidence-schema`
+(2026-10-10). The column-level DDL, with per-step and per-review-fix notes, is in
 [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md). Revision 2 incorporates the
 2026-10-09 design review. It continues from the relay handoff
 (`docs/predictive-session-handoff.md`, `1ef86ba`) on

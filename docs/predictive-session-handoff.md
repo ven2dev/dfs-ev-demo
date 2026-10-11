@@ -8,8 +8,9 @@ completed work or repeat source downloads merely to recover context.
 - Workspace: `/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo`.
 - Branch: `feature/dfsEV-52-evidence-schema`, taken from the relay WIP tip
   `1ef86ba` (the earlier synthetic-proof work was carried forward, not discarded).
-- PR A (real-source schema and replay core) is complete in ten committed steps.
-  No PR is open. The next action is the owner's `codex review --base main`.
+- PR A (real-source schema and replay core) was built in ten steps, then all
+  nine findings of the first Codex review were fixed (below). No PR is open. The
+  next action is the owner's second `codex review --base main`.
 - The approved design is [`predictive-real-source-schema.md`](predictive-real-source-schema.md)
   revision 2 and [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md)
   revision 2. Section 14 of the DDL lists what each step built and every
@@ -17,9 +18,9 @@ completed work or repeat source downloads merely to recover context.
 
 | Step | Commit | What it added |
 | --- | --- | --- |
-| 1 | `bcf3d37` | Migration reset: synthetic 0003/0004 replaced by the new 0003 |
-| 2 | `19da332` | Real-source envelope: profiles, rights, blobs, runs, artifacts, captures, 32 seeded teams, observations with entity/source keys |
-| 3 | `8707d1b` | Snap and participation evidence kinds |
+| 1 | `bcf3d37` | Approved real-source schema and contract amendments recorded in docs |
+| 2 | `19da332` | Migration reset to the new 0003, with the real-source envelope: profiles, rights, blobs, runs, artifacts, captures, 32 seeded teams, observations with entity/source keys |
+| 3 | `8707d1b` | Role privileges and rights authorization proven in PostgreSQL |
 | 4 | `3acea3e` | Persisted reconciliation decisions; current access uses the database clock |
 | 5 | `0a923ff` | Coverage-aware source-row absences (`absence-v1`) |
 | 6 | `f0f37cb` | Completion decisions over exact marker heads |
@@ -28,9 +29,26 @@ completed work or repeat source downloads merely to recover context.
 | 9 | `6f1bc3f` | Identity bridges with strict same-source ambiguity checks |
 | 10 | `2085bc1` | Owner-only scoped retention with audit and backup re-apply |
 
-Validation at step 10 on Node 24.18.1: 831 jsdom + 442 Node tests; the complete
-disposable PostgreSQL suite (74 Node checks + 42 Vitest tests, all **25**
-mandatory predictive cases); typecheck, lint, CI gate, DB guards, and the
+(An earlier version of this table mislabeled steps 1–3; step 3 never added snap
+kinds. They arrived with review fix 9.)
+
+First Codex review fixes (2026-10-10; DDL section 14 has a note per fix):
+
+| Fix | Commit | What it changed |
+| --- | --- | --- |
+| 1 | `b7f923a` | Reconciliation decisions must cite every visible head, in SQL and TypeScript |
+| 6 | `d448220` | Persisted replay loads participation decisions |
+| 7 | `2d14a1e` | Feature-run decision dependencies must be current at the cutoff |
+| 3 | `c416ce4` | Game-scoped absence coverage binds a typed game identity |
+| 8 | `9eb1eac` | Canonical retention digest; no control characters in any ID |
+| 9 | `23c306d` | Snap evidence kinds, `snap-source-compatibility`, pooled `snapShare` |
+| 5 | `9f462d7` | Final labels pin a current, linked, unambiguous player bridge (check 9) |
+| 2 | `f7fab0d` | Feature runs recorded only through a `clock_timestamp()`-stamped recorder function |
+| 4 | `bf8a029` | Per-digest session locks for blob files and a resumable removal queue |
+
+Validation after the fixes on Node 24.18.1: 831 jsdom + 454 Node tests; the
+complete disposable PostgreSQL suite (74 Node checks + 44 Vitest tests, all
+**27** mandatory predictive cases); typecheck, lint, CI gate, DB guards, and the
 migration and readiness checks.
 
 ## Owner decisions still in force

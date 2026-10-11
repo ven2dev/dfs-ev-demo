@@ -1,8 +1,9 @@
 # `0003_predictive_evidence.sql`: column-level DDL, revision 2
 
-Status: **implemented in PR A** on `feature/dfsEV-52-evidence-schema` (steps 1–10,
-2026-10-10). Sections 1–13 are the approved design; section 14 records what each
-step built and where it refined the design. 0003 stays in its draft reset period
+Status: **implemented in PR A** on `feature/dfsEV-52-evidence-schema` (steps 1–10
+and the first Codex review's nine fixes, 2026-10-10). Sections 1–13 are the
+approved design; section 14 records what each step and review fix built and where
+it refined the design. 0003 stays in its draft reset period
 until PR A passes review (section 12).
 
 Revision 2 consolidates the owner decisions of 2026-10-10 (scoped deletion, saving
