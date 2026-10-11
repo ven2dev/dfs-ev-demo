@@ -1,6 +1,6 @@
 # #52 session handoff
 
-Updated 2026-10-11 after the second implementation review fixes. Resume from this state; do not restart the
+Updated 2026-10-11 after the second implementation review and cleanup follow-up fixes. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
 ## Current state: PR A implemented, awaiting review
@@ -9,8 +9,8 @@ completed work or repeat source downloads merely to recover context.
 - Branch: `feature/dfsEV-52-evidence-schema`, taken from the relay WIP tip
   `1ef86ba` (the earlier synthetic-proof work was carried forward, not discarded).
 - PR A (real-source schema and replay core) was built in ten steps, then the
-  first review's nine findings and second review's four P1 blockers were fixed
-  (below). The owner requested no push or PR yet. The next action is independent
+  first review's nine findings, second review's four P1 blockers and two cleanup
+  follow-up findings were fixed (below). The owner requested no push or PR yet. The next action is independent
   review of these fixes, then the owner's decision on publishing PR A.
 - The approved design is [`predictive-real-source-schema.md`](predictive-real-source-schema.md)
   revision 2 and [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md)
@@ -78,7 +78,16 @@ removes its final label and later label versions, even when the later label
 cites a different surviving bridge. Its earlier unbridged provisional label
 remains.
 
-Validation on Node 24.18.1: 831 jsdom + 457 Node tests (265 pure predictive
+Cleanup follow-up (2026-10-11): aged temporary files are removed under the digest
+lock even when their final digest is committed; committed final bytes and recent
+files remain protected. The artifact store writes/reads/removes exact JSON and
+CSV addresses and discovers CSV orphans. Regressions failed on the previous
+implementation, then passed for stale committed-digest temps, CSV orphan and
+committed-file behavior, and CSV retention/resume through the non-superuser
+owner. This follow-up changes no SQL, migration manifest or catalog contract;
+real CSV parser qualification stays in PR B.
+
+Validation on Node 24.18.1: 831 jsdom + 458 Node tests (266 pure predictive
 cases); the full disposable PostgreSQL gate (74 Node checks + 47 Vitest tests,
 including all **30** mandatory predictive cases); typecheck, lint, CI gate, DB
 guards, migration/catalog/readiness verification, Firestore rules and zero

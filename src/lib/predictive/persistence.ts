@@ -529,9 +529,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const before = Number((await client.query("SELECT extract(epoch FROM clock_timestamp()) * 1000 AS now")).rows[0].now) - graceMs;
     const removed: string[] = [];
     for (const candidate of await artifacts.candidates(before)) await withBlobLocks([candidate.sha256], async () => {
-      // Even an unreferenced temporary file waits until its writer releases the
-      // lock. A committed digest keeps both its content and any diagnostic temp.
-      if (!await blobReferenced(candidate.sha256) && await artifacts.removeOrphan(candidate, before)) removed.push(candidate.reference);
+      // The role-checked query also confirms this session still holds the lock.
+      // Committed rows protect final bytes, never temporary filenames. Both
+      // kinds wait for any live writer and recheck filesystem age under the lock.
+      const referenced = await blobReferenced(candidate.sha256);
+      if ((candidate.kind === "temporary" || !referenced) && await artifacts.removeOrphan(candidate, before)) removed.push(candidate.reference);
     });
     return removed;
   };

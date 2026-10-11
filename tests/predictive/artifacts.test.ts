@@ -37,6 +37,23 @@ it("refuses checkout roots, symlink roots and insecure directories", async () =>
   try { await expect(openArtifactStore(checkout)).rejects.toThrow("artifact-root-refused"); }
   finally { await rm(checkout, { recursive: true }); }
 });
+it("stores and reads CSV at the SQL media-type address and refuses other reference suffixes", async () => {
+  const directory = await root(); const store = await openArtifactStore(directory); const bytes = "player_id,yards\n00-0000001,300\n";
+  const sha = createHash("sha256").update(bytes).digest("hex"); const reference = sha + ".csv";
+  expect(await store.database.write(bytes, sha, "text/csv")).toBe(reference);
+  expect(await store.database.read(reference, sha, Buffer.byteLength(bytes))).toBe(bytes);
+  expect(await readFile(join(directory, ".db-blobs", reference), "utf8")).toBe(bytes);
+  expect(await (await openArtifactStore(directory)).database.read(reference, sha, Buffer.byteLength(bytes))).toBe(bytes);
+  for (const bad of ["../" + reference, sha + ".txt", sha + ".CSV", sha + ".json.csv", "a".repeat(64) + ".csv"]) {
+    await expect(store.database.read(bad, sha, Buffer.byteLength(bytes))).rejects.toThrow("artifact-reference-refused");
+    await expect(store.database.remove(bad, sha)).rejects.toThrow("artifact-reference-refused");
+  }
+  // Runtime callers cannot choose an arbitrary extension through a media type.
+  await expect(store.database.write(bytes, sha, "application/octet-stream" as "text/csv")).rejects.toThrow("artifact-reference-refused");
+  expect((await readdir(join(directory, ".db-blobs"))).filter((name) => name.startsWith(".capture-"))).toEqual([]);
+  await store.database.remove(reference, sha);
+  await expect(store.database.read(reference, sha, Buffer.byteLength(bytes))).rejects.toMatchObject({ code: "ENOENT" });
+});
 it("refuses an insecure, symlinked or replaced database blob namespace", async () => {
   const directory = await root(); const outside = await root(); const database = join(directory, ".db-blobs");
   await symlink(outside, database);

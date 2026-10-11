@@ -1401,6 +1401,21 @@ it("predictive blob cleanup and publication serialize on the blob digest in both
 it("predictive retention drains and resumes blob removals through an execute-only non-superuser login", async () => {
   await withProof(async ({ client, store, artifacts, target }) => {
     const a = passingYardsFixture(false); await store.publish("owner-A", a, NOW);
+    const csv = "player_id,yards\n00-0000001,300\n"; const csvSha = digest(csv); const csvRef = csvSha + ".csv";
+    // Register a schema-valid CSV source blob directly: real CSV parsers remain
+    // PR B work, but the complete existing storage/retention contract must work.
+    const registerCsv = async (runId: string) => {
+      expect(await artifacts.database.write(csv, csvSha, "text/csv")).toBe(csvRef);
+      await client.query("INSERT INTO predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'text/csv',$3)", [csvSha, Buffer.byteLength(csv), csvRef]);
+      await client.query(`INSERT INTO predictive_artifacts (id,blob_sha256,profile_id,retrieval_kind,origin,scope_kind)
+        VALUES ('csv-retention-proof',$1,$2,'full','fixture://csv-retention','manual')`, [csvSha, PROFILE]);
+      await client.query(`INSERT INTO predictive_captures (id,run_id,artifact_id,captured_at,available_at,ingested_at,state,
+        body_complete,header_verified,parser_succeeded,parsed_rows)
+        VALUES ('csv-retention-capture',$1,'csv-retention-proof',$2,$2,$2,'incomplete',true,false,false,0)`, [runId, NOW]);
+      const stored = (await client.query("SELECT storage_ref,byte_size FROM predictive_blobs WHERE sha256=$1", [csvSha])).rows[0];
+      expect(await artifacts.database.read(stored.storage_ref, csvSha, stored.byte_size)).toBe(csv);
+    };
+    await registerCsv("owner-A");
     const login = "dfs52_retention_" + randomBytes(8).toString("hex");
     await client.query(`CREATE ROLE ${login} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD 'disposable-owner-test'`);
     await client.query(`GRANT predictive_retention_owner TO ${login}`);
@@ -1429,18 +1444,26 @@ it("predictive retention drains and resumes blob removals through an execute-onl
         scope: { kind: "source", profileIds: [PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel: "full" };
       // Journals can contain identical bytes, but DB retention never deletes them.
       await artifacts.write(a.artifacts[0].bytes, sha);
+      await artifacts.write(csv, csvSha, "text/csv");
       const result = await ownerStore.retain(event);
-      expect(result.removedBlobRefs).toHaveLength(a.artifacts.length);
+      expect(result.removedBlobRefs).toHaveLength(a.artifacts.length + 1);
+      expect(result.removedBlobRefs).toContain(csvRef);
       expect((await client.query("SELECT count(*)::integer AS count FROM predictive_blob_removals")).rows[0].count).toBe(0);
       await expect(artifacts.database.read(ref, sha, Buffer.byteLength(a.artifacts[0].bytes))).rejects.toMatchObject({ code: "ENOENT" });
       expect(await artifacts.read(ref, sha, Buffer.byteLength(a.artifacts[0].bytes))).toBe(a.artifacts[0].bytes);
+      await expect(artifacts.database.read(csvRef, csvSha, Buffer.byteLength(csv))).rejects.toMatchObject({ code: "ENOENT" });
+      expect(await artifacts.read(csvRef, csvSha, Buffer.byteLength(csv))).toBe(csv);
       expect((await ownerStore.retentionEvents()).map((row) => row.id)).toEqual([event.id]);
       await store.publish("owner-B", a, NOW);
+      await registerCsv("owner-B");
       const failed = await createLocalPredictiveStore(owner, ownerTarget, { ...artifacts, database: { ...artifacts.database,
         remove: async () => { throw new Error("owner unlink interrupted"); } } });
       await expect(failed.retain({ ...event, id: "owner-resume" })).rejects.toThrow("owner unlink interrupted");
-      expect((await client.query("SELECT count(*)::integer AS count FROM predictive_blob_removals")).rows[0].count).toBe(a.artifacts.length);
-      expect(await ownerStore.resumeBlobRemovals()).toHaveLength(a.artifacts.length);
+      expect((await client.query("SELECT count(*)::integer AS count FROM predictive_blob_removals")).rows[0].count).toBe(a.artifacts.length + 1);
+      expect(await artifacts.database.read(csvRef, csvSha, Buffer.byteLength(csv))).toBe(csv);
+      const resumed = await ownerStore.resumeBlobRemovals();
+      expect(resumed).toHaveLength(a.artifacts.length + 1); expect(resumed).toContain(csvRef);
+      await expect(artifacts.database.read(csvRef, csvSha, Buffer.byteLength(csv))).rejects.toMatchObject({ code: "ENOENT" });
       expect(await ownerStore.resumeBlobRemovals()).toEqual([]);
       expect((await ownerStore.retentionEvents()).map((row) => row.id)).toEqual(["owner-delete", "owner-resume"]);
     } finally { await owner.end(); await client.query(`DROP ROLE ${login}`); }
@@ -1478,12 +1501,27 @@ it("predictive rollback removes unpublished bytes and orphan recovery preserves 
     await artifacts.database.write(orphan, sha); await artifacts.write(orphan, sha);
     const temporary = ".capture-" + sha + "-00000000-0000-4000-8000-000000000000.tmp";
     await writeFile(join(root, ".db-blobs", temporary), "partial", { mode: 0o600 });
+    const committedTemporary = ".capture-" + a.artifacts[0].sha256 + "-00000000-0000-4000-8000-000000000001.tmp";
+    await writeFile(join(root, ".db-blobs", committedTemporary), "partial recapture", { mode: 0o600 });
+    const recentTemporary = ".capture-" + a.artifacts[0].sha256 + "-00000000-0000-4000-8000-000000000002.tmp";
+    await writeFile(join(root, ".db-blobs", recentTemporary), "active recapture", { mode: 0o600 });
     const old = new Date(Date.now() - 48 * 60 * 60 * 1000);
-    for (const name of [ref, temporary, a.artifacts[0].sha256 + ".json"]) await utimes(join(root, ".db-blobs", name), old, old);
+    for (const name of [ref, temporary, committedTemporary, a.artifacts[0].sha256 + ".json"]) await utimes(join(root, ".db-blobs", name), old, old);
     const fresh = "recent uncommitted file"; const freshSha = digest(fresh); await artifacts.database.write(fresh, freshSha);
-    expect((await store.sweepOrphanBlobs()).sort()).toEqual([ref, temporary].sort());
+    const csv = "id,yards\n1,300\n"; const csvSha = digest(csv); const csvRef = await artifacts.database.write(csv, csvSha, "text/csv");
+    await artifacts.write(csv, csvSha, "text/csv"); await utimes(join(root, ".db-blobs", csvRef), old, old);
+    // An aged schema-valid committed CSV survives, just like committed JSON.
+    const committedCsv = "id,yards\n2,320\n"; const committedCsvSha = digest(committedCsv);
+    const committedCsvRef = await artifacts.database.write(committedCsv, committedCsvSha, "text/csv");
+    await client.query("INSERT INTO predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'text/csv',$3)",
+      [committedCsvSha, Buffer.byteLength(committedCsv), committedCsvRef]);
+    await utimes(join(root, ".db-blobs", committedCsvRef), old, old);
+    expect((await store.sweepOrphanBlobs()).sort()).toEqual([ref, temporary, committedTemporary, csvRef].sort());
     expect(await store.sweepOrphanBlobs()).toEqual([]);
+    expect(await readFile(join(root, ".db-blobs", recentTemporary), "utf8")).toBe("active recapture");
     expect(await artifacts.read(ref, sha, Buffer.byteLength(orphan))).toBe(orphan);
+    expect(await artifacts.read(csvRef, csvSha, Buffer.byteLength(csv))).toBe(csv);
+    expect(await artifacts.database.read(committedCsvRef, committedCsvSha, Buffer.byteLength(committedCsv))).toBe(committedCsv);
     expect(await artifacts.database.read(freshSha + ".json", freshSha, Buffer.byteLength(fresh))).toBe(fresh);
     expect(await artifacts.database.read(a.artifacts[0].sha256 + ".json", a.artifacts[0].sha256, Buffer.byteLength(a.artifacts[0].bytes))).toBe(a.artifacts[0].bytes);
     await expect(store.sweepOrphanBlobs(0)).rejects.toThrow("blob-grace-refused");

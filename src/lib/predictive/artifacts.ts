@@ -5,14 +5,15 @@ import { join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { digest, refuse } from "./validation.ts";
 
+export type ArtifactMediaType = "application/json" | "text/csv";
 export type ArtifactStore = {
-  write: (bytes: string, sha256: string) => Promise<string>;
+  write: (bytes: string, sha256: string, mediaType?: ArtifactMediaType) => Promise<string>;
   read: (reference: string, sha256: string, byteSize: number) => Promise<string>;
   // Retention only: removes one content-addressed file. The caller first proves
   // the database no longer references it.
   remove: (reference: string, sha256: string) => Promise<void>;
 };
-export type BlobCandidate = { reference: string; sha256: string };
+export type BlobCandidate = { reference: string; sha256: string; kind: "final" | "temporary" };
 export type DatabaseBlobStore = ArtifactStore & {
   candidates: (before: number) => Promise<BlobCandidate[]>;
   removeOrphan: (candidate: BlobCandidate, before: number) => Promise<boolean>;
@@ -20,6 +21,10 @@ export type DatabaseBlobStore = ArtifactStore & {
 export type PrivateArtifactStore = ArtifactStore & { database: DatabaseBlobStore };
 const repository = fileURLToPath(new URL("../../../", import.meta.url));
 const checkedDigest = (value: string) => { if (!/^[a-f0-9]{64}$/.test(value)) refuse("artifact-reference-refused"); };
+const checkedReference = (reference: string, sha256: string) => {
+  checkedDigest(sha256);
+  if (reference !== sha256 + ".json" && reference !== sha256 + ".csv") refuse("artifact-reference-refused");
+};
 const privateFile = async (path: string, limit: number): Promise<string> => {
   const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
@@ -76,8 +81,8 @@ export const openArtifactStore = async (directory: string, maxFileBytes = 1_000_
   };
   const contentStore = (directory: string): ArtifactStore => {
     const read: ArtifactStore["read"] = async (reference, sha256, byteSize) => {
-      checkedDigest(sha256);
-      if (reference !== sha256 + ".json" || !Number.isSafeInteger(byteSize) || byteSize < 0 || byteSize > maxFileBytes) refuse("artifact-reference-refused");
+      checkedReference(reference, sha256);
+      if (!Number.isSafeInteger(byteSize) || byteSize < 0 || byteSize > maxFileBytes) refuse("artifact-reference-refused");
       await checkDirectory(directory);
       const bytes = await privateFile(join(directory, reference), maxFileBytes);
       if (Buffer.byteLength(bytes) !== byteSize || digest(bytes) !== sha256) refuse("artifact-integrity-failed");
@@ -90,18 +95,18 @@ export const openArtifactStore = async (directory: string, maxFileBytes = 1_000_
     return {
       read,
       remove: async (reference, sha256) => {
-        checkedDigest(sha256);
-        if (reference !== sha256 + ".json") refuse("artifact-reference-refused");
+        checkedReference(reference, sha256);
         await checkDirectory(directory);
         try { await unlink(join(directory, reference)); }
         catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
         await syncDirectory();
       },
-      write: async (bytes, sha256) => {
+      write: async (bytes, sha256, mediaType = "application/json") => {
         checkedDigest(sha256);
+        if (mediaType !== "application/json" && mediaType !== "text/csv") refuse("artifact-reference-refused");
         if (typeof bytes !== "string" || Buffer.byteLength(bytes) > maxFileBytes || digest(bytes) !== sha256) refuse("artifact-integrity-failed");
         await checkDirectory(directory);
-        const reference = sha256 + ".json";
+        const reference = sha256 + (mediaType === "text/csv" ? ".csv" : ".json");
         const temporary = join(directory, ".capture-" + sha256 + "-" + randomUUID() + ".tmp");
         const handle = await open(temporary, "wx", 0o600);
         try {
@@ -117,8 +122,12 @@ export const openArtifactStore = async (directory: string, maxFileBytes = 1_000_
       },
     };
   };
-  const candidateDigest = (reference: string) => /^([a-f0-9]{64})\.json$/.exec(reference)?.[1] ??
-    /^\.capture-([a-f0-9]{64})-[a-f0-9-]{36}\.tmp$/.exec(reference)?.[1];
+  const blobCandidate = (reference: string): BlobCandidate | null => {
+    const final = /^([a-f0-9]{64})\.(json|csv)$/.exec(reference);
+    if (final) return { reference, sha256: final[1], kind: "final" };
+    const temporary = /^\.capture-([a-f0-9]{64})-[a-f0-9-]{36}\.tmp$/.exec(reference);
+    return temporary ? { reference, sha256: temporary[1], kind: "temporary" } : null;
+  };
   const oldPrivateFile = async (reference: string, before: number) => {
     const info = await lstat(join(databaseRoot, reference)).catch((error: NodeJS.ErrnoException) => { if (error.code !== "ENOENT") throw error; });
     return !!info && info.isFile() && !info.isSymbolicLink() && info.nlink === 1 && (info.mode & 0o077) === 0 && info.mtimeMs < before;
@@ -130,13 +139,14 @@ export const openArtifactStore = async (directory: string, maxFileBytes = 1_000_
       await checkDirectory(databaseRoot);
       const candidates: BlobCandidate[] = [];
       for (const reference of (await readdir(databaseRoot)).sort()) {
-        const sha256 = candidateDigest(reference);
-        if (sha256 && await oldPrivateFile(reference, before)) candidates.push({ reference, sha256 });
+        const candidate = blobCandidate(reference);
+        if (candidate && await oldPrivateFile(reference, before)) candidates.push(candidate);
       }
       return candidates;
     },
     removeOrphan: async (candidate, before) => {
-      if (!Number.isFinite(before) || candidateDigest(candidate.reference) !== candidate.sha256) refuse("artifact-reference-refused");
+      const parsed = blobCandidate(candidate.reference);
+      if (!Number.isFinite(before) || !parsed || parsed.sha256 !== candidate.sha256 || parsed.kind !== candidate.kind) refuse("artifact-reference-refused");
       checkedDigest(candidate.sha256); await checkDirectory(databaseRoot);
       if (!await oldPrivateFile(candidate.reference, before)) return false;
       try { await unlink(join(databaseRoot, candidate.reference)); }

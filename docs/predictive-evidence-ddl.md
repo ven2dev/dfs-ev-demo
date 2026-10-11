@@ -1041,8 +1041,9 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
   `store.sweepOrphanBlobs()` with a database-clock age cutoff (24 hours by default,
   configurable from one hour to 30 days). The sweep checks age and committed
   references under the digest lock and only scans private digest files and
-  digest-tagged temporary files in `.db-blobs/`. Committed/recent bytes and all
-  journals are preserved. The owner handles journal and backup retention
+  digest-tagged temporary files in `.db-blobs/`. Committed final bytes, recent
+  files and all journals are preserved. Aged temporary files are removable even
+  for a committed digest; they are never SQL references. The owner handles journal and backup retention
   separately. One authoritative database owns each root, and all writers must
   cooperate with the lock protocol on dedicated sequential sessions.
 - **Exact player identity:** membership, player stats, player snaps,
@@ -1070,3 +1071,19 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
 - **Draft reset:** only unmerged 0003 and its generated artifacts change. Released
   v1/v2 files/contracts and readiness minimum 2 remain intact. Only disposable
   PostgreSQL is used; hosted roles and migrations remain gated by #95.
+
+### Cleanup review follow-up (2026-10-11)
+
+- Orphan candidates distinguish final and temporary filenames. The sweep removes
+  aged temporary files under the digest lock even when final bytes remain
+  committed. Both kinds recheck filesystem age after acquiring the lock.
+- The filesystem now matches SQL's media contract: `application/json` maps to
+  `<sha>.json` and `text/csv` maps to `<sha>.csv`. Read/remove validate either
+  exact address; orphan discovery includes CSV finals. The write API defaults to
+  JSON for existing archive/publication callers. No SQL or migration artifact
+  changes are needed, and real-source parser qualification remains PR B work.
+- Regressions fail against the previous code. They cover an aged temp for a
+  committed digest, preserved recent temp/committed final bytes, CSV
+  write/read/reopen/refusal, aged untracked CSV removal, preserved committed CSV,
+  and CSV retention plus failed-unlink/resume through the non-superuser
+  execute-only owner login. Root journal copies survive both paths.
