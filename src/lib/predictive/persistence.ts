@@ -1,7 +1,8 @@
 import type { Client } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
 import type { ArtifactStore } from "./artifacts.ts";
-import type { Artifact, Capture, Dataset, Observation, Profile, Reconciliation, Request, Revision, RightsDecision } from "./types.ts";
+import type { Artifact, Capture, Dataset, Decision, Observation, Profile, Request, Revision, RightsDecision } from "./types.ts";
+import { validateCompletionDecisions } from "./completion.ts";
 import { buildPassingYardsFromReplay, validatePassingYardsRequest } from "./passingYards.ts";
 import { blockedProfiles, replayObservations } from "./replay.ts";
 import { canonical, digest, entityKey, instant, observation, refuse, sourceKey, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
@@ -58,7 +59,7 @@ const DECISION_SQL = `SELECT jsonb_build_object('id',d.id,'kind',d.kind,'entityK
   'inputs',coalesce((SELECT jsonb_agg(jsonb_build_object('observationId',i.observation_id,'role',i.role) ORDER BY i.observation_id COLLATE "C")
     FROM public.predictive_decision_inputs i WHERE i.decision_id=d.id),'[]'::jsonb)) AS decision
   FROM public.predictive_decisions d JOIN public.predictive_ingestion_runs r ON r.id=d.run_id
-  WHERE r.status='published' AND d.kind='reconciliation' AND d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz ORDER BY d.id`;
+  WHERE r.status='published' AND d.kind IN ('reconciliation','completion') AND d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz ORDER BY d.id`;
 
 // No remote session, primary test DB or unregistered scratch database can use
 // this local proof. The caller owns one session; operations are sequential.
@@ -182,7 +183,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       await persistRights(pending.splice(index === -1 ? 0 : index, 1)[0]);
     }
   };
-  const persistDecision = async (decision: Reconciliation, runId: string) => {
+  const persistDecision = async (decision: Decision, runId: string) => {
     const existing = (await client.query(DECISION_SQL.replace("d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz", "d.id=$1"), [decision.id])).rows[0]?.decision;
     if (existing) { if (canonical(existing) !== canonical({ ...decision, inputs: [...decision.inputs].sort((a, b) => a.observationId < b.observationId ? -1 : 1) })) refuse("decision-id-conflict"); return; }
     await client.query(`INSERT INTO public.predictive_decisions (id,kind,entity_key,policy_id,mode,outcome,run_id,decided_at,predecessor_id)
@@ -237,8 +238,9 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         const profiles = new Map([...(await profilesFor([...new Set([...known.values()].map((row) => row.artifact.profileId))])), ...dataset.profiles]
           .map((profile) => [profile.id, profile]));
         const earlier = (await client.query(DECISION_SQL.replace("d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz", "d.id=ANY($1::text[])"),
-          [checked.decisions.flatMap((decision) => decision.predecessorId ? [decision.predecessorId] : [])])).rows.map((row) => row.decision as Reconciliation);
-        validateDecisions([...earlier.filter((item) => !checked.decisions.some((decision) => decision.id === item.id)), ...checked.decisions], known, profiles);
+          [checked.decisions.flatMap((decision) => decision.predecessorId ? [decision.predecessorId] : [])])).rows.map((row) => row.decision as Decision);
+        const all = [...earlier.filter((item) => !checked.decisions.some((decision) => decision.id === item.id)), ...checked.decisions];
+        validateDecisions(all, known, profiles);
       }
       await insertRun(id, requestHash, now, "published", null, counts, bytes);
       for (const artifact of dataset.artifacts) await persistArtifact(artifact);
@@ -325,9 +327,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const profileIds = [...new Set(rows.map((row) => row.artifact.profileId))];
     const rights = (await client.query(RIGHTS_SQL, [profileIds])).rows.map((row) => row.decision as RightsDecision);
     const visible = validateObservations(rows);
-    const decisions = (await client.query(DECISION_SQL, [request.cutoff, [...new Set([...visible.values()].map((row) => "reconciliation:" + row.entityKey))]]))
-      .rows.map((row) => row.decision as Reconciliation);
-    validateDecisions(decisions, visible, new Map((await profilesFor(profileIds)).map((profile) => [profile.id, profile])));
+    const decisionKeys = new Set([...visible.values()].flatMap((row) => ["reconciliation:" + row.entityKey,
+      ...("gameId" in row.revision.data && row.revision.data.gameId ? ["completion:" + row.revision.data.gameId] : [])]));
+    const decisions = (await client.query(DECISION_SQL, [request.cutoff, [...decisionKeys]])).rows.map((row) => row.decision as Decision);
+    const profileMap = new Map((await profilesFor(profileIds)).map((profile) => [profile.id, profile]));
+    validateDecisions(decisions, visible, profileMap);
+    validateCompletionDecisions(decisions, visible, profileMap);
     return buildPassingYardsFromReplay(replayObservations(rows, blockedProfiles(rights, profileIds, clock), decisions), request);
   }, true);
 

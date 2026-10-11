@@ -662,3 +662,23 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
 - **Still deferred to PR B:** automatically detecting absences from real file
   recaptures. Step 5 supplies the contract and its enforcement; tests construct
   absences directly.
+
+### Step 6 additions (2026-10-10)
+
+- **Completion decisions:** `kind = 'completion'`, policy `event-completion-v1`,
+  entity key `completion:<gameId>`, outcome
+  `{ state, completionObservedAt, actualEnd: null }`, inputs with role `marker`.
+  `actualEnd` stays null until an actual-end source is qualified.
+- **No cherry-picking:** a record's inputs must equal exactly the marker heads
+  for that game usable at `decided_at`, absences included. The database
+  recomputes the state and observed time from them (`predictive_decision_check`,
+  matching `completion.ts`). A disappeared or multi-provider marker is
+  `conflicting`.
+- **Replay** recomputes `event-completion-v1` from the cutoff-visible heads and
+  cites (`completions`) the latest record only when it judged exactly those heads
+  and reached the same outcome. A stale record is never trusted. Persisted
+  completion records become mandatory for outcome labels in step 7.
+- **Design choice:** the policy is deterministic and versioned, so evidence plus
+  policy is the source of truth, and a record is a database-verified,
+  citable application of it. That avoids two sources of truth and avoids
+  requiring a fresh record after every marker capture.

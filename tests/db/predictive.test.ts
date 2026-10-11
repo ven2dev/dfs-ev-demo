@@ -12,9 +12,10 @@ import { buildPassingYardsBundle } from "../../src/lib/predictive/passingYards.t
 import { createLocalPredictiveStore, MEMBERSHIP_READ_SQL, SCHEDULE_READ_SQL } from "../../src/lib/predictive/persistence.ts";
 import { ingestLocalDataset } from "../../src/lib/predictive/ingest.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
+import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/completion.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { runLocalProof } from "../../scripts/predictive/local.ts";
-import { digest, TEAM_IDS } from "../../src/lib/predictive/validation.ts";
+import { digest, instant, TEAM_IDS, validateDataset } from "../../src/lib/predictive/validation.ts";
 import type { Dataset, Revision } from "../../src/lib/predictive/types.ts";
 import { addCapture, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_B, emptyDataset, gameId, membership, passingYardsFixture,
   PLAYER, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM } from "../predictive/fixtures/passingYards.ts";
@@ -727,5 +728,46 @@ it("predictive coverage-aware absences block later cutoffs only and PostgreSQL r
     const returned = await store.replay(request("2026-10-08T16:00:00.000Z"));
     expect(returned.reasons).not.toContain("required-input-disappeared");
     expect(returned.team![0].games.map((game) => game.gameId)).toContain(PRIOR[4]);
+  });
+});
+it("predictive completion records must cite exactly the marker heads known at their decision time and state the policy outcome", async () => {
+  await withProof(async ({ client, store }) => {
+    const a = passingYardsFixture(false); await store.publish("A", a, NOW);
+    const recorded = recordCompletion("completion-5", PRIOR[4], markerHeadsAt(validateDataset(a).observations.values(), PRIOR[4], instant(CAPTURE_A)), CAPTURE_A, "synthetic-proof");
+    await store.publish("decide", { ...emptyDataset(), profiles: a.profiles, rightsDecisions: a.rightsDecisions, decisions: [recorded] }, NOW);
+    const replay = await store.replay(request());
+    expect(replay).toEqual(buildPassingYardsBundle({ ...a, decisions: [recorded] }, request()));
+    expect(replay.completions).toEqual([{ decisionId: "completion-5", gameId: PRIOR[4], state: "completed", decidedAt: CAPTURE_A }]);
+    const insert = async (id: string, outcome: object, inputs: string[], options: { decidedAt?: string; mode?: string; predecessor?: string | null } = {}) => {
+      await client.query(`INSERT INTO predictive_decisions (id,kind,entity_key,policy_id,mode,outcome,run_id,decided_at,predecessor_id)
+        VALUES ($1,'completion',$2,'event-completion-v1',$3,$4,'decide',$5,$6)`,
+      [id, "completion:" + PRIOR[4], options.mode ?? "synthetic-proof", outcome, options.decidedAt ?? CAPTURE_A, options.predecessor ?? null]);
+      for (const observation of inputs) await client.query("INSERT INTO predictive_decision_inputs VALUES ($1,$2,'marker')", [id, observation]);
+    };
+    const completed = { state: "completed", completionObservedAt: CAPTURE_A, actualEnd: null };
+    const markers = ["final-synthetic-game-5", "terminal-synthetic-game-5"];
+    await sqlProbe(client, async () => { await insert("probe-ok", completed, markers, { predecessor: "completion-5" }); await client.query("SET CONSTRAINTS ALL IMMEDIATE"); });
+    const refusals: [string, () => Promise<void>, string][] = [
+      ["a cherry-picked marker set", () => insert("probe", completed, markers.slice(0, 1)), "predictive-completion-inputs-invalid"],
+      ["a state the markers do not support", () => insert("probe", { state: "in-progress", completionObservedAt: null, actualEnd: null }, markers), "predictive-decision-rule-invalid"],
+      ["an earlier observed time", () => insert("probe", { ...completed, completionObservedAt: "2026-10-07T11:00:00.000Z" }, markers), "predictive-decision-rule-invalid"],
+      ["a decision before its markers were usable", () => insert("probe", completed, markers, { decidedAt: "2026-10-07T11:00:00.000Z" }), "predictive-completion-inputs-invalid"],
+      ["synthetic markers under production mode", () => insert("probe", completed, markers, { mode: "production-research" }), "predictive-decision-mode-invalid"],
+    ];
+    for (const [label, run, message] of refusals) await sqlProbe(client, async () => {
+      await run();
+      await expect(client.query("SET CONSTRAINTS ALL IMMEDIATE"), label).rejects.toMatchObject({ code: "23514", message });
+    });
+    await sqlProbe(client, async () => {
+      await expect(insert("probe", { ...completed, actualEnd: "2026-10-07T12:00:00.000Z" }, markers)).rejects.toMatchObject({ code: "23514" });
+    });
+    // A later suspension notice changes the heads: the record is no longer cited.
+    const later = { ...emptyDataset(), profiles: a.profiles, rightsDecisions: a.rightsDecisions };
+    addCapture(later, "late-suspension", [revision("late-suspension", "event-state-marker", { gameId: PRIOR[4], markerType: "suspension-notice", markerValue: "notice", terminalPlayTimeOfDay: null })], CAPTURE_B);
+    await store.publish("suspension", later, NOW);
+    expect((await store.replay(request())).completions).toHaveLength(1);
+    const stale = await store.replay(request(CUTOFF_B));
+    expect(stale.completions).toEqual([]);
+    expect(stale.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-conflicting" });
   });
 });

@@ -1,5 +1,6 @@
-import type { Dataset, Kind, Observation, Reconciliation, RightsDecision } from "./types.ts";
-import { allows, compareText, datasetContainer, instant, object, rightsInForce, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
+import type { CompletionRecord, Dataset, Decision, Kind, Observation, Reconciliation, RightsDecision } from "./types.ts";
+import { completionFromHeads, validateCompletionDecisions } from "./completion.ts";
+import { allows, canonical, compareText, datasetContainer, instant, object, rightsInForce, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
 
 export type Selection<K extends Kind> = ({ state: "selected"; observation: Observation<K> } |
   { state: "missing" | "ambiguous" | "absent"; observation: null }) & { dependencies: Observation[] };
@@ -29,6 +30,7 @@ export const createReplay = (dataset: Dataset, cutoff: string, accessAt: string)
   const decisions = root.decisions.filter((value) => instant(object(value).decidedAt) <= at);
   const validated = validateDataset({ ...root, artifacts, captures, decisions });
   validateDecisions(validated.decisions, validated.observations, validated.profiles);
+  validateCompletionDecisions(validated.decisions, validated.observations, validated.profiles);
   const rows = [...validated.observations.values()];
   return replayObservations(rows, blockedProfiles(validated.rightsDecisions, new Set(rows.map((row) => row.artifact.profileId)), accessAt), validated.decisions);
 };
@@ -36,21 +38,22 @@ export const createReplay = (dataset: Dataset, cutoff: string, accessAt: string)
 // Persistent reads supply only validated, cutoff-visible source chains. Each
 // source chain contributes its head; one fact with several provider heads is
 // ambiguous until a reconciliation decision selects one.
-export const replayObservations = (rows: Observation[], blocked: Set<string>, decisions: Reconciliation[] = []) => {
+export const replayObservations = (rows: Observation[], blocked: Set<string>, decisions: Decision[] = []) => {
   const active = [...validateObservations(rows).values()].filter((row) => !blocked.has(row.artifact.profileId));
   const superseded = new Set(active.map((row) => row.revision.predecessorId));
   const heads = active.filter((row) => !superseded.has(row.revision.id));
   const replacedDecisions = new Set(decisions.map((decision) => decision.predecessorId));
-  const decisionHeads = new Map<string, Reconciliation[]>();
+  const decisionHeads = new Map<string, Decision[]>();
   for (const decision of decisions.filter((item) => !replacedDecisions.has(item.id))) {
     decisionHeads.set(decision.entityKey, [...(decisionHeads.get(decision.entityKey) ?? []), decision]);
   }
+  const cited = new Map<string, CompletionRecord>();
   const used = new Map<string, Reconciliation>();
   const disappeared = new Map<string, Observation[]>();
   // A decision resolves a fact only for the exact provider heads it judged. A
   // later correction or a new provider makes it stale, and the fact ambiguous.
   const reconciled = (key: string, matches: Observation[]) => {
-    const latest = decisionHeads.get("reconciliation:" + key) ?? [];
+    const latest = (decisionHeads.get("reconciliation:" + key) ?? []) as Reconciliation[];
     if (latest.length !== 1 || latest[0].outcome.result !== "selected") return null;
     const judged = latest[0].inputs.map((input) => input.observationId).sort(compareText);
     const current = matches.map((row) => row.revision.id).sort(compareText);
@@ -90,6 +93,18 @@ export const replayObservations = (rows: Observation[], blocked: Set<string>, de
     // Current provider heads for one fact, for producing reconciliation decisions.
     heads: (key: string): Observation[] => heads.filter((row) => row.entityKey === key),
     usedDecisions: () => [...used.values()].sort((a, b) => compareText(a.id, b.id)),
+    // event-completion-v1 over the current marker heads (absences included). A
+    // persisted record is cited only if it judged exactly these heads and agrees.
+    completion: (gameId: string) => {
+      const markers = heads.filter((row) => row.entityKey.startsWith("event-state-marker:" + gameId + ":"));
+      const outcome = completionFromHeads(markers);
+      const latest = (decisionHeads.get("completion:" + gameId) ?? []) as CompletionRecord[];
+      const judged = (record: CompletionRecord) => record.inputs.map((input) => input.observationId).sort(compareText).join("\n");
+      const current = markers.map((row) => row.revision.id).sort(compareText).join("\n");
+      if (latest.length === 1 && judged(latest[0]) === current && canonical(latest[0].outcome) === canonical(outcome)) cited.set(latest[0].id, latest[0]);
+      return { ...outcome, inputs: markers };
+    },
+    citedCompletions: () => [...cited.values()].sort((a, b) => compareText(a.id, b.id)),
     disappearedFacts: () => [...disappeared.keys()].sort(compareText),
     // Enumerate cutoff-known facts only; a future capture cannot invent a
     // prior-game gap or reveal a future identity to an earlier replay.

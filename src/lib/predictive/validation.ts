@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { NFL_TEAM_ABBREVIATIONS } from "../nflStadiums.ts";
 import { KINDS, ROUTING_FIELDS, STAT_FIELDS, type Artifact, type Capture, type Dataset, type Kind, type Observation,
-  type Profile, type Reconciliation, type Revision, type RightsDecision, type Use } from "./types.ts";
+  type Decision, type Profile, type Reconciliation, type Revision, type RightsDecision, type Use } from "./types.ts";
 
 export class PredictiveError extends Error {
   code: string;
@@ -267,34 +267,57 @@ export const datasetContainer = (value: unknown) => {
 
 // Shape only; references are checked against stored or visible evidence by
 // validateDecisions, because a decision may cite evidence from earlier batches.
-export const validateDecisionShape = (value: unknown): Reconciliation => {
+export const validateDecisionShape = (value: unknown): Decision => {
   const row = exact(value, ["id", "kind", "entityKey", "policyId", "mode", "decidedAt", "predecessorId", "outcome", "inputs"]);
-  text(row.id); oneOf(row.kind, ["reconciliation"]); oneOf(row.policyId, ["reconciliation-v1"]);
+  text(row.id); oneOf(row.kind, ["reconciliation", "completion"]);
   oneOf(row.mode, ["production-research", "synthetic-proof"]); instant(row.decidedAt);
-  if (typeof row.entityKey !== "string" || !row.entityKey.startsWith("reconciliation:") || row.entityKey.length > 300) refuse("invalid-decision");
   if (row.predecessorId !== null) text(row.predecessorId);
   if (row.predecessorId === row.id) refuse("invalid-decision");
+  if (!Array.isArray(row.inputs) || row.inputs.length > 16) refuse("invalid-decision");
+  if (row.kind === "completion") {
+    oneOf(row.policyId, ["event-completion-v1"]);
+    if (typeof row.entityKey !== "string" || !row.entityKey.startsWith("completion:")) refuse("invalid-decision");
+    gameIdentity(row.entityKey.slice("completion:".length));
+    const outcome = exact(row.outcome, ["state", "completionObservedAt", "actualEnd"]);
+    oneOf(outcome.state, ["scheduled", "in-progress", "completed", "suspended", "postponed", "conflicting"]);
+    if ((outcome.state === "completed") !== (outcome.completionObservedAt !== null)) refuse("invalid-decision");
+    if (outcome.completionObservedAt !== null) instant(outcome.completionObservedAt);
+    if (outcome.actualEnd !== null) refuse("invalid-decision");
+    for (const input of row.inputs) { const item = exact(input, ["observationId", "role"]); text(item.observationId); oneOf(item.role, ["marker"]); }
+    if (new Set(row.inputs.map((input) => input.observationId)).size !== row.inputs.length) refuse("invalid-decision");
+    return value as Decision;
+  }
+  oneOf(row.policyId, ["reconciliation-v1"]);
+  if (typeof row.entityKey !== "string" || !row.entityKey.startsWith("reconciliation:") || row.entityKey.length > 300) refuse("invalid-decision");
   const outcome = exact(row.outcome, ["result", "selectedObservationId", "rule"]);
   oneOf(outcome.result, ["selected", "conflict", "insufficient-sources"]);
   oneOf(outcome.rule, ["single-source", "sources-agree", "material-discrepancy", "no-candidates"]);
   if ((outcome.result === "selected") !== (outcome.selectedObservationId !== null)) refuse("invalid-decision");
   if (outcome.selectedObservationId !== null) text(outcome.selectedObservationId);
-  if (!Array.isArray(row.inputs) || row.inputs.length > 16) refuse("invalid-decision");
   for (const input of row.inputs) { const item = exact(input, ["observationId", "role"]); text(item.observationId); oneOf(item.role, ["candidate", "selected"]); }
   if (new Set(row.inputs.map((input) => input.observationId)).size !== row.inputs.length) refuse("invalid-decision");
-  return value as Reconciliation;
+  return value as Decision;
 };
 
 // reconciliation-v1 rules, identical to predictive_decision_check() in 0003:
 // inputs are distinct provider heads for one fact, each usable by decidedAt;
 // the rule matches the evidence; synthetic evidence implies synthetic-proof.
-export const validateDecisions = (decisions: Reconciliation[], observations: Map<string, Observation>, profiles: Map<string, Profile>) => {
-  const byId = new Map<string, Reconciliation>(); const successors = new Set<string>();
+export const validateDecisions = (decisions: Decision[], observations: Map<string, Observation>, profiles: Map<string, Profile>) => {
+  const byId = new Map<string, Decision>(); const successors = new Set<string>();
   for (const decision of decisions) {
     if (byId.has(decision.id)) refuse("duplicate-decision");
     byId.set(decision.id, decision);
   }
+  // Chains apply to every decision kind: same kind and fact, ordered, unbranched.
   for (const decision of decisions) {
+    if (decision.predecessorId === null) continue;
+    const prior = byId.get(decision.predecessorId) ?? refuse("decision-predecessor-missing");
+    if (prior.kind !== decision.kind || prior.entityKey !== decision.entityKey || instant(prior.decidedAt) > instant(decision.decidedAt)) refuse("decision-lineage-invalid");
+    if (successors.has(prior.id)) refuse("decision-branch-refused");
+    successors.add(prior.id);
+  }
+  for (const decision of decisions) {
+    if (decision.kind !== "reconciliation") continue;
     const fact = decision.entityKey.slice("reconciliation:".length);
     const rows = decision.inputs.map((input) => observations.get(input.observationId) ?? refuse("decision-input-missing"));
     const decided = instant(decision.decidedAt);
@@ -314,12 +337,6 @@ export const validateDecisions = (decisions: Reconciliation[], observations: Map
     if (!consistent) refuse("decision-rule-mismatch");
     const synthetic = rows.some((row) => profiles.get(row.artifact.profileId)?.purpose === "synthetic-test");
     if (synthetic !== (decision.mode === "synthetic-proof")) refuse("decision-mode-mismatch");
-    if (decision.predecessorId !== null) {
-      const prior = byId.get(decision.predecessorId) ?? refuse("decision-predecessor-missing");
-      if (prior.entityKey !== decision.entityKey || instant(prior.decidedAt) > decided) refuse("decision-lineage-invalid");
-      if (successors.has(prior.id)) refuse("decision-branch-refused");
-      successors.add(prior.id);
-    }
   }
 };
 

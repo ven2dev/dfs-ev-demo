@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import { buildPassingYardsBundle } from "../../src/lib/predictive/passingYards.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
+import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/completion.ts";
 import { digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader } from "../../src/lib/predictive/validation.ts";
-import type { Artifact, Capture, Dataset, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
+import type { Artifact, Capture, CompletionRecord, Dataset, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
 import { addCapture, artifact, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_A, CUTOFF_B, gameId, membership, OPPONENT,
   passingYardsFixture, PLAYER, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamStats } from "./fixtures/passingYards.ts";
 
@@ -792,6 +793,55 @@ describe("absence-v1 coverage-aware disappearance", () => {
     const dataset = scoped(); const absence = disappear(dataset);
     playerChanges(dataset, absence.id, change);
     expect(() => validateDataset(dataset)).toThrow(code);
+  });
+});
+
+describe("event-completion-v1 recorded decisions", () => {
+  const headsAt = (dataset: Dataset, at: string) => markerHeadsAt(validateDataset(dataset).observations.values(), PRIOR[4], instant(at));
+  const record = (dataset: Dataset, at = CAPTURE_A) => recordCompletion("completion-5", PRIOR[4], headsAt(dataset, at), at, "synthetic-proof");
+  it("cites a record that judged exactly the current marker heads", () => {
+    const dataset = passingYardsFixture(false); const recorded = record(dataset);
+    expect(recorded.outcome).toEqual({ state: "completed", completionObservedAt: CAPTURE_A, actualEnd: null });
+    expect(recorded.inputs.map((input) => input.observationId)).toEqual(["final-synthetic-game-5", "terminal-synthetic-game-5"]);
+    dataset.decisions.push(recorded);
+    const result = bundle(dataset);
+    expect(result.status).toBe("ready-inputs");
+    expect(result.completions).toEqual([{ decisionId: "completion-5", gameId: PRIOR[4], state: "completed", decidedAt: CAPTURE_A }]);
+    expect(bundle(passingYardsFixture(false)).completions).toEqual([]);
+  });
+  it("stops citing a record once later markers change the heads it judged", () => {
+    const dataset = passingYardsFixture(false); dataset.decisions.push(record(dataset));
+    addCapture(dataset, "late-suspension", [revision("late-suspension", "event-state-marker", { gameId: PRIOR[4], markerType: "suspension-notice", markerValue: "notice", terminalPlayTimeOfDay: null })], CAPTURE_B);
+    expect(bundle(dataset).completions).toHaveLength(1);
+    const later = buildPassingYardsBundle(dataset, request(CUTOFF_B));
+    expect(later.completions).toEqual([]);
+    expect(later.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-conflicting" });
+  });
+  it.each([
+    ["completion-inputs-not-heads", (value: CompletionRecord) => ({ ...value, inputs: value.inputs.slice(0, 1) })],
+    ["decision-rule-mismatch", (value: CompletionRecord) => ({ ...value, outcome: { state: "in-progress" as const, completionObservedAt: null, actualEnd: null } })],
+    ["decision-rule-mismatch", (value: CompletionRecord) => ({ ...value, outcome: { ...value.outcome, completionObservedAt: "2026-10-07T11:00:00.000Z" } })],
+    ["decision-mode-mismatch", (value: CompletionRecord) => ({ ...value, mode: "production-research" as const })],
+  ] as const)("refuses a record that misstates its markers: %s", (code, change) => {
+    const dataset = passingYardsFixture(false); dataset.decisions.push(change(record(dataset)));
+    expect(() => bundle(dataset)).toThrow(code);
+  });
+  it("refuses a record decided before its markers were usable", () => {
+    const dataset = passingYardsFixture(false);
+    dataset.decisions.push({ ...record(dataset), decidedAt: "2026-10-07T11:00:00.000Z" });
+    expect(() => bundle(dataset)).toThrow("completion-inputs-not-heads");
+  });
+  it("treats a disappeared marker as conflicting evidence", () => {
+    const dataset = passingYardsFixture(false);
+    Object.assign(dataset.artifacts.find((value) => value.id === "A-event-state-marker")!, { scopeKind: "season-file", scopeSeason: 2026 });
+    const markers = (JSON.parse(dataset.artifacts.find((value) => value.id === "A-event-state-marker")!.bytes) as Revision[]).filter((value) => value.id !== "terminal-synthetic-game-5");
+    addCapture(dataset, "marker-file", markers, CAPTURE_B);
+    Object.assign(dataset.artifacts.at(-1)!, { scopeKind: "season-file", scopeSeason: 2026 });
+    addCapture(dataset, "marker-absence", [revision("absent-terminal-5", "source-row-absent", { priorObservationId: "terminal-synthetic-game-5",
+      priorEntityKey: "event-state-marker:" + PRIOR[4] + ":terminal-play", coveringCaptureId: "capture-marker-file", scopeKind: "season-file",
+      scopeSeason: 2026, scopeWeek: null, scopeFilter: null, gameId: PRIOR[4] }, "terminal-synthetic-game-5")], CAPTURE_B);
+    const later = buildPassingYardsBundle(dataset, request(CUTOFF_B));
+    expect(later.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-conflicting" });
   });
 });
 

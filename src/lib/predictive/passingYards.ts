@@ -93,7 +93,7 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
     computedAt: request.computedAt, status: "unavailable-inputs", reasons: [], quality: [],
     target, teamId, opponentId, availability: { injury: status.injury, depth: status.depth, participation: "future-unknown" },
     player: [], team: enrich ? [] : null, opponent: enrich ? [] : null, scheduledRestHours: null,
-    dependencyAvailableAt: null, dependencies: [], excludedSchedule, reconciliations: [],
+    dependencyAvailableAt: null, dependencies: [], excludedSchedule, reconciliations: [], completions: [],
     scheduleCoverage: { state: "unverified", missingGameIds: [] },
   };
   if (target && member && !reasons.size) {
@@ -225,6 +225,8 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
   base.dependencies = dependencies;
   base.dependencyAvailableAt = dependencies.length ? new Date(Math.max(...dependencies.map((row) => instant(row.availableAt)))).toISOString() : null;
   if (replay.disappearedFacts().length) reasons.add("required-input-disappeared");
+  base.completions = replay.citedCompletions().map((record) => ({ decisionId: record.id, gameId: record.entityKey.slice("completion:".length),
+    state: record.outcome.state, decidedAt: record.decidedAt }));
   base.reconciliations = replay.usedDecisions().map((decision) => ({ decisionId: decision.id, entityKey: decision.entityKey,
     result: decision.outcome.result, decidedAt: decision.decidedAt }));
   base.reasons = [...reasons].sort(); base.quality = [...quality].sort();

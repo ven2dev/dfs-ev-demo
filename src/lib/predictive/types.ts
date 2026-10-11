@@ -96,9 +96,18 @@ export type Reconciliation = {
     rule: "single-source" | "sources-agree" | "material-discrepancy" | "no-candidates" };
   inputs: { observationId: string; role: "candidate" | "selected" }[];
 };
+// A recorded application of event-completion-v1 to exactly the marker heads
+// known at decidedAt. Replay recomputes the policy and cites a matching record.
+export type CompletionRecord = {
+  id: string; kind: "completion"; entityKey: string; policyId: "event-completion-v1";
+  mode: "production-research" | "synthetic-proof"; decidedAt: string; predecessorId: string | null;
+  outcome: { state: "scheduled" | "in-progress" | "completed" | "suspended" | "postponed" | "conflicting"; completionObservedAt: string | null; actualEnd: null };
+  inputs: { observationId: string; role: "marker" }[];
+};
+export type Decision = Reconciliation | CompletionRecord;
 export type Dataset = {
   formatVersion: 2; profiles: Profile[]; rightsDecisions: RightsDecision[]; artifacts: Artifact[]; captures: Capture[];
-  decisions: Reconciliation[];
+  decisions: Decision[];
 };
 export type Observation<K extends Kind = Kind> = {
   revision: Revision<K>; capture: Capture; artifact: Artifact; entityKey: string; sourceKey: string;
@@ -133,6 +142,7 @@ export type Bundle = {
   player: Summary[]; team: Summary[] | null; opponent: Summary[] | null;
   scheduledRestHours: number | null; dependencyAvailableAt: string | null; dependencies: Dependency[];
   excludedSchedule: Exclusion[]; inputDigest: string;
+  completions: { decisionId: string; gameId: string; state: CompletionRecord["outcome"]["state"]; decidedAt: string }[];
   reconciliations: { decisionId: string; entityKey: string; result: Reconciliation["outcome"]["result"]; decidedAt: string }[];
   scheduleCoverage: { state: "complete" | "unverified"; missingGameIds: string[] };
 };

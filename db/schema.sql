@@ -933,7 +933,15 @@ CREATE CONSTRAINT TRIGGER predictive_check_links AFTER INSERT ON public.predicti
 CREATE FUNCTION public.predictive_decision_valid(kind text, outcome jsonb) RETURNS boolean
 LANGUAGE plpgsql IMMUTABLE STRICT AS $$
 BEGIN
-  IF kind <> 'reconciliation' OR jsonb_typeof(outcome) <> 'object' OR
+  IF jsonb_typeof(outcome) <> 'object' THEN RETURN false; END IF;
+  IF kind = 'completion' THEN
+    RETURN (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) = ARRAY['actualEnd','completionObservedAt','state']
+      AND (outcome->>'state' IN ('scheduled','in-progress','completed','suspended','postponed','conflicting')) IS TRUE
+      AND outcome->'actualEnd' = 'null'::jsonb
+      AND CASE WHEN outcome->>'state' = 'completed' THEN public.predictive_instant(outcome->>'completionObservedAt')
+        ELSE outcome->'completionObservedAt' = 'null'::jsonb END;
+  END IF;
+  IF kind <> 'reconciliation' OR
     (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) IS DISTINCT FROM ARRAY['result','rule','selectedObservationId']
     THEN RETURN false; END IF;
   RETURN (outcome->>'result' IN ('selected','conflict','insufficient-sources')) IS TRUE
@@ -956,6 +964,7 @@ CREATE TABLE public.predictive_decisions (
   predecessor_id text,
   CHECK (public.predictive_decision_valid(kind, outcome) IS TRUE),
   CHECK (kind <> 'reconciliation' OR (policy_id = 'reconciliation-v1' AND entity_key LIKE 'reconciliation:%')),
+  CHECK (kind <> 'completion' OR (policy_id = 'event-completion-v1' AND entity_key ~ '^completion:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$')),
   CHECK (predecessor_id IS DISTINCT FROM id),
   UNIQUE (id, kind, entity_key, policy_id),
   FOREIGN KEY (predecessor_id, kind, entity_key, policy_id)
@@ -967,7 +976,7 @@ CREATE INDEX predictive_decisions_entity_idx ON public.predictive_decisions (kin
 CREATE TABLE public.predictive_decision_inputs (
   decision_id text NOT NULL REFERENCES public.predictive_decisions(id),
   observation_id text NOT NULL REFERENCES public.predictive_observations(id),
-  role text NOT NULL CHECK (role IN ('candidate','selected')),
+  role text NOT NULL CHECK (role IN ('candidate','selected','marker')),
   PRIMARY KEY (decision_id, observation_id)
 );
 CREATE INDEX predictive_decision_inputs_reverse_idx ON public.predictive_decision_inputs (observation_id, decision_id);
@@ -978,25 +987,73 @@ CREATE TRIGGER predictive_decisions_no_truncate BEFORE TRUNCATE ON public.predic
 CREATE TRIGGER predictive_decision_inputs_no_truncate BEFORE TRUNCATE ON public.predictive_decision_inputs FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
 
 CREATE FUNCTION public.predictive_decision_check() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE target text; d public.predictive_decisions; fact text;
+DECLARE target text; d public.predictive_decisions; fact text; game text;
   inputs integer; sources integer; selected integer; selected_id text; same boolean; synthetic boolean; consistent boolean;
+  head_ids text[]; input_ids text[]; r record; absent boolean := false;
+  final_n integer := 0; terminal_n integer := 0; totals_n integer := 0; suspended_n integer := 0; postponed_n integer := 0;
+  final_at timestamptz; terminal_at timestamptz; totals_at timestamptz; state text; observed timestamptz;
 BEGIN
   IF TG_TABLE_NAME = 'predictive_decisions' THEN target := NEW.id; ELSE target := NEW.decision_id; END IF;
   SELECT * INTO d FROM public.predictive_decisions WHERE id = target;
-  IF (SELECT status FROM public.predictive_ingestion_runs WHERE id = d.run_id) <> 'published' THEN
+  IF (SELECT status FROM public.predictive_ingestion_runs WHERE id = d.run_id) <> 'published'
+      OR (d.predecessor_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.predictive_decisions p WHERE p.id = d.predecessor_id AND p.decided_at > d.decided_at)) THEN
     RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';
   END IF;
-  fact := substr(d.entity_key, length('reconciliation:') + 1);
-  SELECT count(*), count(DISTINCT o.source_key), count(*) FILTER (WHERE i.role = 'selected'),
-    min(i.observation_id) FILTER (WHERE i.role = 'selected'), count(DISTINCT o.data) <= 1, coalesce(bool_or(p.purpose = 'synthetic-test'), false)
-    INTO inputs, sources, selected, selected_id, same, synthetic
+  SELECT count(*), coalesce(bool_or(p.purpose = 'synthetic-test'), false) INTO inputs, synthetic
     FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id
     JOIN public.predictive_source_profiles p ON p.id = o.profile_id WHERE i.decision_id = target;
-  IF sources <> inputs OR EXISTS (SELECT 1 FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id
-      WHERE i.decision_id = target AND (o.entity_key <> fact OR NOT EXISTS (
+  IF (inputs > 0 AND synthetic <> (d.mode = 'synthetic-proof')) OR (d.mode = 'synthetic-proof' AND NOT public.predictive_harness_session()) THEN
+    RAISE EXCEPTION 'predictive-decision-mode-invalid' USING ERRCODE = '23514';
+  END IF;
+  IF d.kind = 'completion' THEN
+    -- event-completion-v1 (completion.ts): the inputs are exactly the marker heads
+    -- usable at decided_at, and the stated outcome is what the policy computes.
+    game := substr(d.entity_key, length('completion:') + 1);
+    SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE "C") INTO input_ids
+      FROM public.predictive_decision_inputs i WHERE i.decision_id = target AND i.role = 'marker';
+    WITH visible AS (SELECT o.* FROM public.predictive_observations o WHERE o.entity_key LIKE 'event-state-marker:' || game || ':%' AND EXISTS (
         SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
-        JOIN public.predictive_ingestion_runs r ON r.id = c.run_id
-        WHERE l.observation_id = o.id AND c.state = 'published' AND r.status = 'published'
+        JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id WHERE l.observation_id = o.id AND c.state = 'published' AND ru.status = 'published'
+          AND c.available_at <= d.decided_at AND c.ingested_at <= d.decided_at))
+    SELECT array_agg(v.id ORDER BY v.id COLLATE "C") INTO head_ids FROM visible v WHERE NOT EXISTS (SELECT 1 FROM visible s WHERE s.predecessor_id = v.id);
+    IF head_ids IS DISTINCT FROM input_ids OR inputs <> coalesce(cardinality(input_ids), 0) THEN
+      RAISE EXCEPTION 'predictive-completion-inputs-invalid' USING ERRCODE = '23514';
+    END IF;
+    FOR r IN SELECT o.kind, split_part(o.entity_key, ':', 3) AS marker,
+        (SELECT c.captured_at FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
+          WHERE l.observation_id = o.id AND c.state = 'published' ORDER BY c.ingested_at, c.available_at, c.captured_at, c.id COLLATE "C" LIMIT 1) AS captured
+      FROM public.predictive_observations o WHERE o.id = ANY(coalesce(input_ids, '{}')) LOOP
+      IF r.kind = 'source-row-absent' THEN absent := true; END IF;
+      IF r.marker = 'provider-final-status' THEN final_n := final_n + 1; final_at := r.captured;
+      ELSIF r.marker = 'terminal-play' THEN terminal_n := terminal_n + 1; terminal_at := r.captured;
+      ELSIF r.marker = 'final-team-totals' THEN totals_n := totals_n + 1; totals_at := r.captured;
+      ELSIF r.marker = 'suspension-notice' THEN suspended_n := suspended_n + 1;
+      ELSIF r.marker = 'postponement-notice' THEN postponed_n := postponed_n + 1; END IF;
+    END LOOP;
+    IF absent OR greatest(final_n, terminal_n, totals_n, suspended_n, postponed_n) > 1
+        OR ((suspended_n > 0 OR postponed_n > 0) AND (final_n + terminal_n + totals_n) > 0) OR (suspended_n > 0 AND postponed_n > 0) THEN state := 'conflicting';
+    ELSIF suspended_n > 0 THEN state := 'suspended';
+    ELSIF postponed_n > 0 THEN state := 'postponed';
+    ELSIF final_n > 0 AND (terminal_n + totals_n) > 0 THEN state := 'completed'; observed := greatest(final_at, least(terminal_at, totals_at));
+    ELSIF (final_n + terminal_n + totals_n) > 0 THEN state := 'in-progress';
+    ELSE state := 'scheduled'; END IF;
+    IF state <> d.outcome->>'state' OR (CASE WHEN observed IS NULL THEN NULL
+        ELSE to_char(observed AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') END) IS DISTINCT FROM d.outcome->>'completionObservedAt' THEN
+      RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514';
+    END IF;
+    RETURN NULL;
+  END IF;
+  IF d.kind <> 'reconciliation' THEN RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514'; END IF;
+  fact := substr(d.entity_key, length('reconciliation:') + 1);
+  SELECT count(DISTINCT o.source_key), count(*) FILTER (WHERE i.role = 'selected'),
+    min(i.observation_id) FILTER (WHERE i.role = 'selected'), count(DISTINCT o.data) <= 1
+    INTO sources, selected, selected_id, same
+    FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id WHERE i.decision_id = target;
+  IF sources <> inputs OR EXISTS (SELECT 1 FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id
+      WHERE i.decision_id = target AND (i.role = 'marker' OR o.entity_key <> fact OR NOT EXISTS (
+        SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
+        JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id
+        WHERE l.observation_id = o.id AND c.state = 'published' AND ru.status = 'published'
           AND c.available_at <= d.decided_at AND c.ingested_at <= d.decided_at))) THEN
     RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';
   END IF;
@@ -1007,12 +1064,6 @@ BEGIN
       ELSE inputs = 0 AND d.outcome->>'rule' = 'no-candidates' END;
   IF consistent IS NOT TRUE THEN
     RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514';
-  END IF;
-  IF synthetic <> (d.mode = 'synthetic-proof') OR (d.mode = 'synthetic-proof' AND NOT public.predictive_harness_session()) THEN
-    RAISE EXCEPTION 'predictive-decision-mode-invalid' USING ERRCODE = '23514';
-  END IF;
-  IF d.predecessor_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.predictive_decisions p WHERE p.id = d.predecessor_id AND p.decided_at > d.decided_at) THEN
-    RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';
   END IF;
   RETURN NULL;
 END
