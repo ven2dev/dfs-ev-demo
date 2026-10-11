@@ -1370,6 +1370,10 @@ BEGIN
       WHERE d.feature_run_id = target AND dc.decided_at > f.cutoff) THEN
     RAISE EXCEPTION 'predictive-feature-run-dependency-after-cutoff' USING ERRCODE = '23514';
   END IF;
+  IF EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d WHERE d.feature_run_id = target AND d.decision_id IS NOT NULL
+      AND NOT public.predictive_decision_current(d.decision_id, f.cutoff)) THEN
+    RAISE EXCEPTION 'predictive-feature-run-decision-stale' USING ERRCODE = '23514';
+  END IF;
   IF EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies d JOIN public.predictive_decision_inputs i ON i.decision_id = d.decision_id
       WHERE d.feature_run_id = target AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_run_dependencies o
         WHERE o.feature_run_id = target AND o.observation_id = i.observation_id)) THEN
@@ -1623,7 +1627,7 @@ BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_recorder') THEN
     GRANT EXECUTE ON FUNCTION public.predictive_rights_in_force(text, timestamptz, timestamptz),
       public.predictive_rights_allow(text, timestamptz, timestamptz, text), public.predictive_harness_session(),
-      public.predictive_feature_run_expired(text, timestamptz) TO predictive_recorder;
+      public.predictive_decision_current(text, timestamptz), public.predictive_feature_run_expired(text, timestamptz) TO predictive_recorder;
     GRANT SELECT ON public.predictive_source_profiles, public.predictive_rights_decisions, public.predictive_ingestion_runs,
       public.predictive_artifacts, public.predictive_captures, public.predictive_games, public.predictive_observations,
       public.predictive_artifact_observations, public.predictive_decisions, public.predictive_decision_inputs TO predictive_recorder;

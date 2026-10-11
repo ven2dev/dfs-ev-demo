@@ -887,10 +887,10 @@ it("predictive feature runs are recorded after read-only computation with exact 
     const correction = passingYardsFixture();
     await store.publish("B", { ...emptyDataset(), ...registrations, artifacts: correction.artifacts.filter((value) => value.id.startsWith("B-")),
       captures: correction.captures.filter((value) => value.artifactId.startsWith("B-")) }, NOW);
-    const copy = async (filter: string, overrides = "", extra: [string, string] | null = null) => {
+    const copy = async (filter: string, overrides = "", extra: [string, string] | null = null, cutoff = "cutoff") => {
       await client.query("SET LOCAL ROLE predictive_recorder");
       await client.query(`INSERT INTO predictive_feature_runs (id,mode,feature_version,candidate,player_id,game_id,cutoff,computed_at,recorded_at,code_version,
-        status,reasons,input_digest,execution_digest,bundle_blob_sha256) SELECT 'probe', ${overrides || "mode"},feature_version,candidate,player_id,game_id,cutoff,
+        status,reasons,input_digest,execution_digest,bundle_blob_sha256) SELECT 'probe', ${overrides || "mode"},feature_version,candidate,player_id,game_id,${cutoff},
         computed_at,recorded_at,code_version,status,reasons,input_digest,execution_digest,bundle_blob_sha256 FROM predictive_feature_runs WHERE id=$1`, [second.featureRunId]);
       await client.query(`INSERT INTO predictive_feature_run_dependencies (feature_run_id,observation_id,decision_id,rights_decision_id,policy_id,feature_definition_id)
         SELECT 'probe',observation_id,decision_id,rights_decision_id,policy_id,feature_definition_id FROM predictive_feature_run_dependencies
@@ -900,6 +900,7 @@ it("predictive feature runs are recorded after read-only computation with exact 
     await sqlProbe(client, async () => { await copy("true"); await client.query("SET CONSTRAINTS ALL IMMEDIATE"); });
     const refusals: [string, () => Promise<void>, string][] = [
       ["a dependency usable only after the cutoff", () => copy("true", "", ["observation_id", "player-correction-B"]), "predictive-feature-run-dependency-after-cutoff"],
+      ["a decision made stale before the cutoff", () => copy("true", "", null, `'${CUTOFF_B}'::timestamptz`), "predictive-feature-run-decision-stale"],
       ["a decision whose inputs are not listed", () => copy("(observation_id IS NULL OR observation_id NOT LIKE 'terminal-%')"), "predictive-feature-run-inputs-incomplete"],
       ["a ready run without model-input rights", () => copy("rights_decision_id IS NULL"), "predictive-feature-run-rights-not-in-force"],
       ["no feature definition", () => copy("feature_definition_id IS NULL"), "predictive-feature-run-definition-missing"],

@@ -743,7 +743,7 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
   code version and both times. The run ID is `feature-run:<execution_digest>`.
 - **Deferred run-level check** (`predictive_feature_run_check`):
   - every observation dependency was usable at the cutoff, and every decision was
-    decided by it
+    both decided by and still current at it
   - every cited decision's inputs are listed
   - the feature definition is named
   - a ready run lists a model-input rights decision in force at `recorded_at` for
@@ -856,3 +856,9 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
   requested player's evidence scope. Replay cites only records that bind the
   current participation inputs, and saved feature runs retain those decision
   IDs.
+
+### Review fix 7 (2026-10-10)
+
+- Feature-run manifests now require every cited decision to remain current at
+  the feature cutoff. A later correction cannot leave a run bound to a stale
+  decision and its superseded inputs.
