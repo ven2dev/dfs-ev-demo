@@ -484,6 +484,9 @@ CREATE TRIGGER predictive_links_no_truncate BEFORE TRUNCATE ON public.predictive
 CREATE FUNCTION public.predictive_rights_check() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE profile_purpose text;
 BEGIN
+  -- Serializes with predictive_record_feature_run() for this profile: a recording
+  -- waits for an uncommitted rights change and then sees it.
+  PERFORM pg_catalog.pg_advisory_xact_lock(520053, pg_catalog.hashtext(NEW.profile_id));
   SELECT purpose INTO profile_purpose FROM public.predictive_source_profiles WHERE id = NEW.profile_id;
   IF (profile_purpose = 'synthetic-test') <> (NEW.evidence_kind = 'synthetic')
       OR (profile_purpose = 'synthetic-test' AND 'public-display' = ANY(NEW.allowed_uses)) THEN
@@ -1166,6 +1169,66 @@ END
 $$;
 CREATE TRIGGER predictive_feature_run_dependencies_sealed BEFORE INSERT ON public.predictive_feature_run_dependencies FOR EACH ROW EXECUTE FUNCTION public.predictive_feature_run_dependency_guard();
 
+-- The only way to save a feature run. It creates the run and its complete
+-- manifest in one call and stamps recorded_at from clock_timestamp(), read once
+-- after taking every evidence profile's lock (shared with rights inserts), so a
+-- delayed transaction cannot keep an earlier time. Rights in force at that
+-- instant are recomputed here, never taken from the caller. READ COMMITTED is
+-- required so each statement sees rights committed before the locks were granted.
+-- execution_digest is SHA-256 over unit-separated fields, with list items
+-- record-separated; IDs cannot contain control characters, so it is unambiguous.
+-- Mirrored by executionDigest() in featureRuns.ts.
+CREATE FUNCTION public.predictive_record_feature_run(run jsonb, dependencies jsonb) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+DECLARE
+  profiles text[]; profile text; recorded timestamptz; rights text[]; policies text[]; definitions text[]; observations text[]; decisions text[];
+  blocked boolean := false; digest_input text; execution text; run_id text; stamp text;
+BEGIN
+  IF NOT pg_catalog.pg_has_role(session_user, 'predictive_recorder', 'MEMBER') THEN
+    RAISE EXCEPTION 'predictive-recorder-not-authorized' USING ERRCODE = '42501';
+  END IF;
+  IF pg_catalog.current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'predictive-recorder-isolation-refused' USING ERRCODE = '25001';
+  END IF;
+  IF jsonb_typeof(run) <> 'object' OR jsonb_typeof(dependencies) <> 'object'
+      OR (SELECT array_agg(k ORDER BY k COLLATE "C") FROM jsonb_object_keys(run) k) IS DISTINCT FROM
+        ARRAY['bundleSha256','candidate','codeVersion','computedAt','cutoff','featureVersion','gameId','inputDigest','mode','playerId','reasons','status']
+      OR (SELECT array_agg(k ORDER BY k COLLATE "C") FROM jsonb_object_keys(dependencies) k) IS DISTINCT FROM
+        ARRAY['decisions','featureDefinitions','observations','policies'] THEN
+    RAISE EXCEPTION 'predictive-feature-run-invalid' USING ERRCODE = '23514';
+  END IF;
+  observations := ARRAY(SELECT DISTINCT v COLLATE "C" FROM jsonb_array_elements_text(dependencies->'observations') v ORDER BY 1);
+  decisions := ARRAY(SELECT DISTINCT v COLLATE "C" FROM jsonb_array_elements_text(dependencies->'decisions') v ORDER BY 1);
+  policies := ARRAY(SELECT DISTINCT v COLLATE "C" FROM jsonb_array_elements_text(dependencies->'policies') v ORDER BY 1);
+  definitions := ARRAY(SELECT DISTINCT v COLLATE "C" FROM jsonb_array_elements_text(dependencies->'featureDefinitions') v ORDER BY 1);
+  IF EXISTS (SELECT 1 FROM unnest(policies || definitions || ARRAY[run->>'featureVersion', run->>'codeVersion']) v WHERE v ~ '[\x01-\x1f\x7f]' OR v IS NULL) THEN
+    RAISE EXCEPTION 'predictive-feature-run-invalid' USING ERRCODE = '23514';
+  END IF;
+  profiles := ARRAY(SELECT DISTINCT o.profile_id COLLATE "C" FROM public.predictive_observations o WHERE o.id = ANY(observations) ORDER BY 1);
+  FOREACH profile IN ARRAY profiles LOOP PERFORM pg_catalog.pg_advisory_xact_lock(520053, pg_catalog.hashtext(profile)); END LOOP;
+  recorded := pg_catalog.date_trunc('milliseconds', pg_catalog.clock_timestamp());
+  stamp := to_char(recorded AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+  rights := ARRAY(SELECT DISTINCT r COLLATE "C" FROM (SELECT public.predictive_rights_in_force(p, recorded, recorded) AS r FROM unnest(profiles) p) x
+    WHERE r IS NOT NULL ORDER BY 1);
+  digest_input := concat_ws(E'\x1f', run->>'inputDigest', array_to_string(rights, E'\x1e'), array_to_string(policies, E'\x1e'),
+    run->>'featureVersion', run->>'codeVersion', run->>'computedAt', stamp);
+  execution := encode(sha256(convert_to(digest_input, 'UTF8')), 'hex');
+  run_id := 'feature-run:' || execution;
+  INSERT INTO public.predictive_feature_runs (id,mode,feature_version,candidate,player_id,game_id,cutoff,computed_at,recorded_at,code_version,
+    status,reasons,input_digest,execution_digest,bundle_blob_sha256)
+  VALUES (run_id, run->>'mode', run->>'featureVersion', run->>'candidate', run->>'playerId', (run->>'gameId')::uuid, (run->>'cutoff')::timestamptz,
+    (run->>'computedAt')::timestamptz, recorded, run->>'codeVersion', run->>'status', ARRAY(SELECT jsonb_array_elements_text(run->'reasons')),
+    run->>'inputDigest', execution, run->>'bundleSha256');
+  INSERT INTO public.predictive_feature_run_dependencies (feature_run_id, observation_id) SELECT run_id, v FROM unnest(observations) v;
+  INSERT INTO public.predictive_feature_run_dependencies (feature_run_id, decision_id) SELECT run_id, v FROM unnest(decisions) v;
+  INSERT INTO public.predictive_feature_run_dependencies (feature_run_id, rights_decision_id) SELECT run_id, v FROM unnest(rights) v;
+  INSERT INTO public.predictive_feature_run_dependencies (feature_run_id, policy_id) SELECT run_id, v FROM unnest(policies) v;
+  INSERT INTO public.predictive_feature_run_dependencies (feature_run_id, feature_definition_id) SELECT run_id, v FROM unnest(definitions) v;
+  -- The deferred run-level check still runs at commit, against this recorded_at.
+  RETURN jsonb_build_object('featureRunId', run_id, 'recordedAt', stamp, 'executionDigest', execution, 'rightsDecisions', to_jsonb(rights));
+END
+$$;
+
 -- feature-run-retention-v1: an unpinned run expires 90 days after recording.
 -- A pin keeps it until an unpin event; provider deletions apply regardless.
 CREATE FUNCTION public.predictive_feature_run_expired(run_id text, t timestamptz) RETURNS boolean LANGUAGE sql STABLE AS $$
@@ -1359,7 +1422,8 @@ REVOKE ALL ON FUNCTION public.predictive_text(jsonb), public.predictive_optional
   public.predictive_snaps_valid(text, jsonb), public.predictive_observation_usable(text, timestamptz), public.predictive_unpin_check(), public.predictive_feature_run_check(), public.predictive_feature_run_expired(text, timestamptz),
   public.predictive_feature_run_dependency_guard(), public.predictive_retention_scope_valid(text, jsonb),
   public.predictive_retention_audit_immutable(),
-  public.predictive_retention_execute(text, text, text, timestamptz, jsonb, text) FROM PUBLIC;
+  public.predictive_retention_execute(text, text, text, timestamptz, jsonb, text),
+  public.predictive_record_feature_run(jsonb, jsonb) FROM PUBLIC;
 DO $grants$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_ingest') THEN
@@ -1396,8 +1460,10 @@ BEGIN
     GRANT SELECT ON public.predictive_source_profiles, public.predictive_rights_decisions, public.predictive_ingestion_runs,
       public.predictive_artifacts, public.predictive_captures, public.predictive_games, public.predictive_observations,
       public.predictive_artifact_observations, public.predictive_decisions, public.predictive_decision_inputs TO predictive_recorder;
-    GRANT SELECT, INSERT ON public.predictive_blobs, public.predictive_feature_runs, public.predictive_feature_run_dependencies,
-      public.predictive_feature_run_pins, public.predictive_feature_run_unpins TO predictive_recorder;
+    -- Runs and manifests are written only through the definer function.
+    GRANT EXECUTE ON FUNCTION public.predictive_record_feature_run(jsonb, jsonb) TO predictive_recorder;
+    GRANT SELECT ON public.predictive_feature_runs, public.predictive_feature_run_dependencies TO predictive_recorder;
+    GRANT SELECT, INSERT ON public.predictive_blobs, public.predictive_feature_run_pins, public.predictive_feature_run_unpins TO predictive_recorder;
   END IF;
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_replay') THEN
     GRANT SELECT ON public.predictive_feature_runs, public.predictive_feature_run_dependencies, public.predictive_feature_run_pins,

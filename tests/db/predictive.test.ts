@@ -15,6 +15,7 @@ import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/completion.ts";
 import { participationHeadsAt, recordParticipation } from "../../src/lib/predictive/participation.ts";
 import { recordSnapCompatibility } from "../../src/lib/predictive/snaps.ts";
+import { executionDigest, FEATURE_CODE_VERSION, featureRunRequest } from "../../src/lib/predictive/featureRuns.ts";
 import type { Label, RecordedRetentionEvent, RetentionEvent } from "../../src/lib/predictive/types.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { runLocalProof } from "../../scripts/predictive/local.ts";
@@ -923,6 +924,14 @@ it("predictive feature runs are recorded after read-only computation with exact 
     if (first.status !== "recorded") throw new Error("expected a recorded run");
     expect(first.bundle).toEqual(pure);
     const run = (await client.query("SELECT * FROM predictive_feature_runs WHERE id=$1", [first.featureRunId])).rows[0];
+    // recorded_at is the database clock at recording, and the run ID is the
+    // server's execution digest, which the TypeScript mirror reproduces.
+    const stampedAt = (run.recorded_at as Date).toISOString();
+    expect(Math.abs(Date.now() - new Date(stampedAt).getTime())).toBeLessThan(60_000);
+    const policies = (await client.query("SELECT policy_id FROM predictive_feature_run_dependencies WHERE feature_run_id=$1 AND policy_id IS NOT NULL",
+      [first.featureRunId])).rows.map((row) => row.policy_id as string);
+    expect(first.executionDigest).toBe(executionDigest({ inputDigest: first.bundle.inputDigest, rightsDecisions: ["rights-" + PROFILE], policies,
+      featureVersion: first.bundle.featureVersion, codeVersion: FEATURE_CODE_VERSION, computedAt: first.bundle.computedAt, recordedAt: stampedAt }));
     expect(run).toMatchObject({ input_digest: first.bundle.inputDigest, status: "ready-inputs", mode: "synthetic-proof", feature_version: "passing-yards-replay-v3" });
     const dependencies = (await client.query("SELECT * FROM predictive_feature_run_dependencies WHERE feature_run_id=$1", [first.featureRunId])).rows;
     expect(dependencies.filter((row) => row.observation_id).map((row) => row.observation_id).sort()).toEqual(first.bundle.dependencies.map((row) => row.observationId).sort());
@@ -943,7 +952,7 @@ it("predictive feature runs are recorded after read-only computation with exact 
       [second.featureRunId])).rows).toEqual([{ rights_decision_id: "rights-renewed" }]);
     // A run that cannot be recorded is reported unavailable, never returned as usable.
     const failing = { query: async (sql: string, params?: unknown[]) => {
-      if (sql.startsWith("INSERT INTO public.predictive_feature_runs")) throw new Error("simulated recording failure");
+      if (sql.includes("predictive_record_feature_run")) throw new Error("simulated recording failure");
       return client.query(sql, params);
     } } as unknown as Client;
     const broken = await createLocalPredictiveStore(failing, target, artifacts);
@@ -953,8 +962,13 @@ it("predictive feature runs are recorded after read-only computation with exact 
     const correction = passingYardsFixture();
     await store.publish("B", { ...emptyDataset(), ...registrations, artifacts: correction.artifacts.filter((value) => value.id.startsWith("B-")),
       captures: correction.captures.filter((value) => value.artifactId.startsWith("B-")) }, NOW);
+    // The recorder can't insert runs or manifests directly; the deferred checks
+    // are the backstop beneath the recorder function, exercised as the table owner.
+    for (const sql of ["INSERT INTO predictive_feature_runs (id) VALUES ('direct')",
+      "INSERT INTO predictive_feature_run_dependencies (feature_run_id,policy_id) VALUES ('x','y-v1')"]) {
+      await sqlProbe(client, async () => { await client.query("SET LOCAL ROLE predictive_recorder"); await expect(client.query(sql)).rejects.toMatchObject({ code: "42501" }); });
+    }
     const copy = async (filter: string, overrides = "", extra: [string, string] | null = null, cutoff = "cutoff") => {
-      await client.query("SET LOCAL ROLE predictive_recorder");
       await client.query(`INSERT INTO predictive_feature_runs (id,mode,feature_version,candidate,player_id,game_id,cutoff,computed_at,recorded_at,code_version,
         status,reasons,input_digest,execution_digest,bundle_blob_sha256) SELECT 'probe', ${overrides || "mode"},feature_version,candidate,player_id,game_id,${cutoff},
         computed_at,recorded_at,code_version,status,reasons,input_digest,execution_digest,bundle_blob_sha256 FROM predictive_feature_runs WHERE id=$1`, [second.featureRunId]);
@@ -1003,6 +1017,38 @@ it("predictive feature runs are recorded after read-only computation with exact 
     await sqlProbe(client, async () => {
       await expect(client.query("INSERT INTO predictive_feature_run_unpins (pin_id,unpinned_at) VALUES ('pin-1',$1)", [day(97)])).rejects.toMatchObject({ code: "23505" });
     });
+    // The recorder function refuses snapshot isolation: an older snapshot could
+    // miss a revocation committed after the transaction began.
+    const pending = featureRunRequest(await store.replay(request()), true);
+    const recordCall = (target: Client) => target.query("SELECT predictive_record_feature_run($1,$2) AS result", [JSON.stringify(pending.run), JSON.stringify(pending.dependencies)]);
+    await client.query("INSERT INTO predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'application/json',$3) ON CONFLICT DO NOTHING",
+      [pending.bundleSha256, Buffer.byteLength(pending.bundleBytes), pending.bundleSha256 + ".json"]);
+    await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+    try {
+      await client.query("SET LOCAL ROLE predictive_recorder");
+      await expect(recordCall(client)).rejects.toMatchObject({ code: "25001", message: "predictive-recorder-isolation-refused" });
+    } finally { await client.query("ROLLBACK"); }
+    // A delayed recording cannot outrun a revocation: it waits on the profile lock
+    // held by the uncommitted revocation, then stamps its own time, sees the
+    // revocation and is refused at commit.
+    const recorder = new Client(target.expected); const monitor = new Client(target.expected);
+    try {
+      await recorder.connect(); await monitor.connect();
+      const recorderPid = await backendPid(recorder); const holderPid = await backendPid(client);
+      await recorder.query("BEGIN"); await recorder.query("SET LOCAL ROLE predictive_recorder");
+      await client.query("BEGIN");
+      const now = (await client.query(`SELECT to_char(date_trunc('milliseconds', now()) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS now`)).rows[0].now;
+      await client.query(`INSERT INTO predictive_rights_decisions (id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+        VALUES ('rights-revoked',$1,'rights-renewed','{internal-research}',$2,NULL,$2,'synthetic','synthetic revocation')`, [PROFILE, now]);
+      const call = recordCall(recorder).then((value) => ({ value }), (error) => ({ error }));
+      await Promise.race([waitForBlocked(monitor, [recorderPid], holderPid),
+        call.then((settled) => { throw new Error("recording did not wait: " + JSON.stringify(settled)); })]);
+      await client.query("COMMIT");
+      expect(await call).toMatchObject({ value: { rows: [{ result: { rightsDecisions: ["rights-revoked"] } }] } });
+      await expect(recorder.query("COMMIT")).rejects.toMatchObject({ code: "23514", message: "predictive-feature-run-rights-not-in-force" });
+    } finally {
+      await Promise.allSettled([recorder.end(), monitor.end()]);
+    }
   });
 });
 it("predictive identity bridges refuse same-source ambiguity at write and keep corrections in their chain", async () => {

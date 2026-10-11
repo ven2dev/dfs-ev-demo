@@ -951,3 +951,38 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
 - `predictive_observation_usable(id, t)` is a shared helper using positional
   parameters, because a column name would shadow a same-named parameter in a
   SQL function.
+
+### Review fix 2 (2026-10-10)
+
+- **`predictive_record_feature_run(run, dependencies)`** is the only way to
+  save a feature run.
+  - `SECURITY DEFINER` with `search_path = pg_catalog, pg_temp`. It checks
+    membership of `predictive_recorder` and is executable only by that role.
+  - It creates the run and its complete manifest in one call.
+  - `predictive_recorder` lost INSERT on `predictive_feature_runs` and
+    `predictive_feature_run_dependencies`; pins, unpins and blobs are
+    unchanged.
+- **Clock and rights:**
+  - The function takes every evidence profile's advisory lock (namespace
+    520053, keyed by profile, in sorted order). `predictive_rights_check()`
+    takes the same lock for each rights insert.
+  - It then reads `date_trunc('milliseconds', clock_timestamp())` once, for
+    `recorded_at`, and recomputes the rights in force at that instant. The
+    caller supplies neither.
+  - `now()` would be the transaction's start time, so a delayed transaction
+    could otherwise keep an earlier time.
+  - It refuses anything but READ COMMITTED (`predictive-recorder-isolation-refused`),
+    because an older snapshot could miss a revocation that committed while it
+    waited.
+  - The deferred run-level check still runs at commit against the stamped
+    time.
+- **Execution digest:** SHA-256 over `\x1f`-separated fields, list items
+  `\x1e`-separated, computed in SQL. `executionDigest()` in `featureRuns.ts`
+  mirrors it, and `replayAndRecord` refuses a server result that doesn't
+  match.
+- **Proofs:**
+  - direct INSERTs are refused for the recorder;
+  - `recorded_at` is the database clock;
+  - REPEATABLE READ is refused;
+  - a recording blocked behind an uncommitted revocation waits on the profile
+    lock, sees the revocation, and is refused at commit.

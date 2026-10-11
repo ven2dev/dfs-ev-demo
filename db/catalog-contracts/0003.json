@@ -1,5 +1,5 @@
 {
-  "catalogFingerprint": "03d76232d63efbebc90b91de37aebc9fafc3de5cd181bbfbd1dc5151b542c726",
+  "catalogFingerprint": "cc51eea33f50bbca96164b08319e49bf111ffaa594f931c379517141001dae6c",
   "contractVersion": 1,
   "formatVersion": 1,
   "objects": [
@@ -15398,6 +15398,15 @@
     },
     {
       "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_record_feature_run(run jsonb, dependencies jsonb)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pg_temp'\nAS $function$\nDECLARE\n  profiles text[]; profile text; recorded timestamptz; rights text[]; policies text[]; definitions text[]; observations text[]; decisions text[];\n  blocked boolean := false; digest_input text; execution text; run_id text; stamp text;\nBEGIN\n  IF NOT pg_catalog.pg_has_role(session_user, 'predictive_recorder', 'MEMBER') THEN\n    RAISE EXCEPTION 'predictive-recorder-not-authorized' USING ERRCODE = '42501';\n  END IF;\n  IF pg_catalog.current_setting('transaction_isolation') <> 'read committed' THEN\n    RAISE EXCEPTION 'predictive-recorder-isolation-refused' USING ERRCODE = '25001';\n  END IF;\n  IF jsonb_typeof(run) <> 'object' OR jsonb_typeof(dependencies) <> 'object'\n      OR (SELECT array_agg(k ORDER BY k COLLATE \"C\") FROM jsonb_object_keys(run) k) IS DISTINCT FROM\n        ARRAY['bundleSha256','candidate','codeVersion','computedAt','cutoff','featureVersion','gameId','inputDigest','mode','playerId','reasons','status']\n      OR (SELECT array_agg(k ORDER BY k COLLATE \"C\") FROM jsonb_object_keys(dependencies) k) IS DISTINCT FROM\n        ARRAY['decisions','featureDefinitions','observations','policies'] THEN\n    RAISE EXCEPTION 'predictive-feature-run-invalid' USING ERRCODE = '23514';\n  END IF;\n  observations := ARRAY(SELECT DISTINCT v COLLATE \"C\" FROM jsonb_array_elements_text(dependencies->'observations') v ORDER BY 1);\n  decisions := ARRAY(SELECT DISTINCT v COLLATE \"C\" FROM jsonb_array_elements_text(dependencies->'decisions') v ORDER BY 1);\n  policies := ARRAY(SELECT DISTINCT v COLLATE \"C\" FROM jsonb_array_elements_text(dependencies->'policies') v ORDER BY 1);\n  definitions := ARRAY(SELECT DISTINCT v COLLATE \"C\" FROM jsonb_array_elements_text(dependencies->'featureDefinitions') v ORDER BY 1);\n  IF EXISTS (SELECT 1 FROM unnest(policies || definitions || ARRAY[run->>'featureVersion', run->>'codeVersion']) v WHERE v ~ '[\\x01-\\x1f\\x7f]' OR v IS NULL) THEN\n    RAISE EXCEPTION 'predictive-feature-run-invalid' USING ERRCODE = '23514';\n  END IF;\n  profiles := ARRAY(SELECT DISTINCT o.profile_id COLLATE \"C\" FROM public.predictive_observations o WHERE o.id = ANY(observations) ORDER BY 1);\n  FOREACH profile IN ARRAY profiles LOOP PERFORM pg_catalog.pg_advisory_xact_lock(520053, pg_catalog.hashtext(profile)); END LOOP;\n  recorded := pg_catalog.date_trunc('milliseconds', pg_catalog.clock_timestamp());\n  stamp := to_char(recorded AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"');\n  rights := ARRAY(SELECT DISTINCT r COLLATE \"C\" FROM (SELECT public.predictive_rights_in_force(p, recorded, recorded) AS r FROM unnest(profiles) p) x\n    WHERE r IS NOT NULL ORDER BY 1);\n  digest_input := concat_ws(E'\\x1f', run->>'inputDigest', array_to_string(rights, E'\\x1e'), array_to_string(policies, E'\\x1e'),\n    run->>'featureVersion', run->>'codeVersion', run->>'computedAt', stamp);\n  execution := encode(sha256(convert_to(digest_input, 'UTF8')), 'hex');\n  run_id := 'feature-run:' || execution;\n  INSERT INTO public.predictive_feature_runs (id,mode,feature_version,candidate,player_id,game_id,cutoff,computed_at,recorded_at,code_version,\n    status,reasons,input_digest,execution_digest,bundle_blob_sha256)\n  VALUES (run_id, run->>'mode', run->>'featureVersion', run->>'candidate', run->>'playerId', (run->>'gameId')::uuid, (run->>'cutoff')::timestamptz,\n    (run->>'computedAt')::timestamptz, recorded, run->>'codeVersion', run->>'status', ARRAY(SELECT jsonb_array_elements_text(run->'reasons')),\n    run->>'inputDigest', execution, run->>'bundleSha256');\n  INSERT INTO public.predictive_feature_run_dependencies (feature_run_id, observation_id) SELECT run_id, v FROM unnest(observations) v;\n  INSERT INTO public.predictive_feature_run_dependencies (feature_run_id, decision_id) SELECT run_id, v FROM unnest(decisions) v;\n  INSERT INTO public.predictive_feature_run_dependencies (feature_run_id, rights_decision_id) SELECT run_id, v FROM unnest(rights) v;\n  INSERT INTO public.predictive_feature_run_dependencies (feature_run_id, policy_id) SELECT run_id, v FROM unnest(policies) v;\n  INSERT INTO public.predictive_feature_run_dependencies (feature_run_id, feature_definition_id) SELECT run_id, v FROM unnest(definitions) v;\n  -- The deferred run-level check still runs at commit, against this recorded_at.\n  RETURN jsonb_build_object('featureRunId', run_id, 'recordedAt', stamp, 'executionDigest', execution, 'rightsDecisions', to_jsonb(rights));\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": true
+      },
+      "kind": "routine",
+      "name": "predictive_record_feature_run(run jsonb, dependencies jsonb)"
+    },
+    {
+      "definition": {
         "definition": "CREATE OR REPLACE FUNCTION public.predictive_retention_audit_immutable()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN RAISE EXCEPTION 'predictive-append-only' USING ERRCODE = '23514'; END\n$function$\n",
         "kind": "f",
         "security_definer": false
@@ -15434,7 +15443,7 @@
     },
     {
       "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_rights_check()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE profile_purpose text;\nBEGIN\n  SELECT purpose INTO profile_purpose FROM public.predictive_source_profiles WHERE id = NEW.profile_id;\n  IF (profile_purpose = 'synthetic-test') <> (NEW.evidence_kind = 'synthetic')\n      OR (profile_purpose = 'synthetic-test' AND 'public-display' = ANY(NEW.allowed_uses)) THEN\n    RAISE EXCEPTION 'predictive-synthetic-rights-refused' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.predecessor_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.predictive_rights_decisions p\n      WHERE p.id = NEW.predecessor_id AND p.decided_at > NEW.decided_at) THEN\n    RAISE EXCEPTION 'predictive-rights-order-refused' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_rights_check()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE profile_purpose text;\nBEGIN\n  -- Serializes with predictive_record_feature_run() for this profile: a recording\n  -- waits for an uncommitted rights change and then sees it.\n  PERFORM pg_catalog.pg_advisory_xact_lock(520053, pg_catalog.hashtext(NEW.profile_id));\n  SELECT purpose INTO profile_purpose FROM public.predictive_source_profiles WHERE id = NEW.profile_id;\n  IF (profile_purpose = 'synthetic-test') <> (NEW.evidence_kind = 'synthetic')\n      OR (profile_purpose = 'synthetic-test' AND 'public-display' = ANY(NEW.allowed_uses)) THEN\n    RAISE EXCEPTION 'predictive-synthetic-rights-refused' USING ERRCODE = '23514';\n  END IF;\n  IF NEW.predecessor_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.predictive_rights_decisions p\n      WHERE p.id = NEW.predecessor_id AND p.decided_at > NEW.decided_at) THEN\n    RAISE EXCEPTION 'predictive-rights-order-refused' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
         "kind": "f",
         "security_definer": false
       },
@@ -15984,7 +15993,7 @@
       },
       {
         "filename": "0003_predictive_evidence.sql",
-        "sha256": "a42939519482b029ca412b23a50f49aa46567188060ac56e69a6ab7ced642050",
+        "sha256": "f60c553579a301083c53f682626903ca1f2a7662b1bbe9f9ac8a16c65ebeb54c",
         "version": 3
       }
     ]
