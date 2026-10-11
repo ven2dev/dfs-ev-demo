@@ -104,10 +104,32 @@ export type CompletionRecord = {
   outcome: { state: "scheduled" | "in-progress" | "completed" | "suspended" | "postponed" | "conflicting"; completionObservedAt: string | null; actualEnd: null };
   inputs: { observationId: string; role: "marker" }[];
 };
-export type Decision = Reconciliation | CompletionRecord;
+// A recorded application of participation-v1 to exactly the participation
+// evidence and stats heads for one player-game known at decidedAt.
+export type ParticipationRecord = {
+  id: string; kind: "participation"; entityKey: string; policyId: "participation-v1";
+  mode: "production-research" | "synthetic-proof"; decidedAt: string; predecessorId: string | null;
+  outcome: { state: "offensive-participant" | "zero-offensive-participation" | "inactive-or-dnp" | "unresolved" | "conflicting" };
+  inputs: { observationId: string; role: "evidence" }[];
+};
+export type Decision = Reconciliation | CompletionRecord | ParticipationRecord;
+// Canonical outcome labels (canonical-label-finalization-v1). Stat names are the
+// registry's canonical fields; values come from the selected stats revision.
+export const LABEL_STATS = { passing_yards: "passingYards", passing_tds: "passingTds", completions: "completions", attempts: "attempts",
+  passing_interceptions: "passingInterceptions", rushing_yards: "rushingYards", carries: "carries", receiving_yards: "receivingYards",
+  receptions: "receptions" } as const;
+export type LabelStat = keyof typeof LABEL_STATS;
+export type Label = {
+  id: string; playerId: string; gameId: string; seasonType: SeasonType; stat: LabelStat; value: number | null;
+  state: "provisional" | "final" | "unresolved" | "excluded"; mode: "production-research" | "synthetic-proof";
+  policyId: "canonical-label-finalization-v1"; labelVersion: number; predecessorId: string | null;
+  completionDecisionId: string; participationDecisionId: string; reconciliationDecisionId: string | null;
+  selectedObservationId: string | null; eligibleFinalAt: string | null; postWindowCaptureId: string | null;
+  finalizedAt: string | null; createdAt: string;
+};
 export type Dataset = {
   formatVersion: 2; profiles: Profile[]; rightsDecisions: RightsDecision[]; artifacts: Artifact[]; captures: Capture[];
-  decisions: Decision[];
+  decisions: Decision[]; labels: Label[];
 };
 export type Observation<K extends Kind = Kind> = {
   revision: Revision<K>; capture: Capture; artifact: Artifact; entityKey: string; sourceKey: string;
@@ -142,6 +164,7 @@ export type Bundle = {
   player: Summary[]; team: Summary[] | null; opponent: Summary[] | null;
   scheduledRestHours: number | null; dependencyAvailableAt: string | null; dependencies: Dependency[];
   excludedSchedule: Exclusion[]; inputDigest: string;
+  participations: { decisionId: string; gameId: string; state: ParticipationRecord["outcome"]["state"]; decidedAt: string }[];
   completions: { decisionId: string; gameId: string; state: CompletionRecord["outcome"]["state"]; decidedAt: string }[];
   reconciliations: { decisionId: string; entityKey: string; result: Reconciliation["outcome"]["result"]; decidedAt: string }[];
   scheduleCoverage: { state: "complete" | "unverified"; missingGameIds: string[] };

@@ -934,6 +934,10 @@ CREATE FUNCTION public.predictive_decision_valid(kind text, outcome jsonb) RETUR
 LANGUAGE plpgsql IMMUTABLE STRICT AS $$
 BEGIN
   IF jsonb_typeof(outcome) <> 'object' THEN RETURN false; END IF;
+  IF kind = 'participation' THEN
+    RETURN (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) = ARRAY['state']
+      AND (outcome->>'state' IN ('offensive-participant','zero-offensive-participation','inactive-or-dnp','unresolved','conflicting')) IS TRUE;
+  END IF;
   IF kind = 'completion' THEN
     RETURN (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) = ARRAY['actualEnd','completionObservedAt','state']
       AND (outcome->>'state' IN ('scheduled','in-progress','completed','suspended','postponed','conflicting')) IS TRUE
@@ -964,6 +968,8 @@ CREATE TABLE public.predictive_decisions (
   predecessor_id text,
   CHECK (public.predictive_decision_valid(kind, outcome) IS TRUE),
   CHECK (kind <> 'reconciliation' OR (policy_id = 'reconciliation-v1' AND entity_key LIKE 'reconciliation:%')),
+  CHECK (kind <> 'participation' OR (policy_id = 'participation-v1'
+    AND entity_key ~ '^participation:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}:00-[0-9]{7}$')),
   CHECK (kind <> 'completion' OR (policy_id = 'event-completion-v1' AND entity_key ~ '^completion:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$')),
   CHECK (predecessor_id IS DISTINCT FROM id),
   UNIQUE (id, kind, entity_key, policy_id),
@@ -976,7 +982,7 @@ CREATE INDEX predictive_decisions_entity_idx ON public.predictive_decisions (kin
 CREATE TABLE public.predictive_decision_inputs (
   decision_id text NOT NULL REFERENCES public.predictive_decisions(id),
   observation_id text NOT NULL REFERENCES public.predictive_observations(id),
-  role text NOT NULL CHECK (role IN ('candidate','selected','marker')),
+  role text NOT NULL CHECK (role IN ('candidate','selected','marker','evidence')),
   PRIMARY KEY (decision_id, observation_id)
 );
 CREATE INDEX predictive_decision_inputs_reverse_idx ON public.predictive_decision_inputs (observation_id, decision_id);
@@ -986,12 +992,37 @@ CREATE TRIGGER predictive_decision_inputs_immutable BEFORE UPDATE OR DELETE ON p
 CREATE TRIGGER predictive_decisions_no_truncate BEFORE TRUNCATE ON public.predictive_decisions FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
 CREATE TRIGGER predictive_decision_inputs_no_truncate BEFORE TRUNCATE ON public.predictive_decision_inputs FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
 
+-- Whether a decision's inputs are exactly the heads of its evidence scope usable
+-- at instant t: marker facts (completion), participation evidence plus stats
+-- (participation), or the one fact (reconciliation). Mirrors labels.ts current().
+CREATE FUNCTION public.predictive_decision_current(decision_id text, t timestamptz) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+DECLARE d public.predictive_decisions; prefix text; exact_key text; heads text[]; inputs text[];
+BEGIN
+  SELECT * INTO d FROM public.predictive_decisions WHERE id = decision_id;
+  IF d.id IS NULL OR d.decided_at > t THEN RETURN false; END IF;
+  IF d.kind = 'completion' THEN prefix := 'event-state-marker:' || split_part(d.entity_key, ':', 2) || ':';
+  ELSIF d.kind = 'participation' THEN
+    prefix := 'participation-evidence:' || split_part(d.entity_key, ':', 2) || ':' || split_part(d.entity_key, ':', 3) || ':';
+    exact_key := 'player-game-stats:' || split_part(d.entity_key, ':', 2) || ':' || split_part(d.entity_key, ':', 3);
+  ELSE exact_key := substr(d.entity_key, length('reconciliation:') + 1); END IF;
+  WITH visible AS (SELECT o.id, o.predecessor_id FROM public.predictive_observations o
+    WHERE ((prefix IS NOT NULL AND o.entity_key LIKE prefix || '%') OR o.entity_key = exact_key) AND EXISTS (
+      SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
+      JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id WHERE l.observation_id = o.id AND c.state = 'published' AND ru.status = 'published'
+        AND c.available_at <= t AND c.ingested_at <= t))
+  SELECT array_agg(v.id ORDER BY v.id COLLATE "C") INTO heads FROM visible v WHERE NOT EXISTS (SELECT 1 FROM visible n WHERE n.predecessor_id = v.id);
+  SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE "C") INTO inputs FROM public.predictive_decision_inputs i WHERE i.decision_id = d.id;
+  RETURN heads IS NOT DISTINCT FROM inputs;
+END
+$$;
+
 CREATE FUNCTION public.predictive_decision_check() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE target text; d public.predictive_decisions; fact text; game text;
   inputs integer; sources integer; selected integer; selected_id text; same boolean; synthetic boolean; consistent boolean;
   head_ids text[]; input_ids text[]; r record; absent boolean := false;
   final_n integer := 0; terminal_n integer := 0; totals_n integer := 0; suspended_n integer := 0; postponed_n integer := 0;
   final_at timestamptz; terminal_at timestamptz; totals_at timestamptz; state text; observed timestamptz;
+  conflict boolean := false; claims text[] := '{}'; stats_n integer := 0; positive_n integer := 0;
 BEGIN
   IF TG_TABLE_NAME = 'predictive_decisions' THEN target := NEW.id; ELSE target := NEW.decision_id; END IF;
   SELECT * INTO d FROM public.predictive_decisions WHERE id = target;
@@ -1008,15 +1039,9 @@ BEGIN
   IF d.kind = 'completion' THEN
     -- event-completion-v1 (completion.ts): the inputs are exactly the marker heads
     -- usable at decided_at, and the stated outcome is what the policy computes.
-    game := substr(d.entity_key, length('completion:') + 1);
     SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE "C") INTO input_ids
       FROM public.predictive_decision_inputs i WHERE i.decision_id = target AND i.role = 'marker';
-    WITH visible AS (SELECT o.* FROM public.predictive_observations o WHERE o.entity_key LIKE 'event-state-marker:' || game || ':%' AND EXISTS (
-        SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
-        JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id WHERE l.observation_id = o.id AND c.state = 'published' AND ru.status = 'published'
-          AND c.available_at <= d.decided_at AND c.ingested_at <= d.decided_at))
-    SELECT array_agg(v.id ORDER BY v.id COLLATE "C") INTO head_ids FROM visible v WHERE NOT EXISTS (SELECT 1 FROM visible s WHERE s.predecessor_id = v.id);
-    IF head_ids IS DISTINCT FROM input_ids OR inputs <> coalesce(cardinality(input_ids), 0) THEN
+    IF NOT public.predictive_decision_current(target, d.decided_at) OR inputs <> coalesce(cardinality(input_ids), 0) THEN
       RAISE EXCEPTION 'predictive-completion-inputs-invalid' USING ERRCODE = '23514';
     END IF;
     FOR r IN SELECT o.kind, split_part(o.entity_key, ':', 3) AS marker,
@@ -1043,6 +1068,27 @@ BEGIN
     END IF;
     RETURN NULL;
   END IF;
+  IF d.kind = 'participation' THEN
+    -- participation-v1 (participation.ts): the inputs are exactly the evidence and
+    -- stats heads usable at decided_at; the state is recomputed from them.
+    SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE "C") INTO input_ids
+      FROM public.predictive_decision_inputs i WHERE i.decision_id = target AND i.role = 'evidence';
+    IF NOT public.predictive_decision_current(target, d.decided_at) OR inputs <> coalesce(cardinality(input_ids), 0) THEN
+      RAISE EXCEPTION 'predictive-participation-inputs-invalid' USING ERRCODE = '23514';
+    END IF;
+    SELECT coalesce(bool_or(n > 1 OR gone), false) INTO conflict FROM (SELECT split_part(o.entity_key, ':', 4) AS evidence, count(*) AS n,
+        bool_or(o.kind = 'source-row-absent') AS gone FROM public.predictive_observations o
+      WHERE o.id = ANY(coalesce(input_ids, '{}')) AND o.entity_key LIKE 'participation-evidence:%' GROUP BY 1) grouped;
+    SELECT coalesce(array_agg(DISTINCT o.data->>'claim'), '{}') INTO claims FROM public.predictive_observations o
+      WHERE o.id = ANY(coalesce(input_ids, '{}')) AND o.kind = 'participation-evidence';
+    SELECT count(*), count(*) FILTER (WHERE o.kind = 'player-game-stats' AND (coalesce((o.data->>'attempts')::integer, 0) > 0
+        OR coalesce((o.data->>'carries')::integer, 0) > 0 OR coalesce((o.data->>'targets')::integer, 0) > 0))
+      INTO stats_n, positive_n FROM public.predictive_observations o WHERE o.id = ANY(coalesce(input_ids, '{}')) AND o.entity_key LIKE 'player-game-stats:%';
+    IF stats_n > 0 AND positive_n = stats_n AND NOT 'offensive-participant' = ANY(claims) THEN claims := array_append(claims, 'offensive-participant'); END IF;
+    state := CASE WHEN conflict OR cardinality(claims) > 1 THEN 'conflicting' WHEN cardinality(claims) = 1 THEN claims[1] ELSE 'unresolved' END;
+    IF state <> d.outcome->>'state' THEN RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514'; END IF;
+    RETURN NULL;
+  END IF;
   IF d.kind <> 'reconciliation' THEN RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514'; END IF;
   fact := substr(d.entity_key, length('reconciliation:') + 1);
   SELECT count(DISTINCT o.source_key), count(*) FILTER (WHERE i.role = 'selected'),
@@ -1050,7 +1096,7 @@ BEGIN
     INTO sources, selected, selected_id, same
     FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id WHERE i.decision_id = target;
   IF sources <> inputs OR EXISTS (SELECT 1 FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id
-      WHERE i.decision_id = target AND (i.role = 'marker' OR o.entity_key <> fact OR NOT EXISTS (
+      WHERE i.decision_id = target AND (i.role NOT IN ('candidate','selected') OR o.entity_key <> fact OR NOT EXISTS (
         SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
         JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id
         WHERE l.observation_id = o.id AND c.state = 'published' AND ru.status = 'published'
@@ -1071,6 +1117,127 @@ $$;
 CREATE CONSTRAINT TRIGGER predictive_check_decisions AFTER INSERT ON public.predictive_decisions DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_decision_check();
 CREATE CONSTRAINT TRIGGER predictive_check_decision_inputs AFTER INSERT ON public.predictive_decision_inputs DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_decision_check();
 
+-- canonical-label-finalization-v1 (labels.ts eligibleFinalAt): the later of the
+-- completion bound + 72 hours and the first Thursday 12:00 UTC strictly after it.
+CREATE FUNCTION public.predictive_label_eligible_final_at(bound timestamptz) RETURNS timestamptz LANGUAGE plpgsql IMMUTABLE STRICT AS $$
+DECLARE naive timestamp := bound AT TIME ZONE 'UTC'; thursday timestamp;
+BEGIN
+  thursday := date_trunc('day', naive) + interval '12 hours';
+  thursday := thursday + ((4 - extract(dow FROM thursday)::integer + 7) % 7) * interval '1 day';
+  IF thursday <= naive THEN thursday := thursday + interval '7 days'; END IF;
+  RETURN greatest(bound + interval '72 hours', thursday AT TIME ZONE 'UTC');
+END
+$$;
+
+CREATE TABLE public.predictive_outcome_labels (
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256),
+  player_id text NOT NULL CHECK (player_id ~ '^00-[0-9]{7}$'),
+  game_id uuid NOT NULL REFERENCES public.predictive_games(id),
+  season_type text NOT NULL CHECK (season_type IN ('REG','POST')),
+  stat text NOT NULL CHECK (stat IN ('passing_yards','passing_tds','completions','attempts','passing_interceptions',
+    'rushing_yards','carries','receiving_yards','receptions')),
+  value integer,
+  state text NOT NULL CHECK (state IN ('provisional','final','unresolved','excluded')),
+  mode text NOT NULL CHECK (mode IN ('production-research','synthetic-proof')),
+  policy_id text NOT NULL CHECK (policy_id = 'canonical-label-finalization-v1'),
+  label_version integer NOT NULL CHECK (label_version >= 1),
+  predecessor_id text REFERENCES public.predictive_outcome_labels(id) DEFERRABLE INITIALLY DEFERRED,
+  run_id text NOT NULL REFERENCES public.predictive_ingestion_runs(id),
+  completion_decision_id text NOT NULL REFERENCES public.predictive_decisions(id),
+  participation_decision_id text NOT NULL REFERENCES public.predictive_decisions(id),
+  reconciliation_decision_id text REFERENCES public.predictive_decisions(id),
+  selected_observation_id text REFERENCES public.predictive_observations(id),
+  eligible_final_at timestamptz CHECK (isfinite(eligible_final_at)),
+  post_window_capture_id text REFERENCES public.predictive_captures(id),
+  finalized_at timestamptz CHECK (isfinite(finalized_at) AND finalized_at = date_trunc('milliseconds', finalized_at)),
+  created_at timestamptz NOT NULL CHECK (isfinite(created_at) AND created_at = date_trunc('milliseconds', created_at)),
+  UNIQUE (player_id, game_id, season_type, stat, label_version),
+  CHECK ((label_version = 1) = (predecessor_id IS NULL)),
+  CHECK (predecessor_id IS DISTINCT FROM id),
+  CHECK (state NOT IN ('unresolved','excluded') OR (value IS NULL AND selected_observation_id IS NULL)),
+  CHECK (value IS NULL OR stat IN ('passing_yards','rushing_yards','receiving_yards') OR value >= 0)
+);
+CREATE UNIQUE INDEX predictive_outcome_labels_one_successor ON public.predictive_outcome_labels (predecessor_id) WHERE predecessor_id IS NOT NULL;
+CREATE INDEX predictive_outcome_labels_game_idx ON public.predictive_outcome_labels (game_id, player_id, stat);
+CREATE TRIGGER predictive_labels_immutable BEFORE UPDATE OR DELETE ON public.predictive_outcome_labels FOR EACH ROW EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_labels_no_truncate BEFORE TRUNCATE ON public.predictive_outcome_labels FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
+
+-- The eight binding checks, mirroring validateLabels() in labels.ts. Each
+-- failure names its check: predictive-label-binding-<n>.
+CREATE FUNCTION public.predictive_label_check() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE l public.predictive_outcome_labels; c public.predictive_decisions; p public.predictive_decisions; r public.predictive_decisions;
+  s public.predictive_observations; cap public.predictive_captures; prior public.predictive_outcome_labels; field text; eligible timestamptz; synthetic boolean;
+BEGIN
+  SELECT * INTO l FROM public.predictive_outcome_labels WHERE id = NEW.id;
+  IF (SELECT status FROM public.predictive_ingestion_runs WHERE id = l.run_id) <> 'published' THEN
+    RAISE EXCEPTION 'predictive-label-binding-6' USING ERRCODE = '23514';
+  END IF;
+  field := CASE l.stat WHEN 'passing_yards' THEN 'passingYards' WHEN 'passing_tds' THEN 'passingTds' WHEN 'completions' THEN 'completions'
+    WHEN 'attempts' THEN 'attempts' WHEN 'passing_interceptions' THEN 'passingInterceptions' WHEN 'rushing_yards' THEN 'rushingYards'
+    WHEN 'carries' THEN 'carries' WHEN 'receiving_yards' THEN 'receivingYards' ELSE 'receptions' END;
+  SELECT * INTO c FROM public.predictive_decisions WHERE id = l.completion_decision_id;
+  SELECT * INTO p FROM public.predictive_decisions WHERE id = l.participation_decision_id;
+  SELECT * INTO r FROM public.predictive_decisions WHERE id = l.reconciliation_decision_id;
+  IF c.kind <> 'completion' OR c.entity_key <> 'completion:' || l.game_id OR NOT public.predictive_decision_current(c.id, l.created_at) THEN
+    RAISE EXCEPTION 'predictive-label-binding-1' USING ERRCODE = '23514';
+  END IF;
+  IF p.kind <> 'participation' OR p.entity_key <> 'participation:' || l.game_id || ':' || l.player_id OR NOT public.predictive_decision_current(p.id, l.created_at) THEN
+    RAISE EXCEPTION 'predictive-label-binding-2' USING ERRCODE = '23514';
+  END IF;
+  IF l.state IN ('provisional','final') THEN
+    IF c.outcome->>'state' <> 'completed' OR p.outcome->>'state' <> 'offensive-participant' THEN
+      RAISE EXCEPTION 'predictive-label-binding-2' USING ERRCODE = '23514';
+    END IF;
+    IF r.id IS NULL OR r.kind <> 'reconciliation' OR r.entity_key <> 'reconciliation:player-game-stats:' || l.game_id || ':' || l.player_id
+        OR r.outcome->>'result' <> 'selected' OR r.outcome->>'selectedObservationId' IS DISTINCT FROM l.selected_observation_id
+        OR NOT public.predictive_decision_current(r.id, l.created_at) THEN
+      RAISE EXCEPTION 'predictive-label-binding-3' USING ERRCODE = '23514';
+    END IF;
+    SELECT * INTO s FROM public.predictive_observations WHERE id = l.selected_observation_id;
+    IF s.kind <> 'player-game-stats' OR s.data->>'seasonType' <> l.season_type OR s.data->field = 'null'::jsonb
+        OR (s.data->>field)::integer IS DISTINCT FROM l.value OR NOT EXISTS (
+          SELECT 1 FROM public.predictive_artifact_observations la JOIN public.predictive_captures ca ON ca.artifact_id = la.artifact_id
+          JOIN public.predictive_ingestion_runs ru ON ru.id = ca.run_id WHERE la.observation_id = s.id AND ca.state = 'published' AND ru.status = 'published'
+            AND ca.available_at <= l.created_at AND ca.ingested_at <= l.created_at) THEN
+      RAISE EXCEPTION 'predictive-label-binding-4' USING ERRCODE = '23514';
+    END IF;
+  ELSE
+    IF l.value IS NOT NULL OR l.selected_observation_id IS NOT NULL THEN RAISE EXCEPTION 'predictive-label-binding-4' USING ERRCODE = '23514'; END IF;
+    IF l.state = 'excluded' AND (c.outcome->>'state' <> 'completed' OR p.outcome->>'state' NOT IN ('zero-offensive-participation','inactive-or-dnp')) THEN
+      RAISE EXCEPTION 'predictive-label-binding-2' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF l.state = 'final' THEN
+    eligible := public.predictive_label_eligible_final_at((c.outcome->>'completionObservedAt')::timestamptz);
+    SELECT * INTO cap FROM public.predictive_captures WHERE id = l.post_window_capture_id;
+    IF l.eligible_final_at IS DISTINCT FROM eligible OR l.finalized_at IS NULL OR l.finalized_at < eligible OR l.created_at < l.finalized_at
+        OR cap.id IS NULL OR cap.state <> 'published' OR NOT (cap.body_complete AND cap.header_verified AND cap.parser_succeeded)
+        OR cap.captured_at < eligible OR NOT EXISTS (SELECT 1 FROM public.predictive_artifact_observations la
+          WHERE la.artifact_id = cap.artifact_id AND la.observation_id = l.selected_observation_id) THEN
+      RAISE EXCEPTION 'predictive-label-binding-5' USING ERRCODE = '23514';
+    END IF;
+    IF cap.ingested_at > l.created_at THEN RAISE EXCEPTION 'predictive-label-binding-6' USING ERRCODE = '23514'; END IF;
+  ELSIF l.post_window_capture_id IS NOT NULL OR l.finalized_at IS NOT NULL OR l.eligible_final_at IS NOT NULL THEN
+    RAISE EXCEPTION 'predictive-label-binding-5' USING ERRCODE = '23514';
+  END IF;
+  IF l.predecessor_id IS NOT NULL THEN
+    SELECT * INTO prior FROM public.predictive_outcome_labels WHERE id = l.predecessor_id;
+    IF prior.player_id <> l.player_id OR prior.game_id <> l.game_id OR prior.season_type <> l.season_type OR prior.stat <> l.stat
+        OR prior.label_version + 1 <> l.label_version OR prior.created_at >= l.created_at THEN
+      RAISE EXCEPTION 'predictive-label-binding-7' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  synthetic := c.mode = 'synthetic-proof' OR p.mode = 'synthetic-proof' OR coalesce(r.mode = 'synthetic-proof', false) OR EXISTS (
+    SELECT 1 FROM public.predictive_observations o JOIN public.predictive_source_profiles sp ON sp.id = o.profile_id
+    WHERE o.id = l.selected_observation_id AND sp.purpose = 'synthetic-test');
+  IF synthetic <> (l.mode = 'synthetic-proof') OR (l.mode = 'synthetic-proof' AND NOT public.predictive_harness_session()) THEN
+    RAISE EXCEPTION 'predictive-label-binding-8' USING ERRCODE = '23514';
+  END IF;
+  RETURN NULL;
+END
+$$;
+CREATE CONSTRAINT TRIGGER predictive_check_labels AFTER INSERT ON public.predictive_outcome_labels DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_label_check();
+
 -- Privileges. PostgreSQL grants EXECUTE on new functions to PUBLIC by default;
 -- every predictive function is revoked from PUBLIC. Role grants apply only where
 -- the roles exist (the disposable harness creates them; hosted role setup is #95).
@@ -1079,7 +1246,8 @@ REVOKE ALL ON FUNCTION public.predictive_text(jsonb), public.predictive_optional
   public.predictive_stats_valid(jsonb), public.predictive_payload_valid(text, jsonb), public.predictive_harness_session(),
   public.predictive_rights_in_force(text, timestamptz, timestamptz), public.predictive_rights_allow(text, timestamptz, timestamptz, text),
   public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check(),
-  public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text) FROM PUBLIC;
+  public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text),
+  public.predictive_decision_current(text, timestamptz), public.predictive_label_eligible_final_at(timestamptz), public.predictive_label_check() FROM PUBLIC;
 DO $grants$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_ingest') THEN
@@ -1088,11 +1256,12 @@ BEGIN
       public.predictive_stats_valid(jsonb), public.predictive_payload_valid(text, jsonb), public.predictive_harness_session(),
       public.predictive_rights_in_force(text, timestamptz, timestamptz), public.predictive_rights_allow(text, timestamptz, timestamptz, text),
       public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check(),
-      public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text) TO predictive_ingest;
+      public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text),
+      public.predictive_decision_current(text, timestamptz), public.predictive_label_eligible_final_at(timestamptz), public.predictive_label_check() TO predictive_ingest;
     GRANT SELECT, INSERT ON public.predictive_source_profiles, public.predictive_rights_decisions, public.predictive_blobs,
       public.predictive_ingestion_runs, public.predictive_run_rights, public.predictive_artifacts, public.predictive_captures,
       public.predictive_games, public.predictive_observations, public.predictive_artifact_observations,
-      public.predictive_decisions, public.predictive_decision_inputs TO predictive_ingest;
+      public.predictive_decisions, public.predictive_decision_inputs, public.predictive_outcome_labels TO predictive_ingest;
     GRANT SELECT ON public.predictive_teams TO predictive_ingest;
   END IF;
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_replay') THEN
@@ -1101,7 +1270,7 @@ BEGIN
     GRANT SELECT ON public.predictive_source_profiles, public.predictive_rights_decisions, public.predictive_blobs,
       public.predictive_ingestion_runs, public.predictive_run_rights, public.predictive_artifacts, public.predictive_captures,
       public.predictive_teams, public.predictive_games, public.predictive_observations, public.predictive_artifact_observations,
-      public.predictive_decisions, public.predictive_decision_inputs TO predictive_replay;
+      public.predictive_decisions, public.predictive_decision_inputs, public.predictive_outcome_labels TO predictive_replay;
   END IF;
 END
 $grants$;

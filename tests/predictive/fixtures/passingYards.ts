@@ -26,7 +26,7 @@ export const rights = (profileId = PROFILE, overrides: Partial<RightsDecision> =
   effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: null, decidedAt: "2026-01-01T00:00:00.000Z",
   evidenceKind: "synthetic", evidenceReference: "synthetic fixtures only", ...overrides,
 });
-export const emptyDataset = (): Dataset => ({ formatVersion: 2, profiles: [profile()], rightsDecisions: [rights()], artifacts: [], captures: [], decisions: [] });
+export const emptyDataset = (): Dataset => ({ formatVersion: 2, profiles: [profile()], rightsDecisions: [rights()], artifacts: [], captures: [], decisions: [], labels: [] });
 
 export const revision = <K extends Kind>(id: string, kind: K, data: DataByKind[K], predecessorId: string | null = null, sourceRecordId = ""): Revision<K> => {
   return { id, kind, sourceRecordId, data, predecessorId, correctionReason: predecessorId ? "synthetic correction" : null } as Revision<K>;

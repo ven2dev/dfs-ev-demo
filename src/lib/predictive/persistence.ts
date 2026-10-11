@@ -1,7 +1,7 @@
 import type { Client } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
 import type { ArtifactStore } from "./artifacts.ts";
-import type { Artifact, Capture, Dataset, Decision, Observation, Profile, Request, Revision, RightsDecision } from "./types.ts";
+import type { Artifact, Capture, Dataset, Decision, Label, Observation, Profile, Request, Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
 import { buildPassingYardsFromReplay, validatePassingYardsRequest } from "./passingYards.ts";
 import { blockedProfiles, replayObservations } from "./replay.ts";
@@ -80,7 +80,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         const { byteSize, storageRef, ...metadata } = row.artifact;
         const artifact: Artifact = { ...metadata, bytes: await artifacts.read(storageRef, metadata.sha256, byteSize) };
         // Every stored row is re-verified against its immutable source bytes.
-        const checked = validateDataset({ formatVersion: 2, profiles: [profiles.get(artifact.profileId)!], rightsDecisions: [], artifacts: [artifact], captures: [], decisions: [] });
+        const checked = validateDataset({ formatVersion: 2, profiles: [profiles.get(artifact.profileId)!], rightsDecisions: [], artifacts: [artifact], captures: [], decisions: [], labels: [] });
         stored = { artifact, revisions: new Map(checked.revisions.get(artifact.id)!.map((revision) => [revision.id, revision])) };
         parsed.set(artifact.id, stored);
       }
@@ -192,6 +192,17 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     for (const input of decision.inputs) await client.query("INSERT INTO public.predictive_decision_inputs (decision_id,observation_id,role) VALUES ($1,$2,$3)",
       [decision.id, input.observationId, input.role]);
   };
+  // Labels are immutable versions; the deferred check enforces all eight bindings.
+  const persistLabel = async (label: Label, runId: string) => {
+    const columns = [label.id, label.playerId, label.gameId, label.seasonType, label.stat, label.value, label.state, label.mode, label.policyId,
+      label.labelVersion, label.predecessorId, runId, label.completionDecisionId, label.participationDecisionId, label.reconciliationDecisionId,
+      label.selectedObservationId, label.eligibleFinalAt, label.postWindowCaptureId, label.finalizedAt, label.createdAt];
+    const existing = (await client.query("SELECT id FROM public.predictive_outcome_labels WHERE id=$1", [label.id])).rows[0];
+    if (existing) refuse("label-id-conflict");
+    await client.query(`INSERT INTO public.predictive_outcome_labels (id,player_id,game_id,season_type,stat,value,state,mode,policy_id,label_version,
+      predecessor_id,run_id,completion_decision_id,participation_decision_id,reconciliation_decision_id,selected_observation_id,eligible_final_at,
+      post_window_capture_id,finalized_at,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`, columns);
+  };
   // The decision each published capture relied on, recorded for audit. A missing
   // decision leaves no row, and the deferred publication check refuses commit.
   const recordRunRights = (runId: string) => client.query(`INSERT INTO public.predictive_run_rights (run_id,rights_decision_id)
@@ -208,8 +219,9 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const checked = validateDataset({ ...dataset, captures: dataset.captures.map((capture) => ({ ...capture, state: "incomplete" })) });
     const bytes = dataset.artifacts.reduce((sum, artifact) => sum + Buffer.byteLength(artifact.bytes), 0);
     if (bytes > PERSISTENCE_BOUNDS.bytes || [...checked.revisions.values()].reduce((sum, rows) => sum + rows.length, 0) > PERSISTENCE_BOUNDS.rows) refuse("publication-bounds-refused");
-    if ((!dataset.captures.length && !checked.decisions.length) || dataset.captures.some((capture) => instant(capture.ingestedAt) > instant(now)) ||
-        checked.decisions.some((decision) => instant(decision.decidedAt) > instant(now))) refuse("publication-time-refused");
+    if ((!dataset.captures.length && !checked.decisions.length && !dataset.labels.length) || dataset.captures.some((capture) => instant(capture.ingestedAt) > instant(now)) ||
+        checked.decisions.some((decision) => instant(decision.decidedAt) > instant(now)) ||
+        dataset.labels.some((label) => instant(label.createdAt) > instant(now))) refuse("publication-time-refused");
     for (const capture of dataset.captures) {
       if (capture.state === "published" && (!capture.bodyComplete || !capture.headerVerified || !capture.parserSucceeded)) refuse("incomplete-capture-published");
       if (capture.state === "published" && capture.parsedRows !== checked.revisions.get(capture.artifactId)!.length) refuse("capture-row-count-mismatch");
@@ -249,6 +261,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         for (const revision of checked.revisions.get(artifact.id)!) await persistRevision(revision, artifact);
       }
       for (const decision of checked.decisions) await persistDecision(decision, id);
+      for (const label of dataset.labels) await persistLabel(label, id);
       await recordRunRights(id);
       return { id, status: "published", failureCode: null, reused: false };
     });
@@ -268,7 +281,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         try {
           const captures = dataset.captures.filter((capture) => capture.artifactId === original.id).map((capture) => ({ ...capture, state: "incomplete" as const }));
           const envelope = validateDataset({ formatVersion: 2, profiles: dataset.profiles, rightsDecisions: [],
-            artifacts: [{ ...original, bytes: "[]", sha256: digest("[]") }], captures, decisions: [] });
+            artifacts: [{ ...original, bytes: "[]", sha256: digest("[]") }], captures, decisions: [], labels: [] });
           await artifacts.write(original.bytes, original.sha256);
           const artifact = { ...original, id: "diagnostic-artifact:" + digest(id + ":" + original.id) };
           profiles = [...envelope.profiles.values()];

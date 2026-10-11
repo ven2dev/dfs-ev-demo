@@ -7,26 +7,8 @@ import { canonical, compareText } from "./validation.ts";
 export type { CompletionState } from "./completion.ts";
 export const completionDecision = (replay: Replay, gameId: string) => replay.completion(gameId);
 
-// participation-v1: positive usage (an attempt, carry or target) or explicit
-// evidence supports one individual label. Missing evidence stays unresolved;
-// nothing here establishes a complete eligible population.
-export type ParticipationState = "offensive-participant" | "zero-offensive-participation" | "inactive-or-dnp" | "unresolved" | "conflicting";
-export type ParticipationDecision = { state: ParticipationState; inputs: Observation[] };
-const EVIDENCE = ["participation-feed", "official-inactive-list", "provider-snap-count"] as const;
-
-export const participationDecision = (replay: Replay, gameId: string, playerId: string, stats: PlayerGameStats | null, statsRow: Observation | null): ParticipationDecision => {
-  const selections = EVIDENCE.map((kind) => replay.select("participation-evidence", "participation-evidence:" + gameId + ":" + playerId + ":" + kind));
-  const inputs = selections.flatMap((selection) => selection.dependencies);
-  if (selections.some((selection) => selection.state === "ambiguous")) return { state: "conflicting", inputs };
-  const claims = new Set(selections.flatMap((selection) => selection.observation ? [selection.observation.revision.data.claim] : []));
-  if (stats && [stats.attempts, stats.carries, stats.targets].some((value) => value !== null && value > 0)) {
-    claims.add("offensive-participant");
-    if (statsRow) inputs.push(statsRow);
-  }
-  if (claims.size > 1) return { state: "conflicting", inputs };
-  const [claim] = claims;
-  return { state: claim ?? "unresolved", inputs };
-};
+// participation-v1 lives in participation.ts and is shared with decision
+// validation; replay applies it to the current evidence and stats heads.
 
 // availability-v1: only an explicit "Out" report withholds. Blank, missing or
 // removed reports are unknown, never healthy.

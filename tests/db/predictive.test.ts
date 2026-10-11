@@ -13,6 +13,8 @@ import { createLocalPredictiveStore, MEMBERSHIP_READ_SQL, SCHEDULE_READ_SQL } fr
 import { ingestLocalDataset } from "../../src/lib/predictive/ingest.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/completion.ts";
+import { participationHeadsAt, recordParticipation } from "../../src/lib/predictive/participation.ts";
+import type { Label } from "../../src/lib/predictive/types.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { runLocalProof } from "../../scripts/predictive/local.ts";
 import { digest, instant, TEAM_IDS, validateDataset } from "../../src/lib/predictive/validation.ts";
@@ -769,5 +771,67 @@ it("predictive completion records must cite exactly the marker heads known at th
     const stale = await store.replay(request(CUTOFF_B));
     expect(stale.completions).toEqual([]);
     expect(stale.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-conflicting" });
+  });
+});
+it("predictive participation records and outcome labels enforce all eight binding checks in PostgreSQL", async () => {
+  await withProof(async ({ client, store }) => {
+    const a = passingYardsFixture(false); await store.publish("A", a, NOW);
+    const observations = validateDataset(a).observations; const t = instant(CAPTURE_A);
+    const decisionsFor = (number: number) => {
+      const game = gameId(number);
+      return [recordCompletion("completion-" + number, game, markerHeadsAt(observations.values(), game, t), CAPTURE_A, "synthetic-proof"),
+        recordParticipation("participation-" + number, game, PLAYER, participationHeadsAt(observations.values(), game, PLAYER, t), CAPTURE_A, "synthetic-proof"),
+        reconcileFact("reconciliation-" + number, "player-game-stats:" + game + ":" + PLAYER,
+          [...observations.values()].filter((value) => value.entityKey === "player-game-stats:" + game + ":" + PLAYER), CAPTURE_A, "synthetic-proof")];
+    };
+    const registrations = { profiles: a.profiles, rightsDecisions: a.rightsDecisions };
+    await store.publish("decisions", { ...emptyDataset(), ...registrations, decisions: [...decisionsFor(5), ...decisionsFor(4)] }, NOW);
+    expect((await client.query("SELECT outcome FROM predictive_decisions WHERE id='participation-5'")).rows[0].outcome).toEqual({ state: "offensive-participant" });
+    const post = { ...emptyDataset(), ...registrations };
+    addCapture(post, "post-window", JSON.parse(a.artifacts.find((value) => value.id === "A-player-game-stats")!.bytes), "2026-10-10T13:00:00.000Z");
+    const AFTER_WINDOW = "2026-10-11T00:00:00.000Z";
+    await store.publish("post-window", post, AFTER_WINDOW);
+    const provisional: Label = { id: "label-5-v1", playerId: PLAYER, gameId: PRIOR[4], seasonType: "REG", stat: "passing_yards", value: 300,
+      state: "provisional", mode: "synthetic-proof", policyId: "canonical-label-finalization-v1", labelVersion: 1, predecessorId: null,
+      completionDecisionId: "completion-5", participationDecisionId: "participation-5", reconciliationDecisionId: "reconciliation-5",
+      selectedObservationId: "player-synthetic-game-5", eligibleFinalAt: null, postWindowCaptureId: null, finalizedAt: null, createdAt: "2026-10-07T13:00:00.000Z" };
+    const final: Label = { ...provisional, id: "label-5-v2", state: "final", labelVersion: 2, predecessorId: "label-5-v1",
+      eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-post-window", finalizedAt: "2026-10-10T14:00:00.000Z", createdAt: "2026-10-10T14:00:00.000Z" };
+    await expect(store.publish("labels-early", { ...emptyDataset(), ...registrations, labels: [provisional, final] }, NOW)).rejects.toThrow("publication-time-refused");
+    await store.publish("labels", { ...emptyDataset(), ...registrations, labels: [provisional, final] }, AFTER_WINDOW);
+    expect((await client.query("SELECT id, state, value FROM predictive_outcome_labels ORDER BY label_version")).rows)
+      .toEqual([{ id: "label-5-v1", state: "provisional", value: 300 }, { id: "label-5-v2", state: "final", value: 300 }]);
+    const insert = (label: Label) => client.query(`INSERT INTO predictive_outcome_labels (id,player_id,game_id,season_type,stat,value,state,mode,policy_id,
+      label_version,predecessor_id,run_id,completion_decision_id,participation_decision_id,reconciliation_decision_id,selected_observation_id,
+      eligible_final_at,post_window_capture_id,finalized_at,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'labels',$12,$13,$14,$15,$16,$17,$18,$19)`,
+    [label.id, label.playerId, label.gameId, label.seasonType, label.stat, label.value, label.state, label.mode, label.policyId, label.labelVersion,
+      label.predecessorId, label.completionDecisionId, label.participationDecisionId, label.reconciliationDecisionId, label.selectedObservationId,
+      label.eligibleFinalAt, label.postWindowCaptureId, label.finalizedAt, label.createdAt]);
+    const fresh = (label: Label): Label => ({ ...label, id: "probe", stat: "attempts", value: label.value === null ? null : 40 });
+    // Valid control: a fresh attempts label under the same deferred checks.
+    await sqlProbe(client, async () => { await insert(fresh(provisional)); await client.query("SET CONSTRAINTS ALL IMMEDIATE"); });
+    const refusals: [number, Label][] = [
+      [1, { ...fresh(provisional), completionDecisionId: "completion-4" }],
+      [2, { ...fresh(provisional), state: "excluded", value: null, selectedObservationId: null, reconciliationDecisionId: null }],
+      [3, { ...fresh(provisional), reconciliationDecisionId: "reconciliation-4" }],
+      [4, { ...fresh(provisional), value: 41 }],
+      [5, { ...fresh(provisional), state: "final", eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-A-player-game-stats",
+        finalizedAt: "2026-10-10T14:00:00.000Z", createdAt: "2026-10-10T14:00:00.000Z" }],
+      [6, { ...fresh(provisional), state: "final", eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-post-window",
+        finalizedAt: "2026-10-10T12:30:00.000Z", createdAt: "2026-10-10T12:30:00.000Z" }],
+      // Chained to the current head but for a different stat: not the same natural key.
+      [7, { ...fresh(provisional), labelVersion: 3, predecessorId: "label-5-v2" }],
+      [8, { ...fresh(provisional), mode: "production-research" }],
+    ];
+    for (const [number, label] of refusals) await sqlProbe(client, async () => {
+      await insert(label);
+      await expect(client.query("SET CONSTRAINTS ALL IMMEDIATE"), "binding " + number).rejects.toMatchObject({ code: "23514", message: "predictive-label-binding-" + number });
+    });
+    await sqlProbe(client, async () => {
+      await expect(insert({ ...final, id: "branch" })).rejects.toMatchObject({ code: "23505" });
+    });
+    await sqlProbe(client, async () => {
+      await expect(insert({ ...fresh(provisional), state: "excluded", value: 0 })).rejects.toMatchObject({ code: "23514" });
+    });
   });
 });

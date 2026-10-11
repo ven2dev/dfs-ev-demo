@@ -33,6 +33,7 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
       "predictive_games",
       "predictive_ingestion_runs",
       "predictive_observations",
+      "predictive_outcome_labels",
       "predictive_rights_decisions",
       "predictive_run_rights",
       "predictive_source_profiles",

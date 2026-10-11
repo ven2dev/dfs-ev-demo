@@ -43,6 +43,7 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive reconciliation decisions resolve only their exact provider heads and PostgreSQL refuses misstated evidence",
   "predictive coverage-aware absences block later cutoffs only and PostgreSQL refuses unproven disappearance",
   "predictive completion records must cite exactly the marker heads known at their decision time and state the policy outcome",
+  "predictive participation records and outcome labels enforce all eight binding checks in PostgreSQL",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

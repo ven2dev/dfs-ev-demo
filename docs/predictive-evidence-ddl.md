@@ -682,3 +682,43 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
   policy is the source of truth, and a record is a database-verified,
   citable application of it. That avoids two sources of truth and avoids
   requiring a fresh record after every marker capture.
+
+### Step 7 additions (2026-10-10)
+
+- **Participation decisions** (`participation-v1`, `participation:<gameId>:<playerId>`):
+  - Inputs (role `evidence`) are exactly the participation-evidence heads plus the
+    player-stats heads usable at `decided_at`. The database recomputes the state.
+  - Positive usage counts only when **every** stats head is present and shows an
+    attempt, carry or target.
+  - Several provider heads for one evidence kind, or evidence that disappeared,
+    is `conflicting`.
+  - Replay recomputes the state and cites a matching record (`participations`).
+- **`predictive_decision_current(decision, t)`:** a decision's inputs equal the
+  heads of its evidence scope usable at `t`. It's used for completion and
+  participation decisions at their own `decided_at`, and by labels at
+  `created_at`, so a label can never rely on a decision that later evidence has
+  overtaken.
+- **`predictive_outcome_labels`** (`canonical-label-finalization-v1`), with a
+  deferred check whose failures are named `predictive-label-binding-1` to `-8`
+  (code mirror: `labels.ts`):
+  1. The completion decision is for this game and current.
+  2. The participation decision is for this player-game and current;
+     provisional/final labels need `completed` and `offensive-participant`, and
+     excluded labels need a confirmed non-participant.
+  3. A selected, current reconciliation of this player-game's stats names the
+     selected observation.
+  4. The value equals the selected payload field for the season type, and the
+     observation was usable by `created_at`. Unresolved and excluded labels have
+     no value.
+  5. Final labels: `eligible_final_at` = the later of bound + 72h and the first
+     Thursday 12:00 UTC strictly after the bound
+     (`predictive_label_eligible_final_at`); `finalized_at` ≥ eligible;
+     `created_at` ≥ finalized; and a complete published post-window capture,
+     captured at or after eligible, that relinks the selected observation.
+  6. The post-window capture was ingested by `created_at`, and the run is
+     published.
+  7. The version chain has the same natural key, version + 1, an earlier
+     predecessor and no branching.
+  8. The mode is consistent with synthetic evidence; synthetic-proof labels need
+     the harness role.
+- **Publication** refuses labels created after the publish time.

@@ -4,8 +4,10 @@ import { buildPassingYardsBundle } from "../../src/lib/predictive/passingYards.t
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/completion.ts";
+import { participationHeadsAt, recordParticipation } from "../../src/lib/predictive/participation.ts";
+import { eligibleFinalAt, validateLabels } from "../../src/lib/predictive/labels.ts";
 import { digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader } from "../../src/lib/predictive/validation.ts";
-import type { Artifact, Capture, CompletionRecord, Dataset, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
+import type { Artifact, Capture, CompletionRecord, Dataset, Label, ParticipationRecord, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
 import { addCapture, artifact, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_A, CUTOFF_B, gameId, membership, OPPONENT,
   passingYardsFixture, PLAYER, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamStats } from "./fixtures/passingYards.ts";
 
@@ -843,6 +845,97 @@ describe("event-completion-v1 recorded decisions", () => {
     const later = buildPassingYardsBundle(dataset, request(CUTOFF_B));
     expect(later.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-conflicting" });
   });
+});
+
+describe("participation-v1 records and canonical outcome labels", () => {
+  const T = instant(CAPTURE_A);
+  const decided = (dataset: Dataset, at = CAPTURE_A, number = 5) => {
+    const observations = validateDataset(dataset).observations; const t = instant(at); const game = gameId(number);
+    const statsHeads = [...observations.values()].filter((value) => value.entityKey === "player-game-stats:" + game + ":" + PLAYER);
+    return [
+      recordCompletion("completion-" + number, game, markerHeadsAt(observations.values(), game, t), at, "synthetic-proof"),
+      recordParticipation("participation-" + number, game, PLAYER, participationHeadsAt(observations.values(), game, PLAYER, t), at, "synthetic-proof"),
+      reconcileFact("reconciliation-" + number, "player-game-stats:" + game + ":" + PLAYER, statsHeads, at, "synthetic-proof"),
+    ];
+  };
+  const POST = "2026-10-10T13:00:00.000Z"; const FINAL = "2026-10-10T14:00:00.000Z";
+  const provisional = (): Label => ({ id: "label-5-v1", playerId: PLAYER, gameId: PRIOR[4], seasonType: "REG", stat: "passing_yards", value: 300,
+    state: "provisional", mode: "synthetic-proof", policyId: "canonical-label-finalization-v1", labelVersion: 1, predecessorId: null,
+    completionDecisionId: "completion-5", participationDecisionId: "participation-5", reconciliationDecisionId: "reconciliation-5",
+    selectedObservationId: "player-synthetic-game-5", eligibleFinalAt: null, postWindowCaptureId: null, finalizedAt: null, createdAt: "2026-10-07T13:00:00.000Z" });
+  const final = (): Label => ({ ...provisional(), id: "label-5-v2", state: "final", labelVersion: 2, predecessorId: "label-5-v1",
+    eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-post-window", finalizedAt: FINAL, createdAt: FINAL });
+  const labelled = (post = POST) => {
+    const dataset = passingYardsFixture(false); dataset.decisions.push(...decided(dataset));
+    // The post-window recapture reconfirms the same stats revision after the window.
+    addCapture(dataset, "post-window", JSON.parse(dataset.artifacts.find((value) => value.id === "A-player-game-stats")!.bytes), post);
+    return dataset;
+  };
+  const check = (dataset: Dataset, labels: Label[]) => {
+    const validated = validateDataset(dataset);
+    validateLabels(labels, { observations: validated.observations, decisions: new Map(dataset.decisions.map((value) => [value.id, value])),
+      captures: new Map(dataset.captures.map((value) => [value.id, value])), artifactRevisions: validated.revisions, profiles: validated.profiles });
+  };
+  it.each([
+    ["2026-10-07T12:00:00.000Z", "2026-10-10T12:00:00.000Z"],
+    ["2026-10-05T03:00:00.000Z", "2026-10-08T12:00:00.000Z"],
+    ["2026-10-08T12:00:00.000Z", "2026-10-15T12:00:00.000Z"],
+    ["2026-10-08T11:59:59.999Z", "2026-10-11T11:59:59.999Z"],
+  ])("computes the operational-final time for a bound of %s", (bound, expected) => {
+    expect(eligibleFinalAt(bound)).toBe(expected);
+  });
+  it("records participation from the current evidence and stats heads and cites it in the bundle", () => {
+    const dataset = passingYardsFixture(false);
+    const record = recordParticipation("participation-5", PRIOR[4], PLAYER, participationHeadsAt(validateDataset(dataset).observations.values(), PRIOR[4], PLAYER, T), CAPTURE_A, "synthetic-proof");
+    expect(record.outcome).toEqual({ state: "offensive-participant" });
+    dataset.decisions.push(record);
+    expect(bundle(dataset).participations).toEqual([{ decisionId: "participation-5", gameId: PRIOR[4], state: "offensive-participant", decidedAt: CAPTURE_A }]);
+  });
+  it.each([
+    ["participation-inputs-not-heads", (value: ParticipationRecord) => ({ ...value, inputs: [] })],
+    ["decision-rule-mismatch", (value: ParticipationRecord) => ({ ...value, outcome: { state: "inactive-or-dnp" as const } })],
+  ] as const)("refuses a participation record that misstates its evidence: %s", (code, change) => {
+    const dataset = passingYardsFixture(false);
+    const record = recordParticipation("participation-5", PRIOR[4], PLAYER, participationHeadsAt(validateDataset(dataset).observations.values(), PRIOR[4], PLAYER, T), CAPTURE_A, "synthetic-proof");
+    dataset.decisions.push(change(record));
+    expect(() => bundle(dataset)).toThrow(code);
+  });
+  it("accepts a provisional label and its final version bound to reconfirmed evidence", () => {
+    expect(() => check(labelled(), [provisional(), final()])).not.toThrow();
+  });
+  it.each([
+    [1, (dataset: Dataset, label: Label) => { dataset.decisions.push(...decided(dataset, CAPTURE_A, 4).slice(0, 1)); return { ...label, completionDecisionId: "completion-4" }; }],
+    [2, (dataset: Dataset, label: Label) => { addCapture(dataset, "late-feed", [revision("late-feed", "participation-evidence",
+      { gameId: PRIOR[4], playerId: PLAYER, teamId: TEAM, evidenceKind: "participation-feed", claim: "offensive-participant" })], "2026-10-07T12:30:00.000Z"); return label; }],
+    [3, (dataset: Dataset, label: Label) => { dataset.decisions.push(...decided(dataset, CAPTURE_A, 4).slice(2)); return { ...label, reconciliationDecisionId: "reconciliation-4" }; }],
+    [4, (_dataset: Dataset, label: Label) => ({ ...label, value: 301 })],
+    [8, (_dataset: Dataset, label: Label) => ({ ...label, mode: "production-research" as const })],
+  ] as const)("refuses a provisional label failing binding check %d", (number, change) => {
+    const dataset = labelled(); const label = change(dataset, provisional());
+    expect(() => check(dataset, [label])).toThrow("label-binding-" + number);
+  });
+  it.each([
+    [5, () => labelled("2026-10-09T13:00:00.000Z"), (label: Label) => label],
+    [5, () => labelled(), (label: Label) => ({ ...label, finalizedAt: "2026-10-10T11:00:00.000Z" })],
+    [6, () => { const dataset = labelled(); dataset.captures.at(-1)!.ingestedAt = "2026-10-10T15:00:00.000Z"; return dataset; }, (label: Label) => label],
+    [7, () => labelled(), (label: Label) => ({ ...label, labelVersion: 3 })],
+    [7, () => labelled(), (label: Label) => ({ ...label, predecessorId: null })],
+  ] as const)("refuses a final label failing binding check %d", (number, makeDataset, change) => {
+    expect(() => check(makeDataset(), [provisional(), change(final())])).toThrow("label-binding-" + number);
+  });
+  it("labels a confirmed non-participant as excluded with no value, never as zero", () => {
+    const dataset = passingYardsFixture(false); markOutForLabels(dataset);
+    dataset.decisions.push(...decided(dataset).slice(0, 2));
+    const excluded: Label = { ...provisional(), state: "excluded", value: null, selectedObservationId: null, reconciliationDecisionId: null };
+    expect(() => check(dataset, [excluded])).not.toThrow();
+    expect(() => check(dataset, [{ ...excluded, value: 0 }])).toThrow("label-binding-4");
+    expect(() => check(labelled(), [excluded])).toThrow("label-binding-2");
+  });
+  const markOutForLabels = (dataset: Dataset) => {
+    omit(dataset, "player-synthetic-game-5");
+    addCapture(dataset, "inactive-5", [revision("inactive-5", "participation-evidence",
+      { gameId: PRIOR[4], playerId: PLAYER, teamId: TEAM, evidenceKind: "official-inactive-list", claim: "inactive-or-dnp" })]);
+  };
 });
 
 describe("local executable proof", () => {

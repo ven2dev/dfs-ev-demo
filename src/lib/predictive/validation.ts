@@ -258,22 +258,33 @@ const CAPTURE_FIELDS = ["id", "artifactId", "capturedAt", "availableAt", "ingest
   "bodyComplete", "headerVerified", "parserSucceeded", "parsedRows"];
 
 export const datasetContainer = (value: unknown) => {
-  const root = exact(value, ["formatVersion", "profiles", "rightsDecisions", "artifacts", "captures", "decisions"]);
+  const root = exact(value, ["formatVersion", "profiles", "rightsDecisions", "artifacts", "captures", "decisions", "labels"]);
   if (root.formatVersion !== 2 || !Array.isArray(root.profiles) || !Array.isArray(root.rightsDecisions) ||
-      !Array.isArray(root.artifacts) || !Array.isArray(root.captures) || !Array.isArray(root.decisions)) refuse("dataset-bounds-refused");
+      !Array.isArray(root.artifacts) || !Array.isArray(root.captures) || !Array.isArray(root.decisions) || !Array.isArray(root.labels)) refuse("dataset-bounds-refused");
   return { formatVersion: 2 as const, profiles: root.profiles, rightsDecisions: root.rightsDecisions, artifacts: root.artifacts,
-    captures: root.captures, decisions: root.decisions };
+    captures: root.captures, decisions: root.decisions, labels: root.labels };
 };
 
 // Shape only; references are checked against stored or visible evidence by
 // validateDecisions, because a decision may cite evidence from earlier batches.
 export const validateDecisionShape = (value: unknown): Decision => {
   const row = exact(value, ["id", "kind", "entityKey", "policyId", "mode", "decidedAt", "predecessorId", "outcome", "inputs"]);
-  text(row.id); oneOf(row.kind, ["reconciliation", "completion"]);
+  text(row.id); oneOf(row.kind, ["reconciliation", "completion", "participation"]);
   oneOf(row.mode, ["production-research", "synthetic-proof"]); instant(row.decidedAt);
   if (row.predecessorId !== null) text(row.predecessorId);
   if (row.predecessorId === row.id) refuse("invalid-decision");
   if (!Array.isArray(row.inputs) || row.inputs.length > 16) refuse("invalid-decision");
+  if (row.kind === "participation") {
+    oneOf(row.policyId, ["participation-v1"]);
+    const parts = typeof row.entityKey === "string" ? row.entityKey.split(":") : [];
+    if (parts.length !== 3 || parts[0] !== "participation") refuse("invalid-decision");
+    gameIdentity(parts[1]); playerIdentity(parts[2]);
+    const outcome = exact(row.outcome, ["state"]);
+    oneOf(outcome.state, ["offensive-participant", "zero-offensive-participation", "inactive-or-dnp", "unresolved", "conflicting"]);
+    for (const input of row.inputs) { const item = exact(input, ["observationId", "role"]); text(item.observationId); oneOf(item.role, ["evidence"]); }
+    if (new Set(row.inputs.map((input) => input.observationId)).size !== row.inputs.length) refuse("invalid-decision");
+    return value as Decision;
+  }
   if (row.kind === "completion") {
     oneOf(row.policyId, ["event-completion-v1"]);
     if (typeof row.entityKey !== "string" || !row.entityKey.startsWith("completion:")) refuse("invalid-decision");

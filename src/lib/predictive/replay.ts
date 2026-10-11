@@ -1,5 +1,6 @@
-import type { CompletionRecord, Dataset, Decision, Kind, Observation, Reconciliation, RightsDecision } from "./types.ts";
+import type { CompletionRecord, Dataset, Decision, Kind, Observation, ParticipationRecord, Reconciliation, RightsDecision } from "./types.ts";
 import { completionFromHeads, validateCompletionDecisions } from "./completion.ts";
+import { participationFromHeads, validateParticipationDecisions } from "./participation.ts";
 import { allows, canonical, compareText, datasetContainer, instant, object, rightsInForce, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
 
 export type Selection<K extends Kind> = ({ state: "selected"; observation: Observation<K> } |
@@ -31,6 +32,7 @@ export const createReplay = (dataset: Dataset, cutoff: string, accessAt: string)
   const validated = validateDataset({ ...root, artifacts, captures, decisions });
   validateDecisions(validated.decisions, validated.observations, validated.profiles);
   validateCompletionDecisions(validated.decisions, validated.observations, validated.profiles);
+  validateParticipationDecisions(validated.decisions, validated.observations, validated.profiles);
   const rows = [...validated.observations.values()];
   return replayObservations(rows, blockedProfiles(validated.rightsDecisions, new Set(rows.map((row) => row.artifact.profileId)), accessAt), validated.decisions);
 };
@@ -48,6 +50,9 @@ export const replayObservations = (rows: Observation[], blocked: Set<string>, de
     decisionHeads.set(decision.entityKey, [...(decisionHeads.get(decision.entityKey) ?? []), decision]);
   }
   const cited = new Map<string, CompletionRecord>();
+  const citedParticipation = new Map<string, ParticipationRecord>();
+  const sameIds = (record: Decision, rows: Observation[]) =>
+    record.inputs.map((input) => input.observationId).sort(compareText).join("\n") === rows.map((row) => row.revision.id).sort(compareText).join("\n");
   const used = new Map<string, Reconciliation>();
   const disappeared = new Map<string, Observation[]>();
   // A decision resolves a fact only for the exact provider heads it judged. A
@@ -105,6 +110,17 @@ export const replayObservations = (rows: Observation[], blocked: Set<string>, de
       return { ...outcome, inputs: markers };
     },
     citedCompletions: () => [...cited.values()].sort((a, b) => compareText(a.id, b.id)),
+    // participation-v1 over the current evidence and stats heads for one
+    // player-game, citing a record only if it judged exactly these heads.
+    participation: (gameId: string, playerId: string) => {
+      const prefix = "participation-evidence:" + gameId + ":" + playerId + ":"; const stats = "player-game-stats:" + gameId + ":" + playerId;
+      const scope = heads.filter((row) => row.entityKey.startsWith(prefix) || row.entityKey === stats);
+      const outcome = participationFromHeads(scope);
+      const latest = (decisionHeads.get("participation:" + gameId + ":" + playerId) ?? []) as ParticipationRecord[];
+      if (latest.length === 1 && sameIds(latest[0], scope) && canonical(latest[0].outcome) === canonical(outcome)) citedParticipation.set(latest[0].id, latest[0]);
+      return { ...outcome, inputs: scope };
+    },
+    citedParticipations: () => [...citedParticipation.values()].sort((a, b) => compareText(a.id, b.id)),
     disappearedFacts: () => [...disappeared.keys()].sort(compareText),
     // Enumerate cutoff-known facts only; a future capture cannot invent a
     // prior-game gap or reveal a future identity to an earlier replay.

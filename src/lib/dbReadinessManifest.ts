@@ -18,7 +18,7 @@ export const DB_READINESS_MANIFEST = {
     {
       "version": 3,
       "filename": "0003_predictive_evidence.sql",
-      "sha256": "911467b1811dc839cd72a7ad9ecaaf7bc3b9babb12f7c2013dc613e60d958c28"
+      "sha256": "8b8fbfe08665943e265cbfaea31bf64db8282417b526b898171841374646646d"
     }
   ],
   "requiredTables": [

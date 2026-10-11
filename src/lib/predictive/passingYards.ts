@@ -2,7 +2,7 @@ import type { Bundle, Dataset, Dependency, Exclusion, Kind, Observation,
   PassingGame, Request, Schedule, Summary, TeamGameStats } from "./types.ts";
 import { createReplay, type Replay } from "./replay.ts";
 import { applicableQuarterback } from "./identity.ts";
-import { availabilityState, completionDecision, participationDecision } from "./policies.ts";
+import { availabilityState, completionDecision } from "./policies.ts";
 import { scheduleContext } from "./scheduleContext.ts";
 import { canonical, compareText, digest, exact, gameIdentity, instant, playerIdentity, refuse } from "./validation.ts";
 
@@ -93,7 +93,7 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
     computedAt: request.computedAt, status: "unavailable-inputs", reasons: [], quality: [],
     target, teamId, opponentId, availability: { injury: status.injury, depth: status.depth, participation: "future-unknown" },
     player: [], team: enrich ? [] : null, opponent: enrich ? [] : null, scheduledRestHours: null,
-    dependencyAvailableAt: null, dependencies: [], excludedSchedule, reconciliations: [], completions: [],
+    dependencyAvailableAt: null, dependencies: [], excludedSchedule, reconciliations: [], completions: [], participations: [],
     scheduleCoverage: { state: "unverified", missingGameIds: [] },
   };
   if (target && member && !reasons.size) {
@@ -156,7 +156,7 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
         const stats = !reason ? select("player-game-stats", game.gameId, request.playerId) : null;
         if (!reason && (stats!.state === "ambiguous" || stats!.state === "absent")) reason = "player-stats-" + stats!.state;
         if (!reason) {
-          const participation = participationDecision(replay, game.gameId, request.playerId, stats?.observation?.revision.data ?? null, stats?.observation ?? null);
+          const participation = replay.participation(game.gameId, request.playerId);
           retain(participation.inputs);
           if (participation.state !== "offensive-participant") reason = "participation-" + participation.state;
         }
@@ -225,6 +225,8 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
   base.dependencies = dependencies;
   base.dependencyAvailableAt = dependencies.length ? new Date(Math.max(...dependencies.map((row) => instant(row.availableAt)))).toISOString() : null;
   if (replay.disappearedFacts().length) reasons.add("required-input-disappeared");
+  base.participations = replay.citedParticipations().map((record) => ({ decisionId: record.id, gameId: record.entityKey.split(":")[1],
+    state: record.outcome.state, decidedAt: record.decidedAt }));
   base.completions = replay.citedCompletions().map((record) => ({ decisionId: record.id, gameId: record.entityKey.slice("completion:".length),
     state: record.outcome.state, decidedAt: record.decidedAt }));
   base.reconciliations = replay.usedDecisions().map((decision) => ({ decisionId: decision.id, entityKey: decision.entityKey,

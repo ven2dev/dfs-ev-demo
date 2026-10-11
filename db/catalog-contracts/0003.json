@@ -1,5 +1,5 @@
 {
-  "catalogFingerprint": "cf83e4bd2bcc6976e73997ddd53d613cd95b5702522c4241a4b8d367f3b83a61",
+  "catalogFingerprint": "e36979b164b7a842ae54cf561ed3bb61bd993158d259085cb3da8c7ce0fa5b7a",
   "contractVersion": 1,
   "formatVersion": 1,
   "objects": [
@@ -2901,6 +2901,266 @@
       },
       "kind": "column",
       "name": "predictive_observations.team_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 13,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.completion_decision_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 20,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.created_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 17,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.eligible_final_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 19,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.finalized_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "uuid"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.game_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.label_version"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.mode"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 14,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.participation_decision_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.player_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.policy_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 18,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.post_window_capture_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 11,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.predecessor_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 15,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.reconciliation_decision_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.run_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.season_type"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 16,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.selected_observation_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.stat"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "text"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.state"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 6,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "predictive_outcome_labels.value"
     },
     {
       "definition": {
@@ -7278,7 +7538,7 @@
     {
       "definition": {
         "deferrable": false,
-        "definition": "CHECK (role = ANY (ARRAY['candidate'::text, 'selected'::text, 'marker'::text]))",
+        "definition": "CHECK (role = ANY (ARRAY['candidate'::text, 'selected'::text, 'marker'::text, 'evidence'::text]))",
         "enforced": true,
         "initially_deferred": false,
         "no_inherit": false,
@@ -7348,7 +7608,7 @@
     {
       "definition": {
         "deferrable": false,
-        "definition": "CHECK (kind <> 'completion'::text OR policy_id = 'event-completion-v1'::text AND entity_key ~ '^completion:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'::text)",
+        "definition": "CHECK (kind <> 'participation'::text OR policy_id = 'participation-v1'::text AND entity_key ~ '^participation:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}:00-[0-9]{7}$'::text)",
         "enforced": true,
         "initially_deferred": false,
         "no_inherit": false,
@@ -7362,7 +7622,7 @@
     {
       "definition": {
         "deferrable": false,
-        "definition": "CHECK (predecessor_id IS DISTINCT FROM id)",
+        "definition": "CHECK (kind <> 'completion'::text OR policy_id = 'event-completion-v1'::text AND entity_key ~ '^completion:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'::text)",
         "enforced": true,
         "initially_deferred": false,
         "no_inherit": false,
@@ -7372,6 +7632,20 @@
       },
       "kind": "constraint",
       "name": "predictive_decisions.predictive_decisions_check3"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (predecessor_id IS DISTINCT FROM id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_decisions.predictive_decisions_check4"
     },
     {
       "definition": {
@@ -8672,6 +8946,816 @@
       },
       "kind": "constraint",
       "name": "predictive_observations.predictive_observations_team_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": true,
+        "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED",
+        "enforced": true,
+        "initially_deferred": true,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "t",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_check_labels"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((label_version = 1) = (predecessor_id IS NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (predecessor_id IS DISTINCT FROM id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((state <> ALL (ARRAY['unresolved'::text, 'excluded'::text])) OR value IS NULL AND selected_observation_id IS NULL)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_check2"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (value IS NULL OR (stat = ANY (ARRAY['passing_yards'::text, 'rushing_yards'::text, 'receiving_yards'::text])) OR value >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_check3"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (completion_decision_id) REFERENCES predictive_decisions(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_completion_decision_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL completion_decision_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_completion_decision_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(created_at) AND created_at = date_trunc('milliseconds'::text, created_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_created_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL created_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_created_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(eligible_final_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_eligible_final_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(finalized_at) AND finalized_at = date_trunc('milliseconds'::text, finalized_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_finalized_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (game_id) REFERENCES predictive_games(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_games",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_games",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_game_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL game_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_game_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (length(id) >= 1 AND length(id) <= 256)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (label_version >= 1)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_label_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL label_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_label_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (mode = ANY (ARRAY['production-research'::text, 'synthetic-proof'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_mode_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL mode",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_mode_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (participation_decision_id) REFERENCES predictive_decisions(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_participation_decision_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL participation_decision_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_participation_decision_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (player_id ~ '^00-[0-9]{7}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_player_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (player_id, game_id, season_type, stat, label_version)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_player_id_game_id_season_type_sta_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL player_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_player_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (policy_id = 'canonical-label-finalization-v1'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_policy_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL policy_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_policy_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (post_window_capture_id) REFERENCES predictive_captures(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_captures",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_captures",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_post_window_capture_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": true,
+        "definition": "FOREIGN KEY (predecessor_id) REFERENCES predictive_outcome_labels(id) DEFERRABLE INITIALLY DEFERRED",
+        "enforced": true,
+        "initially_deferred": true,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": true,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": true,
+            "table": "public.predictive_outcome_labels",
+            "type": 5
+          },
+          {
+            "deferrable": true,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": true,
+            "table": "public.predictive_outcome_labels",
+            "type": 17
+          },
+          {
+            "deferrable": true,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": true,
+            "table": "public.predictive_outcome_labels",
+            "type": 9
+          },
+          {
+            "deferrable": true,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": true,
+            "table": "public.predictive_outcome_labels",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_predecessor_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (reconciliation_decision_id) REFERENCES predictive_decisions(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_decisions",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_reconciliation_decision_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (run_id) REFERENCES predictive_ingestion_runs(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_ingestion_runs",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_ingestion_runs",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_run_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL run_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_run_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (season_type = ANY (ARRAY['REG'::text, 'POST'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_season_type_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL season_type",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_season_type_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (selected_observation_id) REFERENCES predictive_observations(id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.predictive_observations",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_observations",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.predictive_outcome_labels",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_selected_observation_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (stat = ANY (ARRAY['passing_yards'::text, 'passing_tds'::text, 'completions'::text, 'attempts'::text, 'passing_interceptions'::text, 'rushing_yards'::text, 'carries'::text, 'receiving_yards'::text, 'receptions'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_stat_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL stat",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_stat_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (state = ANY (ARRAY['provisional'::text, 'final'::text, 'unresolved'::text, 'excluded'::text]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_state_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL state",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "predictive_outcome_labels.predictive_outcome_labels_state_not_null"
     },
     {
       "definition": {
@@ -10603,6 +11687,78 @@
     },
     {
       "definition": {
+        "definition": "CREATE INDEX predictive_outcome_labels_game_idx ON predictive_outcome_labels USING btree (game_id, player_id, stat)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_outcome_labels",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_outcome_labels_game_idx"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX predictive_outcome_labels_one_successor ON predictive_outcome_labels USING btree (predecessor_id) WHERE predecessor_id IS NOT NULL",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_outcome_labels",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_outcome_labels_one_successor"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX predictive_outcome_labels_pkey ON predictive_outcome_labels USING btree (id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_outcome_labels",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_outcome_labels_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX predictive_outcome_labels_player_id_game_id_season_type_sta_key ON predictive_outcome_labels USING btree (player_id, game_id, season_type, stat, label_version)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "predictive_outcome_labels",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "predictive_outcome_labels_player_id_game_id_season_type_sta_key"
+    },
+    {
+      "definition": {
         "definition": "CREATE UNIQUE INDEX predictive_rights_decisions_id_profile_id_key ON predictive_rights_decisions USING btree (id, profile_id)",
         "exclusion": false,
         "immediate": true,
@@ -11185,6 +12341,23 @@
         "view_definition": null
       },
       "kind": "relation",
+      "name": "predictive_outcome_labels"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
       "name": "predictive_rights_decisions"
     },
     {
@@ -11275,7 +12448,7 @@
     },
     {
       "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_decision_check()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE target text; d public.predictive_decisions; fact text; game text;\n  inputs integer; sources integer; selected integer; selected_id text; same boolean; synthetic boolean; consistent boolean;\n  head_ids text[]; input_ids text[]; r record; absent boolean := false;\n  final_n integer := 0; terminal_n integer := 0; totals_n integer := 0; suspended_n integer := 0; postponed_n integer := 0;\n  final_at timestamptz; terminal_at timestamptz; totals_at timestamptz; state text; observed timestamptz;\nBEGIN\n  IF TG_TABLE_NAME = 'predictive_decisions' THEN target := NEW.id; ELSE target := NEW.decision_id; END IF;\n  SELECT * INTO d FROM public.predictive_decisions WHERE id = target;\n  IF (SELECT status FROM public.predictive_ingestion_runs WHERE id = d.run_id) <> 'published'\n      OR (d.predecessor_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.predictive_decisions p WHERE p.id = d.predecessor_id AND p.decided_at > d.decided_at)) THEN\n    RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';\n  END IF;\n  SELECT count(*), coalesce(bool_or(p.purpose = 'synthetic-test'), false) INTO inputs, synthetic\n    FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id\n    JOIN public.predictive_source_profiles p ON p.id = o.profile_id WHERE i.decision_id = target;\n  IF (inputs > 0 AND synthetic <> (d.mode = 'synthetic-proof')) OR (d.mode = 'synthetic-proof' AND NOT public.predictive_harness_session()) THEN\n    RAISE EXCEPTION 'predictive-decision-mode-invalid' USING ERRCODE = '23514';\n  END IF;\n  IF d.kind = 'completion' THEN\n    -- event-completion-v1 (completion.ts): the inputs are exactly the marker heads\n    -- usable at decided_at, and the stated outcome is what the policy computes.\n    game := substr(d.entity_key, length('completion:') + 1);\n    SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE \"C\") INTO input_ids\n      FROM public.predictive_decision_inputs i WHERE i.decision_id = target AND i.role = 'marker';\n    WITH visible AS (SELECT o.* FROM public.predictive_observations o WHERE o.entity_key LIKE 'event-state-marker:' || game || ':%' AND EXISTS (\n        SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n        JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id WHERE l.observation_id = o.id AND c.state = 'published' AND ru.status = 'published'\n          AND c.available_at <= d.decided_at AND c.ingested_at <= d.decided_at))\n    SELECT array_agg(v.id ORDER BY v.id COLLATE \"C\") INTO head_ids FROM visible v WHERE NOT EXISTS (SELECT 1 FROM visible s WHERE s.predecessor_id = v.id);\n    IF head_ids IS DISTINCT FROM input_ids OR inputs <> coalesce(cardinality(input_ids), 0) THEN\n      RAISE EXCEPTION 'predictive-completion-inputs-invalid' USING ERRCODE = '23514';\n    END IF;\n    FOR r IN SELECT o.kind, split_part(o.entity_key, ':', 3) AS marker,\n        (SELECT c.captured_at FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n          WHERE l.observation_id = o.id AND c.state = 'published' ORDER BY c.ingested_at, c.available_at, c.captured_at, c.id COLLATE \"C\" LIMIT 1) AS captured\n      FROM public.predictive_observations o WHERE o.id = ANY(coalesce(input_ids, '{}')) LOOP\n      IF r.kind = 'source-row-absent' THEN absent := true; END IF;\n      IF r.marker = 'provider-final-status' THEN final_n := final_n + 1; final_at := r.captured;\n      ELSIF r.marker = 'terminal-play' THEN terminal_n := terminal_n + 1; terminal_at := r.captured;\n      ELSIF r.marker = 'final-team-totals' THEN totals_n := totals_n + 1; totals_at := r.captured;\n      ELSIF r.marker = 'suspension-notice' THEN suspended_n := suspended_n + 1;\n      ELSIF r.marker = 'postponement-notice' THEN postponed_n := postponed_n + 1; END IF;\n    END LOOP;\n    IF absent OR greatest(final_n, terminal_n, totals_n, suspended_n, postponed_n) > 1\n        OR ((suspended_n > 0 OR postponed_n > 0) AND (final_n + terminal_n + totals_n) > 0) OR (suspended_n > 0 AND postponed_n > 0) THEN state := 'conflicting';\n    ELSIF suspended_n > 0 THEN state := 'suspended';\n    ELSIF postponed_n > 0 THEN state := 'postponed';\n    ELSIF final_n > 0 AND (terminal_n + totals_n) > 0 THEN state := 'completed'; observed := greatest(final_at, least(terminal_at, totals_at));\n    ELSIF (final_n + terminal_n + totals_n) > 0 THEN state := 'in-progress';\n    ELSE state := 'scheduled'; END IF;\n    IF state <> d.outcome->>'state' OR (CASE WHEN observed IS NULL THEN NULL\n        ELSE to_char(observed AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') END) IS DISTINCT FROM d.outcome->>'completionObservedAt' THEN\n      RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514';\n    END IF;\n    RETURN NULL;\n  END IF;\n  IF d.kind <> 'reconciliation' THEN RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514'; END IF;\n  fact := substr(d.entity_key, length('reconciliation:') + 1);\n  SELECT count(DISTINCT o.source_key), count(*) FILTER (WHERE i.role = 'selected'),\n    min(i.observation_id) FILTER (WHERE i.role = 'selected'), count(DISTINCT o.data) <= 1\n    INTO sources, selected, selected_id, same\n    FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id WHERE i.decision_id = target;\n  IF sources <> inputs OR EXISTS (SELECT 1 FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id\n      WHERE i.decision_id = target AND (i.role = 'marker' OR o.entity_key <> fact OR NOT EXISTS (\n        SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n        JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id\n        WHERE l.observation_id = o.id AND c.state = 'published' AND ru.status = 'published'\n          AND c.available_at <= d.decided_at AND c.ingested_at <= d.decided_at))) THEN\n    RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';\n  END IF;\n  consistent := CASE d.outcome->>'result'\n      WHEN 'selected' THEN selected = 1 AND selected_id = d.outcome->>'selectedObservationId'\n        AND ((d.outcome->>'rule' = 'single-source' AND inputs = 1) OR (d.outcome->>'rule' = 'sources-agree' AND inputs > 1 AND same))\n      WHEN 'conflict' THEN selected = 0 AND d.outcome->>'rule' = 'material-discrepancy' AND inputs > 1 AND NOT same\n      ELSE inputs = 0 AND d.outcome->>'rule' = 'no-candidates' END;\n  IF consistent IS NOT TRUE THEN\n    RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514';\n  END IF;\n  RETURN NULL;\nEND\n$function$\n",
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_decision_check()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE target text; d public.predictive_decisions; fact text; game text;\n  inputs integer; sources integer; selected integer; selected_id text; same boolean; synthetic boolean; consistent boolean;\n  head_ids text[]; input_ids text[]; r record; absent boolean := false;\n  final_n integer := 0; terminal_n integer := 0; totals_n integer := 0; suspended_n integer := 0; postponed_n integer := 0;\n  final_at timestamptz; terminal_at timestamptz; totals_at timestamptz; state text; observed timestamptz;\n  conflict boolean := false; claims text[] := '{}'; stats_n integer := 0; positive_n integer := 0;\nBEGIN\n  IF TG_TABLE_NAME = 'predictive_decisions' THEN target := NEW.id; ELSE target := NEW.decision_id; END IF;\n  SELECT * INTO d FROM public.predictive_decisions WHERE id = target;\n  IF (SELECT status FROM public.predictive_ingestion_runs WHERE id = d.run_id) <> 'published'\n      OR (d.predecessor_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.predictive_decisions p WHERE p.id = d.predecessor_id AND p.decided_at > d.decided_at)) THEN\n    RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';\n  END IF;\n  SELECT count(*), coalesce(bool_or(p.purpose = 'synthetic-test'), false) INTO inputs, synthetic\n    FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id\n    JOIN public.predictive_source_profiles p ON p.id = o.profile_id WHERE i.decision_id = target;\n  IF (inputs > 0 AND synthetic <> (d.mode = 'synthetic-proof')) OR (d.mode = 'synthetic-proof' AND NOT public.predictive_harness_session()) THEN\n    RAISE EXCEPTION 'predictive-decision-mode-invalid' USING ERRCODE = '23514';\n  END IF;\n  IF d.kind = 'completion' THEN\n    -- event-completion-v1 (completion.ts): the inputs are exactly the marker heads\n    -- usable at decided_at, and the stated outcome is what the policy computes.\n    SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE \"C\") INTO input_ids\n      FROM public.predictive_decision_inputs i WHERE i.decision_id = target AND i.role = 'marker';\n    IF NOT public.predictive_decision_current(target, d.decided_at) OR inputs <> coalesce(cardinality(input_ids), 0) THEN\n      RAISE EXCEPTION 'predictive-completion-inputs-invalid' USING ERRCODE = '23514';\n    END IF;\n    FOR r IN SELECT o.kind, split_part(o.entity_key, ':', 3) AS marker,\n        (SELECT c.captured_at FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n          WHERE l.observation_id = o.id AND c.state = 'published' ORDER BY c.ingested_at, c.available_at, c.captured_at, c.id COLLATE \"C\" LIMIT 1) AS captured\n      FROM public.predictive_observations o WHERE o.id = ANY(coalesce(input_ids, '{}')) LOOP\n      IF r.kind = 'source-row-absent' THEN absent := true; END IF;\n      IF r.marker = 'provider-final-status' THEN final_n := final_n + 1; final_at := r.captured;\n      ELSIF r.marker = 'terminal-play' THEN terminal_n := terminal_n + 1; terminal_at := r.captured;\n      ELSIF r.marker = 'final-team-totals' THEN totals_n := totals_n + 1; totals_at := r.captured;\n      ELSIF r.marker = 'suspension-notice' THEN suspended_n := suspended_n + 1;\n      ELSIF r.marker = 'postponement-notice' THEN postponed_n := postponed_n + 1; END IF;\n    END LOOP;\n    IF absent OR greatest(final_n, terminal_n, totals_n, suspended_n, postponed_n) > 1\n        OR ((suspended_n > 0 OR postponed_n > 0) AND (final_n + terminal_n + totals_n) > 0) OR (suspended_n > 0 AND postponed_n > 0) THEN state := 'conflicting';\n    ELSIF suspended_n > 0 THEN state := 'suspended';\n    ELSIF postponed_n > 0 THEN state := 'postponed';\n    ELSIF final_n > 0 AND (terminal_n + totals_n) > 0 THEN state := 'completed'; observed := greatest(final_at, least(terminal_at, totals_at));\n    ELSIF (final_n + terminal_n + totals_n) > 0 THEN state := 'in-progress';\n    ELSE state := 'scheduled'; END IF;\n    IF state <> d.outcome->>'state' OR (CASE WHEN observed IS NULL THEN NULL\n        ELSE to_char(observed AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') END) IS DISTINCT FROM d.outcome->>'completionObservedAt' THEN\n      RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514';\n    END IF;\n    RETURN NULL;\n  END IF;\n  IF d.kind = 'participation' THEN\n    -- participation-v1 (participation.ts): the inputs are exactly the evidence and\n    -- stats heads usable at decided_at; the state is recomputed from them.\n    SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE \"C\") INTO input_ids\n      FROM public.predictive_decision_inputs i WHERE i.decision_id = target AND i.role = 'evidence';\n    IF NOT public.predictive_decision_current(target, d.decided_at) OR inputs <> coalesce(cardinality(input_ids), 0) THEN\n      RAISE EXCEPTION 'predictive-participation-inputs-invalid' USING ERRCODE = '23514';\n    END IF;\n    SELECT coalesce(bool_or(n > 1 OR gone), false) INTO conflict FROM (SELECT split_part(o.entity_key, ':', 4) AS evidence, count(*) AS n,\n        bool_or(o.kind = 'source-row-absent') AS gone FROM public.predictive_observations o\n      WHERE o.id = ANY(coalesce(input_ids, '{}')) AND o.entity_key LIKE 'participation-evidence:%' GROUP BY 1) grouped;\n    SELECT coalesce(array_agg(DISTINCT o.data->>'claim'), '{}') INTO claims FROM public.predictive_observations o\n      WHERE o.id = ANY(coalesce(input_ids, '{}')) AND o.kind = 'participation-evidence';\n    SELECT count(*), count(*) FILTER (WHERE o.kind = 'player-game-stats' AND (coalesce((o.data->>'attempts')::integer, 0) > 0\n        OR coalesce((o.data->>'carries')::integer, 0) > 0 OR coalesce((o.data->>'targets')::integer, 0) > 0))\n      INTO stats_n, positive_n FROM public.predictive_observations o WHERE o.id = ANY(coalesce(input_ids, '{}')) AND o.entity_key LIKE 'player-game-stats:%';\n    IF stats_n > 0 AND positive_n = stats_n AND NOT 'offensive-participant' = ANY(claims) THEN claims := array_append(claims, 'offensive-participant'); END IF;\n    state := CASE WHEN conflict OR cardinality(claims) > 1 THEN 'conflicting' WHEN cardinality(claims) = 1 THEN claims[1] ELSE 'unresolved' END;\n    IF state <> d.outcome->>'state' THEN RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514'; END IF;\n    RETURN NULL;\n  END IF;\n  IF d.kind <> 'reconciliation' THEN RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514'; END IF;\n  fact := substr(d.entity_key, length('reconciliation:') + 1);\n  SELECT count(DISTINCT o.source_key), count(*) FILTER (WHERE i.role = 'selected'),\n    min(i.observation_id) FILTER (WHERE i.role = 'selected'), count(DISTINCT o.data) <= 1\n    INTO sources, selected, selected_id, same\n    FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id WHERE i.decision_id = target;\n  IF sources <> inputs OR EXISTS (SELECT 1 FROM public.predictive_decision_inputs i JOIN public.predictive_observations o ON o.id = i.observation_id\n      WHERE i.decision_id = target AND (i.role NOT IN ('candidate','selected') OR o.entity_key <> fact OR NOT EXISTS (\n        SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n        JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id\n        WHERE l.observation_id = o.id AND c.state = 'published' AND ru.status = 'published'\n          AND c.available_at <= d.decided_at AND c.ingested_at <= d.decided_at))) THEN\n    RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';\n  END IF;\n  consistent := CASE d.outcome->>'result'\n      WHEN 'selected' THEN selected = 1 AND selected_id = d.outcome->>'selectedObservationId'\n        AND ((d.outcome->>'rule' = 'single-source' AND inputs = 1) OR (d.outcome->>'rule' = 'sources-agree' AND inputs > 1 AND same))\n      WHEN 'conflict' THEN selected = 0 AND d.outcome->>'rule' = 'material-discrepancy' AND inputs > 1 AND NOT same\n      ELSE inputs = 0 AND d.outcome->>'rule' = 'no-candidates' END;\n  IF consistent IS NOT TRUE THEN\n    RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514';\n  END IF;\n  RETURN NULL;\nEND\n$function$\n",
         "kind": "f",
         "security_definer": false
       },
@@ -11284,7 +12457,16 @@
     },
     {
       "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_decision_valid(kind text, outcome jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\n IMMUTABLE STRICT\nAS $function$\nBEGIN\n  IF jsonb_typeof(outcome) <> 'object' THEN RETURN false; END IF;\n  IF kind = 'completion' THEN\n    RETURN (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) = ARRAY['actualEnd','completionObservedAt','state']\n      AND (outcome->>'state' IN ('scheduled','in-progress','completed','suspended','postponed','conflicting')) IS TRUE\n      AND outcome->'actualEnd' = 'null'::jsonb\n      AND CASE WHEN outcome->>'state' = 'completed' THEN public.predictive_instant(outcome->>'completionObservedAt')\n        ELSE outcome->'completionObservedAt' = 'null'::jsonb END;\n  END IF;\n  IF kind <> 'reconciliation' OR\n    (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) IS DISTINCT FROM ARRAY['result','rule','selectedObservationId']\n    THEN RETURN false; END IF;\n  RETURN (outcome->>'result' IN ('selected','conflict','insufficient-sources')) IS TRUE\n    AND (outcome->>'rule' IN ('single-source','sources-agree','material-discrepancy','no-candidates')) IS TRUE\n    AND CASE WHEN outcome->>'result' = 'selected' THEN public.predictive_text(outcome->'selectedObservationId')\n      ELSE outcome->'selectedObservationId' = 'null'::jsonb END;\nEXCEPTION WHEN OTHERS THEN RETURN false;\nEND\n$function$\n",
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_decision_current(decision_id text, t timestamp with time zone)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE\nAS $function$\nDECLARE d public.predictive_decisions; prefix text; exact_key text; heads text[]; inputs text[];\nBEGIN\n  SELECT * INTO d FROM public.predictive_decisions WHERE id = decision_id;\n  IF d.id IS NULL OR d.decided_at > t THEN RETURN false; END IF;\n  IF d.kind = 'completion' THEN prefix := 'event-state-marker:' || split_part(d.entity_key, ':', 2) || ':';\n  ELSIF d.kind = 'participation' THEN\n    prefix := 'participation-evidence:' || split_part(d.entity_key, ':', 2) || ':' || split_part(d.entity_key, ':', 3) || ':';\n    exact_key := 'player-game-stats:' || split_part(d.entity_key, ':', 2) || ':' || split_part(d.entity_key, ':', 3);\n  ELSE exact_key := substr(d.entity_key, length('reconciliation:') + 1); END IF;\n  WITH visible AS (SELECT o.id, o.predecessor_id FROM public.predictive_observations o\n    WHERE ((prefix IS NOT NULL AND o.entity_key LIKE prefix || '%') OR o.entity_key = exact_key) AND EXISTS (\n      SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n      JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id WHERE l.observation_id = o.id AND c.state = 'published' AND ru.status = 'published'\n        AND c.available_at <= t AND c.ingested_at <= t))\n  SELECT array_agg(v.id ORDER BY v.id COLLATE \"C\") INTO heads FROM visible v WHERE NOT EXISTS (SELECT 1 FROM visible n WHERE n.predecessor_id = v.id);\n  SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE \"C\") INTO inputs FROM public.predictive_decision_inputs i WHERE i.decision_id = d.id;\n  RETURN heads IS NOT DISTINCT FROM inputs;\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "predictive_decision_current(decision_id text, t timestamp with time zone)"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_decision_valid(kind text, outcome jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\n IMMUTABLE STRICT\nAS $function$\nBEGIN\n  IF jsonb_typeof(outcome) <> 'object' THEN RETURN false; END IF;\n  IF kind = 'participation' THEN\n    RETURN (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) = ARRAY['state']\n      AND (outcome->>'state' IN ('offensive-participant','zero-offensive-participation','inactive-or-dnp','unresolved','conflicting')) IS TRUE;\n  END IF;\n  IF kind = 'completion' THEN\n    RETURN (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) = ARRAY['actualEnd','completionObservedAt','state']\n      AND (outcome->>'state' IN ('scheduled','in-progress','completed','suspended','postponed','conflicting')) IS TRUE\n      AND outcome->'actualEnd' = 'null'::jsonb\n      AND CASE WHEN outcome->>'state' = 'completed' THEN public.predictive_instant(outcome->>'completionObservedAt')\n        ELSE outcome->'completionObservedAt' = 'null'::jsonb END;\n  END IF;\n  IF kind <> 'reconciliation' OR\n    (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) IS DISTINCT FROM ARRAY['result','rule','selectedObservationId']\n    THEN RETURN false; END IF;\n  RETURN (outcome->>'result' IN ('selected','conflict','insufficient-sources')) IS TRUE\n    AND (outcome->>'rule' IN ('single-source','sources-agree','material-discrepancy','no-candidates')) IS TRUE\n    AND CASE WHEN outcome->>'result' = 'selected' THEN public.predictive_text(outcome->'selectedObservationId')\n      ELSE outcome->'selectedObservationId' = 'null'::jsonb END;\nEXCEPTION WHEN OTHERS THEN RETURN false;\nEND\n$function$\n",
         "kind": "f",
         "security_definer": false
       },
@@ -11335,6 +12517,24 @@
       },
       "kind": "routine",
       "name": "predictive_integer(value jsonb, minimum numeric, maximum numeric)"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_label_check()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE l public.predictive_outcome_labels; c public.predictive_decisions; p public.predictive_decisions; r public.predictive_decisions;\n  s public.predictive_observations; cap public.predictive_captures; prior public.predictive_outcome_labels; field text; eligible timestamptz; synthetic boolean;\nBEGIN\n  SELECT * INTO l FROM public.predictive_outcome_labels WHERE id = NEW.id;\n  IF (SELECT status FROM public.predictive_ingestion_runs WHERE id = l.run_id) <> 'published' THEN\n    RAISE EXCEPTION 'predictive-label-binding-6' USING ERRCODE = '23514';\n  END IF;\n  field := CASE l.stat WHEN 'passing_yards' THEN 'passingYards' WHEN 'passing_tds' THEN 'passingTds' WHEN 'completions' THEN 'completions'\n    WHEN 'attempts' THEN 'attempts' WHEN 'passing_interceptions' THEN 'passingInterceptions' WHEN 'rushing_yards' THEN 'rushingYards'\n    WHEN 'carries' THEN 'carries' WHEN 'receiving_yards' THEN 'receivingYards' ELSE 'receptions' END;\n  SELECT * INTO c FROM public.predictive_decisions WHERE id = l.completion_decision_id;\n  SELECT * INTO p FROM public.predictive_decisions WHERE id = l.participation_decision_id;\n  SELECT * INTO r FROM public.predictive_decisions WHERE id = l.reconciliation_decision_id;\n  IF c.kind <> 'completion' OR c.entity_key <> 'completion:' || l.game_id OR NOT public.predictive_decision_current(c.id, l.created_at) THEN\n    RAISE EXCEPTION 'predictive-label-binding-1' USING ERRCODE = '23514';\n  END IF;\n  IF p.kind <> 'participation' OR p.entity_key <> 'participation:' || l.game_id || ':' || l.player_id OR NOT public.predictive_decision_current(p.id, l.created_at) THEN\n    RAISE EXCEPTION 'predictive-label-binding-2' USING ERRCODE = '23514';\n  END IF;\n  IF l.state IN ('provisional','final') THEN\n    IF c.outcome->>'state' <> 'completed' OR p.outcome->>'state' <> 'offensive-participant' THEN\n      RAISE EXCEPTION 'predictive-label-binding-2' USING ERRCODE = '23514';\n    END IF;\n    IF r.id IS NULL OR r.kind <> 'reconciliation' OR r.entity_key <> 'reconciliation:player-game-stats:' || l.game_id || ':' || l.player_id\n        OR r.outcome->>'result' <> 'selected' OR r.outcome->>'selectedObservationId' IS DISTINCT FROM l.selected_observation_id\n        OR NOT public.predictive_decision_current(r.id, l.created_at) THEN\n      RAISE EXCEPTION 'predictive-label-binding-3' USING ERRCODE = '23514';\n    END IF;\n    SELECT * INTO s FROM public.predictive_observations WHERE id = l.selected_observation_id;\n    IF s.kind <> 'player-game-stats' OR s.data->>'seasonType' <> l.season_type OR s.data->field = 'null'::jsonb\n        OR (s.data->>field)::integer IS DISTINCT FROM l.value OR NOT EXISTS (\n          SELECT 1 FROM public.predictive_artifact_observations la JOIN public.predictive_captures ca ON ca.artifact_id = la.artifact_id\n          JOIN public.predictive_ingestion_runs ru ON ru.id = ca.run_id WHERE la.observation_id = s.id AND ca.state = 'published' AND ru.status = 'published'\n            AND ca.available_at <= l.created_at AND ca.ingested_at <= l.created_at) THEN\n      RAISE EXCEPTION 'predictive-label-binding-4' USING ERRCODE = '23514';\n    END IF;\n  ELSE\n    IF l.value IS NOT NULL OR l.selected_observation_id IS NOT NULL THEN RAISE EXCEPTION 'predictive-label-binding-4' USING ERRCODE = '23514'; END IF;\n    IF l.state = 'excluded' AND (c.outcome->>'state' <> 'completed' OR p.outcome->>'state' NOT IN ('zero-offensive-participation','inactive-or-dnp')) THEN\n      RAISE EXCEPTION 'predictive-label-binding-2' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  IF l.state = 'final' THEN\n    eligible := public.predictive_label_eligible_final_at((c.outcome->>'completionObservedAt')::timestamptz);\n    SELECT * INTO cap FROM public.predictive_captures WHERE id = l.post_window_capture_id;\n    IF l.eligible_final_at IS DISTINCT FROM eligible OR l.finalized_at IS NULL OR l.finalized_at < eligible OR l.created_at < l.finalized_at\n        OR cap.id IS NULL OR cap.state <> 'published' OR NOT (cap.body_complete AND cap.header_verified AND cap.parser_succeeded)\n        OR cap.captured_at < eligible OR NOT EXISTS (SELECT 1 FROM public.predictive_artifact_observations la\n          WHERE la.artifact_id = cap.artifact_id AND la.observation_id = l.selected_observation_id) THEN\n      RAISE EXCEPTION 'predictive-label-binding-5' USING ERRCODE = '23514';\n    END IF;\n    IF cap.ingested_at > l.created_at THEN RAISE EXCEPTION 'predictive-label-binding-6' USING ERRCODE = '23514'; END IF;\n  ELSIF l.post_window_capture_id IS NOT NULL OR l.finalized_at IS NOT NULL OR l.eligible_final_at IS NOT NULL THEN\n    RAISE EXCEPTION 'predictive-label-binding-5' USING ERRCODE = '23514';\n  END IF;\n  IF l.predecessor_id IS NOT NULL THEN\n    SELECT * INTO prior FROM public.predictive_outcome_labels WHERE id = l.predecessor_id;\n    IF prior.player_id <> l.player_id OR prior.game_id <> l.game_id OR prior.season_type <> l.season_type OR prior.stat <> l.stat\n        OR prior.label_version + 1 <> l.label_version OR prior.created_at >= l.created_at THEN\n      RAISE EXCEPTION 'predictive-label-binding-7' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  synthetic := c.mode = 'synthetic-proof' OR p.mode = 'synthetic-proof' OR coalesce(r.mode = 'synthetic-proof', false) OR EXISTS (\n    SELECT 1 FROM public.predictive_observations o JOIN public.predictive_source_profiles sp ON sp.id = o.profile_id\n    WHERE o.id = l.selected_observation_id AND sp.purpose = 'synthetic-test');\n  IF synthetic <> (l.mode = 'synthetic-proof') OR (l.mode = 'synthetic-proof' AND NOT public.predictive_harness_session()) THEN\n    RAISE EXCEPTION 'predictive-label-binding-8' USING ERRCODE = '23514';\n  END IF;\n  RETURN NULL;\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "predictive_label_check()"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_label_eligible_final_at(bound timestamp with time zone)\n RETURNS timestamp with time zone\n LANGUAGE plpgsql\n IMMUTABLE STRICT\nAS $function$\nDECLARE naive timestamp := bound AT TIME ZONE 'UTC'; thursday timestamp;\nBEGIN\n  thursday := date_trunc('day', naive) + interval '12 hours';\n  thursday := thursday + ((4 - extract(dow FROM thursday)::integer + 7) % 7) * interval '1 day';\n  IF thursday <= naive THEN thursday := thursday + interval '7 days'; END IF;\n  RETURN greatest(bound + interval '72 hours', thursday AT TIME ZONE 'UTC');\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "predictive_label_eligible_final_at(bound timestamp with time zone)"
     },
     {
       "definition": {
@@ -11658,6 +12858,30 @@
     },
     {
       "definition": {
+        "definition": "CREATE CONSTRAINT TRIGGER predictive_check_labels AFTER INSERT ON predictive_outcome_labels DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION predictive_label_check()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_outcome_labels.predictive_check_labels"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_labels_immutable BEFORE DELETE OR UPDATE ON predictive_outcome_labels FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_outcome_labels.predictive_labels_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER predictive_labels_no_truncate BEFORE TRUNCATE ON predictive_outcome_labels FOR EACH STATEMENT EXECUTE FUNCTION predictive_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "predictive_outcome_labels.predictive_labels_no_truncate"
+    },
+    {
+      "definition": {
         "definition": "CREATE TRIGGER predictive_rights_immutable BEFORE DELETE OR UPDATE ON predictive_rights_decisions FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
         "enabled": "O"
       },
@@ -11746,7 +12970,7 @@
       },
       {
         "filename": "0003_predictive_evidence.sql",
-        "sha256": "911467b1811dc839cd72a7ad9ecaaf7bc3b9babb12f7c2013dc613e60d958c28",
+        "sha256": "8b8fbfe08665943e265cbfaea31bf64db8282417b526b898171841374646646d",
         "version": 3
       }
     ]
