@@ -48,6 +48,7 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive identity bridges refuse same-source ambiguity at write and keep corrections in their chain",
   "predictive retention removes a source scope with chain descendants and derived rows, audits it and re-applies it to a restored backup",
   "predictive retention expires unpinned feature runs with digest-only audit and admits deletion only through the owner function",
+  "predictive snap evidence enforces counts and missingness and snap compatibility decisions cite the complete provider overlap",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

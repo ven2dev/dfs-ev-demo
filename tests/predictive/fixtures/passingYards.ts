@@ -1,5 +1,5 @@
-import { KINDS, STAT_FIELDS, type Artifact, type DataByKind, type Dataset, type Kind, type Membership, type PlayerGameStats,
-  type Profile, type Request, type Revision, type RightsDecision, type Schedule, type TeamGameStats } from "../../../src/lib/predictive/types.ts";
+import { KINDS, STAT_FIELDS, type Artifact, type DataByKind, type Dataset, type Kind, type Membership, type PlayerGameSnaps, type PlayerGameStats,
+  type Profile, type Request, type Revision, type RightsDecision, type Schedule, type TeamGameSnaps, type TeamGameStats } from "../../../src/lib/predictive/types.ts";
 import { canonical, digest } from "../../../src/lib/predictive/validation.ts";
 
 export const PLAYER = "00-0000001";
@@ -67,6 +67,16 @@ export const teamStats = (game: Schedule, teamId: string, rawTeam: string, attem
 };
 export const playerStats = (game: Schedule, attempts: number | null, passingYards: number | null, teamId = TEAM, rawTeam = "PHI"): PlayerGameStats =>
   ({ ...teamStats(game, teamId, rawTeam, attempts, passingYards), playerId: PLAYER });
+export const playerSnaps = (game: Schedule, offenseSnaps: number | null, teamId = TEAM, rawTeam = "PHI"): PlayerGameSnaps => ({
+  gameId: game.gameId, rawGameId: game.rawGameId, playerId: PLAYER, teamId, rawTeam, season: game.season, seasonType: game.seasonType,
+  offenseSnaps, specialTeamsSnaps: 0, played: true, started: true, routesRun: null,
+  missing: { routesRun: "source-missing", ...(offenseSnaps === null ? { offenseSnaps: "source-blank" as const } : {}) },
+});
+export const teamSnaps = (game: Schedule, offenseSnaps: number | null, playCountingDefinition = "offensive-plays-v1", teamId = TEAM, rawTeam = "PHI"): TeamGameSnaps => ({
+  gameId: game.gameId, rawGameId: game.rawGameId, teamId, rawTeam, season: game.season, seasonType: game.seasonType,
+  offenseSnaps, dropbacks: null, playCountingDefinition,
+  missing: { dropbacks: "source-missing", ...(offenseSnaps === null ? { offenseSnaps: "source-blank" as const } : {}) },
+});
 export const completionMarkers = (game: Schedule, at: string = CAPTURE_A) => [
   revision("final-" + game.rawGameId, "event-state-marker", { gameId: game.gameId, markerType: "provider-final-status", markerValue: "final", terminalPlayTimeOfDay: null }),
   revision("terminal-" + game.rawGameId, "event-state-marker", { gameId: game.gameId, markerType: "terminal-play", markerValue: "END GAME", terminalPlayTimeOfDay: at.slice(11, 19) }),

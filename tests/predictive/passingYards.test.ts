@@ -2,15 +2,16 @@ import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import { buildPassingYardsBundle, buildPassingYardsFromReplay } from "../../src/lib/predictive/passingYards.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
+import { recordSnapCompatibility, snapOverlapHeadsAt, snapProfilesCompatible, snapShare, validateSnapCompatibilityDecisions } from "../../src/lib/predictive/snaps.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/completion.ts";
 import { participationHeadsAt, recordParticipation } from "../../src/lib/predictive/participation.ts";
 import { eligibleFinalAt, validateLabels } from "../../src/lib/predictive/labels.ts";
 import { featureRunRecord } from "../../src/lib/predictive/featureRuns.ts";
-import { digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader } from "../../src/lib/predictive/validation.ts";
+import { digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader, validateRevision } from "../../src/lib/predictive/validation.ts";
 import type { Artifact, Capture, CompletionRecord, Dataset, Label, ParticipationRecord, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
 import { addCapture, artifact, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_A, CUTOFF_B, emptyDataset, gameId, membership, OPPONENT,
-  passingYardsFixture, PLAYER, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamStats } from "./fixtures/passingYards.ts";
+  passingYardsFixture, PLAYER, playerSnaps, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamSnaps, teamStats } from "./fixtures/passingYards.ts";
 
 const row = (dataset: Dataset, id: string): Revision => {
   return dataset.artifacts.flatMap((item) => JSON.parse(item.bytes) as Revision[]).find((item) => item.id === id)!;
@@ -1067,5 +1068,90 @@ describe("retention-policy-v1 replay notice", () => {
     const empty = createReplay(emptyDataset(), CUTOFF_A, request().computedAt);
     expect(buildPassingYardsFromReplay({ ...empty, retentionProfiles: ["synthetic-other-v1"] }, request()).reasons).toContain("retained-evidence-removed");
     expect(buildPassingYardsFromReplay(empty, request()).reasons).not.toContain("retained-evidence-removed");
+  });
+});
+
+describe("snap evidence and snap-compatibility-v1", () => {
+  const OTHER = "synthetic-other-v1";
+  const snapDataset = (rows: { id: string; profile?: string; at?: string; revisions: Revision[] }[]) => {
+    const dataset = emptyDataset(); dataset.profiles.push(profile(OTHER)); dataset.rightsDecisions.push(rights(OTHER));
+    for (const item of rows) addCapture(dataset, item.id, item.revisions, item.at ?? CAPTURE_A, item.profile ?? PROFILE);
+    return dataset;
+  };
+  const bothProviders = (otherTeamSnaps = 60, otherPlayerSnaps = 30) => snapDataset([
+    { id: "snaps-a", revisions: [revision("a-team-5", "team-game-snaps", teamSnaps(game(5), 60)), revision("a-player-5", "player-game-snaps", playerSnaps(game(5), 30)),
+      revision("a-team-4", "team-game-snaps", teamSnaps(game(4), 50)), revision("a-player-4", "player-game-snaps", playerSnaps(game(4), 40))] },
+    { id: "snaps-b", profile: OTHER, revisions: [revision("b-team-5", "team-game-snaps", teamSnaps(game(5), otherTeamSnaps)),
+      revision("b-player-5", "player-game-snaps", playerSnaps(game(5), otherPlayerSnaps))] },
+  ]);
+  const rowsOfDataset = (dataset: Dataset) => validateDataset(dataset).observations;
+  const byId = (dataset: Dataset, id: string) => rowsOfDataset(dataset).get(id)!;
+  const t = instant(CUTOFF_A);
+
+  it("validates counts, flags, definitions and per-field missingness without zero-filling", () => {
+    const valid = revision("snap", "player-game-snaps", playerSnaps(game(5), null));
+    expect(() => validateRevision(valid)).not.toThrow();
+    const team = revision("team-snap", "team-game-snaps", teamSnaps(game(5), 61));
+    expect(() => validateRevision(team)).not.toThrow();
+    const refusals: [string, Revision, string][] = [
+      ["a blank without a reason", { ...valid, data: { ...valid.data, missing: { routesRun: "source-missing" } } } as Revision, "missingness-reason-required"],
+      ["a reason beside a value", { ...valid, data: { ...valid.data, offenseSnaps: 3 } } as Revision, "unexpected-missingness-reason"],
+      ["a count above 300", { ...team, data: { ...team.data, offenseSnaps: 301 } } as Revision, "invalid-numeric-value"],
+      ["a non-boolean flag", { ...valid, data: { ...valid.data, played: "yes" } } as unknown as Revision, "invalid-snaps"],
+      ["a missing play-counting definition", { ...team, data: { ...team.data, playCountingDefinition: "" } } as Revision, "invalid-snaps"],
+    ];
+    for (const [label, row, message] of refusals) expect(() => validateRevision(row), label).toThrow(message);
+  });
+
+  it("pools paired snaps over the same games and leaves gaps, blanks and zero denominators undefined", () => {
+    const dataset = bothProviders();
+    const pair = (player: string | null, team: string | null) => ({ player: player ? byId(dataset, player) : null, team: team ? byId(dataset, team) : null });
+    const same = () => true;
+    // (30 + 40) / (60 + 50), pooled rather than averaged per game.
+    expect(snapShare([pair("a-player-5", "a-team-5"), pair("a-player-4", "a-team-4")], same)).toEqual({ value: 70 / 110, playerSnaps: 70, teamSnaps: 110, games: 2, reason: null });
+    expect(snapShare([pair("a-player-5", "a-team-5"), pair("a-player-4", null)], same).reason).toBe("snap-pair-missing");
+    expect(snapShare([pair("a-player-5", "a-team-4")], same).reason).toBe("snap-pair-invalid");
+    const blank = snapDataset([{ id: "blank", revisions: [revision("blank-team", "team-game-snaps", teamSnaps(game(5), null)),
+      revision("blank-player", "player-game-snaps", playerSnaps(game(5), 0)), revision("zero-team", "team-game-snaps", teamSnaps(game(4), 0)),
+      revision("zero-player", "player-game-snaps", playerSnaps(game(4), 0)), revision("over-team", "team-game-snaps", teamSnaps(game(3), 10)),
+      revision("over-player", "player-game-snaps", playerSnaps(game(3), 11))] }]);
+    const of = (player: string, team: string) => ({ player: byId(blank, player), team: byId(blank, team) });
+    expect(snapShare([of("blank-player", "blank-team")], same)).toMatchObject({ value: null, reason: "snap-value-missing" });
+    expect(snapShare([of("zero-player", "zero-team")], same)).toMatchObject({ value: null, reason: "snap-denominator-zero" });
+    expect(snapShare([of("over-player", "over-team")], same).reason).toBe("snap-pair-invalid");
+    // Mixing providers in one window needs a current compatibility decision.
+    const mixed = [pair("a-player-4", "a-team-4"), pair("b-player-5", "b-team-5")];
+    expect(snapShare(mixed, (a, b) => a === b).reason).toBe("snap-source-incompatible");
+    const decision = recordSnapCompatibility("compat", PROFILE, OTHER, rowsOfDataset(dataset).values(), CUTOFF_A, "synthetic-proof");
+    expect(snapShare(mixed, (a, b) => snapProfilesCompatible([decision], rowsOfDataset(dataset).values(), a, b, t))).toMatchObject({ value: 70 / 110, reason: null });
+  });
+
+  it("decides compatibility from the complete overlap and refuses cherry-picked evidence", () => {
+    const agreeing = bothProviders(); const observations = rowsOfDataset(agreeing);
+    const compatible = recordSnapCompatibility("compat", OTHER, PROFILE, observations.values(), CUTOFF_A, "synthetic-proof");
+    // Game 5 is the only game both cover; game 4's rows are outside the overlap.
+    expect(compatible).toMatchObject({ entityKey: "snap-source-compatibility:" + OTHER + ":" + PROFILE, outcome: { result: "compatible", overlapGames: 1 } });
+    expect(compatible.inputs.map((input) => input.observationId)).toEqual(["a-player-5", "a-team-5", "b-player-5", "b-team-5"]);
+    expect(() => createReplay({ ...agreeing, decisions: [compatible] }, CUTOFF_A, request().computedAt)).not.toThrow();
+    const cherryPicked = { ...compatible, inputs: compatible.inputs.filter((input) => input.observationId !== "b-player-5") };
+    expect(() => validateSnapCompatibilityDecisions([cherryPicked], observations, validateDataset(agreeing).profiles)).toThrow("snap-compatibility-inputs-not-heads");
+    expect(() => validateSnapCompatibilityDecisions([{ ...compatible, outcome: { result: "incompatible", overlapGames: 1 } }], observations,
+      validateDataset(agreeing).profiles)).toThrow("decision-rule-mismatch");
+    // Disagreeing player snaps, or a different play-counting definition, are incompatible.
+    expect(recordSnapCompatibility("x", PROFILE, OTHER, rowsOfDataset(bothProviders(60, 31)).values(), CUTOFF_A, "synthetic-proof").outcome.result).toBe("incompatible");
+    const definitions = bothProviders(); const team = definitions.artifacts.find((value) => value.id === "snaps-b")!;
+    const rows = (JSON.parse(team.bytes) as Revision[]).map((row) => row.kind === "team-game-snaps" ? { ...row, data: { ...row.data, playCountingDefinition: "all-plays-v1" } } : row);
+    Object.assign(team, { bytes: JSON.stringify(rows), sha256: digest(JSON.stringify(rows)) });
+    expect(recordSnapCompatibility("y", PROFILE, OTHER, rowsOfDataset(definitions).values(), CUTOFF_A, "synthetic-proof").outcome.result).toBe("incompatible");
+    // No shared game: insufficient overlap, with no inputs.
+    const apart = snapDataset([{ id: "only-a", revisions: [revision("a-team-5", "team-game-snaps", teamSnaps(game(5), 60))] }]);
+    expect(recordSnapCompatibility("z", PROFILE, OTHER, rowsOfDataset(apart).values(), CUTOFF_A, "synthetic-proof")).toMatchObject({ outcome: { result: "insufficient-overlap", overlapGames: 0 }, inputs: [] });
+    // A later correction leaves the decision stale for later instants only.
+    const corrected = bothProviders();
+    addCapture(corrected, "b-fix", [revision("b-team-5-fix", "team-game-snaps", teamSnaps(game(5), 59), "b-team-5")], CAPTURE_B, OTHER);
+    const later = rowsOfDataset(corrected);
+    expect(snapOverlapHeadsAt(later.values(), [PROFILE, OTHER], instant(CUTOFF_B)).map((row) => row.revision.id)).toContain("b-team-5-fix");
+    expect(snapProfilesCompatible([compatible], later.values(), PROFILE, OTHER, t)).toBe(true);
+    expect(snapProfilesCompatible([compatible], later.values(), PROFILE, OTHER, instant(CUTOFF_B))).toBe(false);
   });
 });

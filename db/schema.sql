@@ -452,6 +452,7 @@ LANGUAGE sql IMMUTABLE STRICT AS $$
     WHEN 'event-state-marker' THEN kind || ':' || (data->>'gameId') || ':' || (data->>'markerType')
     WHEN 'participation-evidence' THEN kind || ':' || (data->>'gameId') || ':' || (data->>'playerId') || ':' || (data->>'evidenceKind')
     WHEN 'team-game-stats' THEN kind || ':' || (data->>'gameId') || ':' || (data->>'teamId')
+    WHEN 'team-game-snaps' THEN kind || ':' || (data->>'gameId') || ':' || (data->>'teamId')
     WHEN 'schedule' THEN kind || ':' || (data->>'gameId')
     ELSE kind || ':' || (data->>'gameId') || ':' || (data->>'playerId') END
 $$;
@@ -484,6 +485,33 @@ EXCEPTION WHEN OTHERS THEN RETURN false;
 END
 $$;
 
+-- Snap counts, matching validateSnaps(): counts 0-300, flags boolean, a missing
+-- reason for exactly the null fields, and a play-counting definition for teams.
+CREATE FUNCTION public.predictive_snaps_valid(kind text, data jsonb) RETURNS boolean
+LANGUAGE plpgsql IMMUTABLE STRICT AS $$
+DECLARE name text; missing jsonb := data->'missing'; counts text[]; flags text[];
+BEGIN
+  IF kind = 'player-game-snaps' THEN counts := ARRAY['offenseSnaps','specialTeamsSnaps','routesRun']; flags := ARRAY['played','started'];
+  ELSE counts := ARRAY['offenseSnaps','dropbacks']; flags := '{}'; END IF;
+  IF jsonb_typeof(missing) <> 'object' THEN RETURN false; END IF;
+  IF EXISTS (SELECT 1 FROM jsonb_each(missing) m WHERE m.key <> ALL(counts || flags)
+      OR m.value NOT IN ('"source-blank"'::jsonb, '"source-missing"'::jsonb)) THEN RETURN false; END IF;
+  FOREACH name IN ARRAY counts || flags LOOP
+    IF data->name = 'null'::jsonb THEN
+      IF NOT missing ? name THEN RETURN false; END IF;
+    ELSE
+      IF missing ? name THEN RETURN false; END IF;
+      IF name = ANY(flags) THEN
+        IF jsonb_typeof(data->name) <> 'boolean' THEN RETURN false; END IF;
+      ELSIF NOT public.predictive_integer(data->name, 0, 300) THEN RETURN false; END IF;
+    END IF;
+  END LOOP;
+  RETURN kind = 'player-game-snaps' OR (jsonb_typeof(data->'playCountingDefinition') = 'string'
+    AND data->>'playCountingDefinition' ~ '^[a-z0-9][a-z0-9.-]{0,63}$');
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END
+$$;
+
 -- Exact per-kind payload contract, matching validateRevision(). Schedule
 -- Eastern-time round trips are checked in code; SQL checks formats only.
 CREATE FUNCTION public.predictive_payload_valid(kind text, data jsonb) RETURNS boolean
@@ -507,6 +535,10 @@ BEGIN
     WHEN 'game-bridge' THEN ARRAY['provider','rawGameId','gameId']
     WHEN 'player-bridge' THEN ARRAY['provider','rawPlayerId','playerId','effectiveFrom','effectiveTo']
     WHEN 'game-relation' THEN ARRAY['gameId','predecessorGameId','relation']
+    WHEN 'player-game-snaps' THEN ARRAY['gameId','rawGameId','playerId','teamId','rawTeam','season','seasonType','offenseSnaps',
+      'specialTeamsSnaps','played','started','routesRun','missing']
+    WHEN 'team-game-snaps' THEN ARRAY['gameId','rawGameId','teamId','rawTeam','season','seasonType','offenseSnaps','dropbacks',
+      'playCountingDefinition','missing']
     ELSE NULL END;
   IF fields IS NULL OR jsonb_typeof(data) <> 'object' THEN RETURN false; END IF;
   IF kind = 'source-row-absent' THEN
@@ -550,6 +582,8 @@ BEGIN
         AND public.predictive_instant(data->>'effectiveTo') AND data->>'effectiveFrom' < data->>'effectiveTo';
     WHEN 'player-game-stats', 'team-game-stats' THEN
       RETURN public.predictive_stats_valid(data);
+    WHEN 'player-game-snaps', 'team-game-snaps' THEN
+      RETURN public.predictive_snaps_valid(kind, data);
     WHEN 'event-state-marker' THEN
       IF (data->>'markerType' IN ('provider-final-status','terminal-play','final-team-totals','suspension-notice','postponement-notice')) IS NOT TRUE
         THEN RETURN false; END IF;
@@ -618,9 +652,9 @@ CREATE TABLE public.predictive_source_profiles (
   allowlist_version text NOT NULL CHECK (length(allowlist_version) BETWEEN 1 AND 256),
   license text NOT NULL CHECK (length(license) BETWEEN 1 AND 256),
   attribution text CHECK (length(attribution) BETWEEN 1 AND 256),
-  evidence_kinds text[] NOT NULL CHECK (cardinality(evidence_kinds) BETWEEN 1 AND 13 AND evidence_kinds <@ ARRAY['schedule','schedule-coverage',
+  evidence_kinds text[] NOT NULL CHECK (cardinality(evidence_kinds) BETWEEN 1 AND 15 AND evidence_kinds <@ ARRAY['schedule','schedule-coverage',
     'membership','player-game-stats','team-game-stats','event-state-marker','participation-evidence','availability','source-row-absent',
-    'team-alias','game-bridge','player-bridge','game-relation']::text[]),
+    'team-alias','game-bridge','player-bridge','game-relation','player-game-snaps','team-game-snaps']::text[]),
   registered_at timestamptz NOT NULL CHECK (isfinite(registered_at) AND registered_at = date_trunc('milliseconds', registered_at))
 );
 
@@ -993,6 +1027,12 @@ BEGIN
     RETURN (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) = ARRAY['state']
       AND (outcome->>'state' IN ('offensive-participant','zero-offensive-participation','inactive-or-dnp','unresolved','conflicting')) IS TRUE;
   END IF;
+  IF kind = 'snap-source-compatibility' THEN
+    RETURN (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) = ARRAY['overlapGames','result']
+      AND (outcome->>'result' IN ('compatible','incompatible','insufficient-overlap')) IS TRUE
+      AND public.predictive_integer(outcome->'overlapGames', 0, 4096)
+      AND ((outcome->>'result' = 'insufficient-overlap') = ((outcome->>'overlapGames')::integer = 0));
+  END IF;
   IF kind = 'completion' THEN
     RETURN (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(outcome) key) = ARRAY['actualEnd','completionObservedAt','state']
       AND (outcome->>'state' IN ('scheduled','in-progress','completed','suspended','postponed','conflicting')) IS TRUE
@@ -1025,6 +1065,9 @@ CREATE TABLE public.predictive_decisions (
   CHECK (kind <> 'reconciliation' OR (policy_id = 'reconciliation-v1' AND entity_key LIKE 'reconciliation:%')),
   CHECK (kind <> 'participation' OR (policy_id = 'participation-v1'
     AND entity_key ~ '^participation:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}:00-[0-9]{7}$')),
+  CHECK (kind <> 'snap-source-compatibility' OR (policy_id = 'snap-compatibility-v1'
+    AND entity_key ~ '^snap-source-compatibility:[a-z0-9][a-z0-9.-]{2,127}:[a-z0-9][a-z0-9.-]{2,127}$'
+    AND split_part(entity_key, ':', 2) COLLATE "C" < split_part(entity_key, ':', 3) COLLATE "C")),
   CHECK (kind <> 'completion' OR (policy_id = 'event-completion-v1' AND entity_key ~ '^completion:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$')),
   CHECK (predecessor_id IS DISTINCT FROM id),
   UNIQUE (id, kind, entity_key, policy_id),
@@ -1051,10 +1094,25 @@ CREATE TRIGGER predictive_decision_inputs_no_truncate BEFORE TRUNCATE ON public.
 -- at instant t: marker facts (completion), participation evidence plus stats
 -- (participation), or the one fact (reconciliation). Mirrors labels.ts current().
 CREATE FUNCTION public.predictive_decision_current(decision_id text, t timestamptz) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
-DECLARE d public.predictive_decisions; prefix text; exact_key text; heads text[]; inputs text[];
+DECLARE d public.predictive_decisions; prefix text; exact_key text; heads text[]; inputs text[]; pa text; pb text;
 BEGIN
   SELECT * INTO d FROM public.predictive_decisions WHERE id = decision_id;
   IF d.id IS NULL OR d.decided_at > t THEN RETURN false; END IF;
+  SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE "C") INTO inputs FROM public.predictive_decision_inputs i WHERE i.decision_id = d.id;
+  IF d.kind = 'snap-source-compatibility' THEN
+    -- snap-compatibility-v1 (snaps.ts snapOverlapHeadsAt): every snap head of both
+    -- profiles in the games both cover with a team snap head at t.
+    pa := split_part(d.entity_key, ':', 2); pb := split_part(d.entity_key, ':', 3);
+    WITH visible AS (SELECT o.id, o.predecessor_id, o.kind, o.profile_id, split_part(o.entity_key, ':', 2) AS game FROM public.predictive_observations o
+      WHERE split_part(o.entity_key, ':', 1) IN ('player-game-snaps','team-game-snaps') AND o.profile_id IN (pa, pb) AND EXISTS (
+        SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
+        JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id WHERE l.observation_id = o.id AND c.state = 'published' AND ru.status = 'published'
+          AND c.available_at <= t AND c.ingested_at <= t)),
+    snap_heads AS (SELECT v.* FROM visible v WHERE NOT EXISTS (SELECT 1 FROM visible n WHERE n.predecessor_id = v.id)),
+    overlap AS (SELECT h.game FROM snap_heads h WHERE h.kind = 'team-game-snaps' GROUP BY h.game HAVING count(DISTINCT h.profile_id) = 2)
+    SELECT array_agg(h.id ORDER BY h.id COLLATE "C") INTO heads FROM snap_heads h WHERE h.game IN (SELECT game FROM overlap);
+    RETURN heads IS NOT DISTINCT FROM inputs;
+  END IF;
   IF d.kind = 'completion' THEN prefix := 'event-state-marker:' || split_part(d.entity_key, ':', 2) || ':';
   ELSIF d.kind = 'participation' THEN
     prefix := 'participation-evidence:' || split_part(d.entity_key, ':', 2) || ':' || split_part(d.entity_key, ':', 3) || ':';
@@ -1066,7 +1124,6 @@ BEGIN
       JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id WHERE l.observation_id = o.id AND c.state = 'published' AND ru.status = 'published'
         AND c.available_at <= t AND c.ingested_at <= t))
   SELECT array_agg(v.id ORDER BY v.id COLLATE "C") INTO heads FROM visible v WHERE NOT EXISTS (SELECT 1 FROM visible n WHERE n.predecessor_id = v.id);
-  SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE "C") INTO inputs FROM public.predictive_decision_inputs i WHERE i.decision_id = d.id;
   RETURN heads IS NOT DISTINCT FROM inputs;
 END
 $$;
@@ -1077,7 +1134,7 @@ DECLARE target text; d public.predictive_decisions; fact text; game text;
   head_ids text[]; input_ids text[]; r record; absent boolean := false;
   final_n integer := 0; terminal_n integer := 0; totals_n integer := 0; suspended_n integer := 0; postponed_n integer := 0;
   final_at timestamptz; terminal_at timestamptz; totals_at timestamptz; state text; observed timestamptz;
-  conflict boolean := false; claims text[] := '{}'; stats_n integer := 0; positive_n integer := 0;
+  conflict boolean := false; claims text[] := '{}'; stats_n integer := 0; positive_n integer := 0; overlap integer; pa text; pb text;
 BEGIN
   IF TG_TABLE_NAME = 'predictive_decisions' THEN target := NEW.id; ELSE target := NEW.decision_id; END IF;
   SELECT * INTO d FROM public.predictive_decisions WHERE id = target;
@@ -1142,6 +1199,29 @@ BEGIN
     IF stats_n > 0 AND positive_n = stats_n AND NOT 'offensive-participant' = ANY(claims) THEN claims := array_append(claims, 'offensive-participant'); END IF;
     state := CASE WHEN conflict OR cardinality(claims) > 1 THEN 'conflicting' WHEN cardinality(claims) = 1 THEN claims[1] ELSE 'unresolved' END;
     IF state <> d.outcome->>'state' THEN RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514'; END IF;
+    RETURN NULL;
+  END IF;
+  IF d.kind = 'snap-source-compatibility' THEN
+    -- snap-compatibility-v1 (snaps.ts): the inputs are exactly the overlap heads,
+    -- and the result is recomputed from them.
+    SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE "C") INTO input_ids
+      FROM public.predictive_decision_inputs i WHERE i.decision_id = target AND i.role = 'evidence';
+    IF NOT public.predictive_decision_current(target, d.decided_at) OR inputs <> coalesce(cardinality(input_ids), 0) THEN
+      RAISE EXCEPTION 'predictive-snap-compatibility-inputs-invalid' USING ERRCODE = '23514';
+    END IF;
+    pa := split_part(d.entity_key, ':', 2); pb := split_part(d.entity_key, ':', 3);
+    SELECT count(DISTINCT split_part(o.entity_key, ':', 2)) INTO overlap FROM public.predictive_observations o WHERE o.id = ANY(coalesce(input_ids, '{}'));
+    IF overlap = 0 THEN state := 'insufficient-overlap';
+    ELSIF EXISTS (SELECT 1 FROM (SELECT o.entity_key, count(*) FILTER (WHERE o.profile_id = pa) AS na, count(*) FILTER (WHERE o.profile_id = pb) AS nb,
+          bool_or(o.kind = 'source-row-absent' OR o.data->'offenseSnaps' = 'null'::jsonb) AS bad,
+          count(DISTINCT o.data->'offenseSnaps') AS snaps, count(DISTINCT o.data->>'playCountingDefinition') AS definitions,
+          count(o.data->>'playCountingDefinition') AS defined
+        FROM public.predictive_observations o WHERE o.id = ANY(input_ids) GROUP BY o.entity_key) g
+        WHERE g.na <> 1 OR g.nb <> 1 OR g.bad OR g.snaps <> 1 OR g.definitions > 1 OR g.defined NOT IN (0, 2)) THEN state := 'incompatible';
+    ELSE state := 'compatible'; END IF;
+    IF state <> d.outcome->>'result' OR (d.outcome->>'overlapGames')::integer <> overlap THEN
+      RAISE EXCEPTION 'predictive-decision-rule-invalid' USING ERRCODE = '23514';
+    END IF;
     RETURN NULL;
   END IF;
   IF d.kind <> 'reconciliation' THEN RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514'; END IF;
@@ -1613,7 +1693,7 @@ REVOKE ALL ON FUNCTION public.predictive_text(jsonb), public.predictive_optional
   public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check(),
   public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text),
   public.predictive_decision_current(text, timestamptz), public.predictive_label_eligible_final_at(timestamptz), public.predictive_label_check(),
-  public.predictive_unpin_check(), public.predictive_feature_run_check(), public.predictive_feature_run_expired(text, timestamptz),
+  public.predictive_snaps_valid(text, jsonb), public.predictive_unpin_check(), public.predictive_feature_run_check(), public.predictive_feature_run_expired(text, timestamptz),
   public.predictive_feature_run_dependency_guard(), public.predictive_retention_scope_valid(text, jsonb),
   public.predictive_retention_audit_immutable(),
   public.predictive_retention_execute(text, text, text, timestamptz, jsonb, text) FROM PUBLIC;
@@ -1622,7 +1702,7 @@ BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_ingest') THEN
     GRANT EXECUTE ON FUNCTION public.predictive_text(jsonb), public.predictive_optional_text(jsonb), public.predictive_instant(text),
       public.predictive_integer(jsonb, numeric, numeric), public.predictive_identity(jsonb, text), public.predictive_entity_key(text, jsonb),
-      public.predictive_stats_valid(jsonb), public.predictive_payload_valid(text, jsonb), public.predictive_harness_session(),
+      public.predictive_stats_valid(jsonb), public.predictive_snaps_valid(text, jsonb), public.predictive_payload_valid(text, jsonb), public.predictive_harness_session(),
       public.predictive_rights_in_force(text, timestamptz, timestamptz), public.predictive_rights_allow(text, timestamptz, timestamptz, text),
       public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check(),
       public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text),

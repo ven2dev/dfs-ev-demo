@@ -77,7 +77,14 @@ const fields: Record<Kind, string[]> = {
   "game-bridge": ["provider", "rawGameId", "gameId"],
   "player-bridge": ["provider", "rawPlayerId", "playerId", "effectiveFrom", "effectiveTo"],
   "game-relation": ["gameId", "predecessorGameId", "relation"],
+  "player-game-snaps": ["gameId", "rawGameId", "playerId", "teamId", "rawTeam", "season", "seasonType", "offenseSnaps", "specialTeamsSnaps",
+    "played", "started", "routesRun", "missing"],
+  "team-game-snaps": ["gameId", "rawGameId", "teamId", "rawTeam", "season", "seasonType", "offenseSnaps", "dropbacks", "playCountingDefinition", "missing"],
 };
+const SNAP_COUNTS: Record<"player-game-snaps" | "team-game-snaps", string[]> = {
+  "player-game-snaps": ["offenseSnaps", "specialTeamsSnaps", "routesRun"], "team-game-snaps": ["offenseSnaps", "dropbacks"],
+};
+const SNAP_FLAGS: Record<"player-game-snaps" | "team-game-snaps", string[]> = { "player-game-snaps": ["played", "started"], "team-game-snaps": [] };
 // Provider names and raw IDs appear inside keys, so they exclude key separators.
 const providerName = (value: unknown) => { if (typeof value !== "string" || !/^[a-z0-9][a-z0-9-]{0,31}$/.test(value)) refuse("invalid-identity"); };
 const rawIdentifier = (value: unknown) => { if (typeof value !== "string" || !/^[A-Za-z0-9._-]{1,64}$/.test(value)) refuse("invalid-identity"); };
@@ -97,6 +104,24 @@ const validateStats = (data: Record<string, unknown>) => {
   }
   if (data.attempts !== null && data.completions !== null && Number(data.completions) > Number(data.attempts)) refuse("completions-exceed-attempts");
   if (data.targets !== null && data.receptions !== null && Number(data.receptions) > Number(data.targets)) refuse("receptions-exceed-targets");
+};
+
+// Mirrors predictive_snaps_valid(): counts 0-300, flags boolean, and a missing
+// reason for exactly the null fields.
+const validateSnaps = (kind: "player-game-snaps" | "team-game-snaps", data: Record<string, unknown>) => {
+  const nullable = [...SNAP_COUNTS[kind], ...SNAP_FLAGS[kind]];
+  const missing = object(data.missing);
+  for (const key of Object.keys(missing)) {
+    if (!nullable.includes(key)) refuse("schema-fields-refused");
+    oneOf(missing[key], ["source-blank", "source-missing"]);
+  }
+  for (const field of nullable) {
+    const value = data[field];
+    if (value === null) { if (!(field in missing)) refuse("missingness-reason-required"); continue; }
+    if (field in missing) refuse("unexpected-missingness-reason");
+    if (SNAP_FLAGS[kind].includes(field)) { if (typeof value !== "boolean") refuse("invalid-snaps"); } else integer(value, 0, 300);
+  }
+  if (kind === "team-game-snaps" && (typeof data.playCountingDefinition !== "string" || !/^[a-z0-9][a-z0-9.-]{0,63}$/.test(data.playCountingDefinition))) refuse("invalid-snaps");
 };
 
 export const validateRevision = (value: unknown): Revision => {
@@ -142,6 +167,8 @@ export const validateRevision = (value: unknown): Revision => {
   } else if (kind === "membership") {
     integer(data.week, 1, 22);
     if (instant(data.effectiveFrom) >= instant(data.effectiveTo)) refuse("invalid-effective-bounds");
+  } else if (kind === "player-game-snaps" || kind === "team-game-snaps") {
+    validateSnaps(kind, data);
   } else if (kind === "player-game-stats" || kind === "team-game-stats") {
     validateStats(data);
   } else if (kind === "event-state-marker") {
@@ -187,7 +214,7 @@ export const entityKey = (revision: Revision): string => {
     const data = revision.data;
     return "participation-evidence:" + data.gameId + ":" + data.playerId + ":" + data.evidenceKind;
   }
-  if (revision.kind === "team-game-stats") return "team-game-stats:" + revision.data.gameId + ":" + revision.data.teamId;
+  if (revision.kind === "team-game-stats" || revision.kind === "team-game-snaps") return revision.kind + ":" + revision.data.gameId + ":" + revision.data.teamId;
   const data = revision.data;
   return revision.kind + ":" + data.gameId + ("playerId" in data ? ":" + data.playerId : "");
 };
@@ -295,11 +322,24 @@ export const datasetContainer = (value: unknown) => {
 // validateDecisions, because a decision may cite evidence from earlier batches.
 export const validateDecisionShape = (value: unknown): Decision => {
   const row = exact(value, ["id", "kind", "entityKey", "policyId", "mode", "decidedAt", "predecessorId", "outcome", "inputs"]);
-  text(row.id); oneOf(row.kind, ["reconciliation", "completion", "participation"]);
+  text(row.id); oneOf(row.kind, ["reconciliation", "completion", "participation", "snap-source-compatibility"]);
   oneOf(row.mode, ["production-research", "synthetic-proof"]); instant(row.decidedAt);
   if (row.predecessorId !== null) text(row.predecessorId);
   if (row.predecessorId === row.id) refuse("invalid-decision");
-  if (!Array.isArray(row.inputs) || row.inputs.length > 16) refuse("invalid-decision");
+  // A snap overlap sample spans whole games; the other kinds cite a few heads.
+  if (!Array.isArray(row.inputs) || row.inputs.length > (row.kind === "snap-source-compatibility" ? 4096 : 16)) refuse("invalid-decision");
+  if (row.kind === "snap-source-compatibility") {
+    oneOf(row.policyId, ["snap-compatibility-v1"]);
+    const parts = typeof row.entityKey === "string" ? row.entityKey.split(":") : [];
+    if (parts.length !== 3 || parts[0] !== "snap-source-compatibility" || !/^[a-z0-9][a-z0-9.-]{2,127}$/.test(parts[1]) ||
+        !/^[a-z0-9][a-z0-9.-]{2,127}$/.test(parts[2]) || compareText(parts[1], parts[2]) >= 0) refuse("invalid-decision");
+    const outcome = exact(row.outcome, ["result", "overlapGames"]);
+    oneOf(outcome.result, ["compatible", "incompatible", "insufficient-overlap"]); integer(outcome.overlapGames, 0, 4096);
+    if ((outcome.result === "insufficient-overlap") !== (outcome.overlapGames === 0)) refuse("invalid-decision");
+    for (const input of row.inputs) { const item = exact(input, ["observationId", "role"]); text(item.observationId); oneOf(item.role, ["evidence"]); }
+    if (new Set(row.inputs.map((input) => input.observationId)).size !== row.inputs.length) refuse("invalid-decision");
+    return value as Decision;
+  }
   if (row.kind === "participation") {
     oneOf(row.policyId, ["participation-v1"]);
     const parts = typeof row.entityKey === "string" ? row.entityKey.split(":") : [];

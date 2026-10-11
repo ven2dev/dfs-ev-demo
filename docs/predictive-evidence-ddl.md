@@ -886,3 +886,35 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
 - The function builds the removed set in parallel arrays, never a temp table,
   because a caller could pre-create a `pg_temp` relation that the definer
   function would then use.
+
+### Review fix 9 (2026-10-10)
+
+- **Snap kinds:**
+  - `player-game-snaps`: offense and special-teams snaps, `played`/`started`
+    flags, optional routes.
+  - `team-game-snaps`: offense snaps, optional dropbacks, and the provider's
+    `playCountingDefinition`.
+  - Validated by `predictive_snaps_valid` and `validateSnaps`: counts 0–300,
+    flags boolean, a missing reason for exactly the null fields, and blanks
+    never zero-filled.
+  - Entity keys follow the stats kinds; profiles may declare up to 15 kinds.
+- **`snap-source-compatibility` (`snap-compatibility-v1`, `snaps.ts`):**
+  - The entity key names both profiles in sorted order. The inputs must be
+    exactly the overlap: every snap head (player, team and absences) of both
+    profiles in each game both cover with a team snap head at `decided_at`.
+    The caller can't leave out disagreeing games.
+  - `compatible` requires exactly one present head per profile per fact,
+    equal offense snaps, and the same play-counting definition.
+    `insufficient-overlap` means no shared game.
+  - `predictive_decision_current` supports the kind, so labels, feature runs
+    and staleness checks treat it like the other decisions.
+- **`snapShare`** (pure, for the first enriched rushing/receiving builder):
+  - Pooled player offense snaps over paired team offense snaps across the same
+    eligible games.
+  - A missing pair, a blank, a player count above the team's, a mismatched
+    game or team, a zero denominator, or providers without a current
+    compatibility decision all leave the ratio undefined, with a reason.
+  - The cross-row rule "player offense snaps ≤ team offense snaps" is enforced
+    here at pairing time, not at publication.
+- Source acquisition and qualification stay in PR B. Being able to store snaps
+  doesn't qualify any source.

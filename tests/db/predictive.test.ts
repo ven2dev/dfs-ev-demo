@@ -14,13 +14,14 @@ import { ingestLocalDataset } from "../../src/lib/predictive/ingest.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/completion.ts";
 import { participationHeadsAt, recordParticipation } from "../../src/lib/predictive/participation.ts";
+import { recordSnapCompatibility } from "../../src/lib/predictive/snaps.ts";
 import type { Label, RecordedRetentionEvent, RetentionEvent } from "../../src/lib/predictive/types.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { runLocalProof } from "../../scripts/predictive/local.ts";
 import { digest, instant, TEAM_IDS, validateDataset } from "../../src/lib/predictive/validation.ts";
 import type { Dataset, Revision } from "../../src/lib/predictive/types.ts";
 import { addCapture, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_B, emptyDataset, gameId, membership, passingYardsFixture,
-  PLAYER, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM } from "../predictive/fixtures/passingYards.ts";
+  PLAYER, playerSnaps, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamSnaps } from "../predictive/fixtures/passingYards.ts";
 import { backendPid, waitForBlocked } from "./leaseSupport";
 import { createScratchHarness } from "./scratch.mjs";
 
@@ -1169,5 +1170,62 @@ it("predictive retention expires unpinned feature runs with digest-only audit an
       await client.query("DELETE FROM predictive_observations WHERE id=$1", [predecessor]);
       await expect(client.query("SET CONSTRAINTS ALL IMMEDIATE")).rejects.toMatchObject({ code: "23503" });
     });
+  });
+});
+it("predictive snap evidence enforces counts and missingness and snap compatibility decisions cite the complete provider overlap", async () => {
+  await withProof(async ({ client, store }) => {
+    const OTHER = "synthetic-other-v1"; const a = passingYardsFixture(false);
+    const game = (number: number) => findRow(a, "schedule-synthetic-game-" + number).data as Parameters<typeof teamSnaps>[0];
+    const snaps = { ...emptyDataset(), profiles: [profile(), profile(OTHER)], rightsDecisions: [rights(), rights(OTHER)] };
+    addCapture(snaps, "snaps-a", [revision("a-team-5", "team-game-snaps", teamSnaps(game(5), 60)), revision("a-player-5", "player-game-snaps", playerSnaps(game(5), 30)),
+      revision("a-team-4", "team-game-snaps", teamSnaps(game(4), 50))]);
+    addCapture(snaps, "snaps-b", [revision("b-team-5", "team-game-snaps", teamSnaps(game(5), 60)), revision("b-player-5", "player-game-snaps", playerSnaps(game(5), 30))], CAPTURE_A, OTHER);
+    await store.publish("A", a, NOW); await store.publish("snaps", snaps, NOW);
+    expect((await client.query("SELECT entity_key, team_id, game_id::text FROM predictive_observations WHERE id='a-team-5'")).rows[0])
+      .toEqual({ entity_key: "team-game-snaps:" + PRIOR[4] + ":" + TEAM, team_id: TEAM, game_id: PRIOR[4] });
+    const observations = validateDataset({ ...snaps }).observations;
+    const decision = recordSnapCompatibility("compat-1", PROFILE, OTHER, observations.values(), CAPTURE_B, "synthetic-proof");
+    expect(decision.outcome).toEqual({ result: "compatible", overlapGames: 1 });
+    await store.publish("compat", { ...emptyDataset(), profiles: snaps.profiles, rightsDecisions: snaps.rightsDecisions, decisions: [decision] }, NOW);
+    expect((await client.query("SELECT outcome FROM predictive_decisions WHERE id='compat-1'")).rows[0].outcome).toEqual({ result: "compatible", overlapGames: 1 });
+    // Payloads: blanks need reasons, counts are bounded, flags are booleans.
+    const base = playerSnaps(game(3), 20);
+    for (const bad of [{ ...base, missing: {} }, { ...base, offenseSnaps: 301 }, { ...base, played: "yes" }, { ...base, offenseSnaps: null }]) {
+      await sqlProbe(client, async () => {
+        await expect(insertObservation(client, "bad-snap", "player-game-snaps", bad)).rejects.toMatchObject({ code: "23514" });
+      });
+    }
+    const insertDecision = async (id: string, outcome: object, inputs: string[]) => {
+      await client.query(`INSERT INTO predictive_decisions (id,kind,entity_key,policy_id,mode,outcome,run_id,decided_at,predecessor_id)
+        VALUES ($1,'snap-source-compatibility',$2,'snap-compatibility-v1','synthetic-proof',$3,'compat',$4,NULL)`, [id, decision.entityKey, outcome, CAPTURE_B]);
+      for (const observation of inputs) await client.query("INSERT INTO predictive_decision_inputs VALUES ($1,$2,'evidence')", [id, observation]);
+    };
+    const all = decision.inputs.map((input) => input.observationId);
+    await sqlProbe(client, async () => { await insertDecision("probe-ok", decision.outcome, all); await client.query("SET CONSTRAINTS ALL IMMEDIATE"); });
+    const refusals: [string, () => Promise<void>, string][] = [
+      ["an overlap that omits a provider head", () => insertDecision("probe", decision.outcome, all.filter((id) => id !== "b-player-5")), "predictive-snap-compatibility-inputs-invalid"],
+      ["a head outside the overlap", () => insertDecision("probe", decision.outcome, [...all, "a-team-4"]), "predictive-snap-compatibility-inputs-invalid"],
+      ["a misstated result", () => insertDecision("probe", { result: "incompatible", overlapGames: 1 }, all), "predictive-decision-rule-invalid"],
+      ["a misstated overlap count", () => insertDecision("probe", { result: "compatible", overlapGames: 2 }, all), "predictive-decision-rule-invalid"],
+    ];
+    for (const [label, insert, message] of refusals) await sqlProbe(client, async () => {
+      await insert();
+      await expect(client.query("SET CONSTRAINTS ALL IMMEDIATE"), label).rejects.toMatchObject({ code: "23514", message });
+    });
+    await sqlProbe(client, async () => {
+      await expect(client.query(`INSERT INTO predictive_decisions (id,kind,entity_key,policy_id,mode,outcome,run_id,decided_at)
+        VALUES ('unsorted','snap-source-compatibility',$1,'snap-compatibility-v1','synthetic-proof',$2,'compat',$3)`,
+      ["snap-source-compatibility:" + PROFILE + ":" + OTHER, decision.outcome, CAPTURE_B])).rejects.toMatchObject({ code: "23514" });
+    });
+    // A provider disagreeing on a shared game makes a later decision incompatible.
+    const disagree = { ...emptyDataset(), profiles: snaps.profiles, rightsDecisions: snaps.rightsDecisions };
+    addCapture(disagree, "b-fix", [revision("b-player-5-fix", "player-game-snaps", playerSnaps(game(5), 31), "b-player-5")], "2026-10-08T15:00:00.000Z", OTHER);
+    await store.publish("disagree", disagree, NOW);
+    const later = recordSnapCompatibility("compat-2", PROFILE, OTHER, validateDataset({ ...snaps, artifacts: [...snaps.artifacts, ...disagree.artifacts],
+      captures: [...snaps.captures, ...disagree.captures] }).observations.values(), "2026-10-08T16:00:00.000Z", "synthetic-proof", "compat-1");
+    expect(later.outcome).toEqual({ result: "incompatible", overlapGames: 1 });
+    await store.publish("compat-2", { ...emptyDataset(), profiles: snaps.profiles, rightsDecisions: snaps.rightsDecisions, decisions: [later] }, NOW);
+    expect((await client.query("SELECT predictive_decision_current('compat-1', '2026-10-08T16:00:00Z') AS stale, predictive_decision_current('compat-2', '2026-10-08T16:00:00Z') AS current")).rows[0])
+      .toEqual({ stale: false, current: true });
   });
 });

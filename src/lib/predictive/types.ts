@@ -2,10 +2,10 @@ export type SeasonType = "REG" | "POST";
 export type Candidate = "stats-v1:player_pass_yds" | "player-opponent-v1:player_pass_yds";
 export type Kind = "schedule" | "schedule-coverage" | "membership" | "player-game-stats" | "team-game-stats" |
   "event-state-marker" | "participation-evidence" | "availability" | "source-row-absent" |
-  "team-alias" | "game-bridge" | "player-bridge" | "game-relation";
+  "team-alias" | "game-bridge" | "player-bridge" | "game-relation" | "player-game-snaps" | "team-game-snaps";
 export const KINDS: readonly Kind[] = ["schedule", "schedule-coverage", "membership", "player-game-stats",
   "team-game-stats", "event-state-marker", "participation-evidence", "availability", "source-row-absent",
-  "team-alias", "game-bridge", "player-bridge", "game-relation"];
+  "team-alias", "game-bridge", "player-bridge", "game-relation", "player-game-snaps", "team-game-snaps"];
 export type ScopeKind = "season-file" | "week-file" | "game" | "all-seasons" | "manual";
 
 // The ten count fields behind the nine registry markets. Values are per game.
@@ -35,6 +35,18 @@ export type TeamGameStats = StatValues & {
   missing: Partial<Record<StatField, MissingReason>>;
 };
 export type PlayerGameStats = TeamGameStats & { playerId: string };
+// Snap counts (approved for #49 snap share). Every nullable field carries its
+// own missing reason; a blank never becomes zero. playCountingDefinition names
+// the provider's play-counting rule, so two providers compare only when equal.
+type SnapIdentity = { gameId: string; rawGameId: string; teamId: string; rawTeam: string; season: number; seasonType: SeasonType };
+export type PlayerGameSnaps = SnapIdentity & {
+  playerId: string; offenseSnaps: number | null; specialTeamsSnaps: number | null; played: boolean | null; started: boolean | null;
+  routesRun: number | null; missing: Partial<Record<"offenseSnaps" | "specialTeamsSnaps" | "played" | "started" | "routesRun", MissingReason>>;
+};
+export type TeamGameSnaps = SnapIdentity & {
+  offenseSnaps: number | null; dropbacks: number | null; playCountingDefinition: string;
+  missing: Partial<Record<"offenseSnaps" | "dropbacks", MissingReason>>;
+};
 export type MarkerType = "provider-final-status" | "terminal-play" | "final-team-totals" | "suspension-notice" | "postponement-notice";
 export type EventStateMarker = { gameId: string; markerType: MarkerType; markerValue: string; terminalPlayTimeOfDay: string | null };
 export type ParticipationEvidence = {
@@ -68,6 +80,7 @@ export type DataByKind = {
   "event-state-marker": EventStateMarker; "participation-evidence": ParticipationEvidence; availability: Availability;
   "source-row-absent": SourceRowAbsent;
   "team-alias": TeamAlias; "game-bridge": GameBridge; "player-bridge": PlayerBridge; "game-relation": GameRelation;
+  "player-game-snaps": PlayerGameSnaps; "team-game-snaps": TeamGameSnaps;
 };
 export type Revision<K extends Kind = Kind> = K extends Kind ? {
   id: string; kind: K; sourceRecordId: string; predecessorId: string | null; correctionReason: string | null; data: DataByKind[K];
@@ -122,7 +135,15 @@ export type ParticipationRecord = {
   outcome: { state: "offensive-participant" | "zero-offensive-participation" | "inactive-or-dnp" | "unresolved" | "conflicting" };
   inputs: { observationId: string; role: "evidence" }[];
 };
-export type Decision = Reconciliation | CompletionRecord | ParticipationRecord;
+// snap-compatibility-v1: whether two snap providers count the same plays, decided
+// from every snap head of both profiles in the games both cover at decidedAt.
+export type SnapCompatibilityRecord = {
+  id: string; kind: "snap-source-compatibility"; entityKey: string; policyId: "snap-compatibility-v1";
+  mode: "production-research" | "synthetic-proof"; decidedAt: string; predecessorId: string | null;
+  outcome: { result: "compatible" | "incompatible" | "insufficient-overlap"; overlapGames: number };
+  inputs: { observationId: string; role: "evidence" }[];
+};
+export type Decision = Reconciliation | CompletionRecord | ParticipationRecord | SnapCompatibilityRecord;
 // Canonical outcome labels (canonical-label-finalization-v1). Stat names are the
 // registry's canonical fields; values come from the selected stats revision.
 export const LABEL_STATS = { passing_yards: "passingYards", passing_tds: "passingTds", completions: "completions", attempts: "attempts",

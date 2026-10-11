@@ -63,7 +63,7 @@ const decisionSql = (predicate: string) => `SELECT jsonb_build_object('id',d.id,
   'inputs',coalesce((SELECT jsonb_agg(jsonb_build_object('observationId',i.observation_id,'role',i.role) ORDER BY i.observation_id COLLATE "C")
     FROM public.predictive_decision_inputs i WHERE i.decision_id=d.id),'[]'::jsonb)) AS decision
   FROM public.predictive_decisions d JOIN public.predictive_ingestion_runs r ON r.id=d.run_id
-  WHERE r.status='published' AND d.kind IN ('reconciliation','completion','participation') AND ${predicate} ORDER BY d.id`;
+  WHERE r.status='published' AND d.kind IN ('reconciliation','completion','participation','snap-source-compatibility') AND ${predicate} ORDER BY d.id`;
 const DECISION_SQL = decisionSql("d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz");
 const DECISION_BY_ID_SQL = decisionSql("d.id=$1");
 const DECISIONS_BY_ID_SQL = decisionSql("d.id=ANY($1::text[])");

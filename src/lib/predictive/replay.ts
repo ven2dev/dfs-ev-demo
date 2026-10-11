@@ -1,6 +1,7 @@
 import type { CompletionRecord, Dataset, Decision, Kind, Observation, ParticipationRecord, Reconciliation, RightsDecision } from "./types.ts";
 import { completionFromHeads, validateCompletionDecisions } from "./completion.ts";
 import { participationFromHeads, validateParticipationDecisions } from "./participation.ts";
+import { validateSnapCompatibilityDecisions } from "./snaps.ts";
 import { allows, canonical, compareText, datasetContainer, instant, object, rightsInForce, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
 
 export type Selection<K extends Kind> = ({ state: "selected"; observation: Observation<K> } |
@@ -33,6 +34,7 @@ export const createReplay = (dataset: Dataset, cutoff: string, accessAt: string)
   validateDecisions(validated.decisions, validated.observations, validated.profiles);
   validateCompletionDecisions(validated.decisions, validated.observations, validated.profiles);
   validateParticipationDecisions(validated.decisions, validated.observations, validated.profiles);
+  validateSnapCompatibilityDecisions(validated.decisions, validated.observations, validated.profiles);
   const rows = [...validated.observations.values()];
   return replayObservations(rows, blockedProfiles(validated.rightsDecisions, new Set(rows.map((row) => row.artifact.profileId)), accessAt), validated.decisions);
 };
