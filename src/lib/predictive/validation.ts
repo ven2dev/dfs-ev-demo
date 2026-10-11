@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { NFL_TEAM_ABBREVIATIONS } from "../nflStadiums.ts";
 import { KINDS, ROUTING_FIELDS, STAT_FIELDS, type Artifact, type Capture, type Dataset, type Kind, type Observation,
-  type Decision, type Profile, type Revision, type RightsDecision, type Use } from "./types.ts";
+  type Decision, type IdentityLink, type Profile, type Revision, type RightsDecision, type Use } from "./types.ts";
 
 export class PredictiveError extends Error {
   code: string;
@@ -311,11 +311,11 @@ const CAPTURE_FIELDS = ["id", "artifactId", "capturedAt", "availableAt", "ingest
   "bodyComplete", "headerVerified", "parserSucceeded", "parsedRows"];
 
 export const datasetContainer = (value: unknown) => {
-  const root = exact(value, ["formatVersion", "profiles", "rightsDecisions", "artifacts", "captures", "decisions", "labels"]);
-  if (root.formatVersion !== 2 || !Array.isArray(root.profiles) || !Array.isArray(root.rightsDecisions) ||
-      !Array.isArray(root.artifacts) || !Array.isArray(root.captures) || !Array.isArray(root.decisions) || !Array.isArray(root.labels)) refuse("dataset-bounds-refused");
+  const root = exact(value, ["formatVersion", "profiles", "rightsDecisions", "artifacts", "captures", "decisions", "labels", "identityLinks"]);
+  if (root.formatVersion !== 2 || !Array.isArray(root.profiles) || !Array.isArray(root.rightsDecisions) || !Array.isArray(root.artifacts) ||
+      !Array.isArray(root.captures) || !Array.isArray(root.decisions) || !Array.isArray(root.labels) || !Array.isArray(root.identityLinks)) refuse("dataset-bounds-refused");
   return { formatVersion: 2 as const, profiles: root.profiles, rightsDecisions: root.rightsDecisions, artifacts: root.artifacts,
-    captures: root.captures, decisions: root.decisions, labels: root.labels };
+    captures: root.captures, decisions: root.decisions, labels: root.labels, identityLinks: root.identityLinks };
 };
 
 // Shape only; references are checked against stored or visible evidence by
@@ -537,6 +537,19 @@ export const validateDataset = (value: unknown) => {
   }
   const rightsDecisions = root.rightsDecisions.map((item) => validateRightsDecision(item, profiles));
   validateRightsChains(rightsDecisions);
+  if (root.identityLinks.length > 256) refuse("dataset-bounds-refused");
+  const linkKeys = new Set<string>();
+  const identityLinks = root.identityLinks.map((item) => {
+    const link = exact(item, ["id", "statsProfileId", "bridgeProfileId", "provider", "decidedAt"]);
+    text(link.id); providerName(link.provider); instant(link.decidedAt);
+    const stats = profiles.get(String(link.statsProfileId)) ?? refuse("profile-missing");
+    const bridges = profiles.get(String(link.bridgeProfileId)) ?? refuse("profile-missing");
+    if (!stats.evidenceKinds.includes("player-game-stats") || !bridges.evidenceKinds.includes("player-bridge")) refuse("invalid-identity-link");
+    const key = [link.statsProfileId, link.bridgeProfileId, link.provider].join("|");
+    if (linkKeys.has(key) || linkKeys.has("id:" + link.id)) refuse("duplicate-identity-link");
+    linkKeys.add(key); linkKeys.add("id:" + link.id);
+    return link as IdentityLink;
+  });
   const revisions = new Map<string, Revision[]>();
   const artifacts = new Map<string, Artifact>();
   for (const value of root.artifacts) {
@@ -594,5 +607,5 @@ export const validateDataset = (value: unknown) => {
     revisions.get(capture.artifactId)!.map((revision) => observation(revision, capture, artifacts.get(capture.artifactId)!))));
   validateAbsences(observations, new Map(dataset.captures.map((capture) => [capture.id, capture])), artifacts, revisions);
   validateBridges(observations);
-  return { dataset, profiles, rightsDecisions, revisions, observations, decisions };
+  return { dataset, profiles, rightsDecisions, revisions, observations, decisions, identityLinks };
 };

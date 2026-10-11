@@ -918,3 +918,36 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
     here at pairing time, not at publication.
 - Source acquisition and qualification stay in PR B. Being able to store snaps
   doesn't qualify any source.
+
+### Review fix 5 (2026-10-10)
+
+- **Identity links:** a new append-only `predictive_profile_identity_links`
+  table (`stats_profile_id`, `bridge_profile_id`, `provider`, `decided_at`),
+  registered through the dataset's `identityLinks`. A link explicitly lets one
+  profile's player bridges in one provider namespace resolve another profile's
+  stats identities. Roster and statistics feeds can be different profiles, and
+  profile equality is never assumed.
+- **Labels:** gain `player_bridge_observation_id`. It is required for `final`,
+  optional for `provisional`, and absent for `unresolved`/`excluded` (table
+  CHECKs).
+- **Binding check 9** (`predictive_label_check`, `labels.ts`): the pinned
+  bridge revision must:
+  - be a `player-bridge` for the label's player;
+  - be usable at creation;
+  - still be its chain's head at creation, so a later correction requires a
+    new label version;
+  - be linked (by creation time) to the selected stats row's profile for its
+    provider;
+  - be unambiguous at creation: no other current head in that provider maps
+    the same raw ID to another player, or the same player from another raw ID
+    with an overlapping window;
+  - have a window containing every current schedule head's kickoff.
+
+  GSIS-native data uses roster-backed bridges whose raw ID is the GSIS ID. That
+  establishes provenance and identity coverage, not independent statistical
+  reconciliation.
+- **Mode and retention:** a synthetic bridge makes the label `synthetic-proof`.
+  Retention deletes labels that cite a deleted bridge.
+- `predictive_observation_usable(id, t)` is a shared helper using positional
+  parameters, because a column name would shadow a same-named parameter in a
+  SQL function.

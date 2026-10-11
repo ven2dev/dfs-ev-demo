@@ -38,6 +38,7 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
       "predictive_ingestion_runs",
       "predictive_observations",
       "predictive_outcome_labels",
+      "predictive_profile_identity_links",
       "predictive_retention_authorizations",
       "predictive_retention_events",
       "predictive_retention_tombstones",

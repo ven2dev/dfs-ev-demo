@@ -157,10 +157,17 @@ export type Label = {
   completionDecisionId: string; participationDecisionId: string; reconciliationDecisionId: string | null;
   selectedObservationId: string | null; eligibleFinalAt: string | null; postWindowCaptureId: string | null;
   finalizedAt: string | null; createdAt: string;
+  // The exact player-bridge revision resolving the label's player: required for
+  // final labels, optional for provisional ones, absent otherwise.
+  playerBridgeObservationId: string | null;
 };
+// An explicit permission for a bridge profile's player bridges in one provider
+// namespace to resolve identities for a stats profile's rows. Roster and
+// statistics feeds can be different profiles; equality is never assumed.
+export type IdentityLink = { id: string; statsProfileId: string; bridgeProfileId: string; provider: string; decidedAt: string };
 export type Dataset = {
   formatVersion: 2; profiles: Profile[]; rightsDecisions: RightsDecision[]; artifacts: Artifact[]; captures: Capture[];
-  decisions: Decision[]; labels: Label[];
+  decisions: Decision[]; labels: Label[]; identityLinks: IdentityLink[];
 };
 export type Observation<K extends Kind = Kind> = {
   revision: Revision<K>; capture: Capture; artifact: Artifact; entityKey: string; sourceKey: string;

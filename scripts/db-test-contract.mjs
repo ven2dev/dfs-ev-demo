@@ -43,7 +43,7 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive reconciliation decisions resolve only their exact provider heads and PostgreSQL refuses misstated evidence",
   "predictive coverage-aware absences block later cutoffs only and PostgreSQL refuses unproven disappearance",
   "predictive completion records must cite exactly the marker heads known at their decision time and state the policy outcome",
-  "predictive participation records and outcome labels enforce all eight binding checks in PostgreSQL",
+  "predictive participation records and outcome labels enforce all nine binding checks in PostgreSQL",
   "predictive feature runs are recorded after read-only computation with exact dependencies, digests and retention",
   "predictive identity bridges refuse same-source ambiguity at write and keep corrections in their chain",
   "predictive retention removes a source scope with chain descendants and derived rows, audits it and re-applies it to a restored backup",

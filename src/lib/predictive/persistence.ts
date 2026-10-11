@@ -1,7 +1,7 @@
 import type { Client } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
 import type { ArtifactStore } from "./artifacts.ts";
-import type { Artifact, Capture, Dataset, Decision, Label, Observation, Profile, RecordedRetentionEvent, Request, RetentionEvent, RetentionResult,
+import type { Artifact, Capture, Dataset, Decision, IdentityLink, Label, Observation, Profile, RecordedRetentionEvent, Request, RetentionEvent, RetentionResult,
   Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
 import { validateParticipationDecisions } from "./participation.ts";
@@ -103,7 +103,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         const { byteSize, storageRef, ...metadata } = row.artifact;
         const artifact: Artifact = { ...metadata, bytes: await artifacts.read(storageRef, metadata.sha256, byteSize) };
         // Every stored row is re-verified against its immutable source bytes.
-        const checked = validateDataset({ formatVersion: 2, profiles: [profiles.get(artifact.profileId)!], rightsDecisions: [], artifacts: [artifact], captures: [], decisions: [], labels: [] });
+        const checked = validateDataset({ formatVersion: 2, profiles: [profiles.get(artifact.profileId)!], rightsDecisions: [], artifacts: [artifact], captures: [], decisions: [], labels: [], identityLinks: [] });
         stored = { artifact, revisions: new Map(checked.revisions.get(artifact.id)!.map((revision) => [revision.id, revision])) };
         parsed.set(artifact.id, stored);
       }
@@ -200,8 +200,17 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     await client.query("INSERT INTO public.predictive_artifact_observations (artifact_id,observation_id) VALUES ($1,$2) ON CONFLICT DO NOTHING", [artifact.id, revision.id]);
   };
+  // Identity links are immutable registrations: a repeated ID must be identical.
+  const persistIdentityLink = async (link: IdentityLink) => {
+    const existing = (await client.query(`SELECT jsonb_build_object('id',id,'statsProfileId',stats_profile_id,'bridgeProfileId',bridge_profile_id,
+      'provider',provider,'decidedAt',${timestamp("decided_at")}) AS link FROM public.predictive_profile_identity_links WHERE id=$1`, [link.id])).rows[0]?.link;
+    if (existing) { if (canonical(existing) !== canonical(link)) refuse("identity-link-id-conflict"); return; }
+    await client.query(`INSERT INTO public.predictive_profile_identity_links (id,stats_profile_id,bridge_profile_id,provider,decided_at)
+      VALUES ($1,$2,$3,$4,$5)`, [link.id, link.statsProfileId, link.bridgeProfileId, link.provider, link.decidedAt]);
+  };
   const persistRegistrations = async (dataset: Dataset) => {
     for (const profile of dataset.profiles) await persistProfile(profile);
+    for (const link of dataset.identityLinks) await persistIdentityLink(link);
     // Predecessors first: a chain is inserted root to head.
     const pending = [...dataset.rightsDecisions];
     while (pending.length) {
@@ -222,12 +231,13 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const persistLabel = async (label: Label, runId: string) => {
     const columns = [label.id, label.playerId, label.gameId, label.seasonType, label.stat, label.value, label.state, label.mode, label.policyId,
       label.labelVersion, label.predecessorId, runId, label.completionDecisionId, label.participationDecisionId, label.reconciliationDecisionId,
-      label.selectedObservationId, label.eligibleFinalAt, label.postWindowCaptureId, label.finalizedAt, label.createdAt];
+      label.selectedObservationId, label.eligibleFinalAt, label.postWindowCaptureId, label.finalizedAt, label.createdAt, label.playerBridgeObservationId];
     const existing = (await client.query("SELECT id FROM public.predictive_outcome_labels WHERE id=$1", [label.id])).rows[0];
     if (existing) refuse("label-id-conflict");
     await client.query(`INSERT INTO public.predictive_outcome_labels (id,player_id,game_id,season_type,stat,value,state,mode,policy_id,label_version,
       predecessor_id,run_id,completion_decision_id,participation_decision_id,reconciliation_decision_id,selected_observation_id,eligible_final_at,
-      post_window_capture_id,finalized_at,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)`, columns);
+      post_window_capture_id,finalized_at,created_at,player_bridge_observation_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`, columns);
   };
   // The decision each published capture relied on, recorded for audit. A missing
   // decision leaves no row, and the deferred publication check refuses commit.
@@ -320,7 +330,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         try {
           const captures = dataset.captures.filter((capture) => capture.artifactId === original.id).map((capture) => ({ ...capture, state: "incomplete" as const }));
           const envelope = validateDataset({ formatVersion: 2, profiles: dataset.profiles, rightsDecisions: [],
-            artifacts: [{ ...original, bytes: "[]", sha256: digest("[]") }], captures, decisions: [], labels: [] });
+            artifacts: [{ ...original, bytes: "[]", sha256: digest("[]") }], captures, decisions: [], labels: [], identityLinks: [] });
           await artifacts.write(original.bytes, original.sha256);
           const artifact = { ...original, id: "diagnostic-artifact:" + digest(id + ":" + original.id) };
           profiles = [...envelope.profiles.values()];

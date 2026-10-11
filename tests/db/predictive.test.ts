@@ -805,7 +805,7 @@ it("predictive completion records must cite exactly the marker heads known at th
     expect(stale.player[0].exclusions).toContainEqual({ gameId: PRIOR[4], reason: "completion-conflicting" });
   });
 });
-it("predictive participation records and outcome labels enforce all eight binding checks in PostgreSQL", async () => {
+it("predictive participation records and outcome labels enforce all nine binding checks in PostgreSQL", async () => {
   await withProof(async ({ client, store }) => {
     const a = passingYardsFixture(false); await store.publish("A", a, NOW);
     const observations = validateDataset(a).observations; const t = instant(CAPTURE_A);
@@ -823,22 +823,35 @@ it("predictive participation records and outcome labels enforce all eight bindin
     addCapture(post, "post-window", JSON.parse(a.artifacts.find((value) => value.id === "A-player-game-stats")!.bytes), "2026-10-10T13:00:00.000Z");
     const AFTER_WINDOW = "2026-10-11T00:00:00.000Z";
     await store.publish("post-window", post, AFTER_WINDOW);
+    // Roster-backed bridges and the link letting them resolve this stats profile's
+    // GSIS identities. The other bridges exist only to be refused below.
+    const bridge = (id: string, data: object) => revision(id, "player-bridge", { provider: "gsis", rawPlayerId: PLAYER, playerId: PLAYER,
+      effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-01-01T00:00:00.000Z", ...data } as never);
+    const bridges = { ...emptyDataset(), ...registrations,
+      identityLinks: [{ id: "link-gsis", statsProfileId: PROFILE, bridgeProfileId: PROFILE, provider: "gsis", decidedAt: "2026-01-01T00:00:00.000Z" }] };
+    addCapture(bridges, "roster-bridges", [bridge("bridge-gsis", {}), bridge("bridge-other", { rawPlayerId: "x-2", playerId: "00-0000002" }),
+      bridge("bridge-old", { rawPlayerId: "old-id", effectiveFrom: "2025-01-01T00:00:00.000Z", effectiveTo: "2025-12-31T00:00:00.000Z" }),
+      bridge("bridge-unlinked", { provider: "other-ns" })]);
+    await store.publish("bridges", bridges, NOW);
     const provisional: Label = { id: "label-5-v1", playerId: PLAYER, gameId: PRIOR[4], seasonType: "REG", stat: "passing_yards", value: 300,
       state: "provisional", mode: "synthetic-proof", policyId: "canonical-label-finalization-v1", labelVersion: 1, predecessorId: null,
       completionDecisionId: "completion-5", participationDecisionId: "participation-5", reconciliationDecisionId: "reconciliation-5",
-      selectedObservationId: "player-synthetic-game-5", eligibleFinalAt: null, postWindowCaptureId: null, finalizedAt: null, createdAt: "2026-10-07T13:00:00.000Z" };
+      selectedObservationId: "player-synthetic-game-5", eligibleFinalAt: null, postWindowCaptureId: null, finalizedAt: null, createdAt: "2026-10-07T13:00:00.000Z",
+      playerBridgeObservationId: null };
     const final: Label = { ...provisional, id: "label-5-v2", state: "final", labelVersion: 2, predecessorId: "label-5-v1",
-      eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-post-window", finalizedAt: "2026-10-10T14:00:00.000Z", createdAt: "2026-10-10T14:00:00.000Z" };
+      eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-post-window", finalizedAt: "2026-10-10T14:00:00.000Z", createdAt: "2026-10-10T14:00:00.000Z",
+      playerBridgeObservationId: "bridge-gsis" };
     await expect(store.publish("labels-early", { ...emptyDataset(), ...registrations, labels: [provisional, final] }, NOW)).rejects.toThrow("publication-time-refused");
     await store.publish("labels", { ...emptyDataset(), ...registrations, labels: [provisional, final] }, AFTER_WINDOW);
     expect((await client.query("SELECT id, state, value FROM predictive_outcome_labels ORDER BY label_version")).rows)
       .toEqual([{ id: "label-5-v1", state: "provisional", value: 300 }, { id: "label-5-v2", state: "final", value: 300 }]);
     const insert = (label: Label) => client.query(`INSERT INTO predictive_outcome_labels (id,player_id,game_id,season_type,stat,value,state,mode,policy_id,
       label_version,predecessor_id,run_id,completion_decision_id,participation_decision_id,reconciliation_decision_id,selected_observation_id,
-      eligible_final_at,post_window_capture_id,finalized_at,created_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'labels',$12,$13,$14,$15,$16,$17,$18,$19)`,
+      eligible_final_at,post_window_capture_id,finalized_at,created_at,player_bridge_observation_id)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'labels',$12,$13,$14,$15,$16,$17,$18,$19,$20)`,
     [label.id, label.playerId, label.gameId, label.seasonType, label.stat, label.value, label.state, label.mode, label.policyId, label.labelVersion,
       label.predecessorId, label.completionDecisionId, label.participationDecisionId, label.reconciliationDecisionId, label.selectedObservationId,
-      label.eligibleFinalAt, label.postWindowCaptureId, label.finalizedAt, label.createdAt]);
+      label.eligibleFinalAt, label.postWindowCaptureId, label.finalizedAt, label.createdAt, label.playerBridgeObservationId]);
     const fresh = (label: Label): Label => ({ ...label, id: "probe", stat: "attempts", value: label.value === null ? null : 40 });
     // Valid control: a fresh attempts label under the same deferred checks.
     await sqlProbe(client, async () => { await insert(fresh(provisional)); await client.query("SET CONSTRAINTS ALL IMMEDIATE"); });
@@ -847,13 +860,16 @@ it("predictive participation records and outcome labels enforce all eight bindin
       [2, { ...fresh(provisional), state: "excluded", value: null, selectedObservationId: null, reconciliationDecisionId: null }],
       [3, { ...fresh(provisional), reconciliationDecisionId: "reconciliation-4" }],
       [4, { ...fresh(provisional), value: 41 }],
-      [5, { ...fresh(provisional), state: "final", eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-A-player-game-stats",
+      [5, { ...fresh(provisional), state: "final", playerBridgeObservationId: "bridge-gsis", eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-A-player-game-stats",
         finalizedAt: "2026-10-10T14:00:00.000Z", createdAt: "2026-10-10T14:00:00.000Z" }],
-      [6, { ...fresh(provisional), state: "final", eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-post-window",
+      [6, { ...fresh(provisional), state: "final", playerBridgeObservationId: "bridge-gsis", eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-post-window",
         finalizedAt: "2026-10-10T12:30:00.000Z", createdAt: "2026-10-10T12:30:00.000Z" }],
       // Chained to the current head but for a different stat: not the same natural key.
       [7, { ...fresh(provisional), labelVersion: 3, predecessorId: "label-5-v2" }],
       [8, { ...fresh(provisional), mode: "production-research" }],
+      [9, { ...fresh(provisional), playerBridgeObservationId: "bridge-other" }],
+      [9, { ...fresh(provisional), playerBridgeObservationId: "bridge-old" }],
+      [9, { ...fresh(provisional), playerBridgeObservationId: "bridge-unlinked" }],
     ];
     for (const [number, label] of refusals) await sqlProbe(client, async () => {
       await insert(label);
@@ -864,6 +880,29 @@ it("predictive participation records and outcome labels enforce all eight bindin
     });
     await sqlProbe(client, async () => {
       await expect(insert({ ...fresh(provisional), state: "excluded", value: 0 })).rejects.toMatchObject({ code: "23514" });
+    });
+    // A final label must pin a bridge; a valid bridge on a provisional label is accepted.
+    await sqlProbe(client, async () => {
+      await expect(insert({ ...fresh(final), predecessorId: null, labelVersion: 1, playerBridgeObservationId: null })).rejects.toMatchObject({ code: "23514" });
+    });
+    await sqlProbe(client, async () => { await insert({ ...fresh(provisional), playerBridgeObservationId: "bridge-gsis" }); await client.query("SET CONSTRAINTS ALL IMMEDIATE"); });
+    // A correction to the bridge makes it stale for labels created afterwards.
+    await sqlProbe(client, async () => {
+      await client.query(`INSERT INTO predictive_ingestion_runs (id,request_sha256,code_version,started_at,finished_at,status,budget,requests,consumed_bytes,
+        artifact_count,capture_count,row_count) VALUES ('bridge-fix',$1,'probe',$2,$2,'published','{}',0,0,1,1,1)`, ["2".repeat(64), "2026-10-09T00:00:00.000Z"]);
+      await client.query("INSERT INTO predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,2,'application/json',$2)", ["b".repeat(64), "b".repeat(64) + ".json"]);
+      await client.query(`INSERT INTO predictive_artifacts (id,blob_sha256,profile_id,retrieval_kind,origin,scope_kind)
+        VALUES ('bridge-fix-artifact',$1,$2,'full','fixture://bridge-fix','manual')`, ["b".repeat(64), PROFILE]);
+      await client.query(`INSERT INTO predictive_captures (id,run_id,artifact_id,captured_at,available_at,ingested_at,state,body_complete,header_verified,
+        parser_succeeded,parsed_rows) VALUES ('bridge-fix-capture','bridge-fix','bridge-fix-artifact',$1,$1,$1,'published',true,true,true,1)`, ["2026-10-09T00:00:00.000Z"]);
+      await insertObservation(client, "bridge-gsis-fix", "player-bridge", { provider: "gsis", rawPlayerId: PLAYER, playerId: PLAYER,
+        effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-06-01T00:00:00.000Z" }, { predecessor: "bridge-gsis" });
+      await client.query("INSERT INTO predictive_artifact_observations (artifact_id,observation_id) VALUES ('bridge-fix-artifact','bridge-gsis-fix')");
+      await client.query("INSERT INTO predictive_run_rights (run_id,rights_decision_id) VALUES ('bridge-fix',$1)", ["rights-" + PROFILE]);
+      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+      // Constraints are immediate for the rest of this transaction, so the insert itself is refused.
+      await expect(insert({ ...fresh(provisional), playerBridgeObservationId: "bridge-gsis", createdAt: "2026-10-10T14:00:00.000Z" }))
+        .rejects.toMatchObject({ code: "23514", message: "predictive-label-binding-9" });
     });
   });
 });
@@ -1018,7 +1057,8 @@ it("predictive retention removes a source scope with chain descendants and deriv
     const label: Label = { id: "label-5-v1", playerId: PLAYER, gameId: game, seasonType: "REG", stat: "passing_yards", value: 300,
       state: "provisional", mode: "synthetic-proof", policyId: "canonical-label-finalization-v1", labelVersion: 1, predecessorId: null,
       completionDecisionId: "completion-5", participationDecisionId: "participation-5", reconciliationDecisionId: "reconciliation-5",
-      selectedObservationId: "player-synthetic-game-5", eligibleFinalAt: null, postWindowCaptureId: null, finalizedAt: null, createdAt: "2026-10-07T13:00:00.000Z" };
+      selectedObservationId: "player-synthetic-game-5", eligibleFinalAt: null, postWindowCaptureId: null, finalizedAt: null, createdAt: "2026-10-07T13:00:00.000Z",
+      playerBridgeObservationId: null };
     await store.publish("labels", { ...emptyDataset(), ...registrations, labels: [label] }, NOW);
     const run = await store.replayAndRecord(request());
     if (run.status !== "recorded") throw new Error("expected a recorded run");

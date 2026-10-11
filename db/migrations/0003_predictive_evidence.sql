@@ -622,6 +622,28 @@ CREATE CONSTRAINT TRIGGER predictive_check_links AFTER INSERT ON public.predicti
 -- Cross-source decisions. A decision never edits a provider's revision; it
 -- selects among provider heads for one fact, or records a conflict. Inputs must
 -- have been usable by decided_at. Mirrors validateDecisions() in code.
+-- An explicit permission for one profile's player bridges, in one provider
+-- namespace, to resolve identities for another profile's stats rows.
+CREATE TABLE public.predictive_profile_identity_links (
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[\x01-\x1f\x7f]'),
+  stats_profile_id text NOT NULL REFERENCES public.predictive_source_profiles(id),
+  bridge_profile_id text NOT NULL REFERENCES public.predictive_source_profiles(id),
+  provider text NOT NULL CHECK (provider ~ '^[a-z0-9][a-z0-9-]{0,31}$'),
+  decided_at timestamptz NOT NULL CHECK (isfinite(decided_at) AND decided_at = date_trunc('milliseconds', decided_at)),
+  UNIQUE (stats_profile_id, bridge_profile_id, provider)
+);
+CREATE TRIGGER predictive_identity_links_immutable BEFORE UPDATE OR DELETE ON public.predictive_profile_identity_links FOR EACH ROW EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_identity_links_no_truncate BEFORE TRUNCATE ON public.predictive_profile_identity_links FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
+
+-- An observation is usable at t when a published capture of a published run made
+-- it available and ingested by t. Positional parameters: in SQL functions a
+-- column name would shadow a parameter of the same name.
+CREATE FUNCTION public.predictive_observation_usable(observation_id text, t timestamptz) RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT EXISTS (SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
+    JOIN public.predictive_ingestion_runs ru ON ru.id = c.run_id WHERE l.observation_id = $1 AND c.state = 'published'
+      AND ru.status = 'published' AND c.available_at <= $2 AND c.ingested_at <= $2)
+$$;
+
 CREATE FUNCTION public.predictive_decision_valid(kind text, outcome jsonb) RETURNS boolean
 LANGUAGE plpgsql IMMUTABLE STRICT AS $$
 BEGIN
@@ -892,7 +914,10 @@ CREATE TABLE public.predictive_outcome_labels (
   post_window_capture_id text REFERENCES public.predictive_captures(id),
   finalized_at timestamptz CHECK (isfinite(finalized_at) AND finalized_at = date_trunc('milliseconds', finalized_at)),
   created_at timestamptz NOT NULL CHECK (isfinite(created_at) AND created_at = date_trunc('milliseconds', created_at)),
+  player_bridge_observation_id text REFERENCES public.predictive_observations(id),
   UNIQUE (player_id, game_id, season_type, stat, label_version),
+  CHECK (state <> 'final' OR player_bridge_observation_id IS NOT NULL),
+  CHECK (state IN ('provisional','final') OR player_bridge_observation_id IS NULL),
   CHECK ((label_version = 1) = (predecessor_id IS NULL)),
   CHECK (predecessor_id IS DISTINCT FROM id),
   CHECK (state NOT IN ('unresolved','excluded') OR (value IS NULL AND selected_observation_id IS NULL)),
@@ -907,7 +932,8 @@ CREATE TRIGGER predictive_labels_no_truncate BEFORE TRUNCATE ON public.predictiv
 -- failure names its check: predictive-label-binding-<n>.
 CREATE FUNCTION public.predictive_label_check() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE l public.predictive_outcome_labels; c public.predictive_decisions; p public.predictive_decisions; r public.predictive_decisions;
-  s public.predictive_observations; cap public.predictive_captures; prior public.predictive_outcome_labels; field text; eligible timestamptz; synthetic boolean;
+  s public.predictive_observations; b public.predictive_observations; cap public.predictive_captures; prior public.predictive_outcome_labels;
+  field text; eligible timestamptz; synthetic boolean;
 BEGIN
   SELECT * INTO l FROM public.predictive_outcome_labels WHERE id = NEW.id;
   IF (SELECT status FROM public.predictive_ingestion_runs WHERE id = l.run_id) <> 'published' THEN
@@ -942,6 +968,39 @@ BEGIN
             AND ca.available_at <= l.created_at AND ca.ingested_at <= l.created_at) THEN
       RAISE EXCEPTION 'predictive-label-binding-4' USING ERRCODE = '23514';
     END IF;
+    -- 9 (bridge-v1, labels.ts): the pinned bridge revision maps the provider's
+    -- identity to this player; it was usable, current and unambiguous when the
+    -- label was created, effective at kickoff, and its profile is linked to the
+    -- selected row's profile for that provider.
+    IF l.player_bridge_observation_id IS NOT NULL THEN
+      SELECT * INTO b FROM public.predictive_observations WHERE id = l.player_bridge_observation_id;
+      IF b.kind IS DISTINCT FROM 'player-bridge' OR b.data->>'playerId' <> l.player_id
+          OR NOT public.predictive_observation_usable(b.id, l.created_at)
+          OR EXISTS (SELECT 1 FROM public.predictive_observations n WHERE n.predecessor_id = b.id AND public.predictive_observation_usable(n.id, l.created_at))
+          OR NOT EXISTS (SELECT 1 FROM public.predictive_profile_identity_links k WHERE k.stats_profile_id = s.profile_id
+            AND k.bridge_profile_id = b.profile_id AND k.provider = b.data->>'provider' AND k.decided_at <= l.created_at)
+          OR EXISTS (SELECT 1 FROM public.predictive_observations h WHERE h.kind = 'player-bridge' AND h.id <> b.id
+            AND h.data->>'provider' = b.data->>'provider' AND public.predictive_observation_usable(h.id, l.created_at)
+            AND NOT EXISTS (SELECT 1 FROM public.predictive_observations n WHERE n.predecessor_id = h.id AND public.predictive_observation_usable(n.id, l.created_at))
+            AND ((h.entity_key = b.entity_key AND h.data->>'playerId' <> b.data->>'playerId')
+              OR (h.entity_key <> b.entity_key AND h.data->>'playerId' = b.data->>'playerId'
+                AND (h.data->>'effectiveFrom')::timestamptz < (b.data->>'effectiveTo')::timestamptz
+                AND (b.data->>'effectiveFrom')::timestamptz < (h.data->>'effectiveTo')::timestamptz))) THEN
+        RAISE EXCEPTION 'predictive-label-binding-9' USING ERRCODE = '23514';
+      END IF;
+      -- Every current schedule head for the game puts kickoff inside the window.
+      IF NOT EXISTS (SELECT 1 FROM public.predictive_observations g WHERE g.entity_key = 'schedule:' || l.game_id
+            AND public.predictive_observation_usable(g.id, l.created_at))
+          OR EXISTS (SELECT 1 FROM public.predictive_observations g WHERE g.entity_key = 'schedule:' || l.game_id
+            AND public.predictive_observation_usable(g.id, l.created_at)
+            AND NOT EXISTS (SELECT 1 FROM public.predictive_observations n WHERE n.predecessor_id = g.id AND public.predictive_observation_usable(n.id, l.created_at))
+            AND (g.kind <> 'schedule' OR (g.data->>'kickoff')::timestamptz < (b.data->>'effectiveFrom')::timestamptz
+              OR (g.data->>'kickoff')::timestamptz >= (b.data->>'effectiveTo')::timestamptz)) THEN
+        RAISE EXCEPTION 'predictive-label-binding-9' USING ERRCODE = '23514';
+      END IF;
+    ELSIF l.state = 'final' THEN
+      RAISE EXCEPTION 'predictive-label-binding-9' USING ERRCODE = '23514';
+    END IF;
   ELSE
     IF l.value IS NOT NULL OR l.selected_observation_id IS NOT NULL THEN RAISE EXCEPTION 'predictive-label-binding-4' USING ERRCODE = '23514'; END IF;
     IF l.state = 'excluded' AND (c.outcome->>'state' <> 'completed' OR p.outcome->>'state' NOT IN ('zero-offensive-participation','inactive-or-dnp')) THEN
@@ -970,7 +1029,7 @@ BEGIN
   END IF;
   synthetic := c.mode = 'synthetic-proof' OR p.mode = 'synthetic-proof' OR coalesce(r.mode = 'synthetic-proof', false) OR EXISTS (
     SELECT 1 FROM public.predictive_observations o JOIN public.predictive_source_profiles sp ON sp.id = o.profile_id
-    WHERE o.id = l.selected_observation_id AND sp.purpose = 'synthetic-test');
+    WHERE o.id IN (l.selected_observation_id, l.player_bridge_observation_id) AND sp.purpose = 'synthetic-test');
   IF synthetic <> (l.mode = 'synthetic-proof') OR (l.mode = 'synthetic-proof' AND NOT public.predictive_harness_session()) THEN
     RAISE EXCEPTION 'predictive-label-binding-8' USING ERRCODE = '23514';
   END IF;
@@ -1221,6 +1280,7 @@ BEGIN
     labs := ARRAY(WITH RECURSIVE chain AS (
         SELECT l.id FROM public.predictive_outcome_labels l WHERE l.completion_decision_id = ANY(decs) OR l.participation_decision_id = ANY(decs)
           OR l.reconciliation_decision_id = ANY(decs) OR l.selected_observation_id = ANY(obs) OR l.post_window_capture_id = ANY(caps)
+          OR l.player_bridge_observation_id = ANY(obs)
         UNION SELECT n.id FROM public.predictive_outcome_labels n JOIN chain ON n.predecessor_id = chain.id)
       SELECT id FROM chain);
     runs := ARRAY(SELECT DISTINCT d.feature_run_id FROM public.predictive_feature_run_dependencies d
@@ -1296,7 +1356,7 @@ REVOKE ALL ON FUNCTION public.predictive_text(jsonb), public.predictive_optional
   public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check(),
   public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text),
   public.predictive_decision_current(text, timestamptz), public.predictive_label_eligible_final_at(timestamptz), public.predictive_label_check(),
-  public.predictive_snaps_valid(text, jsonb), public.predictive_unpin_check(), public.predictive_feature_run_check(), public.predictive_feature_run_expired(text, timestamptz),
+  public.predictive_snaps_valid(text, jsonb), public.predictive_observation_usable(text, timestamptz), public.predictive_unpin_check(), public.predictive_feature_run_check(), public.predictive_feature_run_expired(text, timestamptz),
   public.predictive_feature_run_dependency_guard(), public.predictive_retention_scope_valid(text, jsonb),
   public.predictive_retention_audit_immutable(),
   public.predictive_retention_execute(text, text, text, timestamptz, jsonb, text) FROM PUBLIC;
@@ -1309,11 +1369,13 @@ BEGIN
       public.predictive_rights_in_force(text, timestamptz, timestamptz), public.predictive_rights_allow(text, timestamptz, timestamptz, text),
       public.predictive_append_only(), public.predictive_rights_check(), public.predictive_publication_check(),
       public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text),
-      public.predictive_decision_current(text, timestamptz), public.predictive_label_eligible_final_at(timestamptz), public.predictive_label_check() TO predictive_ingest;
+      public.predictive_decision_current(text, timestamptz), public.predictive_label_eligible_final_at(timestamptz), public.predictive_label_check(),
+      public.predictive_observation_usable(text, timestamptz) TO predictive_ingest;
     GRANT SELECT, INSERT ON public.predictive_source_profiles, public.predictive_rights_decisions, public.predictive_blobs,
       public.predictive_ingestion_runs, public.predictive_run_rights, public.predictive_artifacts, public.predictive_captures,
       public.predictive_games, public.predictive_observations, public.predictive_artifact_observations,
-      public.predictive_decisions, public.predictive_decision_inputs, public.predictive_outcome_labels TO predictive_ingest;
+      public.predictive_decisions, public.predictive_decision_inputs, public.predictive_outcome_labels,
+      public.predictive_profile_identity_links TO predictive_ingest;
     GRANT SELECT ON public.predictive_teams TO predictive_ingest;
   END IF;
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_replay') THEN
@@ -1322,7 +1384,8 @@ BEGIN
     GRANT SELECT ON public.predictive_source_profiles, public.predictive_rights_decisions, public.predictive_blobs,
       public.predictive_ingestion_runs, public.predictive_run_rights, public.predictive_artifacts, public.predictive_captures,
       public.predictive_teams, public.predictive_games, public.predictive_observations, public.predictive_artifact_observations,
-      public.predictive_decisions, public.predictive_decision_inputs, public.predictive_outcome_labels TO predictive_replay;
+      public.predictive_decisions, public.predictive_decision_inputs, public.predictive_outcome_labels,
+      public.predictive_profile_identity_links TO predictive_replay;
   END IF;
   -- The recorder saves feature runs: it reads evidence for the deferred checks and
   -- writes only blobs and feature-run tables.

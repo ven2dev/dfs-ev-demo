@@ -9,7 +9,7 @@ import { participationHeadsAt, recordParticipation } from "../../src/lib/predict
 import { eligibleFinalAt, validateLabels } from "../../src/lib/predictive/labels.ts";
 import { featureRunRecord } from "../../src/lib/predictive/featureRuns.ts";
 import { digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader, validateRevision } from "../../src/lib/predictive/validation.ts";
-import type { Artifact, Capture, CompletionRecord, Dataset, Label, ParticipationRecord, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
+import type { Artifact, Capture, CompletionRecord, Dataset, Label, ParticipationRecord, PlayerBridge, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
 import { addCapture, artifact, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_A, CUTOFF_B, emptyDataset, gameId, membership, OPPONENT,
   passingYardsFixture, PLAYER, playerSnaps, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamSnaps, teamStats } from "./fixtures/passingYards.ts";
 
@@ -883,11 +883,18 @@ describe("participation-v1 records and canonical outcome labels", () => {
   const provisional = (): Label => ({ id: "label-5-v1", playerId: PLAYER, gameId: PRIOR[4], seasonType: "REG", stat: "passing_yards", value: 300,
     state: "provisional", mode: "synthetic-proof", policyId: "canonical-label-finalization-v1", labelVersion: 1, predecessorId: null,
     completionDecisionId: "completion-5", participationDecisionId: "participation-5", reconciliationDecisionId: "reconciliation-5",
-    selectedObservationId: "player-synthetic-game-5", eligibleFinalAt: null, postWindowCaptureId: null, finalizedAt: null, createdAt: "2026-10-07T13:00:00.000Z" });
+    selectedObservationId: "player-synthetic-game-5", eligibleFinalAt: null, postWindowCaptureId: null, finalizedAt: null, createdAt: "2026-10-07T13:00:00.000Z",
+    playerBridgeObservationId: null });
   const final = (): Label => ({ ...provisional(), id: "label-5-v2", state: "final", labelVersion: 2, predecessorId: "label-5-v1",
-    eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-post-window", finalizedAt: FINAL, createdAt: FINAL });
+    eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-post-window", finalizedAt: FINAL, createdAt: FINAL,
+    playerBridgeObservationId: "bridge-gsis" });
+  // A GSIS-native roster bridge: raw ID = GSIS ID, linked to the stats profile.
+  const bridge = (id: string, data: Partial<PlayerBridge> = {}, predecessor: string | null = null) => revision(id, "player-bridge",
+    { provider: "gsis", rawPlayerId: PLAYER, playerId: PLAYER, effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-01-01T00:00:00.000Z", ...data }, predecessor);
   const labelled = (post = POST) => {
     const dataset = passingYardsFixture(false); dataset.decisions.push(...decided(dataset));
+    addCapture(dataset, "roster-bridges", [bridge("bridge-gsis")]);
+    dataset.identityLinks.push({ id: "link-gsis", statsProfileId: PROFILE, bridgeProfileId: PROFILE, provider: "gsis", decidedAt: "2026-01-01T00:00:00.000Z" });
     // The post-window recapture reconfirms the same stats revision after the window.
     addCapture(dataset, "post-window", JSON.parse(dataset.artifacts.find((value) => value.id === "A-player-game-stats")!.bytes), post);
     return dataset;
@@ -895,7 +902,8 @@ describe("participation-v1 records and canonical outcome labels", () => {
   const check = (dataset: Dataset, labels: Label[]) => {
     const validated = validateDataset(dataset);
     validateLabels(labels, { observations: validated.observations, decisions: new Map(dataset.decisions.map((value) => [value.id, value])),
-      captures: new Map(dataset.captures.map((value) => [value.id, value])), artifactRevisions: validated.revisions, profiles: validated.profiles });
+      captures: new Map(dataset.captures.map((value) => [value.id, value])), artifactRevisions: validated.revisions, profiles: validated.profiles,
+      identityLinks: validated.identityLinks });
   };
   it.each([
     ["2026-10-07T12:00:00.000Z", "2026-10-10T12:00:00.000Z"],
@@ -944,12 +952,32 @@ describe("participation-v1 records and canonical outcome labels", () => {
   ] as const)("refuses a final label failing binding check %d", (number, makeDataset, change) => {
     expect(() => check(makeDataset(), [provisional(), change(final())])).toThrow("label-binding-" + number);
   });
+  it.each([
+    ["no bridge on a final label", (dataset: Dataset, label: Label) => { void dataset; return { ...label, playerBridgeObservationId: null }; }],
+    ["a bridge for another player", (dataset: Dataset, label: Label) => {
+      addCapture(dataset, "other-bridge", [bridge("bridge-other", { rawPlayerId: "x-2", playerId: "00-0000002" })]); return { ...label, playerBridgeObservationId: "bridge-other" }; }],
+    ["a bridge superseded before creation", (dataset: Dataset, label: Label) => {
+      addCapture(dataset, "bridge-fix", [bridge("bridge-gsis-fix", { effectiveTo: "2027-06-01T00:00:00.000Z" }, "bridge-gsis")], "2026-10-09T00:00:00.000Z"); return label; }],
+    ["a bridge whose window misses kickoff", (dataset: Dataset, label: Label) => {
+      addCapture(dataset, "old-bridge", [bridge("bridge-old", { rawPlayerId: "old-id", effectiveFrom: "2025-01-01T00:00:00.000Z", effectiveTo: "2025-12-31T00:00:00.000Z" })]);
+      return { ...label, playerBridgeObservationId: "bridge-old" }; }],
+    ["a bridge namespace without an identity link", (dataset: Dataset, label: Label) => {
+      addCapture(dataset, "unlinked", [bridge("bridge-unlinked", { provider: "other-ns" })]); return { ...label, playerBridgeObservationId: "bridge-unlinked" }; }],
+    ["an identity link decided after creation", (dataset: Dataset, label: Label) => { dataset.identityLinks[0].decidedAt = "2026-10-11T00:00:00.000Z"; return label; }],
+    ["another source mapping the same raw ID to a different player", (dataset: Dataset, label: Label) => {
+      const other = "synthetic-roster-v1"; dataset.profiles.push(profile(other)); dataset.rightsDecisions.push(rights(other));
+      addCapture(dataset, "rival-bridge", [bridge("bridge-rival", { playerId: "00-0000002" })], CAPTURE_A, other); return label; }],
+  ] as const)("refuses a final label failing binding check 9: %s", (_label, change) => {
+    const dataset = labelled(); const label = change(dataset, final());
+    expect(() => check(dataset, [provisional(), label])).toThrow("label-binding-9");
+  });
   it("labels a confirmed non-participant as excluded with no value, never as zero", () => {
     const dataset = passingYardsFixture(false); markOutForLabels(dataset);
     dataset.decisions.push(...decided(dataset).slice(0, 2));
     const excluded: Label = { ...provisional(), state: "excluded", value: null, selectedObservationId: null, reconciliationDecisionId: null };
     expect(() => check(dataset, [excluded])).not.toThrow();
     expect(() => check(dataset, [{ ...excluded, value: 0 }])).toThrow("label-binding-4");
+    expect(() => check(dataset, [{ ...excluded, playerBridgeObservationId: "bridge-gsis" }])).toThrow("label-binding-9");
     expect(() => check(labelled(), [excluded])).toThrow("label-binding-2");
   });
   const markOutForLabels = (dataset: Dataset) => {

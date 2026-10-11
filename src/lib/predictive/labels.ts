@@ -1,4 +1,4 @@
-import type { Capture, CompletionRecord, Decision, Label, Observation, ParticipationRecord, Profile, Reconciliation, Revision } from "./types.ts";
+import type { Capture, CompletionRecord, Decision, IdentityLink, Label, Observation, ParticipationRecord, Profile, Reconciliation, Revision } from "./types.ts";
 import { LABEL_STATS } from "./types.ts";
 import { markerHeadsAt } from "./completion.ts";
 import { participationHeadsAt } from "./participation.ts";
@@ -19,7 +19,7 @@ export const eligibleFinalAt = (bound: string): string => {
 
 type Context = {
   observations: Map<string, Observation>; decisions: Map<string, Decision>; captures: Map<string, Capture>;
-  artifactRevisions: Map<string, Revision[]>; profiles: Map<string, Profile>;
+  artifactRevisions: Map<string, Revision[]>; profiles: Map<string, Profile>; identityLinks: IdentityLink[];
 };
 const ids = (values: string[]) => [...values].sort(compareText).join("\n");
 const usableBy = (row: Observation, t: number) => instant(row.capture.availableAt) <= t && instant(row.capture.ingestedAt) <= t;
@@ -38,7 +38,32 @@ const scopeHeads = (decision: Decision, observations: Map<string, Observation>, 
 const current = (decision: Decision, context: Context, t: number) =>
   instant(decision.decidedAt) <= t && ids(decision.inputs.map((input) => input.observationId)) === ids(scopeHeads(decision, context.observations, t).map((row) => row.revision.id));
 
-// The eight binding checks, mirrored by predictive_label_check() in 0003.
+// Revisions usable at t with no successor usable at t, across all facts.
+const headsAt = (observations: Map<string, Observation>, t: number) => {
+  const usable = [...observations.values()].filter((row) => usableBy(row, t));
+  const superseded = new Set(usable.map((row) => row.revision.predecessorId));
+  return usable.filter((row) => !superseded.has(row.revision.id));
+};
+// 9 (bridge-v1): the pinned bridge revision maps the provider identity to this
+// player; it is usable, current and unambiguous at creation, effective at every
+// current kickoff for the game, and its profile is linked to the selected row's.
+const bridgeBinds = (label: Label, bridge: Observation | undefined, selected: Observation, context: Context, created: number) => {
+  if (!bridge || bridge.revision.kind !== "player-bridge" || bridge.revision.data.playerId !== label.playerId || !usableBy(bridge, created)) return false;
+  const data = bridge.revision.data; const from = instant(data.effectiveFrom); const to = instant(data.effectiveTo);
+  const heads = headsAt(context.observations, created);
+  if (!heads.some((row) => row.revision.id === bridge.revision.id)) return false;
+  if (!context.identityLinks.some((link) => link.statsProfileId === selected.artifact.profileId && link.bridgeProfileId === bridge.artifact.profileId &&
+      link.provider === data.provider && instant(link.decidedAt) <= created)) return false;
+  const ambiguous = heads.some((row) => row.revision.kind === "player-bridge" && row.revision.id !== bridge.revision.id && row.revision.data.provider === data.provider &&
+    ((row.entityKey === bridge.entityKey && row.revision.data.playerId !== data.playerId) || (row.entityKey !== bridge.entityKey &&
+      row.revision.data.playerId === data.playerId && instant(row.revision.data.effectiveFrom) < to && from < instant(row.revision.data.effectiveTo))));
+  if (ambiguous) return false;
+  const schedules = [...context.observations.values()].filter((row) => row.entityKey === "schedule:" + label.gameId && usableBy(row, created));
+  const current = heads.filter((row) => row.entityKey === "schedule:" + label.gameId);
+  return schedules.length > 0 && current.every((row) => row.revision.kind === "schedule" && from <= instant(row.revision.data.kickoff) && instant(row.revision.data.kickoff) < to);
+};
+
+// The nine binding checks, mirrored by predictive_label_check() in 0003.
 export const validateLabels = (labels: Label[], context: Context) => {
   const byId = new Map<string, Label>(); const successors = new Set<string>();
   for (const label of labels) { if (byId.has(label.id)) refuse("duplicate-label"); byId.set(label.id, label); }
@@ -64,8 +89,12 @@ export const validateLabels = (labels: Label[], context: Context) => {
       const selected = context.observations.get(label.selectedObservationId ?? "");
       if (!selected || selected.revision.kind !== "player-game-stats" || selected.revision.data.seasonType !== label.seasonType ||
           selected.revision.data[field] === null || selected.revision.data[field] !== label.value || !usableBy(selected, created)) fail(4);
+      if (label.playerBridgeObservationId !== null) {
+        if (!bridgeBinds(label, context.observations.get(label.playerBridgeObservationId), selected!, context, created)) fail(9);
+      } else if (label.state === "final") fail(9);
     } else {
       if (label.value !== null || label.selectedObservationId !== null) fail(4);
+      if (label.playerBridgeObservationId !== null) fail(9);
       if (label.state === "excluded" && (completion!.outcome.state !== "completed" ||
           !["zero-offensive-participation", "inactive-or-dnp"].includes(participation!.outcome.state))) fail(2);
     }
@@ -89,9 +118,9 @@ export const validateLabels = (labels: Label[], context: Context) => {
     }
     // 8: synthetic evidence anywhere in the label makes it synthetic-proof.
     const cited = [completion, participation, context.decisions.get(label.reconciliationDecisionId ?? "")].filter((value): value is Decision => !!value);
-    const selectedRow = context.observations.get(label.selectedObservationId ?? "");
+    const evidenceRows = [label.selectedObservationId, label.playerBridgeObservationId].flatMap((id) => context.observations.get(id ?? "") ?? []);
     const synthetic = cited.some((decision) => decision.mode === "synthetic-proof") ||
-      (selectedRow !== undefined && context.profiles.get(selectedRow.artifact.profileId)?.purpose === "synthetic-test");
+      evidenceRows.some((row) => context.profiles.get(row.artifact.profileId)?.purpose === "synthetic-test");
     if (synthetic !== (label.mode === "synthetic-proof")) fail(8);
   }
 };
