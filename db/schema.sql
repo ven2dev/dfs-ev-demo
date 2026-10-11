@@ -799,8 +799,15 @@ CREATE TABLE public.predictive_artifact_observations (
 );
 CREATE INDEX predictive_artifact_observations_reverse_idx ON public.predictive_artifact_observations (observation_id, artifact_id);
 
+-- The one exception is a DELETE inside a transaction holding a retention
+-- authorization, which only predictive_retention_execute() can create.
 CREATE FUNCTION public.predictive_append_only() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN RAISE EXCEPTION 'predictive-append-only' USING ERRCODE = '23514'; END
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF EXISTS (SELECT 1 FROM public.predictive_retention_authorizations a WHERE a.txid = pg_catalog.pg_current_xact_id()) THEN RETURN OLD; END IF;
+  END IF;
+  RAISE EXCEPTION 'predictive-append-only' USING ERRCODE = '23514';
+END
 $$;
 CREATE TRIGGER predictive_profiles_immutable BEFORE UPDATE OR DELETE ON public.predictive_source_profiles FOR EACH ROW EXECUTE FUNCTION public.predictive_append_only();
 CREATE TRIGGER predictive_rights_immutable BEFORE UPDATE OR DELETE ON public.predictive_rights_decisions FOR EACH ROW EXECUTE FUNCTION public.predictive_append_only();
@@ -1407,6 +1414,169 @@ CREATE FUNCTION public.predictive_feature_run_expired(run_id text, t timestamptz
   FROM public.predictive_feature_runs f WHERE f.id = run_id
 $$;
 
+-- retention-policy-v1. Owner-run scoped deletion, outside the append-only write
+-- path. An event row is written once, complete, by predictive_retention_execute;
+-- tombstones exist only for audit_level 'full'. Neither is ever changed.
+CREATE FUNCTION public.predictive_retention_scope_valid(reason text, scope jsonb) RETURNS boolean
+LANGUAGE plpgsql IMMUTABLE AS $$
+DECLARE keys text[];
+BEGIN
+  IF jsonb_typeof(scope) <> 'object' THEN RETURN false; END IF;
+  keys := ARRAY(SELECT k FROM jsonb_object_keys(scope) k ORDER BY k COLLATE "C");
+  IF scope->>'kind' = 'feature-run-expiry' THEN
+    RETURN reason = 'expiry' AND keys = ARRAY['asOf','kind'] AND jsonb_typeof(scope->'asOf') = 'string' AND public.predictive_instant(scope->>'asOf');
+  END IF;
+  IF scope->>'kind' <> 'source' OR reason = 'expiry' OR keys <> ARRAY['capturedBefore','capturedFrom','kind','profileIds']
+      OR jsonb_typeof(scope->'profileIds') <> 'array' OR jsonb_array_length(scope->'profileIds') NOT BETWEEN 1 AND 64
+      OR EXISTS (SELECT 1 FROM jsonb_array_elements(scope->'profileIds') e WHERE jsonb_typeof(e) <> 'string')
+      OR ARRAY(SELECT e FROM jsonb_array_elements_text(scope->'profileIds') WITH ORDINALITY x(e, n) ORDER BY n)
+        <> ARRAY(SELECT DISTINCT e COLLATE "C" FROM jsonb_array_elements_text(scope->'profileIds') e ORDER BY 1) THEN
+    RETURN false;
+  END IF;
+  IF jsonb_typeof(scope->'capturedFrom') <> 'null' AND NOT (jsonb_typeof(scope->'capturedFrom') = 'string' AND public.predictive_instant(scope->>'capturedFrom')) THEN RETURN false; END IF;
+  IF jsonb_typeof(scope->'capturedBefore') <> 'null' AND NOT (jsonb_typeof(scope->'capturedBefore') = 'string' AND public.predictive_instant(scope->>'capturedBefore')) THEN RETURN false; END IF;
+  RETURN scope->>'capturedFrom' IS NULL OR scope->>'capturedBefore' IS NULL OR (scope->>'capturedFrom')::timestamptz < (scope->>'capturedBefore')::timestamptz;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END
+$$;
+
+CREATE TABLE public.predictive_retention_events (
+  id text PRIMARY KEY CHECK (length(id) BETWEEN 1 AND 256 AND id !~ '[[:cntrl:]]'),
+  reason text NOT NULL CHECK (reason IN ('expiry','rights-revoked','provider-request','owner-request')),
+  authority text NOT NULL CHECK (length(authority) BETWEEN 1 AND 256 AND authority !~ '[[:cntrl:]]'),
+  decided_at timestamptz NOT NULL CHECK (isfinite(decided_at) AND decided_at = date_trunc('milliseconds', decided_at)),
+  -- Deterministic: re-applying it to a restored backup removes the same rows.
+  scope_descriptor jsonb NOT NULL CHECK (public.predictive_retention_scope_valid(reason, scope_descriptor) IS TRUE),
+  audit_level text NOT NULL CHECK (audit_level IN ('full','digest-only')),
+  removed_counts jsonb NOT NULL CHECK (jsonb_typeof(removed_counts) = 'object'),
+  removed_ids_digest text NOT NULL CHECK (removed_ids_digest ~ '^[a-f0-9]{64}$'),
+  executed_at timestamptz NOT NULL CHECK (isfinite(executed_at) AND executed_at >= decided_at)
+);
+CREATE TABLE public.predictive_retention_tombstones (
+  retention_event_id text NOT NULL REFERENCES public.predictive_retention_events(id),
+  target_kind text NOT NULL CHECK (target_kind IN ('observation','artifact','capture','decision','label','feature-run','pin','blob')),
+  target_id text NOT NULL CHECK (length(target_id) BETWEEN 1 AND 256),
+  PRIMARY KEY (retention_event_id, target_kind, target_id)
+);
+-- Control state, not evidence: one row per executing transaction, inserted and
+-- removed by predictive_retention_execute. No role is granted any privilege.
+CREATE TABLE public.predictive_retention_authorizations (
+  txid xid8 PRIMARY KEY,
+  retention_event_id text NOT NULL
+);
+
+CREATE FUNCTION public.predictive_retention_audit_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN RAISE EXCEPTION 'predictive-append-only' USING ERRCODE = '23514'; END
+$$;
+CREATE TRIGGER predictive_retention_events_immutable BEFORE UPDATE OR DELETE ON public.predictive_retention_events FOR EACH ROW EXECUTE FUNCTION public.predictive_retention_audit_immutable();
+CREATE TRIGGER predictive_retention_tombstones_immutable BEFORE UPDATE OR DELETE ON public.predictive_retention_tombstones FOR EACH ROW EXECUTE FUNCTION public.predictive_retention_audit_immutable();
+CREATE TRIGGER predictive_retention_events_no_truncate BEFORE TRUNCATE ON public.predictive_retention_events FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_retention_audit_immutable();
+CREATE TRIGGER predictive_retention_tombstones_no_truncate BEFORE TRUNCATE ON public.predictive_retention_tombstones FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_retention_audit_immutable();
+
+-- Computes the deletion closure and removes it in dependency order:
+--   1. observations in scope plus every descendant in their source chains;
+--   2. their links, then the artifacts in scope with all their captures;
+--   3. decisions with any deleted input, plus their descendants;
+--   4. labels citing any deleted decision, observation or capture, plus later versions;
+--   5. feature runs depending on any of the above (or expired), with dependencies, pins, unpins;
+--   6. blobs no longer referenced by any artifact or feature run.
+-- Ordinary foreign keys stay, without CASCADE: an incomplete closure fails the
+-- transaction. Blob files are removed by the owner CLI after commit.
+CREATE FUNCTION public.predictive_retention_execute(event_id text, event_reason text, event_authority text, event_decided_at timestamptz,
+  event_scope jsonb, event_audit_level text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+DECLARE
+  profiles text[]; captured_from timestamptz; captured_before timestamptz; as_of timestamptz;
+  arts text[] := '{}'; caps text[] := '{}'; obs text[] := '{}'; decs text[] := '{}'; labs text[] := '{}';
+  runs text[] := '{}'; pins text[] := '{}'; blobs text[] := '{}'; refs text[];
+  removed text[]; counts jsonb; ids_digest text; links integer; inputs integer; dependencies integer; unpins integer;
+BEGIN
+  IF NOT pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER') THEN
+    RAISE EXCEPTION 'predictive-retention-not-authorized' USING ERRCODE = '42501';
+  END IF;
+  IF event_decided_at IS NULL OR event_decided_at > pg_catalog.now() OR NOT public.predictive_retention_scope_valid(event_reason, event_scope) THEN
+    RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514';
+  END IF;
+  IF event_scope->>'kind' = 'source' THEN
+    profiles := ARRAY(SELECT jsonb_array_elements_text(event_scope->'profileIds'));
+    IF EXISTS (SELECT 1 FROM unnest(profiles) p WHERE NOT EXISTS (SELECT 1 FROM public.predictive_source_profiles sp WHERE sp.id = p)) THEN
+      RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514';
+    END IF;
+    captured_from := (event_scope->>'capturedFrom')::timestamptz; captured_before := (event_scope->>'capturedBefore')::timestamptz;
+    -- An artifact with any capture in range is removed whole, bytes and captures.
+    arts := ARRAY(SELECT DISTINCT a.id FROM public.predictive_artifacts a JOIN public.predictive_captures c ON c.artifact_id = a.id
+      WHERE a.profile_id = ANY(profiles) AND (captured_from IS NULL OR c.captured_at >= captured_from)
+        AND (captured_before IS NULL OR c.captured_at < captured_before));
+    caps := ARRAY(SELECT c.id FROM public.predictive_captures c WHERE c.artifact_id = ANY(arts));
+    obs := ARRAY(WITH RECURSIVE chain AS (
+        SELECT o.id FROM public.predictive_observations o JOIN public.predictive_artifact_observations l ON l.observation_id = o.id
+        WHERE l.artifact_id = ANY(arts) AND o.profile_id = ANY(profiles)
+        UNION SELECT n.id FROM public.predictive_observations n JOIN chain ON n.predecessor_id = chain.id)
+      SELECT id FROM chain);
+    decs := ARRAY(WITH RECURSIVE chain AS (
+        SELECT DISTINCT i.decision_id AS id FROM public.predictive_decision_inputs i WHERE i.observation_id = ANY(obs)
+        UNION SELECT n.id FROM public.predictive_decisions n JOIN chain ON n.predecessor_id = chain.id)
+      SELECT id FROM chain);
+    labs := ARRAY(WITH RECURSIVE chain AS (
+        SELECT l.id FROM public.predictive_outcome_labels l WHERE l.completion_decision_id = ANY(decs) OR l.participation_decision_id = ANY(decs)
+          OR l.reconciliation_decision_id = ANY(decs) OR l.selected_observation_id = ANY(obs) OR l.post_window_capture_id = ANY(caps)
+        UNION SELECT n.id FROM public.predictive_outcome_labels n JOIN chain ON n.predecessor_id = chain.id)
+      SELECT id FROM chain);
+    runs := ARRAY(SELECT DISTINCT d.feature_run_id FROM public.predictive_feature_run_dependencies d
+      WHERE d.observation_id = ANY(obs) OR d.decision_id = ANY(decs));
+  ELSE
+    as_of := (event_scope->>'asOf')::timestamptz;
+    IF as_of > pg_catalog.now() THEN RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514'; END IF;
+    runs := ARRAY(SELECT f.id FROM public.predictive_feature_runs f WHERE public.predictive_feature_run_expired(f.id, as_of));
+  END IF;
+  pins := ARRAY(SELECT p.id FROM public.predictive_feature_run_pins p WHERE p.feature_run_id = ANY(runs));
+  blobs := ARRAY(SELECT DISTINCT b.sha256 FROM public.predictive_blobs b
+    WHERE (b.sha256 IN (SELECT a.blob_sha256 FROM public.predictive_artifacts a WHERE a.id = ANY(arts))
+        OR b.sha256 IN (SELECT f.bundle_blob_sha256 FROM public.predictive_feature_runs f WHERE f.id = ANY(runs)))
+      AND NOT EXISTS (SELECT 1 FROM public.predictive_artifacts a WHERE a.blob_sha256 = b.sha256 AND NOT a.id = ANY(arts))
+      AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_runs f WHERE f.bundle_blob_sha256 = b.sha256 AND NOT f.id = ANY(runs)));
+  refs := ARRAY(SELECT b.storage_ref FROM public.predictive_blobs b WHERE b.sha256 = ANY(blobs) ORDER BY b.storage_ref COLLATE "C");
+
+  removed := ARRAY(SELECT x FROM (
+      SELECT 'observation:' || v FROM unnest(obs) v UNION ALL SELECT 'artifact:' || v FROM unnest(arts) v
+      UNION ALL SELECT 'capture:' || v FROM unnest(caps) v UNION ALL SELECT 'decision:' || v FROM unnest(decs) v
+      UNION ALL SELECT 'label:' || v FROM unnest(labs) v UNION ALL SELECT 'feature-run:' || v FROM unnest(runs) v
+      UNION ALL SELECT 'pin:' || v FROM unnest(pins) v UNION ALL SELECT 'blob:' || v FROM unnest(blobs) v) t(x) ORDER BY x COLLATE "C");
+  ids_digest := encode(sha256(convert_to(array_to_string(removed, E'\n'), 'UTF8')), 'hex');
+  SELECT count(*) INTO links FROM public.predictive_artifact_observations l WHERE l.observation_id = ANY(obs) OR l.artifact_id = ANY(arts);
+  SELECT count(*) INTO inputs FROM public.predictive_decision_inputs i WHERE i.decision_id = ANY(decs);
+  SELECT count(*) INTO dependencies FROM public.predictive_feature_run_dependencies d WHERE d.feature_run_id = ANY(runs);
+  SELECT count(*) INTO unpins FROM public.predictive_feature_run_unpins u WHERE u.pin_id = ANY(pins);
+  counts := jsonb_build_object('observations', cardinality(obs), 'artifacts', cardinality(arts), 'captures', cardinality(caps),
+    'decisions', cardinality(decs), 'labels', cardinality(labs), 'featureRuns', cardinality(runs), 'pins', cardinality(pins),
+    'blobs', cardinality(blobs), 'links', links, 'decisionInputs', inputs, 'featureRunDependencies', dependencies, 'unpins', unpins);
+
+  INSERT INTO public.predictive_retention_events (id,reason,authority,decided_at,scope_descriptor,audit_level,removed_counts,removed_ids_digest,executed_at)
+    VALUES (event_id, event_reason, event_authority, event_decided_at, event_scope, event_audit_level, counts, ids_digest, pg_catalog.now());
+  INSERT INTO public.predictive_retention_authorizations (txid, retention_event_id) VALUES (pg_catalog.pg_current_xact_id(), event_id);
+  DELETE FROM public.predictive_feature_run_unpins WHERE pin_id = ANY(pins);
+  DELETE FROM public.predictive_feature_run_pins WHERE id = ANY(pins);
+  DELETE FROM public.predictive_feature_run_dependencies WHERE feature_run_id = ANY(runs);
+  DELETE FROM public.predictive_feature_runs WHERE id = ANY(runs);
+  DELETE FROM public.predictive_outcome_labels WHERE id = ANY(labs);
+  DELETE FROM public.predictive_decision_inputs WHERE decision_id = ANY(decs);
+  DELETE FROM public.predictive_decisions WHERE id = ANY(decs);
+  DELETE FROM public.predictive_artifact_observations WHERE observation_id = ANY(obs) OR artifact_id = ANY(arts);
+  DELETE FROM public.predictive_observations WHERE id = ANY(obs);
+  DELETE FROM public.predictive_captures WHERE id = ANY(caps);
+  DELETE FROM public.predictive_artifacts WHERE id = ANY(arts);
+  DELETE FROM public.predictive_blobs WHERE sha256 = ANY(blobs);
+  IF event_audit_level = 'full' THEN
+    INSERT INTO public.predictive_retention_tombstones (retention_event_id, target_kind, target_id)
+      SELECT event_id, split_part(x, ':', 1), substr(x, length(split_part(x, ':', 1)) + 2) FROM unnest(removed) x;
+  END IF;
+  DELETE FROM public.predictive_retention_authorizations WHERE txid = pg_catalog.pg_current_xact_id();
+  -- Blob references are returned to the caller for file removal, never stored
+  -- for digest-only events.
+  RETURN jsonb_build_object('eventId', event_id, 'removedCounts', counts, 'removedIdsDigest', ids_digest, 'removedBlobRefs', to_jsonb(refs));
+END
+$$;
+
 -- Privileges. PostgreSQL grants EXECUTE on new functions to PUBLIC by default;
 -- every predictive function is revoked from PUBLIC. Role grants apply only where
 -- the roles exist (the disposable harness creates them; hosted role setup is #95).
@@ -1418,7 +1588,9 @@ REVOKE ALL ON FUNCTION public.predictive_text(jsonb), public.predictive_optional
   public.predictive_decision_valid(text, jsonb), public.predictive_decision_check(), public.predictive_absence_valid(text),
   public.predictive_decision_current(text, timestamptz), public.predictive_label_eligible_final_at(timestamptz), public.predictive_label_check(),
   public.predictive_unpin_check(), public.predictive_feature_run_check(), public.predictive_feature_run_expired(text, timestamptz),
-  public.predictive_feature_run_dependency_guard() FROM PUBLIC;
+  public.predictive_feature_run_dependency_guard(), public.predictive_retention_scope_valid(text, jsonb),
+  public.predictive_retention_audit_immutable(),
+  public.predictive_retention_execute(text, text, text, timestamptz, jsonb, text) FROM PUBLIC;
 DO $grants$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_ingest') THEN
@@ -1457,7 +1629,12 @@ BEGIN
   END IF;
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_replay') THEN
     GRANT SELECT ON public.predictive_feature_runs, public.predictive_feature_run_dependencies, public.predictive_feature_run_pins,
-      public.predictive_feature_run_unpins TO predictive_replay;
+      public.predictive_feature_run_unpins, public.predictive_retention_events TO predictive_replay;
+  END IF;
+  -- The retention owner can only execute the definer function; it holds no
+  -- table privilege, and no role holds UPDATE, DELETE or TRUNCATE.
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_retention_owner') THEN
+    GRANT EXECUTE ON FUNCTION public.predictive_retention_execute(text, text, text, timestamptz, jsonb, text) TO predictive_retention_owner;
   END IF;
 END
 $grants$;

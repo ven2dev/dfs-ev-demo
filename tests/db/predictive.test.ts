@@ -14,7 +14,7 @@ import { ingestLocalDataset } from "../../src/lib/predictive/ingest.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/completion.ts";
 import { participationHeadsAt, recordParticipation } from "../../src/lib/predictive/participation.ts";
-import type { Label } from "../../src/lib/predictive/types.ts";
+import type { Label, RecordedRetentionEvent, RetentionEvent } from "../../src/lib/predictive/types.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { runLocalProof } from "../../scripts/predictive/local.ts";
 import { digest, instant, TEAM_IDS, validateDataset } from "../../src/lib/predictive/validation.ts";
@@ -961,5 +961,166 @@ it("predictive identity bridges refuse same-source ambiguity at write and keep c
           effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-01-01T00:00:00.000Z", ...bad }, { sourceRecordId: "x" })).rejects.toMatchObject({ code: "23514" });
       });
     }
+  });
+});
+const executeSql = "SELECT predictive_retention_execute($1,$2,$3,$4,$5,$6) AS result";
+const executeParams = (event: RetentionEvent) => [event.id, event.reason, event.authority, event.decidedAt, JSON.stringify(event.scope), event.auditLevel];
+it("predictive retention removes a source scope with chain descendants and derived rows, audits it and re-applies it to a restored backup", async () => {
+  await withProof(async ({ client, store, artifacts }) => {
+    const a = passingYardsFixture(false); await store.publish("A", a, NOW);
+    const observations = validateDataset(a).observations; const t = instant(CAPTURE_A); const game = gameId(5);
+    const registrations = { profiles: a.profiles, rightsDecisions: a.rightsDecisions };
+    const statsKey = "player-game-stats:" + game + ":" + PLAYER;
+    await store.publish("decisions", { ...emptyDataset(), ...registrations, decisions: [
+      recordCompletion("completion-5", game, markerHeadsAt(observations.values(), game, t), CAPTURE_A, "synthetic-proof"),
+      recordParticipation("participation-5", game, PLAYER, participationHeadsAt(observations.values(), game, PLAYER, t), CAPTURE_A, "synthetic-proof"),
+      reconcileFact("reconciliation-5", statsKey, [...observations.values()].filter((value) => value.entityKey === statsKey), CAPTURE_A, "synthetic-proof")] }, NOW);
+    const label: Label = { id: "label-5-v1", playerId: PLAYER, gameId: game, seasonType: "REG", stat: "passing_yards", value: 300,
+      state: "provisional", mode: "synthetic-proof", policyId: "canonical-label-finalization-v1", labelVersion: 1, predecessorId: null,
+      completionDecisionId: "completion-5", participationDecisionId: "participation-5", reconciliationDecisionId: "reconciliation-5",
+      selectedObservationId: "player-synthetic-game-5", eligibleFinalAt: null, postWindowCaptureId: null, finalizedAt: null, createdAt: "2026-10-07T13:00:00.000Z" };
+    await store.publish("labels", { ...emptyDataset(), ...registrations, labels: [label] }, NOW);
+    const run = await store.replayAndRecord(request());
+    if (run.status !== "recorded") throw new Error("expected a recorded run");
+    const correction = passingYardsFixture();
+    await store.publish("B", { ...emptyDataset(), ...registrations, artifacts: correction.artifacts.filter((value) => value.id.startsWith("B-")),
+      captures: correction.captures.filter((value) => value.artifactId.startsWith("B-")) }, NOW);
+    // Another profile's evidence is outside the scope and must survive.
+    const OTHER = "synthetic-other-v1";
+    const other = { ...emptyDataset(), profiles: [profile(OTHER)], rightsDecisions: [rights(OTHER)] };
+    addCapture(other, "other", [revision("other-schedule", "schedule", schedule(81, "2026-09-14T00:15:00.000Z", "nfl:team:SEA", "nfl:team:ARI"))], CAPTURE_A, OTHER);
+    await store.publish("other", other, NOW);
+    const blobFor = async (artifact: string) => (await client.query("SELECT b.* FROM predictive_blobs b JOIN predictive_artifacts a ON a.blob_sha256=b.sha256 WHERE a.id=$1", [artifact])).rows[0];
+    const aBlob = await blobFor("A-player-game-stats"); const bBlob = await blobFor("B-player");
+    const event: RetentionEvent = { id: "retention-A", reason: "provider-request", authority: "synthetic provider removal notice", decidedAt: NOW,
+      scope: { kind: "source", profileIds: [PROFILE], capturedFrom: null, capturedBefore: CAPTURE_B }, auditLevel: "full" };
+    // The live removal, recorded and then rolled back: what remains is a backup
+    // taken before the event, to which the recorded event is re-applied.
+    let live: RecordedRetentionEvent | undefined;
+    await sqlProbe(client, async () => {
+      await client.query("SET LOCAL ROLE predictive_retention_owner");
+      await client.query(executeSql, executeParams(event));
+      await client.query("RESET ROLE");
+      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+      [live] = await store.retentionEvents();
+    });
+    expect(live).toMatchObject({ id: "retention-A", scope: event.scope, auditLevel: "full" });
+    expect(await store.retentionEvents()).toEqual([]);
+    expect(await store.reapply([live!])).toEqual([{ eventId: "retention-A", status: "reapplied", matched: true }]);
+    expect(await store.reapply([live!])).toEqual([{ eventId: "retention-A", status: "present", matched: true }]);
+    // Every A row and every descendant in its source chains is gone, with the
+    // decisions, label and feature run derived from them. B's artifacts and the
+    // other profile's evidence remain.
+    const ids = async (table: string) => (await client.query(`SELECT id FROM ${table} ORDER BY id COLLATE "C"`)).rows.map((row) => row.id);
+    expect(await ids("predictive_observations")).toEqual(["other-schedule"]);
+    expect(await ids("predictive_artifacts")).toEqual(["B-player", "B-team", "other"]);
+    for (const table of ["predictive_decisions", "predictive_outcome_labels", "predictive_feature_runs"]) expect(await ids(table)).toEqual([]);
+    expect((await client.query("SELECT count(*)::integer AS count FROM predictive_decision_inputs")).rows[0].count).toBe(0);
+    const recorded = (await store.retentionEvents())[0];
+    expect(recorded.removedCounts).toMatchObject({ observations: rowsOf(a).length + 2, artifacts: a.artifacts.length, captures: a.captures.length,
+      decisions: 3, labels: 1, featureRuns: 1 });
+    const tombstones = (await client.query("SELECT target_kind || ':' || target_id AS id FROM predictive_retention_tombstones ORDER BY target_kind || ':' || target_id COLLATE \"C\"")).rows.map((row) => row.id);
+    expect(tombstones).toEqual(expect.arrayContaining(["observation:player-correction-B", "decision:completion-5", "label:label-5-v1", "feature-run:" + run.featureRunId]));
+    expect(recorded.removedIdsDigest).toBe(digest(tombstones.join("\n")));
+    // Blob files go after commit; a blob still referenced elsewhere stays.
+    await expect(artifacts.read(aBlob.storage_ref, aBlob.sha256, aBlob.byte_size)).rejects.toThrow();
+    expect(await artifacts.read(bBlob.storage_ref, bBlob.sha256, bBlob.byte_size)).toContain("player-correction-B");
+    // Replay never silently substitutes what was removed.
+    const after = await store.replay(request());
+    expect(after.status).toBe("unavailable-inputs"); expect(after.reasons).toContain("retained-evidence-removed");
+  });
+});
+it("predictive retention expires unpinned feature runs with digest-only audit and admits deletion only through the owner function", async () => {
+  await withProof(async ({ client, store, artifacts }) => {
+    const a = passingYardsFixture(); await store.publish("A", a, NOW);
+    const bundle = async (bytes: string) => {
+      const sha256 = digest(bytes); await artifacts.write(bytes, sha256);
+      await client.query("INSERT INTO predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'application/json',$3)", [sha256, Buffer.byteLength(bytes), sha256 + ".json"]);
+      return sha256;
+    };
+    const shared = await bundle('{"bundle":"shared"}'); const own = await bundle('{"bundle":"own"}');
+    const insertRun = async (id: string, blob: string, recordedAt: string) => {
+      await client.query("BEGIN");
+      await client.query(`INSERT INTO predictive_feature_runs (id,mode,feature_version,candidate,player_id,game_id,cutoff,computed_at,recorded_at,code_version,
+        status,reasons,input_digest,execution_digest,bundle_blob_sha256) VALUES ($1,'production-research','passing-yards-replay-v3',$2,$3,$4,$5,$5,$5,'probe',
+        'unavailable-inputs','{probe}',$6,$6,$7)`, [id, request().candidate, PLAYER, TARGET, recordedAt, "0".repeat(64), blob]);
+      await client.query("INSERT INTO predictive_feature_run_dependencies (feature_run_id,feature_definition_id) VALUES ($1,'passing-yards-replay-v3')", [id]);
+      await client.query("COMMIT");
+    };
+    await insertRun("old-unpinned", shared, "2026-01-02T00:00:00.000Z");
+    await insertRun("old-pinned", shared, "2026-01-02T00:00:00.000Z");
+    await insertRun("old-released", own, "2026-01-02T00:00:00.000Z");
+    await insertRun("recent", own, "2026-10-01T00:00:00.000Z");
+    await client.query("INSERT INTO predictive_feature_run_pins (id,feature_run_id,reason,pinned_at) VALUES ('pin-held','old-pinned','training','2026-01-03T00:00:00.000Z'),('pin-released','old-released','evaluation','2026-01-03T00:00:00.000Z')");
+    await client.query("INSERT INTO predictive_feature_run_unpins (pin_id,unpinned_at) VALUES ('pin-released','2026-02-01T00:00:00.000Z')");
+    const decidedAt = new Date(Date.now() - 60_000).toISOString();
+    const expiry: RetentionEvent = { id: "expiry-1", reason: "expiry", authority: "feature-run-retention-v1", decidedAt,
+      scope: { kind: "feature-run-expiry", asOf: decidedAt }, auditLevel: "digest-only" };
+    const result = await store.retain(expiry);
+    expect((await client.query("SELECT id FROM predictive_feature_runs ORDER BY id")).rows.map((row) => row.id)).toEqual(["old-pinned", "recent"]);
+    expect(result.removedCounts).toMatchObject({ featureRuns: 2, pins: 1, unpins: 1, featureRunDependencies: 2, blobs: 0, observations: 0 });
+    // The own blob is still used by the recent run and the shared one by the pinned run.
+    expect(result.removedBlobRefs).toEqual([]);
+    expect(result.removedIdsDigest).toBe(digest(["feature-run:old-released", "feature-run:old-unpinned", "pin:pin-released"].join("\n")));
+    // digest-only keeps counts, the digest and the descriptor, but no identifiers.
+    expect((await client.query("SELECT count(*)::integer AS count FROM predictive_retention_tombstones")).rows[0].count).toBe(0);
+    expect((await store.retentionEvents())[0]).toMatchObject({ id: "expiry-1", scope: expiry.scope, removedIdsDigest: result.removedIdsDigest });
+    await expect(store.retain(expiry)).rejects.toMatchObject({ code: "23505" });
+    // Once the last referencing run expires, the blob row and file go too.
+    await client.query("INSERT INTO predictive_feature_run_unpins (pin_id,unpinned_at) VALUES ('pin-held','2026-02-01T00:00:00.000Z')");
+    const second = await store.retain({ ...expiry, id: "expiry-2" });
+    expect(second.removedBlobRefs).toEqual([shared + ".json"]);
+    await expect(artifacts.read(shared + ".json", shared, 19)).rejects.toThrow();
+    expect(await artifacts.read(own + ".json", own, Buffer.byteLength('{"bundle":"own"}'))).toBe('{"bundle":"own"}');
+    // Malformed or premature events are refused before anything is removed.
+    const invalid: RetentionEvent[] = [
+      { ...expiry, id: "bad-reason", reason: "owner-request" },
+      { ...expiry, id: "bad-time", decidedAt: "2999-01-01T00:00:00.000Z", scope: { kind: "feature-run-expiry", asOf: "2999-01-01T00:00:00.000Z" } },
+      { ...expiry, id: "bad-profile", reason: "owner-request", scope: { kind: "source", profileIds: ["unknown-profile"], capturedFrom: null, capturedBefore: null } },
+      { ...expiry, id: "bad-order", reason: "owner-request", scope: { kind: "source", profileIds: [PROFILE, "a-profile"], capturedFrom: null, capturedBefore: null } },
+      { ...expiry, id: "bad-range", reason: "owner-request", scope: { kind: "source", profileIds: [PROFILE], capturedFrom: CAPTURE_B, capturedBefore: CAPTURE_A } },
+    ];
+    for (const event of invalid) await expect(store.retain(event), event.id).rejects.toMatchObject({ code: "23514", message: "predictive-retention-invalid" });
+    // Only the retention owner may execute; it holds no table privilege itself.
+    const denied = { code: "42501" };
+    for (const role of ["predictive_ingest", "predictive_replay", "predictive_recorder"]) {
+      await sqlProbe(client, async () => {
+        await client.query(`SET LOCAL ROLE ${role}`);
+        await expect(client.query(executeSql, executeParams({ ...expiry, id: "probe" })), role).rejects.toMatchObject(denied);
+      });
+      await sqlProbe(client, async () => {
+        await client.query(`SET LOCAL ROLE ${role}`);
+        await expect(client.query("INSERT INTO predictive_retention_authorizations (txid,retention_event_id) VALUES (pg_current_xact_id(),'probe')"), role).rejects.toMatchObject(denied);
+      });
+    }
+    for (const sql of ["DELETE FROM predictive_observations", "SELECT * FROM predictive_retention_events", "UPDATE predictive_retention_events SET authority='x'"]) {
+      await sqlProbe(client, async () => { await client.query("SET LOCAL ROLE predictive_retention_owner"); await expect(client.query(sql)).rejects.toMatchObject(denied); });
+    }
+    // No settable flag exists: a custom setting authorizes nothing, even for the owner.
+    const appendOnly = { code: "23514", message: "predictive-append-only" };
+    await sqlProbe(client, async () => {
+      await client.query("SET LOCAL predictive.retention = 'authorized'");
+      await expect(client.query("DELETE FROM predictive_observations WHERE id='player-correction-B'")).rejects.toMatchObject(appendOnly);
+    });
+    // Audit rows stay immutable even inside an authorized transaction.
+    for (const sql of ["DELETE FROM predictive_retention_events", "UPDATE predictive_retention_events SET authority='x'"]) {
+      await sqlProbe(client, async () => {
+        await client.query("INSERT INTO predictive_retention_authorizations (txid,retention_event_id) VALUES (pg_current_xact_id(),'probe')");
+        await expect(client.query(sql)).rejects.toMatchObject(appendOnly);
+      });
+    }
+    // The foreign keys are the backstop: an authorized deletion that omits a
+    // chain descendant or a link fails.
+    const predecessor = (await client.query("SELECT predecessor_id FROM predictive_observations WHERE id='team-correction-B'")).rows[0].predecessor_id;
+    await sqlProbe(client, async () => {
+      await client.query("INSERT INTO predictive_retention_authorizations (txid,retention_event_id) VALUES (pg_current_xact_id(),'probe')");
+      await expect(client.query("DELETE FROM predictive_observations WHERE id=$1", [predecessor])).rejects.toMatchObject({ code: "23503" });
+    });
+    await sqlProbe(client, async () => {
+      await client.query("INSERT INTO predictive_retention_authorizations (txid,retention_event_id) VALUES (pg_current_xact_id(),'probe')");
+      await client.query("DELETE FROM predictive_artifact_observations WHERE observation_id=$1", [predecessor]);
+      await client.query("DELETE FROM predictive_observations WHERE id=$1", [predecessor]);
+      await expect(client.query("SET CONSTRAINTS ALL IMMEDIATE")).rejects.toMatchObject({ code: "23503" });
+    });
   });
 });

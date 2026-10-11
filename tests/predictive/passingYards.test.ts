@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
-import { buildPassingYardsBundle } from "../../src/lib/predictive/passingYards.ts";
+import { buildPassingYardsBundle, buildPassingYardsFromReplay } from "../../src/lib/predictive/passingYards.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/completion.ts";
@@ -9,7 +9,7 @@ import { eligibleFinalAt, validateLabels } from "../../src/lib/predictive/labels
 import { featureRunRecord } from "../../src/lib/predictive/featureRuns.ts";
 import { digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader } from "../../src/lib/predictive/validation.ts";
 import type { Artifact, Capture, CompletionRecord, Dataset, Label, ParticipationRecord, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
-import { addCapture, artifact, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_A, CUTOFF_B, gameId, membership, OPPONENT,
+import { addCapture, artifact, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_A, CUTOFF_B, emptyDataset, gameId, membership, OPPONENT,
   passingYardsFixture, PLAYER, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamStats } from "./fixtures/passingYards.ts";
 
 const row = (dataset: Dataset, id: string): Revision => {
@@ -1029,5 +1029,24 @@ describe("local executable proof", () => {
   it.each(["DATABASE_URL", "MIGRATION_DATABASE_URL", "ODDS_API_KEY", "NEON_API_KEY", "FIREBASE_ADMIN_PRIVATE_KEY", "PGHOST", "GOOGLE_APPLICATION_CREDENTIALS", "TEST_DATABASE_URL"])("refuses ambient %s without echoing it", (key) => {
     const result = run({ [key]: "sensitive-test-placeholder" });
     expect(result.status).toBe(1); expect(result.stdout).toBe(""); expect(result.stderr).not.toContain("sensitive-test-placeholder");
+  });
+});
+
+describe("retention-policy-v1 replay notice", () => {
+  it("reports removed evidence for an unavailable bundle or one still reading a retained profile, and leaves others unchanged", () => {
+    const dataset = passingYardsFixture(false);
+    const replay = createReplay(dataset, CUTOFF_A, request().computedAt);
+    const ready = buildPassingYardsFromReplay(replay, request());
+    expect(ready.status).toBe("ready-inputs");
+    // An unrelated profile's removal does not affect a ready bundle.
+    expect(buildPassingYardsFromReplay({ ...replay, retentionProfiles: ["synthetic-other-v1"] }, request())).toEqual(ready);
+    // A bundle still reading a profile that lost evidence is withheld.
+    const retained = buildPassingYardsFromReplay({ ...replay, retentionProfiles: [PROFILE] }, request());
+    expect(retained).toMatchObject({ status: "unavailable-inputs", reasons: ["retained-evidence-removed"] });
+    expect(retained.inputDigest).not.toBe(ready.inputDigest);
+    // An already-unavailable bundle says removal may explain the missing inputs.
+    const empty = createReplay(emptyDataset(), CUTOFF_A, request().computedAt);
+    expect(buildPassingYardsFromReplay({ ...empty, retentionProfiles: ["synthetic-other-v1"] }, request()).reasons).toContain("retained-evidence-removed");
+    expect(buildPassingYardsFromReplay(empty, request()).reasons).not.toContain("retained-evidence-removed");
   });
 });

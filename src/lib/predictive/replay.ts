@@ -40,7 +40,9 @@ export const createReplay = (dataset: Dataset, cutoff: string, accessAt: string)
 // Persistent reads supply only validated, cutoff-visible source chains. Each
 // source chain contributes its head; one fact with several provider heads is
 // ambiguous until a reconciliation decision selects one.
-export const replayObservations = (rows: Observation[], blocked: Set<string>, decisions: Decision[] = []) => {
+// retentionProfiles names the profiles an executed source retention event may
+// have removed evidence from at or before the cutoff.
+export const replayObservations = (rows: Observation[], blocked: Set<string>, decisions: Decision[] = [], retentionProfiles: string[] = []) => {
   const active = [...validateObservations(rows).values()].filter((row) => !blocked.has(row.artifact.profileId));
   const superseded = new Set(active.map((row) => row.revision.predecessorId));
   const heads = active.filter((row) => !superseded.has(row.revision.id));
@@ -75,6 +77,7 @@ export const replayObservations = (rows: Observation[], blocked: Set<string>, de
   }
   return {
     blockedProfiles: [...blocked].sort(),
+    retentionProfiles: [...new Set(retentionProfiles)].sort(compareText),
     select: <K extends Kind>(kind: K, key: string): Selection<K> => {
       // absence-v1: a provider chain whose head is an absence withholds the fact.
       const absent = heads.filter((row) => row.revision.kind === "source-row-absent" && row.entityKey === key);

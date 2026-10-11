@@ -1,13 +1,14 @@
 import type { Client } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
 import type { ArtifactStore } from "./artifacts.ts";
-import type { Artifact, Capture, Dataset, Decision, Label, Observation, Profile, Request, Revision, RightsDecision } from "./types.ts";
+import type { Artifact, Capture, Dataset, Decision, Label, Observation, Profile, RecordedRetentionEvent, Request, RetentionEvent, RetentionResult,
+  Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
 import { validateParticipationDecisions } from "./participation.ts";
 import { featureRunRecord } from "./featureRuns.ts";
 import { buildPassingYardsFromReplay, validatePassingYardsRequest } from "./passingYards.ts";
 import { blockedProfiles, replayObservations } from "./replay.ts";
-import { canonical, digest, entityKey, instant, observation, refuse, rightsInForce, sourceKey, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
+import { canonical, compareText, digest, entityKey, instant, observation, refuse, rightsInForce, sourceKey, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
 
 export const PERSISTENCE_BOUNDS = { artifacts: 256, captures: 512, bytes: 8_000_000, rows: 8192 } as const;
 const LOCK_NAMESPACE = 520052;
@@ -350,7 +351,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     validateDecisions(decisions, visible, profileMap);
     validateCompletionDecisions(decisions, visible, profileMap);
     validateParticipationDecisions(decisions, visible, profileMap);
-    const bundle = buildPassingYardsFromReplay(replayObservations(rows, blockedProfiles(rights, profileIds, clock), decisions), request);
+    // Profiles an executed source retention event may have removed evidence from
+    // at or before the cutoff; replay reports retained-evidence-removed for them.
+    const retention = (await client.query(`SELECT scope_descriptor->'profileIds' AS profiles FROM public.predictive_retention_events
+      WHERE scope_descriptor->>'kind'='source' AND (scope_descriptor->>'capturedFrom' IS NULL
+        OR (scope_descriptor->>'capturedFrom')::timestamptz <= $1::timestamptz)`, [request.cutoff])).rows.flatMap((row) => row.profiles as string[]);
+    const bundle = buildPassingYardsFromReplay(replayObservations(rows, blockedProfiles(rights, profileIds, clock), decisions, retention), request);
     return { bundle, clock, rights, profileMap };
   }, true);
   const replay = async (request: Request) => (await compute(request)).bundle;
@@ -398,5 +404,41 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     try { return { status: "replayed" as const, bundle: await replay(request) }; }
     catch { return { status: "unavailable" as const, reason: "persisted-replay-unavailable" }; }
   };
-  return { publish, replay, replayAndRecord, safeReplay, recordRefusal };
+  // retention-policy-v1: one owner-run event per transaction, executed only by the
+  // definer function as predictive_retention_owner. Blob files are removed after
+  // commit, and only while no row references them (a concurrent publication may
+  // have re-added the same bytes).
+  const retain = async (event: RetentionEvent): Promise<RetentionResult> => {
+    const result = await transaction(async () => {
+      if (!(await client.query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='predictive_retention_owner'")).rows.length) refuse("retention-owner-role-unavailable");
+      await client.query("SET LOCAL ROLE predictive_retention_owner");
+      return (await client.query("SELECT public.predictive_retention_execute($1,$2,$3,$4,$5,$6) AS result",
+        [event.id, event.reason, event.authority, event.decidedAt, JSON.stringify(event.scope), event.auditLevel])).rows[0].result as RetentionResult;
+    });
+    for (const reference of result.removedBlobRefs) {
+      const sha256 = reference.slice(0, 64);
+      if ((await client.query("SELECT 1 FROM public.predictive_blobs WHERE sha256=$1", [sha256])).rows.length) continue;
+      await artifacts.remove(reference, sha256);
+    }
+    return result;
+  };
+  const retentionEvents = async (): Promise<RecordedRetentionEvent[]> => (await client.query(`SELECT id,reason,authority,${timestamp("decided_at")} AS "decidedAt",
+    scope_descriptor AS scope,audit_level AS "auditLevel",removed_counts AS "removedCounts",removed_ids_digest AS "removedIdsDigest",
+    ${timestamp("executed_at")} AS "executedAt" FROM public.predictive_retention_events ORDER BY executed_at, id COLLATE "C"`)).rows;
+  // A restored backup re-applies every retention event recorded since, oldest
+  // first, by its scope descriptor, before any read. A present event is skipped;
+  // matched is false when the backup lacked rows the original removal saw.
+  const reapply = async (events: RecordedRetentionEvent[]) => {
+    const results: { eventId: string; status: "present" | "reapplied"; matched: boolean }[] = [];
+    for (const event of [...events].sort((a, b) => instant(a.executedAt) - instant(b.executedAt) || compareText(a.id, b.id))) {
+      if ((await client.query("SELECT 1 FROM public.predictive_retention_events WHERE id=$1", [event.id])).rows.length) {
+        results.push({ eventId: event.id, status: "present", matched: true }); continue;
+      }
+      const result = await retain({ id: event.id, reason: event.reason, authority: event.authority, decidedAt: event.decidedAt, scope: event.scope, auditLevel: event.auditLevel });
+      results.push({ eventId: event.id, status: "reapplied",
+        matched: result.removedIdsDigest === event.removedIdsDigest && canonical(result.removedCounts) === canonical(event.removedCounts) });
+    }
+    return results;
+  };
+  return { publish, replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply };
 };

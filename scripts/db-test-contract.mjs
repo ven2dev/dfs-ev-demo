@@ -46,6 +46,8 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive participation records and outcome labels enforce all eight binding checks in PostgreSQL",
   "predictive feature runs are recorded after read-only computation with exact dependencies, digests and retention",
   "predictive identity bridges refuse same-source ambiguity at write and keep corrections in their chain",
+  "predictive retention removes a source scope with chain descendants and derived rows, audits it and re-applies it to a restored backup",
+  "predictive retention expires unpinned feature runs with digest-only audit and admits deletion only through the owner function",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

@@ -781,3 +781,57 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
   `resolveGame` and `replacementOf` return `identity-bridge-missing` or
   `identity-bridge-conflict` rather than picking a mapping.
 - **Games:** publishing a `game-relation` also inserts its predecessor game.
+
+### Step 10 additions (2026-10-10)
+
+- **Tables:** `predictive_retention_events`, `predictive_retention_tombstones`
+  and `predictive_retention_authorizations`, plus
+  `predictive_retention_scope_valid(reason, scope)`.
+- **Scope descriptors** (deterministic, validated in SQL):
+  - `{ kind: "source", profileIds, capturedFrom, capturedBefore }`:
+    `profileIds` is sorted, unique and registered, and the half-open capture
+    range may be open at either end. Used for `rights-revoked`,
+    `provider-request` and `owner-request`.
+  - `{ kind: "feature-run-expiry", asOf }`: used only for `expiry`.
+    `decided_at` and `asOf` can't be in the future.
+- **`predictive_retention_execute(...)`:**
+  - `SECURITY DEFINER`, `search_path = pg_catalog, pg_temp`, every reference
+    schema-qualified.
+  - Its first statement checks `pg_has_role(session_user,
+    'predictive_retention_owner', 'MEMBER')`.
+  - Revoked from PUBLIC and granted only to `predictive_retention_owner`, which
+    holds no table privilege.
+  - It computes the section 9 closure and deletes it in dependency order. An
+    artifact with any capture in range is removed whole, bytes and captures.
+- **Refinements to section 9:**
+  - **Event rows** are written once, complete with counts, digest and
+    `executed_at`, so no audit row is ever updated.
+  - **Tombstone key** is `(event, target kind, target ID)`.
+  - **Authorizations** carry no foreign key. The row is inserted and removed
+    inside the function, so nothing after it in the transaction is authorized.
+- **Append-only exception:** `predictive_append_only()` allows a DELETE only
+  while the current `pg_current_xact_id()` holds an authorization row. Audit
+  tables use their own always-refusing trigger. A custom `SET predictive.*`
+  authorizes nothing.
+- **Audit:**
+  - `removed_ids_digest` is the SHA-256 of the sorted `kind:id` lines.
+  - `full` keeps tombstones of exactly those lines; `digest-only` keeps none.
+  - Removed blob references are returned to the caller and never stored.
+- **Owner path (`store.retain`):**
+  - Executes as the owner role in one transaction.
+  - After commit, removes each returned blob file through
+    `ArtifactStore.remove`, skipping any blob a row references again.
+- **Backups:**
+  - `store.retentionEvents()` exports the recorded events.
+  - `store.reapply(events)` re-executes every missing event, oldest first, by
+    its descriptor and reports `matched`. `matched` is false when the restored
+    backup lacked rows the original removal saw.
+- **Replay:**
+  - A source event whose range starts at or before the cutoff marks its
+    profiles.
+  - A bundle that is already unavailable, or that still reads a marked
+    profile, gets `retained-evidence-removed`. Removed evidence is never
+    silently replaced by an older head.
+- **Harness note:** the disposable harness session is a superuser, so the
+  `pg_has_role` check always passes there. Role grants are what the DB cases
+  prove. Production role setup stays behind #95.

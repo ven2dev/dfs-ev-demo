@@ -225,6 +225,12 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
   base.dependencies = dependencies;
   base.dependencyAvailableAt = dependencies.length ? new Date(Math.max(...dependencies.map((row) => instant(row.availableAt)))).toISOString() : null;
   if (replay.disappearedFacts().length) reasons.add("required-input-disappeared");
+  // retention-policy-v1: removed evidence is never silently replaced. A bundle
+  // that is already unavailable, or that still reads a profile a retention event
+  // removed evidence from, says so.
+  if (replay.retentionProfiles.length && (reasons.size || dependencies.some((row) => replay.retentionProfiles.includes(row.profileId)))) {
+    reasons.add("retained-evidence-removed");
+  }
   base.participations = replay.citedParticipations().map((record) => ({ decisionId: record.id, gameId: record.entityKey.split(":")[1],
     state: record.outcome.state, decidedAt: record.decidedAt }));
   base.completions = replay.citedCompletions().map((record) => ({ decisionId: record.id, gameId: record.entityKey.slice("completion:".length),

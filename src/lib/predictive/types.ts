@@ -179,3 +179,14 @@ export type Bundle = {
   reconciliations: { decisionId: string; entityKey: string; result: Reconciliation["outcome"]["result"]; decidedAt: string }[];
   scheduleCoverage: { state: "complete" | "unverified"; missingGameIds: string[] };
 };
+
+// retention-policy-v1. The scope descriptor is deterministic, so a restored
+// backup re-applies an event by it and removes the same rows.
+export type RetentionScope = { kind: "source"; profileIds: string[]; capturedFrom: string | null; capturedBefore: string | null } |
+  { kind: "feature-run-expiry"; asOf: string };
+export type RetentionEvent = {
+  id: string; reason: "expiry" | "rights-revoked" | "provider-request" | "owner-request"; authority: string; decidedAt: string;
+  scope: RetentionScope; auditLevel: "full" | "digest-only";
+};
+export type RecordedRetentionEvent = RetentionEvent & { removedCounts: Record<string, number>; removedIdsDigest: string; executedAt: string };
+export type RetentionResult = { eventId: string; removedCounts: Record<string, number>; removedIdsDigest: string; removedBlobRefs: string[] };

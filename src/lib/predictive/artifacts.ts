@@ -8,6 +8,9 @@ import { digest, refuse } from "./validation.ts";
 export type ArtifactStore = {
   write: (bytes: string, sha256: string) => Promise<string>;
   read: (reference: string, sha256: string, byteSize: number) => Promise<string>;
+  // Retention only: removes one content-addressed file. The caller first proves
+  // the database no longer references it.
+  remove: (reference: string, sha256: string) => Promise<void>;
 };
 const repository = fileURLToPath(new URL("../../../", import.meta.url));
 const checkedDigest = (value: string) => { if (!/^[a-f0-9]{64}$/.test(value)) refuse("artifact-reference-refused"); };
@@ -57,8 +60,20 @@ export const openArtifactStore = async (directory: string, maxFileBytes = 1_000_
     if (Buffer.byteLength(bytes) !== byteSize || digest(bytes) !== sha256) refuse("artifact-integrity-failed");
     return bytes;
   };
+  const syncRoot = async () => {
+    const directory = await open(root, constants.O_RDONLY | constants.O_NOFOLLOW);
+    try { await directory.sync(); } finally { await directory.close(); }
+  };
   return {
     read,
+    remove: async (reference, sha256) => {
+      checkedDigest(sha256);
+      if (reference !== sha256 + ".json") refuse("artifact-reference-refused");
+      await checkRoot();
+      try { await unlink(join(root, reference)); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+      await syncRoot();
+    },
     write: async (bytes, sha256) => {
       checkedDigest(sha256);
       if (typeof bytes !== "string" || Buffer.byteLength(bytes) > maxFileBytes || digest(bytes) !== sha256) refuse("artifact-integrity-failed");
@@ -72,8 +87,7 @@ export const openArtifactStore = async (directory: string, maxFileBytes = 1_000_
         try { await link(temporary, join(root, reference)); }
         catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
       } finally { await unlink(temporary); }
-      const directory = await open(root, constants.O_RDONLY | constants.O_NOFOLLOW);
-      try { await directory.sync(); } finally { await directory.close(); }
+      await syncRoot();
       // An existing address must match. Never overwrite tampered stored bytes.
       await read(reference, sha256, Buffer.byteLength(bytes));
       return reference;
