@@ -50,6 +50,9 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive retention expires unpinned feature runs with digest-only audit and admits deletion only through the owner function",
   "predictive snap evidence enforces counts and missingness and snap compatibility decisions cite the complete provider overlap",
   "predictive blob cleanup and publication serialize on the blob digest in both orders and cleanup resumes after a failed removal",
+  "predictive retention drains and resumes blob removals through an execute-only non-superuser login",
+  "predictive rollback removes unpublished bytes and orphan recovery preserves committed blobs and journals",
+  "predictive final labels bind exact raw identity and retaining their bridge removes later label versions",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

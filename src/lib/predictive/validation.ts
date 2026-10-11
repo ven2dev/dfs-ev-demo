@@ -66,18 +66,18 @@ const fields: Record<Kind, string[]> = {
   schedule: ["gameId", "rawGameId", "season", "seasonType", "week", "kickoff", "rawGameday", "rawGametime",
     "homeTeamId", "awayTeamId", "rawHomeTeam", "rawAwayTeam", "rawRoof", "rawSurface", "rawStadiumId"],
   "schedule-coverage": ["teamId", "fromSeason", "throughSeason", "gameIds", "state"],
-  membership: ["gameId", "playerId", "teamId", "rawTeam", "position", "rosterStatus", "season", "seasonType", "week", "effectiveFrom", "effectiveTo"],
-  "player-game-stats": [...STATS_BASE, "playerId"],
+  membership: ["gameId", "playerId", "rawPlayerId", "playerIdProvider", "teamId", "rawTeam", "position", "rosterStatus", "season", "seasonType", "week", "effectiveFrom", "effectiveTo"],
+  "player-game-stats": [...STATS_BASE, "playerId", "rawPlayerId", "playerIdProvider"],
   "team-game-stats": STATS_BASE,
   "event-state-marker": ["gameId", "markerType", "markerValue", "terminalPlayTimeOfDay"],
-  "participation-evidence": ["gameId", "playerId", "teamId", "evidenceKind", "claim"],
-  availability: ["gameId", "playerId", "teamId", "rawReportStatus", "rawPracticeStatus", "rawDepthRank"],
+  "participation-evidence": ["gameId", "playerId", "rawPlayerId", "playerIdProvider", "teamId", "evidenceKind", "claim"],
+  availability: ["gameId", "playerId", "rawPlayerId", "playerIdProvider", "teamId", "rawReportStatus", "rawPracticeStatus", "rawDepthRank"],
   "source-row-absent": ["priorObservationId", "priorEntityKey", "coveringCaptureId", "scopeKind", "scopeSeason", "scopeWeek", "scopeGameId", "scopeFilter"],
   "team-alias": ["provider", "rawAlias", "teamId", "effectiveFromSeason", "effectiveToSeason"],
   "game-bridge": ["provider", "rawGameId", "gameId"],
   "player-bridge": ["provider", "rawPlayerId", "playerId", "effectiveFrom", "effectiveTo"],
   "game-relation": ["gameId", "predecessorGameId", "relation"],
-  "player-game-snaps": ["gameId", "rawGameId", "playerId", "teamId", "rawTeam", "season", "seasonType", "offenseSnaps", "specialTeamsSnaps",
+  "player-game-snaps": ["gameId", "rawGameId", "playerId", "rawPlayerId", "playerIdProvider", "teamId", "rawTeam", "season", "seasonType", "offenseSnaps", "specialTeamsSnaps",
     "played", "started", "routesRun", "missing"],
   "team-game-snaps": ["gameId", "rawGameId", "teamId", "rawTeam", "season", "seasonType", "offenseSnaps", "dropbacks", "playCountingDefinition", "missing"],
 };
@@ -148,6 +148,7 @@ export const validateRevision = (value: unknown): Revision => {
     if ("gameId" in data) gameIdentity(data.gameId);
   } else if (fields[kind].includes("gameId")) gameIdentity(data.gameId);
   if ("playerId" in data) playerIdentity(data.playerId);
+  if ("playerIdProvider" in data) { providerName(data.playerIdProvider); rawIdentifier(data.rawPlayerId); }
   const bridge = kind === "team-alias" || kind === "game-bridge" || kind === "player-bridge";
   for (const key of ["rawGameId", "rawTeam", "rawHomeTeam", "rawAwayTeam", "position", "rosterStatus", "markerValue"]) if (key in data && !bridge) text(data[key]);
   for (const key of ["teamId", "homeTeamId", "awayTeamId"]) if (key in data) teamIdentity(data[key]);
@@ -502,25 +503,28 @@ const validateAbsences = (observations: Map<string, Observation>, captures: Map<
   }
 };
 
-// bridge-v1, mirrored by the bridge rule in predictive_publication_check():
-// within one source, a provider's canonical player or game maps from one raw ID
-// at a time. Team aliases are many-to-one by design (LA, LAR and STL may all
-// name one franchise). Disagreement across sources is resolved at replay.
+// bridge-v1: one-to-one within a profile/provider at overlapping effective and
+// knowledge times. A later correction does not erase an earlier ambiguity.
 const validateBridges = (observations: Map<string, Observation>) => {
-  const superseded = new Set([...observations.values()].map((row) => row.revision.predecessorId));
-  const heads = [...observations.values()].filter((row) => !superseded.has(row.revision.id));
-  for (const row of heads) {
-    if (row.revision.kind !== "player-bridge" && row.revision.kind !== "game-bridge") continue;
-    const data = row.revision.data;
-    const clash = heads.some((other) => {
-      if (other === row || other.revision.kind !== row.revision.kind || other.artifact.profileId !== row.artifact.profileId) return false;
-      const theirs = other.revision.data as typeof data;
-      if (theirs.provider !== data.provider || other.entityKey === row.entityKey) return false;
-      if (row.revision.kind === "game-bridge") return (theirs as { gameId: string }).gameId === (data as { gameId: string }).gameId;
-      const mine = data as { playerId: string; effectiveFrom: string; effectiveTo: string }; const other2 = theirs as typeof mine;
-      return other2.playerId === mine.playerId && instant(other2.effectiveFrom) < instant(mine.effectiveTo) && instant(mine.effectiveFrom) < instant(other2.effectiveTo);
-    });
-    if (clash) refuse("bridge-ambiguous");
+  const knownAt = (row: Observation) => Math.max(instant(row.capture.availableAt), instant(row.capture.ingestedAt));
+  const ends = new Map<string, number>();
+  for (const row of observations.values()) if (row.revision.predecessorId) ends.set(row.revision.predecessorId, knownAt(row));
+  const rows = [...observations.values()].filter((row) => row.revision.kind === "player-bridge" || row.revision.kind === "game-bridge");
+  for (let i = 0; i < rows.length; i++) for (const other of rows.slice(i + 1)) {
+    const row = rows[i];
+    if (other.revision.kind !== row.revision.kind || other.artifact.profileId !== row.artifact.profileId ||
+        knownAt(other) >= (ends.get(row.revision.id) ?? Infinity) || knownAt(row) >= (ends.get(other.revision.id) ?? Infinity)) continue;
+    if (row.revision.kind === "game-bridge" && other.revision.kind === "game-bridge") {
+      const mine = row.revision.data; const theirs = other.revision.data;
+      if (mine.provider === theirs.provider && ((mine.rawGameId === theirs.rawGameId && mine.gameId !== theirs.gameId) ||
+          (mine.rawGameId !== theirs.rawGameId && mine.gameId === theirs.gameId))) refuse("bridge-ambiguous");
+    }
+    if (row.revision.kind === "player-bridge" && other.revision.kind === "player-bridge") {
+      const mine = row.revision.data; const theirs = other.revision.data;
+      if (mine.provider === theirs.provider && instant(theirs.effectiveFrom) < instant(mine.effectiveTo) && instant(mine.effectiveFrom) < instant(theirs.effectiveTo) &&
+          ((mine.rawPlayerId === theirs.rawPlayerId && mine.playerId !== theirs.playerId) ||
+            (mine.rawPlayerId !== theirs.rawPlayerId && mine.playerId === theirs.playerId))) refuse("bridge-ambiguous");
+    }
   }
 };
 

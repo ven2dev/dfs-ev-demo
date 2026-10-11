@@ -26,7 +26,10 @@ export type Schedule = {
 export type ScheduleCoverage = {
   teamId: string; fromSeason: number; throughSeason: number; gameIds: string[]; state: "complete" | "incomplete";
 };
-export type Membership = {
+// Exact raw identity survives normalization. The provider names the ID
+// namespace (e.g. gsis), which can differ from the feed's distributor.
+export type RawPlayerIdentity = { rawPlayerId: string; playerIdProvider: string };
+export type Membership = RawPlayerIdentity & {
   gameId: string; playerId: string; teamId: string; rawTeam: string; position: string; rosterStatus: string;
   season: number; seasonType: SeasonType; week: number; effectiveFrom: string; effectiveTo: string;
 };
@@ -34,12 +37,12 @@ export type TeamGameStats = StatValues & {
   gameId: string; rawGameId: string; teamId: string; rawTeam: string; season: number; seasonType: SeasonType;
   missing: Partial<Record<StatField, MissingReason>>;
 };
-export type PlayerGameStats = TeamGameStats & { playerId: string };
+export type PlayerGameStats = TeamGameStats & RawPlayerIdentity & { playerId: string };
 // Snap counts (approved for #49 snap share). Every nullable field carries its
 // own missing reason; a blank never becomes zero. playCountingDefinition names
 // the provider's play-counting rule, so two providers compare only when equal.
 type SnapIdentity = { gameId: string; rawGameId: string; teamId: string; rawTeam: string; season: number; seasonType: SeasonType };
-export type PlayerGameSnaps = SnapIdentity & {
+export type PlayerGameSnaps = SnapIdentity & RawPlayerIdentity & {
   playerId: string; offenseSnaps: number | null; specialTeamsSnaps: number | null; played: boolean | null; started: boolean | null;
   routesRun: number | null; missing: Partial<Record<"offenseSnaps" | "specialTeamsSnaps" | "played" | "started" | "routesRun", MissingReason>>;
 };
@@ -49,12 +52,12 @@ export type TeamGameSnaps = SnapIdentity & {
 };
 export type MarkerType = "provider-final-status" | "terminal-play" | "final-team-totals" | "suspension-notice" | "postponement-notice";
 export type EventStateMarker = { gameId: string; markerType: MarkerType; markerValue: string; terminalPlayTimeOfDay: string | null };
-export type ParticipationEvidence = {
+export type ParticipationEvidence = RawPlayerIdentity & {
   gameId: string; playerId: string; teamId: string;
   evidenceKind: "participation-feed" | "official-inactive-list" | "provider-snap-count";
   claim: "offensive-participant" | "zero-offensive-participation" | "inactive-or-dnp";
 };
-export type Availability = {
+export type Availability = RawPlayerIdentity & {
   gameId: string; playerId: string; teamId: string;
   rawReportStatus: string | null; rawPracticeStatus: string | null; rawDepthRank: number | null;
 };

@@ -8,7 +8,7 @@ import { markerHeadsAt, recordCompletion } from "../../src/lib/predictive/comple
 import { participationHeadsAt, recordParticipation } from "../../src/lib/predictive/participation.ts";
 import { eligibleFinalAt, validateLabels } from "../../src/lib/predictive/labels.ts";
 import { featureRunRecord } from "../../src/lib/predictive/featureRuns.ts";
-import { digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader, validateRevision } from "../../src/lib/predictive/validation.ts";
+import { canonical, digest, instant, RAW_ALLOWLISTS, validateDataset, validateRawHeader, validateRevision } from "../../src/lib/predictive/validation.ts";
 import type { Artifact, Capture, CompletionRecord, Dataset, Label, ParticipationRecord, PlayerBridge, Reconciliation, Revision } from "../../src/lib/predictive/types.ts";
 import { addCapture, artifact, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_A, CUTOFF_B, emptyDataset, gameId, membership, OPPONENT,
   passingYardsFixture, PLAYER, playerSnaps, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamSnaps, teamStats } from "./fixtures/passingYards.ts";
@@ -913,6 +913,31 @@ describe("participation-v1 records and canonical outcome labels", () => {
   ])("computes the operational-final time for a bound of %s", (bound, expected) => {
     expect(eligibleFinalAt(bound)).toBe(expected);
   });
+  it("binds a final label to the selected row's exact raw player and namespace", () => {
+    const rewrite = (dataset: Dataset, rawPlayerId: string, playerIdProvider = "gsis") => {
+      for (const artifact of dataset.artifacts) {
+        const rows = JSON.parse(artifact.bytes) as Revision[];
+        for (const row of rows) if (row.id === "player-synthetic-game-5" && row.kind === "player-game-stats") {
+          row.data.rawPlayerId = rawPlayerId; row.data.playerIdProvider = playerIdProvider;
+        }
+        artifact.bytes = canonical(rows); artifact.sha256 = digest(artifact.bytes);
+      }
+    };
+    // Valid control: the pinned GSIS bridge and both recaptures agree exactly.
+    expect(() => check(labelled(), [provisional(), final()])).not.toThrow();
+    for (const [raw, provider] of [["wrong-raw-player", "gsis"], [PLAYER, "other-provider"]]) {
+      const dataset = labelled(); rewrite(dataset, raw, provider);
+      expect(() => check(dataset, [provisional(), final()])).toThrow("label-binding-9");
+    }
+    // A noncanonical source is valid only with the exact matching bridge/link.
+    const dataset = labelled(); rewrite(dataset, "provider-player-123", "provider-x");
+    const bridges = dataset.artifacts.find((artifact) => artifact.id === "roster-bridges")!;
+    const rows = JSON.parse(bridges.bytes) as Revision<"player-bridge">[];
+    rows[0].data.rawPlayerId = "provider-player-123"; rows[0].data.provider = "provider-x";
+    bridges.bytes = canonical(rows); bridges.sha256 = digest(bridges.bytes);
+    dataset.identityLinks[0].provider = "provider-x";
+    expect(() => check(dataset, [provisional(), final()])).not.toThrow();
+  });
   it("records participation from the current evidence and stats heads and cites it in the bundle", () => {
     const dataset = passingYardsFixture(false);
     const record = recordParticipation("participation-5", PRIOR[4], PLAYER, participationHeadsAt(validateDataset(dataset).observations.values(), PRIOR[4], PLAYER, T), CAPTURE_A, "synthetic-proof");
@@ -1048,6 +1073,21 @@ describe("bridge-v1 identity bridges", () => {
     const games = passingYardsFixture(false);
     addCapture(games, "games", [revision("g1", "game-bridge", { provider: "provider-x", rawGameId: "evt-1", gameId: TARGET }),
       revision("g2", "game-bridge", { provider: "provider-x", rawGameId: "evt-2", gameId: TARGET })]);
+    expect(() => validateDataset(games)).toThrow("bridge-ambiguous");
+  });
+  it("refuses one raw player/game ID naming two canonical identities, including ambiguity hidden by later corrections", () => {
+    const duplicate = passingYardsFixture(false);
+    addCapture(duplicate, "bridges", [playerBridge("one", "raw-1", PLAYER), playerBridge("two", "raw-1", "00-0000002")]);
+    expect(() => validateDataset(duplicate)).toThrow("bridge-ambiguous");
+    const sequential = passingYardsFixture(false);
+    addCapture(sequential, "bridges", [playerBridge("one", "raw-1", PLAYER, "2026-01-01T00:00:00.000Z", "2026-05-01T00:00:00.000Z"),
+      playerBridge("two", "raw-1", "00-0000002", "2026-05-01T00:00:00.000Z")]);
+    expect(() => validateDataset(sequential)).not.toThrow();
+    addCapture(duplicate, "later-fix", [playerBridge("two-fix", "raw-1", PLAYER, undefined, undefined, "two")], CAPTURE_B);
+    expect(() => validateDataset(duplicate)).toThrow("bridge-ambiguous");
+    const games = passingYardsFixture(false);
+    addCapture(games, "games", [revision("one", "game-bridge", { provider: "provider-x", rawGameId: "evt-1", gameId: TARGET }),
+      revision("two", "game-bridge", { provider: "provider-x", rawGameId: "evt-1", gameId: PRIOR[0] })]);
     expect(() => validateDataset(games)).toThrow("bridge-ambiguous");
   });
   it.each([

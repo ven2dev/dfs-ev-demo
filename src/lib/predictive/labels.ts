@@ -50,13 +50,16 @@ const headsAt = (observations: Map<string, Observation>, t: number) => {
 const bridgeBinds = (label: Label, bridge: Observation | undefined, selected: Observation, context: Context, created: number) => {
   if (!bridge || bridge.revision.kind !== "player-bridge" || bridge.revision.data.playerId !== label.playerId || !usableBy(bridge, created)) return false;
   const data = bridge.revision.data; const from = instant(data.effectiveFrom); const to = instant(data.effectiveTo);
+  if (selected.revision.kind !== "player-game-stats" || selected.revision.data.rawPlayerId !== data.rawPlayerId ||
+      selected.revision.data.playerIdProvider !== data.provider || selected.revision.data.playerId !== label.playerId) return false;
   const heads = headsAt(context.observations, created);
   if (!heads.some((row) => row.revision.id === bridge.revision.id)) return false;
   if (!context.identityLinks.some((link) => link.statsProfileId === selected.artifact.profileId && link.bridgeProfileId === bridge.artifact.profileId &&
       link.provider === data.provider && instant(link.decidedAt) <= created)) return false;
   const ambiguous = heads.some((row) => row.revision.kind === "player-bridge" && row.revision.id !== bridge.revision.id && row.revision.data.provider === data.provider &&
-    ((row.entityKey === bridge.entityKey && row.revision.data.playerId !== data.playerId) || (row.entityKey !== bridge.entityKey &&
-      row.revision.data.playerId === data.playerId && instant(row.revision.data.effectiveFrom) < to && from < instant(row.revision.data.effectiveTo))));
+    instant(row.revision.data.effectiveFrom) < to && from < instant(row.revision.data.effectiveTo) &&
+    ((row.entityKey === bridge.entityKey && row.revision.data.playerId !== data.playerId) ||
+      (row.entityKey !== bridge.entityKey && row.revision.data.playerId === data.playerId)));
   if (ambiguous) return false;
   const schedules = [...context.observations.values()].filter((row) => row.entityKey === "schedule:" + label.gameId && usableBy(row, created));
   const current = heads.filter((row) => row.entityKey === "schedule:" + label.gameId);

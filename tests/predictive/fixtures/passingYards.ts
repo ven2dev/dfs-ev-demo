@@ -28,8 +28,12 @@ export const rights = (profileId = PROFILE, overrides: Partial<RightsDecision> =
 });
 export const emptyDataset = (): Dataset => ({ formatVersion: 2, profiles: [profile()], rightsDecisions: [rights()], artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] });
 
-export const revision = <K extends Kind>(id: string, kind: K, data: DataByKind[K], predecessorId: string | null = null, sourceRecordId = ""): Revision<K> => {
-  return { id, kind, sourceRecordId, data, predecessorId, correctionReason: predecessorId ? "synthetic correction" : null } as Revision<K>;
+type FixtureData<K extends Kind> = K extends "membership" | "player-game-stats" | "player-game-snaps" | "participation-evidence" | "availability"
+  ? Omit<DataByKind[K], "rawPlayerId" | "playerIdProvider"> & Partial<{ rawPlayerId: string; playerIdProvider: string }> : DataByKind[K];
+export const revision = <K extends Kind>(id: string, kind: K, data: FixtureData<K>, predecessorId: string | null = null, sourceRecordId = ""): Revision<K> => {
+  const sourceData = ["membership", "player-game-stats", "player-game-snaps", "participation-evidence", "availability"].includes(kind)
+    ? { rawPlayerId: (data as { playerId: string }).playerId, playerIdProvider: "gsis", ...data } : data;
+  return { id, kind, sourceRecordId, data: sourceData, predecessorId, correctionReason: predecessorId ? "synthetic correction" : null } as Revision<K>;
 };
 export const artifact = (id: string, rows: Revision[], profileId = PROFILE): Artifact => {
   const bytes = canonical(rows);
@@ -54,7 +58,7 @@ export const coverage = (teamId: string, gameIds: string[]): DataByKind["schedul
   teamId, fromSeason: 2024, throughSeason: 2026, gameIds: [...gameIds].sort(), state: "complete",
 });
 export const membership = (game: Schedule, overrides: Partial<Membership> = {}): Membership => ({
-  gameId: game.gameId, playerId: PLAYER, teamId: TEAM, rawTeam: "PHI", position: "QB", rosterStatus: "ACT",
+  gameId: game.gameId, playerId: PLAYER, rawPlayerId: PLAYER, playerIdProvider: "gsis", teamId: TEAM, rawTeam: "PHI", position: "QB", rosterStatus: "ACT",
   season: game.season, seasonType: game.seasonType, week: game.week,
   effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-01-01T00:00:00.000Z", ...overrides,
 });
@@ -66,9 +70,9 @@ export const teamStats = (game: Schedule, teamId: string, rawTeam: string, attem
     ...counts, attempts, passingYards, missing: {} };
 };
 export const playerStats = (game: Schedule, attempts: number | null, passingYards: number | null, teamId = TEAM, rawTeam = "PHI"): PlayerGameStats =>
-  ({ ...teamStats(game, teamId, rawTeam, attempts, passingYards), playerId: PLAYER });
+  ({ ...teamStats(game, teamId, rawTeam, attempts, passingYards), playerId: PLAYER, rawPlayerId: PLAYER, playerIdProvider: "gsis" });
 export const playerSnaps = (game: Schedule, offenseSnaps: number | null, teamId = TEAM, rawTeam = "PHI"): PlayerGameSnaps => ({
-  gameId: game.gameId, rawGameId: game.rawGameId, playerId: PLAYER, teamId, rawTeam, season: game.season, seasonType: game.seasonType,
+  gameId: game.gameId, rawGameId: game.rawGameId, playerId: PLAYER, rawPlayerId: PLAYER, playerIdProvider: "gsis", teamId, rawTeam, season: game.season, seasonType: game.seasonType,
   offenseSnaps, specialTeamsSnaps: 0, played: true, started: true, routesRun: null,
   missing: { routesRun: "source-missing", ...(offenseSnaps === null ? { offenseSnaps: "source-blank" as const } : {}) },
 });

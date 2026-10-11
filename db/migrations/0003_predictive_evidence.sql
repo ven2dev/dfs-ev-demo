@@ -127,18 +127,18 @@ BEGIN
     WHEN 'schedule' THEN ARRAY['gameId','rawGameId','season','seasonType','week','kickoff','rawGameday','rawGametime',
       'homeTeamId','awayTeamId','rawHomeTeam','rawAwayTeam','rawRoof','rawSurface','rawStadiumId']
     WHEN 'schedule-coverage' THEN ARRAY['teamId','fromSeason','throughSeason','gameIds','state']
-    WHEN 'membership' THEN ARRAY['gameId','playerId','teamId','rawTeam','position','rosterStatus','season','seasonType','week','effectiveFrom','effectiveTo']
-    WHEN 'player-game-stats' THEN stats || ARRAY['playerId']
+    WHEN 'membership' THEN ARRAY['gameId','playerId','rawPlayerId','playerIdProvider','teamId','rawTeam','position','rosterStatus','season','seasonType','week','effectiveFrom','effectiveTo']
+    WHEN 'player-game-stats' THEN stats || ARRAY['playerId','rawPlayerId','playerIdProvider']
     WHEN 'team-game-stats' THEN stats
     WHEN 'event-state-marker' THEN ARRAY['gameId','markerType','markerValue','terminalPlayTimeOfDay']
-    WHEN 'participation-evidence' THEN ARRAY['gameId','playerId','teamId','evidenceKind','claim']
-    WHEN 'availability' THEN ARRAY['gameId','playerId','teamId','rawReportStatus','rawPracticeStatus','rawDepthRank']
+    WHEN 'participation-evidence' THEN ARRAY['gameId','playerId','rawPlayerId','playerIdProvider','teamId','evidenceKind','claim']
+    WHEN 'availability' THEN ARRAY['gameId','playerId','rawPlayerId','playerIdProvider','teamId','rawReportStatus','rawPracticeStatus','rawDepthRank']
     WHEN 'source-row-absent' THEN ARRAY['priorObservationId','priorEntityKey','coveringCaptureId','scopeKind','scopeSeason','scopeWeek','scopeGameId','scopeFilter']
     WHEN 'team-alias' THEN ARRAY['provider','rawAlias','teamId','effectiveFromSeason','effectiveToSeason']
     WHEN 'game-bridge' THEN ARRAY['provider','rawGameId','gameId']
     WHEN 'player-bridge' THEN ARRAY['provider','rawPlayerId','playerId','effectiveFrom','effectiveTo']
     WHEN 'game-relation' THEN ARRAY['gameId','predecessorGameId','relation']
-    WHEN 'player-game-snaps' THEN ARRAY['gameId','rawGameId','playerId','teamId','rawTeam','season','seasonType','offenseSnaps',
+    WHEN 'player-game-snaps' THEN ARRAY['gameId','rawGameId','playerId','rawPlayerId','playerIdProvider','teamId','rawTeam','season','seasonType','offenseSnaps',
       'specialTeamsSnaps','played','started','routesRun','missing']
     WHEN 'team-game-snaps' THEN ARRAY['gameId','rawGameId','teamId','rawTeam','season','seasonType','offenseSnaps','dropbacks',
       'playCountingDefinition','missing']
@@ -152,6 +152,9 @@ BEGIN
     (SELECT array_agg(key ORDER BY key) FROM unnest(fields) key) THEN RETURN false; END IF;
   IF data ? 'gameId' AND NOT public.predictive_identity(data->'gameId', 'game') THEN RETURN false; END IF;
   IF data ? 'playerId' AND NOT public.predictive_identity(data->'playerId', 'player') THEN RETURN false; END IF;
+  IF data ? 'playerIdProvider' AND (jsonb_typeof(data->'playerIdProvider') <> 'string'
+      OR data->>'playerIdProvider' !~ '^[a-z0-9][a-z0-9-]{0,31}$'
+      OR jsonb_typeof(data->'rawPlayerId') <> 'string' OR data->>'rawPlayerId' !~ '^[A-Za-z0-9._-]{1,64}$') THEN RETURN false; END IF;
   FOREACH name IN ARRAY ARRAY['teamId','homeTeamId','awayTeamId'] LOOP
     IF data ? name AND NOT public.predictive_identity(data->name, 'team') THEN RETURN false; END IF;
   END LOOP;
@@ -581,16 +584,28 @@ BEGIN
       WHERE l.observation_id = o.id AND c.state = 'published')) THEN
     RAISE EXCEPTION 'predictive-publication-invalid' USING ERRCODE = '23514';
   END IF;
-  -- bridge-v1 (validateBridges in code): within one source, a provider's player
-  -- or game maps from one raw ID at a time; team aliases may be many-to-one.
-  IF EXISTS (SELECT 1 FROM public.predictive_observations o JOIN public.predictive_observations h
-      ON h.kind = o.kind AND h.profile_id = o.profile_id AND h.id <> o.id AND h.entity_key <> o.entity_key AND h.data->>'provider' = o.data->>'provider'
+  -- bridge-v1: both ambiguity directions, at overlapping knowledge times and
+  -- (for players) effective windows. Later corrections cannot hide old conflicts.
+  IF EXISTS (WITH known AS (
+      SELECT o.id, o.predecessor_id, min(greatest(c.available_at, c.ingested_at)) AS since
+      FROM public.predictive_observations o JOIN public.predictive_artifact_observations l ON l.observation_id = o.id
+      JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id
+      JOIN public.predictive_ingestion_runs r ON r.id = c.run_id
+      WHERE c.state = 'published' AND r.status = 'published' GROUP BY o.id, o.predecessor_id
+    ), windows AS (
+      SELECT k.id, k.since, coalesce(min(n.since), 'infinity'::timestamptz) AS until
+      FROM known k LEFT JOIN known n ON n.predecessor_id = k.id GROUP BY k.id, k.since
+    ) SELECT 1 FROM public.predictive_observations o JOIN windows ow ON ow.id = o.id
+      JOIN public.predictive_observations h ON h.kind = o.kind AND h.profile_id = o.profile_id AND h.id <> o.id
+        AND h.data->>'provider' = o.data->>'provider'
+      JOIN windows hw ON hw.id = h.id AND hw.since < ow.until AND ow.since < hw.until
       WHERE o.id = ANY(affected) AND o.kind IN ('player-bridge','game-bridge')
-        AND NOT EXISTS (SELECT 1 FROM public.predictive_observations n WHERE n.predecessor_id = h.id)
-        AND NOT EXISTS (SELECT 1 FROM public.predictive_observations n WHERE n.predecessor_id = o.id)
-        AND ((o.kind = 'game-bridge' AND h.data->>'gameId' = o.data->>'gameId')
-          OR (o.kind = 'player-bridge' AND h.data->>'playerId' = o.data->>'playerId'
-            AND h.data->>'effectiveFrom' < o.data->>'effectiveTo' AND o.data->>'effectiveFrom' < h.data->>'effectiveTo'))) THEN
+        AND ((o.kind = 'game-bridge' AND ((h.entity_key = o.entity_key AND h.game_id <> o.game_id)
+            OR (h.entity_key <> o.entity_key AND h.game_id = o.game_id)))
+          OR (o.kind = 'player-bridge' AND ((h.entity_key = o.entity_key AND h.player_id <> o.player_id)
+            OR (h.entity_key <> o.entity_key AND h.player_id = o.player_id))
+            AND (h.data->>'effectiveFrom')::timestamptz < (o.data->>'effectiveTo')::timestamptz
+            AND (o.data->>'effectiveFrom')::timestamptz < (h.data->>'effectiveTo')::timestamptz))) THEN
     RAISE EXCEPTION 'predictive-bridge-ambiguous' USING ERRCODE = '23514';
   END IF;
   IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id = ANY(affected) AND o.kind = 'source-row-absent'
@@ -978,6 +993,9 @@ BEGIN
     IF l.player_bridge_observation_id IS NOT NULL THEN
       SELECT * INTO b FROM public.predictive_observations WHERE id = l.player_bridge_observation_id;
       IF b.kind IS DISTINCT FROM 'player-bridge' OR b.data->>'playerId' <> l.player_id
+          OR b.data->>'rawPlayerId' IS DISTINCT FROM s.data->>'rawPlayerId'
+          OR b.data->>'provider' IS DISTINCT FROM s.data->>'playerIdProvider'
+          OR s.data->>'playerId' IS DISTINCT FROM l.player_id
           OR NOT public.predictive_observation_usable(b.id, l.created_at)
           OR EXISTS (SELECT 1 FROM public.predictive_observations n WHERE n.predecessor_id = b.id AND public.predictive_observation_usable(n.id, l.created_at))
           OR NOT EXISTS (SELECT 1 FROM public.predictive_profile_identity_links k WHERE k.stats_profile_id = s.profile_id
@@ -985,10 +1003,10 @@ BEGIN
           OR EXISTS (SELECT 1 FROM public.predictive_observations h WHERE h.kind = 'player-bridge' AND h.id <> b.id
             AND h.data->>'provider' = b.data->>'provider' AND public.predictive_observation_usable(h.id, l.created_at)
             AND NOT EXISTS (SELECT 1 FROM public.predictive_observations n WHERE n.predecessor_id = h.id AND public.predictive_observation_usable(n.id, l.created_at))
+            AND (h.data->>'effectiveFrom')::timestamptz < (b.data->>'effectiveTo')::timestamptz
+            AND (b.data->>'effectiveFrom')::timestamptz < (h.data->>'effectiveTo')::timestamptz
             AND ((h.entity_key = b.entity_key AND h.data->>'playerId' <> b.data->>'playerId')
-              OR (h.entity_key <> b.entity_key AND h.data->>'playerId' = b.data->>'playerId'
-                AND (h.data->>'effectiveFrom')::timestamptz < (b.data->>'effectiveTo')::timestamptz
-                AND (b.data->>'effectiveFrom')::timestamptz < (h.data->>'effectiveTo')::timestamptz))) THEN
+              OR (h.entity_key <> b.entity_key AND h.data->>'playerId' = b.data->>'playerId'))) THEN
         RAISE EXCEPTION 'predictive-label-binding-9' USING ERRCODE = '23514';
       END IF;
       -- Every current schedule head for the game puts kickoff inside the window.
@@ -1423,6 +1441,68 @@ $$;
 -- Privileges. PostgreSQL grants EXECUTE on new functions to PUBLIC by default;
 -- every predictive function is revoked from PUBLIC. Role grants apply only where
 -- the roles exist (the disposable harness creates them; hosted role setup is #95).
+-- Execute-only filesystem cleanup boundary. No retention caller receives table
+-- privileges. Rechecks and acknowledgements require the same session digest lock
+-- as publishers; a fresh READ COMMITTED statement sees a completed publisher.
+CREATE FUNCTION public.predictive_blob_reference_guard(reference text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+BEGIN
+  IF NOT (pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER')
+      OR pg_catalog.pg_has_role(session_user, 'predictive_ingest', 'MEMBER')
+      OR pg_catalog.pg_has_role(session_user, 'predictive_recorder', 'MEMBER')) THEN
+    RAISE EXCEPTION 'predictive-blob-cleanup-role-refused' USING ERRCODE = '42501';
+  END IF;
+  IF reference IS NULL OR reference !~ '^[a-f0-9]{64}\.(json|csv)$' THEN
+    RAISE EXCEPTION 'predictive-blob-reference-refused' USING ERRCODE = '23514';
+  END IF;
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'predictive-blob-cleanup-isolation-refused' USING ERRCODE = '25001';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_locks WHERE locktype = 'advisory' AND pid = pg_catalog.pg_backend_pid()
+      AND classid = 520054::oid AND objid = (('x' || substr(reference, 1, 8))::bit(32)::bigint)::oid
+      AND objsubid = 2 AND mode = 'ExclusiveLock' AND granted) THEN
+    RAISE EXCEPTION 'predictive-blob-lock-required' USING ERRCODE = '55000';
+  END IF;
+END
+$$;
+CREATE FUNCTION public.predictive_blob_referenced(reference text) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+BEGIN
+  PERFORM public.predictive_blob_reference_guard(reference);
+  RETURN EXISTS (SELECT 1 FROM public.predictive_blobs WHERE sha256 = substr(reference, 1, 64));
+END
+$$;
+CREATE FUNCTION public.predictive_pending_blob_removals() RETURNS SETOF text
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+BEGIN
+  IF NOT pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER') THEN
+    RAISE EXCEPTION 'predictive-retention-role-refused' USING ERRCODE = '42501';
+  END IF;
+  RETURN QUERY SELECT storage_ref FROM public.predictive_blob_removals ORDER BY storage_ref COLLATE "C" LIMIT 1024;
+END
+$$;
+CREATE FUNCTION public.predictive_ack_blob_removal(reference text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+BEGIN
+  IF NOT pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER') THEN
+    RAISE EXCEPTION 'predictive-retention-role-refused' USING ERRCODE = '42501';
+  END IF;
+  PERFORM public.predictive_blob_reference_guard(reference);
+  DELETE FROM public.predictive_blob_removals WHERE storage_ref = reference;
+END
+$$;
+CREATE FUNCTION public.predictive_retention_history() RETURNS SETOF public.predictive_retention_events
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+BEGIN
+  IF NOT pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER') THEN
+    RAISE EXCEPTION 'predictive-retention-role-refused' USING ERRCODE = '42501';
+  END IF;
+  RETURN QUERY SELECT * FROM public.predictive_retention_events ORDER BY executed_at, id COLLATE "C";
+END
+$$;
+REVOKE ALL ON FUNCTION public.predictive_blob_reference_guard(text), public.predictive_blob_referenced(text),
+  public.predictive_pending_blob_removals(), public.predictive_ack_blob_removal(text), public.predictive_retention_history() FROM PUBLIC;
+
 REVOKE ALL ON FUNCTION public.predictive_text(jsonb), public.predictive_optional_text(jsonb), public.predictive_instant(text),
   public.predictive_integer(jsonb, numeric, numeric), public.predictive_identity(jsonb, text), public.predictive_entity_key(text, jsonb),
   public.predictive_stats_valid(jsonb), public.predictive_payload_valid(text, jsonb), public.predictive_harness_session(),
@@ -1438,6 +1518,7 @@ REVOKE ALL ON FUNCTION public.predictive_text(jsonb), public.predictive_optional
 DO $grants$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_ingest') THEN
+    GRANT EXECUTE ON FUNCTION public.predictive_blob_referenced(text) TO predictive_ingest;
     GRANT EXECUTE ON FUNCTION public.predictive_text(jsonb), public.predictive_optional_text(jsonb), public.predictive_instant(text),
       public.predictive_integer(jsonb, numeric, numeric), public.predictive_identity(jsonb, text), public.predictive_entity_key(text, jsonb),
       public.predictive_stats_valid(jsonb), public.predictive_snaps_valid(text, jsonb), public.predictive_payload_valid(text, jsonb), public.predictive_harness_session(),
@@ -1465,6 +1546,7 @@ BEGIN
   -- The recorder saves feature runs: it reads evidence for the deferred checks and
   -- writes only blobs and feature-run tables.
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_recorder') THEN
+    GRANT EXECUTE ON FUNCTION public.predictive_blob_referenced(text) TO predictive_recorder;
     GRANT EXECUTE ON FUNCTION public.predictive_rights_in_force(text, timestamptz, timestamptz),
       public.predictive_rights_allow(text, timestamptz, timestamptz, text), public.predictive_harness_session(),
       public.predictive_decision_current(text, timestamptz), public.predictive_feature_run_expired(text, timestamptz) TO predictive_recorder;
@@ -1483,7 +1565,9 @@ BEGIN
   -- The retention owner can only execute the definer function; it holds no
   -- table privilege, and no role holds UPDATE, DELETE or TRUNCATE.
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'predictive_retention_owner') THEN
-    GRANT EXECUTE ON FUNCTION public.predictive_retention_execute(text, text, text, timestamptz, jsonb, text) TO predictive_retention_owner;
+    GRANT EXECUTE ON FUNCTION public.predictive_retention_execute(text, text, text, timestamptz, jsonb, text),
+      public.predictive_pending_blob_removals(), public.predictive_blob_referenced(text),
+      public.predictive_ack_blob_removal(text), public.predictive_retention_history() TO predictive_retention_owner;
   END IF;
 END
 $grants$;

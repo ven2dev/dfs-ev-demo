@@ -1,6 +1,6 @@
 # #52 session handoff
 
-Updated 2026-10-10 after PR A step 10. Resume from this state; do not restart the
+Updated 2026-10-11 after the second implementation review fixes. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
 ## Current state: PR A implemented, awaiting review
@@ -8,9 +8,10 @@ completed work or repeat source downloads merely to recover context.
 - Workspace: `/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo`.
 - Branch: `feature/dfsEV-52-evidence-schema`, taken from the relay WIP tip
   `1ef86ba` (the earlier synthetic-proof work was carried forward, not discarded).
-- PR A (real-source schema and replay core) was built in ten steps, then all
-  nine findings of the first Codex review were fixed (below). No PR is open. The
-  next action is the owner's second `codex review --base main`.
+- PR A (real-source schema and replay core) was built in ten steps, then the
+  first review's nine findings and second review's four P1 blockers were fixed
+  (below). The owner requested no push or PR yet. The next action is independent
+  review of these fixes, then the owner's decision on publishing PR A.
 - The approved design is [`predictive-real-source-schema.md`](predictive-real-source-schema.md)
   revision 2 and [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md)
   revision 2. Section 14 of the DDL lists what each step built and every
@@ -50,6 +51,43 @@ Validation after the fixes on Node 24.18.1: 831 jsdom + 454 Node tests; the
 complete disposable PostgreSQL suite (74 Node checks + 44 Vitest tests, all
 **27** mandatory predictive cases); typecheck, lint, CI gate, DB guards, and the
 migration and readiness checks.
+
+Second implementation review fixes (2026-10-11):
+
+1. Retention cleanup uses execute-only, role-checked definer APIs for the queue,
+   committed-reference recheck, acknowledgement and history. A real
+   non-superuser login with only retention membership proves the complete retain
+   and resume paths; direct table access remains denied.
+2. SQL-owned files move to private `.db-blobs/`, separate from archive journals.
+   Failed publication, diagnostics and feature-run recording remove unreferenced
+   final files under digest locks. An owner-run age-gated orphan sweep recovers
+   abandoned final/temp files after crashes or cleanup failure. Journals and
+   backups still need separate owner retention. Every root belongs to one
+   authoritative database and cooperating sequential sessions.
+3. Player-scoped source evidence retains its exact raw ID and ID namespace.
+   Label check 9 compares the selected stats row with its pinned bridge; a
+   profile link alone is insufficient. The reported raw-X/bridge-Y scenario is
+   refused in SQL and TypeScript.
+4. Player/game bridges reject both ambiguity directions over overlapping
+   knowledge ranges (and player effective ranges). Later corrections cannot
+   hide an earlier conflict. Pure and direct-SQL regressions include adjacent
+   effective windows and valid correction controls.
+
+The suggested retention regression also proves that deleting a cited bridge
+removes its final label and later label versions, even when the later label
+cites a different surviving bridge. Its earlier unbridged provisional label
+remains.
+
+Validation on Node 24.18.1: 831 jsdom + 457 Node tests (265 pure predictive
+cases); the full disposable PostgreSQL gate (74 Node checks + 47 Vitest tests,
+including all **30** mandatory predictive cases); typecheck, lint, CI gate, DB
+guards, migration/catalog/readiness verification, Firestore rules and zero
+production dependency vulnerabilities. The production build passes with
+`npm run build -- --webpack`; default Turbopack fails because its CSS worker
+cannot bind a local port in this execution environment. Only draft 0003 and its generated
+artifacts change; released v1/v2 stay intact. No real dev, Neon or Production
+migrations were run. See the [test reasoning review](predictive-test-review.md)
+for test oracles and crash-simulation limits.
 
 ## Owner decisions still in force
 

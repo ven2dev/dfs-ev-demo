@@ -6,6 +6,25 @@ readiness tests adjusted for v3. The governing behavior is documented in the
 [ingestion contract](predictive-ingestion.md); these tests establish synthetic
 local persistence behavior, not real-source qualification or model validity.
 
+## Second implementation review regressions (2026-10-11)
+
+These checks address the reported failures without using a shared pure function
+as their sole oracle. The mandatory database report now requires all 30
+predictive cases.
+
+| Case | Contract and independent evidence |
+| --- | --- |
+| Execute-only retention | An actual NOSUPERUSER login holds only `predictive_retention_owner`. Raw blob/queue SELECT and queue DELETE fail with `42501`; store retention removes bytes and drains the queue. Injected unlink failure leaves a committed event and queued references, and resume removes them. A missing lock, traversal reference and REPEATABLE READ snapshot fail with their specific codes. A separate root journal survives. |
+| Rollback / orphan lifecycle | Changed bytes trigger the original `observation-id-conflict`; the new digest has neither a blob row nor a file. Failures after writing, during diagnostic registration and during feature-run recording also leave no unpublished final file. A simulated process death leaves aged final/temp files; sweep removes exactly those files, preserving old committed bytes, a recent uncommitted file and a journal. This simulates abandoned filesystem state, not an actual process-kill/fsync fault. |
+| Exact raw identity | Stats raw X are attributed to canonical A, while the linked roster has Y → A. PostgreSQL rejects the label transaction specifically at check 9 and leaves no labels. X → A is the positive control. Pure checks also cover a wrong namespace and a valid noncanonical provider bridge/link. |
+| Bridge ambiguity | Pure validation and direct SQL reject both one raw ID → two canonical IDs and two raw IDs → one canonical ID for player/game bridges. Adjacent player effective windows and genuine corrections are valid controls. A conflicting historical revision followed by a later fix is rejected even though the final heads agree. |
+| Label retention closure | A final label cites the removed bridge; its successor cites a different bridge in a surviving profile. Retention removes both labels while keeping that surviving bridge and the earlier unbridged provisional label. This distinguishes transitive label-lineage deletion from direct references alone. |
+| Private database namespace | A symlinked/insecure `.db-blobs/` is refused when opened. Replacing it after registration makes reads and sweeps refuse while the original bytes remain intact. |
+
+These proofs use disposable PostgreSQL and synthetic evidence. They do not
+qualify hosted role provisioning, filesystem/backup operations under actual
+process crashes, a real provider's identity adapter, licensing or model inputs.
+
 ## PostgreSQL cases and evidence
 
 | Case | Required behavior and independent evidence |

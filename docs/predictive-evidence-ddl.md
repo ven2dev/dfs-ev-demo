@@ -1,7 +1,7 @@
 # `0003_predictive_evidence.sql`: column-level DDL, revision 2
 
 Status: **implemented in PR A** on `feature/dfsEV-52-evidence-schema` (steps 1–10
-and the first Codex review's nine fixes, 2026-10-10). Sections 1–13 are the
+and both implementation review rounds, through 2026-10-11). Sections 1–13 are the
 approved design; section 14 records what each step and review fix built and where
 it refined the design. 0003 stays in its draft reset period
 until PR A passes review (section 12).
@@ -471,7 +471,7 @@ CREATE TABLE public.predictive_retention_authorizations (  -- control state, NOT
 | `predictive_ingest` | INSERT on profiles, rights, runs, run rights, blobs, artifacts, captures, observations, links, decisions, decision inputs, labels; SELECT on those |
 | `predictive_replay` | SELECT only, used inside READ ONLY transactions |
 | `predictive_recorder` | INSERT on blobs, feature runs, dependencies, pins, unpins; SELECT where FK checks need it |
-| `predictive_retention_owner` | EXECUTE on `predictive_retention_execute` only |
+| `predictive_retention_owner` | EXECUTE on scoped retention, cleanup and history APIs only; no table grants |
 | `predictive_harness` | Disposable harness only; the membership that permits `synthetic-proof` rows |
 
 - **Every function:** `REVOKE ALL ON FUNCTION ... FROM PUBLIC`, then grant only to
@@ -1009,8 +1009,8 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
     step.
   - A crash or failed unlink leaves the row, and `store.resumeBlobRemovals()`
     retries.
-  - No orphan-file sweep: archive journals share the artifact root and have no
-    blob row.
+  - The second implementation review separates database blobs from journals and
+    adds orphan recovery, as recorded below.
   - For digest-only events, the queue briefly holds the blob reference until
     its file is removed.
 - **Proofs:**
@@ -1020,3 +1020,53 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
     committed row.
   - A failed unlink is resumed after the event has committed.
 - Each artifact root belongs to one authoritative database.
+
+### Second implementation review fixes (2026-10-11)
+
+- **Execute-only cleanup:** `predictive_pending_blob_removals()`,
+  `predictive_blob_referenced(text)`, `predictive_ack_blob_removal(text)` and
+  `predictive_retention_history()` use `SECURITY DEFINER`, qualified references,
+  fixed `pg_catalog, pg_temp` search paths and session-user membership checks.
+  PUBLIC has no execution grant. Retention still has no table privileges.
+  Reference rechecks and acknowledgements require the session's digest advisory
+  lock and READ COMMITTED isolation. Queue listing returns at most 1,024 entries;
+  resume handles one batch, so the owner repeats until empty. Ingest and recorder
+  may execute only the reference recheck needed for rollback cleanup.
+- **Blob lifecycle:** `.db-blobs/` owns SQL-managed bytes; existing private
+  archive/journal files stay at the registered root for compatibility. Root and
+  database-directory registration are checked and synced before publication.
+  Publication, diagnostic recording and feature-run recording remove unreferenced
+  files after rollback while still holding the digest lock. Temporary write
+  failures also attempt unlink. Crashes or cleanup failures are recovered by
+  `store.sweepOrphanBlobs()` with a database-clock age cutoff (24 hours by default,
+  configurable from one hour to 30 days). The sweep checks age and committed
+  references under the digest lock and only scans private digest files and
+  digest-tagged temporary files in `.db-blobs/`. Committed/recent bytes and all
+  journals are preserved. The owner handles journal and backup retention
+  separately. One authoritative database owns each root, and all writers must
+  cooperate with the lock protocol on dedicated sequential sessions.
+- **Exact player identity:** membership, player stats, player snaps,
+  participation evidence and availability require `rawPlayerId` and
+  `playerIdProvider`. The latter names the ID namespace (for example `gsis`),
+  rather than necessarily the feed distributor. Label binding check 9 compares
+  the selected stats row's raw ID and namespace to its pinned bridge, and its
+  canonical player to the label. Profile authorization remains an additional
+  check. GSIS-native data keeps its GSIS ID as the exact raw identity.
+- **Bridge ambiguity:** within one profile/provider, raw ID → different
+  canonical IDs and different raw IDs → one canonical ID are both rejected for
+  player/game bridges. Player effective ranges and revision knowledge ranges
+  must overlap for a conflict. A predecessor ends when its successor becomes
+  known; later corrections cannot hide an earlier conflict. Team aliases retain
+  their approved many-to-one behavior.
+- **Independent regressions:** a non-superuser login with retention membership
+  only completes retention and queue recovery while direct table access fails.
+  Rollback failures cover publication, diagnostics and feature runs; aged orphan
+  final/temp files are removed while committed, recent and journal bytes survive.
+  TypeScript and direct SQL reject both bridge ambiguity directions and
+  historical conflicts hidden by later corrections. The raw-X/bridge-Y label
+  scenario fails check 9. Removing a cited bridge deletes its final label and a
+  later label citing a different surviving bridge, while preserving the earlier
+  unbridged provisional label.
+- **Draft reset:** only unmerged 0003 and its generated artifacts change. Released
+  v1/v2 files/contracts and readiness minimum 2 remain intact. Only disposable
+  PostgreSQL is used; hosted roles and migrations remain gated by #95.

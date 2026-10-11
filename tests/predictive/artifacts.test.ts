@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { chmod, link, mkdir, mkdtemp, readFile, readdir, realpath, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { chmod, link, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, stat, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it } from "vitest";
@@ -36,6 +36,19 @@ it("refuses checkout roots, symlink roots and insecure directories", async () =>
   await mkdir(checkout, { mode: 0o700 });
   try { await expect(openArtifactStore(checkout)).rejects.toThrow("artifact-root-refused"); }
   finally { await rm(checkout, { recursive: true }); }
+});
+it("refuses an insecure, symlinked or replaced database blob namespace", async () => {
+  const directory = await root(); const outside = await root(); const database = join(directory, ".db-blobs");
+  await symlink(outside, database);
+  await expect(openArtifactStore(directory)).rejects.toThrow("artifact-root-refused");
+  await rm(database); await mkdir(database, { mode: 0o755 });
+  await expect(openArtifactStore(directory)).rejects.toThrow("artifact-root-refused");
+  await chmod(database, 0o700); const store = await openArtifactStore(directory); const bytes = "[]"; const sha = digest(bytes);
+  const ref = await store.database.write(bytes, sha);
+  await rename(database, join(directory, ".original-db-blobs")); await mkdir(database, { mode: 0o700 });
+  await expect(store.database.read(ref, sha, 2)).rejects.toThrow("artifact-root-refused");
+  await expect(store.database.candidates(Date.now())).rejects.toThrow("artifact-root-refused");
+  expect(await readFile(join(directory, ".original-db-blobs", ref), "utf8")).toBe(bytes);
 });
 it("refuses traversal, bad hashes, tampered bytes, missing files and public permissions", async () => {
   const directory = await root(); const store = await openArtifactStore(directory); const bytes = "[]"; const sha = digest(bytes); const ref = await store.write(bytes, sha);

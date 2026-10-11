@@ -1,4 +1,5 @@
-import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { randomBytes } from "node:crypto";
+import { mkdtemp, readdir, utimes, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "pg";
@@ -269,7 +270,7 @@ it("predictive failed and partial publication quarantine diagnostics without exp
     expect((await client.query("SELECT count(*)::integer AS count FROM predictive_artifact_observations")).rows[0].count).toBe(0);
     expect((await client.query("SELECT artifact_count,capture_count,row_count FROM predictive_ingestion_runs WHERE id='bad-schema'")).rows[0])
       .toEqual({ artifact_count: bad.artifacts.length, capture_count: bad.captures.length, row_count: 0 });
-    expect(await artifacts.read(artifact.sha256 + ".json", artifact.sha256, Buffer.byteLength(artifact.bytes))).toBe(artifact.bytes);
+    expect(await artifacts.database.read(artifact.sha256 + ".json", artifact.sha256, Buffer.byteLength(artifact.bytes))).toBe(artifact.bytes);
     await store.publish("A", passingYardsFixture(false), NOW);
     expect(await store.replay(request())).toEqual(buildPassingYardsBundle(passingYardsFixture(false), request()));
   });
@@ -436,13 +437,13 @@ it("predictive PostgreSQL enforces rights knowledge time, harness-only synthetic
 it("predictive missing or tampered artifact bytes withhold replay without replacing stored evidence", async () => {
   await withProof(async ({ store, root, client, artifacts }) => {
     const dataset = passingYardsFixture(false); await store.publish("A", dataset, NOW);
-    const artifact = dataset.artifacts.find((value) => value.id === "A-player-game-stats")!; const path = join(root, artifact.sha256 + ".json");
+    const artifact = dataset.artifacts.find((value) => value.id === "A-player-game-stats")!; const path = join(root, ".db-blobs", artifact.sha256 + ".json");
     const before = await store.replay(request()); expect(before.status).toBe("ready-inputs");
     const original = await readFile(path, "utf8"); const tampered = original.replace('"passingYards":50', '"passingYards":51');
     expect(tampered).not.toBe(original); expect(Buffer.byteLength(tampered)).toBe(Buffer.byteLength(original));
     await writeFile(path, tampered, { mode: 0o600 });
     expect(await store.safeReplay(request())).toEqual({ status: "unavailable", reason: "persisted-replay-unavailable" });
-    await expect(artifacts.write(original, artifact.sha256)).rejects.toThrow("artifact-integrity-failed");
+    await expect(artifacts.database.write(original, artifact.sha256)).rejects.toThrow("artifact-integrity-failed");
     expect(await readFile(path, "utf8")).toBe(tampered);
     await writeFile(path, original); expect(await store.replay(request())).toEqual(before);
     await rm(path); expect(await store.safeReplay(request())).toEqual({ status: "unavailable", reason: "persisted-replay-unavailable" });
@@ -939,7 +940,7 @@ it("predictive feature runs are recorded after read-only computation with exact 
     expect(dependencies.filter((row) => row.rights_decision_id).map((row) => row.rights_decision_id)).toEqual(["rights-" + PROFILE]);
     expect(dependencies.filter((row) => row.feature_definition_id).map((row) => row.feature_definition_id)).toEqual(["passing-yards-replay-v3"]);
     const blob = (await client.query("SELECT byte_size,storage_ref FROM predictive_blobs WHERE sha256=$1", [run.bundle_blob_sha256])).rows[0];
-    expect(JSON.parse(await artifacts.read(blob.storage_ref, run.bundle_blob_sha256, blob.byte_size))).toEqual(first.bundle);
+    expect(JSON.parse(await artifacts.database.read(blob.storage_ref, run.bundle_blob_sha256, blob.byte_size))).toEqual(first.bundle);
     // A renewed rights decision that still allows model input changes only the execution record.
     const renewal = { ...emptyDataset(), profiles: a.profiles, rightsDecisions: [...a.rightsDecisions,
       rights(PROFILE, { id: "rights-renewed", predecessorId: "rights-" + PROFILE, effectiveFrom: "2026-10-09T12:00:00.000Z", decidedAt: "2026-10-09T12:00:00.000Z" })] };
@@ -1062,6 +1063,8 @@ it("predictive identity bridges refuse same-source ambiguity at write and keep c
       revision("alias-la", "team-alias", { provider: "provider-x", rawAlias: "LA", teamId: "nfl:team:LA", effectiveFromSeason: 2016, effectiveToSeason: 2026 }),
       revision("game-bridge", "game-bridge", { provider: "provider-x", rawGameId: "evt-9", gameId: TARGET }),
       revision("relation", "game-relation", { gameId: TARGET, predecessorGameId: gameId(99), relation: "replacement" })]);
+    addCapture(bridges, "later-bridges", [revision("later-alias", "team-alias", { provider: "provider-x", rawAlias: "NE", teamId: "nfl:team:NE",
+      effectiveFromSeason: 2026, effectiveToSeason: 2026 })], CAPTURE_B);
     await store.publish("bridges", bridges, NOW);
     expect((await client.query("SELECT entity_key, player_id, team_id FROM predictive_observations WHERE id IN ('bridge-a','alias-lar') ORDER BY id")).rows).toEqual([
       { entity_key: "team-alias:provider-x:LAR", player_id: null, team_id: "nfl:team:LA" },
@@ -1075,8 +1078,25 @@ it("predictive identity bridges refuse same-source ambiguity at write and keep c
     // A third raw ID for the same player overlapping an existing mapping is refused,
     // as is a second raw game ID for one game. A further team alias is fine.
     await expect(probe(playerBridge("bridge-c", "p789", PLAYER, "2026-06-01T00:00:00.000Z"))).rejects.toMatchObject({ code: "23514", message: "predictive-bridge-ambiguous" });
+    // The other direction: one raw ID cannot currently name two players.
+    await expect(probe(playerBridge("same-raw", "p456", "00-0000002", "2026-06-01T00:00:00.000Z")))
+      .rejects.toMatchObject({ code: "23514", message: "predictive-bridge-ambiguous" });
+    // Adjacent effective windows are legitimate, even with the same raw ID.
+    await probe(playerBridge("same-raw-old", "p456", "00-0000002", "2025-01-01T00:00:00.000Z", "2026-05-01T00:00:00.000Z"));
     await expect(probe(revision("game-bridge-2", "game-bridge", { provider: "provider-x", rawGameId: "evt-10", gameId: TARGET })))
       .rejects.toMatchObject({ code: "23514", message: "predictive-bridge-ambiguous" });
+    await expect(probe(revision("same-raw-game", "game-bridge", { provider: "provider-x", rawGameId: "evt-9", gameId: gameId(99) })))
+      .rejects.toMatchObject({ code: "23514", message: "predictive-bridge-ambiguous" });
+    // A conflicting mapping and its later correction inserted together still
+    // conflict at the earlier knowledge time. Do not merely compare final heads.
+    await expect(sqlProbe(client, async () => {
+      const bad = playerBridge("historical-bad", "p456", "00-0000002", "2026-05-01T00:00:00.000Z");
+      const fix = playerBridge("historical-fix", "p456", PLAYER, "2026-05-01T00:00:00.000Z", "2027-01-01T00:00:00.000Z", bad.id);
+      await insertObservation(client, bad.id, bad.kind, bad.data);
+      await insertObservation(client, fix.id, fix.kind, fix.data, { predecessor: bad.id });
+      await client.query("INSERT INTO predictive_artifact_observations (artifact_id,observation_id) VALUES ('bridges',$1),('later-bridges',$2)", [bad.id, fix.id]);
+      await client.query("SET CONSTRAINTS ALL IMMEDIATE");
+    })).rejects.toMatchObject({ code: "23514", message: "predictive-bridge-ambiguous" });
     await probe(revision("alias-stl", "team-alias", { provider: "provider-x", rawAlias: "STL", teamId: "nfl:team:LA", effectiveFromSeason: 2016, effectiveToSeason: 2016 }));
     // Correcting a mapping stays inside its own chain and is accepted.
     await probe(playerBridge("bridge-b-fix", "p456", PLAYER, "2026-05-01T00:00:00.000Z", "2026-12-01T00:00:00.000Z", "bridge-b"));
@@ -1150,8 +1170,8 @@ it("predictive retention removes a source scope with chain descendants and deriv
     const removed = (await client.query("SELECT target_kind AS kind, target_id AS id FROM predictive_retention_tombstones")).rows;
     expect(recorded.removedIdsDigest).toBe(retentionIdsDigest(removed));
     // Blob files go after commit; a blob still referenced elsewhere stays.
-    await expect(artifacts.read(aBlob.storage_ref, aBlob.sha256, aBlob.byte_size)).rejects.toThrow();
-    expect(await artifacts.read(bBlob.storage_ref, bBlob.sha256, bBlob.byte_size)).toContain("player-correction-B");
+    await expect(artifacts.database.read(aBlob.storage_ref, aBlob.sha256, aBlob.byte_size)).rejects.toThrow();
+    expect(await artifacts.database.read(bBlob.storage_ref, bBlob.sha256, bBlob.byte_size)).toContain("player-correction-B");
     // Replay never silently substitutes what was removed.
     const after = await store.replay(request());
     expect(after.status).toBe("unavailable-inputs"); expect(after.reasons).toContain("retained-evidence-removed");
@@ -1161,7 +1181,7 @@ it("predictive retention expires unpinned feature runs with digest-only audit an
   await withProof(async ({ client, store, artifacts }) => {
     const a = passingYardsFixture(); await store.publish("A", a, NOW);
     const bundle = async (bytes: string) => {
-      const sha256 = digest(bytes); await artifacts.write(bytes, sha256);
+      const sha256 = digest(bytes); await artifacts.database.write(bytes, sha256);
       await client.query("INSERT INTO predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'application/json',$3)", [sha256, Buffer.byteLength(bytes), sha256 + ".json"]);
       return sha256;
     };
@@ -1204,8 +1224,8 @@ it("predictive retention expires unpinned feature runs with digest-only audit an
     await client.query("INSERT INTO predictive_feature_run_unpins (pin_id,unpinned_at) VALUES ('pin-held','2026-02-01T00:00:00.000Z')");
     const second = await store.retain({ ...expiry, id: "expiry-2" });
     expect(second.removedBlobRefs).toEqual([shared + ".json"]);
-    await expect(artifacts.read(shared + ".json", shared, 19)).rejects.toThrow();
-    expect(await artifacts.read(own + ".json", own, Buffer.byteLength('{"bundle":"own"}'))).toBe('{"bundle":"own"}');
+    await expect(artifacts.database.read(shared + ".json", shared, 19)).rejects.toThrow();
+    expect(await artifacts.database.read(own + ".json", own, Buffer.byteLength('{"bundle":"own"}'))).toBe('{"bundle":"own"}');
     // Malformed or premature events are refused before anything is removed.
     const invalid: RetentionEvent[] = [
       { ...expiry, id: "bad-reason", reason: "owner-request" },
@@ -1346,11 +1366,11 @@ it("predictive blob cleanup and publication serialize on the blob digest in both
       expect(await publisher.publish("again", solo("solo-again"), NOW)).toMatchObject({ status: "published" });
       await publisherClient.query("SELECT pg_advisory_unlock(520054,$1)", [key]);
       expect(await retained).toMatchObject({ value: { removedBlobRefs: [reference] } });
-      expect(await blobRow()).toBe(1); expect(await artifacts.read(reference, sha, size)).toBe(first.artifacts[0].bytes); expect(await queued()).toEqual([]);
+      expect(await blobRow()).toBe(1); expect(await artifacts.database.read(reference, sha, size)).toBe(first.artifacts[0].bytes); expect(await queued()).toEqual([]);
       // Order 2: cleanup holding the lock mid-unlink makes the publisher wait; the
       // publisher then rewrites the file, so its committed row has its bytes.
       const removing = Promise.withResolvers<void>(); const gate = Promise.withResolvers<void>();
-      const gated = { ...artifacts, remove: async (ref: string, digest: string) => { removing.resolve(); await gate.promise; await artifacts.remove(ref, digest); } };
+      const gated = { ...artifacts, database: { ...artifacts.database, remove: async (ref: string, digest: string) => { removing.resolve(); await gate.promise; await artifacts.database.remove(ref, digest); } } };
       const cleaner = await createLocalPredictiveStore(client, target, gated);
       const removal = cleaner.retain(event("cleanup-2")).then((value) => ({ value }), (error) => ({ error }));
       await removing.promise;
@@ -1359,19 +1379,174 @@ it("predictive blob cleanup and publication serialize on the blob digest in both
       gate.resolve();
       expect(await removal).toMatchObject({ value: { removedBlobRefs: [reference] } });
       expect(await republished).toMatchObject({ value: { status: "published" } });
-      expect(await blobRow()).toBe(1); expect(await artifacts.read(reference, sha, size)).toBe(first.artifacts[0].bytes); expect(await queued()).toEqual([]);
+      expect(await blobRow()).toBe(1); expect(await artifacts.database.read(reference, sha, size)).toBe(first.artifacts[0].bytes); expect(await queued()).toEqual([]);
       // Recovery: a failed unlink leaves the committed event and the queue row;
       // resuming removes the file once no row references it.
-      const failing = await createLocalPredictiveStore(client, target, { ...artifacts, remove: async () => { throw new Error("simulated unlink failure"); } });
+      const failing = await createLocalPredictiveStore(client, target, { ...artifacts, database: { ...artifacts.database, remove: async () => { throw new Error("simulated unlink failure"); } } });
       await expect(failing.retain(event("cleanup-3"))).rejects.toThrow("simulated unlink failure");
       expect((await store.retentionEvents()).map((row) => row.id)).toContain("cleanup-3");
       expect(await queued()).toEqual([reference]); expect(await blobRow()).toBe(0);
-      expect(await artifacts.read(reference, sha, size)).toBe(first.artifacts[0].bytes);
+      expect(await artifacts.database.read(reference, sha, size)).toBe(first.artifacts[0].bytes);
       expect(await store.resumeBlobRemovals()).toEqual([reference]);
       expect(await queued()).toEqual([]);
-      await expect(artifacts.read(reference, sha, size)).rejects.toThrow();
+      await expect(artifacts.database.read(reference, sha, size)).rejects.toThrow();
     } finally {
       await Promise.allSettled([publisherClient.end(), monitor.end()]);
     }
+  });
+});
+
+// This login has the exact production retention membership, never superuser or
+// table privileges. Synthetic publication is performed separately by the harness.
+it("predictive retention drains and resumes blob removals through an execute-only non-superuser login", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const a = passingYardsFixture(false); await store.publish("owner-A", a, NOW);
+    const login = "dfs52_retention_" + randomBytes(8).toString("hex");
+    await client.query(`CREATE ROLE ${login} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD 'disposable-owner-test'`);
+    await client.query(`GRANT predictive_retention_owner TO ${login}`);
+    const expected = { ...target.expected, user: login, password: "disposable-owner-test" };
+    const owner = new Client(expected);
+    const ownerTarget = { expected, assertTarget: (config: object) => { expect(config).toEqual(expected); target.assertTarget(target.expected); } };
+    try {
+      await owner.connect();
+      expect((await owner.query("SELECT rolsuper FROM pg_roles WHERE rolname=session_user")).rows[0].rolsuper).toBe(false);
+      await owner.query("SET ROLE predictive_retention_owner");
+      for (const sql of ["SELECT * FROM public.predictive_blobs", "SELECT * FROM public.predictive_blob_removals",
+        "DELETE FROM public.predictive_blob_removals"]) await expect(owner.query(sql)).rejects.toMatchObject({ code: "42501" });
+      await owner.query("RESET ROLE");
+      const sha = a.artifacts[0].sha256; const ref = sha + ".json";
+      await expect(owner.query("SELECT public.predictive_blob_referenced($1)", [ref])).rejects.toMatchObject({ code: "55000" });
+      await expect(owner.query("SELECT public.predictive_blob_referenced($1)", ["../" + ref])).rejects.toMatchObject({ code: "23514" });
+      await expect(owner.query("SELECT public.predictive_ack_blob_removal($1)", [ref])).rejects.toMatchObject({ code: "55000" });
+      const key = Number.parseInt(sha.slice(0, 8), 16) | 0;
+      await owner.query("SELECT pg_advisory_lock(520054,$1)", [key]);
+      try {
+        await owner.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+        await expect(owner.query("SELECT public.predictive_blob_referenced($1)", [ref])).rejects.toMatchObject({ code: "25001" });
+      } finally { await owner.query("ROLLBACK"); await owner.query("SELECT pg_advisory_unlock(520054,$1)", [key]); }
+      const ownerStore = await createLocalPredictiveStore(owner, ownerTarget, artifacts);
+      const event: RetentionEvent = { id: "owner-delete", reason: "provider-request", authority: "synthetic provider request", decidedAt: NOW,
+        scope: { kind: "source", profileIds: [PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel: "full" };
+      // Journals can contain identical bytes, but DB retention never deletes them.
+      await artifacts.write(a.artifacts[0].bytes, sha);
+      const result = await ownerStore.retain(event);
+      expect(result.removedBlobRefs).toHaveLength(a.artifacts.length);
+      expect((await client.query("SELECT count(*)::integer AS count FROM predictive_blob_removals")).rows[0].count).toBe(0);
+      await expect(artifacts.database.read(ref, sha, Buffer.byteLength(a.artifacts[0].bytes))).rejects.toMatchObject({ code: "ENOENT" });
+      expect(await artifacts.read(ref, sha, Buffer.byteLength(a.artifacts[0].bytes))).toBe(a.artifacts[0].bytes);
+      expect((await ownerStore.retentionEvents()).map((row) => row.id)).toEqual([event.id]);
+      await store.publish("owner-B", a, NOW);
+      const failed = await createLocalPredictiveStore(owner, ownerTarget, { ...artifacts, database: { ...artifacts.database,
+        remove: async () => { throw new Error("owner unlink interrupted"); } } });
+      await expect(failed.retain({ ...event, id: "owner-resume" })).rejects.toThrow("owner unlink interrupted");
+      expect((await client.query("SELECT count(*)::integer AS count FROM predictive_blob_removals")).rows[0].count).toBe(a.artifacts.length);
+      expect(await ownerStore.resumeBlobRemovals()).toHaveLength(a.artifacts.length);
+      expect(await ownerStore.resumeBlobRemovals()).toEqual([]);
+      expect((await ownerStore.retentionEvents()).map((row) => row.id)).toEqual(["owner-delete", "owner-resume"]);
+    } finally { await owner.end(); await client.query(`DROP ROLE ${login}`); }
+  });
+});
+
+it("predictive rollback removes unpublished bytes and orphan recovery preserves committed blobs and journals", async () => {
+  await withProof(async ({ client, store, artifacts, target, root }) => {
+    const a = passingYardsFixture(false); await store.publish("A", a, NOW);
+    const conflict = passingYardsFixture(false);
+    const changed = conflict.artifacts.find((artifact) => artifact.id === "A-player-game-stats")!;
+    const rows = JSON.parse(changed.bytes) as Revision[];
+    const player = rows.find((row) => row.id === "player-synthetic-game-5")!;
+    if (player.kind !== "player-game-stats") throw new Error("fixture player missing");
+    player.data.passingYards = 301; changed.bytes = JSON.stringify(rows); changed.sha256 = digest(changed.bytes);
+    await expect(store.publish("conflict", conflict, NOW)).rejects.toThrow("observation-id-conflict");
+    await expect(artifacts.database.read(changed.sha256 + ".json", changed.sha256, Buffer.byteLength(changed.bytes))).rejects.toMatchObject({ code: "ENOENT" });
+    expect((await client.query("SELECT count(*)::integer AS count FROM predictive_blobs WHERE sha256=$1", [changed.sha256])).rows[0].count).toBe(0);
+    // Failure after a file write but before the write transaction (crash analogue).
+    conflict.artifacts = [changed, ...conflict.artifacts.filter((artifact) => artifact !== changed)];
+    const crashing = await createLocalPredictiveStore(client, target, { ...artifacts, database: { ...artifacts.database,
+      write: async (bytes, sha) => { await artifacts.database.write(bytes, sha); throw new Error("after file write"); } } });
+    await expect(crashing.publish("write-fail", conflict, NOW)).rejects.toThrow("after file write");
+    const failedDiagnostic = { ...conflict, profiles: conflict.profiles.map((profile) => ({ ...profile, license: "conflicting registration" })) };
+    await expect(store.recordRefusal("diagnostic-fail", failedDiagnostic, NOW)).rejects.toThrow("profile-id-conflict");
+    await expect(artifacts.database.read(changed.sha256 + ".json", changed.sha256, Buffer.byteLength(changed.bytes))).rejects.toMatchObject({ code: "ENOENT" });
+    // Feature-run file survives neither recorder failure nor the return of an unavailable result.
+    const unavailable = await crashing.replayAndRecord(request());
+    expect(unavailable).toEqual({ status: "unavailable", reason: "feature-run-not-recorded" });
+    expect((await readdir(join(root, ".db-blobs"))).filter((name) => name.endsWith(".json")).sort())
+      .toEqual(a.artifacts.map((artifact) => artifact.sha256 + ".json").sort());
+    // A crash can skip all application finally blocks: recreate orphan content
+    // and a partial temp file, then age them beyond the documented 24h grace.
+    const orphan = "orphan diagnostic bytes"; const sha = digest(orphan); const ref = sha + ".json";
+    await artifacts.database.write(orphan, sha); await artifacts.write(orphan, sha);
+    const temporary = ".capture-" + sha + "-00000000-0000-4000-8000-000000000000.tmp";
+    await writeFile(join(root, ".db-blobs", temporary), "partial", { mode: 0o600 });
+    const old = new Date(Date.now() - 48 * 60 * 60 * 1000);
+    for (const name of [ref, temporary, a.artifacts[0].sha256 + ".json"]) await utimes(join(root, ".db-blobs", name), old, old);
+    const fresh = "recent uncommitted file"; const freshSha = digest(fresh); await artifacts.database.write(fresh, freshSha);
+    expect((await store.sweepOrphanBlobs()).sort()).toEqual([ref, temporary].sort());
+    expect(await store.sweepOrphanBlobs()).toEqual([]);
+    expect(await artifacts.read(ref, sha, Buffer.byteLength(orphan))).toBe(orphan);
+    expect(await artifacts.database.read(freshSha + ".json", freshSha, Buffer.byteLength(fresh))).toBe(fresh);
+    expect(await artifacts.database.read(a.artifacts[0].sha256 + ".json", a.artifacts[0].sha256, Buffer.byteLength(a.artifacts[0].bytes))).toBe(a.artifacts[0].bytes);
+    await expect(store.sweepOrphanBlobs(0)).rejects.toThrow("blob-grace-refused");
+  });
+});
+
+it("predictive final labels bind exact raw identity and retaining their bridge removes later label versions", async () => {
+  await withProof(async ({ client, store }) => {
+    const dataset = passingYardsFixture(false);
+    // Model the reported parser error exactly: raw X was attributed to A, while
+    // a genuine roster bridge Y -> A exists in the permitted bridge profile.
+    for (const artifact of dataset.artifacts) {
+      const rows = JSON.parse(artifact.bytes) as Revision[];
+      for (const row of rows) if (row.kind === "player-game-stats" && row.id === "player-synthetic-game-5") row.data.rawPlayerId = "raw-X";
+      artifact.bytes = JSON.stringify(rows); artifact.sha256 = digest(artifact.bytes);
+    }
+    const observed = validateDataset(dataset).observations; const at = instant(CAPTURE_A); const game = PRIOR[4];
+    dataset.decisions.push(recordCompletion("complete-5", game, markerHeadsAt(observed.values(), game, at), CAPTURE_A, "synthetic-proof"),
+      recordParticipation("participate-5", game, PLAYER, participationHeadsAt(observed.values(), game, PLAYER, at), CAPTURE_A, "synthetic-proof"),
+      reconcileFact("reconcile-5", "player-game-stats:" + game + ":" + PLAYER,
+        [...observed.values()].filter((row) => row.entityKey === "player-game-stats:" + game + ":" + PLAYER), CAPTURE_A, "synthetic-proof"));
+    const bridgeProfile = "synthetic-roster-identity";
+    dataset.profiles.push(profile(bridgeProfile)); dataset.rightsDecisions.push(rights(bridgeProfile));
+    dataset.identityLinks.push({ id: "linked-roster", statsProfileId: PROFILE, bridgeProfileId: bridgeProfile, provider: "gsis", decidedAt: CAPTURE_A });
+    const bridge = (id: string, raw: string) => revision(id, "player-bridge", { provider: "gsis", rawPlayerId: raw, playerId: PLAYER,
+      effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-01-01T00:00:00.000Z" });
+    addCapture(dataset, "wrong-raw-roster", [bridge("bridge-Y", PLAYER)], CAPTURE_A, bridgeProfile);
+    addCapture(dataset, "post-window", JSON.parse(dataset.artifacts.find((artifact) => artifact.id === "A-player-game-stats")!.bytes), "2026-10-10T13:00:00.000Z");
+    const after = "2026-10-11T00:00:00.000Z"; await store.publish("raw-identity", dataset, after);
+    const provisional: Label = { id: "identity-v1", playerId: PLAYER, gameId: game, seasonType: "REG", stat: "passing_yards", value: 300,
+      state: "provisional", mode: "synthetic-proof", policyId: "canonical-label-finalization-v1", labelVersion: 1, predecessorId: null,
+      completionDecisionId: "complete-5", participationDecisionId: "participate-5", reconciliationDecisionId: "reconcile-5",
+      selectedObservationId: "player-synthetic-game-5", eligibleFinalAt: null, postWindowCaptureId: null, finalizedAt: null,
+      createdAt: "2026-10-07T13:00:00.000Z", playerBridgeObservationId: null };
+    const final: Label = { ...provisional, id: "identity-v2", predecessorId: provisional.id, labelVersion: 2, state: "final",
+      eligibleFinalAt: "2026-10-10T12:00:00.000Z", postWindowCaptureId: "capture-post-window", finalizedAt: "2026-10-10T14:00:00.000Z",
+      createdAt: "2026-10-10T14:00:00.000Z", playerBridgeObservationId: "bridge-Y" };
+    const registrations = { profiles: dataset.profiles, rightsDecisions: dataset.rightsDecisions, identityLinks: dataset.identityLinks };
+    const labels = (items: Label[]) => ({ ...emptyDataset(), ...registrations, labels: items });
+    await expect(store.publish("wrong-raw-label", labels([provisional, final]), after))
+      .rejects.toMatchObject({ code: "23514", message: "predictive-label-binding-9" });
+    expect((await client.query("SELECT id FROM predictive_outcome_labels")).rows).toEqual([]);
+    const deletion: RetentionEvent = { id: "remove-wrong-bridge", reason: "owner-request", authority: "synthetic identity evidence replacement", decidedAt: after,
+      scope: { kind: "source", profileIds: [bridgeProfile], capturedFrom: null, capturedBefore: null }, auditLevel: "full" };
+    await store.retain(deletion);
+    const correct = { ...emptyDataset(), ...registrations }; addCapture(correct, "correct-roster", [bridge("bridge-X", "raw-X")], CAPTURE_A, bridgeProfile);
+    await store.publish("correct-roster", correct, after);
+    const bound = { ...final, playerBridgeObservationId: "bridge-X" };
+    // The successor cites a different, surviving bridge. Its removal therefore
+    // proves label-lineage closure, rather than merely direct bridge references.
+    const survivingProfile = "synthetic-surviving-roster"; const surviving = emptyDataset();
+    surviving.profiles.push(profile(survivingProfile)); surviving.rightsDecisions.push(rights(survivingProfile));
+    surviving.identityLinks.push({ id: "surviving-link", statsProfileId: PROFILE, bridgeProfileId: survivingProfile, provider: "gsis", decidedAt: CAPTURE_A });
+    addCapture(surviving, "surviving-roster", [bridge("surviving-bridge-X", "raw-X")], CAPTURE_A, survivingProfile);
+    await store.publish("surviving-roster", surviving, after);
+    const successor = { ...bound, id: "identity-v3", predecessorId: bound.id, labelVersion: 3, createdAt: "2026-10-10T14:00:01.000Z",
+      playerBridgeObservationId: "surviving-bridge-X" };
+    await store.publish("correct-label", labels([provisional, bound, successor]), after);
+    expect((await client.query("SELECT id FROM predictive_outcome_labels ORDER BY label_version")).rows.map((row) => row.id))
+      .toEqual(["identity-v1", "identity-v2", "identity-v3"]);
+    const result = await store.retain({ ...deletion, id: "remove-cited-bridge" });
+    expect(result.removedCounts).toMatchObject({ observations: 1, labels: 2 });
+    expect((await client.query("SELECT id FROM predictive_outcome_labels")).rows).toEqual([{ id: "identity-v1" }]);
+    expect((await client.query("SELECT id FROM predictive_observations WHERE id='surviving-bridge-X'")).rows).toEqual([{ id: "surviving-bridge-X" }]);
   });
 });

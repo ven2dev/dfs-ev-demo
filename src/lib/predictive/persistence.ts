@@ -1,6 +1,6 @@
 import type { Client } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
-import type { ArtifactStore } from "./artifacts.ts";
+import type { PrivateArtifactStore } from "./artifacts.ts";
 import type { Artifact, Capture, Dataset, Decision, IdentityLink, Label, Observation, Profile, RecordedRetentionEvent, Request, RetentionEvent, RetentionResult,
   Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
@@ -92,7 +92,8 @@ export const retentionIdsDigest = (removed: { kind: string; id: string }[]) =>
 
 // No remote session, primary test DB or unregistered scratch database can use
 // this local proof. The caller owns one session; operations are sequential.
-export const createLocalPredictiveStore = async (client: Client, target: Target, artifacts: ArtifactStore) => {
+export const createLocalPredictiveStore = async (client: Client, target: Target, privateArtifacts: PrivateArtifactStore) => {
+  const artifacts = privateArtifacts.database;
   const assertTarget = async () => { target.assertTarget(target.expected); await checkConnectedTarget(client, target.expected); };
   await assertTarget();
   let busy = false;
@@ -146,15 +147,28 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         try {
           await client.query("SET LOCAL lock_timeout = '5s'");
           await client.query("SELECT pg_advisory_lock($1,$2)", [BLOB_LOCK_NAMESPACE, key]);
+          held.push(key);
           await client.query("COMMIT");
         } catch (error) { await client.query("ROLLBACK"); throw error; }
-        held.push(key);
       }
       return await work();
     } finally {
       for (const key of held.reverse()) await client.query("SELECT pg_advisory_unlock($1,$2)", [BLOB_LOCK_NAMESPACE, key]);
     }
   };
+  const blobReferenced = async (sha256: string): Promise<boolean> =>
+    (await client.query("SELECT public.predictive_blob_referenced($1) AS referenced", [sha256 + ".json"])).rows[0].referenced;
+  // Files precede the SQL commit. After success or rollback, remove only bytes
+  // that the committed database does not own, while retaining the digest locks.
+  // A disconnected/crashed process leaves files for the bounded-age orphan sweep.
+  const withBlobPublication = <T>(digests: string[], work: () => Promise<T>) => withBlobLocks(digests, async () => {
+    try { return await work(); }
+    finally {
+      for (const sha256 of new Set(digests.filter((value) => /^[a-f0-9]{64}$/.test(value)))) {
+        if (!await blobReferenced(sha256)) await artifacts.remove(sha256 + ".json", sha256);
+      }
+    }
+  });
   const priorRun = async (id: string, sha256: string): Promise<RunResult | null> => {
     const row = (await client.query("SELECT request_sha256,status,failure_code FROM public.predictive_ingestion_runs WHERE id=$1", [id])).rows[0];
     if (!row) return null;
@@ -292,7 +306,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const requestHash = digest(canonical(dataset));
     const counts = { artifacts: dataset.artifacts.length, captures: new Set(dataset.captures.map((capture) => capture.id)).size,
       rows: new Set([...checked.revisions.values()].flatMap((rows) => rows.map((revision) => revision.id))).size };
-    return withBlobLocks(dataset.artifacts.map((artifact) => artifact.sha256), async () => {
+    return withBlobPublication(dataset.artifacts.map((artifact) => artifact.sha256), async () => {
       for (const artifact of dataset.artifacts) await artifacts.write(artifact.bytes, artifact.sha256);
       return transaction(async () => {
         const existing = await priorRun(id, requestHash); if (existing) return existing;
@@ -387,7 +401,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // Diagnostic bytes are written to the artifact store too, so the same locks apply.
   const recordRefusal = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
     const digests = Array.isArray(dataset?.artifacts) ? dataset.artifacts.map((artifact) => typeof artifact?.sha256 === "string" ? artifact.sha256 : "") : [];
-    return withBlobLocks(digests, () => recordRefusalLocked(id, dataset, now));
+    return withBlobPublication(digests, () => recordRefusalLocked(id, dataset, now));
   };
 
   const compute = async (request: Request) => transaction(async () => {
@@ -454,7 +468,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const synthetic = profiles.some((id) => profileMap.get(id)?.purpose === "synthetic-test");
     const { run, dependencies, bundleBytes, bundleSha256 } = featureRunRequest(bundle, synthetic);
     try {
-      return await withBlobLocks([bundleSha256], () => transaction(async () => {
+      return await withBlobPublication([bundleSha256], () => transaction(async () => {
         await client.query("SET LOCAL ROLE predictive_recorder");
         await artifacts.write(bundleBytes, bundleSha256);
         await client.query(`INSERT INTO public.predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'application/json',$3)
@@ -497,27 +511,40 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const removeQueuedBlob = async (reference: string) => {
     const sha256 = reference.slice(0, 64);
     await withBlobLocks([sha256], async () => {
-      const referenced = (await client.query("SELECT 1 FROM public.predictive_blobs WHERE sha256=$1", [sha256])).rows.length > 0;
+      const referenced = await blobReferenced(sha256);
       if (!referenced) await artifacts.remove(reference, sha256);
-      await client.query("DELETE FROM public.predictive_blob_removals WHERE storage_ref=$1", [reference]);
+      await client.query("SELECT public.predictive_ack_blob_removal($1)", [reference]);
     });
   };
   const resumeBlobRemovals = async () => {
-    const references = (await client.query(`SELECT storage_ref FROM public.predictive_blob_removals ORDER BY storage_ref COLLATE "C"`)).rows
+    const references = (await client.query("SELECT public.predictive_pending_blob_removals() AS storage_ref")).rows
       .map((row) => row.storage_ref as string);
     for (const reference of references) await removeQueuedBlob(reference);
     return references;
   };
+  // Owner-run, resumable orphan recovery. Never scans archive/journal files.
+  // Recheck both age and committed references after acquiring each digest lock.
+  const sweepOrphanBlobs = async (graceMs = 24 * 60 * 60 * 1000) => {
+    if (!Number.isSafeInteger(graceMs) || graceMs < 60 * 60 * 1000 || graceMs > 30 * 24 * 60 * 60 * 1000) refuse("blob-grace-refused");
+    const before = Number((await client.query("SELECT extract(epoch FROM clock_timestamp()) * 1000 AS now")).rows[0].now) - graceMs;
+    const removed: string[] = [];
+    for (const candidate of await artifacts.candidates(before)) await withBlobLocks([candidate.sha256], async () => {
+      // Even an unreferenced temporary file waits until its writer releases the
+      // lock. A committed digest keeps both its content and any diagnostic temp.
+      if (!await blobReferenced(candidate.sha256) && await artifacts.removeOrphan(candidate, before)) removed.push(candidate.reference);
+    });
+    return removed;
+  };
   const retentionEvents = async (): Promise<RecordedRetentionEvent[]> => (await client.query(`SELECT id,reason,authority,${timestamp("decided_at")} AS "decidedAt",
     scope_descriptor AS scope,audit_level AS "auditLevel",removed_counts AS "removedCounts",removed_ids_digest AS "removedIdsDigest",
-    ${timestamp("executed_at")} AS "executedAt" FROM public.predictive_retention_events ORDER BY executed_at, id COLLATE "C"`)).rows;
+    ${timestamp("executed_at")} AS "executedAt" FROM public.predictive_retention_history()`)).rows;
   // A restored backup re-applies every retention event recorded since, oldest
   // first, by its scope descriptor, before any read. A present event is skipped;
   // matched is false when the backup lacked rows the original removal saw.
   const reapply = async (events: RecordedRetentionEvent[]) => {
     const results: { eventId: string; status: "present" | "reapplied"; matched: boolean }[] = [];
     for (const event of [...events].sort((a, b) => instant(a.executedAt) - instant(b.executedAt) || compareText(a.id, b.id))) {
-      if ((await client.query("SELECT 1 FROM public.predictive_retention_events WHERE id=$1", [event.id])).rows.length) {
+      if ((await client.query("SELECT 1 FROM public.predictive_retention_history() WHERE id=$1", [event.id])).rows.length) {
         results.push({ eventId: event.id, status: "present", matched: true }); continue;
       }
       const result = await retain({ id: event.id, reason: event.reason, authority: event.authority, decidedAt: event.decidedAt, scope: event.scope, auditLevel: event.auditLevel });
@@ -526,5 +553,5 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
-  return { publish, replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals };
+  return { publish, replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };
