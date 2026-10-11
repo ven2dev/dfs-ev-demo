@@ -333,9 +333,16 @@ export const validateDecisionShape = (value: unknown): Decision => {
   return value as Decision;
 };
 
+const reconciliationHeadsAt = (observations: Iterable<Observation>, fact: string, t: number) => {
+  const visible = [...observations].filter((row) => row.entityKey === fact &&
+    instant(row.capture.availableAt) <= t && instant(row.capture.ingestedAt) <= t);
+  const superseded = new Set(visible.map((row) => row.revision.predecessorId));
+  return visible.filter((row) => !superseded.has(row.revision.id));
+};
+
 // reconciliation-v1 rules, identical to predictive_decision_check() in 0003:
-// inputs are distinct provider heads for one fact, each usable by decidedAt;
-// the rule matches the evidence; synthetic evidence implies synthetic-proof.
+// inputs are every provider head for one fact usable by decidedAt; the rule
+// matches that complete evidence set; synthetic evidence implies synthetic-proof.
 export const validateDecisions = (decisions: Decision[], observations: Map<string, Observation>, profiles: Map<string, Profile>) => {
   const byId = new Map<string, Decision>(); const successors = new Set<string>();
   for (const decision of decisions) {
@@ -360,6 +367,8 @@ export const validateDecisions = (decisions: Decision[], observations: Map<strin
       if (instant(row.capture.availableAt) > decided || instant(row.capture.ingestedAt) > decided) refuse("decision-input-after-decision");
     }
     if (new Set(rows.map((row) => row.sourceKey)).size !== rows.length) refuse("decision-duplicate-source");
+    const ids = (values: Observation[]) => values.map((row) => row.revision.id).sort(compareText).join("\n");
+    if (ids(rows) !== ids(reconciliationHeadsAt(observations.values(), fact, decided))) refuse("reconciliation-inputs-not-heads");
     const selected = decision.inputs.filter((input) => input.role === "selected");
     const same = rows.length > 1 && rows.every((row) => canonical(row.revision.data) === canonical(rows[0].revision.data));
     const { result, rule, selectedObservationId } = decision.outcome;

@@ -47,6 +47,7 @@ export const MEMBERSHIP_READ_SQL = closureSql("o.kind='membership' AND o.player_
 export const SCHEDULE_READ_SQL = closureSql("o.kind='schedule' AND o.season BETWEEN $3 AND $4 AND (o.home_team_id=ANY($2::text[]) OR o.away_team_id=ANY($2::text[]))");
 export const ENTITY_READ_SQL = closureSql("o.game_id=ANY($2::uuid[]) AND (o.kind IN ('schedule','event-state-marker','team-game-stats') OR o.player_id=$3)");
 const idReadSql = closureSql("o.id=ANY($2::text[])");
+const decisionScopeReadSql = closureSql("o.entity_key=ANY($2::text[]) OR o.entity_key LIKE ANY($3::text[])");
 const aliasReadSql = closureSql("o.kind='schedule' AND o.raw_game_id=ANY($2::text[])");
 const coverageReadSql = closureSql("o.kind='schedule-coverage' AND o.team_id=ANY($2::text[]) AND o.data->>'fromSeason'=$3 AND o.data->>'throughSeason'=$4");
 const PROFILE_SQL = `SELECT jsonb_build_object('id',id,'purpose',purpose,'provider',provider,'feed',feed,'releaseTag',release_tag,
@@ -63,6 +64,17 @@ const DECISION_SQL = `SELECT jsonb_build_object('id',d.id,'kind',d.kind,'entityK
     FROM public.predictive_decision_inputs i WHERE i.decision_id=d.id),'[]'::jsonb)) AS decision
   FROM public.predictive_decisions d JOIN public.predictive_ingestion_runs r ON r.id=d.run_id
   WHERE r.status='published' AND d.kind IN ('reconciliation','completion') AND d.entity_key=ANY($2::text[]) AND d.decided_at <= $1::timestamptz ORDER BY d.id`;
+
+const decisionScope = (decision: Decision) => {
+  if (decision.kind === "reconciliation") {
+    return { exact: [decision.entityKey.slice("reconciliation:".length)], prefixes: [] };
+  }
+  if (decision.kind === "completion") {
+    return { exact: [], prefixes: ["event-state-marker:" + decision.entityKey.slice("completion:".length) + ":%"] };
+  }
+  const [, gameId, playerId] = decision.entityKey.split(":");
+  return { exact: ["player-game-stats:" + gameId + ":" + playerId], prefixes: ["participation-evidence:" + gameId + ":" + playerId + ":%"] };
+};
 
 // No remote session, primary test DB or unregistered scratch database can use
 // this local proof. The caller owns one session; operations are sequential.
@@ -249,7 +261,20 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         observation(revision, capture, byId.get(capture.artifactId)!)));
       const referenced = [...new Set([...incoming.flatMap((row) => [row.revision.id, ...(row.revision.predecessorId ? [row.revision.predecessorId] : [])]),
         ...checked.decisions.flatMap((decision) => decision.inputs.map((input) => input.observationId))])];
-      const known = validateObservations([...await read(idReadSql, [now, referenced]), ...incoming]);
+      const scopes = new Map<string, { exact: Set<string>; prefixes: Set<string> }>();
+      for (const decision of checked.decisions) {
+        const group = scopes.get(decision.decidedAt) ?? { exact: new Set<string>(), prefixes: new Set<string>() };
+        const scope = decisionScope(decision);
+        scope.exact.forEach((value) => group.exact.add(value)); scope.prefixes.forEach((value) => group.prefixes.add(value));
+        scopes.set(decision.decidedAt, group);
+      }
+      const scopeRows: Observation[] = [];
+      for (const [decidedAt, scope] of scopes) {
+        scopeRows.push(...await read(decisionScopeReadSql, [decidedAt, [...scope.exact], [...scope.prefixes]]));
+      }
+      const knownRows = [...await read(idReadSql, [now, referenced]), ...scopeRows, ...incoming];
+      const known = validateObservations(knownRows);
+      if (known.size > PERSISTENCE_BOUNDS.rows) refuse("publication-bounds-refused");
       if (checked.decisions.length) {
         const profiles = new Map([...(await profilesFor([...new Set([...known.values()].map((row) => row.artifact.profileId))])), ...dataset.profiles]
           .map((profile) => [profile.id, profile]));

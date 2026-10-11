@@ -839,3 +839,13 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
 - **Harness note:** the disposable harness session is a superuser, so the
   `pg_has_role` check always passes there. Role grants are what the DB cases
   prove. Production role setup stays behind #95.
+
+### Review fix 1 (2026-10-10)
+
+- Reconciliation decisions must cite the complete set of provider heads for
+  their fact visible at `decided_at`, matching completion and participation.
+  SQL uses `predictive_decision_current`; TypeScript computes the same
+  cutoff-visible head set.
+- Publication loads every stored source chain in each decision's evidence scope
+  before validation. Loading only the cited IDs would let an omitted provider
+  head evade the code validator even though PostgreSQL could see it.

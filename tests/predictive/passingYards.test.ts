@@ -693,6 +693,11 @@ describe("reconciliation-v1 cross-source decisions", () => {
     expect(result.reconciliations).toEqual([{ decisionId: "rec-agree", entityKey: "reconciliation:" + fact, result: "selected", decidedAt: DECIDED }]);
     expect(result.dependencies.map((dep) => dep.observationId)).toEqual(expect.arrayContaining(["player-synthetic-game-5", "second-player-5"]));
   });
+  it("refuses a reconciliation that omits a visible provider head", () => {
+    const dataset = twoSources(300);
+    dataset.decisions.push(reconcileFact("rec-partial", fact, heads(dataset).slice(0, 1), DECIDED, "synthetic-proof"));
+    expect(() => bundle(dataset)).toThrow("reconciliation-inputs-not-heads");
+  });
   it("applies a decision only from its decision time and only to the exact heads it judged", () => {
     const dataset = twoSources(300);
     dataset.decisions.push(reconcileFact("rec-late", fact, heads(dataset), CAPTURE_B, "synthetic-proof"));

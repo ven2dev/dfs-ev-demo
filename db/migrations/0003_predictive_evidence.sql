@@ -750,6 +750,9 @@ BEGIN
           AND c.available_at <= d.decided_at AND c.ingested_at <= d.decided_at))) THEN
     RAISE EXCEPTION 'predictive-decision-invalid' USING ERRCODE = '23514';
   END IF;
+  IF NOT public.predictive_decision_current(target, d.decided_at) THEN
+    RAISE EXCEPTION 'predictive-reconciliation-inputs-not-heads' USING ERRCODE = '23514';
+  END IF;
   consistent := CASE d.outcome->>'result'
       WHEN 'selected' THEN selected = 1 AND selected_id = d.outcome->>'selectedObservationId'
         AND ((d.outcome->>'rule' = 'single-source' AND inputs = 1) OR (d.outcome->>'rule' = 'sources-agree' AND inputs > 1 AND same))

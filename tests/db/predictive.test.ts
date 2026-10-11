@@ -642,6 +642,9 @@ it("predictive reconciliation decisions resolve only their exact provider heads 
     const heads = createReplay(dataset, CUTOFF_B, request().computedAt).heads(fact);
     const agree = reconcileFact("rec-agree", fact, heads, DECIDED, "synthetic-proof");
     const decisions = { ...emptyDataset(), profiles: dataset.profiles, rightsDecisions: dataset.rightsDecisions, decisions: [agree] };
+    const partial = reconcileFact("rec-partial", fact, heads.slice(0, 1), DECIDED, "synthetic-proof");
+    await expect(store.publish("partial-decision", { ...decisions, decisions: [partial] }, NOW))
+      .rejects.toThrow("reconciliation-inputs-not-heads");
     await store.publish("decide", decisions, NOW);
     const withDecision = { ...dataset, decisions: [agree] };
     const resolved = await store.replay(request());
@@ -656,12 +659,14 @@ it("predictive reconciliation decisions resolve only their exact provider heads 
       for (const [observation, role] of inputs) await client.query("INSERT INTO predictive_decision_inputs VALUES ($1,$2,$3)", [id, observation, role]);
     };
     const selected = { result: "selected", selectedObservationId: "player-synthetic-game-5", rule: "sources-agree" };
+    const single = { result: "selected", selectedObservationId: "player-synthetic-game-5", rule: "single-source" };
     const pair: [string, string][] = [["player-synthetic-game-5", "selected"], ["second-player-5", "candidate"]];
     // Valid control under the same deferred checks.
     await sqlProbe(client, async () => { await insertDecision("probe-ok", selected, pair, DECIDED, "synthetic-proof", "rec-agree"); await client.query("SET CONSTRAINTS ALL IMMEDIATE"); });
     const refusals: [string, () => Promise<void>, string][] = [
       ["input usable only after the decision", () => insertDecision("probe", selected, pair, "2026-10-07T11:00:00.000Z"), "predictive-decision-invalid"],
       ["input from another fact", () => insertDecision("probe", selected, [["player-synthetic-game-5", "selected"], ["player-synthetic-game-4", "candidate"]]), "predictive-decision-invalid"],
+      ["a reconciliation that omits a visible provider head", () => insertDecision("probe", single, [["player-synthetic-game-5", "selected"]]), "predictive-reconciliation-inputs-not-heads"],
       ["conflict claimed for agreeing sources", () => insertDecision("probe", { result: "conflict", selectedObservationId: null, rule: "material-discrepancy" },
         [["player-synthetic-game-5", "candidate"], ["second-player-5", "candidate"]]), "predictive-decision-rule-invalid"],
       ["selection naming an input not marked selected", () => insertDecision("probe", { ...selected, selectedObservationId: "second-player-5" }, pair), "predictive-decision-rule-invalid"],
