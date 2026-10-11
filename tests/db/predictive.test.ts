@@ -1315,3 +1315,63 @@ it("predictive snap evidence enforces counts and missingness and snap compatibil
       .toEqual({ stale: false, current: true });
   });
 });
+it("predictive blob cleanup and publication serialize on the blob digest in both orders and cleanup resumes after a failed removal", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    const OTHER = "synthetic-other-v1";
+    const solo = (id: string) => {
+      const dataset = { ...emptyDataset(), profiles: [profile(OTHER)], rightsDecisions: [rights(OTHER)] };
+      addCapture(dataset, id, [revision("other-schedule", "schedule", schedule(81, "2026-09-14T00:15:00.000Z", "nfl:team:SEA", "nfl:team:ARI"))], CAPTURE_A, OTHER);
+      return dataset;
+    };
+    const first = solo("solo"); const sha = first.artifacts[0].sha256; const reference = sha + ".json"; const size = Buffer.byteLength(first.artifacts[0].bytes);
+    await store.publish("solo", first, NOW);
+    const event = (id: string): RetentionEvent => ({ id, reason: "owner-request", authority: "synthetic cleanup proof", decidedAt: NOW,
+      scope: { kind: "source", profileIds: [OTHER], capturedFrom: null, capturedBefore: null }, auditLevel: "full" });
+    const publisherClient = new Client(target.expected); const monitor = new Client(target.expected);
+    // Reads go through the monitor: a query on a blocked connection would queue
+    // behind its lock wait.
+    const queued = async () => (await monitor.query("SELECT storage_ref FROM predictive_blob_removals")).rows.map((row) => row.storage_ref);
+    const blobRow = async () => (await monitor.query("SELECT count(*)::integer AS count FROM predictive_blobs WHERE sha256=$1", [sha])).rows[0].count;
+    try {
+      await publisherClient.connect(); await monitor.connect();
+      const publisher = await createLocalPredictiveStore(publisherClient, target, artifacts);
+      const cleanerPid = await backendPid(client); const publisherPid = await backendPid(publisherClient);
+      const key = Number.parseInt(sha.slice(0, 8), 16) | 0;
+      // Order 1: a publisher holding the digest lock (about to write the same bytes)
+      // makes cleanup wait; it commits a new reference, so cleanup keeps the file.
+      await publisherClient.query("SELECT pg_advisory_lock(520054,$1)", [key]);
+      const retained = store.retain(event("cleanup-1")).then((value) => ({ value }), (error) => ({ error }));
+      await Promise.race([waitForBlocked(monitor, [cleanerPid], publisherPid), retained.then((settled) => { throw new Error("cleanup did not wait: " + JSON.stringify(settled)); })]);
+      expect(await queued()).toEqual([reference]);
+      expect(await publisher.publish("again", solo("solo-again"), NOW)).toMatchObject({ status: "published" });
+      await publisherClient.query("SELECT pg_advisory_unlock(520054,$1)", [key]);
+      expect(await retained).toMatchObject({ value: { removedBlobRefs: [reference] } });
+      expect(await blobRow()).toBe(1); expect(await artifacts.read(reference, sha, size)).toBe(first.artifacts[0].bytes); expect(await queued()).toEqual([]);
+      // Order 2: cleanup holding the lock mid-unlink makes the publisher wait; the
+      // publisher then rewrites the file, so its committed row has its bytes.
+      const removing = Promise.withResolvers<void>(); const gate = Promise.withResolvers<void>();
+      const gated = { ...artifacts, remove: async (ref: string, digest: string) => { removing.resolve(); await gate.promise; await artifacts.remove(ref, digest); } };
+      const cleaner = await createLocalPredictiveStore(client, target, gated);
+      const removal = cleaner.retain(event("cleanup-2")).then((value) => ({ value }), (error) => ({ error }));
+      await removing.promise;
+      const republished = publisher.publish("third", solo("solo-third"), NOW).then((value) => ({ value }), (error) => ({ error }));
+      await Promise.race([waitForBlocked(monitor, [publisherPid], cleanerPid), republished.then((settled) => { throw new Error("publisher did not wait: " + JSON.stringify(settled)); })]);
+      gate.resolve();
+      expect(await removal).toMatchObject({ value: { removedBlobRefs: [reference] } });
+      expect(await republished).toMatchObject({ value: { status: "published" } });
+      expect(await blobRow()).toBe(1); expect(await artifacts.read(reference, sha, size)).toBe(first.artifacts[0].bytes); expect(await queued()).toEqual([]);
+      // Recovery: a failed unlink leaves the committed event and the queue row;
+      // resuming removes the file once no row references it.
+      const failing = await createLocalPredictiveStore(client, target, { ...artifacts, remove: async () => { throw new Error("simulated unlink failure"); } });
+      await expect(failing.retain(event("cleanup-3"))).rejects.toThrow("simulated unlink failure");
+      expect((await store.retentionEvents()).map((row) => row.id)).toContain("cleanup-3");
+      expect(await queued()).toEqual([reference]); expect(await blobRow()).toBe(0);
+      expect(await artifacts.read(reference, sha, size)).toBe(first.artifacts[0].bytes);
+      expect(await store.resumeBlobRemovals()).toEqual([reference]);
+      expect(await queued()).toEqual([]);
+      await expect(artifacts.read(reference, sha, size)).rejects.toThrow();
+    } finally {
+      await Promise.allSettled([publisherClient.end(), monitor.end()]);
+    }
+  });
+});

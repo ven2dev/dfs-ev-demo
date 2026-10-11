@@ -12,6 +12,12 @@ import { canonical, compareText, digest, entityKey, instant, observation, refuse
 
 export const PERSISTENCE_BOUNDS = { artifacts: 256, captures: 512, bytes: 8_000_000, rows: 8192 } as const;
 const LOCK_NAMESPACE = 520052;
+// Per-digest session locks coordinating artifact-store files with blob rows.
+// Every writer holds a digest's lock from before writing the file until its
+// transaction commits; cleanup holds it from the reference recheck through the
+// unlink. Keys are the digest's first 32 bits: a collision only serializes more.
+const BLOB_LOCK_NAMESPACE = 520054;
+const blobLockKey = (sha256: string) => Number.parseInt(sha256.slice(0, 8), 16) | 0;
 type Target = { expected: object; assertTarget: (config: object) => void };
 type StoredArtifact = Omit<Artifact, "bytes"> & { byteSize: number; storageRef: string };
 type Raw = { revision: Revision; capture: Capture; artifact: StoredArtifact };
@@ -127,6 +133,27 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         const result = await work(); await client.query("COMMIT"); return result;
       } catch (error) { await client.query("ROLLBACK"); throw error; }
     } finally { busy = false; }
+  };
+  // Acquired in ascending key order with a bounded wait; released in finally. A
+  // lost connection drops the locks and fails every later query, so no unlink
+  // runs without the lock.
+  const withBlobLocks = async <T>(digests: string[], work: () => Promise<T>): Promise<T> => {
+    const keys = [...new Set(digests.filter((value) => /^[a-f0-9]{64}$/.test(value)).map(blobLockKey))].sort((a, b) => a - b);
+    const held: number[] = [];
+    try {
+      for (const key of keys) {
+        await client.query("BEGIN");
+        try {
+          await client.query("SET LOCAL lock_timeout = '5s'");
+          await client.query("SELECT pg_advisory_lock($1,$2)", [BLOB_LOCK_NAMESPACE, key]);
+          await client.query("COMMIT");
+        } catch (error) { await client.query("ROLLBACK"); throw error; }
+        held.push(key);
+      }
+      return await work();
+    } finally {
+      for (const key of held.reverse()) await client.query("SELECT pg_advisory_unlock($1,$2)", [BLOB_LOCK_NAMESPACE, key]);
+    }
   };
   const priorRun = async (id: string, sha256: string): Promise<RunResult | null> => {
     const row = (await client.query("SELECT request_sha256,status,failure_code FROM public.predictive_ingestion_runs WHERE id=$1", [id])).rows[0];
@@ -265,58 +292,60 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const requestHash = digest(canonical(dataset));
     const counts = { artifacts: dataset.artifacts.length, captures: new Set(dataset.captures.map((capture) => capture.id)).size,
       rows: new Set([...checked.revisions.values()].flatMap((rows) => rows.map((revision) => revision.id))).size };
-    for (const artifact of dataset.artifacts) await artifacts.write(artifact.bytes, artifact.sha256);
-    return transaction(async () => {
-      const existing = await priorRun(id, requestHash); if (existing) return existing;
-      await persistRegistrations(dataset);
-      const incomplete = dataset.captures.some((capture) => capture.state !== "published");
-      if (incomplete) {
-        await insertRun(id, requestHash, now, "incomplete", "partial-acquisition", { ...counts, rows: 0 }, bytes);
+    return withBlobLocks(dataset.artifacts.map((artifact) => artifact.sha256), async () => {
+      for (const artifact of dataset.artifacts) await artifacts.write(artifact.bytes, artifact.sha256);
+      return transaction(async () => {
+        const existing = await priorRun(id, requestHash); if (existing) return existing;
+        await persistRegistrations(dataset);
+        const incomplete = dataset.captures.some((capture) => capture.state !== "published");
+        if (incomplete) {
+          await insertRun(id, requestHash, now, "incomplete", "partial-acquisition", { ...counts, rows: 0 }, bytes);
+          for (const artifact of dataset.artifacts) await persistArtifact(artifact);
+          for (const capture of dataset.captures) await persistCapture({ ...capture, id: id + ":diagnostic:" + capture.id, state: "incomplete" }, id);
+          return { id, status: "incomplete", failureCode: "partial-acquisition", reused: false };
+        }
+        const byId = new Map(dataset.artifacts.map((artifact) => [artifact.id, artifact]));
+        const incoming = dataset.captures.flatMap((capture) => checked.revisions.get(capture.artifactId)!.map((revision) =>
+          observation(revision, capture, byId.get(capture.artifactId)!)));
+        const referenced = [...new Set([...incoming.flatMap((row) => [row.revision.id, ...(row.revision.predecessorId ? [row.revision.predecessorId] : [])]),
+          ...checked.decisions.flatMap((decision) => decision.inputs.map((input) => input.observationId))])];
+        const scopes = new Map<string, { exact: Set<string>; prefixes: Set<string> }>();
+        for (const decision of checked.decisions) {
+          const group = scopes.get(decision.decidedAt) ?? { exact: new Set<string>(), prefixes: new Set<string>() };
+          const scope = decisionScope(decision);
+          scope.exact.forEach((value) => group.exact.add(value)); scope.prefixes.forEach((value) => group.prefixes.add(value));
+          scopes.set(decision.decidedAt, group);
+        }
+        const scopeRows: Observation[] = [];
+        for (const [decidedAt, scope] of scopes) {
+          scopeRows.push(...await read(decisionScopeReadSql, [decidedAt, [...scope.exact], [...scope.prefixes]]));
+        }
+        const knownRows = [...await read(idReadSql, [now, referenced]), ...scopeRows, ...incoming];
+        const known = validateObservations(knownRows);
+        if (known.size > PERSISTENCE_BOUNDS.rows) refuse("publication-bounds-refused");
+        if (checked.decisions.length) {
+          const profiles = new Map([...(await profilesFor([...new Set([...known.values()].map((row) => row.artifact.profileId))])), ...dataset.profiles]
+            .map((profile) => [profile.id, profile]));
+          const earlier = (await client.query(DECISIONS_BY_ID_SQL,
+            [checked.decisions.flatMap((decision) => decision.predecessorId ? [decision.predecessorId] : [])])).rows.map((row) => row.decision as Decision);
+          const all = [...earlier.filter((item) => !checked.decisions.some((decision) => decision.id === item.id)), ...checked.decisions];
+          validateDecisions(all, known, profiles);
+        }
+        await insertRun(id, requestHash, now, "published", null, counts, bytes);
         for (const artifact of dataset.artifacts) await persistArtifact(artifact);
-        for (const capture of dataset.captures) await persistCapture({ ...capture, id: id + ":diagnostic:" + capture.id, state: "incomplete" }, id);
-        return { id, status: "incomplete", failureCode: "partial-acquisition", reused: false };
-      }
-      const byId = new Map(dataset.artifacts.map((artifact) => [artifact.id, artifact]));
-      const incoming = dataset.captures.flatMap((capture) => checked.revisions.get(capture.artifactId)!.map((revision) =>
-        observation(revision, capture, byId.get(capture.artifactId)!)));
-      const referenced = [...new Set([...incoming.flatMap((row) => [row.revision.id, ...(row.revision.predecessorId ? [row.revision.predecessorId] : [])]),
-        ...checked.decisions.flatMap((decision) => decision.inputs.map((input) => input.observationId))])];
-      const scopes = new Map<string, { exact: Set<string>; prefixes: Set<string> }>();
-      for (const decision of checked.decisions) {
-        const group = scopes.get(decision.decidedAt) ?? { exact: new Set<string>(), prefixes: new Set<string>() };
-        const scope = decisionScope(decision);
-        scope.exact.forEach((value) => group.exact.add(value)); scope.prefixes.forEach((value) => group.prefixes.add(value));
-        scopes.set(decision.decidedAt, group);
-      }
-      const scopeRows: Observation[] = [];
-      for (const [decidedAt, scope] of scopes) {
-        scopeRows.push(...await read(decisionScopeReadSql, [decidedAt, [...scope.exact], [...scope.prefixes]]));
-      }
-      const knownRows = [...await read(idReadSql, [now, referenced]), ...scopeRows, ...incoming];
-      const known = validateObservations(knownRows);
-      if (known.size > PERSISTENCE_BOUNDS.rows) refuse("publication-bounds-refused");
-      if (checked.decisions.length) {
-        const profiles = new Map([...(await profilesFor([...new Set([...known.values()].map((row) => row.artifact.profileId))])), ...dataset.profiles]
-          .map((profile) => [profile.id, profile]));
-        const earlier = (await client.query(DECISIONS_BY_ID_SQL,
-          [checked.decisions.flatMap((decision) => decision.predecessorId ? [decision.predecessorId] : [])])).rows.map((row) => row.decision as Decision);
-        const all = [...earlier.filter((item) => !checked.decisions.some((decision) => decision.id === item.id)), ...checked.decisions];
-        validateDecisions(all, known, profiles);
-      }
-      await insertRun(id, requestHash, now, "published", null, counts, bytes);
-      for (const artifact of dataset.artifacts) await persistArtifact(artifact);
-      for (const capture of dataset.captures) await persistCapture(capture, id);
-      for (const artifact of dataset.artifacts.filter((item) => dataset.captures.some((capture) => capture.artifactId === item.id))) {
-        for (const revision of checked.revisions.get(artifact.id)!) await persistRevision(revision, artifact);
-      }
-      for (const decision of checked.decisions) await persistDecision(decision, id);
-      for (const label of dataset.labels) await persistLabel(label, id);
-      await recordRunRights(id);
-      return { id, status: "published", failureCode: null, reused: false };
+        for (const capture of dataset.captures) await persistCapture(capture, id);
+        for (const artifact of dataset.artifacts.filter((item) => dataset.captures.some((capture) => capture.artifactId === item.id))) {
+          for (const revision of checked.revisions.get(artifact.id)!) await persistRevision(revision, artifact);
+        }
+        for (const decision of checked.decisions) await persistDecision(decision, id);
+        for (const label of dataset.labels) await persistLabel(label, id);
+        await recordRunRights(id);
+        return { id, status: "published", failureCode: null, reused: false };
+      });
     });
   };
 
-  const recordRefusal = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
+  const recordRefusalLocked = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
     if (typeof id !== "string" || !id.trim() || id.length > 256) refuse("invalid-run-id"); instant(now);
     const requestHash = digest(canonical(dataset));
     const diagnostics: { artifact: Artifact; captures: Capture[] }[] = [];
@@ -353,6 +382,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       }
       return { id, status: "refused", failureCode: "publication-refused", reused: false };
     });
+  };
+
+  // Diagnostic bytes are written to the artifact store too, so the same locks apply.
+  const recordRefusal = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
+    const digests = Array.isArray(dataset?.artifacts) ? dataset.artifacts.map((artifact) => typeof artifact?.sha256 === "string" ? artifact.sha256 : "") : [];
+    return withBlobLocks(digests, () => recordRefusalLocked(id, dataset, now));
   };
 
   const compute = async (request: Request) => transaction(async () => {
@@ -417,10 +452,10 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const { bundle, profileMap } = await compute(request);
     const profiles = [...new Set(bundle.dependencies.map((dependency) => dependency.profileId))];
     const synthetic = profiles.some((id) => profileMap.get(id)?.purpose === "synthetic-test");
+    const { run, dependencies, bundleBytes, bundleSha256 } = featureRunRequest(bundle, synthetic);
     try {
-      return await transaction(async () => {
+      return await withBlobLocks([bundleSha256], () => transaction(async () => {
         await client.query("SET LOCAL ROLE predictive_recorder");
-        const { run, dependencies, bundleBytes, bundleSha256 } = featureRunRequest(bundle, synthetic);
         await artifacts.write(bundleBytes, bundleSha256);
         await client.query(`INSERT INTO public.predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'application/json',$3)
           ON CONFLICT (sha256) DO NOTHING`, [bundleSha256, Buffer.byteLength(bundleBytes), bundleSha256 + ".json"]);
@@ -430,7 +465,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
           featureVersion: bundle.featureVersion, codeVersion: FEATURE_CODE_VERSION, computedAt: bundle.computedAt, recordedAt: recorded.recordedAt });
         if (expected !== recorded.executionDigest || recorded.featureRunId !== "feature-run:" + expected) refuse("feature-run-digest-mismatch");
         return { status: "recorded" as const, bundle, featureRunId: recorded.featureRunId, inputDigest: bundle.inputDigest, executionDigest: recorded.executionDigest };
-      });
+      }));
     } catch {
       return { status: "unavailable" as const, reason: "feature-run-not-recorded" };
     }
@@ -444,8 +479,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   };
   // retention-policy-v1: one owner-run event per transaction, executed only by the
   // definer function as predictive_retention_owner. Blob files are removed after
-  // commit, and only while no row references them (a concurrent publication may
-  // have re-added the same bytes).
+  // commit from the removal queue, each under its digest's lock and only while no
+  // row references it (a concurrent publication may have re-added the bytes).
   const retain = async (event: RetentionEvent): Promise<RetentionResult> => {
     const result = await transaction(async () => {
       if (!(await client.query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='predictive_retention_owner'")).rows.length) refuse("retention-owner-role-unavailable");
@@ -453,12 +488,25 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       return (await client.query("SELECT public.predictive_retention_execute($1,$2,$3,$4,$5,$6) AS result",
         [event.id, event.reason, event.authority, event.decidedAt, JSON.stringify(event.scope), event.auditLevel])).rows[0].result as RetentionResult;
     });
-    for (const reference of result.removedBlobRefs) {
-      const sha256 = reference.slice(0, 64);
-      if ((await client.query("SELECT 1 FROM public.predictive_blobs WHERE sha256=$1", [sha256])).rows.length) continue;
-      await artifacts.remove(reference, sha256);
-    }
+    for (const reference of result.removedBlobRefs) await removeQueuedBlob(reference);
     return result;
+  };
+  // Under the digest's lock: a blob referenced again keeps its file; otherwise
+  // the file is unlinked. Either way the queue row goes only after that, so a
+  // crash or failed unlink leaves it for resumeBlobRemovals().
+  const removeQueuedBlob = async (reference: string) => {
+    const sha256 = reference.slice(0, 64);
+    await withBlobLocks([sha256], async () => {
+      const referenced = (await client.query("SELECT 1 FROM public.predictive_blobs WHERE sha256=$1", [sha256])).rows.length > 0;
+      if (!referenced) await artifacts.remove(reference, sha256);
+      await client.query("DELETE FROM public.predictive_blob_removals WHERE storage_ref=$1", [reference]);
+    });
+  };
+  const resumeBlobRemovals = async () => {
+    const references = (await client.query(`SELECT storage_ref FROM public.predictive_blob_removals ORDER BY storage_ref COLLATE "C"`)).rows
+      .map((row) => row.storage_ref as string);
+    for (const reference of references) await removeQueuedBlob(reference);
+    return references;
   };
   const retentionEvents = async (): Promise<RecordedRetentionEvent[]> => (await client.query(`SELECT id,reason,authority,${timestamp("decided_at")} AS "decidedAt",
     scope_descriptor AS scope,audit_level AS "auditLevel",removed_counts AS "removedCounts",removed_ids_digest AS "removedIdsDigest",
@@ -478,5 +526,5 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
-  return { publish, replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply };
+  return { publish, replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals };
 };

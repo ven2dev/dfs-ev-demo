@@ -986,3 +986,36 @@ needs. Each later step regenerates migration 0003 using the section 12 procedure
   - REPEATABLE READ is refused;
   - a recording blocked behind an uncommitted revocation waits on the profile
     lock, sees the revocation, and is refused at commit.
+
+### Review fix 4 (2026-10-10)
+
+- **Per-digest session locks** (advisory namespace 520054, keyed by each
+  digest's first 32 bits) coordinate artifact-store files with blob rows:
+  - **Publication** holds a lock for every artifact digest from before writing
+    the files until its transaction commits. **Refusal diagnostics** do the
+    same.
+  - **Feature-run recording** holds its bundle digest's lock the same way.
+  - **Cleanup** holds the lock from the database reference recheck through the
+    unlink.
+  - Locks are taken in ascending key order on the store's own connection, with
+    a 5-second `lock_timeout`, and released in `finally`.
+  - A lost connection drops the locks and fails the recheck query, so no
+    unlink runs without the lock.
+- **`predictive_blob_removals`** is a control-state queue with no grants,
+  filled by `predictive_retention_execute`.
+  - `removeQueuedBlob` keeps the file when the blob is referenced again, and
+    otherwise unlinks it. Either way, the queue row is deleted only after that
+    step.
+  - A crash or failed unlink leaves the row, and `store.resumeBlobRemovals()`
+    retries.
+  - No orphan-file sweep: archive journals share the artifact root and have no
+    blob row.
+  - For digest-only events, the queue briefly holds the blob reference until
+    its file is removed.
+- **Proofs:**
+  - Cleanup waits behind a publisher holding the lock, then keeps the file the
+    publisher re-referenced.
+  - A publisher waits behind cleanup mid-unlink, then rewrites the file for its
+    committed row.
+  - A failed unlink is resumed after the event has committed.
+- Each artifact root belongs to one authoritative database.

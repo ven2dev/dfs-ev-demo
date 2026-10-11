@@ -1288,6 +1288,16 @@ CREATE TABLE public.predictive_retention_authorizations (
   retention_event_id text NOT NULL
 );
 
+-- Control state, not evidence: blob files whose rows a retention event deleted
+-- and that are not yet confirmed removed from the artifact store. The owner path
+-- drains it under the per-digest lock; a crash or failed unlink leaves the row
+-- for a retry. A row is removed once its file is gone or its blob is referenced
+-- again. No role is granted any privilege.
+CREATE TABLE public.predictive_blob_removals (
+  storage_ref text PRIMARY KEY CHECK (storage_ref ~ '^[a-f0-9]{64}\.(json|csv)$'),
+  queued_at timestamptz NOT NULL CHECK (isfinite(queued_at))
+);
+
 CREATE FUNCTION public.predictive_retention_audit_immutable() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN RAISE EXCEPTION 'predictive-append-only' USING ERRCODE = '23514'; END
 $$;
@@ -1398,6 +1408,7 @@ BEGIN
   DELETE FROM public.predictive_captures WHERE id = ANY(caps);
   DELETE FROM public.predictive_artifacts WHERE id = ANY(arts);
   DELETE FROM public.predictive_blobs WHERE sha256 = ANY(blobs);
+  INSERT INTO public.predictive_blob_removals (storage_ref, queued_at) SELECT r, pg_catalog.now() FROM unnest(refs) r ON CONFLICT DO NOTHING;
   IF event_audit_level = 'full' THEN
     INSERT INTO public.predictive_retention_tombstones (retention_event_id, target_kind, target_id)
       SELECT event_id, r.k, r.v FROM unnest(removed_kinds, removed_ids) r(k, v);

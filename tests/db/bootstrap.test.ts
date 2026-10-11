@@ -26,6 +26,7 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
       "player_game_stats",
       "predictive_artifact_observations",
       "predictive_artifacts",
+      "predictive_blob_removals",
       "predictive_blobs",
       "predictive_captures",
       "predictive_decision_inputs",
