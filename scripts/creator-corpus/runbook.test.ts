@@ -17,12 +17,12 @@ const toolSources = readdirSync(TOOL_DIRECTORY)
   .concat(source("src/lib/creatorDecisions.ts"));
 const CLI = source("scripts/creator-corpus/cli.ts");
 
-const COMMANDS = ["resolve", "confirm", "discover", "review", "rebuild", "screen", "purge"];
-const OPTIONS = ["creators", "output", "max-units", "registry", "keys", "decisions", "captures", "allow-incomplete-end-week", "input", "port", "dry-run", "force"];
+const COMMANDS = ["resolve", "confirm", "discover", "review", "rebuild", "screen", "purge", "gate-register"];
+const OPTIONS = ["creators", "output", "max-units", "registry", "keys", "decisions", "captures", "allow-incomplete-end-week", "input", "port", "dry-run", "force", "private-record"];
 
 describe("creator corpus runbook", () => {
   it("documents every command, and every command it shows exists", () => {
-    const shown = [...RUNBOOK.matchAll(/npm run creators -- ([a-z]+)/g)].map((match) => match[1]);
+    const shown = [...RUNBOOK.matchAll(/npm run creators -- ([a-z-]+)/g)].map((match) => match[1]);
     expect(new Set(shown)).toEqual(new Set(COMMANDS));
     for (const command of COMMANDS) expect(CLI, command).toContain(`command === "${command}"`);
   });

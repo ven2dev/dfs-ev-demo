@@ -101,6 +101,44 @@ const registryFor = (confirmed: boolean) => ({
   ],
 });
 
+describe("gate-register", () => {
+  it("creates the private commitment record and a public gate without names, keys, or network access", async () => {
+    await writeJson("creators.json", [
+      { key: "creator-b", name: "Synthetic B", seedVideoId: "bbbbbbbbbbb" },
+      { key: "creator-a", name: "Synthetic A", seedVideoId: "aaaaaaaaaaa" },
+    ]);
+    let calls = 0;
+    const result = await run([
+      "gate-register",
+      "--creators", path("creators.json"),
+      "--private-record", path("gate-private.json"),
+    ], {
+      gateOutputPath: path("readiness-gate.json"),
+      fetchImpl: async () => { calls++; throw new Error("no network allowed"); },
+    });
+    expect(result.code).toBe("ok");
+    expect(calls).toBe(0);
+    const privateText = await readFile(path("gate-private.json"), "utf8");
+    const publicText = await readFile(path("readiness-gate.json"), "utf8");
+    expect(privateText).toContain("creator-a");
+    expect(privateText).toContain("saltHex");
+    expect(privateText).not.toContain("Synthetic");
+    expect(publicText).not.toContain("creator-a");
+    expect(publicText).not.toContain("saltHex");
+    expect(JSON.parse(result.lines[0])).toMatchObject({ eligibleCreatorCount: 2 });
+  });
+
+  it("requires both private inputs and refuses to replace the registered public gate", async () => {
+    expect((await run(["gate-register", "--creators", path("creators.json")], {
+      gateOutputPath: path("readiness-gate.json"),
+    })).code).toBe("creators-and-private-record-required");
+    await writeJson("creators.json", creatorsFile);
+    const args = ["gate-register", "--creators", path("creators.json"), "--private-record", path("gate-private.json")];
+    expect((await run(args, { gateOutputPath: path("readiness-gate.json") })).code).toBe("ok");
+    expect((await run(args, { gateOutputPath: path("readiness-gate.json") })).code).toBe("readiness-gate-exists");
+  });
+});
+
 describe("resolve", () => {
   it("writes an unconfirmed registry, prints the name comparison, and counts quota", async () => {
     await writeJson("creators.json", creatorsFile);

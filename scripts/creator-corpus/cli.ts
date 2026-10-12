@@ -24,6 +24,7 @@ import { isApiDataStale } from "../../src/lib/creatorCorpusManifest.ts";
 import { PrivateFileError, assertPrivateOutputAvailable, deletePrivateFile, readPrivateJson, writePrivateJson } from "./privateOutput.ts";
 import { startReviewServer } from "./reviewServer.ts";
 import { YoutubeApiError, createQuotaMeter, createYoutubeClient, type FetchLike } from "./youtubeApi.ts";
+import { ReadinessGateError, registerReadinessGate } from "./readinessGate.ts";
 
 // Owner-run commands for the #88 corpus manifest. Failures print one fixed
 // code; nothing printed here can contain the API key, a URL or a raw error.
@@ -45,6 +46,9 @@ export type CliDeps = {
   out: (line: string) => void;
   // Resolves when the owner stops a long-running command (Ctrl+C).
   waitForStop: () => Promise<void>;
+  // Tests direct the create-only public gate into a disposable directory.
+  // Production omits this and uses the one committed gate path.
+  gateOutputPath?: string;
 };
 
 const COMMON = {
@@ -243,10 +247,27 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     return;
   }
 
+  if (command === "gate-register") {
+    const values = parse({ creators: { type: "string" }, "private-record": { type: "string" } });
+    if (!values.creators || !values["private-record"]) return usage("creators-and-private-record-required");
+    const gate = await registerReadinessGate({
+      creatorsPath: values.creators,
+      privateRecordPath: values["private-record"],
+      now: deps.now(),
+      outputPath: deps.gateOutputPath,
+    });
+    deps.out(JSON.stringify({
+      registeredAt: gate.registeredAt,
+      eligibleCreatorCount: gate.eligibleCreatorCount,
+      commitmentDigest: gate.commitment.digest,
+    }));
+    return;
+  }
+
   usage("unknown-command");
 };
 
-const KNOWN = [UsageError, InputError, PrivateFileError, CommandError, YoutubeApiError, DecisionsFileError];
+const KNOWN = [UsageError, InputError, PrivateFileError, CommandError, YoutubeApiError, DecisionsFileError, ReadinessGateError];
 
 export const main = async (argv: string[]): Promise<number> => {
   try {

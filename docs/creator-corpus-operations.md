@@ -41,6 +41,29 @@ exception ends before any public use (#91).
 
 A suggested private folder: `~/.config/dfs-ev-demo/creators/`.
 
+The database projection and every stored field's authority/lifecycle are
+defined in the [creator corpus persistence contract](creator-corpus-persistence-contract.md).
+
+## Register the readiness gate once
+
+Before importing the corpus or examining any holdout, create the private
+eligible-creator commitment in your own terminal. Use the same private creators
+file that discovery uses. The private record is created outside the repository;
+the command writes only the safe commitment, counts, thresholds, window and
+rule to the committed `scripts/creator-corpus/readiness-gate.json` file.
+
+```bash
+npm run creators -- gate-register \
+  --creators ~/.config/dfs-ev-demo/creators/creators.json \
+  --private-record ~/.config/dfs-ev-demo/creators/readiness-gate-private.json
+```
+
+Both outputs are create-only. If registration is interrupted after the private
+record is written, run the same command again: it reuses the original salt. If
+the eligible keys changed, it refuses the run. Never delete or share the
+private record; it is required to verify the public commitment locally without
+revealing the eligible keys.
+
 ## What is fixed in advance
 
 `scripts/creator-corpus/registration.json` records the window and rule that were
@@ -369,6 +392,10 @@ Every failure prints one line, `creator-corpus: <code>`.
 | `must-be-outside-repository` | A file path is inside the repository. Use a folder outside it. |
 | `directory-missing` | The folder for a file does not exist. Create it first. |
 | `output-exists` | The output file already exists. Choose a new name; files are never overwritten. |
+| `readiness-gate-exists` | The public readiness gate is already registered. It is immutable; do not replace it after inspecting corpus or holdout results. |
+| `invalid-private-gate-record`, `invalid-gate-salt` | The private gate record is damaged or malformed. Restore the original private record; never generate a replacement salt for an existing registration. |
+| `gate-creators-changed` | The current creators file does not contain exactly the eligible keys bound by the private gate record. Use the original eligible set or create a separately reviewed future registration. |
+| `invalid-gate-creators`, `invalid-gate-registration-time`, `gate-window-mismatch`, `invalid-readiness-gate`, `readiness-gate-unwritable` | The gate inputs, committed registration, clock or destination do not satisfy the fixed contract. Stop rather than repairing or replacing a registered gate; send the exact code for review. |
 | `input-unreadable` | An input file is missing or is not valid JSON. |
 | `invalid-creators-file`, `invalid-creator-key`, `invalid-creator-name`, `invalid-seed-video`, `duplicate-creator-key` | The creators file is malformed; see step 1. |
 | `title-mismatch-cannot-confirm` | The stored name does not match the resolved channel. Fix the creators file and resolve again. |
