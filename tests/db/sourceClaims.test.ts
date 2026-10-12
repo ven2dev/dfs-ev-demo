@@ -10,7 +10,7 @@ import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
 import { ensureHarnessSession, ensurePredictiveRoles } from "../../scripts/predictive/harness.ts";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { createLocalPredictiveStore, retentionIdsDigest } from "../../src/lib/predictive/persistence.ts";
-import type { RecordedRetentionEvent } from "../../src/lib/predictive/types.ts";
+import type { Dataset, RecordedRetentionEvent } from "../../src/lib/predictive/types.ts";
 import { canonical, digest, entityKey } from "../../src/lib/predictive/validation.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { reconcileFact } from "../../src/lib/predictive/policies.ts";
@@ -21,7 +21,7 @@ import { prepareSourceClaims, projectSourceClaim } from "../../src/lib/predictiv
 import { sourceClaimFixture } from "../predictive/fixtures/sourceClaims.ts";
 import { sourceCsv, sourceGameId, sourceSamples } from "../predictive/fixtures/source.ts";
 import { passingYardsFixture } from "../predictive/fixtures/passingYards.ts";
-import { addCapture, gameId, profile, revision, rights } from "../predictive/fixtures/passingYards.ts";
+import { addCapture, gameId, profile, PROFILE, revision, rights, schedule } from "../predictive/fixtures/passingYards.ts";
 import { BRIDGE_PROFILE, normalizationFixture, NORMALIZATION_GAME, rewriteNormalizationRows } from "../predictive/fixtures/sourceNormalization.ts";
 import { createScratchHarness } from "./scratch.mjs";
 
@@ -878,6 +878,81 @@ it("CSV unavailable migration upgrades v5 preserving v1 positive and withheld pl
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM predictive_source_bindings WHERE id='legacy-v1'")).rows).toEqual(binding);
   }, 5);
+});
+
+it("CSV unavailable retention re-applies pre-v6 legacy events with identical counts and digests after restoration", async () => {
+  for (const auditLevel of ["full", "digest-only"] as const) {
+    const fixture = passingYardsFixture(false);
+    const other: Dataset = { formatVersion: 2, profiles: [profile("retention-survivor")], rightsDecisions: [rights("retention-survivor")],
+      artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+    addCapture(other, "retention-survivor", [revision("surviving-schedule", "schedule",
+      schedule(81, "2026-09-14T00:15:00.000Z", "nfl:team:SEA", "nfl:team:ARI"))], "2026-10-07T12:00:00.000Z", "retention-survivor");
+    const seed = async (store: Store) => {
+      await store.publish("legacy-retention", fixture, "2026-10-11T00:00:00.000Z");
+      await store.publish("surviving-retention", other, "2026-10-11T00:00:00.000Z");
+    };
+    // Hand-counted fixture: 13 schedules, 2 coverage rows, 6 memberships,
+    // 6 player rows, 14 team rows, 18 markers and 1 availability row.
+    const emptyCounts = { observations: 0, artifacts: 0, captures: 0, decisions: 0, labels: 0, featureRuns: 0,
+      pins: 0, blobs: 0, links: 0, decisionInputs: 0, featureRunDependencies: 0, unpins: 0 };
+    const removedCounts = { ...emptyCounts, observations: 60, artifacts: 7, captures: 7, blobs: 7, links: 60 };
+    const assertDeleted = async (client: Client, artifacts: Artifacts) => {
+      expect((await client.query("SELECT id FROM predictive_observations ORDER BY id")).rows).toEqual([{ id: "surviving-schedule" }]);
+      expect((await client.query("SELECT id FROM predictive_artifacts ORDER BY id")).rows).toEqual([{ id: "retention-survivor" }]);
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_blob_removals")).rows[0].n).toBe(0);
+      for (const artifact of fixture.artifacts)
+        await expect(artifacts.database.read(artifact.sha256 + ".json", artifact.sha256, Buffer.byteLength(artifact.bytes)))
+          .rejects.toMatchObject({ code: "ENOENT" });
+      const kept = other.artifacts[0];
+      expect(await artifacts.database.read(kept.sha256 + ".json", kept.sha256, Buffer.byteLength(kept.bytes))).toBe(kept.bytes);
+    };
+    let history: RecordedRetentionEvent[] = []; let oldProcedure = "";
+    const procedure = async (client: Client) => (await client.query(`SELECT pg_get_functiondef(
+      'public.predictive_retention_execute(text,text,text,timestamptz,jsonb,text)'::regprocedure) AS definition`)).rows[0].definition as string;
+    await withProof(async ({ client, store, artifacts, target }) => {
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(5);
+      oldProcedure = await procedure(client);
+      await seed(store);
+      await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+        const owner = await createLocalPredictiveStore(login, loginTarget, artifacts);
+        await owner.retain({ id: "legacy-empty", reason: "provider-request", authority: "synthetic test", decidedAt: "2026-10-11T00:00:00.000Z",
+          scope: { kind: "source", profileIds: [PROFILE], capturedFrom: "2025-01-01T00:00:00.000Z", capturedBefore: "2026-01-01T00:00:00.000Z" }, auditLevel });
+        await owner.retain({ id: "legacy-removal", reason: "provider-request", authority: "synthetic test", decidedAt: "2026-10-11T00:00:00.000Z",
+          scope: { kind: "source", profileIds: [PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel });
+        history = await owner.retentionEvents();
+      });
+      expect(history.map((event) => event.id)).toEqual(["legacy-empty", "legacy-removal"]);
+      expect(history[0].removedCounts).toEqual(emptyCounts);
+      expect(history[0].removedIdsDigest).toBe(retentionIdsDigest([]));
+      expect(history[1].removedCounts).toEqual(removedCounts);
+      expect(history[1].removedIdsDigest).not.toBe(history[0].removedIdsDigest);
+      await assertDeleted(client, artifacts);
+    }, 5);
+    // Restore the same retained evidence and IDs into a fresh post-v6 database.
+    // New timestamps are allowed; the deletion set and audit contract are not.
+    await withProof(async ({ client, store, artifacts, target }) => {
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(6);
+      expect(await procedure(client)).not.toBe(oldProcedure);
+      await seed(store);
+      await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+        const owner = await createLocalPredictiveStore(login, loginTarget, artifacts);
+        expect(await owner.reapply(history)).toEqual([
+          { eventId: "legacy-empty", status: "reapplied", matched: true }, { eventId: "legacy-removal", status: "reapplied", matched: true },
+        ]);
+        const restored = await owner.retentionEvents();
+        expect(restored.map(({ id, removedCounts, removedIdsDigest }) => ({ id, removedCounts, removedIdsDigest })))
+          .toEqual(history.map(({ id, removedCounts, removedIdsDigest }) => ({ id, removedCounts, removedIdsDigest })));
+        expect(await owner.reapply(history)).toEqual([
+          { eventId: "legacy-empty", status: "present", matched: true }, { eventId: "legacy-removal", status: "present", matched: true },
+        ]);
+        expect(await owner.retentionEvents()).toEqual(restored);
+      });
+      const tombstones = (await client.query("SELECT target_kind AS kind,target_id AS id FROM predictive_retention_tombstones")).rows;
+      if (auditLevel === "full") { expect(tombstones).toHaveLength(81); expect(retentionIdsDigest(tombstones)).toBe(history[1].removedIdsDigest); }
+      else expect(tombstones).toEqual([]);
+      await assertDeleted(client, artifacts);
+    });
+  }
 });
 
 it("CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts", async () => {

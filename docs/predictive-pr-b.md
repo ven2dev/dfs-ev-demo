@@ -10,6 +10,28 @@ publication and unavailable-state persistence are implemented in internal resear
 staging. Shared feature/decision/label activation remains next; this does not
 finish PR B or parent #52.
 
+## Migration ordering decision (2026-10-12)
+
+The owner approved #90 landing first: its creator-corpus migration owns 0004.
+After that merge, merge main into this branch and move PR B's three unmerged
+migrations from **0004–0006 to 0005–0007**, then regenerate catalog/readiness
+artifacts and update migration-prefix tests. The owner confirmed they have run
+only in disposable databases. Released 0001–0003 remain frozen. No further
+PR B migrations will be added until this ordering is resolved. References below
+use the current filenames pending #90's merge; renumbering has not occurred.
+
+Capture-less bindings cannot prove they fall outside a time-scoped source
+deletion. Keep the conservative closure: remove those bindings and their entire
+raw-key lineage for the named profile. This can remove more history than the
+event's time window; never turn an unknown capture time into evidence of safety.
+
+The cross-version retention regression executes legacy empty/nonempty deletions
+under pre-0006 SQL, restores identical evidence into a post-0006 database, and
+requires identical audit counts/digests in both full and digest-only modes. It
+also checks file removal, unrelated survivors and idempotent reapplication
+through a non-superuser retention-only login. See the
+[test reasoning](predictive-test-review.md#pr-b-cross-version-retention-audit-2026-10-12).
+
 ## Implemented increment
 
 `sourceStats.ts` projects the ten permitted player/team counts under

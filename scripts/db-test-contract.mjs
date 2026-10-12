@@ -87,6 +87,7 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV unavailable bindings verify every ambiguous capture file and allow evidenced conflict recovery",
   "CSV capture-less unavailable bindings keep source rights and whole-lineage retention through execute-only ownership",
   "CSV unavailable migration upgrades v5 preserving v1 positive and withheld plans, exact retries and recorded history",
+  "CSV unavailable retention re-applies pre-v6 legacy events with identical counts and digests after restoration",
   "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
   "CSV unavailable planning checks context rights before file hydration and revocation blocks saved conflicts and retries",
   "CSV binding schedule reconciliation pins only a current exact selection and a new conflicting head can be recorded unavailable",

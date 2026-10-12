@@ -336,3 +336,23 @@ corrections. Capture-less retention is exercised with an execute-only,
 non-superuser owner and a time-scoped source deletion. These are storage and
 policy proofs; they do not qualify real bridges or establish source completion,
 population completeness, historical availability or production throughput.
+
+## PR B cross-version retention audit (2026-10-12)
+
+The required `pre-v6 legacy events` case actually executes the pre-0006
+retention procedure in a v5 scratch database, then re-imports the same immutable
+evidence and IDs into a fresh v6 database. It checks the ledger tips and verifies
+that the two procedure definitions differ; a same-version restore cannot satisfy
+this regression. Both full and digest-only audit modes cover an empty time scope
+and a nonempty legacy JSON deletion with no source-stat rows or bindings.
+
+Expected counts are hand-counted: 60 observations, seven artifacts/captures/blobs
+and 60 links, with every other legacy count zero and no new source-count keys.
+Reapplication must match the original counts and digest exactly. Full audit also
+checks all 81 tombstones against the digest; digest-only audit has no tombstones.
+Both phases use a real non-superuser retention-only login. The tests check actual
+file removal, an empty removal queue, surviving unrelated evidence and an
+unchanged second reapplication. This proves the zero-new-row audit compatibility
+claimed by the replacement procedure; it restores retained evidence, not a
+physical PostgreSQL backup, and does not cover nonzero new source kinds (which
+have their own same-version restore cases).

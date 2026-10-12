@@ -1,7 +1,21 @@
 # #52 session handoff
 
-Updated 2026-10-12 after PR B unavailable-state persistence. Resume from this state; do not restart the
+Updated 2026-10-12 after PR B retention compatibility review. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
+
+## Current migration coordination (2026-10-12)
+
+The owner approved **#90 merging first and owning 0004**. After it merges, merge
+main into PR B (no rebase), move this branch's three unmerged migrations from
+**0004–0006 to 0005–0007**, regenerate catalog/readiness artifacts and update the
+prefix/version tests. The owner confirmed none ran outside disposable databases.
+Released 0001–0003 stay frozen. Hold further PR B migration additions until this
+ordering is resolved; the filenames below have not yet been changed.
+
+The old relay handoff now has this notice too. Do not use its historical October 9
+instructions as current schema/merge guidance. Preserve the creator session's
+database: PR B uses Docker project `dfs-ev-52-prb-test` and `[::1]:54329`, not the
+default project at `127.0.0.1:54329`.
 
 ## Current state: PR A merged; PR B bound source revisions in internal research staging
 
@@ -374,3 +388,23 @@ Evidence: `/private/tmp/dfs52-prb-unavailable-jsdom.log`,
 `/private/tmp/dfs52-prb-unavailable-node.log`,
 `/private/tmp/dfs52-prb-unavailable-db.log`,
 `/private/tmp/dfs52-prb-unavailable-proof.log`.
+
+## Retention compatibility review follow-up
+
+The independent review of `564549b` found no blockers. The suggested regression
+now executes empty/nonempty legacy retention events under pre-0006 SQL in v5,
+then re-imports the same evidence/IDs into v6 and re-applies them through a
+non-superuser retention-only login. Counts and digest match exactly in full and
+digest-only modes; files are removed, unrelated evidence survives, and a second
+reapplication is unchanged. No runtime SQL change was required. Capture-less
+whole-lineage deletion is consciously retained and documented above.
+
+Validation: **74 Node database checks + 85 database tests**, including all
+**68 mandatory predictive cases**, typecheck, changed-file lint, CI-gate and
+whitespace checks pass. The application code and migration artifacts did not
+change; the earlier 831 jsdom + 604 Node result remains the last app-suite run.
+Evidence: `/private/tmp/dfs52-prb-retention-db.log`,
+`/private/tmp/dfs52-prb-retention-focused.log`,
+`/private/tmp/dfs52-prb-retention-typecheck.log`,
+`/private/tmp/dfs52-prb-retention-lint.log`,
+`/private/tmp/dfs52-prb-retention-ci.log`.
