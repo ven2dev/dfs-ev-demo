@@ -216,6 +216,54 @@ describe("import", () => {
   });
 });
 
+describe("readiness", () => {
+  const args = () => ["readiness", "--database-registration", path("database-registration.json"),
+    "--private-record", path("gate-private.json")];
+
+  it("validates the local database target and prints the generated report without reading corpus source files", async () => {
+    await writeJson("database-registration.json", {
+      formatVersion: 1, transport: "loopback", port: 55432, database: "dfs_ev_corpus", role: "corpus_importer",
+    });
+    await writeJson("gate-private.json", { formatVersion: 1, eligibleCreatorKeys: ["creator-a"], saltHex: "f".repeat(64) });
+    await chmod(path("gate-private.json"), 0o600);
+    let called = false;
+    const result = await run(args(), {
+      env: { CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.1:55432/dfs_ev_corpus" },
+      readinessReporter: async ({ config, now, loadPrivateGateRecord }) => {
+        called = true;
+        expect(config).toMatchObject({ database: "dfs_ev_corpus", user: "corpus_importer" });
+        expect(now).toEqual(CLOSED);
+        expect(await loadPrivateGateRecord()).toMatchObject({ eligibleCreatorKeys: ["creator-a"] });
+        return { formatVersion: 1, downstream: { modelReadiness: "blocked" } };
+      },
+    });
+    expect(result.code).toBe("ok");
+    expect(called).toBe(true);
+    expect(JSON.parse(result.lines[0])).toEqual({ formatVersion: 1, downstream: { modelReadiness: "blocked" } });
+  });
+
+  it("requires the registration and refuses hosted or ambient configuration before reporting", async () => {
+    expect((await run(["readiness"])).code).toBe("database-registration-and-private-record-required");
+    await writeJson("database-registration.json", {
+      formatVersion: 1, transport: "loopback", port: 55432, database: "dfs_ev_corpus", role: "corpus_importer",
+    });
+    let calls = 0;
+    const reporter = async () => { calls++; return {}; };
+    expect((await run(args(), {
+      env: { CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@ep-example.neon.tech:5432/dfs_ev_corpus" },
+      readinessReporter: reporter,
+    })).code).toBe("local-corpus-database-required");
+    expect((await run(args(), {
+      env: {
+        CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.1:55432/dfs_ev_corpus",
+        PGHOST: "127.0.0.1",
+      },
+      readinessReporter: reporter,
+    })).code).toBe("ambient-database-configuration-refused");
+    expect(calls).toBe(0);
+  });
+});
+
 describe("resolve", () => {
   it("writes an unconfirmed registry, prints the name comparison, and counts quota", async () => {
     await writeJson("creators.json", creatorsFile);

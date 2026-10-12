@@ -10,6 +10,7 @@ import { publishCorpusImport } from "../../scripts/creator-corpus/importPublishe
 import type { CorpusDatabaseConfig } from "../../scripts/creator-corpus/importTarget.ts";
 import type { CorpusImportSource } from "../../scripts/creator-corpus/importPlanner.ts";
 import { buildReadinessGate } from "../../scripts/creator-corpus/readinessGate.ts";
+import { generateCorpusReadinessReport, PICK_METRICS_PENDING } from "../../scripts/creator-corpus/readinessReport.ts";
 import { NOW, discoveryFor, record, vid } from "../../scripts/creator-corpus/testSupport.ts";
 import { createScratchHarness } from "./scratch.mjs";
 
@@ -112,5 +113,53 @@ it("corpus importer fails on lock contention and rolls back a later publication 
     expect((await owner.query("SELECT count(*)::integer AS count FROM corpus_imports")).rows[0].count).toBe(1);
     expect((await owner.query("SELECT count(*)::integer AS count FROM corpus_capture_events")).rows[0].count).toBe(1);
     expect((await owner.query("SELECT count(*)::integer AS count FROM corpus_decision_events")).rows[0].count).toBe(1);
+  });
+});
+
+it("corpus readiness reads one consistent local projection and keeps coverage dimensions separate", async () => {
+  await withImporterDatabase(async (owner, config) => {
+    await publishCorpusImport({ config, loadSource: async () => source(1) });
+    const before = (await owner.query(`SELECT
+      (SELECT count(*)::integer FROM corpus_imports) AS imports,
+      (SELECT count(*)::integer FROM corpus_capture_events) AS captures,
+      (SELECT count(*)::integer FROM corpus_decision_events) AS decisions,
+      (SELECT count(*)::integer FROM corpus_api_videos) AS videos`)).rows[0];
+    const report = await generateCorpusReadinessReport({
+      config,
+      now: NOW,
+      loadPrivateGateRecord: async () => ({
+        formatVersion: 1,
+        eligibleCreatorKeys: ["creator-a", "creator-b"],
+        saltHex: "f".repeat(64),
+      }),
+    });
+    expect(report.corpus).toMatchObject({
+      registeredCreatorCount: 2,
+      identifiedCreatorCount: 2,
+      creatorCoverage: "complete",
+      videos: { total: 3, included: 1, needsReview: 2, excluded: 0, unknown: 0 },
+      captureRate: { capturedIncludedVideos: 1, includedVideos: 1, percentage: 100 },
+      publicUseClearance: { status: "not-cleared", clearedVideos: 0, corpusVideos: 3, percentage: 0 },
+    });
+    expect(report.creators.find((creator) => creator.creatorKey === "creator-a")?.videos[0]).toMatchObject({
+      inclusion: "present", captureAvailability: "captured", apiFreshness: "fresh",
+      publicUseClearance: "not-cleared",
+    });
+    expect(report.pickLevelMetrics.market).toBe(PICK_METRICS_PENDING);
+    expect(report.downstream.modelReadiness).toBe("blocked");
+    await expect(generateCorpusReadinessReport({
+      config,
+      now: NOW,
+      loadPrivateGateRecord: async () => ({
+        formatVersion: 1,
+        eligibleCreatorKeys: ["creator-a", "creator-b"],
+        saltHex: "e".repeat(64),
+      }),
+    })).rejects.toMatchObject({ code: "readiness-gate-verification-failed" });
+    expect((await owner.query(`SELECT
+      (SELECT count(*)::integer FROM corpus_imports) AS imports,
+      (SELECT count(*)::integer FROM corpus_capture_events) AS captures,
+      (SELECT count(*)::integer FROM corpus_decision_events) AS decisions,
+      (SELECT count(*)::integer FROM corpus_api_videos) AS videos`)).rows[0]).toEqual(before);
   });
 });

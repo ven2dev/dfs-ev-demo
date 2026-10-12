@@ -24,7 +24,7 @@ const fail = (code: string): never => {
   throw new CorpusImportDatabaseError(code);
 };
 
-const assertConnectedTarget = async (client: ClientBase, config: CorpusDatabaseConfig): Promise<void> => {
+export const assertConnectedCorpusTarget = async (client: ClientBase, config: CorpusDatabaseConfig): Promise<void> => {
   const { rows: [identity] } = await client.query(`SELECT current_database() AS database,current_user AS role,
     current_setting('server_version_num')::integer AS version,
     (SELECT rolsuper FROM pg_roles WHERE rolname=current_user) AS superuser`);
@@ -149,7 +149,7 @@ export const publishCorpusImport = async ({
     try { await client.connect(); } catch { return fail("corpus-import-database-failure"); }
     // Establish the actual database, role, version and grants before the
     // callback is allowed to open any private corpus source.
-    try { await assertConnectedTarget(client, config); }
+    try { await assertConnectedCorpusTarget(client, config); }
     catch (error) {
       if (error instanceof CorpusImportDatabaseError) throw error;
       return fail("corpus-import-database-failure");

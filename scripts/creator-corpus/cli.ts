@@ -30,6 +30,7 @@ import { ReadinessGateError, parsePrivateGateRecord, parseReadinessGate, registe
 import { parseCorpusDatabaseRegistration, parseCorpusDatabaseTarget, CorpusImportTargetError } from "./importTarget.ts";
 import { publishCorpusImport, CorpusImportDatabaseError, type CorpusImportResult } from "./importPublisher.ts";
 import { CorpusImportPlanError, type CorpusImportSource } from "./importPlanner.ts";
+import { CorpusReadinessError, generateCorpusReadinessReport } from "./readinessReport.ts";
 
 // Owner-run commands for the #88 corpus manifest. Failures print one fixed
 // code; nothing printed here can contain the API key, a URL or a raw error.
@@ -60,6 +61,11 @@ export type CliDeps = {
     config: ReturnType<typeof parseCorpusDatabaseTarget>;
     loadSource: () => Promise<CorpusImportSource>;
   }) => Promise<CorpusImportResult>;
+  readinessReporter?: (options: {
+    config: ReturnType<typeof parseCorpusDatabaseTarget>;
+    now: Date;
+    loadPrivateGateRecord: () => Promise<ReturnType<typeof parsePrivateGateRecord>>;
+  }) => Promise<unknown>;
 };
 
 const COMMON = {
@@ -345,11 +351,28 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     return;
   }
 
+  if (command === "readiness") {
+    const values = parse({ "database-registration": { type: "string" }, "private-record": { type: "string" } });
+    if (!values["database-registration"] || !values["private-record"]) {
+      return usage("database-registration-and-private-record-required");
+    }
+    const databaseRegistration = parseCorpusDatabaseRegistration(await readPrivateJson(values["database-registration"]));
+    const config = parseCorpusDatabaseTarget(deps.env, databaseRegistration);
+    const report = await (deps.readinessReporter ?? generateCorpusReadinessReport)({
+      config,
+      now: deps.now(),
+      loadPrivateGateRecord: async () =>
+        parsePrivateGateRecord((await readPrivateJsonSource(values["private-record"] as string)).value),
+    });
+    deps.out(JSON.stringify(report));
+    return;
+  }
+
   usage("unknown-command");
 };
 
 const KNOWN = [UsageError, InputError, PrivateFileError, CommandError, YoutubeApiError, DecisionsFileError, ReadinessGateError,
-  CorpusImportTargetError, CorpusImportDatabaseError, CorpusImportPlanError];
+  CorpusImportTargetError, CorpusImportDatabaseError, CorpusImportPlanError, CorpusReadinessError];
 
 export const main = async (argv: string[]): Promise<number> => {
   try {
