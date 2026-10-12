@@ -16,6 +16,14 @@ completed work or repeat source downloads merely to recover context.
   [review gate](database-migrations.md#pr-a-draft-period-reset-of-migration-0003).
   Publish this branch for review and require remote CI before merge. Parent #52
   remains open for PR B and the broader ingestion/operation criteria.
+- [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102) is open against
+  `main`. Its first remote run passed app checks (including the default build),
+  DB integration, aggregate CI and Vercel. CodeQL's result check flagged an
+  `Accept`-header URL substring comparison and a fixture's intentional
+  first-newline replacement. The follow-up uses the parsed request hostname
+  (including redirects) and constructs only the malformed header explicitly.
+  Two header regressions failed before the fix; exact API-host, redirect and
+  lookalike-host controls pass. Recheck remote CI on the new head before merge.
 - The approved design is [`predictive-real-source-schema.md`](predictive-real-source-schema.md)
   revision 2 and [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md)
   revision 2. Section 14 of the DDL lists what each step built and every

@@ -26,7 +26,10 @@ export const fixtureTransport = (options: { partialDepth?: boolean; failFeed?: S
       const feed = SOURCE_FEEDS.find((name) => { const asset = sourceAsset(name, 2026); return asset.url === address || asset.metadataUrl === address; })!;
       const asset = sourceAsset(feed, 2026);
       let bytes = sourceCsv(feed);
-      if (options.badHeader === feed) bytes = bytes.replace("\n", ",unexpected\n");
+      if (options.badHeader === feed) {
+        const [header, ...records] = bytes.split("\n");
+        bytes = [header + ",unexpected", ...records].join("\n");
+      }
       const partial = feed === "depth" && options.partialDepth;
       const size = partial ? 59_000_000 : Buffer.byteLength(bytes);
       if (address === asset.metadataUrl) return new Response(JSON.stringify({ tag_name: asset.tag, assets: [{ name: asset.name, size,

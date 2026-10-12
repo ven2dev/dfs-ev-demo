@@ -27,6 +27,19 @@ These proofs use disposable PostgreSQL and synthetic evidence. They do not
 qualify hosted role provisioning, filesystem/backup operations under actual
 process crashes, a real provider's identity adapter, licensing or model inputs.
 
+## Publication CodeQL follow-up (2026-10-11)
+
+PR #102's initial remote run passed the application/default-build and database
+gates. CodeQL flagged a URL substring comparison used to select the response
+format and an intentional first-newline fixture mutation. The request allowlist
+already checks exact parsed hosts; the `Accept` header now does too, using the
+current destination after redirects. A permitted GitHub filename containing
+`api.github.com` and an API-to-asset redirect both incorrectly selected JSON
+before the fix; the regressions now require CSV. Exact API-host selection stays
+JSON, and lookalike hosts are refused before fetching. The bad-header fixture
+constructs the header separately and preserves every data record, retaining the
+existing schema-drift failure test without a sanitization-like replacement.
+
 ## PostgreSQL cases and evidence
 
 | Case | Required behavior and independent evidence |

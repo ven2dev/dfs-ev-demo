@@ -54,7 +54,7 @@ export const createSourceTransport = (limits: SourceLimits = SOURCE_LIMITS, over
         for (let redirect = 0; ; redirect++) {
           check(); if (requests === limits.requests) refuse("source-request-budget-exceeded"); requests++;
           response = await deps.fetch(url, { redirect: "manual", signal: controller.signal, headers: {
-            Accept: origin.includes("api.github.com") ? "application/vnd.github+json" : "text/csv",
+            Accept: new URL(url).hostname === "api.github.com" ? "application/vnd.github+json" : "text/csv",
             "Accept-Encoding": "identity", "User-Agent": "dfs-ev-demo-predictive-source-qualification",
             ...(options.range ? { Range: `bytes=0-${maximum - 1}` } : {}),
           } });

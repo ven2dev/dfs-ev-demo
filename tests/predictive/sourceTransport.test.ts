@@ -19,7 +19,25 @@ it("sends bounded range requests with manual redirects, identity encoding and no
   expect(options.redirect).toBe("manual"); expect(options.headers).toMatchObject({ Range: "bytes=0-2", "Accept-Encoding": "identity" });
   expect(options.headers).not.toHaveProperty("Authorization");
 });
+it.each([
+  ["https://api.github.com/repos/nflverse/nflverse-data/releases/tags/schedules", "application/vnd.github+json"],
+  ["https://github.com/nflverse/nflverse-data/releases/download/schedules/api.github.com.csv", "text/csv"],
+])("chooses the response format by the exact request hostname for %s", async (url, accept) => {
+  const fetcher = vi.fn<typeof fetch>(async () => new Response("ok"));
+  await createSourceTransport(SOURCE_LIMITS, { fetch: fetcher }).get(url);
+  expect(fetcher.mock.calls[0][1]!.headers).toMatchObject({ Accept: accept });
+});
+it("chooses the redirected response format by the destination hostname", async () => {
+  const metadata = "https://api.github.com/repos/nflverse/nflverse-data/releases/tags/schedules";
+  let call = 0;
+  const fetcher = vi.fn<typeof fetch>(async () => ++call === 1 ? new Response(null, { status: 302,
+    headers: { location: "https://release-assets.githubusercontent.com/api.github.com.csv?signature=value" } }) : new Response("ok"));
+  await createSourceTransport(SOURCE_LIMITS, { fetch: fetcher }).get(metadata);
+  expect(fetcher.mock.calls[0][1]!.headers).toMatchObject({ Accept: "application/vnd.github+json" });
+  expect(fetcher.mock.calls[1][1]!.headers).toMatchObject({ Accept: "text/csv" });
+});
 it.each(["http://github.com/nflverse/nflverse-data/releases/download/a/b", "https://evil.test/nflverse/nflverse-data/releases/download/a/b",
+  "https://api.github.com.evil.test/nflverse/nflverse-data/releases/download/a/b", "https://evil-api.github.com/nflverse/nflverse-data/releases/download/a/b",
   "https://user:pass@github.com/nflverse/nflverse-data/releases/download/a/b", endpoint + "?secret=1", endpoint + "#fragment"])("refuses unregistered origin %s before fetching", async (url) => {
   const fetcher = vi.fn<typeof fetch>();
   await expect(createSourceTransport(SOURCE_LIMITS, { fetch: fetcher }).get(url)).rejects.toThrow("source-url-refused"); expect(fetcher).not.toHaveBeenCalled();
