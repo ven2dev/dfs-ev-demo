@@ -6,6 +6,42 @@ readiness tests adjusted for v3. The governing behavior is documented in the
 [ingestion contract](predictive-ingestion.md); these tests establish synthetic
 local persistence behavior, not real-source qualification or model validity.
 
+## PR B normalization planner tests (2026-10-11)
+
+The planner has 32 new pure cases and four additional mandatory DB cases,
+bringing the required predictive list to 45. The first pure positive case spells
+out the exact canonical IDs, 10 attempts / 80 yards, eight blank-count reasons,
+five bridge/schedule references and the raw row's ordinal/fingerprint. It does
+not use the projector as its expected-value oracle. Team-only plans omit player
+requirements. Known zero/signed values stay distinct from blanks.
+
+Negative and boundary cases independently remove each bridge/schedule/link,
+change the link namespace or knowledge time, put player effective bounds exactly
+at kickoff, disagree on schedule context and introduce both directions of
+cross-profile mapping conflicts. A later bridge correction changes the later
+plan and preserves the complete earlier one. Unrelated evidence, ordering and
+unchanged-rights access time leave the plan equal. Default model-input replay
+remains blocked by research-only rights, while normalization can use its explicit
+research permission. A caller-supplied replay with post-cutoff evidence is refused.
+
+The DB positive control uses an actual replay-only NOSUPERUSER login and probes
+the planner's transaction settings (`read only`, `repeatable read`). It has no
+INSERT grant, creates no canonical stats row, and returns the same complete plan
+as the harness reader. Removing bridge bytes/rows while keeping registrations
+and identity links returns missing evidence rather than a candidate or exception.
+The scoped regression keeps an unrelated correction's ancestor in another
+artifact: the relevant plan still succeeds. A second raw ID mapped to the same
+player in another profile must then withhold it. A separate schedule decoy has
+the same raw alias but a different canonical game and must also withhold the
+plan. Raw-byte tampering fails before any candidate is proposed.
+
+The real-file proof intentionally has no registered canonical bridges. Both
+feeds return `game-bridge-missing`, with zero canonical observations/features/
+labels. This proves the gate holds; synthetic bridge tests do not qualify a real
+provider bridge, completion source, population or membership bounds. Plans do
+not yet test atomic canonical publication, binding-table retention or persisted
+canonical hydration, because those paths are still unimplemented.
+
 ## PR B raw CSV claims tests (2026-10-11)
 
 The nine mandatory CSV database cases extend the required predictive list to

@@ -64,6 +64,10 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV source replay keeps equal-time conflicts ambiguous and late older imports cannot replace a newer snapshot",
   "CSV source migration upgrades released v3 without changing existing evidence or its recorded checksum",
   "CSV source retention re-applies identical row deletion after re-importing retained files into a fresh database",
+  "CSV normalization plans verify raw rows and exact bridges in a read-only snapshot through a replay-only login",
+  "CSV normalization scoped reads include reverse identity conflicts without importing unrelated correction chains",
+  "CSV normalization refuses tampered raw files before proposing a canonical payload",
+  "CSV normalization scoped reads retain schedule alias conflicts outside the mapped canonical game",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

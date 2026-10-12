@@ -15,6 +15,8 @@ import { prepareSourceClaims, projectSourceClaim } from "../../src/lib/predictiv
 import { sourceClaimFixture } from "../predictive/fixtures/sourceClaims.ts";
 import { sourceCsv, sourceGameId, sourceSamples } from "../predictive/fixtures/source.ts";
 import { passingYardsFixture } from "../predictive/fixtures/passingYards.ts";
+import { addCapture, gameId, profile, revision, rights } from "../predictive/fixtures/passingYards.ts";
+import { BRIDGE_PROFILE, normalizationFixture, NORMALIZATION_GAME, rewriteNormalizationRows } from "../predictive/fixtures/sourceNormalization.ts";
 import { createScratchHarness } from "./scratch.mjs";
 
 type Store = Awaited<ReturnType<typeof createLocalPredictiveStore>>;
@@ -264,5 +266,94 @@ it("CSV source retention re-applies identical row deletion after re-importing re
     for (const input of [a, b])
       await expect(artifacts.database.read(input.artifact.sha256 + ".csv", input.artifact.sha256, Buffer.byteLength(input.artifact.bytes)))
         .rejects.toMatchObject({ code: "ENOENT" });
+  });
+});
+
+it("CSV normalization plans verify raw rows and exact bridges in a read-only snapshot through a replay-only login", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const { input, context } = await normalizationFixture();
+    await store.publishSourceStats(input); await store.publish("normalization-context", context, "2026-10-11T00:00:00.000Z");
+    const cutoff = await captureTime(client, input.captureId); const request = replayRequest(cutoff);
+    const expected = await store.planSourceStatsNormalization(request);
+    expect(expected).toMatchObject({ status: "planned-source-normalization", candidate: { kind: "player-game-stats",
+      data: { gameId: NORMALIZATION_GAME, playerId: "00-0000001", rawPlayerId: "00-0000001", attempts: 10, passingYards: 80 } }, observationsPublished: false });
+    expect(expected.binding.dependencies.map((row) => row.observationId).sort()).toEqual(["game-map", "game-schedule", "opponent-map", "player-map", "team-map"]);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_observations WHERE kind IN ('player-game-stats','team-game-stats')")).rows[0].n).toBe(0);
+    await withLogin(client, target, ["predictive_replay"], async (reader, readerTarget) => {
+      let probes = 0;
+      const observed = { query: async (sql: string, params?: unknown[]) => {
+        if (sql.includes("predictive_profile_identity_links") && sql.includes("stats_profile_id=$1")) {
+          const settings = (await reader.query("SELECT current_setting('transaction_read_only') AS ro,current_setting('transaction_isolation') AS isolation")).rows[0];
+          expect(settings).toEqual({ ro: "on", isolation: "repeatable read" }); probes++;
+        }
+        return reader.query(sql, params);
+      } } as unknown as Client;
+      const replayOnly = await createLocalPredictiveStore(observed, readerTarget, artifacts);
+      expect(await replayOnly.planSourceStatsNormalization(request)).toEqual(expected); expect(probes).toBe(1);
+      await expect(reader.query("INSERT INTO predictive_source_stats_rows (id) VALUES ('denied')")).rejects.toMatchObject({ code: "42501" });
+    });
+    const missing = await store.planSourceStatsNormalization({ ...request, cutoff: new Date(Date.parse(cutoff) - 1).toISOString() });
+    expect(missing).toMatchObject({ status: "unavailable-source-normalization", reason: "source-capture-missing", candidate: null });
+    await store.retain({ id: "remove-normalization-bridges", reason: "provider-request", authority: "synthetic test",
+      decidedAt: input.capturedAt, scope: { kind: "source", profileIds: [BRIDGE_PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" });
+    // Links and profile registrations survive retention, but cannot replace
+    // their removed bridge evidence or cause missing profile metadata to throw.
+    expect(await store.planSourceStatsNormalization(request)).toMatchObject({ reason: "game-bridge-missing", candidate: null });
+  });
+});
+
+it("CSV normalization scoped reads include reverse identity conflicts without importing unrelated correction chains", async () => {
+  await withProof(async ({ client, store }) => {
+    const { input, context, bridgeRows } = await normalizationFixture();
+    // This ancestor lives in a different artifact from its unrelated correction.
+    // Reading only the target must not rebuild/validate the whole mixed artifact.
+    addCapture(context, "unrelated-ancestor", [revision("unrelated-root", "game-bridge", {
+      provider: "nflverse", rawGameId: "unrelated-game", gameId: gameId(99) })], "2026-10-08T12:00:00.000Z", BRIDGE_PROFILE);
+    rewriteNormalizationRows(context, [...bridgeRows, revision("unrelated-correction", "game-bridge", {
+      provider: "nflverse", rawGameId: "unrelated-game", gameId: gameId(98) }, "unrelated-root")]);
+    await store.publishSourceStats(input); await store.publish("mixed-normalization-context", context, "2026-10-11T00:00:00.000Z");
+    const request = replayRequest(await captureTime(client, input.captureId));
+    const planned = await store.planSourceStatsNormalization(request);
+    expect(planned.status).toBe("planned-source-normalization");
+    expect(planned.binding.dependencies.some((row) => row.observationId.startsWith("unrelated"))).toBe(false);
+    const other = "normalization-reverse-rival";
+    const rival = { formatVersion: 2 as const, profiles: [profile(other)], rightsDecisions: [rights(other)],
+      artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+    addCapture(rival, "reverse-rival", [revision("reverse-player", "player-bridge", {
+      provider: "gsis", rawPlayerId: "00-0000002", playerId: "00-0000001",
+      effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-01-01T00:00:00.000Z" })], "2026-10-09T12:00:00.000Z", other);
+    await store.publish("reverse-rival", rival, "2026-10-11T00:00:00.000Z");
+    const conflict = await store.planSourceStatsNormalization(request);
+    expect(conflict).toMatchObject({ reason: "player-bridge-conflict", candidate: null });
+    expect(conflict.binding.dependencies.some((row) => row.observationId === "reverse-player")).toBe(true);
+  });
+});
+
+it("CSV normalization refuses tampered raw files before proposing a canonical payload", async () => {
+  await withProof(async ({ client, store, root }) => {
+    const { input, context } = await normalizationFixture();
+    await store.publishSourceStats(input); await store.publish("tamper-normalization-context", context, "2026-10-11T00:00:00.000Z");
+    await writeFile(join(root, ".db-blobs", input.artifact.sha256 + ".csv"), input.artifact.bytes.replace('"80"', '"81"'), { mode: 0o600 });
+    await expect(store.planSourceStatsNormalization(replayRequest(await captureTime(client, input.captureId)))).rejects.toThrow("artifact-integrity-failed");
+  });
+});
+
+it("CSV normalization scoped reads retain schedule alias conflicts outside the mapped canonical game", async () => {
+  await withProof(async ({ client, store }) => {
+    const { input, context, bridgeRows } = await normalizationFixture();
+    await store.publishSourceStats(input); await store.publish("alias-normalization-context", context, "2026-10-11T00:00:00.000Z");
+    const request = replayRequest(await captureTime(client, input.captureId));
+    expect((await store.planSourceStatsNormalization(request)).status).toBe("planned-source-normalization");
+    const other = "normalization-schedule-rival";
+    const rival = { formatVersion: 2 as const, profiles: [profile(other)], rightsDecisions: [rights(other)],
+      artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+    const schedule = bridgeRows.find((row) => row.kind === "schedule")!;
+    addCapture(rival, "schedule-rival", [revision("rival-schedule", "schedule", { ...schedule.data, gameId: gameId(77) })],
+      "2026-10-09T12:00:00.000Z", other);
+    await store.publish("schedule-rival", rival, "2026-10-11T00:00:00.000Z");
+    const conflict = await store.planSourceStatsNormalization(request);
+    expect(conflict).toMatchObject({ reason: "normalization-schedule-ambiguous", candidate: null });
+    expect(conflict.binding.dependencies.filter((row) => row.role === "schedule").map((row) => row.observationId).sort())
+      .toEqual(["game-schedule", "rival-schedule"]);
   });
 });

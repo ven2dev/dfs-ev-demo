@@ -3,7 +3,7 @@
 Updated 2026-10-11 after PR A merged and PR B began. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
-## Current state: PR A merged; PR B raw CSV claims persistence implemented
+## Current state: PR A merged; PR B normalization planner implemented
 
 - PR B workspace: `/private/tmp/dfs-ev-52-pr-b`; branch:
   `feature/dfsEV-52-real-source-ingestion`, created from merged main `d934432`.
@@ -30,8 +30,11 @@ completed work or repeat source downloads merely to recover context.
   preserving every typed/refused record and exact raw bytes. Database-clock
   ingestion, cutoff replay, idempotency, current rights, full-file row verification,
   rollback cleanup and retention/resume are implemented. These are raw claims,
-  with a guard against direct canonical publication. The canonical JSON path
-  still requires an explicit row/transform/bridge binding adapter next. See
+  with a guard against direct canonical publication. Canonical normalization
+  planning is now implemented too: exact source-row/bridge/schedule bindings,
+  kickoff-effective player identity, current internal-research rights and scoped
+  conflict detection. The persisted planner works read-only through replay-only
+  access. Actual canonical publication/binding persistence remains next. See
   [PR B progress and measurements](predictive-pr-b.md).
 - PR B validation: 831 jsdom + 529 Node tests, typecheck, lint, and the complete
   disposable PostgreSQL gate (74 Node checks + 58 DB tests, all 41 mandatory
@@ -40,6 +43,11 @@ completed work or repeat source downloads merely to recover context.
   Only disposable databases received migration 0004. App tests/proof required
   sandbox permission for local loopback listeners/connections.
   Production Webpack build, CI gate and diff whitespace checks also pass.
+  The subsequent planner passes 561 Node tests, 74 DB Node checks and 62 DB
+  tests (all 45 mandatory predictive cases), typecheck and lint. Its real-file
+  proof returns `game-bridge-missing` for both feeds with zero canonical writes.
+  It changes no SQL/catalog/readiness artifacts or app route. The earlier
+  browser/build numbers describe the CSV-storage checkpoint.
 - The approved design is [`predictive-real-source-schema.md`](predictive-real-source-schema.md)
   revision 2 and [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md)
   revision 2. Section 14 of the DDL lists what each step built and every
@@ -159,12 +167,15 @@ measuring correctness, memory and capture cost. PR B should stamp `decided_at`
 knowledge times from the database clock (DDL section 14, step 8 nuance) and own
 automatic absence detection from real files.
 
-Next implement the canonical source-row/transform/bridge binding adapter described
-in `predictive-pr-b.md`. Raw CSV storage/replay is implemented; do not replace it
-with generated JSON alone or link staged claims directly to observations. Keep
-same-source correction lineage, explicit disappearance semantics and retention
-closure. Preserve unresolved completion/population/membership states. 0004 is
-local and unmerged; coordinate numbering before PR review. Never edit 0003.
+Next persist canonical source-row/transform/bridge bindings as described in
+`predictive-pr-b.md`. The planner is implemented; its output is ephemeral and
+publishes no revision/predecessor. Revalidate current bindings/rights with the
+database clock at publication and re-parse/recompute them on hydration. Define
+correction behavior when identity mapping changes the canonical entity: v3's
+source key includes that entity, so it cannot simply cross the existing FK chain.
+Keep explicit disappearance semantics and retention closure. Preserve unresolved
+completion/population/membership states. 0004 is local and unmerged; coordinate
+numbering before PR review. Never edit 0003.
 
 ## Real-source findings and private evidence
 
@@ -216,11 +227,19 @@ it somewhere permanent outside the checkout.**
   `/private/tmp/dfs52-prb-parity.py` and `/private/tmp/dfs52-prb-parity.json`.
 - PR B candidate evidence digest:
   `e4e59e643e54de3f9e5096d0944958ff65ee7d85fc0edc692ecc8b8df3b6dfd1`.
-- Raw CSV SQL proof: `/private/tmp/dfs52-prb-csv-proof.json` (actual ingestion
+- Raw CSV storage-checkpoint proof: `/private/tmp/dfs52-prb-csv-proof-83de5fd.json` (actual ingestion
   timestamps are part of its replay digests; reruns legitimately differ).
 - Final validation logs: `/private/tmp/dfs52-prb-csv-app.log`,
   `/private/tmp/dfs52-prb-csv-db-full.log`, `/private/tmp/dfs52-prb-csv-typecheck.log`
   and `/private/tmp/dfs52-prb-csv-lint.log`.
+- Normalization proof: `/private/tmp/dfs52-prb-normalization-proof.json`, at
+  2026-10-12 03:17 UTC / 2026-10-11 Los Angeles. Player publish/replay/plan
+  3,037/274/270 ms; team 108/12/31 ms; peak RSS 414,973,952 bytes (~396 MiB).
+  Both plans are unavailable because no canonical game bridge is registered.
+- Planner validation: `/private/tmp/dfs52-prb-normalization-node.log`,
+  `/private/tmp/dfs52-prb-normalization-db.log`,
+  `/private/tmp/dfs52-prb-normalization-typecheck.log` and
+  `/private/tmp/dfs52-prb-normalization-lint.log`.
 
 Offline TypeScript verification and independent Python CSV/hash/ZoneInfo checks
 agree on the source hashes/counts, selected digest, roster partition, player/team

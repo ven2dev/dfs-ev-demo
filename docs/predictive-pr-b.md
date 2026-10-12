@@ -4,8 +4,8 @@ Updated 2026-10-11. PR A merged as [PR #102](https://github.com/ven2dev/dfs-ev-d
 `d934432e8aa32a38226c65306592b77e04e05f01`. Migration 0003 is frozen.
 PR B starts from that main revision on `feature/dfsEV-52-real-source-ingestion`
 in `/private/tmp/dfs-ev-52-pr-b`. Offline qualification and local raw CSV claims
-persistence are implemented. Canonical normalization remains next; this does
-not finish PR B or parent #52.
+persistence and canonical normalization planning are implemented. Canonical
+publication remains next; this does not finish PR B or parent #52.
 
 ## Implemented increment
 
@@ -137,7 +137,7 @@ TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_te
 npm run test:db:down
 ```
 
-Final local proof on 2026-10-11 (Los Angeles; SQL import at
+CSV-storage checkpoint proof (`83de5fd`) on 2026-10-11 (Los Angeles; SQL import at
 2026-10-12 02:29 UTC):
 
 | Measure | Player | Team |
@@ -154,23 +154,65 @@ These are one-run local measurements, not a scheduled-operation capacity claim.
 Raw files add 2,065,102 logical bytes in the scratch store. There are zero
 canonical observations, features or final labels. Both feeds are unavailable
 one millisecond before import, and identical retries preserve replay.
-Evidence: `/private/tmp/dfs52-prb-csv-proof.json`. Replay digests include actual
+Evidence: `/private/tmp/dfs52-prb-csv-proof-83de5fd.json`. Replay digests include actual
 SQL ingestion times and legitimately differ when the proof is rerun.
 
-## Canonical row bindings: next engineering work
+## Canonical normalization planning
+
+`sourceNormalization.ts` now plans a typed canonical player/team stats payload
+from verified source replay, together with exact row ordinals/fingerprints,
+raw capture/file references, parser/transform versions, identity links, current
+rights decisions and bridge/schedule observation dependencies. It requires an
+explicit game bridge, dated team/opponent aliases, and a schedule consistent
+with season, week, season type and home/away identity. Player claims also need
+the exact raw ID/namespace bridge effective at kickoff and a cutoff-known
+authorization link. A GSIS-looking ID alone supplies no bridge. Missing/conflicting
+evidence produces no candidate. Zero, signed yards and missingness are preserved.
+
+The persisted `planSourceStatsNormalization()` re-verifies raw CSV and stored
+rows, then hydrates scoped bridge/schedule evidence against exact JSON bytes
+inside one read-only, repeatable-read transaction. It loads both forward and
+reverse identity mappings and schedules sharing the selected raw aliases, so a
+conflict outside the first mapped game/player cannot be hidden. It validates
+chosen source chains without reconstructing unrelated corrections from mixed
+artifacts. A replay-only non-superuser can use this path. Retention can leave
+profile/link registrations, but those cannot replace deleted bridge evidence.
+
+Normalization explicitly uses current `internal-research` rights. Existing
+feature replay still defaults to `model-input`; this does not expand licensed
+uses. The plan's payload digest is separate from its binding/plan digest.
+Later bridge corrections affect only later cutoffs, while unrelated evidence,
+input ordering and a later access time under unchanged rights leave the plan
+unchanged. Plans are ephemeral: no observation ID, predecessor, feature run,
+completion, membership window, absence or label is created.
+
+The extended retained-file proof at 2026-10-12 03:17 UTC (2026-10-11 Los Angeles)
+imports/replays the same 4,517 player and 130 team rows, then correctly returns
+`unavailable-source-normalization / game-bridge-missing` for both feeds. It does
+not invent canonical bridges. Player publish/replay/plan measured 3,037/274/270 ms;
+team 108/12/31 ms. Source-row storage stays 5,922,816 bytes; maximum process RSS
+was 414,973,952 bytes (~396 MiB). Zero requests and zero canonical observations,
+features or labels were published, and the scratch DB/files were removed.
+Evidence: `/private/tmp/dfs52-prb-normalization-proof.json`.
+
+## Canonical publication: next engineering work
 
 The released JSON observation path still expects revision arrays; it cannot
 hydrate CSV rows as canonical evidence. Staged row projections do not authorize
 normalization. The next adapter must:
 
-1. Bind each normalized observation to its exact source row/capture, transform
-   version and current player/team/game bridge revisions. Re-parse and verify
-   the normalized payload and exact raw identities during hydration. A generated
-   JSON witness can supplement this provenance, not replace it.
+1. Record the planned binding atomically with canonical evidence, revalidating it
+   at publication under the database clock. Add database-enforced exact row/
+   bridge references and re-parse/recompute the normalized payload during
+   hydration. A generated JSON witness can supplement raw provenance, not replace
+   it. Current plans are not an authorization token or a stored dependency table.
 2. Preserve same-profile source keys and correction chains across complete
    snapshots. Changed content appends revisions; recaptures never backdate
    visibility. Disappearance requires compatible complete coverage before
    publishing `absence-v1`, not a missing-row inference from a probe.
+   The released source key includes the canonical entity: an identity correction
+   that changes that entity cannot simply be appended to its current chain. The
+   forward binding design must explicitly handle this case before enabling writes.
 3. Include row bindings, normalization witnesses and dependent canonical rows in
    retention, and stamp new decision knowledge times with the database clock.
 4. Keep target/player normalization bounds separate from shared full-file parsing.
@@ -210,7 +252,7 @@ dependencies and measured costs. Edited fixtures are useful tests, but cannot
 be described as observed provider corrections. Unqualified completion/population
 keeps the real bundle unavailable and parent #52 open.
 
-## Validation of this increment
+## Validation
 
 The new tests use hand-specified counts/refusals for ten-field projection,
 missing/zero/signed values, paired denominators, identity/context/season refusal,
@@ -218,7 +260,7 @@ positive individual evidence, unresolved denominators, contradictory positions
 and conflict ordering. Offline tests verify original v1 output, unchanged bytes,
 no fetch or SQL-owned file publication, tampered-byte refusal and credentials.
 
-Validation passed on Node 24.18.1: **831 jsdom + 529 Node tests**, typecheck,
+The CSV-storage checkpoint passed on Node 24.18.1: **831 jsdom + 529 Node tests**, typecheck,
 lint, the production Webpack build, CI gate, `git diff --check`, and the complete
 PostgreSQL gate (**74 Node checks + 58 database tests**, including all **41**
 mandatory predictive cases). App tests require local
@@ -231,3 +273,11 @@ after re-importing retained files into a fresh database. This last check proves
 deletion-set parity, not preservation of historical SQL ingestion times. The
 [test reasoning review](predictive-test-review.md) distinguishes independent
 oracles from checks shared with the implementation.
+
+The subsequent normalization planner passes **561 Node tests** (including 32
+new planning cases), the full PostgreSQL gate (**74 Node checks + 62 DB tests**,
+all **45** mandatory predictive cases), typecheck and lint. Four new DB cases
+cover replay-only access/read isolation, reverse identity conflicts and mixed
+artifact scoping, raw tampering, and schedule alias conflicts outside the mapped
+game. The extended real-file proof above also passes. This increment changes no
+SQL migration, catalog contract, application route or readiness version.

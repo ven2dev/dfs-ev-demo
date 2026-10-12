@@ -1,4 +1,4 @@
-import type { CompletionRecord, Dataset, Decision, Kind, Observation, ParticipationRecord, Reconciliation, RightsDecision } from "./types.ts";
+import type { CompletionRecord, Dataset, Decision, Kind, Observation, ParticipationRecord, Reconciliation, RightsDecision, Use } from "./types.ts";
 import { completionFromHeads, validateCompletionDecisions } from "./completion.ts";
 import { participationFromHeads, validateParticipationDecisions } from "./participation.ts";
 import { validateSnapCompatibilityDecisions } from "./snaps.ts";
@@ -8,13 +8,14 @@ export type Selection<K extends Kind> = ({ state: "selected"; observation: Obser
   { state: "missing" | "ambiguous" | "absent"; observation: null }) & { dependencies: Observation[] };
 
 // Current access: evidence is usable now only while its profile's rights in
-// force now allow model input. Earlier authorization is audit, not permission.
-export const blockedProfiles = (decisions: RightsDecision[], profileIds: Iterable<string>, accessAt: string) => {
+// force now allow the requested use (model input by default). Earlier
+// authorization is audit, not permission.
+export const blockedProfiles = (decisions: RightsDecision[], profileIds: Iterable<string>, accessAt: string, use: Use = "model-input") => {
   const at = instant(accessAt);
-  return new Set([...profileIds].filter((id) => !allows(rightsInForce(decisions, id, at, at), "model-input")));
+  return new Set([...profileIds].filter((id) => !allows(rightsInForce(decisions, id, at, at), use)));
 };
 
-export const createReplay = (dataset: Dataset, cutoff: string, accessAt: string) => {
+export const createReplay = (dataset: Dataset, cutoff: string, accessAt: string, use: Use = "model-input") => {
   const at = instant(cutoff);
   const root = datasetContainer(dataset);
   // Filter on the trusted capture routing envelope before parsing source bytes
@@ -36,7 +37,7 @@ export const createReplay = (dataset: Dataset, cutoff: string, accessAt: string)
   validateParticipationDecisions(validated.decisions, validated.observations, validated.profiles);
   validateSnapCompatibilityDecisions(validated.decisions, validated.observations, validated.profiles);
   const rows = [...validated.observations.values()];
-  return replayObservations(rows, blockedProfiles(validated.rightsDecisions, new Set(rows.map((row) => row.artifact.profileId)), accessAt), validated.decisions);
+  return replayObservations(rows, blockedProfiles(validated.rightsDecisions, new Set(rows.map((row) => row.artifact.profileId)), accessAt, use), validated.decisions);
 };
 
 // Persistent reads supply only validated, cutoff-visible source chains. Each

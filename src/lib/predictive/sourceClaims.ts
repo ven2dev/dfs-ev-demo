@@ -13,6 +13,18 @@ export type SourceClaimRow = {
   id: string; rowOrdinal: number; rawKeySha256: string; selectedSha256: string;
   projection: SourceStats | null; failureCode: string | null;
 };
+export type SourceStatsRequest = {
+  profileId: string; rawGameId: string; rawTeam: string; rawPlayerId: string | null; cutoff: string;
+};
+export type SourceStatsCapture = {
+  id: string; runId: string; artifactId: string; capturedAt: string; availableAt: string; ingestedAt: string;
+  parsedRows: number; sha256: string; storageRef: string; byteSize: number;
+};
+export type SourceStatsReplay = {
+  status: "unavailable-source-claim" | "observed-source-claim"; reason: string | null;
+  evidence: { version: string; request: SourceStatsRequest; captures: SourceStatsCapture[]; rows: SourceClaimRow[] };
+  inputDigest: string; featuresPublished: false; labelsFinalized: false; populationCoverage: "unqualified";
+};
 export const sourceClaimKey = (row: SourceRow, feed: SourceStatsFeed) => digest(sourceStatsKey(row, feed === "player"));
 export const projectSourceClaim = (captureId: string, feed: SourceStatsFeed, row: SourceRow, rowOrdinal: number): SourceClaimRow => {
   let projection: SourceStats | null = null; let failureCode: string | null = null;

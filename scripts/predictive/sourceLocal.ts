@@ -76,10 +76,18 @@ export const runSourceClaimsProof = async (args: string[], environment: NodeJS.P
         const retry = await store.publishSourceStats(input);
         const afterRetry = await store.replaySourceStats(request);
         if (!retry.reused || afterRetry.inputDigest !== replay.inputDigest) refuse("source-proof-idempotency-refused");
+        const normalizationStarted = performance.now();
+        const normalization = await store.planSourceStatsNormalization(request);
+        const normalizationMs = performance.now() - normalizationStarted;
+        // The retained journal supplies raw claims, not registered canonical
+        // bridges. Familiar NFL/GSIS IDs must not silently substitute for them.
+        if (normalization.status !== "unavailable-source-normalization" || normalization.reason !== "game-bridge-missing" || normalization.candidate !== null)
+          refuse("source-proof-invented-identity");
         reports.push({ feed: input.profile.feed, rows: prepared.rows.length, projected: prepared.rows.filter((row) => row.projection).length,
           refused: prepared.rows.filter((row) => row.failureCode).length, capturedAt: input.capturedAt, ingestedAt: imported,
           rawBytes: Buffer.byteLength(input.artifact.bytes), rawSha256: input.artifact.sha256, publishMs: Math.round(publishMs),
-          replayMs: Math.round(replayMs), preImportUnavailable: true, retryPreservedReplay: true, inputDigest: replay.inputDigest });
+          replayMs: Math.round(replayMs), preImportUnavailable: true, retryPreservedReplay: true, inputDigest: replay.inputDigest,
+          normalizationMs: Math.round(normalizationMs), normalizationStatus: normalization.status, normalizationReason: normalization.reason });
       }
       const sizes = (await client.query(`SELECT pg_relation_size('public.predictive_source_stats_rows') AS heap,
         pg_indexes_size('public.predictive_source_stats_rows') AS indexes, pg_total_relation_size('public.predictive_source_stats_rows') AS total`)).rows[0];
