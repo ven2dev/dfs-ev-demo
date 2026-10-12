@@ -363,6 +363,149 @@ it outside the repository (enforced), do not share it, and do not open it in an
 agent session. It contains no API data, so the 30-day limit does not apply to
 it, and `purge` will never delete it.
 
+### 11. Prepare the local projection database
+
+The projection requires PostgreSQL 18 on this computer. It is not the hosted
+application database. Create a dedicated local database and login from an
+administrator `psql` session; `\password` prompts without putting the password
+in shell history:
+
+```text
+CREATE ROLE corpus_importer LOGIN;
+\password corpus_importer
+CREATE DATABASE dfs_ev_corpus;
+\q
+```
+
+The role must exist before applying the schema so the final grants are made.
+From the repository, connect as the local database owner—not as
+`corpus_importer`—and install the reviewed schema:
+
+```bash
+psql -d dfs_ev_corpus -v ON_ERROR_STOP=1 -f db/schema.sql
+```
+
+Create this owner-only registration outside the repository, adjusting the port
+if the local server does not use 5432:
+
+```json
+{
+  "formatVersion": 1,
+  "transport": "loopback",
+  "port": 5432,
+  "database": "dfs_ev_corpus",
+  "role": "corpus_importer"
+}
+```
+
+Save it as
+`~/.config/dfs-ev-demo/creators/database-registration.json` and run
+`chmod 600` on it. Enter the matching connection URL through a hidden prompt;
+never put it in a command, file, chat or issue:
+
+```bash
+read -rs 'CORPUS_DATABASE_URL?Local corpus database URL (hidden): '
+printf '\n'
+export CORPUS_DATABASE_URL
+```
+
+The supported tools refuse non-loopback hosts, the wrong database or role,
+PostgreSQL versions other than 18, superusers, pooled/hosted URLs, query-string
+overrides, and ambient `DATABASE_URL`, `MIGRATION_DATABASE_URL`, `PG*` or
+`POSTGRES_*` configuration. The database owner can always bypass application
+tooling with direct SQL; these guarantees cover the supported owner CLI and
+application roles.
+
+### 12. Import one validated snapshot
+
+Use the latest fresh discovery file and the authoritative append-only owner
+logs. The private gate record proves the eligible creator set without storing
+that set or its salt in the database:
+
+```bash
+npm run creators -- import \
+  --input ~/.config/dfs-ev-demo/creators/discovery.json \
+  --decisions ~/.config/dfs-ev-demo/creators/decisions.json \
+  --captures ~/.config/dfs-ev-demo/creators/captures.jsonl \
+  --private-record ~/.config/dfs-ev-demo/creators/readiness-gate-private.json \
+  --database-registration ~/.config/dfs-ev-demo/creators/database-registration.json
+```
+
+The command verifies the actual local target and restricted role before opening
+any private corpus file. It then validates the complete snapshot and publishes
+one serializable transaction under an advisory lock. An identical rerun is a
+no-op. Appended owner events are accepted; changed or truncated prior history
+is refused. A failed transaction leaves the previous projection intact, so the
+safe response to an interrupted import is to rerun the same command.
+
+### 13. Generate the readiness report
+
+```bash
+npm run creators -- readiness \
+  --private-record ~/.config/dfs-ev-demo/creators/readiness-gate-private.json \
+  --database-registration ~/.config/dfs-ev-demo/creators/database-registration.json
+```
+
+This is a repeatable-read, read-only report. It verifies the private creator
+commitment and prints every registered creator/week slot and current or
+owner-only video identity. Inclusion, active transcript availability, API
+freshness and public-use clearance remain separate. Capture percentages always
+show their included-video numerator and denominator. Public-use clearance is
+0% for a nonempty corpus under the current `internal-research-only` contract
+and unavailable for an empty corpus.
+
+Pick-level market, missing-line, unresolved-player and outcome metrics remain
+`not available: extraction/grading pending (#35/#36)`. Extraction, grading and
+model readiness stay blocked. Meeting the registered pick counts will permit
+the next evaluation step only; it will not establish model validity, and picks
+from the same video or game remain correlated.
+
+### 14. Enforce API retention in Postgres
+
+Run this before relying on a readiness report and as part of routine local
+maintenance:
+
+```bash
+npm run creators -- expire-api \
+  --database-registration ~/.config/dfs-ev-demo/creators/database-registration.json
+```
+
+At exactly 30 days an API row is still retained; once any row in a creator's
+validated snapshot is older, the command atomically deletes that creator's
+complete API snapshot. It shares the import advisory lock, so it cannot race a
+replacement. Owner decisions, capture history, transcript fingerprints, gate
+registration and import audit remain. The readiness report then labels the
+missing API state `unknown` and keeps every preregistered slot visible.
+
+When finished, clear the credential from the terminal:
+
+```bash
+unset CORPUS_DATABASE_URL
+```
+
+## Rebuild and recovery
+
+The private files are authoritative and the local database is disposable.
+Back up the creators file, private gate record, append-only decisions and
+captures independently; the database cannot reconstruct transcript text or the
+private commitment salt. Keep API-derived discovery/registry files only inside
+their 30-day period.
+
+To recover, create a **new empty local database with a different name** rather
+than deleting the current one. Apply `db/schema.sql` as its owner after ensuring
+`corpus_importer` exists, make a matching private database registration, then
+run `import`, `expire-api` and `readiness` against the new database. If the saved
+discovery is stale, refresh it first and reuse the permanent decision and
+capture logs. Compare the new readiness counts with the last trusted report;
+only then retire the old database. Do not copy corpus table rows between
+databases or repair them by hand.
+
+An altered/truncated-history refusal means the private source no longer matches
+the imported prefix. Restore the authoritative file from backup; do not edit
+the database to make it agree. A lost private gate record cannot be regenerated
+for the registered commitment—restore its backup. The tested evidence for these
+paths is mapped in the [creator corpus synthetic test matrix](creator-corpus-test-matrix.md).
+
 ## Data age
 
 The tools treat API-derived fields (titles, descriptions, publish times,
@@ -377,6 +520,8 @@ longer than 30 calendar days". That limit applies to keeping the data, so stale
 files must be deleted, not only left unused. Use `purge` (step 9). Your
 decisions (video IDs, your choice and reason) are your own records and are not
 subject to the limit; titles, descriptions and channel titles are.
+Run `expire-api` as well as file `purge`: one enforces the local Postgres
+projection lifecycle and the other removes the private API-derived files.
 
 ## Troubleshooting
 
@@ -393,6 +538,12 @@ Every failure prints one line, `creator-corpus: <code>`.
 | `directory-missing` | The folder for a file does not exist. Create it first. |
 | `output-exists` | The output file already exists. Choose a new name; files are never overwritten. |
 | `readiness-gate-exists` | The public readiness gate is already registered. It is immutable; do not replace it after inspecting corpus or holdout results. |
+| `invalid-database-registration`, `local-corpus-database-required`, `ambient-database-configuration-refused` | The local target registration or connection environment is unsafe or does not match. Use only the registered loopback PostgreSQL 18 database and clear ambient database variables. |
+| `connected-corpus-target-refused`, `corpus-import-privileges-refused` | The connected database, role, version or grants do not match the restricted local corpus contract. Stop and inspect the local setup as its owner. |
+| `corpus-import-lock-busy`, `corpus-api-expiry-lock-busy` | Another import or expiry transaction owns the corpus lock. Let it finish and retry. |
+| `corpus-import-database-failure`, `corpus-api-expiry-database-failure`, `corpus-readiness-database-failure` | The local transaction failed safely. Check PostgreSQL, then rerun; do not repair projection rows by hand. |
+| `corpus-import-refused` | Previously imported owner history was changed/truncated or a projection no longer matches its audit. Restore the authoritative private source and rerun. |
+| `readiness-gate-verification-failed`, `corpus-readiness-gate-missing`, `corpus-readiness-gate-ambiguous`, `corpus-readiness-import-missing` | The private commitment and imported immutable gate/audit do not form one verified report source. Stop instead of guessing or replacing the gate. |
 | `invalid-private-gate-record`, `invalid-gate-salt` | The private gate record is damaged or malformed. Restore the original private record; never generate a replacement salt for an existing registration. |
 | `gate-creators-changed` | The current creators file does not contain exactly the eligible keys bound by the private gate record. Use the original eligible set or create a separately reviewed future registration. |
 | `invalid-gate-creators`, `invalid-gate-registration-time`, `gate-window-mismatch`, `invalid-readiness-gate`, `readiness-gate-unwritable` | The gate inputs, committed registration, clock or destination do not satisfy the fixed contract. Stop rather than repairing or replacing a registered gate; send the exact code for review. |
@@ -433,6 +584,6 @@ Any other code: send the exact line (it contains no secrets).
   by an API client. Transcripts come only from your own manual capture
   (step 10) or, later, creator-authorized sources (#91). This is a summary of the
   policy as read for this project, not legal advice.
-- **Database persistence** (#90) is not built. Your decisions, captures and
-  manifests live only in the private files above until the planned import.
+- **Hosted database persistence.** The #90 projection is local-only. Hosted
+  storage and any role/policy change remain blocked by #95 and #91.
 - **Public or product use** of any of this is blocked by #91.

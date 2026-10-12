@@ -264,6 +264,30 @@ describe("readiness", () => {
   });
 });
 
+describe("expire-api", () => {
+  it("validates the local target and prints only the bounded deletion summary", async () => {
+    await writeJson("database-registration.json", {
+      formatVersion: 1, transport: "loopback", port: 55432, database: "dfs_ev_corpus", role: "corpus_importer",
+    });
+    let called = false;
+    const result = await run(["expire-api", "--database-registration", path("database-registration.json")], {
+      env: { CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.1:55432/dfs_ev_corpus" },
+      apiExpiry: async ({ config, now }) => {
+        called = true;
+        expect(config).toMatchObject({ database: "dfs_ev_corpus", user: "corpus_importer" });
+        expect(now).toEqual(CLOSED);
+        return { outcome: "expired", cutoff: "2026-09-07T12:00:00.000Z", creatorsExpired: 1, videosDeleted: 8 };
+      },
+    });
+    expect(result.code).toBe("ok");
+    expect(called).toBe(true);
+    expect(JSON.parse(result.lines[0])).toEqual({
+      outcome: "expired", cutoff: "2026-09-07T12:00:00.000Z", creatorsExpired: 1, videosDeleted: 8,
+    });
+    expect((await run(["expire-api"])).code).toBe("database-registration-required");
+  });
+});
+
 describe("resolve", () => {
   it("writes an unconfirmed registry, prints the name comparison, and counts quota", async () => {
     await writeJson("creators.json", creatorsFile);

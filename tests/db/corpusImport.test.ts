@@ -6,11 +6,16 @@ import { checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
 import { createCatalogVerifier, loadCatalogContracts } from "../../scripts/db-migrations/contracts.mjs";
 import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
 import { ensureCorpusImporterRole } from "../../scripts/creator-corpus/dbHarness.ts";
-import { publishCorpusImport } from "../../scripts/creator-corpus/importPublisher.ts";
+import {
+  CORPUS_LOCK_KEY,
+  CORPUS_LOCK_NAMESPACE,
+  publishCorpusImport,
+} from "../../scripts/creator-corpus/importPublisher.ts";
 import type { CorpusDatabaseConfig } from "../../scripts/creator-corpus/importTarget.ts";
 import type { CorpusImportSource } from "../../scripts/creator-corpus/importPlanner.ts";
 import { buildReadinessGate } from "../../scripts/creator-corpus/readinessGate.ts";
 import { generateCorpusReadinessReport, PICK_METRICS_PENDING } from "../../scripts/creator-corpus/readinessReport.ts";
+import { expireCorpusApiEvidence } from "../../scripts/creator-corpus/apiExpiry.ts";
 import { NOW, discoveryFor, record, vid } from "../../scripts/creator-corpus/testSupport.ts";
 import { createScratchHarness } from "./scratch.mjs";
 
@@ -23,7 +28,9 @@ const decision = (n: number): DecisionEvent => ({
 });
 
 const source = (version = 1): CorpusImportSource => {
-  const discovery = discoveryFor([record(1), record(2)]);
+  const discovery = discoveryFor(version > 3
+    ? [record(1, { durationSeconds: 2100 }), record(2), record(3)]
+    : [record(1), record(2)]);
   const captures = [buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(1), action: "capture",
     text: "synthetic transcript ".repeat(20), publishedDate: "2025-10-09", captionKind: "uploaded" }, NOW)];
   if (version > 1) captures.push(buildCaptureEvent({ creatorKey: "creator-a", videoId: vid(1), action: "replace",
@@ -38,7 +45,7 @@ const source = (version = 1): CorpusImportSource => {
       registeredAt: "2026-10-06T01:00:00.000Z", endSeason: 2026, endWeek: 4, ruleVersion: "v1" }),
     fingerprints: {
       registration: "a".repeat(64), gate: "b".repeat(64), captures: String(version).repeat(64),
-      decisions: (version > 2 ? "4" : "d").repeat(64), discovery: "e".repeat(64),
+      decisions: (version > 2 ? "4" : "d").repeat(64), discovery: (version > 3 ? "5" : "e").repeat(64),
     },
     now: NOW,
   };
@@ -75,12 +82,17 @@ it("corpus importer publishes one atomic snapshot, appends only owner tails and 
     expect(await publishCorpusImport({ config, loadSource: async () => source(2) })).toMatchObject({
       outcome: "append", capturesAppended: 1, decisionsAppended: 0, apiSnapshotsReplaced: 0,
     });
+    expect(await publishCorpusImport({ config, loadSource: async () => source(4) })).toMatchObject({
+      outcome: "append", capturesAppended: 0, decisionsAppended: 1, apiSnapshotsReplaced: 1,
+    });
     const counts = (await owner.query(`SELECT
       (SELECT count(*)::integer FROM corpus_imports) AS imports,
       (SELECT count(*)::integer FROM corpus_capture_events) AS captures,
       (SELECT count(*)::integer FROM corpus_decision_events) AS decisions,
       (SELECT count(*)::integer FROM corpus_api_videos) AS videos`)).rows[0];
-    expect(counts).toEqual({ imports: 2, captures: 2, decisions: 1, videos: 3 });
+    expect(counts).toEqual({ imports: 3, captures: 2, decisions: 2, videos: 4 });
+    expect((await owner.query("SELECT duration_seconds FROM corpus_api_videos WHERE creator_key='creator-a' AND video_id=$1",
+      [vid(1)])).rows[0].duration_seconds).toBe(2100);
   });
 });
 
@@ -161,5 +173,50 @@ it("corpus readiness reads one consistent local projection and keeps coverage di
       (SELECT count(*)::integer FROM corpus_capture_events) AS captures,
       (SELECT count(*)::integer FROM corpus_decision_events) AS decisions,
       (SELECT count(*)::integer FROM corpus_api_videos) AS videos`)).rows[0]).toEqual(before);
+  });
+});
+
+it("corpus API expiry removes complete stale snapshots while preserving permanent owner history", async () => {
+  await withImporterDatabase(async (owner, config) => {
+    await publishCorpusImport({ config, loadSource: async () => source(1) });
+    const atLimit = new Date(NOW.getTime() + 30 * 24 * 60 * 60 * 1000);
+    expect(await expireCorpusApiEvidence({ config, now: atLimit })).toMatchObject({
+      outcome: "expired", creatorsExpired: 0, videosDeleted: 0,
+    });
+    await owner.query("SELECT pg_advisory_lock($1,$2)", [CORPUS_LOCK_NAMESPACE, CORPUS_LOCK_KEY]);
+    try {
+      await expect(expireCorpusApiEvidence({ config, now: new Date(atLimit.getTime() + 1) }))
+        .rejects.toMatchObject({ code: "corpus-api-expiry-lock-busy" });
+    } finally {
+      await owner.query("SELECT pg_advisory_unlock($1,$2)", [CORPUS_LOCK_NAMESPACE, CORPUS_LOCK_KEY]);
+    }
+    expect(await expireCorpusApiEvidence({ config, now: new Date(atLimit.getTime() + 1) })).toMatchObject({
+      outcome: "expired", creatorsExpired: 2, videosDeleted: 3,
+    });
+    expect((await owner.query(`SELECT
+      (SELECT count(*)::integer FROM corpus_api_videos) AS videos,
+      (SELECT count(*)::integer FROM corpus_capture_events) AS captures,
+      (SELECT count(*)::integer FROM corpus_decision_events) AS decisions,
+      (SELECT count(*)::integer FROM corpus_imports) AS imports,
+      (SELECT count(*)::integer FROM corpus_gate_registrations) AS gates`)).rows[0]).toEqual({
+      videos: 0, captures: 1, decisions: 1, imports: 1, gates: 1,
+    });
+    const report = await generateCorpusReadinessReport({
+      config,
+      now: new Date(atLimit.getTime() + 1),
+      loadPrivateGateRecord: async () => ({
+        formatVersion: 1,
+        eligibleCreatorKeys: ["creator-a", "creator-b"],
+        saltHex: "f".repeat(64),
+      }),
+    });
+    expect(report.corpus).toMatchObject({
+      videos: { total: 1, included: 0, needsReview: 0, excluded: 0, unknown: 1 },
+      slots: { total: 80, present: 0, needsReview: 0, missing: 80 },
+      publicUseClearance: { status: "not-cleared", clearedVideos: 0, corpusVideos: 1, percentage: 0 },
+    });
+    expect(report.creators.map((creator) => [creator.creatorKey, creator.apiEvidence])).toEqual([
+      ["creator-a", "unknown"], ["creator-b", "unknown"],
+    ]);
   });
 });

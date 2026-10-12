@@ -142,6 +142,28 @@ describe("buildCorpusReadinessReport", () => {
     expect(report.downstream).toEqual({ extraction: "blocked", grading: "blocked", modelReadiness: "blocked" });
   });
 
+  it("uses decision time and file position to resolve active decisions", () => {
+    const report = buildCorpusReadinessReport(source({
+      decisionEvents: [
+        { creatorKey: "creator-a", filePosition: 1, videoId: vid(97), decisionKind: "include",
+          decidedAt: "2026-10-07T11:00:00.000Z" },
+        { creatorKey: "creator-a", filePosition: 2, videoId: vid(97), decisionKind: "clear",
+          decidedAt: "2026-10-07T11:00:00.000Z" },
+        { creatorKey: "creator-a", filePosition: 3, videoId: vid(98), decisionKind: "clear",
+          decidedAt: "2026-10-07T12:00:00.000Z" },
+        { creatorKey: "creator-a", filePosition: 4, videoId: vid(98), decisionKind: "include",
+          decidedAt: "2026-10-07T12:00:00.000Z" },
+      ],
+    }));
+
+    expect(report.unappliedDecisions).toEqual([
+      { creatorKey: "creator-a", videoId: vid(98), why: "video-not-in-current-api-evidence" },
+    ]);
+    expect(report.creators[0].videos).toEqual([
+      expect.objectContaining({ videoId: vid(98), inclusion: "unknown", apiFreshness: "unknown" }),
+    ]);
+  });
+
   it("refuses an invalid report time", () => {
     expect(() => buildCorpusReadinessReport(source({ now: new Date("invalid") })))
       .toThrow(expect.objectContaining({ code: "invalid-readiness-time" }));

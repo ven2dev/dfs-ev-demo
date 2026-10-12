@@ -9,6 +9,7 @@ import { loadRegistration } from "./creatorInputs.ts";
 // when a command, option, error code, file or fixed value drifts from it.
 const root = process.cwd();
 const RUNBOOK = readFileSync(resolve(root, "docs/creator-corpus-operations.md"), "utf8");
+const MATRIX = readFileSync(resolve(root, "docs/creator-corpus-test-matrix.md"), "utf8");
 const TOOL_DIRECTORY = resolve(root, "scripts/creator-corpus");
 const source = (path: string) => readFileSync(resolve(root, path), "utf8");
 const toolSources = readdirSync(TOOL_DIRECTORY)
@@ -17,8 +18,8 @@ const toolSources = readdirSync(TOOL_DIRECTORY)
   .concat(source("src/lib/creatorDecisions.ts"));
 const CLI = source("scripts/creator-corpus/cli.ts");
 
-const COMMANDS = ["resolve", "confirm", "discover", "review", "rebuild", "screen", "purge", "gate-register"];
-const OPTIONS = ["creators", "output", "max-units", "registry", "keys", "decisions", "captures", "allow-incomplete-end-week", "input", "port", "dry-run", "force", "private-record"];
+const COMMANDS = ["resolve", "confirm", "discover", "review", "rebuild", "screen", "purge", "gate-register", "import", "readiness", "expire-api"];
+const OPTIONS = ["creators", "output", "max-units", "registry", "keys", "decisions", "captures", "allow-incomplete-end-week", "input", "port", "dry-run", "force", "private-record", "database-registration"];
 
 describe("creator corpus runbook", () => {
   it("documents every command, and every command it shows exists", () => {
@@ -65,5 +66,16 @@ describe("creator corpus runbook", () => {
     expect(RUNBOOK).not.toMatch(/AIza[0-9A-Za-z_-]{20,}/);
     expect(RUNBOOK).not.toMatch(/\bUC[0-9A-Za-z_-]{22}\b/);
     expect(RUNBOOK).not.toMatch(/watch\?v=(?!VIDEO_ID_)[A-Za-z0-9_-]{11}/);
+  });
+
+  it("maps the complete synthetic acceptance matrix to tracked tests", () => {
+    for (const phrase of [
+      "identical no-op", "owner-tail append", "API snapshot replacement", "Changed, truncated",
+      "rolls back", "unavailable status", "Equal-time decisions", "physically removed",
+      "Transcript text", "Every preregistered slot", "read-only database snapshot", "before private corpus sources",
+    ]) expect(MATRIX).toContain(phrase);
+    const paths = [...MATRIX.matchAll(/`((?:scripts|tests)\/[A-Za-z0-9_./-]+)`/g)].map((match) => match[1]);
+    expect(paths.length).toBeGreaterThan(8);
+    for (const path of paths) expect(existsSync(resolve(root, path)), path).toBe(true);
   });
 });

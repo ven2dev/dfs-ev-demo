@@ -31,6 +31,7 @@ import { parseCorpusDatabaseRegistration, parseCorpusDatabaseTarget, CorpusImpor
 import { publishCorpusImport, CorpusImportDatabaseError, type CorpusImportResult } from "./importPublisher.ts";
 import { CorpusImportPlanError, type CorpusImportSource } from "./importPlanner.ts";
 import { CorpusReadinessError, generateCorpusReadinessReport } from "./readinessReport.ts";
+import { CorpusApiExpiryError, expireCorpusApiEvidence } from "./apiExpiry.ts";
 
 // Owner-run commands for the #88 corpus manifest. Failures print one fixed
 // code; nothing printed here can contain the API key, a URL or a raw error.
@@ -66,6 +67,7 @@ export type CliDeps = {
     now: Date;
     loadPrivateGateRecord: () => Promise<ReturnType<typeof parsePrivateGateRecord>>;
   }) => Promise<unknown>;
+  apiExpiry?: typeof expireCorpusApiEvidence;
 };
 
 const COMMON = {
@@ -368,11 +370,21 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     return;
   }
 
+  if (command === "expire-api") {
+    const values = parse({ "database-registration": { type: "string" } });
+    if (!values["database-registration"]) return usage("database-registration-required");
+    const databaseRegistration = parseCorpusDatabaseRegistration(await readPrivateJson(values["database-registration"]));
+    const config = parseCorpusDatabaseTarget(deps.env, databaseRegistration);
+    const result = await (deps.apiExpiry ?? expireCorpusApiEvidence)({ config, now: deps.now() });
+    deps.out(JSON.stringify(result));
+    return;
+  }
+
   usage("unknown-command");
 };
 
 const KNOWN = [UsageError, InputError, PrivateFileError, CommandError, YoutubeApiError, DecisionsFileError, ReadinessGateError,
-  CorpusImportTargetError, CorpusImportDatabaseError, CorpusImportPlanError, CorpusReadinessError];
+  CorpusImportTargetError, CorpusImportDatabaseError, CorpusImportPlanError, CorpusReadinessError, CorpusApiExpiryError];
 
 export const main = async (argv: string[]): Promise<number> => {
   try {

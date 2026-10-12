@@ -244,3 +244,6 @@ capturing transcripts by hand. They are not part of the deployed app, a build,
 CI or any scheduled job, and all inputs and outputs must be JSON files (JSON
 Lines for the capture log) outside this repository. See the
 [creator corpus runbook](docs/creator-corpus-operations.md) before use.
+The local Postgres projection, retention operation, recovery procedure and
+readiness report are included there; their coverage is enumerated in the
+[synthetic test matrix](docs/creator-corpus-test-matrix.md).

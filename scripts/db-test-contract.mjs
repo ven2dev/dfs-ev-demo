@@ -65,6 +65,7 @@ export const CORPUS_REQUIRED_CASES = Object.freeze([
   "corpus importer verifies the connected local role before loading any private source",
   "corpus importer fails on lock contention and rolls back a later publication error without partial rows",
   "corpus readiness reads one consistent local projection and keeps coverage dimensions separate",
+  "corpus API expiry removes complete stale snapshots while preserving permanent owner history",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

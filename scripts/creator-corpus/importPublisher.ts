@@ -9,8 +9,8 @@ import {
 } from "./importPlanner.ts";
 import type { CorpusDatabaseConfig } from "./importTarget.ts";
 
-const LOCK_NAMESPACE = 606090;
-const LOCK_KEY = 1;
+export const CORPUS_LOCK_NAMESPACE = 606090;
+export const CORPUS_LOCK_KEY = 1;
 
 export class CorpusImportDatabaseError extends Error {
   code: string;
@@ -164,7 +164,8 @@ export const publishCorpusImport = async ({
       await client.query("SET LOCAL statement_timeout='20s'");
       await client.query("SET LOCAL idle_in_transaction_session_timeout='20s'");
       await client.query("SET LOCAL search_path=public");
-      const { rows: [lock] } = await client.query("SELECT pg_try_advisory_xact_lock($1,$2) AS acquired", [LOCK_NAMESPACE, LOCK_KEY]);
+      const { rows: [lock] } = await client.query("SELECT pg_try_advisory_xact_lock($1,$2) AS acquired",
+        [CORPUS_LOCK_NAMESPACE, CORPUS_LOCK_KEY]);
       if (!lock.acquired) return fail("corpus-import-lock-busy");
       const plan = planCorpusImport({ ...source, stored: await readCorpusStoredState(client) });
       if (plan.outcome === "refuse") {
