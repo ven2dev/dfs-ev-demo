@@ -98,6 +98,8 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV canonical fact reads verify raw bytes even outside the requested destination and fail instead of truncating discovery",
   "CSV canonical fact reads keep player and team identities distinct and do not backdate canonical recording",
   "CSV canonical fact reads preserve unresolved routing when no historical canonical destination exists",
+  "CSV consumer witnesses bind unchanged recaptures and post-window evidence through a replay-only login",
+  "CSV consumer checks withhold stale routing and revoked access instead of reviving earlier selected values",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

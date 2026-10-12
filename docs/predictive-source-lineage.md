@@ -129,6 +129,44 @@ Existing cited-evidence closure and backup audit parity remain in place.
 
 ## Remaining activation work
 
+The application preparation now includes
+[`sourceWitness.ts`](../src/lib/predictive/sourceWitness.ts). A consumer witness
+pins every contributing raw lineage's profile, canonical entity, binding ID,
+revision ID and head token, plus applicable withheld evidence and explicit
+missing requested entities. Its digest excludes query time, so reading unchanged
+evidence later does not by itself stale a decision. An unchanged recapture does
+change the witness: the statistical revision can be reused but the binding and
+source capture cannot be replaced without new provenance. Unknown current
+routing remains applicable to every entity filter in the requested profiles.
+Known unrelated destinations can be excluded from a narrower witness.
+
+The same witness supports a read-only reconciliation-v1 assessment, the F3
+positive-usage contribution and a post-window source-capture check. Existing
+reconciliation and participation policies share their numerical predicates with
+these helpers. Withheld evidence prevents selecting a usable rival or inferring
+usage. A zero/blank/missing usage row does not establish absence or zero
+participation. Multiple providers must all show positive usage to contribute
+that evidence; yardage disagreement alone does not negate positive usage.
+Explicit inactive/snap evidence still needs the complete participation policy.
+
+The post-window check requires an unchanged complete witness and the exact
+reconciliation-v1 selection. It checks the selected binding's own raw capture,
+including its capture time at/after the eligible boundary and ingestion at/before
+the read cutoff. An unchanged revision first recorded before the window can be
+reconfirmed by a later bound recapture; the old capture cannot stand in for it.
+Agreeing sources use the same deterministic selection as reconciliation-v1;
+conflicting sources cannot supply a selected post-window capture.
+
+These helpers consume verified snapshots; a digest is not evidence of source
+authorization or database publication. `unchanged` can describe an empty set
+and does not establish a usable selection or complete population. Capture
+confirmation alone establishes none of the other final-label checks, including
+qualified completion, identity, current outcome-use rights or a persisted
+participation/reconciliation decision. The witnesses are research application
+preparation, not a new stored decision format or SQL activation. Existing
+features, decisions and labels still use the released contracts until the
+shared SQL rule and forward recorders are implemented together.
+
 `sourceFacts.ts` and the persisted `replaySourceStatsFacts()` now implement the
 application's preliminary research read boundary: complete raw-chain discovery
 inside requested profiles, verified current replanning, raw heads before

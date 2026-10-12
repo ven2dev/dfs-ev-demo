@@ -1,6 +1,6 @@
 # #52 session handoff
 
-Updated 2026-10-12 after PR B canonical stats read adapter. Resume from this state; do not restart the
+Updated 2026-10-12 after PR B shared consumer witnesses. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
 The owner asked whether the issue's ACs are complete. **No:** the
@@ -24,6 +24,10 @@ The old relay handoff now has this notice too. Do not use its historical October
 instructions as current schema/merge guidance. Preserve the creator session's
 database: PR B uses Docker project `dfs-ev-52-prb-test` and `[::1]:54329`, not the
 default project at `127.0.0.1:54329`.
+
+PR #103 merged at 2026-10-12 19:27:45 UTC as `3daf1dc`. The shared consumer
+witness checkpoint is being committed before the coordinated merge/renumber;
+that merge and its regenerated artifacts must be completed next.
 
 ## Current state: PR A merged; PR B bound source revisions in internal research staging
 
@@ -469,3 +473,33 @@ Evidence: `/private/tmp/dfs52-prb-facts-jsdom.log`,
 `/private/tmp/dfs52-prb-facts-typecheck.log`, `/private/tmp/dfs52-prb-facts-lint.log`,
 `/private/tmp/dfs52-prb-facts-ci.log`, `/private/tmp/dfs52-prb-facts-proof.log`,
 `/private/tmp/dfs52-prb-facts-proof-metrics.log`.
+
+## Latest checkpoint: shared consumer witnesses
+
+`sourceWitness.ts` pins binding IDs/tokens separately from statistical revision
+IDs, scopes missing and withheld evidence, and compares exact source head sets
+without treating a query clock change as an evidence change. Reconciliation-v1
+and F3 usage helpers share the released policy predicates. The post-window
+source-capture helper checks the exact selected binding and its own raw capture;
+an unchanged revision can be reconfirmed by a later recapture, but an earlier
+capture cannot be substituted. These remain read-only research helpers: no
+SQL activation or active feature/decision/label write path has been added.
+
+Seventeen pure cases and two mandatory database cases cover those invariants,
+including a non-superuser replay-only login. The complete pre-merge database gate
+passes **74 Node checks + 94 DB tests**, all **77 mandatory predictive cases**.
+The full Node run passed 632 cases before the final zero-usage-rival case was
+added; the final focused witness run passes all 17 cases. All **831 jsdom**
+cases, typecheck, lint, CI gate and Firebase Admin runtime pass. The DB/app
+suites needed loopback permission for local connections/listeners; test guards
+and timeouts were unchanged. A final complete post-merge run remains necessary.
+The retained-file CLI proof was extended to assert witness withholding but has
+not yet been rerun in this checkpoint.
+
+Evidence: `/private/tmp/dfs52-prb-consumers-node.log`,
+`/private/tmp/dfs52-prb-consumers-focused.log`,
+`/private/tmp/dfs52-prb-consumers-jsdom.log`,
+`/private/tmp/dfs52-prb-consumers-db.log`,
+`/private/tmp/dfs52-prb-consumers-typecheck.log`,
+`/private/tmp/dfs52-prb-consumers-lint.log`,
+`/private/tmp/dfs52-prb-consumers-ci.log`.

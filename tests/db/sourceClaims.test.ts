@@ -18,6 +18,7 @@ import { ROUTING_FIELDS } from "../../src/lib/predictive/types.ts";
 import { sourceNormalizationBasis } from "../../src/lib/predictive/persistence.ts";
 import { SOURCE_NORMALIZATION_V1 } from "../../src/lib/predictive/sourceNormalization.ts";
 import { selectSourceFact, SOURCE_FACT_BOUNDS } from "../../src/lib/predictive/sourceFacts.ts";
+import { checkSourceWitness, sourceFactWitness, sourcePostWindowCapture, sourceReconciliationEvidence, sourceUsageEvidence } from "../../src/lib/predictive/sourceWitness.ts";
 import { prepareSourceClaims, projectSourceClaim } from "../../src/lib/predictive/sourceClaims.ts";
 import { sourceClaimFixture } from "../predictive/fixtures/sourceClaims.ts";
 import { sourceCsv, sourceGameId, sourceSamples } from "../predictive/fixtures/source.ts";
@@ -1192,6 +1193,69 @@ it("CSV canonical fact reads preserve unresolved routing when no historical cano
       expect(selectSourceFact(snapshot, entityKeys[0] ?? factKey())).toMatchObject({ state: "withheld", head: null });
       expect(JSON.stringify(snapshot)).not.toContain("passingYards");
     }
+  });
+});
+
+it("CSV consumer witnesses bind unchanged recaptures and post-window evidence through a replay-only login", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    const { input, request } = await seedBinding(store);
+    const a = await store.recordSourceNormalization("consumer-A", request, null);
+    const earlier = await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt));
+    const witness = sourceFactWitness(earlier);
+    await client.query("SELECT pg_sleep(0.005)");
+    const recapture = sourceClaimFixture("consumer-recapture"); recapture.capturedAt = new Date().toISOString();
+    await store.publishSourceStats(recapture);
+    const b = await store.recordSourceNormalization("consumer-B", request, "consumer-A");
+    expect(b.event.revision).toEqual(a.event.revision);
+    await withLogin(client, target, ["predictive_replay"], async (reader, readerTarget) => {
+      const replay = await createLocalPredictiveStore(reader, readerTarget, artifacts);
+      const after = await replay.replaySourceStatsFacts(factRequest(request.profileId, b.event.recordedAt));
+      const current = sourceFactWitness(after);
+      expect(checkSourceWitness(witness, after).state).toBe("changed");
+      expect(current.heads).toMatchObject([{ bindingId: "consumer-B", revisionId: a.event.revision!.id }]);
+      expect(sourceUsageEvidence(after, factKey()).state).toBe("positive-usage");
+      expect(sourceReconciliationEvidence(after, factKey())).toMatchObject({ outcome: { result: "selected", rule: "single-source" },
+        selected: { bindingId: "consumer-B", revisionId: a.event.revision!.id } });
+      const post = { entityKey: factKey(), bindingId: "consumer-B", captureId: recapture.captureId, eligibleAt: a.event.recordedAt };
+      expect(sourcePostWindowCapture(after, witness, post).reason).toBe("source-witness-changed");
+      expect(sourcePostWindowCapture(after, current, post)).toMatchObject({ state: "confirmed-source-capture", captureId: recapture.captureId,
+        head: { bindingId: "consumer-B", revisionId: a.event.revision!.id }, labelsFinalized: false });
+      expect(sourcePostWindowCapture(after, current, { ...post, captureId: input.captureId }).reason).toBe("source-capture-selection-mismatch");
+      expect(sourcePostWindowCapture(earlier, witness, { ...post, bindingId: "consumer-A", captureId: input.captureId }).reason)
+        .toBe("source-capture-before-final-window");
+      expect(await replay.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt))).toEqual(earlier);
+      await expect(reader.query("SELECT predictive_record_source_binding('consumer-denied',NULL,'{}')")).rejects.toMatchObject({ code: "42501" });
+    });
+    for (const table of ["predictive_observations", "predictive_feature_runs", "predictive_outcome_labels"])
+      expect((await client.query(`SELECT count(*)::integer AS n FROM ${table}${table === "predictive_observations" ? " WHERE kind IN ('player-game-stats','team-game-stats')" : ""}`)).rows[0].n).toBe(0);
+  });
+});
+
+it("CSV consumer checks withhold stale routing and revoked access instead of reviving earlier selected values", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const { input, request } = await seedBinding(store);
+    const a = await store.recordSourceNormalization("consumer-stale-A", request, null);
+    const earlier = await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt));
+    const witness = sourceFactWitness(earlier);
+    const at = await changeFactPlayer(client, store, "consumer-player-B", "00-0000002", "player-map");
+    const stale = await store.replaySourceStatsFacts(factRequest(request.profileId, at));
+    expect(checkSourceWitness(witness, stale)).toMatchObject({ state: "unavailable", reason: "source-evidence-withheld", current: { heads: [] } });
+    expect(sourceReconciliationEvidence(stale, factKey())).toMatchObject({ state: "withheld", selected: null, outcome: null });
+    expect(sourceUsageEvidence(stale, factKey()).state).toBe("withheld");
+    const post = { entityKey: factKey(), bindingId: a.event.id, captureId: input.captureId, eligibleAt: input.capturedAt };
+    expect(sourcePostWindowCapture(stale, witness, post).reason).toBe("source-evidence-withheld");
+    const now = new Date().toISOString();
+    await client.query(`INSERT INTO predictive_rights_decisions (id,profile_id,predecessor_id,allowed_uses,effective_from,decided_at,evidence_kind,evidence_reference)
+      VALUES ('consumer-revocation',$1,$2,'{}',$3,$3,'synthetic','fixture revocation')`, [request.profileId, input.rightsDecisions[0].id, now]);
+    let reads = 0;
+    const deniedBytes = { ...artifacts, database: { ...artifacts.database, read: async () => { reads++; throw new Error("unexpected provider read"); } } };
+    const restricted = await createLocalPredictiveStore(client, target, deniedBytes);
+    const denied = await restricted.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt));
+    expect(checkSourceWitness(witness, denied)).toMatchObject({ state: "unavailable", reason: "rights-not-in-force" });
+    expect(sourceReconciliationEvidence(denied, factKey()).outcome).toBeNull();
+    expect(sourceUsageEvidence(denied, factKey()).state).toBe("withheld");
+    expect(sourcePostWindowCapture(denied, witness, post).reason).toBe("rights-not-in-force");
+    expect(reads).toBe(0);
   });
 });
 

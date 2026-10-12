@@ -20,14 +20,18 @@ export const availabilityState = (data: Availability | null) => ({
 // reconciliation-v1: one provider head is selected as-is; identical claims are
 // selected deterministically (lowest source key); any material difference is a
 // conflict. No provider authority order is assumed.
+export const reconciliationOutcome = (candidates: { id: string; sourceKey: string; data: unknown }[]): Reconciliation["outcome"] => {
+  const ordered = [...candidates].sort((a, b) => compareText(a.sourceKey, b.sourceKey));
+  const same = ordered.length > 1 && ordered.every((row) => canonical(row.data) === canonical(ordered[0].data));
+  const selected = ordered.length === 1 || same ? ordered[0].id : null;
+  return !ordered.length ? { result: "insufficient-sources", selectedObservationId: null, rule: "no-candidates" } :
+    selected ? { result: "selected", selectedObservationId: selected, rule: ordered.length === 1 ? "single-source" : "sources-agree" } :
+    { result: "conflict", selectedObservationId: null, rule: "material-discrepancy" };
+};
 export const reconcileFact = (id: string, fact: string, candidates: Observation[], decidedAt: string,
   mode: Reconciliation["mode"], predecessorId: string | null = null): Reconciliation => {
   const ordered = [...candidates].sort((a, b) => compareText(a.sourceKey, b.sourceKey));
-  const same = ordered.length > 1 && ordered.every((row) => canonical(row.revision.data) === canonical(ordered[0].revision.data));
-  const selected = ordered.length === 1 || same ? ordered[0].revision.id : null;
-  const outcome: Reconciliation["outcome"] = !ordered.length ? { result: "insufficient-sources", selectedObservationId: null, rule: "no-candidates" } :
-    selected ? { result: "selected", selectedObservationId: selected, rule: ordered.length === 1 ? "single-source" : "sources-agree" } :
-    { result: "conflict", selectedObservationId: null, rule: "material-discrepancy" };
+  const outcome = reconciliationOutcome(ordered.map((row) => ({ id: row.revision.id, sourceKey: row.sourceKey, data: row.revision.data })));
   return { id, kind: "reconciliation", entityKey: "reconciliation:" + fact, policyId: "reconciliation-v1", mode, decidedAt, predecessorId, outcome,
-    inputs: ordered.map((row) => ({ observationId: row.revision.id, role: row.revision.id === selected ? "selected" : "candidate" })) };
+    inputs: ordered.map((row) => ({ observationId: row.revision.id, role: row.revision.id === outcome.selectedObservationId ? "selected" : "candidate" })) };
 };

@@ -15,6 +15,7 @@ import { readVerifiedSourcePrototype } from "../../src/lib/predictive/sourceProt
 import { SOURCE_PROFILE_VERSION } from "../../src/lib/predictive/sourceAdapters.ts";
 import type { Profile, RightsDecision } from "../../src/lib/predictive/types.ts";
 import { canonical, refuse } from "../../src/lib/predictive/validation.ts";
+import { checkSourceWitness, sourceFactWitness } from "../../src/lib/predictive/sourceWitness.ts";
 import { ensurePredictiveRoles } from "./harness.ts";
 
 // Guarded, owner-run, disposable proof. No fetch, hosted credentials, migrations
@@ -97,6 +98,9 @@ export const runSourceClaimsProof = async (args: string[], environment: NodeJS.P
         if (facts.status !== "replayed-source-facts" || facts.heads.length !== 0 || facts.withheld.length !== 1 ||
             facts.withheld[0].bindingId !== bindingId || facts.withheld[0].reason !== "game-bridge-missing" || facts.withheld[0].routing !== "unresolved")
           refuse("source-proof-canonical-facts-refused");
+        const witness = sourceFactWitness(facts);
+        if (checkSourceWitness(witness, facts).state !== "unavailable" || witness.heads.length !== 0 || witness.withheld.length !== 1)
+          refuse("source-proof-consumer-witness-refused");
         reports.push({ feed: input.profile.feed, rows: prepared.rows.length, projected: prepared.rows.filter((row) => row.projection).length,
           refused: prepared.rows.filter((row) => row.failureCode).length, capturedAt: input.capturedAt, ingestedAt: imported,
           rawBytes: Buffer.byteLength(input.artifact.bytes), rawSha256: input.artifact.sha256, publishMs: Math.round(publishMs),
@@ -104,7 +108,8 @@ export const runSourceClaimsProof = async (args: string[], environment: NodeJS.P
           normalizationMs: Math.round(normalizationMs), normalizationStatus: normalization.status, normalizationReason: normalization.reason,
           unavailableBindingRecordedAt: saved.event.recordedAt, unavailableBindingReplayVerified: true, unavailableBindingRetryVerified: true,
           factReplayMs: Math.round(factReplayMs), factHeads: facts.heads.length, factWithheld: facts.withheld.length,
-          factReason: facts.withheld[0].reason, factRouting: facts.withheld[0].routing, factDigest: facts.inputDigest });
+          factReason: facts.withheld[0].reason, factRouting: facts.withheld[0].routing, factDigest: facts.inputDigest,
+          consumerWitnessState: "unavailable", consumerWitnessDigest: witness.evidenceDigest });
       }
       const sizes = (await client.query(`SELECT pg_relation_size('public.predictive_source_stats_rows') AS heap,
         pg_indexes_size('public.predictive_source_stats_rows') AS indexes, pg_total_relation_size('public.predictive_source_stats_rows') AS total`)).rows[0];

@@ -389,3 +389,38 @@ zero requests and publishes no active observations/features/labels. Tests prove
 read semantics and provenance, not qualified real bridges, complete population,
 historical source availability, indexed roster-scale performance or the pending
 SQL/feature/decision/label activation.
+## PR B shared consumer witnesses (2026-10-12)
+
+The pure witness cases specify binding/revision IDs and predecessor links by
+hand, using separately normalized synthetic CSV/context fixtures. Expected
+selected IDs, missing destinations, withheld routing, usage states and boundary
+timestamps are explicit assertions, not values calculated by the witness helper.
+They cover query-time invariance, same-revision recapture invalidation, canonical
+rerouting, unrecorded mapping changes, unresolved rivals, agreeing/conflicting
+providers, unrelated destinations, empty sets and narrowed/changed scopes.
+Usage controls distinguish blank/zero/missing from positive attempts/carries/
+targets; a positive rival cannot erase another provider's zero-usage evidence.
+An unchanged empty witness is explicitly not a usable selection.
+
+Post-window cases set the eligible boundary independently of the helper and
+check equality versus one millisecond before it. They distinguish capture time
+from later ingestion and select the current binding's raw capture, rather than
+the reused revision's original capture. Old witnesses, wrong capture/binding IDs
+and conflicting selections refuse. These are isolated source-capture checks,
+not proofs of completion, licensed outcome use or full label finalization.
+
+Two mandatory PostgreSQL cases exercise actual persisted reader output: a
+non-superuser replay-only login observes a reused statistical revision with a
+new binding/capture, and stale identity/current-rights changes withhold every
+consumer. The tests require unchanged earlier replay, refusal of publication
+through the reader login and zero active statistics observations/features/labels.
+The rights case counts provider file reads and requires zero after revocation.
+The actual retained-file CLI proof also creates a witness and requires its
+`game-bridge-missing` evidence to remain unavailable. It acquires no new files.
+
+Snapshot/witness digest checks detect accidental mutation; a correctly rehashed
+forgery remains outside this pure contract's authority. Byte verification,
+database-clock recording, rights and complete raw-chain validation belong to
+the persisted reader/recorders. SQL binding-aware feature/decision/label
+activation and real provider qualification remain outstanding; these tests do
+not claim either is complete.

@@ -16,6 +16,16 @@ reader, returns explicit withheld states, and pins binding provenance separately
 from unchanged statistical revisions. It remains a read-only research API;
 the shared SQL/feature/decision/label activation is still outstanding.
 
+Shared consumer preparation now pins the exact bound head set in
+[`sourceWitness.ts`](../src/lib/predictive/sourceWitness.ts). Read-only
+reconciliation, positive-usage and post-window source-capture checks use this
+same witness, including unresolved contributions. Query time alone does not
+invalidate it; recaptures do, even when they reuse a statistical revision.
+The post-window check follows the selected binding's exact capture. These
+helpers do not activate or persist features, decisions or labels; the SQL and
+downstream integration gate remains open. See
+[the witness contract and limits](predictive-source-lineage.md#remaining-activation-work).
+
 ## Parent #52 acceptance criteria audit (2026-10-12)
 
 **Parent #52 is not complete.** This audit follows the nine original criteria in
