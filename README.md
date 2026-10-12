@@ -118,6 +118,10 @@ outcome coverage remains blocked on qualified participation evidence. Current
 revised historical files are exploratory, public/commercial display rights
 remain conditional, and no projection model or new ingestion job ships here.
 
+The [local synthetic cutoff replay proof](docs/predictive-ingestion.md) for #52
+is runnable with `npm run predictive:demo`. It demonstrates immutable corrections
+and separate player/team/opponent passing inputs without an API key or database.
+
 ### Provider notes (nflverse)
 
 - **Cost:** free, no API key. The actual CSV downloads (GitHub Releases

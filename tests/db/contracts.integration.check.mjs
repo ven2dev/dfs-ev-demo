@@ -73,7 +73,7 @@ test("full verifier reports every real column, key, check, FK, index, sequence a
     `);
     const original = await readCatalog(client, expected);
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    const differences = await compareCandidateCatalog(client, contracts, 2);
+    const differences = await compareCandidateCatalog(client, contracts, files.length);
     for (const prefix of [
       "Changed column:creators.channel_name / not_null", "Changed column:creators.created_at / default",
       "Unexpected column:creators.extra_value", "Missing column:nflverse_roster_players.football_name",
@@ -105,15 +105,15 @@ test("unenforced foreign keys and disabled internal enforcement triggers are det
   await harness.withDatabase(async (client, expected) => {
     await runScratchMigrations(client, optionsFor(expected));
     await client.query("ALTER TABLE creator_video_submissions ALTER CONSTRAINT creator_video_submissions_creator_id_fkey NOT ENFORCED");
-    has(await compareCandidateCatalog(client, contracts, 2),
+    has(await compareCandidateCatalog(client, contracts, files.length),
       "Changed constraint:creator_video_submissions.creator_video_submissions_creator_id_fkey / enforced");
     await client.query("ALTER TABLE creator_video_submissions ALTER CONSTRAINT creator_video_submissions_creator_id_fkey ENFORCED");
-    await verify(client, 2);
+    await verify(client, files.length);
     await client.query("ALTER TABLE creator_video_submissions DISABLE TRIGGER ALL");
-    const differences = await compareCandidateCatalog(client, contracts, 2);
+    const differences = await compareCandidateCatalog(client, contracts, files.length);
     has(differences, "Changed constraint:creator_video_submissions.creator_video_submissions_creator_id_fkey / trigger_states");
     assert.ok(!differences.some((difference) => difference.includes(" / validated") || difference.includes(" / enforced")));
-    await assert.rejects(verify(client, 2), /candidate-catalog-mismatch/);
+    await assert.rejects(verify(client, files.length), /candidate-catalog-mismatch/);
   });
 });
 
@@ -126,7 +126,7 @@ test("a naturally failed concurrent unique-index build exposes invalidity to the
     await client.query("DROP INDEX idx_creator_video_submissions_creator");
     await assert.rejects(client.query("CREATE UNIQUE INDEX CONCURRENTLY idx_creator_video_submissions_creator ON creator_video_submissions (creator_id)"),
       (error) => error.code === "23505");
-    const differences = await compareCandidateCatalog(client, contracts, 2);
+    const differences = await compareCandidateCatalog(client, contracts, files.length);
     has(differences, "Changed index:idx_creator_video_submissions_creator / valid: expected true; actual false");
     has(differences, "Changed index:idx_creator_video_submissions_creator / ready: expected true; actual false");
     has(differences, "Changed index:idx_creator_video_submissions_creator / unique");
@@ -145,7 +145,7 @@ test("failed upgrade verification preserves the committed baseline, seeded rows 
     try {
       await observer.connect();
       await assert.rejects(runScratchMigrations(client, optionsFor(expected, { verify: async (session, version) => {
-        assert.equal((await session.query("SELECT count(*)::integer AS count FROM db_migrations")).rows[0].count, 2);
+        assert.equal((await session.query("SELECT count(*)::integer AS count FROM db_migrations")).rows[0].count, files.length);
         assert.equal((await observer.query("SELECT count(*)::integer AS count FROM db_migrations")).rows[0].count, 1);
         assert.equal((await observer.query("SELECT to_regclass('public.odds_observations') AS relation")).rows[0].relation, null);
         await session.query("ALTER TABLE odds_observations ALTER COLUMN captured_at DROP NOT NULL");
@@ -184,7 +184,7 @@ test("fresh scratch databases reproduce contracts while ignoring owner roles, OI
       oids.push((await client.query("SELECT 'public.creators'::regclass::oid AS oid")).rows[0].oid);
       await client.query("ALTER TABLE creators OWNER TO pg_database_owner");
       await client.query("SELECT setval('creators_id_seq', 100000, true)");
-      await verify(client, 2);
+      await verify(client, files.length);
     });
   }
   assert.notEqual(oids[0], oids[1]);
@@ -197,25 +197,25 @@ test("contract generation refuses unsupported managed objects and cleans up its 
 
 test("an extension can be explicitly contracted without its members hiding application drift", async () => {
   const sql = "CREATE EXTENSION pg_trgm WITH SCHEMA public;\n";
-  const extensionFiles = [...files, { version: 3, filename: "0003_synthetic_extension.sql", sql, sha256: fingerprint(sql) }];
+  const extensionFiles = [...files, { version: files.length + 1, filename: "0004_synthetic_extension.sql", sql, sha256: fingerprint(sql) }];
   const artifacts = await buildCatalogContracts(harness, extensionFiles);
   const extensionContracts = { ledger: JSON.parse(artifacts.get("ledger.json")),
-    migrations: [1, 2, 3].map((version) => JSON.parse(artifacts.get("000" + version + ".json"))) };
-  assert.deepEqual(compareCatalogs(contracts.migrations[1], extensionContracts.migrations[2]), ["Unexpected extension:pg_trgm"]);
+    migrations: extensionFiles.map((file) => file.version).map((version) => JSON.parse(artifacts.get("000" + version + ".json"))) };
+  assert.deepEqual(compareCatalogs(contracts.migrations.at(-1), extensionContracts.migrations.at(-1)), ["Unexpected extension:pg_trgm"]);
   await harness.withDatabase(async (client, expected) => {
     await runScratchMigrations(client, optionsFor(expected));
     await client.query(sql);
-    assert.deepEqual(await compareCandidateCatalog(client, contracts, 2), ["Unexpected extension:pg_trgm"]);
+    assert.deepEqual(await compareCandidateCatalog(client, contracts, files.length), ["Unexpected extension:pg_trgm"]);
     await assert.rejects(runScratchMigrations(client, optionsFor(expected)), /candidate-catalog-mismatch/);
     await client.query("DROP EXTENSION pg_trgm");
     const options = optionsFor(expected, { files: extensionFiles, verify: createCatalogVerifier(extensionContracts) });
-    assert.deepEqual((await runScratchMigrations(client, options)).executed, [3]);
+    assert.deepEqual((await runScratchMigrations(client, options)).executed, [files.length + 1]);
     assert.deepEqual((await runScratchMigrations(client, options)).executed, []);
     const incorrectVersion = structuredClone(extensionContracts);
-    incorrectVersion.migrations[2].objects.find((object) => object.kind === "extension").definition.version = "unreviewed";
-    has(await compareCandidateCatalog(client, incorrectVersion, 3), "Changed extension:pg_trgm / version");
+    incorrectVersion.migrations.at(-1).objects.find((object) => object.kind === "extension").definition.version = "unreviewed";
+    has(await compareCandidateCatalog(client, incorrectVersion, extensionFiles.length), "Changed extension:pg_trgm / version");
     await client.query("ALTER TABLE creators ALTER COLUMN channel_name DROP NOT NULL");
-    has(await compareCandidateCatalog(client, extensionContracts, 3), "Changed column:creators.channel_name / not_null");
+    has(await compareCandidateCatalog(client, extensionContracts, extensionFiles.length), "Changed column:creators.channel_name / not_null");
     await assert.rejects(runScratchMigrations(client, options), /candidate-catalog-mismatch/);
   });
 });

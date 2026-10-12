@@ -45,7 +45,7 @@ test("empty installation matches the authentic current catalog and reruns preser
       assert.equal((await session.query("SELECT current_setting('standard_conforming_strings') AS mode")).rows[0].mode, "on");
       await verify(session, version);
     } });
-    assert.deepEqual(await runScratchMigrations(client, options), { schemaVersion: 2, executed: [1, 2] });
+    assert.deepEqual(await runScratchMigrations(client, options), { schemaVersion: files.length, executed: files.map((file) => file.version) });
     const ledgerColumns = await client.query("SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'db_migrations' ORDER BY ordinal_position");
     assert.deepEqual(ledgerColumns.rows.map((row) => row.column_name),
       ["version", "filename", "sha256", "runner_version", "provenance", "applied_at"]);
@@ -54,18 +54,20 @@ test("empty installation matches the authentic current catalog and reruns preser
     const catalog = await readCatalog(client, expected);
     const ledgerObjects = new Set(contracts.ledger.objects.map((object) => object.kind + ":" + object.name));
     const application = { ...catalog, objects: catalog.objects.filter((object) => !ledgerObjects.has(object.kind + ":" + object.name)) };
-    assert.deepEqual(compareCatalogs(reference, application), []);
+    const historicalKeys = new Set(contracts.migrations[1].objects.map((object) => object.kind + ":" + object.name));
+    assert.deepEqual(compareCatalogs(reference, { ...application, objects: application.objects.filter((object) => historicalKeys.has(object.kind + ":" + object.name)) }), []);
+    await verify(client, files.length);
     await client.query("INSERT INTO creators (channel_name) VALUES ('synthetic creator')");
     await client.query("INSERT INTO creator_video_submissions (creator_id, video_url, transcript_text) SELECT id, 'https://example.invalid/synthetic', 'synthetic text' FROM creators");
     const before = await ledgerRows(client);
-    assert.deepEqual(await runScratchMigrations(client, options), { schemaVersion: 2, executed: [] });
+    assert.deepEqual(await runScratchMigrations(client, options), { schemaVersion: files.length, executed: [] });
     assert.deepEqual(await ledgerRows(client), before);
     assert.ok(before.every((row) => row.provenance === "executed" && row.runner_version === 1));
     const { rows } = await client.query("SELECT c.channel_name, v.transcript_text FROM creators c JOIN creator_video_submissions v ON v.creator_id = c.id");
     assert.deepEqual(rows, [{ channel_name: "synthetic creator", transcript_text: "synthetic text" }]);
     const status = await readMigrationStatus(client, expected, files);
-    assert.equal(status.schemaVersion, 2);
-    assert.equal(status.history.length, 2);
+    assert.equal(status.schemaVersion, files.length);
+    assert.equal(status.history.length, files.length);
   });
 });
 
@@ -89,12 +91,12 @@ test("recorded baseline upgrades preserve seeded relationships and working seque
     await client.query("INSERT INTO creator_video_submissions (creator_id, video_url, transcript_text) SELECT id, 'https://example.invalid/baseline', 'baseline text' FROM creators");
     const original = await client.query("SELECT * FROM creator_video_submissions");
     const baselineLedger = (await ledgerRows(client))[0];
-    assert.deepEqual((await runScratchMigrations(client, optionsFor(expected))).executed, [2]);
+    assert.deepEqual((await runScratchMigrations(client, optionsFor(expected))).executed, files.slice(1).map((file) => file.version));
     assert.deepEqual((await ledgerRows(client))[0], baselineLedger);
     assert.deepEqual((await client.query("SELECT * FROM creator_video_submissions")).rows, original.rows);
     const { rows } = await client.query("INSERT INTO creators (channel_name) VALUES ('after upgrade') RETURNING id");
     assert.equal(Number(rows[0].id), 2);
-    await verify(client, 2);
+    await verify(client, files.length);
   });
 });
 
@@ -150,7 +152,7 @@ test("deep catalog mismatch rolls back all application DDL and ledger writes wit
       return client.query(sql, params);
     } };
     await assert.rejects(runScratchMigrations(observed, optionsFor(expected, { verify: async (session, version) => {
-      assert.equal((await ledgerRows(session)).length, 2);
+      assert.equal((await ledgerRows(session)).length, files.length);
       await session.query("ALTER TABLE creators ALTER COLUMN channel_name DROP NOT NULL; ALTER SEQUENCE creators_id_seq INCREMENT BY 2");
       await verify(session, version);
     } })), (error) => {
@@ -161,7 +163,7 @@ test("deep catalog mismatch rolls back all application DDL and ledger writes wit
     });
     assert.deepEqual(boundaries, ["BEGIN", "ROLLBACK"]);
     await assertEmpty(client);
-    assert.deepEqual((await runScratchMigrations(client, optionsFor(expected))).executed, [1, 2]);
+    assert.deepEqual((await runScratchMigrations(client, optionsFor(expected))).executed, files.map((file) => file.version));
   });
 });
 
@@ -198,9 +200,9 @@ test("held transaction lock fails promptly and concurrent runners cannot double-
       } finally { release(); }
       const outcome = await settling;
       if (outcome.error) throw outcome.error;
-      assert.deepEqual(outcome.result.executed, [1, 2]);
+      assert.deepEqual(outcome.result.executed, files.map((file) => file.version));
       assert.deepEqual((await runScratchMigrations(competitor, optionsFor(expected))).executed, []);
-      assert.equal((await ledgerRows(client)).length, 2);
+      assert.equal((await ledgerRows(client)).length, files.length);
     } finally {
       await client.query("ROLLBACK");
       await competitor.end();
