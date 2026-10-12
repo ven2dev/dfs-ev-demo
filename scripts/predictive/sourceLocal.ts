@@ -14,7 +14,7 @@ import { prepareSourceClaims, type SourceStatsPublication } from "../../src/lib/
 import { readVerifiedSourcePrototype } from "../../src/lib/predictive/sourcePrototype.ts";
 import { SOURCE_PROFILE_VERSION } from "../../src/lib/predictive/sourceAdapters.ts";
 import type { Profile, RightsDecision } from "../../src/lib/predictive/types.ts";
-import { refuse } from "../../src/lib/predictive/validation.ts";
+import { canonical, refuse } from "../../src/lib/predictive/validation.ts";
 import { ensurePredictiveRoles } from "./harness.ts";
 
 // Guarded, owner-run, disposable proof. No fetch, hosted credentials, migrations
@@ -83,11 +83,20 @@ export const runSourceClaimsProof = async (args: string[], environment: NodeJS.P
         // bridges. Familiar NFL/GSIS IDs must not silently substitute for them.
         if (normalization.status !== "unavailable-source-normalization" || normalization.reason !== "game-bridge-missing" || normalization.candidate !== null)
           refuse("source-proof-invented-identity");
+        const { cutoff: _cutoff, ...bindingRequest } = request; void _cutoff;
+        const bindingId = "source-proof:normalization:" + input.profile.feed;
+        const saved = await store.recordSourceNormalization(bindingId, bindingRequest, null);
+        const bound = await store.replaySourceNormalization({ ...request, cutoff: saved.event.recordedAt });
+        const boundRetry = await store.recordSourceNormalization(bindingId, bindingRequest, null);
+        if (saved.event.revision !== null || saved.event.plan.reason !== "game-bridge-missing" ||
+            bound.reason !== "game-bridge-missing" || bound.head !== null || !boundRetry.reused ||
+            canonical(saved.event) !== canonical(boundRetry.event)) refuse("source-proof-unavailable-binding-refused");
         reports.push({ feed: input.profile.feed, rows: prepared.rows.length, projected: prepared.rows.filter((row) => row.projection).length,
           refused: prepared.rows.filter((row) => row.failureCode).length, capturedAt: input.capturedAt, ingestedAt: imported,
           rawBytes: Buffer.byteLength(input.artifact.bytes), rawSha256: input.artifact.sha256, publishMs: Math.round(publishMs),
           replayMs: Math.round(replayMs), preImportUnavailable: true, retryPreservedReplay: true, inputDigest: replay.inputDigest,
-          normalizationMs: Math.round(normalizationMs), normalizationStatus: normalization.status, normalizationReason: normalization.reason });
+          normalizationMs: Math.round(normalizationMs), normalizationStatus: normalization.status, normalizationReason: normalization.reason,
+          unavailableBindingRecordedAt: saved.event.recordedAt, unavailableBindingReplayVerified: true, unavailableBindingRetryVerified: true });
       }
       const sizes = (await client.query(`SELECT pg_relation_size('public.predictive_source_stats_rows') AS heap,
         pg_indexes_size('public.predictive_source_stats_rows') AS indexes, pg_total_relation_size('public.predictive_source_stats_rows') AS total`)).rows[0];

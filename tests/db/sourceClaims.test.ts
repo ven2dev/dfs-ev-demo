@@ -11,8 +11,12 @@ import { ensureHarnessSession, ensurePredictiveRoles } from "../../scripts/predi
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { createLocalPredictiveStore, retentionIdsDigest } from "../../src/lib/predictive/persistence.ts";
 import type { RecordedRetentionEvent } from "../../src/lib/predictive/types.ts";
-import { canonical, digest } from "../../src/lib/predictive/validation.ts";
+import { canonical, digest, entityKey } from "../../src/lib/predictive/validation.ts";
+import { createReplay } from "../../src/lib/predictive/replay.ts";
+import { reconcileFact } from "../../src/lib/predictive/policies.ts";
+import { ROUTING_FIELDS } from "../../src/lib/predictive/types.ts";
 import { sourceNormalizationBasis } from "../../src/lib/predictive/persistence.ts";
+import { SOURCE_NORMALIZATION_V1 } from "../../src/lib/predictive/sourceNormalization.ts";
 import { prepareSourceClaims, projectSourceClaim } from "../../src/lib/predictive/sourceClaims.ts";
 import { sourceClaimFixture } from "../predictive/fixtures/sourceClaims.ts";
 import { sourceCsv, sourceGameId, sourceSamples } from "../predictive/fixtures/source.ts";
@@ -671,7 +675,7 @@ it("CSV binding migration upgrades v4 without changing released history and reru
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 4)).toEqual(ledger); expect(upgraded).toHaveLength(5);
+    expect(upgraded.slice(0, 4)).toEqual(ledger); expect(upgraded).toHaveLength(6);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
@@ -695,5 +699,261 @@ it("CSV binding canonical guard refuses generated JSON under real source profile
     await expect(store.publish("generated-json-run", wrapped, "2026-10-11T00:00:00.000Z")).rejects.toThrow("predictive-source-canonical-binding-required");
     expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_bindings")).rows[0].n).toBe(1);
     expect((await client.query("SELECT count(*)::integer AS n FROM predictive_observations WHERE kind='player-game-stats'")).rows[0].n).toBe(0);
+  });
+});
+
+it("CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries", async () => {
+  const cases = [
+    ["game-map", "game-bridge-missing", []],
+    ["team-map", "team-alias-missing", ["game-bridge"]],
+    ["opponent-map", "opponent-alias-missing", ["game-bridge", "team-alias"]],
+    ["game-schedule", "normalization-schedule-missing", ["game-bridge", "opponent-alias", "team-alias"]],
+    ["player-map", "player-bridge-missing", ["game-bridge", "opponent-alias", "schedule", "team-alias"]],
+    ["link", "player-bridge-link-missing", ["game-bridge", "opponent-alias", "player-bridge", "schedule", "team-alias"]],
+    ["wrong-week", "source-schedule-context-conflict", ["game-bridge", "opponent-alias", "schedule", "team-alias"]],
+  ] as const;
+  for (const [missing, reason, roles] of cases) await withProof(async ({ client, store, artifacts, target }) => {
+    const fixture = await normalizationFixture();
+    if (missing === "link") fixture.context.identityLinks = [];
+    if (missing === "wrong-week") fixture.bridgeRows.find((row) => row.kind === "schedule")!.data.week = 5;
+    rewriteNormalizationRows(fixture.context, fixture.bridgeRows.filter((row) => row.id !== missing));
+    await store.publishSourceStats(fixture.input);
+    await store.publish("unavailable-context", fixture.context, "2026-10-11T00:00:00.000Z");
+    const request = { profileId: fixture.input.profile.id, rawGameId: sourceGameId, rawTeam: "PHI", rawPlayerId: "00-0000001" };
+    await withLogin(client, target, ["predictive_recorder", "predictive_replay", "predictive_harness"], async (login, loginTarget) => {
+      const restricted = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      const saved = await restricted.recordSourceNormalization("unavailable", request, null);
+      expect(saved.event).toMatchObject({ revision: null, plan: { reason, candidate: null } });
+      expect(saved.event.plan.binding.dependencies.map((dep) => dep.role)).toEqual(roles);
+      expect(saved.event.plan.binding.rightsDecisionIds).toEqual([fixture.input.rightsDecisions[0].id,
+        ...(roles.length ? ["rights-" + BRIDGE_PROFILE] : [])].sort());
+      expect(await restricted.replaySourceNormalization({ ...request, cutoff: saved.event.recordedAt })).toMatchObject({ reason, head: null });
+      expect(await restricted.recordSourceNormalization("unavailable", request, null)).toEqual({ ...saved, reused: true });
+      for (const mutation of ["reason", "rights", "dependency"]) await probe(login, async () => {
+        const fake = structuredClone(saved.event.plan);
+        if (mutation === "reason") fake.reason = "source-row-missing";
+        if (mutation === "rights") fake.binding.rightsDecisionIds = [];
+        if (mutation === "dependency") fake.binding.dependencies = [...fake.binding.dependencies, { ...fake.binding.dependencies[0],
+          role: "schedule", observationId: "game-map" }];
+        rehashPlan(fake);
+        await expect(login.query("SELECT predictive_record_source_binding('forged-unavailable','unavailable',$1)", [JSON.stringify(fake)]))
+          .rejects.toMatchObject({ code: "23514" });
+      });
+    });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_stats_revisions")).rows[0].n).toBe(0);
+  });
+});
+
+it("CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence", async () => {
+  for (const mode of ["game-forward", "game-reverse", "team", "opponent", "player-forward", "player-reverse", "schedule", "schedule-alias"]) {
+    await withProof(async ({ client, store }) => {
+      const { request, input } = await seedBinding(store);
+      const other = "unavailable-rival-profile";
+      const conflict = { formatVersion: 2 as const, profiles: [profile(other)], rightsDecisions: [rights(other, { allowedUses: ["internal-research"] })],
+        artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+      const rows = mode.startsWith("game") ? [revision("rival", "game-bridge", { provider: "nflverse",
+        rawGameId: mode === "game-forward" ? sourceGameId : "other-game", gameId: mode === "game-forward" ? gameId(67) : NORMALIZATION_GAME })]
+        : mode === "team" || mode === "opponent" ? [revision("rival", "team-alias", { provider: "nflverse", rawAlias: mode === "team" ? "PHI" : "CAR",
+          teamId: "nfl:team:BUF", effectiveFromSeason: 2026, effectiveToSeason: 2026 })]
+        : mode.startsWith("player") ? [revision("rival", "player-bridge", { provider: "gsis",
+          rawPlayerId: mode === "player-forward" ? "00-0000001" : "00-0000002", playerId: mode === "player-forward" ? "00-0000002" : "00-0000001",
+          effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-01-01T00:00:00.000Z" })]
+        : [revision("rival", "schedule", { ...(await normalizationFixture()).bridgeRows.find((row) => row.kind === "schedule")!.data,
+          gameId: mode === "schedule-alias" ? gameId(67) : NORMALIZATION_GAME })];
+      addCapture(conflict, "rival-context", rows, "2026-10-09T13:00:00.000Z", other);
+      await store.publish("rival-context", conflict, "2026-10-11T00:00:00.000Z");
+      const saved = await store.recordSourceNormalization("conflicting", request, null);
+      const expected = mode.startsWith("game") ? "game-bridge-conflict" : mode === "team" ? "team-alias-conflict"
+        : mode === "opponent" ? "opponent-alias-conflict" : mode.startsWith("player") ? "player-bridge-conflict" : "normalization-schedule-ambiguous";
+      expect(saved.event.plan.reason).toBe(expected);
+      expect(saved.event.plan.binding.dependencies.some((dep) => dep.observationId === "rival")).toBe(true);
+      expect(saved.event.plan.binding.rightsDecisionIds).toEqual([input.rightsDecisions[0].id, "rights-" + BRIDGE_PROFILE, "rights-" + other].sort());
+      expect(await store.replaySourceNormalization({ ...request, cutoff: saved.event.recordedAt })).toMatchObject({ reason: expected, head: null });
+      await probe(client, async () => {
+        const forged = structuredClone(saved.event.plan); forged.binding.dependencies = forged.binding.dependencies.filter((dep) => dep.observationId !== "rival");
+        rehashPlan(forged); await expect(client.query("SELECT predictive_record_source_binding('forged-conflict','conflicting',$1)", [JSON.stringify(forged)]))
+          .rejects.toMatchObject({ code: "23514" });
+      });
+    });
+  }
+});
+
+it("CSV unavailable bindings supersede usable context and recover without inventing numeric corrections or changing earlier cutoffs", async () => {
+  await withProof(async ({ client, store }) => {
+    const { request, bridgeRows } = await seedBinding(store);
+    const a = await store.recordSourceNormalization("usable-A", request, null);
+    const original = await store.replaySourceNormalization({ ...request, cutoff: a.event.recordedAt });
+    await client.query("SELECT pg_sleep(0.005)"); const later = new Date().toISOString();
+    const changes = { formatVersion: 2 as const, profiles: [profile(BRIDGE_PROFILE)], rightsDecisions: [], artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+    const prior = bridgeRows.find((row) => row.kind === "schedule")!;
+    addCapture(changes, "wrong-context", [revision("wrong-context", "schedule", { ...prior.data, week: 5 }, prior.id)], later, BRIDGE_PROFILE);
+    await store.publish("wrong-context", changes, later);
+    expect(await store.replaySourceNormalization({ ...request, cutoff: later })).toMatchObject({ reason: "source-binding-stale" });
+    const b = await store.recordSourceNormalization("unavailable-B", request, a.event.id);
+    expect(b.event).toMatchObject({ revision: null, plan: { reason: "source-schedule-context-conflict" } });
+    expect(await store.replaySourceNormalization({ ...request, cutoff: b.event.recordedAt })).toMatchObject({ reason: "source-schedule-context-conflict", head: null });
+    await client.query("SELECT pg_sleep(0.005)"); const recovered = new Date().toISOString();
+    changes.artifacts = []; changes.captures = [];
+    addCapture(changes, "recovered-context", [revision("recovered-context", "schedule", prior.data, "wrong-context")], recovered, BRIDGE_PROFILE);
+    await store.publish("recovered-context", changes, recovered);
+    const c = await store.recordSourceNormalization("usable-C", request, b.event.id);
+    expect(c.event.revision).toEqual(a.event.revision);
+    expect(await store.replaySourceNormalization({ ...request, cutoff: c.event.recordedAt })).toMatchObject({ status: "observed-source-normalization", head: { id: "usable-C" } });
+    expect(await store.replaySourceNormalization({ ...request, cutoff: a.event.recordedAt })).toEqual(original);
+    expect(await store.replaySourceNormalization({ ...request, cutoff: b.event.recordedAt })).toMatchObject({ reason: "source-schedule-context-conflict" });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_stats_revisions")).rows[0].n).toBe(1);
+  });
+});
+
+it("CSV unavailable bindings verify every ambiguous capture file and allow evidenced conflict recovery", async () => {
+  await withProof(async ({ client, store, root }) => {
+    const a = sourceClaimFixture("capture-rival-A");
+    const b = sourceClaimFixture("capture-rival-B", "player", sourceCsv("player", [{ ...sourceSamples().player[0], passing_yards: "91" }]));
+    b.capturedAt = a.capturedAt;
+    await store.publishSourceStats(a); await store.publishSourceStats(b);
+    const request = { profileId: a.profile.id, rawGameId: sourceGameId, rawTeam: "PHI", rawPlayerId: "00-0000001" };
+    const saved = await store.recordSourceNormalization("ambiguous-captures", request, null);
+    expect(saved.event.plan).toMatchObject({ reason: "source-capture-ambiguous", binding: { sourceRows: [], rightsDecisionIds: [a.rightsDecisions[0].id] } });
+    expect(saved.event.plan.binding.sourceCaptures.map((capture) => capture.id)).toEqual([a.captureId, b.captureId]);
+    for (const input of [a, b]) {
+      const path = join(root, ".db-blobs", input.artifact.sha256 + ".csv");
+      await writeFile(path, "damaged", { mode: 0o600 });
+      await expect(store.recordSourceNormalization("ambiguous-captures", request, null)).rejects.toThrow("artifact-integrity-failed");
+      await expect(store.replaySourceNormalization({ ...request, cutoff: saved.event.recordedAt })).rejects.toThrow("artifact-integrity-failed");
+      await writeFile(path, input.artifact.bytes, { mode: 0o600 });
+    }
+    const fixture = await normalizationFixture(); await store.publish("capture-recovery-context", fixture.context, "2026-10-11T00:00:00.000Z");
+    const next = sourceClaimFixture("capture-recovery"); next.capturedAt = saved.event.recordedAt; await store.publishSourceStats(next);
+    const recovered = await store.recordSourceNormalization("capture-recovery", request, saved.event.id);
+    expect(recovered.event.revision?.data.passingYards).toBe(80);
+    expect(await store.replaySourceNormalization({ ...request, cutoff: saved.event.recordedAt })).toMatchObject({ reason: "source-capture-ambiguous" });
+    expect(await store.replaySourceNormalization({ ...request, cutoff: recovered.event.recordedAt })).toMatchObject({ status: "observed-source-normalization" });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_binding_captures WHERE binding_id='ambiguous-captures'")).rows[0].n).toBe(2);
+  });
+});
+
+it("CSV capture-less unavailable bindings keep source rights and whole-lineage retention through execute-only ownership", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const fixture = await normalizationFixture();
+    await store.publish("capture-less-context", fixture.context, "2026-10-11T00:00:00.000Z");
+    const request = { profileId: fixture.input.profile.id, rawGameId: sourceGameId, rawTeam: "PHI", rawPlayerId: "00-0000001" };
+    const a = await store.recordSourceNormalization("capture-less-A", request, null);
+    expect(a.event.plan).toMatchObject({ reason: "source-capture-missing", binding: { sourceCaptures: [], sourceRows: [],
+      dependencies: [], rightsDecisionIds: [fixture.input.rightsDecisions[0].id] } });
+    await store.recordSourceNormalization("capture-less-B", request, a.event.id);
+    await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+      const owner = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      // No-capture records cannot establish that they fall outside a time-scoped deletion.
+      await owner.retain({ id: "remove-capture-less", reason: "provider-request", authority: "synthetic test", decidedAt: fixture.input.capturedAt,
+        scope: { kind: "source", profileIds: [fixture.input.profile.id], capturedFrom: "2026-10-01T00:00:00.000Z", capturedBefore: "2026-10-02T00:00:00.000Z" }, auditLevel: "digest-only" });
+    });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_bindings")).rows[0].n).toBe(0);
+    const removed = await store.recordSourceNormalization("after-removal", request, null);
+    expect(removed.event.plan.reason).toBe("retained-evidence-removed");
+    expect(await store.replaySourceNormalization({ ...request, cutoff: removed.event.recordedAt })).toMatchObject({ reason: "retained-evidence-removed" });
+  });
+});
+
+it("CSV unavailable migration upgrades v5 preserving v1 positive and withheld plans, exact retries and recorded history", async () => {
+  for (const player of ["00-0000001", "00-0000002"]) await withProof(async ({ client, store, target }) => {
+    const { input, request } = await seedBinding(store);
+    request.rawPlayerId = player;
+    const plan = await store.planSourceStatsNormalization({ ...request, cutoff: await captureTime(client, input.captureId) });
+    plan.binding.version = SOURCE_NORMALIZATION_V1;
+    if (!plan.candidate) plan.binding.rightsDecisionIds = [];
+    rehashPlan(plan);
+    const saved = (await client.query("SELECT predictive_record_source_binding('legacy-v1',NULL,$1) AS result", [JSON.stringify(plan)])).rows[0].result;
+    const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    const binding = (await client.query("SELECT * FROM predictive_source_bindings")).rows;
+    const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
+    await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 5)).toEqual(ledger);
+    expect((await client.query("SELECT * FROM predictive_source_bindings")).rows).toEqual(binding);
+    expect(await store.recordSourceNormalization("legacy-v1", request, null)).toMatchObject({ reused: true, event: { plan } });
+    expect(await store.replaySourceNormalization({ ...request, cutoff: saved.recordedAt })).toMatchObject(player === "00-0000001"
+      ? { status: "observed-source-normalization", head: { id: "legacy-v1" } } : { reason: "source-row-missing", head: null });
+    const next = await store.recordSourceNormalization("v2-next", request, "legacy-v1");
+    expect(next.event.plan.binding.version).toBe("nflverse-stats-normalization-plan-v2");
+    if (plan.candidate) expect(next.event.revision?.id).toBe((await client.query("SELECT revision_id FROM predictive_source_bindings WHERE id='legacy-v1'")).rows[0].revision_id);
+    await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
+    expect((await client.query("SELECT * FROM predictive_source_bindings WHERE id='legacy-v1'")).rows).toEqual(binding);
+  }, 5);
+});
+
+it("CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts", async () => {
+  for (const [id, expected] of [["game-map", "game-bridge-conflict"], ["team-map", "team-alias-conflict"],
+    ["opponent-map", "opponent-alias-conflict"], ["player-map", "player-bridge-conflict"], ["game-schedule", "normalization-schedule-absent"],
+    ["expired-player", "player-bridge-missing"], ["expired-team", "team-alias-missing"]]) await withProof(async ({ store }) => {
+    const fixture = await normalizationFixture();
+    const outOfWindow = id.startsWith("expired");
+    const prior = fixture.bridgeRows.find((row) => row.id === (id === "expired-player" ? "player-map" : id === "expired-team" ? "team-map" : id))!;
+    if (prior.kind === "player-bridge" && outOfWindow) prior.data.effectiveTo = "2026-10-01T00:00:00.000Z";
+    if (prior.kind === "team-alias" && outOfWindow) prior.data.effectiveToSeason = 2025;
+    if (prior.kind === "team-alias" && outOfWindow) prior.data.effectiveFromSeason = 2025;
+    rewriteNormalizationRows(fixture.context, fixture.bridgeRows);
+    Object.assign(fixture.context.artifacts[0], { scopeKind: "season-file", scopeSeason: 2026 });
+    await store.publishSourceStats(fixture.input);
+    await store.publish("before-absence", fixture.context, "2026-10-11T00:00:00.000Z");
+    if (!outOfWindow) {
+      const next = { formatVersion: 2 as const, profiles: [profile(BRIDGE_PROFILE)], rightsDecisions: [], artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+      addCapture(next, "empty-cover", [], "2026-10-10T12:00:00.000Z", BRIDGE_PROFILE);
+      Object.assign(next.artifacts[0], { scopeKind: "season-file", scopeSeason: 2026 });
+      const routing = Object.fromEntries(ROUTING_FIELDS.filter((field) => field in prior.data).map((field) => [field, (prior.data as Record<string, unknown>)[field]]));
+      addCapture(next, "absent-context", [revision("context-absence", "source-row-absent", { priorObservationId: prior.id,
+        priorEntityKey: entityKey(prior), coveringCaptureId: "capture-empty-cover", scopeKind: "season-file", scopeSeason: 2026,
+        scopeWeek: null, scopeGameId: null, scopeFilter: null, ...routing }, prior.id)], "2026-10-10T12:00:00.000Z", BRIDGE_PROFILE);
+      await store.publish("absent-context", next, "2026-10-11T00:00:00.000Z");
+    }
+    const saved = await store.recordSourceNormalization("context-unavailable", { profileId: fixture.input.profile.id,
+      rawGameId: sourceGameId, rawTeam: "PHI", rawPlayerId: "00-0000001" }, null);
+    expect(saved.event.plan.reason).toBe(expected);
+    expect(saved.event.plan.binding.dependencies.some((dep) => dep.observationId === (outOfWindow ? prior.id : "context-absence"))).toBe(true);
+  });
+});
+
+it("CSV binding schedule reconciliation pins only a current exact selection and a new conflicting head can be recorded unavailable", async () => {
+  await withProof(async ({ client, store }) => {
+    const fixture = await normalizationFixture(); await store.publishSourceStats(fixture.input);
+    const other = "schedule-agreement-profile"; fixture.context.profiles.push(profile(other));
+    fixture.context.rightsDecisions.push(rights(other, { allowedUses: ["internal-research"] }));
+    const schedule = fixture.bridgeRows.find((row) => row.kind === "schedule")!;
+    addCapture(fixture.context, "agree-schedule", [revision("agree-schedule", "schedule", schedule.data)], "2026-10-09T12:00:00.000Z", other);
+    await store.publish("schedule-evidence", fixture.context, "2026-10-11T00:00:00.000Z");
+    const fact = "schedule:" + NORMALIZATION_GAME; const decisionAt = "2026-10-10T12:00:00.000Z";
+    const heads = createReplay(fixture.context, decisionAt, decisionAt, "internal-research").heads(fact);
+    const selected = reconcileFact("schedule-selection", fact, heads, decisionAt, "synthetic-proof");
+    await store.publish("schedule-decision", { ...fixture.context, artifacts: [], captures: [], decisions: [selected] }, "2026-10-11T00:00:00.000Z");
+    const request = { profileId: fixture.input.profile.id, rawGameId: sourceGameId, rawTeam: "PHI", rawPlayerId: "00-0000001" };
+    const a = await store.recordSourceNormalization("selected-schedule", request, null);
+    expect(a.event.plan.binding.decisions).toEqual([{ ...selected, inputs: [
+      { observationId: "agree-schedule", role: "candidate" }, { observationId: "game-schedule", role: "selected" },
+    ] }]);
+    const original = await store.replaySourceNormalization({ ...request, cutoff: a.event.recordedAt });
+    await client.query("SELECT pg_sleep(0.005)"); const later = new Date().toISOString();
+    const correction = { ...fixture.context, artifacts: [], captures: [], decisions: [], identityLinks: [] };
+    addCapture(correction, "schedule-new-head", [revision("schedule-new-head", "schedule", { ...schedule.data, kickoff: "2026-10-18T19:00:00.000Z" }, "agree-schedule")], later, other);
+    await store.publish("schedule-new-head", correction, later);
+    const b = await store.recordSourceNormalization("stale-selection-withheld", request, a.event.id);
+    expect(b.event.plan).toMatchObject({ reason: "normalization-schedule-ambiguous", binding: { decisions: [] } });
+    expect(b.event.plan.binding.dependencies.filter((dep) => dep.role === "schedule").map((dep) => dep.observationId)).toEqual(["game-schedule", "schedule-new-head"]);
+    expect(await store.replaySourceNormalization({ ...request, cutoff: a.event.recordedAt })).toEqual(original);
+  });
+});
+
+it("CSV unavailable planning checks context rights before file hydration and revocation blocks saved conflicts and retries", async () => {
+  await withProof(async ({ client, store, root }) => {
+    const fixture = await normalizationFixture(); fixture.context.identityLinks = [];
+    await store.publishSourceStats(fixture.input); await store.publish("rights-context", fixture.context, "2026-10-11T00:00:00.000Z");
+    const request = { profileId: fixture.input.profile.id, rawGameId: sourceGameId, rawTeam: "PHI", rawPlayerId: "00-0000001" };
+    const saved = await store.recordSourceNormalization("rights-unavailable", request, null);
+    expect(saved.event.plan.reason).toBe("player-bridge-link-missing");
+    await client.query("SELECT pg_sleep(0.005)"); const revokedAt = new Date().toISOString();
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      VALUES ('unavailable-context-revoked',$1,$2,'{}',$3,NULL,$3,'synthetic','fixture revocation')`, [BRIDGE_PROFILE, "rights-" + BRIDGE_PROFILE, revokedAt]);
+    await writeFile(join(root, ".db-blobs", fixture.context.artifacts[0].sha256 + ".json"), "damaged", { mode: 0o600 });
+    expect(await store.replaySourceNormalization({ ...request, cutoff: saved.event.recordedAt })).toMatchObject({ reason: "rights-not-in-force", head: null });
+    await expect(store.recordSourceNormalization("rights-unavailable", request, null)).rejects.toThrow("predictive-source-plan-rights-profile-invalid");
+    expect(await store.planSourceStatsNormalization({ ...request, cutoff: revokedAt })).toMatchObject({ reason: "game-bridge-missing", binding: { dependencies: [] } });
+    expect((await store.recordSourceNormalization("rights-new-unavailable", request, saved.event.id)).event.plan.reason).toBe("game-bridge-missing");
   });
 });

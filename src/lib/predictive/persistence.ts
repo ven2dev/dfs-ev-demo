@@ -6,7 +6,7 @@ import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_V
 import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
 import type { SourceStatsFeed } from "./sourceStats.ts";
 import { SOURCE_LINEAGE_VERSION, sourceBindingHeadsAt, sourceStatsRawKey, type SourceBindingEvent } from "./sourceLineage.ts";
-import { planSourceStatsFromReplay as planNormalization, type SourceNormalizationPlan } from "./sourceNormalization.ts";
+import { planSourceStatsFromReplay as planNormalization, SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
 import type { Artifact, Capture, Dataset, Decision, IdentityLink, Label, Observation, Profile, RecordedRetentionEvent, Request, RetentionEvent, RetentionResult,
   Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
@@ -20,9 +20,9 @@ import { allows, canonical, compareText, digest, entityKey, exact, instant, obse
 // rights decision must not manufacture a statistical correction. Access is
 // checked separately, against the database clock, on every read and retry.
 export const sourceNormalizationBasis = (plan: SourceNormalizationPlan) => {
-  const { cutoff: _cutoff, sourceInputDigest: _digest, rightsDecisionIds: _rights, sourceRequest, ...binding } = plan.binding;
+  const { cutoff: _cutoff, sourceInputDigest: _digest, rightsDecisionIds: _rights, version: _version, sourceRequest, ...binding } = plan.binding;
   const { cutoff: _requestCutoff, ...request } = sourceRequest;
-  void _cutoff; void _digest; void _rights; void _requestCutoff;
+  void _cutoff; void _digest; void _rights; void _requestCutoff; void _version;
   return canonical({ reason: plan.reason, candidate: plan.candidate, binding, request });
 };
 export type SourceNormalizationReplay = {
@@ -394,29 +394,32 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         [profile.id, request.cutoff])).rows.length > 0;
       return result(removed ? "retained-evidence-removed" : "source-capture-missing", [], []);
     }
-    if (new Set(captures.map((capture) => capture.sha256)).size > 1) return result("source-capture-ambiguous", captures, []);
-    const capture = captures[0];
-    let verified = verifiedCsv.get(capture.id);
-    if (verified && canonical(verified.capture) !== canonical(capture)) refuse("stored-source-capture-mismatch");
-    if (!verified) {
-      reserveVerifiedBytes(Number(capture.byteSize), capture.sha256);
-      let file = verifiedCsvFiles.get(capture.sha256);
-      if (file && file.feed !== feed) refuse("stored-source-capture-mismatch");
-      if (!file) {
-        const bytes = await artifacts.read(capture.storageRef, capture.sha256, Number(capture.byteSize));
-        file = { feed, parsed: await parseSourceCsv(feed, bytes, PERSISTENCE_BOUNDS.rows) };
-        verifiedCsvFiles.set(capture.sha256, file);
+    // Every cited capture is verified, including equal-time conflicts.
+    for (const capture of captures) {
+      let verified = verifiedCsv.get(capture.id);
+      if (verified && canonical(verified.capture) !== canonical(capture)) refuse("stored-source-capture-mismatch");
+      if (!verified) {
+        reserveVerifiedBytes(Number(capture.byteSize), capture.sha256);
+        let file = verifiedCsvFiles.get(capture.sha256);
+        if (file && file.feed !== feed) refuse("stored-source-capture-mismatch");
+        if (!file) {
+          const bytes = await artifacts.read(capture.storageRef, capture.sha256, Number(capture.byteSize));
+          file = { feed, parsed: await parseSourceCsv(feed, bytes, PERSISTENCE_BOUNDS.rows) };
+          verifiedCsvFiles.set(capture.sha256, file);
+        }
+        const parsed = file.parsed;
+        if (parsed.headerSha256 !== profile.headerProfileSha256 || parsed.rows.length !== capture.parsedRows) refuse("stored-source-capture-mismatch");
+        verified = { capture, expected: parsed.rows.map((row, index) => projectSourceClaim(capture.id, feed, row, index + 1)) };
+        verifiedCsv.set(capture.id, verified);
       }
-      const parsed = file.parsed;
-      if (parsed.headerSha256 !== profile.headerProfileSha256 || parsed.rows.length !== capture.parsedRows) refuse("stored-source-capture-mismatch");
-      verified = { capture, expected: parsed.rows.map((row, index) => projectSourceClaim(capture.id, feed, row, index + 1)) };
-      verifiedCsv.set(capture.id, verified);
+      const expectedRows = verified.expected;
+      const stored = (await client.query(`SELECT id,row_ordinal AS "rowOrdinal",raw_key_sha256 AS "rawKeySha256",
+        selected_sha256 AS "selectedSha256",projection,failure_code AS "failureCode"
+        FROM public.predictive_source_stats_rows WHERE capture_id=$1 ORDER BY row_ordinal LIMIT 8193`, [capture.id])).rows;
+      if (canonical(stored) !== canonical(expectedRows)) refuse("stored-source-row-mismatch");
     }
-    const expected = verified.expected;
-    const stored = (await client.query(`SELECT id,row_ordinal AS "rowOrdinal",raw_key_sha256 AS "rawKeySha256",
-      selected_sha256 AS "selectedSha256",projection,failure_code AS "failureCode"
-      FROM public.predictive_source_stats_rows WHERE capture_id=$1 ORDER BY row_ordinal LIMIT 8193`, [capture.id])).rows;
-    if (canonical(stored) !== canonical(expected)) refuse("stored-source-row-mismatch");
+    if (new Set(captures.map((capture) => capture.sha256)).size > 1) return result("source-capture-ambiguous", captures, []);
+    const capture = captures[0]; const expected = verifiedCsv.get(capture.id)!.expected;
     const key = sourceClaimKey({ game_id: request.rawGameId, team: request.rawTeam, player_id: request.rawPlayerId ?? "" }, feed);
     const matches = expected.filter((row) => row.rawKeySha256 === key);
     if (!matches.length) return result("source-row-missing", [capture], []);
@@ -425,21 +428,35 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   };
   const replaySourceStats = (request: SourceStatsRequest) => transaction(() => readSourceStats(request), true);
 
-  const readSourceNormalization = async (request: SourceStatsRequest, accessAt?: string) => {
+  const readSourceNormalization = async (request: SourceStatsRequest, accessAt?: string, version: string = SOURCE_NORMALIZATION_VERSION) => {
     const source = await readSourceStats(request, accessAt);
     const clock = accessAt ?? (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string;
     const context: Dataset = { formatVersion: 2, profiles: [], rightsDecisions: [], artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
-    if (source.status !== "observed-source-claim") return planNormalization(source, { ...context, replay: replayObservations([], new Set()) }, clock);
+    if (source.status !== "observed-source-claim") {
+      context.profiles = await profilesFor([request.profileId]);
+      context.rightsDecisions = (await client.query(RIGHTS_SQL, [[request.profileId]])).rows.map((row) => row.decision as RightsDecision);
+      return planNormalization(source, { ...context, replay: replayObservations([], new Set()) }, clock, version);
+    }
     const stats = source.evidence.rows[0].projection!;
+    const readContext = async (sql: string, values: unknown[]) => {
+      const raw = (await client.query(sql, values)).rows.map((row) => row.envelope as Raw);
+      const ids = [...new Set(raw.map((row) => row.artifact.profileId))];
+      const rights = (await client.query(RIGHTS_SQL, [ids])).rows.map((row) => row.decision as RightsDecision);
+      const blocked = blockedProfiles(rights, ids, clock, "internal-research");
+      // Permission is checked before opening context bytes, including when the
+      // resulting plan is unavailable. Historical hydration uses its audit
+      // clock only after the separate current-access gate has passed.
+      return hydrate(raw.filter((row) => !blocked.has(row.artifact.profileId)));
+    };
     const keys = ["game-bridge:nflverse:" + stats.rawGameId, "team-alias:nflverse:" + stats.rawTeam,
       "team-alias:nflverse:" + stats.rawOpponent, ...(stats.rawPlayerId ? ["player-bridge:gsis:" + stats.rawPlayerId] : [])];
-    const bridges = await read(normalizationBridgeReadSql, [request.cutoff, keys]);
+    const bridges = await readContext(normalizationBridgeReadSql, [request.cutoff, keys]);
     const games = [...new Set(bridges.flatMap((row) => row.revision.kind === "game-bridge" ? [row.revision.data.gameId] : []))];
     const players = [...new Set(bridges.flatMap((row) => row.revision.kind === "player-bridge" ? [row.revision.data.playerId] : []))];
-    const reverse = await read(normalizationReverseReadSql, [request.cutoff, games, players]);
-    const schedules = await read(normalizationScheduleReadSql, [request.cutoff, games]);
+    const reverse = await readContext(normalizationReverseReadSql, [request.cutoff, games, players]);
+    const schedules = await readContext(normalizationScheduleReadSql, [request.cutoff, games]);
     const rawScheduleIds = [...new Set(schedules.flatMap((row) => row.revision.kind === "schedule" ? [row.revision.data.rawGameId] : []))];
-    const aliases = await read(aliasReadSql, [request.cutoff, rawScheduleIds]);
+    const aliases = await readContext(aliasReadSql, [request.cutoff, rawScheduleIds]);
     const observations = [...bridges, ...reverse, ...schedules, ...aliases];
     if (observations.length > PERSISTENCE_BOUNDS.rows) refuse("replay-row-bounds-refused");
     context.identityLinks = (await client.query(`SELECT id,stats_profile_id AS "statsProfileId",bridge_profile_id AS "bridgeProfileId",
@@ -459,7 +476,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     // Reconstructing a full Dataset from partially selected artifacts would
     // pull unrelated corrections into this scoped read without their ancestors.
     const replay = replayObservations([...visible.values()], blockedProfiles(context.rightsDecisions, profileIds, clock, "internal-research"), context.decisions);
-    return planNormalization(source, { ...context, replay }, clock);
+    return planNormalization(source, { ...context, replay }, clock, version);
   };
   const planSourceStatsNormalization = (request: SourceStatsRequest) => transaction(() => readSourceNormalization(request), true);
 
@@ -507,7 +524,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     // Recompute the original proposal against immutable CSV/JSON bytes and its
     // original knowledge/access clocks; current access is a separate gate.
     for (const event of history) {
-      const reproduced = await readSourceNormalization(event.plan.binding.sourceRequest, event.recordedAt);
+      const reproduced = await readSourceNormalization(event.plan.binding.sourceRequest, event.recordedAt, event.plan.binding.version);
       if (canonical(reproduced) !== canonical(event.plan)) refuse("stored-source-binding-plan-mismatch");
     }
     return sourceBindingHeadsAt(history, cutoff);
@@ -523,7 +540,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     // Retries re-verify their original files too. SQL independently checks
     // current rights on both new records and exact retries.
     if (existing && canonical(await readSourceNormalization(plan.binding.sourceRequest, (await client.query(
-      `SELECT ${timestamp("recorded_at")} AS now FROM public.predictive_source_bindings WHERE id=$1`, [id])).rows[0].now)) !== canonical(plan))
+      `SELECT ${timestamp("recorded_at")} AS now FROM public.predictive_source_bindings WHERE id=$1`, [id])).rows[0].now, plan.binding.version)) !== canonical(plan))
       refuse("stored-source-binding-plan-mismatch");
     const result = (await client.query("SELECT public.predictive_record_source_binding($1,$2,$3) AS result", [id, expectedHeadId, JSON.stringify(plan)])).rows[0].result;
     const history = await bindingHistory(scoped, result.recordedAt);

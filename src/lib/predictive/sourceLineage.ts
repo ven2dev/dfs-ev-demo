@@ -1,6 +1,6 @@
 import type { SourceStatsRequest } from "./sourceClaims.ts";
 import { SOURCE_PROFILE_VERSION } from "./sourceAdapters.ts";
-import { SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
+import { SOURCE_NORMALIZATION_V1, SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
 import { SOURCE_STATS_VERSION } from "./sourceStats.ts";
 import type { Revision } from "./types.ts";
 import { canonical, compareText, digest, entityKey, exact, instant, playerIdentity, refuse, TEAM_IDS, validateRevision } from "./validation.ts";
@@ -38,7 +38,7 @@ const verifyPlan = (plan: SourceNormalizationPlan, recordedAt: string) => {
   const binding = plan.binding; const request = binding.sourceRequest;
   const rawKey = sourceStatsRawKey(request);
   const now = instant(recordedAt); const cutoff = instant(binding.cutoff);
-  if (binding.version !== SOURCE_NORMALIZATION_VERSION || binding.parserVersion !== SOURCE_PROFILE_VERSION || binding.projectionVersion !== SOURCE_STATS_VERSION ||
+  if (![SOURCE_NORMALIZATION_V1, SOURCE_NORMALIZATION_VERSION].includes(binding.version) || binding.parserVersion !== SOURCE_PROFILE_VERSION || binding.projectionVersion !== SOURCE_STATS_VERSION ||
       request.profileId !== binding.sourceProfileId || request.cutoff !== binding.cutoff ||
       cutoff > now || (binding.rawSourceKey !== null && binding.rawSourceKey !== rawKey) ||
       plan.observationsPublished !== false || plan.featuresPublished !== false || plan.labelsFinalized !== false || plan.populationCoverage !== "unqualified" ||

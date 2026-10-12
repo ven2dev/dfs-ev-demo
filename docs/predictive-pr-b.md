@@ -1,12 +1,14 @@
 # #52 PR B: real-source ingestion progress
 
-Updated 2026-10-11. PR A merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102),
+Updated 2026-10-12. PR A merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102),
 `d934432e8aa32a38226c65306592b77e04e05f01`. Migration 0003 is frozen.
 PR B starts from that main revision on `feature/dfsEV-52-real-source-ingestion`
 in `/private/tmp/dfs-ev-52-pr-b`. Offline qualification and local raw CSV claims
 persistence and canonical normalization planning are implemented. The raw/canonical
 correction-lineage design also has an executable pure contract. Database binding
-publication remains next; this does not finish PR B or parent #52.
+publication and unavailable-state persistence are implemented in internal research
+staging. Shared feature/decision/label activation remains next; this does not
+finish PR B or parent #52.
 
 ## Implemented increment
 
@@ -317,11 +319,11 @@ This supersedes the earlier statement that binding storage is unimplemented.
 It does **not** activate canonical observations, model reads or labels. The
 existing real archive still has no registered game bridges, so its normalization
 remains `game-bridge-missing`; no download or provider qualification occurred in
-this increment. The recorder currently accepts positive normalization plus
-missing/refused/ambiguous raw-row states. Context failures remain unrecordable
-read-only plans. The next implementation must expand those states and give
-feature, reconciliation, participation and label reads the same binding-aware
-heads before activation. Migration 0003 and committed 0004 remain unchanged;
+this increment. At the 0005 checkpoint, the recorder accepted positive
+normalization plus missing/refused/ambiguous raw-row states; context failures
+were unrecordable read-only plans. The 0006 checkpoint below supersedes that
+limitation. Feature, reconciliation, participation and label reads still need
+the same binding-aware heads before activation. Migration 0003 and committed 0004 remain unchanged;
 maximum-known advances to 5 while application readiness minimum stays 2.
 
 
@@ -337,3 +339,53 @@ Docker database. Logs: `/private/tmp/dfs52-prb-bindings-jsdom.log`,
 `/private/tmp/dfs52-prb-bindings-db.log`. The new storage behavior is verified with
 synthetic fixtures; no additional provider download or real bridge qualification
 was performed. No persistent dev, hosted or Production database received 0005.
+
+
+## Unavailable-state storage checkpoint
+
+Forward migration 0006 adds normalization plan v2. The database independently
+reconstructs the complete witness for missing/ambiguous captures, raw-row
+failures, missing/conflicting game/team/opponent/player identity, absent/missing/
+ambiguous schedules, incompatible schedule context and missing player identity
+links. It compares the entire proposal, including failure reason, exact evidence
+sets and current rights; recomputing a forged digest cannot authorize a record.
+The current witness must still match at the recorder's database clock.
+
+Unavailable plans pin the source's rights and those of every cited dependency.
+A missing context state supersedes usable statistics through the raw binding
+chain. Recovery can attach unchanged statistics without manufacturing a numeric
+correction. Earlier cutoffs keep their original result while access rights permit.
+All cited conflicting capture files are verified before recording and on replay.
+Denied context profiles are filtered before their files are opened.
+
+Existing v1 plans and exact-ID retries retain their original byte/digest witness;
+new records require v2. A v1-to-v2 format transition alone is not an evidence
+correction. Retention conservatively removes capture-less bindings and their
+whole raw lineage when their source profile is scoped, including time-scoped
+deletions: a record with no capture cannot prove it falls outside that interval.
+The revoked-rights response remains an access refusal, not authorization to
+retain or expose provider payloads.
+
+Migration 0003 and committed 0004/0005 stay unchanged. Maximum-known advances
+to 6; application readiness minimum remains 2. These revisions still do not
+contribute to features, participation/reconciliation decisions or final labels.
+The next implementation must make every application/SQL consumer use the same
+raw-binding head rule before activation.
+
+
+Validation for the 0006 checkpoint: **831 jsdom + 604 Node tests**, **74 Node database
+checks + 84 database tests**, all **67 mandatory predictive cases**, typecheck,
+lint, CI-gate, migration/catalog/readiness verification, whitespace checks and
+21 local documentation links pass. The retained-file proof ran at
+2026-10-12 16:38 UTC with **zero requests**: 4,517 player rows (4,512 typed,
+five refused) and 130 typed team rows; each feed recorded/replayed its
+`game-bridge-missing` binding and verified an exact-ID retry. Active canonical
+observations remain zero. Peak whole-process RSS was 476,119,040 bytes
+(~454 MiB), measured rather than capped. Registered scratch databases and the
+isolated PR-B Docker container were removed; the creator container was left
+alone after isolation. No persistent dev, Neon or Production migration ran.
+
+Evidence: `/private/tmp/dfs52-prb-unavailable-jsdom.log`,
+`/private/tmp/dfs52-prb-unavailable-node.log`,
+`/private/tmp/dfs52-prb-unavailable-db.log`,
+`/private/tmp/dfs52-prb-unavailable-proof.log`.

@@ -5,7 +5,8 @@ import { SOURCE_STATS_VERSION } from "./sourceStats.ts";
 import type { Dataset, IdentityLink, Observation, PlayerGameStats, TeamGameStats } from "./types.ts";
 import { allows, canonical, compareText, digest, instant, refuse, rightsInForce, validateRevision } from "./validation.ts";
 
-export const SOURCE_NORMALIZATION_VERSION = "nflverse-stats-normalization-plan-v1";
+export const SOURCE_NORMALIZATION_V1 = "nflverse-stats-normalization-plan-v1";
+export const SOURCE_NORMALIZATION_VERSION = "nflverse-stats-normalization-plan-v2";
 type Role = "game-bridge" | "team-alias" | "opponent-alias" | "player-bridge" | "schedule";
 type Binding = {
   role: Role; observationId: string; profileId: string; sourceKey: string;
@@ -17,7 +18,9 @@ type Context = Pick<Dataset, "profiles" | "rightsDecisions" | "identityLinks"> &
 // This plans normalization from a verified raw replay; it cannot publish a
 // revision or infer its predecessor. The recorder independently revalidates
 // its binding before storing a research revision. No IDs/windows are minted.
-export const planSourceStatsFromReplay = (source: SourceStatsReplay, context: Context, accessAt: string) => {
+export const planSourceStatsFromReplay = (source: SourceStatsReplay, context: Context, accessAt: string,
+  version: string = SOURCE_NORMALIZATION_VERSION) => {
+  if (![SOURCE_NORMALIZATION_V1, SOURCE_NORMALIZATION_VERSION].includes(version)) refuse("source-normalization-version-refused");
   const { request, captures, rows } = source.evidence;
   const cutoff = instant(request.cutoff); const now = instant(accessAt);
   if (cutoff > now || source.evidence.version !== SOURCE_CLAIM_VERSION || source.inputDigest !== digest(canonical(source.evidence)))
@@ -38,7 +41,14 @@ export const planSourceStatsFromReplay = (source: SourceStatsReplay, context: Co
     }
   };
   const result = (reason: string | null, candidate: Candidate | null = null) => {
-    const binding = { version: SOURCE_NORMALIZATION_VERSION, cutoff: request.cutoff, sourceRequest: { ...request }, sourceInputDigest: source.inputDigest,
+    if (version === SOURCE_NORMALIZATION_VERSION && reason !== "rights-not-in-force") {
+      rightsDecisionIds = [...new Set([request.profileId, ...[...dependencies.values()].map((row) => row.profileId)])].map((id) => {
+        const decision = rightsInForce(context.rightsDecisions, id, now, now);
+        if (!allows(decision, "internal-research")) refuse("source-normalization-rights-refused");
+        return decision!.id;
+      }).sort(compareText);
+    }
+    const binding = { version, cutoff: request.cutoff, sourceRequest: { ...request }, sourceInputDigest: source.inputDigest,
       sourceProfileId: request.profileId, rawSourceKey: rows[0]?.rawKeySha256 ?? null,
       sourceCaptures: captures, sourceRows: rows.map(({ id, rowOrdinal, selectedSha256 }) => ({ id, rowOrdinal, selectedSha256 }))
         .sort((a, b) => a.rowOrdinal - b.rowOrdinal),
@@ -122,9 +132,10 @@ export const planSourceStatsFromReplay = (source: SourceStatsReplay, context: Co
   return result(null, candidate);
 };
 
-export const planSourceStatsNormalization = (source: SourceStatsReplay, context: Dataset, accessAt: string) =>
+export const planSourceStatsNormalization = (source: SourceStatsReplay, context: Dataset, accessAt: string,
+  version: string = SOURCE_NORMALIZATION_VERSION) =>
   planSourceStatsFromReplay(source, { ...context, replay: source.status === "observed-source-claim"
     ? createReplay(context, source.evidence.request.cutoff, accessAt, "internal-research")
-    : replayObservations([], new Set()) }, accessAt);
+    : replayObservations([], new Set()) }, accessAt, version);
 
 export type SourceNormalizationPlan = ReturnType<typeof planSourceStatsFromReplay>;

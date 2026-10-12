@@ -309,3 +309,30 @@ app/Node tests passed. V1/v2/v3 migration SQL and catalog contracts are unchange
 The owner selected option B: delivery 2 stays off main until the real-source
 schema is designed. These are WIP proof repairs, not approval to merge the
 synthetic schema or include source qualification in a delivery-1/2 PR.
+
+
+## PR B unavailable-state test reasoning (2026-10-12)
+
+The v2 failure witness is reconstructed independently in PostgreSQL, not accepted
+from the TypeScript digest. Negative cases alter a reason, rights set or relevant
+dependency and recompute the digest; each must still fail with a check violation.
+Missing-context cases assert hand-written prefix dependency roles and rights,
+while both identity conflict directions and schedule aliases must cite every
+competing observation. Effective-window cases distinguish observed but
+non-applicable mappings from conflicting mappings. Coverage-proven absence heads
+remain conflicts/absent schedules rather than inferred zero statistics.
+
+A usable → incompatible schedule → recovered schedule sequence keeps A's
+earlier replay, withholds B, and attaches C to A's exact unchanged revision:
+one statistical revision, three binding events. Every file in an ambiguous
+capture pair is separately damaged; recording/retry/replay must reject either
+damage. Revoked context bytes are also damaged to demonstrate that current
+permission is checked before opening them, not merely after successful hydration.
+
+A v5 database contains positive or missing-row v1 plans before upgrading to v6.
+Original rows and ledger prefixes must be unchanged, old IDs retry exactly,
+historical replay still works and new v2 bindings do not manufacture numeric
+corrections. Capture-less retention is exercised with an execute-only,
+non-superuser owner and a time-scoped source deletion. These are storage and
+policy proofs; they do not qualify real bridges or establish source completion,
+population completeness, historical availability or production throughput.

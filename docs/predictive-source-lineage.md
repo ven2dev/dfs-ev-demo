@@ -1,7 +1,7 @@
 # PR B canonical source lineage
 
 The pure contract in `sourceLineage.ts` now has a PostgreSQL recorder and verified
-hydration path under forward migration 0005. **These canonical source revisions
+hydration path under forward migrations 0005 and 0006. **These canonical source revisions
 remain internal research staging.** They do not enter `predictive_observations`,
 model inputs, participation/reconciliation decisions or labels. Full activation
 must update every reader's head rules together. Migration 0003 is frozen.
@@ -72,10 +72,10 @@ Bindings reference raw captures/rows, every relevant bridge/schedule head,
 identity links, reconciliation decisions and rights through restrictive foreign
 keys. Positive candidates append or attach revisions in
 `predictive_source_stats_revisions`; unavailable raw rows create a null-revision
-binding. This checkpoint records `source-row-missing`, `source-row-refused` and
-`source-row-ambiguous`. Missing/ambiguous captures and unresolved/conflicting
-context remain read-only plans and are not recordable yet. A disappeared row
-never becomes zero, confirmed absence or an absence-v1 observation.
+binding. The original 0005 checkpoint records `source-row-missing`,
+`source-row-refused` and `source-row-ambiguous`; 0006 expands unavailable states
+as described below. A disappeared row never becomes zero, confirmed absence
+or an absence-v1 observation.
 
 `replaySourceNormalization(request)` uses a replay-only, repeatable-read,
 read-only snapshot. It verifies stored association sets, recomputes each original
@@ -102,6 +102,30 @@ fresh recording. Associations are deleted before their restrictive references.
 New audit kinds/counts appear only when those rows exist, preserving older
 retention audit parity. Blob removal still uses the released execute-only APIs
 and digest locks. There are no new generated blob files to recover.
+
+## Unavailable states implemented in 0006
+
+Plan v2 pins current research rights on every result, including early failures,
+except an access-refused response. The SQL planner independently reconstructs
+the same ordered checks as TypeScript and requires an exact witness. A missing
+bridge cites the evidence already reached; a conflicting bridge or schedule
+cites every relevant competing head. Missing/ambiguous source captures and
+removed-evidence states are recordable without invented rows or identities.
+All cited capture files are independently parsed and checked, even when their
+contents conflict. Context rights are checked before opening context files.
+
+The unavailable raw head supersedes an earlier usable binding. Recovery follows
+that head; identical values reuse their canonical revision. No absence, zero or
+participation decision is implied. Recorder validation rechecks the complete
+witness at current database time, so unrecorded raw/context changes invalidate
+stale proposals. V1 records and exact retries still reproduce their original
+version; fresh records use v2. Freshness ignores only the v1/v2 envelope version,
+clock fields and rights-decision IDs, with rights enforced separately.
+
+Source retention removes the entire lineage of capture-less bindings when
+their source is scoped. This is conservative for time-limited deletion because
+a capture-less event has no provider capture time to establish an exemption.
+Existing cited-evidence closure and backup audit parity remain in place.
 
 ## Remaining activation work
 
@@ -190,3 +214,14 @@ recorder users. This checkpoint creates no generated file, so the released blob
 rollback/crash suite remains the filesystem recovery proof. Synthetic bridges
 and corrections do not qualify real providers or demonstrate observed provider
 corrections. Full feature/decision/label activation remains outstanding.
+
+
+Nine additional mandatory PostgreSQL cases cover exact failure-prefix and
+conflict witnesses, rehashed failure/rights/dependency forgeries, usable →
+unavailable → recovered history, every conflicting capture's byte integrity,
+capture-less source retention through a non-superuser owner, v5 upgrade with
+v1 positive/withheld plans and retries, absence heads and effective-window
+boundaries, current/stale schedule reconciliation and rights before hydration.
+Expected failure reasons, dependency roles, revision counts and canonical
+reconciliation input order are hand-specified. These synthetic tests do not
+qualify real-source identity, completion, population coverage or history.

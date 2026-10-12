@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { planSourceStatsFromReplay, planSourceStatsNormalization } from "../../src/lib/predictive/sourceNormalization.ts";
+import { planSourceStatsFromReplay, planSourceStatsNormalization, SOURCE_NORMALIZATION_V1, SOURCE_NORMALIZATION_VERSION } from "../../src/lib/predictive/sourceNormalization.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { canonical, digest } from "../../src/lib/predictive/validation.ts";
 import { addCapture, gameId, profile, revision, rights } from "./fixtures/passingYards.ts";
@@ -146,4 +146,22 @@ it("does not change the plan for unrelated evidence, input ordering or a later a
     "2026-10-09T12:00:00.000Z", BRIDGE_PROFILE);
   context.artifacts.reverse(); context.captures.reverse(); context.profiles.reverse(); context.rightsDecisions.reverse();
   expect(planSourceStatsNormalization(source, context, "2026-10-11T13:00:00.000Z")).toEqual(result);
+});
+it("pins source and cited-context rights for unavailable v2 plans and preserves exact v1 audit output", async () => {
+  const { source, context, bridgeRows, input } = await normalizationFixture();
+  rewriteNormalizationRows(context, bridgeRows.filter((row) => row.id !== "player-map"));
+  const current = planSourceStatsNormalization(source, context, NORMALIZATION_ACCESS);
+  expect(current).toMatchObject({ reason: "player-bridge-missing", binding: { version: SOURCE_NORMALIZATION_VERSION,
+    rightsDecisionIds: [input.rightsDecisions[0].id, "rights-" + BRIDGE_PROFILE].sort() } });
+  const historical = planSourceStatsNormalization(source, context, NORMALIZATION_ACCESS, SOURCE_NORMALIZATION_V1);
+  expect(historical.binding.version).toBe(SOURCE_NORMALIZATION_V1);
+  expect(historical.binding.rightsDecisionIds).toEqual([]);
+  expect(historical.binding.dependencies).toEqual(current.binding.dependencies);
+  expect(historical.reason).toBe(current.reason);
+  expect(historical.planDigest).toBe(digest(canonical({ reason: historical.reason, candidate: null, binding: historical.binding })));
+  source.status = "unavailable-source-claim"; source.reason = "source-capture-missing";
+  source.evidence.captures = []; source.evidence.rows = []; source.inputDigest = digest(canonical(source.evidence));
+  const missing = planSourceStatsNormalization(source, context, NORMALIZATION_ACCESS);
+  expect(missing.binding.rightsDecisionIds).toEqual([input.rightsDecisions[0].id]);
+  expect(missing.binding.dependencies).toEqual([]);
 });

@@ -81,6 +81,15 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV binding bridge retention removes ancestors and descendants and identical restored evidence re-applies its audit",
   "CSV binding migration upgrades v4 without changing released history and reruns are no-ops",
   "CSV binding canonical guard refuses generated JSON under real source profiles and immutable bindings cannot be rewritten",
+  "CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries",
+  "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
+  "CSV unavailable bindings supersede usable context and recover without inventing numeric corrections or changing earlier cutoffs",
+  "CSV unavailable bindings verify every ambiguous capture file and allow evidenced conflict recovery",
+  "CSV capture-less unavailable bindings keep source rights and whole-lineage retention through execute-only ownership",
+  "CSV unavailable migration upgrades v5 preserving v1 positive and withheld plans, exact retries and recorded history",
+  "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
+  "CSV unavailable planning checks context rights before file hydration and revocation blocks saved conflicts and retries",
+  "CSV binding schedule reconciliation pins only a current exact selection and a new conflicting head can be recorded unavailable",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

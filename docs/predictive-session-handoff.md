@@ -1,6 +1,6 @@
 # #52 session handoff
 
-Updated 2026-10-11 after PR A merged and PR B began. Resume from this state; do not restart the
+Updated 2026-10-12 after PR B unavailable-state persistence. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
 ## Current state: PR A merged; PR B bound source revisions in internal research staging
@@ -178,7 +178,7 @@ for test oracles and crash-simulation limits.
    evidence, with strict ambiguity validation. Step 6 recompute-and-cite.
 3. The §7b candidate features (weather, venue, depth/teammate absences,
    targets per snap) and a defensive-scheme slot are reserved, not implemented.
-4. App readiness minimum remains **2**; this branch's maximum-known is **5**.
+4. App readiness minimum remains **2**; this branch's maximum-known is **6**.
    Production migrations, role setup and activation stay behind #95.
 5. No paid access, API key or issue comment is authorized by this work.
 
@@ -195,14 +195,14 @@ The recorder revalidates exact raw/context/current rights with database time;
 replay recomputes original plans from verified files and withholds unrecorded
 changes. Retention removes complete affected raw lineages, including ancestors,
 and associated canonical source revisions. These rows remain outside
-`predictive_observations`, features, decisions and labels. Positive plans and
-missing/refused/ambiguous raw rows are recordable; unavailable captures and
-context plans are not yet recordable. Expand those states, then implement one
+`predictive_observations`, features, decisions and labels. Positive plans, unavailable captures, raw-row failures and unavailable
+context are now recordable through forward 0006/v2. Existing v1 plans keep exact
+historical hydration and retries. Implement one
 binding-aware head contract across SQL replay, reconciliation, participation,
 label and post-window checks before activating them. Changing only feature
 replay is insufficient. Preserve unresolved completion/population/membership.
-0004/0005 are local and unmerged; coordinate numbering before PR review. Never
-edit/reset 0003. No persistent dev, hosted or Production migration was run.
+0004/0005/0006 are local and unmerged; coordinate numbering before PR review. Never
+edit/reset committed 0003/0004/0005 (or 0006 after this checkpoint). No persistent dev, hosted or Production migration was run.
 
 ## Real-source findings and private evidence
 
@@ -337,3 +337,40 @@ and the relevant installed Next.js guide before code changes. Run
 Docker service. Use offline `predictive:source verify` with the journal above
 instead of downloading again. Raw records remain outside Git. No subagents
 were authorized for this work.
+
+
+## Latest checkpoint: unavailable normalization states
+
+0006 independently reconstructs all unavailable witnesses and pins source/cited
+context rights on v2 failure plans. It preserves v1 plans and exact-ID retries;
+new records require v2. All cited equal-time conflict files are verified. Current
+context rights are checked before opening bytes. Capture-less bindings are
+conservatively removed with their whole lineage whenever their source is scoped
+for deletion. Shared feature/decision/label head activation remains outstanding.
+
+The default disposable IPv4 Docker project was also in use by a creator worktree
+with a different migration 0004. This checkpoint's final database validation uses
+an isolated `dfs-ev-52-prb-test` project, the same pinned PostgreSQL image, tmpfs
+and throwaway credentials, on the harness-permitted `[::1]:54329` loopback. Its
+temporary Compose file is `/private/tmp/dfs52-prb-compose.yml`. Do not operate
+on another session's default container. Use the normal Compose lifecycle for
+this isolated project and `npm run test:db` with the IPv6 test URL; all scratch
+databases still require normal harness registration. No harness guard was relaxed.
+
+
+Validation for the 0006 checkpoint: **831 jsdom + 604 Node tests**, **74 Node database
+checks + 84 database tests**, all **67 mandatory predictive cases**, typecheck,
+lint, CI-gate, migration/catalog/readiness verification, whitespace checks and
+21 local documentation links pass. The retained-file proof ran at
+2026-10-12 16:38 UTC with **zero requests**: 4,517 player rows (4,512 typed,
+five refused) and 130 typed team rows; each feed recorded/replayed its
+`game-bridge-missing` binding and verified an exact-ID retry. Active canonical
+observations remain zero. Peak whole-process RSS was 476,119,040 bytes
+(~454 MiB), measured rather than capped. Registered scratch databases and the
+isolated PR-B Docker container were removed; the creator container was left
+alone after isolation. No persistent dev, Neon or Production migration ran.
+
+Evidence: `/private/tmp/dfs52-prb-unavailable-jsdom.log`,
+`/private/tmp/dfs52-prb-unavailable-node.log`,
+`/private/tmp/dfs52-prb-unavailable-db.log`,
+`/private/tmp/dfs52-prb-unavailable-proof.log`.
