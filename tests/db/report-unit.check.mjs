@@ -5,8 +5,8 @@ import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { LEASE_REQUIRED_CASES, READINESS_REQUIRED_CASES, PREDICTIVE_REQUIRED_CASES, validateLeaseDbReport, validateNodeDbReport,
-  validateReadinessDbReport, validatePredictiveDbReport } from "../../scripts/db-test-contract.mjs";
+import { CORPUS_REQUIRED_CASES, LEASE_REQUIRED_CASES, READINESS_REQUIRED_CASES, PREDICTIVE_REQUIRED_CASES, validateCorpusDbReport,
+  validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport, validatePredictiveDbReport } from "../../scripts/db-test-contract.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const reporter = fileURLToPath(new URL("../../scripts/db-test-reporter.mjs", import.meta.url));
@@ -71,6 +71,18 @@ test("Vitest DB report requires every predictive persistence case independently 
       assert.throws(() => validatePredictiveDbReport({ ...report, numPassedTests: changed.length,
         testResults: [{ assertionResults: changed }] }), /DB test contract failed/);
     }
+  }
+});
+
+test("Vitest DB report requires every corpus schema case independently of the other DB suites", () => {
+  const assertions = [...LEASE_REQUIRED_CASES, ...READINESS_REQUIRED_CASES, ...PREDICTIVE_REQUIRED_CASES, ...CORPUS_REQUIRED_CASES]
+    .map((fullName) => ({ fullName, status: "passed" }));
+  const report = { success: true, numPassedTests: assertions.length, testResults: [{ assertionResults: assertions }] };
+  assert.equal(validateCorpusDbReport(report), CORPUS_REQUIRED_CASES.length);
+  for (const fullName of CORPUS_REQUIRED_CASES) {
+    const remaining = assertions.filter((row) => row.fullName !== fullName);
+    assert.throws(() => validateCorpusDbReport({ ...report, numPassedTests: remaining.length,
+      testResults: [{ assertionResults: remaining }] }), /DB test contract failed/);
   }
 });
 
