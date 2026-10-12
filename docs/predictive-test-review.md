@@ -6,6 +6,33 @@ readiness tests adjusted for v3. The governing behavior is documented in the
 [ingestion contract](predictive-ingestion.md); these tests establish synthetic
 local persistence behavior, not real-source qualification or model validity.
 
+## PR B raw CSV claims tests (2026-10-11)
+
+The nine mandatory CSV database cases extend the required predictive list to
+41. Twelve pure/CLI cases cover record ordinals, excluded columns, typed refusals,
+profile/header/media/scope incompatibility and pre-I/O argument/credential guards.
+
+| Case | Contract and independent evidence |
+| --- | --- |
+| Import clock / A-B replay | An archived capture has an old source time; SQL ingestion is later. The claim is missing one millisecond before ingestion and visible exactly at it, with hand-specified 10 attempts / 80 yards. B changes yards to 95; the entire earlier replay remains equal. Retry preserves the timestamp, one-row count and digest. No canonical observations exist. A/B content is synthetic, not an observed provider correction. |
+| Missing / refused / ambiguous / zero | Two differing rows for one raw key remain ambiguous. A third row with noninteger attempts retains its ordinal and `source-number-refused`. A later complete snapshot omitting the original player returns missing, while an explicit zero-attempt row returns observed zero. The earlier ambiguous replay remains unchanged. None establishes absence or complete participation. |
+| Raw and stored integrity | A same-size raw-file mutation fails specifically with `artifact-integrity-failed`. Restoring the raw bytes and corrupting the stored selected hash under temporarily disabled administrator immutability then fails with `stored-source-row-mismatch`. This proves replay recomputes against raw bytes independently of SQL's shape constraints; the same projection function is not an independent numerical oracle. |
+| Rollback / current rights | Changed bytes with an existing run ID fail with `run-id-conflict`; a later capture-ID conflict fails after publication work begins. SQL run state stays unchanged and unpublished CSV bytes are removed. A separately appended rights revocation blocks historical replay and new publication, whose rollback also leaves no final file. |
+| Direct SQL boundary | UPDATE/DELETE/TRUNCATE fail with the append-only code. Strict payload examples independently reject unexpected fields, null type, wrong raw identity, same team/opponent and completions greater than attempts. Missing/sparse record coverage and incorrect raw keys fail their specific deferred checks. A valid direct insert copied from an older capture receives a new ingestion timestamp. Direct canonical links fail with `predictive-source-canonical-binding-required`. |
+| Snapshot order | Same-time different raw hashes remain ambiguous. A newer source capture supersedes them. A still later SQL import of an older source snapshot cannot displace the newer source claim. The original conflict cutoff remains ambiguous. |
+| Released upgrade / no-op | Existing v3 observations and all original ledger fields/checksums survive applying only 0004. A no-op preserves the full ledger, and a source publication then succeeds. The separate v2 upgrade case now expects `[3,4]` while preserving the authentic older history and application rows. |
+| Least privilege / retention | Real NOSUPERUSER logins publish/replay only with intended memberships; direct source-row deletion remains denied. A retention-only login cannot SELECT source rows. Scoped retention deletes them and records their count/digest; injected CSV unlink failure leaves the queue recoverable through execute-only resume. A later replay explicitly reports removed evidence. |
+| Retention re-apply | Two retained source files contain three records, including one refused row. Digest-only retention removes all three and both CSV files without full tombstones. Re-importing those same files/capture IDs into a fresh database gets a new ingestion time, but re-applying the recorded deletion matches the original counts and ID digest; a second application is idempotent. This checks deletion-set parity after raw-file restoration, not historical SQL-timestamp restoration or a real database backup. |
+
+The real retained-file proof supplies sample-scale parity: 4,517 player rows
+(4,512 typed, five refused) and 130 typed team rows, exact raw hashes, no earlier
+SQL visibility, idempotent replay, measured time/storage/RSS and zero canonical
+observations. It uses one previously captured source snapshot, so it does not
+prove real-provider correction history, official completion, population coverage,
+canonical bridge normalization or readiness for a model. The source-row relation
+is not a backup archive; restoring imported knowledge timestamps still needs a
+reviewed backup workflow before hosted use.
+
 ## Second implementation review regressions (2026-10-11)
 
 These checks address the reported failures without using a shared pure function

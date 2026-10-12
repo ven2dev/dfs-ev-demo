@@ -170,7 +170,26 @@ when PR A passes review, after which changes are new forward migrations.
 Independent review approved `d5c5c71` on 2026-10-11 with no confirmed defects,
 and the owner authorized push and opening PR A. The draft reset period is now
 closed: 0003 is frozen and further schema changes require a forward migration.
-Remote CI and the owner's merge remain pending; hosted activation stays behind #95.
+PR #102 passed remote CI and merged as `d934432` on 2026-10-11. Hosted
+activation stays behind #95.
+
+## PR B forward migration 0004
+
+`0004_predictive_source_claims.sql` stages complete nflverse player/team CSV
+snapshots as immutable typed claims or explicit row refusals. It adds no
+canonical observations and rejects direct canonical links to the staged CSV
+artifacts until a reviewed row/bridge normalization contract exists. A database
+trigger stamps CSV ingestion time; original archive capture times remain
+separate. Source rows join the existing scoped-retention graph and audit digest,
+including queued CSV file removal through the execute-only owner APIs.
+
+The generated schema, prefix contract, manifest and maximum-known readiness
+version advance to 4; the application's minimum remains 2. Empty database,
+released-v3 upgrade, v2 upgrade and no-op tests run only in the disposable
+harness. Released 0001–0003 SQL/checksums/contracts remain unchanged. This
+unmerged 0004 is a local PR B checkpoint, not hosted migration authorization.
+See [PR B progress](predictive-pr-b.md) for the measured retained-file proof,
+current scope and remaining canonical bindings.
 
 ## Generated catalog contracts
 

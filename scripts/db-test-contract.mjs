@@ -55,6 +55,15 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive blob reference identity preserves committed application/json and removes its unreferenced sibling",
   "predictive blob reference identity preserves committed text/csv and removes its unreferenced sibling",
   "predictive final labels bind exact raw identity and retaining their bridge removes later label versions",
+  "CSV source persistence stamps import time, is idempotent and preserves A/B cutoff replay",
+  "CSV source replay exposes missing, refused and ambiguous rows without inventing zero",
+  "CSV source replay refuses tampered raw files and forged selected-row projections",
+  "CSV source publication rolls back files and refuses run conflicts and revoked current rights",
+  "CSV source SQL enforces complete row ordinals, strict projection shape and the canonical binding boundary",
+  "CSV source ingest and replay work without superuser and retention removes rows and resumes files with execute-only access",
+  "CSV source replay keeps equal-time conflicts ambiguous and late older imports cannot replace a newer snapshot",
+  "CSV source migration upgrades released v3 without changing existing evidence or its recorded checksum",
+  "CSV source retention re-applies identical row deletion after re-importing retained files into a fresh database",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

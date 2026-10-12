@@ -1,6 +1,10 @@
 import type { Client } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
-import type { PrivateArtifactStore } from "./artifacts.ts";
+import type { ArtifactMediaType, PrivateArtifactStore } from "./artifacts.ts";
+import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
+  type SourceClaimRow, type SourceStatsPublication } from "./sourceClaims.ts";
+import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
+import type { SourceStatsFeed } from "./sourceStats.ts";
 import type { Artifact, Capture, Dataset, Decision, IdentityLink, Label, Observation, Profile, RecordedRetentionEvent, Request, RetentionEvent, RetentionResult,
   Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
@@ -161,15 +165,16 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // Files precede the SQL commit. After success or rollback, remove only bytes
   // that the committed database does not own, while retaining the digest locks.
   // A disconnected/crashed process leaves files for the bounded-age orphan sweep.
-  const withBlobPublication = <T>(digests: string[], work: () => Promise<T>) => withBlobLocks(digests, async () => {
+  const withBlobReferences = <T>(references: string[], work: () => Promise<T>) => withBlobLocks(references.map((reference) => reference.slice(0, 64)), async () => {
     try { return await work(); }
     finally {
-      for (const sha256 of new Set(digests.filter((value) => /^[a-f0-9]{64}$/.test(value)))) {
-        const reference = sha256 + ".json"; // These publication paths write JSON.
-        if (!await blobReferenced(reference)) await artifacts.remove(reference, sha256);
+      for (const reference of new Set(references.filter((value) => /^[a-f0-9]{64}\.(json|csv)$/.test(value)))) {
+        if (!await blobReferenced(reference)) await artifacts.remove(reference, reference.slice(0, 64));
       }
     }
   });
+  const withBlobPublication = <T>(digests: string[], work: () => Promise<T>) =>
+    withBlobReferences(digests.map((sha256) => sha256 + ".json"), work);
   const priorRun = async (id: string, sha256: string): Promise<RunResult | null> => {
     const row = (await client.query("SELECT request_sha256,status,failure_code FROM public.predictive_ingestion_runs WHERE id=$1", [id])).rows[0];
     if (!row) return null;
@@ -177,11 +182,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return { id, status: row.status, failureCode: row.failure_code, reused: true };
   };
   const insertRun = async (id: string, sha256: string, now: string, status: RunResult["status"], failureCode: string | null,
-    counts: { artifacts: number; captures: number; rows: number }, consumedBytes: number) => {
+    counts: { artifacts: number; captures: number; rows: number }, consumedBytes: number,
+    codeVersion = "predictive-local-store-v2", peakRssBytes: number | null = null) => {
     await client.query(`INSERT INTO public.predictive_ingestion_runs
       (id,request_sha256,code_version,started_at,finished_at,status,failure_code,budget,requests,consumed_bytes,artifact_count,capture_count,row_count,peak_rss_bytes)
-      VALUES ($1,$2,'predictive-local-store-v2',$3,$3,$4,$5,$6,0,$7,$8,$9,$10,NULL)`,
-      [id, sha256, now, status, failureCode, PERSISTENCE_BOUNDS, consumedBytes, counts.artifacts, counts.captures, counts.rows]);
+      VALUES ($1,$2,$11,$3,$3,$4,$5,$6,0,$7,$8,$9,$10,$12)`,
+      [id, sha256, now, status, failureCode, PERSISTENCE_BOUNDS, consumedBytes, counts.artifacts, counts.captures, counts.rows, codeVersion, peakRssBytes]);
   };
   // Registrations are immutable: a repeated ID must carry identical content.
   const persistProfile = async (profile: Profile) => {
@@ -200,12 +206,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       [decision.id, decision.profileId, decision.predecessorId, decision.allowedUses, decision.effectiveFrom, decision.effectiveTo,
         decision.decidedAt, decision.evidenceKind, decision.evidenceReference]);
   };
-  const persistArtifact = async (artifact: Artifact) => {
+  const persistArtifact = async (artifact: Artifact, mediaType: ArtifactMediaType = "application/json") => {
     const byteSize = Buffer.byteLength(artifact.bytes);
-    await client.query(`INSERT INTO public.predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'application/json',$3)
-      ON CONFLICT (sha256) DO NOTHING`, [artifact.sha256, byteSize, artifact.sha256 + ".json"]);
+    await client.query(`INSERT INTO public.predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,$3,$4)
+      ON CONFLICT (sha256) DO NOTHING`, [artifact.sha256, byteSize, mediaType, artifact.sha256 + (mediaType === "text/csv" ? ".csv" : ".json")]);
     const blob = (await client.query("SELECT byte_size,media_type FROM public.predictive_blobs WHERE sha256=$1", [artifact.sha256])).rows[0];
-    if (blob.byte_size !== byteSize || blob.media_type !== "application/json") refuse("blob-conflict");
+    if (blob.byte_size !== byteSize || blob.media_type !== mediaType) refuse("blob-conflict");
     const values = [artifact.id, artifact.sha256, artifact.profileId, artifact.retrievalKind, artifact.origin, artifact.providerEtag,
       artifact.providerLastModified, artifact.releaseUpdatedAt, artifact.scopeKind, artifact.scopeSeason, artifact.scopeWeek, artifact.scopeGameId, artifact.scopeFilter];
     const row = (await client.query(`SELECT id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,provider_last_modified,
@@ -288,6 +294,92 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id
     WHERE c.run_id=$1 AND c.state='published' AND public.predictive_rights_in_force(a.profile_id, c.captured_at, c.captured_at) IS NOT NULL
     ON CONFLICT DO NOTHING`, [runId]);
+
+  const publishSourceStats = async (input: SourceStatsPublication): Promise<RunResult> => {
+    const prepared = await prepareSourceClaims(input);
+    const { artifact } = input; const reference = artifact.sha256 + ".csv";
+    const requestHash = digest(canonical({ version: SOURCE_CLAIM_VERSION, input }));
+    return withBlobReferences([reference], async () => {
+      await artifacts.write(artifact.bytes, artifact.sha256, "text/csv");
+      return transaction(async () => {
+        const existing = await priorRun(input.id, requestHash); if (existing) return existing;
+        await client.query("SELECT pg_advisory_xact_lock(520053,hashtext($1))", [input.profile.id]);
+        // Importing an old archive is knowledge now, never a historical SQL write.
+        const now = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string;
+        if (instant(input.capturedAt) > instant(now)) refuse("source-publication-time-refused");
+        await persistRegistrations({ formatVersion: 2, profiles: [input.profile], rightsDecisions: input.rightsDecisions,
+          artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] });
+        await insertRun(input.id, requestHash, now, "published", null, { artifacts: 1, captures: 1, rows: prepared.rows.length }, Buffer.byteLength(artifact.bytes),
+          SOURCE_CLAIM_VERSION, process.resourceUsage().maxRSS * 1024);
+        await persistArtifact(artifact, "text/csv");
+        await persistCapture({ id: input.captureId, artifactId: artifact.id, capturedAt: input.capturedAt, availableAt: input.capturedAt,
+          ingestedAt: now, publishedAt: null, publicationEvidence: null, state: "published", bodyComplete: true,
+          headerVerified: true, parserSucceeded: true, parsedRows: prepared.rows.length }, input.id);
+        for (const row of prepared.rows) await client.query(`INSERT INTO public.predictive_source_stats_rows
+          (id,capture_id,row_ordinal,raw_key_sha256,selected_sha256,projection,failure_code) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          [row.id, input.captureId, row.rowOrdinal, row.rawKeySha256, row.selectedSha256, row.projection, row.failureCode]);
+        await recordRunRights(input.id);
+        return { id: input.id, status: "published", failureCode: null, reused: false };
+      });
+    });
+  };
+
+  const replaySourceStats = async (request: { profileId: string; rawGameId: string; rawTeam: string; rawPlayerId: string | null; cutoff: string }) =>
+    transaction(async () => {
+      instant(request.cutoff);
+      if (typeof request.profileId !== "string" || !request.profileId.trim() || request.profileId.length > 256 ||
+          !/^2026_\d{2}_[A-Z]{2,3}_[A-Z]{2,3}$/.test(request.rawGameId) || !/^[A-Z]{2,3}$/.test(request.rawTeam) ||
+          (request.rawPlayerId !== null && !/^00-\d{7}$/.test(request.rawPlayerId))) refuse("source-replay-request-refused");
+      const profile = (await profilesFor([request.profileId]))[0];
+      if (!profile || !["player", "team"].includes(profile.feed) || profile.parserVersion !== SOURCE_PROFILE_VERSION ||
+          profile.allowlistVersion !== "predictive-raw-allowlist-v1" ||
+          (profile.feed === "player") !== (request.rawPlayerId !== null)) refuse("source-replay-profile-refused");
+      const feed = profile.feed as SourceStatsFeed;
+      const accessible = (await client.query(`SELECT public.predictive_rights_allow($1,clock_timestamp(),clock_timestamp(),'internal-research') AS allowed`, [profile.id])).rows[0].allowed;
+      const result = (reason: string | null, captures: unknown[], rows: SourceClaimRow[]) => {
+        const evidence = { version: SOURCE_CLAIM_VERSION, request, captures, rows };
+        return { status: reason ? "unavailable-source-claim" : "observed-source-claim", reason, evidence,
+          inputDigest: digest(canonical(evidence)), featuresPublished: false, labelsFinalized: false, populationCoverage: "unqualified" };
+      };
+      if (!accessible) return result("rights-not-in-force", [], []);
+      // The newest source snapshot visible at cutoff wins, not the last imported
+      // old archive. Equal-time contradictory captures remain ambiguous.
+      const captures = (await client.query(`WITH eligible AS (
+        SELECT c.*, dense_rank() OVER (ORDER BY c.captured_at DESC) AS rank
+        FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id
+        JOIN public.predictive_ingestion_runs r ON r.id=c.run_id JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256
+        WHERE a.profile_id=$1 AND a.scope_kind='season-file' AND a.scope_season=$2 AND a.scope_filter IS NULL
+          AND b.media_type='text/csv' AND c.state='published' AND r.status='published'
+          AND c.available_at <= $3::timestamptz AND c.ingested_at <= $3::timestamptz)
+        SELECT c.id,c.run_id AS "runId",c.artifact_id AS "artifactId",${timestamp("c.captured_at")} AS "capturedAt",
+          ${timestamp("c.available_at")} AS "availableAt",${timestamp("c.ingested_at")} AS "ingestedAt",c.parsed_rows AS "parsedRows",
+          b.sha256,b.storage_ref AS "storageRef",b.byte_size AS "byteSize"
+        FROM eligible c JOIN public.predictive_artifacts a ON a.id=c.artifact_id JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256
+        WHERE rank=1 ORDER BY c.ingested_at,c.id COLLATE "C" LIMIT 257`, [profile.id, SOURCE_SAMPLE_SEASON, request.cutoff])).rows;
+      if (captures.length > 256) refuse("source-replay-bounds-refused");
+      if (!captures.length) {
+        const removed = (await client.query(`SELECT 1 FROM public.predictive_retention_events
+          WHERE scope_descriptor->>'kind'='source' AND scope_descriptor->'profileIds' ? $1
+            AND (scope_descriptor->>'capturedFrom' IS NULL OR (scope_descriptor->>'capturedFrom')::timestamptz <= $2::timestamptz) LIMIT 1`,
+          [profile.id, request.cutoff])).rows.length > 0;
+        return result(removed ? "retained-evidence-removed" : "source-capture-missing", [], []);
+      }
+      if (new Set(captures.map((capture) => capture.sha256)).size > 1) return result("source-capture-ambiguous", captures, []);
+      const capture = captures[0];
+      const bytes = await artifacts.read(capture.storageRef, capture.sha256, Number(capture.byteSize));
+      const parsed = await parseSourceCsv(feed, bytes, PERSISTENCE_BOUNDS.rows);
+      if (parsed.headerSha256 !== profile.headerProfileSha256 || parsed.rows.length !== capture.parsedRows) refuse("stored-source-capture-mismatch");
+      const expected = parsed.rows.map((row, index) => projectSourceClaim(capture.id, feed, row, index + 1));
+      const stored = (await client.query(`SELECT id,row_ordinal AS "rowOrdinal",raw_key_sha256 AS "rawKeySha256",
+        selected_sha256 AS "selectedSha256",projection,failure_code AS "failureCode"
+        FROM public.predictive_source_stats_rows WHERE capture_id=$1 ORDER BY row_ordinal LIMIT 8193`, [capture.id])).rows;
+      if (canonical(stored) !== canonical(expected)) refuse("stored-source-row-mismatch");
+      const key = sourceClaimKey({ game_id: request.rawGameId, team: request.rawTeam, player_id: request.rawPlayerId ?? "" }, feed);
+      const matches = expected.filter((row) => row.rawKeySha256 === key);
+      if (!matches.length) return result("source-row-missing", [capture], []);
+      if (new Set(matches.map((row) => row.selectedSha256)).size > 1) return result("source-row-ambiguous", [capture], matches);
+      return result(matches[0].failureCode ? "source-row-refused" : null, [capture], matches);
+    }, true);
 
   const publish = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
     if (typeof id !== "string" || !id.trim() || id.length > 256) refuse("invalid-run-id"); instant(now);
@@ -556,5 +648,5 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
-  return { publish, replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
+  return { publish, publishSourceStats, replaySourceStats, replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

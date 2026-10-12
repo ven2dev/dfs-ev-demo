@@ -167,7 +167,8 @@ export const readVerifiedSourcePrototype = async (store: ArtifactStore, journal:
   }
   if (canonical(qualification) !== canonical(report.qualification)) refuse("source-restoration-mismatch");
   return { verified: true, featuresPublished: false, captures: report.captures.length, qualification: report.qualification,
-    samples, season: report.season, targetGameId: report.targetGameId, finishedAt: report.finishedAt as string, reportStatus: report.status };
+    samples, sourceCaptures: report.captures as unknown as Capture[], season: report.season,
+    targetGameId: report.targetGameId, finishedAt: report.finishedAt as string, reportStatus: report.status };
 };
 
 // Preserve the v1 verifier's public result and immutable report semantics. PR B

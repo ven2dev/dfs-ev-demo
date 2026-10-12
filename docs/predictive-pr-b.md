@@ -3,8 +3,9 @@
 Updated 2026-10-11. PR A merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102),
 `d934432e8aa32a38226c65306592b77e04e05f01`. Migration 0003 is frozen.
 PR B starts from that main revision on `feature/dfsEV-52-real-source-ingestion`
-in `/private/tmp/dfs-ev-52-pr-b`. This increment is an offline qualification
-adapter; it does not finish PR B or parent #52.
+in `/private/tmp/dfs-ev-52-pr-b`. Offline qualification and local raw CSV claims
+persistence are implemented. Canonical normalization remains next; this does
+not finish PR B or parent #52.
 
 ## Implemented increment
 
@@ -86,48 +87,99 @@ with `/private/tmp/dfs52-prb-parity.json`. The
 bytes and storage. This increment adds no raw files. Temporary storage is not a
 durable archive.
 
-## CSV publication: next engineering work
+## Local raw CSV claims persistence
 
-Filesystem CSV support does not make SQL replay CSV-aware. `validateDataset()`
-expects JSON revision arrays, limited to 1 MB/2,048 rows per artifact.
-`persistArtifact()` writes JSON media; `hydrate()` verifies observations against
-that JSON. The player CSV exceeds 2 MB; full identifiers/roster enumeration also
-exceeds the 8,192-observation publication bound. Changing suffixes or a cap cannot
-establish normalization provenance.
+Forward migration `0004_predictive_source_claims.sql` adds immutable raw-source
+rows, not canonical observations. The complete, unfiltered 2026 player/team
+season-file is the supported scope, capped at 8 MB and 8,192 parsed records.
+Each row records its capture, record ordinal, raw-key hash, allowlisted row hash
+and either a typed projection or an explicit refusal. Ordinals count emitted
+CSV records, not physical lines; quoted newlines and skipped blanks are tested.
+Exact source hashes pin excluded columns without importing those columns.
 
-Requirements for the next storage design, before implementing any migration:
+`publishSourceStats()` verifies the parser/header/profile, writes exact CSV
+bytes to `.db-blobs/` under the digest lock, and atomically publishes the run,
+capture and every row. A database trigger stamps ingestion from the database
+clock even for direct SQL. The original archive capture time stays separate;
+importing it now cannot establish earlier SQL knowledge. Current internal
+research rights are checked under the profile lock. Exact retries preserve the
+run, ingestion time and replay; failed publication cleans only its unpublished
+CSV address. Existing root journals stay unchanged.
 
-1. Keep exact full CSV bytes, verified media/header/profile and retrieval context
-   as the source artifact. Preserve v1 journals in their existing archive
-   namespace; never silently rename them into SQL-owned blobs.
-2. Bind each normalized observation to its exact source capture, parsed data-row
-   ordinal, selected-row hash, parser/transform version and exact bridge revisions.
-   The ordinal counts emitted records, not physical lines: quoted newlines and
-   skipped blanks make line numbers unsuitable. Full source hashes pin excluded
-   columns without importing them into SQL.
-3. Hydration re-parses the raw bytes and checks the allowlisted projection,
-   payload and raw identity. A generated JSON manifest may be an additional
-   immutable witness; it cannot replace the original artifact/row binding.
-   Profile authorization alone cannot prove a row's normalization.
-4. Preserve source archive times separately from later SQL publication. Importing
-   a retained capture now cannot backdate SQL ingestion. Stamp decision knowledge
-   times with the database clock; release `updated_at` stays diagnostic.
-5. Preserve same-profile correction chains/source keys. Changed content appends
-   revisions; exact recaptures add visibility evidence without earlier availability.
-   Disappearance requires a complete capture with compatible scope, never a probe
-   or filtered subset.
-6. Include raw artifacts, normalized witnesses, row bindings and descendants in
-   the retention graph. Extend reviewed execute-only APIs and digest locks, with
-   rollback/resume/orphan proofs under the intended non-superuser role. A new
-   table with an unhandled foreign key would break current retention.
-7. Bound shared file parsing separately from target/player publication. Keep
-   refused/unresolved rows in diagnostics. Measure SQL rows/links, index/TOAST
-   sizes, bytes per recapture, queries and RSS before raising bounds or scheduling.
+`replaySourceStats()` runs read-only at repeatable read, checks current rights,
+selects the newest source snapshot visible at the cutoff, verifies the raw hash
+and header, and re-parses every record against the stored fingerprints and typed
+projection. Importing an older archive later cannot replace a newer snapshot.
+Different hashes captured at the same time remain ambiguous. Missing, refused
+and conflicting rows remain explicit; disappearance is not converted into zero
+or absence. The staging boundary rejects linking these CSV artifacts directly
+to canonical observations. Raw claims never publish features or finalize labels.
 
-No schema changes are committed in this increment. Any extension needs 0004 or
-later, generated migration/catalog/readiness artifacts and disposable empty,
-upgrade, no-op and retention proofs. Coordinate numbering with other work;
-0003 and its checksum remain unchanged.
+Retention includes source rows in its deletion closure, audit digest and optional
+full tombstones. Existing execute-only owner APIs, exact file-reference checks,
+queued removal/resume and digest locks remain in force. Ordinary restrictive
+foreign keys remain in place. Events with no source rows retain their released
+counts/digests for backup re-apply compatibility. Migration 0003 and all released
+contracts/checksums remain unchanged; app readiness minimum remains 2.
+
+The offline proof uses the retained v1 journal and its previously approved
+internal-research review. It makes no upstream requests and creates/removes only
+a registered disposable database and a separate private artifact directory:
+
+```sh
+docker compose --env-file /dev/null --project-name dfs-ev-demo-test \
+  -f compose.test.yml up -d --wait --wait-timeout 60
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
+  npm run predictive:source:local -- prove \
+  --artifact-root /private/tmp/dfs-ev-52-source-proof.utpDdL \
+  --journal f496e74d6823d5507b301568d2c9c1dbc6f562fe93c8cbb52f621bd6674a5b31.json \
+  --journal-bytes 10967
+npm run test:db:down
+```
+
+Final local proof on 2026-10-11 (Los Angeles; SQL import at
+2026-10-12 02:29 UTC):
+
+| Measure | Player | Team |
+| --- | ---: | ---: |
+| Stored source records | 4,517 | 130 |
+| Typed / refused | 4,512 / 5 | 130 / 0 |
+| Exact CSV bytes | 2,011,144 | 53,958 |
+| Publication time | 3,031 ms | 111 ms |
+| One targeted replay, including full-file verification | 289 ms | 12 ms |
+
+Combined row heap is 4,227,072 bytes; indexes 1,662,976 bytes; total relation
+storage 5,922,816 bytes. Whole-process maximum RSS is 444,497,920 bytes (~424 MiB).
+These are one-run local measurements, not a scheduled-operation capacity claim.
+Raw files add 2,065,102 logical bytes in the scratch store. There are zero
+canonical observations, features or final labels. Both feeds are unavailable
+one millisecond before import, and identical retries preserve replay.
+Evidence: `/private/tmp/dfs52-prb-csv-proof.json`. Replay digests include actual
+SQL ingestion times and legitimately differ when the proof is rerun.
+
+## Canonical row bindings: next engineering work
+
+The released JSON observation path still expects revision arrays; it cannot
+hydrate CSV rows as canonical evidence. Staged row projections do not authorize
+normalization. The next adapter must:
+
+1. Bind each normalized observation to its exact source row/capture, transform
+   version and current player/team/game bridge revisions. Re-parse and verify
+   the normalized payload and exact raw identities during hydration. A generated
+   JSON witness can supplement this provenance, not replace it.
+2. Preserve same-profile source keys and correction chains across complete
+   snapshots. Changed content appends revisions; recaptures never backdate
+   visibility. Disappearance requires compatible complete coverage before
+   publishing `absence-v1`, not a missing-row inference from a probe.
+3. Include row bindings, normalization witnesses and dependent canonical rows in
+   retention, and stamp new decision knowledge times with the database clock.
+4. Keep target/player normalization bounds separate from shared full-file parsing.
+   The much larger identifiers/roster feeds are outside this stats-only storage
+   increment. Measure their storage, queries and RSS before increasing bounds.
+
+Any schema extension must be forward from frozen 0003, with generated catalog/
+readiness artifacts and disposable empty, upgrade, no-op and retention proofs.
+Coordinate migration numbering before review; 0004 is still local/unmerged.
 
 ## Source gates before usable passing-yards inputs
 
@@ -166,10 +218,16 @@ positive individual evidence, unresolved denominators, contradictory positions
 and conflict ordering. Offline tests verify original v1 output, unchanged bytes,
 no fetch or SQL-owned file publication, tampered-byte refusal and credentials.
 
-Validation passed on Node 24.18.1: **517 Node tests**, including 54 new tests,
-typecheck, lint and `git diff --check`. The retained capture was restored offline
-and the independent Python candidate partition agrees. No database schema or
-publication path changed, so the DB suite was not repeated for this increment.
-Database integration
-becomes mandatory when the CSV publication/schema path changes. PR A's DB and
-remote-CI proofs do not count as tests of that future path.
+Validation passed on Node 24.18.1: **831 jsdom + 529 Node tests**, typecheck,
+lint, the production Webpack build, CI gate, `git diff --check`, and the complete
+PostgreSQL gate (**74 Node checks + 58 database tests**, including all **41**
+mandatory predictive cases). App tests require local
+loopback listeners; the sandbox-denied attempt was rerun with that permission.
+The retained-file proof above passed with no downloads. Database cases cover
+timestamp enforcement, cutoff boundaries, row/byte corruption, current rights,
+complete ordinals, equal-time conflicts, late old archives, migration upgrade/
+no-op, rollback cleanup, non-superuser retention/resume and retention re-apply
+after re-importing retained files into a fresh database. This last check proves
+deletion-set parity, not preservation of historical SQL ingestion times. The
+[test reasoning review](predictive-test-review.md) distinguishes independent
+oracles from checks shared with the implementation.

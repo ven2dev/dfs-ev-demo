@@ -3,7 +3,7 @@
 Updated 2026-10-11 after PR A merged and PR B began. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
-## Current state: PR A merged; PR B offline assessment implemented
+## Current state: PR A merged; PR B raw CSV claims persistence implemented
 
 - PR B workspace: `/private/tmp/dfs-ev-52-pr-b`; branch:
   `feature/dfsEV-52-real-source-ingestion`, created from merged main `d934432`.
@@ -25,13 +25,21 @@ completed work or repeat source downloads merely to recover context.
   CodeQL fixes `614742e`. Remote app/default-build, PostgreSQL, CodeQL, aggregate
   CI and Vercel checks passed before merge.
 - PR B adds typed raw statistics and offline `predictive:source assess`, preserving
-  v1 journals/output and applying F3 to individual positive usage. See
-  [PR B progress and storage requirements](predictive-pr-b.md). No SQL/migration
-  changes yet: persisted replay verifies JSON revision arrays, so raw CSV needs
-  an explicit row/transform/bridge binding before SQL publication.
-- PR B validation: 517 Node tests (54 new), typecheck, lint and diff whitespace
-  checks pass. Retained-file offline assessment and independent Python partition
-  checks agree. No DB path changed and no migration was run.
+  v1 journals/output and applying F3 to individual positive usage. It now also
+  stages complete player/team CSV snapshots under forward migration 0004,
+  preserving every typed/refused record and exact raw bytes. Database-clock
+  ingestion, cutoff replay, idempotency, current rights, full-file row verification,
+  rollback cleanup and retention/resume are implemented. These are raw claims,
+  with a guard against direct canonical publication. The canonical JSON path
+  still requires an explicit row/transform/bridge binding adapter next. See
+  [PR B progress and measurements](predictive-pr-b.md).
+- PR B validation: 831 jsdom + 529 Node tests, typecheck, lint, and the complete
+  disposable PostgreSQL gate (74 Node checks + 58 DB tests, all 41 mandatory
+  predictive cases) pass. Retained-file import/replay proof also passes with
+  zero downloads. Released migration 0003 and old contracts remain unchanged.
+  Only disposable databases received migration 0004. App tests/proof required
+  sandbox permission for local loopback listeners/connections.
+  Production Webpack build, CI gate and diff whitespace checks also pass.
 - The approved design is [`predictive-real-source-schema.md`](predictive-real-source-schema.md)
   revision 2 and [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md)
   revision 2. Section 14 of the DDL lists what each step built and every
@@ -140,7 +148,7 @@ for test oracles and crash-simulation limits.
    evidence, with strict ambiguity validation. Step 6 recompute-and-cite.
 3. The §7b candidate features (weather, venue, depth/teammate absences,
    targets per snap) and a defensive-scheme slot are reserved, not implemented.
-4. App readiness minimum remains **2**; this branch's maximum-known is **3**.
+4. App readiness minimum remains **2**; this branch's maximum-known is **4**.
    Production migrations, role setup and activation stay behind #95.
 5. No paid access, API key or issue comment is authorized by this work.
 
@@ -151,9 +159,12 @@ measuring correctness, memory and capture cost. PR B should stamp `decided_at`
 knowledge times from the database clock (DDL section 14, step 8 nuance) and own
 automatic absence detection from real files.
 
-Next implement the CSV provenance/storage design described in `predictive-pr-b.md`,
-with a forward migration only if required. Preserve exact raw data and explicit
-unresolved states; do not substitute fabricated completion or membership bounds.
+Next implement the canonical source-row/transform/bridge binding adapter described
+in `predictive-pr-b.md`. Raw CSV storage/replay is implemented; do not replace it
+with generated JSON alone or link staged claims directly to observations. Keep
+same-source correction lineage, explicit disappearance semantics and retention
+closure. Preserve unresolved completion/population/membership states. 0004 is
+local and unmerged; coordinate numbering before PR review. Never edit 0003.
 
 ## Real-source findings and private evidence
 
@@ -171,7 +182,14 @@ Typed projection accepts 4,512 of 4,517 player rows; five lack raw GSIS IDs. All
 130 team rows project. Independent Python CSV/hash checks reproduce the candidate
 partition. Player/team passing parity remains a same-provider consistency check.
 Offline assessment measured 1.86 s wall and 444,760,064 bytes maximum RSS (~424 MiB).
-Actual SQL publication and ready-inputs remain unimplemented/unqualified.
+Raw SQL claims publication now imports all 4,517 player and 130 team records,
+with all five player refusals preserved. Canonical publication and ready-inputs
+remain unimplemented/unqualified. The final retained-file proof at 2026-10-12
+02:29 UTC (2026-10-11 Los Angeles) measured player publish/replay at 3,031/289 ms,
+team at 111/12 ms, source-row relation storage at 5,922,816 bytes and whole-process
+peak RSS at 444,497,920 bytes (~424 MiB). Before-import unavailability and exact
+retry replay both passed. The scratch database and its SQL-owned files were
+removed, with zero canonical observations, features or labels published.
 
 Still unqualified: completion, independent offensive participation and complete
 population enumeration, independent schedule coverage, canonical event/team
@@ -198,6 +216,11 @@ it somewhere permanent outside the checkout.**
   `/private/tmp/dfs52-prb-parity.py` and `/private/tmp/dfs52-prb-parity.json`.
 - PR B candidate evidence digest:
   `e4e59e643e54de3f9e5096d0944958ff65ee7d85fc0edc692ecc8b8df3b6dfd1`.
+- Raw CSV SQL proof: `/private/tmp/dfs52-prb-csv-proof.json` (actual ingestion
+  timestamps are part of its replay digests; reruns legitimately differ).
+- Final validation logs: `/private/tmp/dfs52-prb-csv-app.log`,
+  `/private/tmp/dfs52-prb-csv-db-full.log`, `/private/tmp/dfs52-prb-csv-typecheck.log`
+  and `/private/tmp/dfs52-prb-csv-lint.log`.
 
 Offline TypeScript verification and independent Python CSV/hash/ZoneInfo checks
 agree on the source hashes/counts, selected digest, roster partition, player/team

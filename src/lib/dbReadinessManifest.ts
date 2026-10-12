@@ -2,7 +2,7 @@
 // Runtime data only: no SQL files, catalog definitions or migration tooling.
 export const DB_READINESS_MANIFEST = {
   "minimumVersion": 2,
-  "maximumKnownVersion": 3,
+  "maximumKnownVersion": 4,
   "runnerVersion": 1,
   "migrations": [
     {
@@ -19,6 +19,11 @@ export const DB_READINESS_MANIFEST = {
       "version": 3,
       "filename": "0003_predictive_evidence.sql",
       "sha256": "ec72796bc69169e8a8a487c2dfd2240c86a4dc94c4ab74b29e4c05c83df9e695"
+    },
+    {
+      "version": 4,
+      "filename": "0004_predictive_source_claims.sql",
+      "sha256": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a"
     }
   ],
   "requiredTables": [
