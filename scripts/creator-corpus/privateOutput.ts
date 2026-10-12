@@ -90,6 +90,40 @@ export const readPrivateJson = async (path: string): Promise<unknown> => {
   }
 };
 
+const readOwnerOnlySource = async (path: string, extensions: readonly string[]): Promise<string> => {
+  const target = await checkedPath(path, extensions);
+  let handle: FileHandle;
+  try {
+    handle = await open(target, constants.O_RDONLY | constants.O_NOFOLLOW);
+  } catch {
+    return fail("input-unreadable");
+  }
+  try {
+    await requireOwnerOnly(handle);
+    return await handle.readFile("utf8");
+  } catch (error) {
+    if (error instanceof PrivateFileError) throw error;
+    return fail("input-unreadable");
+  } finally {
+    await handle.close();
+  }
+};
+
+// Import fingerprints bind the exact validated source bytes. These strict
+// readers return those bytes only after checking the opened file itself and
+// require the file to exist; the importer never treats a misspelled path as an
+// empty owner history.
+export const readPrivateJsonSource = async (path: string): Promise<{ text: string; value: unknown }> => {
+  const text = await readOwnerOnlySource(path, [".json"]);
+  try {
+    return { text, value: JSON.parse(text) };
+  } catch {
+    return fail("input-unreadable");
+  }
+};
+
+export const readPrivateText = (path: string): Promise<string> => readOwnerOnlySource(path, [".jsonl"]);
+
 // Like readPrivateJson, but a file that does not exist yet is `undefined`
 // rather than an error. A file that exists and is unreadable or corrupt still
 // fails, so a caller never overwrites something it could not understand.

@@ -57,6 +57,17 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "predictive final labels bind exact raw identity and retaining their bridge removes later label versions",
 ]);
 
+export const CORPUS_REQUIRED_CASES = Object.freeze([
+  "corpus schema stores only bounded metadata and keeps owner, API and derived statuses separate",
+  "corpus owner events, imports and gate registrations are append-only while API rows are replace-or-delete",
+  "corpus importer role has only local projection privileges and PUBLIC/runtime roles have none",
+  "corpus importer publishes one atomic snapshot, appends only owner tails and reruns as a no-op",
+  "corpus importer verifies the connected local role before loading any private source",
+  "corpus importer fails on lock contention and rolls back a later publication error without partial rows",
+  "corpus readiness reads one consistent local projection and keeps coverage dimensions separate",
+  "corpus API expiry removes complete stale snapshots while preserving permanent owner history",
+]);
+
 export const NODE_REQUIRED_CASES = Object.freeze({
   "tests/db/target.check.mjs": Object.freeze([
     "accepts only explicit loopback test connections",
@@ -72,6 +83,7 @@ export const NODE_REQUIRED_CASES = Object.freeze({
     "Vitest DB report preserves all required lease cases and refuses missing, skipped, todo or failed results",
     "Vitest DB report requires the readiness cases independently of the existing 13 lease cases",
     "Vitest DB report requires every predictive persistence case independently of lease and readiness cases",
+    "Vitest DB report requires every corpus schema case independently of the other DB suites",
   ]),
   "tests/db/readiness-manifest-unit.check.mjs": Object.freeze([
     "readiness generation binds the explicit minimum to validated migration and table contracts",
@@ -187,3 +199,4 @@ export function validateLeaseDbReport(report, required = LEASE_REQUIRED_CASES) {
 
 export const validateReadinessDbReport = (report) => validateLeaseDbReport(report, READINESS_REQUIRED_CASES);
 export const validatePredictiveDbReport = (report) => validateLeaseDbReport(report, PREDICTIVE_REQUIRED_CASES);
+export const validateCorpusDbReport = (report) => validateLeaseDbReport(report, CORPUS_REQUIRED_CASES);

@@ -329,7 +329,8 @@ streaming parse.
    schema reference and readiness manifest. **Document the reset** in
    `docs/database-migrations.md`. Any local database that has the old v3/v4 must be
    recreated. The migration runner is **not** changed to accept edited checksums.
-3. Readiness minimum stays at 2; maximum-known is 3.
+3. Readiness minimum stays at 2; after the independent creator-corpus
+   projection migration, maximum-known is 4.
 
 ## 10. Delivery sequence
 

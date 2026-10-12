@@ -7,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCli, type CliDeps } from "./cli.ts";
 import type { FetchLike } from "./youtubeApi.ts";
 import { discoveryFor, record as supportRecord, vid as supportVid } from "./testSupport.ts";
+import { buildCaptureEvent } from "../../src/lib/creatorCaptures.ts";
+import { buildReadinessGate } from "./readinessGate.ts";
 
 const KEY = "SECRET-KEY-VALUE-123";
 const vid = (n: number) => "vid" + String(n).padStart(8, "0");
@@ -99,6 +101,191 @@ const registryFor = (confirmed: boolean) => ({
       apiFetchedAt: CLOSED.toISOString(),
     },
   ],
+});
+
+describe("gate-register", () => {
+  it("creates the private commitment record and a public gate without names, keys, or network access", async () => {
+    await writeJson("creators.json", [
+      { key: "creator-b", name: "Synthetic B", seedVideoId: "bbbbbbbbbbb" },
+      { key: "creator-a", name: "Synthetic A", seedVideoId: "aaaaaaaaaaa" },
+    ]);
+    let calls = 0;
+    const result = await run([
+      "gate-register",
+      "--creators", path("creators.json"),
+      "--private-record", path("gate-private.json"),
+    ], {
+      gateOutputPath: path("readiness-gate.json"),
+      fetchImpl: async () => { calls++; throw new Error("no network allowed"); },
+    });
+    expect(result.code).toBe("ok");
+    expect(calls).toBe(0);
+    const privateText = await readFile(path("gate-private.json"), "utf8");
+    const publicText = await readFile(path("readiness-gate.json"), "utf8");
+    expect(privateText).toContain("creator-a");
+    expect(privateText).toContain("saltHex");
+    expect(privateText).not.toContain("Synthetic");
+    expect(publicText).not.toContain("creator-a");
+    expect(publicText).not.toContain("saltHex");
+    expect(JSON.parse(result.lines[0])).toMatchObject({ eligibleCreatorCount: 2 });
+  });
+
+  it("requires both private inputs and refuses to replace the registered public gate", async () => {
+    expect((await run(["gate-register", "--creators", path("creators.json")], {
+      gateOutputPath: path("readiness-gate.json"),
+    })).code).toBe("creators-and-private-record-required");
+    await writeJson("creators.json", creatorsFile);
+    const args = ["gate-register", "--creators", path("creators.json"), "--private-record", path("gate-private.json")];
+    expect((await run(args, { gateOutputPath: path("readiness-gate.json") })).code).toBe("ok");
+    expect((await run(args, { gateOutputPath: path("readiness-gate.json") })).code).toBe("readiness-gate-exists");
+  });
+});
+
+describe("import", () => {
+  const importArgs = () => [
+    "import",
+    "--input", path("discovery.json"),
+    "--decisions", path("decisions.json"),
+    "--captures", path("captures.jsonl"),
+    "--private-record", path("gate-private.json"),
+    "--database-registration", path("database-registration.json"),
+  ];
+
+  it("rejects hosted and ambient database configuration before opening private corpus files", async () => {
+    await writeJson("database-registration.json", {
+      formatVersion: 1, transport: "loopback", port: 55432, database: "dfs_ev_corpus", role: "corpus_importer",
+    });
+    let called = false;
+    const publisher = async () => {
+      called = true;
+      throw new Error("publisher must not run");
+    };
+    expect((await run(importArgs(), {
+      env: { CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@ep-example.neon.tech:5432/dfs_ev_corpus" },
+      importPublisher: publisher,
+    })).code).toBe("local-corpus-database-required");
+    expect((await run(importArgs(), {
+      env: {
+        CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.1:55432/dfs_ev_corpus",
+        DATABASE_URL: "postgresql://ordinary-app-value",
+      },
+      importPublisher: publisher,
+    })).code).toBe("ambient-database-configuration-refused");
+    expect(called).toBe(false);
+  });
+
+  it("loads exact owner-only source bytes only after target approval and reports the publisher result", async () => {
+    const discovery = discoveryFor([supportRecord(1)]);
+    const saltHex = "f".repeat(64);
+    const keys = discovery.creators.map((creator) => creator.key).sort();
+    const gate = buildReadinessGate({ keys, saltHex, registeredAt: "2026-10-06T01:00:00.000Z",
+      endSeason: 2026, endWeek: 4, ruleVersion: "v1" });
+    await writeJson("database-registration.json", {
+      formatVersion: 1, transport: "loopback", port: 55432, database: "dfs_ev_corpus", role: "corpus_importer",
+    });
+    await writeJson("discovery.json", discovery);
+    await writeJson("decisions.json", {});
+    await writeJson("gate-private.json", { formatVersion: 1, eligibleCreatorKeys: keys, saltHex });
+    await writeJson("registration.json", discovery.registration);
+    await writeJson("readiness-gate.json", gate);
+    const capture = buildCaptureEvent({ creatorKey: "creator-a", videoId: supportVid(1), action: "capture",
+      text: "synthetic transcript ".repeat(20), publishedDate: "2025-10-09", captionKind: "uploaded" }, CLOSED);
+    await writeFile(path("captures.jsonl"), JSON.stringify(capture) + "\n");
+    for (const name of ["discovery.json", "decisions.json", "gate-private.json", "captures.jsonl"]) {
+      await chmod(path(name), 0o600);
+    }
+    let loaded = false;
+    const result = await run(importArgs(), {
+      env: { CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.1:55432/dfs_ev_corpus" },
+      registrationPath: path("registration.json"),
+      gatePath: path("readiness-gate.json"),
+      importPublisher: async ({ config, loadSource }) => {
+        expect(config).toMatchObject({ database: "dfs_ev_corpus", user: "corpus_importer" });
+        const source = await loadSource();
+        loaded = true;
+        expect(source.captures).toHaveLength(1);
+        expect(source.discovery.creators).toHaveLength(2);
+        expect(Object.values(source.fingerprints).every((value) => /^[a-f0-9]{64}$/.test(value))).toBe(true);
+        return { outcome: "append", importId: "9", capturesAppended: 1, decisionsAppended: 0,
+          apiSnapshotsReplaced: 2, decisionsNotApplied: 0 };
+      },
+    });
+    expect(result.code).toBe("ok");
+    expect(loaded).toBe(true);
+    expect(JSON.parse(result.lines[0])).toMatchObject({ outcome: "append", importId: "9" });
+  });
+});
+
+describe("readiness", () => {
+  const args = () => ["readiness", "--database-registration", path("database-registration.json"),
+    "--private-record", path("gate-private.json")];
+
+  it("validates the local database target and prints the generated report without reading corpus source files", async () => {
+    await writeJson("database-registration.json", {
+      formatVersion: 1, transport: "loopback", port: 55432, database: "dfs_ev_corpus", role: "corpus_importer",
+    });
+    await writeJson("gate-private.json", { formatVersion: 1, eligibleCreatorKeys: ["creator-a"], saltHex: "f".repeat(64) });
+    await chmod(path("gate-private.json"), 0o600);
+    let called = false;
+    const result = await run(args(), {
+      env: { CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.1:55432/dfs_ev_corpus" },
+      readinessReporter: async ({ config, now, loadPrivateGateRecord }) => {
+        called = true;
+        expect(config).toMatchObject({ database: "dfs_ev_corpus", user: "corpus_importer" });
+        expect(now).toEqual(CLOSED);
+        expect(await loadPrivateGateRecord()).toMatchObject({ eligibleCreatorKeys: ["creator-a"] });
+        return { formatVersion: 1, downstream: { modelReadiness: "blocked" } };
+      },
+    });
+    expect(result.code).toBe("ok");
+    expect(called).toBe(true);
+    expect(JSON.parse(result.lines[0])).toEqual({ formatVersion: 1, downstream: { modelReadiness: "blocked" } });
+  });
+
+  it("requires the registration and refuses hosted or ambient configuration before reporting", async () => {
+    expect((await run(["readiness"])).code).toBe("database-registration-and-private-record-required");
+    await writeJson("database-registration.json", {
+      formatVersion: 1, transport: "loopback", port: 55432, database: "dfs_ev_corpus", role: "corpus_importer",
+    });
+    let calls = 0;
+    const reporter = async () => { calls++; return {}; };
+    expect((await run(args(), {
+      env: { CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@ep-example.neon.tech:5432/dfs_ev_corpus" },
+      readinessReporter: reporter,
+    })).code).toBe("local-corpus-database-required");
+    expect((await run(args(), {
+      env: {
+        CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.1:55432/dfs_ev_corpus",
+        PGHOST: "127.0.0.1",
+      },
+      readinessReporter: reporter,
+    })).code).toBe("ambient-database-configuration-refused");
+    expect(calls).toBe(0);
+  });
+});
+
+describe("expire-api", () => {
+  it("validates the local target and prints only the bounded deletion summary", async () => {
+    await writeJson("database-registration.json", {
+      formatVersion: 1, transport: "loopback", port: 55432, database: "dfs_ev_corpus", role: "corpus_importer",
+    });
+    let called = false;
+    const result = await run(["expire-api", "--database-registration", path("database-registration.json")], {
+      env: { CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.1:55432/dfs_ev_corpus" },
+      apiExpiry: async ({ config, now }) => {
+        called = true;
+        expect(config).toMatchObject({ database: "dfs_ev_corpus", user: "corpus_importer" });
+        expect(now).toEqual(CLOSED);
+        return { outcome: "expired", cutoff: "2026-09-07T12:00:00.000Z", creatorsExpired: 1, videosDeleted: 8 };
+      },
+    });
+    expect(result.code).toBe("ok");
+    expect(called).toBe(true);
+    expect(JSON.parse(result.lines[0])).toEqual({
+      outcome: "expired", cutoff: "2026-09-07T12:00:00.000Z", creatorsExpired: 1, videosDeleted: 8,
+    });
+    expect((await run(["expire-api"])).code).toBe("database-registration-required");
+  });
 });
 
 describe("resolve", () => {

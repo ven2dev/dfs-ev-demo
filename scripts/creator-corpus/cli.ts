@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,14 +17,21 @@ import {
   type CreatorDiscovery,
 } from "./commands.ts";
 import { DecisionsFileError, effectiveDecisions, eventsFor, parseDecisionsFile } from "../../src/lib/creatorDecisions.ts";
-import { InputError, isEndWeekClosed, loadRegistration, parseCreatorsFile } from "./creatorInputs.ts";
+import { CaptureLogError, parseCaptureLog } from "../../src/lib/creatorCaptures.ts";
+import { InputError, isEndWeekClosed, loadRegistration, parseCreatorsFile, parseRegistration } from "./creatorInputs.ts";
 import { parseDiscoveryFile } from "./discoveryFile.ts";
 import { readCapturesFile } from "./captureStore.ts";
 import { readDecisionsFile } from "./decisionStore.ts";
 import { isApiDataStale } from "../../src/lib/creatorCorpusManifest.ts";
-import { PrivateFileError, assertPrivateOutputAvailable, deletePrivateFile, readPrivateJson, writePrivateJson } from "./privateOutput.ts";
+import { PrivateFileError, assertPrivateOutputAvailable, deletePrivateFile, readPrivateJson, readPrivateJsonSource, readPrivateText, writePrivateJson } from "./privateOutput.ts";
 import { startReviewServer } from "./reviewServer.ts";
 import { YoutubeApiError, createQuotaMeter, createYoutubeClient, type FetchLike } from "./youtubeApi.ts";
+import { ReadinessGateError, parsePrivateGateRecord, parseReadinessGate, registerReadinessGate, verifyReadinessGate } from "./readinessGate.ts";
+import { parseCorpusDatabaseRegistration, parseCorpusDatabaseTarget, CorpusImportTargetError } from "./importTarget.ts";
+import { publishCorpusImport, CorpusImportDatabaseError, type CorpusImportResult } from "./importPublisher.ts";
+import { CorpusImportPlanError, type CorpusImportSource } from "./importPlanner.ts";
+import { CorpusReadinessError, generateCorpusReadinessReport } from "./readinessReport.ts";
+import { CorpusApiExpiryError, expireCorpusApiEvidence } from "./apiExpiry.ts";
 
 // Owner-run commands for the #88 corpus manifest. Failures print one fixed
 // code; nothing printed here can contain the API key, a URL or a raw error.
@@ -45,6 +53,21 @@ export type CliDeps = {
   out: (line: string) => void;
   // Resolves when the owner stops a long-running command (Ctrl+C).
   waitForStop: () => Promise<void>;
+  // Tests direct the create-only public gate into a disposable directory.
+  // Production omits this and uses the one committed gate path.
+  gateOutputPath?: string;
+  gatePath?: string;
+  registrationPath?: string;
+  importPublisher?: (options: {
+    config: ReturnType<typeof parseCorpusDatabaseTarget>;
+    loadSource: () => Promise<CorpusImportSource>;
+  }) => Promise<CorpusImportResult>;
+  readinessReporter?: (options: {
+    config: ReturnType<typeof parseCorpusDatabaseTarget>;
+    now: Date;
+    loadPrivateGateRecord: () => Promise<ReturnType<typeof parsePrivateGateRecord>>;
+  }) => Promise<unknown>;
+  apiExpiry?: typeof expireCorpusApiEvidence;
 };
 
 const COMMON = {
@@ -243,10 +266,125 @@ export const runCli = async (argv: string[], deps: CliDeps): Promise<void> => {
     return;
   }
 
+  if (command === "gate-register") {
+    const values = parse({ creators: { type: "string" }, "private-record": { type: "string" } });
+    if (!values.creators || !values["private-record"]) return usage("creators-and-private-record-required");
+    const gate = await registerReadinessGate({
+      creatorsPath: values.creators,
+      privateRecordPath: values["private-record"],
+      now: deps.now(),
+      outputPath: deps.gateOutputPath,
+    });
+    deps.out(JSON.stringify({
+      registeredAt: gate.registeredAt,
+      eligibleCreatorCount: gate.eligibleCreatorCount,
+      commitmentDigest: gate.commitment.digest,
+    }));
+    return;
+  }
+
+  if (command === "import") {
+    const values = parse({
+      input: { type: "string" },
+      decisions: { type: "string" },
+      captures: { type: "string" },
+      "private-record": { type: "string" },
+      "database-registration": { type: "string" },
+    });
+    if (!values.input || !values.decisions || !values.captures || !values["private-record"] || !values["database-registration"]) {
+      return usage("import-inputs-required");
+    }
+
+    // The non-corpus target registration and URL are validated first. The
+    // publisher then verifies the connected database and role before invoking
+    // loadSource, so a remote or misleading target cannot cause private files
+    // to be opened.
+    const databaseRegistration = parseCorpusDatabaseRegistration(await readPrivateJson(values["database-registration"]));
+    const config = parseCorpusDatabaseTarget(deps.env, databaseRegistration);
+    const publisher = deps.importPublisher ?? publishCorpusImport;
+    const result = await publisher({
+      config,
+      loadSource: async () => {
+        const captureSource = await readPrivateText(values.captures as string);
+        let captures;
+        try {
+          captures = parseCaptureLog(captureSource);
+        } catch (error) {
+          if (error instanceof CaptureLogError) throw new CommandError("invalid-captures-file");
+          throw error;
+        }
+        const decisionSource = await readPrivateJsonSource(values.decisions as string);
+        const decisions = readDecisions(decisionSource.value);
+        const discoverySource = await readPrivateJsonSource(values.input as string);
+        const discovery = parseDiscoveryFile(discoverySource.value);
+        const privateRecordSource = await readPrivateJsonSource(values["private-record"] as string);
+        const privateRecord = parsePrivateGateRecord(privateRecordSource.value);
+        const registrationPath = deps.registrationPath ?? fileURLToPath(new URL("./registration.json", import.meta.url));
+        const gatePath = deps.gatePath ?? fileURLToPath(new URL("./readiness-gate.json", import.meta.url));
+        const registrationText = await readFile(registrationPath, "utf8");
+        const gateText = await readFile(gatePath, "utf8");
+        const registration = parseRegistration(JSON.parse(registrationText));
+        const gate = parseReadinessGate(JSON.parse(gateText));
+        verifyReadinessGate(gate, privateRecord, discovery.creators.map((creator) => creator.key));
+        const digest = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
+        return {
+          captures,
+          decisions,
+          discovery,
+          registration,
+          gate,
+          fingerprints: {
+            registration: digest(registrationText),
+            gate: digest(gateText),
+            captures: digest(captureSource),
+            decisions: digest(decisionSource.text),
+            discovery: digest(discoverySource.text),
+          },
+          now: deps.now(),
+        };
+      },
+    });
+    if (result.outcome === "refuse") {
+      deps.out(JSON.stringify({ outcome: result.outcome, refusals: result.plan.refusals,
+        decisionsNotApplied: result.plan.decisionsNotApplied.length }));
+      throw new CommandError("corpus-import-refused");
+    }
+    deps.out(JSON.stringify(result));
+    return;
+  }
+
+  if (command === "readiness") {
+    const values = parse({ "database-registration": { type: "string" }, "private-record": { type: "string" } });
+    if (!values["database-registration"] || !values["private-record"]) {
+      return usage("database-registration-and-private-record-required");
+    }
+    const databaseRegistration = parseCorpusDatabaseRegistration(await readPrivateJson(values["database-registration"]));
+    const config = parseCorpusDatabaseTarget(deps.env, databaseRegistration);
+    const report = await (deps.readinessReporter ?? generateCorpusReadinessReport)({
+      config,
+      now: deps.now(),
+      loadPrivateGateRecord: async () =>
+        parsePrivateGateRecord((await readPrivateJsonSource(values["private-record"] as string)).value),
+    });
+    deps.out(JSON.stringify(report));
+    return;
+  }
+
+  if (command === "expire-api") {
+    const values = parse({ "database-registration": { type: "string" } });
+    if (!values["database-registration"]) return usage("database-registration-required");
+    const databaseRegistration = parseCorpusDatabaseRegistration(await readPrivateJson(values["database-registration"]));
+    const config = parseCorpusDatabaseTarget(deps.env, databaseRegistration);
+    const result = await (deps.apiExpiry ?? expireCorpusApiEvidence)({ config, now: deps.now() });
+    deps.out(JSON.stringify(result));
+    return;
+  }
+
   usage("unknown-command");
 };
 
-const KNOWN = [UsageError, InputError, PrivateFileError, CommandError, YoutubeApiError, DecisionsFileError];
+const KNOWN = [UsageError, InputError, PrivateFileError, CommandError, YoutubeApiError, DecisionsFileError, ReadinessGateError,
+  CorpusImportTargetError, CorpusImportDatabaseError, CorpusImportPlanError, CorpusReadinessError, CorpusApiExpiryError];
 
 export const main = async (argv: string[]): Promise<number> => {
   try {
@@ -268,10 +406,6 @@ export const main = async (argv: string[]): Promise<number> => {
     return 1;
   }
 };
-
-// Keep readFile referenced so a future reader sees inputs are never read here
-// without the private-path checks.
-void readFile;
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   process.exitCode = await main(process.argv.slice(2));
