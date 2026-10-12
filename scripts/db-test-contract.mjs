@@ -91,6 +91,13 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
   "CSV unavailable planning checks context rights before file hydration and revocation blocks saved conflicts and retries",
   "CSV binding schedule reconciliation pins only a current exact selection and a new conflicting head can be recorded unavailable",
+  "CSV canonical fact reads expand raw lineages before filtering and preserve read-only A to B to A provenance",
+  "CSV canonical fact reads discover an unrecorded destination and withhold both routes without stale numeric payloads",
+  "CSV canonical fact reads retain missing-row uncertainty and reappearance binds unchanged values to fresh provenance",
+  "CSV canonical fact reads check source and context rights before any provider file is opened",
+  "CSV canonical fact reads verify raw bytes even outside the requested destination and fail instead of truncating discovery",
+  "CSV canonical fact reads keep player and team identities distinct and do not backdate canonical recording",
+  "CSV canonical fact reads preserve unresolved routing when no historical canonical destination exists",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

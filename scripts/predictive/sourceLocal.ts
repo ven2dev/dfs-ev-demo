@@ -91,12 +91,20 @@ export const runSourceClaimsProof = async (args: string[], environment: NodeJS.P
         if (saved.event.revision !== null || saved.event.plan.reason !== "game-bridge-missing" ||
             bound.reason !== "game-bridge-missing" || bound.head !== null || !boundRetry.reused ||
             canonical(saved.event) !== canonical(boundRetry.event)) refuse("source-proof-unavailable-binding-refused");
+        const factStarted = performance.now();
+        const facts = await store.replaySourceStatsFacts({ profileIds: [input.profile.id], entityKeys: [], cutoff: saved.event.recordedAt });
+        const factReplayMs = performance.now() - factStarted;
+        if (facts.status !== "replayed-source-facts" || facts.heads.length !== 0 || facts.withheld.length !== 1 ||
+            facts.withheld[0].bindingId !== bindingId || facts.withheld[0].reason !== "game-bridge-missing" || facts.withheld[0].routing !== "unresolved")
+          refuse("source-proof-canonical-facts-refused");
         reports.push({ feed: input.profile.feed, rows: prepared.rows.length, projected: prepared.rows.filter((row) => row.projection).length,
           refused: prepared.rows.filter((row) => row.failureCode).length, capturedAt: input.capturedAt, ingestedAt: imported,
           rawBytes: Buffer.byteLength(input.artifact.bytes), rawSha256: input.artifact.sha256, publishMs: Math.round(publishMs),
           replayMs: Math.round(replayMs), preImportUnavailable: true, retryPreservedReplay: true, inputDigest: replay.inputDigest,
           normalizationMs: Math.round(normalizationMs), normalizationStatus: normalization.status, normalizationReason: normalization.reason,
-          unavailableBindingRecordedAt: saved.event.recordedAt, unavailableBindingReplayVerified: true, unavailableBindingRetryVerified: true });
+          unavailableBindingRecordedAt: saved.event.recordedAt, unavailableBindingReplayVerified: true, unavailableBindingRetryVerified: true,
+          factReplayMs: Math.round(factReplayMs), factHeads: facts.heads.length, factWithheld: facts.withheld.length,
+          factReason: facts.withheld[0].reason, factRouting: facts.withheld[0].routing, factDigest: facts.inputDigest });
       }
       const sizes = (await client.query(`SELECT pg_relation_size('public.predictive_source_stats_rows') AS heap,
         pg_indexes_size('public.predictive_source_stats_rows') AS indexes, pg_total_relation_size('public.predictive_source_stats_rows') AS total`)).rows[0];

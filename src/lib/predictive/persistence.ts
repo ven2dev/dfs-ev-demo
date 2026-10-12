@@ -6,7 +6,8 @@ import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_V
 import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
 import type { SourceStatsFeed } from "./sourceStats.ts";
 import { SOURCE_LINEAGE_VERSION, sourceBindingHeadsAt, sourceStatsRawKey, type SourceBindingEvent } from "./sourceLineage.ts";
-import { planSourceStatsFromReplay as planNormalization, SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
+import { planSourceStatsFromReplay as planNormalization, sourceNormalizationBasis, SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
+import { SOURCE_FACT_BOUNDS, sourceFactHeadsAt, sourceFactRequest, sourceFactSnapshot, type SourceFactRequest } from "./sourceFacts.ts";
 import type { Artifact, Capture, Dataset, Decision, IdentityLink, Label, Observation, Profile, RecordedRetentionEvent, Request, RetentionEvent, RetentionResult,
   Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
@@ -19,12 +20,7 @@ import { allows, canonical, compareText, digest, entityKey, exact, instant, obse
 // Only evidence changes affect freshness. A later query clock or a renewed
 // rights decision must not manufacture a statistical correction. Access is
 // checked separately, against the database clock, on every read and retry.
-export const sourceNormalizationBasis = (plan: SourceNormalizationPlan) => {
-  const { cutoff: _cutoff, sourceInputDigest: _digest, rightsDecisionIds: _rights, version: _version, sourceRequest, ...binding } = plan.binding;
-  const { cutoff: _requestCutoff, ...request } = sourceRequest;
-  void _cutoff; void _digest; void _rights; void _requestCutoff; void _version;
-  return canonical({ reason: plan.reason, candidate: plan.candidate, binding, request });
-};
+export { sourceNormalizationBasis } from "./sourceNormalization.ts";
 export type SourceNormalizationReplay = {
   status: "observed-source-normalization" | "unavailable-source-normalization"; reason: string | null;
   head: SourceBindingEvent | null; currentPlan: SourceNormalizationPlan;
@@ -572,6 +568,43 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return result(null, head, currentPlan);
   }, true);
 
+  // Research read adapter: enumerate complete recorded raw lineages inside the
+  // explicit profiles, verify them, replan, and only then filter canonically.
+  // No SQL entity predicate may discard a rerouted successor or a new current
+  // destination. Bounds refuse the entire read rather than returning a prefix.
+  const replaySourceStatsFacts = (input: SourceFactRequest) => transaction(async () => {
+    const request = sourceFactRequest(input); const clock = await databaseClock();
+    if (instant(request.cutoff) > instant(clock)) refuse("source-binding-future-cutoff-refused");
+    const profiles = await profilesFor(request.profileIds);
+    if (profiles.length !== request.profileIds.length) return sourceFactSnapshot(request, [], [], "source-profile-missing");
+    if (profiles.some((profile) => profile.provider !== "nflverse" || !["player", "team"].includes(profile.feed) ||
+        profile.parserVersion !== SOURCE_PROFILE_VERSION || profile.allowlistVersion !== "predictive-raw-allowlist-v1"))
+      return sourceFactSnapshot(request, [], [], "source-profile-refused");
+    const rights = (await client.query(RIGHTS_SQL, [request.profileIds])).rows.map((row) => row.decision as RightsDecision);
+    if (blockedProfiles(rights, request.profileIds, clock, "internal-research").size)
+      return sourceFactSnapshot(request, [], [], "rights-not-in-force");
+    const records = (await client.query(`SELECT DISTINCT b.profile_id AS "profileId",b.raw_key_sha256 AS "rawKey",
+      (b.plan->'binding'->'sourceRequest') - 'cutoff' AS request FROM public.predictive_source_bindings b
+      WHERE b.profile_id=ANY($1::text[]) AND b.recorded_at <= $2::timestamptz
+      ORDER BY "profileId","rawKey",request LIMIT ${SOURCE_FACT_BOUNDS.lineages + 1}`, [request.profileIds, request.cutoff])).rows;
+    if (records.length > SOURCE_FACT_BOUNDS.lineages) refuse("source-fact-bounds-refused");
+    const requests: SourceStatsRequest[] = []; const history: SourceBindingEvent[] = [];
+    for (const row of records) {
+      exact(row.request, ["profileId", "rawGameId", "rawTeam", "rawPlayerId"]);
+      const raw = { ...row.request, cutoff: request.cutoff } as SourceStatsRequest;
+      if (row.profileId !== raw.profileId || row.rawKey !== sourceStatsRawKey(raw)) refuse("stored-source-binding-mismatch");
+      requests.push(raw); history.push(...await bindingHistory(raw, request.cutoff));
+      if (history.length > SOURCE_FACT_BOUNDS.events) refuse("source-fact-bounds-refused");
+    }
+    // Check every historical context profile before opening any provider bytes.
+    // An inaccessible chain cannot be proven irrelevant by reading its payload.
+    if (!await currentBindingAccess(history, clock)) return sourceFactSnapshot(request, [], [], "rights-not-in-force");
+    await verifyBindingHistory(history, request.cutoff);
+    const plans: SourceNormalizationPlan[] = [];
+    for (const raw of requests) plans.push(await readSourceNormalization(raw, clock));
+    return sourceFactHeadsAt(history, plans, request);
+  }, true);
+
   const publish = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
     if (typeof id !== "string" || !id.trim() || id.length > 256) refuse("invalid-run-id"); instant(now);
     if (dataset.captures.some((capture) => !["published", "incomplete"].includes(capture.state))) refuse("invalid-enum");
@@ -839,5 +872,6 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
-  return { publish, publishSourceStats, replaySourceStats, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
+  return { publish, publishSourceStats, replaySourceStats, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
+    replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

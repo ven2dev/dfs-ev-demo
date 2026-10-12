@@ -7,6 +7,16 @@ import { allows, canonical, compareText, digest, instant, refuse, rightsInForce,
 
 export const SOURCE_NORMALIZATION_V1 = "nflverse-stats-normalization-plan-v1";
 export const SOURCE_NORMALIZATION_VERSION = "nflverse-stats-normalization-plan-v2";
+
+// Evidence determines freshness; renewed equivalent rights and query clocks
+// are access checks, not statistical corrections. Historical v1/v2 witnesses
+// describe the same contribution when their evidence is unchanged.
+export const sourceNormalizationBasis = (plan: SourceNormalizationPlan) => {
+  const { cutoff: _cutoff, sourceInputDigest: _digest, rightsDecisionIds: _rights, version: _version, sourceRequest, ...binding } = plan.binding;
+  const { cutoff: _requestCutoff, ...request } = sourceRequest;
+  void _cutoff; void _digest; void _rights; void _requestCutoff; void _version;
+  return canonical({ reason: plan.reason, candidate: plan.candidate, binding, request });
+};
 type Role = "game-bridge" | "team-alias" | "opponent-alias" | "player-bridge" | "schedule";
 type Binding = {
   role: Role; observationId: string; profileId: string; sourceKey: string;

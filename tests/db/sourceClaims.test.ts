@@ -17,6 +17,7 @@ import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { ROUTING_FIELDS } from "../../src/lib/predictive/types.ts";
 import { sourceNormalizationBasis } from "../../src/lib/predictive/persistence.ts";
 import { SOURCE_NORMALIZATION_V1 } from "../../src/lib/predictive/sourceNormalization.ts";
+import { selectSourceFact, SOURCE_FACT_BOUNDS } from "../../src/lib/predictive/sourceFacts.ts";
 import { prepareSourceClaims, projectSourceClaim } from "../../src/lib/predictive/sourceClaims.ts";
 import { sourceClaimFixture } from "../predictive/fixtures/sourceClaims.ts";
 import { sourceCsv, sourceGameId, sourceSamples } from "../predictive/fixtures/source.ts";
@@ -1012,6 +1013,185 @@ it("CSV binding schedule reconciliation pins only a current exact selection and 
     expect(b.event.plan).toMatchObject({ reason: "normalization-schedule-ambiguous", binding: { decisions: [] } });
     expect(b.event.plan.binding.dependencies.filter((dep) => dep.role === "schedule").map((dep) => dep.observationId)).toEqual(["game-schedule", "schedule-new-head"]);
     expect(await store.replaySourceNormalization({ ...request, cutoff: a.event.recordedAt })).toEqual(original);
+  });
+});
+
+const factKey = (player = "00-0000001") => "player-game-stats:" + NORMALIZATION_GAME + ":" + player;
+const factRequest = (profileId: string, cutoff: string, entityKeys = [factKey()]) => ({ profileIds: [profileId], entityKeys, cutoff });
+const changeFactPlayer = async (client: Client, store: Store, id: string, playerId: string, predecessor: string) => {
+  await client.query("SELECT pg_sleep(0.005)");
+  const time = new Date().toISOString();
+  const context: Dataset = { formatVersion: 2, profiles: [profile(BRIDGE_PROFILE)], rightsDecisions: [], artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+  addCapture(context, id, [revision(id, "player-bridge", { provider: "gsis", rawPlayerId: "00-0000001", playerId,
+    effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-01-01T00:00:00.000Z" }, predecessor)], time, BRIDGE_PROFILE);
+  await store.publish(id, context, time);
+  return time;
+};
+
+it("CSV canonical fact reads expand raw lineages before filtering and preserve read-only A to B to A provenance", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const { request } = await seedBinding(store);
+    const a = await store.recordSourceNormalization("fact-A", request, null);
+    const original = await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt));
+    expect(selectSourceFact(original, factKey())).toMatchObject({ state: "selected", head: { head: { id: "fact-A",
+      revision: { data: { playerId: "00-0000001", passingYards: 80 } } }, revisionKnownAt: a.event.recordedAt } });
+    await changeFactPlayer(client, store, "fact-player-B", "00-0000002", "player-map");
+    const b = await store.recordSourceNormalization("fact-B", request, "fact-A");
+    await withLogin(client, target, ["predictive_replay"], async (reader, readerTarget) => {
+      let snapshots = 0;
+      const tracked = { query: async (sql: string, params?: unknown[]) => {
+        if (sql.includes("SELECT DISTINCT b.profile_id AS")) {
+          expect((await reader.query("SELECT current_setting('transaction_read_only') AS ro,current_setting('transaction_isolation') AS isolation")).rows[0])
+            .toEqual({ ro: "on", isolation: "repeatable read" }); snapshots++;
+        }
+        return reader.query(sql, params);
+      } } as unknown as Client;
+      const replay = await createLocalPredictiveStore(tracked, readerTarget, artifacts);
+      expect(await replay.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt))).toEqual(original);
+      const atB = await replay.replaySourceStatsFacts(factRequest(request.profileId, b.event.recordedAt, [factKey(), factKey("00-0000002")]));
+      expect(selectSourceFact(atB, factKey())).toMatchObject({ state: "missing", head: null });
+      expect(selectSourceFact(atB, factKey("00-0000002"))).toMatchObject({ state: "selected", head: { head: { id: "fact-B" } } });
+      expect(atB).toMatchObject({ coverage: "recorded-lineages-only", observationsPublished: false, featuresPublished: false, labelsFinalized: false });
+      expect(snapshots).toBe(2);
+      await expect(reader.query("SELECT predictive_record_source_binding('fact-denied',NULL,'{}')")).rejects.toMatchObject({ code: "42501" });
+    });
+    await changeFactPlayer(client, store, "fact-player-A-again", "00-0000001", "fact-player-B");
+    const c = await store.recordSourceNormalization("fact-C", request, "fact-B");
+    const returned = await store.replaySourceStatsFacts(factRequest(request.profileId, c.event.recordedAt));
+    expect(returned.heads[0].head.revision).toEqual(a.event.revision);
+    expect(returned.heads[0].revisionKnownAt).toBe(a.event.recordedAt);
+    expect(returned.heads[0].headToken).not.toBe(original.heads[0].headToken);
+    expect(await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt))).toEqual(original);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_observations WHERE kind IN ('player-game-stats','team-game-stats')")).rows[0].n).toBe(0);
+    for (const table of ["predictive_feature_runs", "predictive_outcome_labels"])
+      expect((await client.query(`SELECT count(*)::integer AS n FROM ${table}`)).rows[0].n).toBe(0);
+  });
+});
+
+it("CSV canonical fact reads discover an unrecorded destination and withhold both routes without stale numeric payloads", async () => {
+  await withProof(async ({ client, store }) => {
+    const { request } = await seedBinding(store); const a = await store.recordSourceNormalization("unrecorded-fact-A", request, null);
+    const earlier = await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt));
+    const at = await changeFactPlayer(client, store, "unrecorded-player-B", "00-0000002", "player-map");
+    // B has no canonical source revision yet. A SQL filter over B's historical
+    // revision IDs alone would miss the raw lineage that now maps to B.
+    for (const key of [factKey(), factKey("00-0000002")]) {
+      const snapshot = await store.replaySourceStatsFacts(factRequest(request.profileId, at, [key]));
+      expect(snapshot.heads).toEqual([]);
+      expect(snapshot.withheld).toEqual([{ lineageKey: expect.any(String), profileId: request.profileId,
+        bindingId: "unrecorded-fact-A", reason: "source-binding-stale", routing: "known-destinations", entityKeys: [key] }]);
+      expect(selectSourceFact(snapshot, key)).toMatchObject({ state: "withheld", head: null });
+      expect(JSON.stringify(snapshot)).not.toContain("passingYards");
+    }
+    expect(await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt))).toEqual(earlier);
+  });
+});
+
+it("CSV canonical fact reads retain missing-row uncertainty and reappearance binds unchanged values to fresh provenance", async () => {
+  await withProof(async ({ client, store }) => {
+    const { request } = await seedBinding(store); const a = await store.recordSourceNormalization("present-fact", request, null);
+    const before = await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt));
+    const missing = sourceClaimFixture("missing-fact", "player", sourceCsv("player", [{ ...sourceSamples().player[0], player_id: "00-0000002" }]));
+    missing.capturedAt = a.event.recordedAt; await store.publishSourceStats(missing);
+    const unrecorded = await store.replaySourceStatsFacts(factRequest(request.profileId, await captureTime(client, missing.captureId)));
+    expect(selectSourceFact(unrecorded, factKey())).toMatchObject({ state: "withheld", head: null, withheld: [{ reason: "source-binding-stale" }] });
+    const b = await store.recordSourceNormalization("missing-fact-binding", request, "present-fact");
+    const withheld = await store.replaySourceStatsFacts(factRequest(request.profileId, b.event.recordedAt));
+    expect(selectSourceFact(withheld, factKey())).toMatchObject({ state: "withheld", head: null, withheld: [{ reason: "source-row-missing" }] });
+    expect(withheld.heads).toEqual([]);
+    const recovered = sourceClaimFixture("recovered-fact"); recovered.capturedAt = b.event.recordedAt; await store.publishSourceStats(recovered);
+    const c = await store.recordSourceNormalization("recovered-fact-binding", request, b.event.id);
+    const after = await store.replaySourceStatsFacts(factRequest(request.profileId, c.event.recordedAt));
+    expect(after.heads[0]).toMatchObject({ revisionKnownAt: a.event.recordedAt, head: { id: c.event.id, revision: a.event.revision } });
+    expect(after.heads[0].headToken).not.toBe(before.heads[0].headToken);
+    expect(after.heads[0].head.plan.binding.sourceCaptures.map((capture) => capture.id)).toEqual([recovered.captureId]);
+    expect(await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt))).toEqual(before);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_stats_revisions")).rows[0].n).toBe(1);
+  });
+});
+
+it("CSV canonical fact reads check source and context rights before any provider file is opened", async () => {
+  for (const revokeContext of [false, true]) await withProof(async ({ client, store, artifacts, target, root }) => {
+    const { input, request } = await seedBinding(store); const a = await store.recordSourceNormalization("rights-fact", request, null);
+    const profileId = revokeContext ? BRIDGE_PROFILE : request.profileId;
+    const predecessor = revokeContext ? "rights-" + BRIDGE_PROFILE : input.rightsDecisions[0].id;
+    const now = new Date().toISOString();
+    await client.query(`INSERT INTO predictive_rights_decisions (id,profile_id,predecessor_id,allowed_uses,effective_from,decided_at,evidence_kind,evidence_reference)
+      VALUES ('fact-revocation',$1,$2,'{}',$3,$3,'synthetic','fixture revocation')`, [profileId, predecessor, now]);
+    await writeFile(join(root, ".db-blobs", input.artifact.sha256 + ".csv"), "damaged", { mode: 0o600 });
+    let reads = 0;
+    const blockedArtifacts = { ...artifacts, database: { ...artifacts.database, read: async () => { reads++; throw new Error("provider bytes opened without rights"); } } };
+    const restricted = await createLocalPredictiveStore(client, target, blockedArtifacts);
+    const snapshot = await restricted.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt));
+    expect(snapshot).toMatchObject({ status: "unavailable-source-facts", reason: "rights-not-in-force", heads: [], withheld: [] });
+    expect(selectSourceFact(snapshot, factKey())).toMatchObject({ state: "withheld", head: null });
+    expect(reads).toBe(0);
+  });
+});
+
+it("CSV canonical fact reads verify raw bytes even outside the requested destination and fail instead of truncating discovery", async () => {
+  await withProof(async ({ client, store, artifacts, target, root }) => {
+    const { input, request } = await seedBinding(store); const a = await store.recordSourceNormalization("integrity-fact", request, null);
+    const scope = factRequest(request.profileId, a.event.recordedAt, [factKey("00-0000002")]);
+    expect((await store.replaySourceStatsFacts(scope)).heads).toEqual([]);
+    const path = join(root, ".db-blobs", input.artifact.sha256 + ".csv");
+    await writeFile(path, "damaged", { mode: 0o600 });
+    await expect(store.replaySourceStatsFacts(scope)).rejects.toThrow("artifact-integrity-failed");
+    await writeFile(path, input.artifact.bytes, { mode: 0o600 });
+    let reads = 0;
+    const bounded = await createLocalPredictiveStore({ query: async (sql: string, params?: unknown[]) => {
+      // A discovery-overflow probe tests refusal before any history hydration;
+      // this simulates the query result boundary, not 257 real SQL lineages.
+      if (sql.includes("SELECT DISTINCT b.profile_id AS")) return { rows: Array(SOURCE_FACT_BOUNDS.lineages + 1).fill({}) };
+      return client.query(sql, params);
+    } } as unknown as Client, target, { ...artifacts, database: { ...artifacts.database,
+      read: async () => { reads++; throw new Error("unexpected hydration after overflow"); } } });
+    await expect(bounded.replaySourceStatsFacts(scope)).rejects.toThrow("source-fact-bounds-refused"); expect(reads).toBe(0);
+    expect((await client.query("SELECT 1 AS n")).rows).toEqual([{ n: 1 }]);
+    expect(await store.replaySourceStatsFacts({ ...scope, profileIds: ["missing-profile"] })).toMatchObject({ reason: "source-profile-missing", heads: [] });
+    await expect(store.replaySourceStatsFacts({ ...scope, cutoff: "2999-01-01T00:00:00.000Z" })).rejects.toThrow("source-binding-future-cutoff-refused");
+  });
+});
+
+it("CSV canonical fact reads keep player and team identities distinct and do not backdate canonical recording", async () => {
+  for (const feed of ["player", "team"] as const) await withProof(async ({ client, store }) => {
+    const { input, request } = await seedBinding(store, feed);
+    const key = feed === "player" ? factKey() : "team-game-stats:" + NORMALIZATION_GAME + ":nfl:team:PHI";
+    const before = await store.replaySourceStatsFacts(factRequest(request.profileId, await captureTime(client, input.captureId), [key]));
+    expect(selectSourceFact(before, key)).toMatchObject({ state: "missing", head: null });
+    expect(before.coverage).toBe("recorded-lineages-only");
+    const a = await store.recordSourceNormalization("typed-fact", request, null);
+    const oneMsBefore = new Date(Date.parse(a.event.recordedAt) - 1).toISOString();
+    expect((await store.replaySourceStatsFacts(factRequest(request.profileId, oneMsBefore, [key]))).heads).toEqual([]);
+    const snapshot = await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt, [key]));
+    expect(selectSourceFact(snapshot, key)).toMatchObject({ state: "selected", head: { revisionKnownAt: a.event.recordedAt,
+      head: { revision: { kind: feed + "-game-stats", data: { gameId: NORMALIZATION_GAME, teamId: "nfl:team:PHI", passingYards: 80 } } } } });
+    if (feed === "team") expect(snapshot.heads[0].head.revision!.data).not.toHaveProperty("playerId");
+    const all = await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt, []));
+    expect(all.heads).toEqual(snapshot.heads);
+    const rights = input.rightsDecisions[0]; const now = new Date().toISOString();
+    await client.query(`INSERT INTO predictive_rights_decisions (id,profile_id,predecessor_id,allowed_uses,effective_from,decided_at,evidence_kind,evidence_reference)
+      VALUES ('fact-rights-renewal',$1,$2,'{internal-research}',$3,$3,'synthetic','fixture renewal')`, [request.profileId, rights.id, now]);
+    expect(await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt, [key]))).toEqual(snapshot);
+  });
+});
+
+it("CSV canonical fact reads preserve unresolved routing when no historical canonical destination exists", async () => {
+  await withProof(async ({ store }) => {
+    const fixture = await normalizationFixture();
+    rewriteNormalizationRows(fixture.context, fixture.bridgeRows.filter((row) => row.kind !== "game-bridge"));
+    await store.publishSourceStats(fixture.input); await store.publish("unrouted-context", fixture.context, "2026-10-11T00:00:00.000Z");
+    const request = { profileId: fixture.input.profile.id, rawGameId: sourceGameId, rawTeam: "PHI", rawPlayerId: "00-0000001" };
+    const a = await store.recordSourceNormalization("unrouted-fact", request, null);
+    expect(a.event).toMatchObject({ revision: null, plan: { reason: "game-bridge-missing" } });
+    for (const entityKeys of [[factKey()], [factKey("00-0000002")], []]) {
+      const snapshot = await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt, entityKeys));
+      expect(snapshot.heads).toEqual([]);
+      expect(snapshot.withheld).toEqual([{ lineageKey: expect.any(String), profileId: request.profileId,
+        bindingId: "unrouted-fact", reason: "game-bridge-missing", routing: "unresolved", entityKeys: [] }]);
+      expect(selectSourceFact(snapshot, entityKeys[0] ?? factKey())).toMatchObject({ state: "withheld", head: null });
+      expect(JSON.stringify(snapshot)).not.toContain("passingYards");
+    }
   });
 });
 

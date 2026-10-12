@@ -1,6 +1,6 @@
 # #52 session handoff
 
-Updated 2026-10-12 after PR B retention compatibility review. Resume from this state; do not restart the
+Updated 2026-10-12 after PR B canonical stats read adapter. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
 ## Current migration coordination (2026-10-12)
@@ -408,3 +408,56 @@ Evidence: `/private/tmp/dfs52-prb-retention-db.log`,
 `/private/tmp/dfs52-prb-retention-typecheck.log`,
 `/private/tmp/dfs52-prb-retention-lint.log`,
 `/private/tmp/dfs52-prb-retention-ci.log`.
+
+## Latest checkpoint: canonical stats read adapter
+
+`sourceFacts.ts` and `replaySourceStatsFacts()` implement read-only canonical
+research reads from verified bindings. The reader discovers every recorded raw
+lineage in explicit profiles, checks all historical source/context rights before
+opening files, verifies original witnesses at their own clocks/versions,
+replans at the cutoff, follows raw heads, and only then filters canonically.
+An unrecorded destination is discovered even without its own stored revision.
+Stale reads return failure/routing metadata, never historical numeric payloads.
+Unresolved current routing remains explicit for every canonical filter; an old
+destination cannot prove the unknown current claim is unrelated to another one.
+
+Selected heads pin binding IDs/tokens separately from statistical revision IDs.
+Recapture/reappearance can reuse a revision with new provenance and retain its
+first recorder time. Equivalent current rights renewal preserves the snapshot.
+The preliminary selector exposes selected/missing/ambiguous/withheld states,
+including multiple providers and a withheld expected provider. Coverage is
+**recorded-lineages-only**, not a complete eligible population. Limits are 16
+profiles, 64 canonical filters, 256 raw lineages, 8,192 total events, plus existing
+per-lineage/file-verification bounds. Overflow refuses, never truncates.
+
+No migration was added or renumbered. #90's PR #103 is still open at this
+checkpoint. SQL must still implement the same current head rule before wiring
+features, reconciliation/participation decisions, labels and post-window capture
+checks together. This research reader activates none of those existing paths.
+After #90 merges, merge main, renumber the current three migrations to 0005–0007
+and regenerate/test their artifacts before adding a forward activation migration.
+Large-roster indexed discovery must preserve unrecorded destination and unresolved
+routing semantics; the profile-wide research reader is not a scale qualification.
+
+Validation: **831 jsdom + 616 Node tests**, **74 Node database checks + 92
+database tests**, all **75 mandatory predictive cases**, typecheck, full lint,
+CI gate, migration/catalog/readiness verification and whitespace checks pass.
+The twelve pure and seven database cases have hand-specified routing/provenance
+oracles; the overflow test is a mocked query-result boundary, not a DB load test.
+The app suite required local loopback permission for unchanged creator-server
+tests; no timeout/configuration was changed.
+
+The final retained-file proof ran at 2026-10-12 17:46 UTC with zero requests:
+4,517 player rows (4,512 typed, five refused) and 130 typed team rows. Each
+canonical fact read has zero usable heads and one `game-bridge-missing` binding
+with unresolved routing. Player/team fact reads measured 357/50 ms; whole-process
+wall time 7.77 seconds and maximum RSS 465,534,976 bytes (~444 MiB), measured,
+not capped. Active canonical observations/features/labels remain zero. Scratch
+databases/private proof files and the isolated PR-B container were removed;
+the retained archive and the creator session's database were preserved.
+
+Evidence: `/private/tmp/dfs52-prb-facts-jsdom.log`,
+`/private/tmp/dfs52-prb-facts-node.log`, `/private/tmp/dfs52-prb-facts-db.log`,
+`/private/tmp/dfs52-prb-facts-typecheck.log`, `/private/tmp/dfs52-prb-facts-lint.log`,
+`/private/tmp/dfs52-prb-facts-ci.log`, `/private/tmp/dfs52-prb-facts-proof.log`,
+`/private/tmp/dfs52-prb-facts-proof-metrics.log`.

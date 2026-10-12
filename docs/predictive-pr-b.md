@@ -10,6 +10,12 @@ publication and unavailable-state persistence are implemented in internal resear
 staging. Shared feature/decision/label activation remains next; this does not
 finish PR B or parent #52.
 
+The canonical stats read adapter now follows complete recorded raw lineages
+before filtering by canonical player/game. It reuses the verified binding
+reader, returns explicit withheld states, and pins binding provenance separately
+from unchanged statistical revisions. It remains a read-only research API;
+the shared SQL/feature/decision/label activation is still outstanding.
+
 ## Migration ordering decision (2026-10-12)
 
 The owner approved #90 landing first: its creator-corpus migration owns 0004.
@@ -221,6 +227,55 @@ features or labels were published, and the scratch DB/files were removed.
 Evidence: `/private/tmp/dfs52-prb-normalization-proof.json`.
 
 ## Canonical publication: next engineering work
+
+### Canonical stats reader implemented without a new migration
+
+`replaySourceStatsFacts({ profileIds, entityKeys, cutoff })` reads every recorded
+raw lineage in the explicit source profiles in one repeatable-read, read-only
+transaction. It verifies historical witnesses with their own versions/clocks,
+replans at the cutoff, follows raw heads, and only then filters canonical
+entities. A current unrecorded remapping withholds both the previous and newly
+mapped destinations, even when the destination has no stored canonical revision
+yet. Stale states expose routing metadata and failure reasons, not old numeric
+payloads. Recorded missing/conflicting context never becomes a zero or absence.
+Unresolved routing is explicit and cannot be filtered away as unrelated: until
+a current plan establishes a destination, the preliminary selector withholds
+within the requested profiles. Historical destinations alone cannot establish
+where a currently unresolved raw claim belongs.
+
+Each usable head includes its exact binding event and a binding token, alongside
+the revision's first recorder time. A recapture or reappearance can retain the
+same numeric revision while changing its binding token and source references.
+Equivalent current rights renewal preserves the original selected binding and
+digest. Current source/context rights are checked before opening historical
+files. The preliminary selector reports selected/missing/ambiguous/withheld;
+multiple observed provider heads still require reconciliation.
+
+This is **recorded-lineages-only** coverage: it does not enumerate an eligible
+player population or make unrecorded raw rows usable. Discovery intentionally
+scans whole requested profiles before canonical filtering, avoiding incomplete
+SQL routing. It refuses more than 16 profiles, 64 entity filters, 256 raw
+lineages, 8,192 total events, or the existing 256 events per raw lineage/20 MB
+verified-byte bounds. It never returns a truncated prefix. These limits and the
+existing file cache bound this research operation; indexed large-roster reads
+and a memory/elapsed-time budget remain future work.
+
+The retained-file proof at 2026-10-12 17:46 UTC makes zero requests. It imports
+4,517 player rows (4,512 typed, five refused) and 130 typed team rows. Both
+canonical fact reads return zero usable heads and one `game-bridge-missing`
+withheld binding with unresolved routing. Player/team fact reads measured 357/50 ms. Whole-process wall
+time was 7.77 seconds and maximum RSS 465,534,976 bytes (~444 MiB), measured
+rather than capped. Active canonical observations, features and labels remain
+zero. Evidence: `/private/tmp/dfs52-prb-facts-proof.log` and
+`/private/tmp/dfs52-prb-facts-proof-metrics.log`.
+
+The increment passes 831 jsdom + 616 Node tests, 74 Node database checks +
+92 database tests (all 75 mandatory predictive cases), typecheck, lint and CI
+gate. No migration/catalog/readiness artifact changed. Seven new mandatory
+database cases and twelve pure cases cover this adapter; see the
+[test reasoning](predictive-test-review.md#pr-b-canonical-fact-reader-2026-10-12).
+
+### Remaining active integration
 
 The released JSON observation path still expects revision arrays; it cannot
 hydrate CSV rows as canonical evidence. Staged row projections do not authorize

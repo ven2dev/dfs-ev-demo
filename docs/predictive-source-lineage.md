@@ -129,6 +129,29 @@ Existing cited-evidence closure and backup audit parity remain in place.
 
 ## Remaining activation work
 
+`sourceFacts.ts` and the persisted `replaySourceStatsFacts()` now implement the
+application's preliminary research read boundary: complete raw-chain discovery
+inside requested profiles, verified current replanning, raw heads before
+canonical filtering, explicit withholding and exact binding tokens. Revision
+knowledge is no earlier than its first binding recorder time. A new binding
+can reuse an unchanged revision while preserving its new provenance. This API
+does not feed existing feature, reconciliation, participation or label paths;
+it cannot substitute for the shared SQL head checker those paths still need.
+Its `recorded-lineages-only` coverage establishes no eligible population.
+
+The current profile-wide discovery is deliberately conservative and bounded,
+including chains whose unrecorded current plan maps to a new destination.
+Replacing it with indexed canonical discovery must preserve that case, not just
+expand chains already routed to the requested entity in historical revisions.
+Any overflow refuses the operation. Source/context rights are checked before
+opening historical bytes; inaccessible history is not parsed to determine
+whether it might be irrelevant. These are research limits, not roster-scale
+performance or qualified provider evidence.
+Unresolved current routing remains explicit for every canonical filter inside
+the requested profiles. A historical destination cannot prove that the current
+unresolved claim is unrelated to another destination. The preliminary selector
+withholds rather than silently dropping that uncertainty.
+
 The original implementation requirements below distinguish the completed
 storage boundary from the downstream work still needed:
 
