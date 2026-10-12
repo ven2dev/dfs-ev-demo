@@ -1,12 +1,16 @@
 # #52 session handoff
 
-Updated 2026-10-11 after independent review approved `d5c5c71` for push and PR. Resume from this state; do not restart the
+Updated 2026-10-11 after PR A merged and PR B began. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
-## Current state: PR A reviewed, approved for publication
+## Current state: PR A merged; PR B offline assessment implemented
 
-- Workspace: `/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo`.
-- Branch: `feature/dfsEV-52-evidence-schema`, taken from the relay WIP tip
+- PR B workspace: `/private/tmp/dfs-ev-52-pr-b`; branch:
+  `feature/dfsEV-52-real-source-ingestion`, created from merged main `d934432`.
+  Dependencies use Node 24.18.1. PR B is local, unpushed and not open. The branch
+  initially tracks origin/main; push only with an explicit feature destination.
+  Preserve the creator and PR A workspaces.
+- Historical PR A branch: `feature/dfsEV-52-evidence-schema`, taken from relay tip
   `1ef86ba` (the earlier synthetic-proof work was carried forward, not discarded).
 - PR A (real-source schema and replay core) was built in ten steps, then the
   first review's nine findings, second review's four P1 blockers and two cleanup
@@ -14,16 +18,20 @@ completed work or repeat source downloads merely to recover context.
   Independent review found no confirmed defects in `d5c5c71`; the owner approved
   push and opening PR A on 2026-10-11. Migration 0003 is now frozen under the
   [review gate](database-migrations.md#pr-a-draft-period-reset-of-migration-0003).
-  Publish this branch for review and require remote CI before merge. Parent #52
+  Further changes need forward migrations; never reset 0003. Parent #52
   remains open for PR B and the broader ingestion/operation criteria.
-- [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102) is open against
-  `main`. Its first remote run passed app checks (including the default build),
-  DB integration, aggregate CI and Vercel. CodeQL's result check flagged an
-  `Accept`-header URL substring comparison and a fixture's intentional
-  first-newline replacement. The follow-up uses the parsed request hostname
-  (including redirects) and constructs only the malformed header explicitly.
-  Two header regressions failed before the fix; exact API-host, redirect and
-  lookalike-host controls pass. Recheck remote CI on the new head before merge.
+- [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102) merged into `main` as
+  `d934432e8aa32a38226c65306592b77e04e05f01`, after reviewed `d5c5c71` and
+  CodeQL fixes `614742e`. Remote app/default-build, PostgreSQL, CodeQL, aggregate
+  CI and Vercel checks passed before merge.
+- PR B adds typed raw statistics and offline `predictive:source assess`, preserving
+  v1 journals/output and applying F3 to individual positive usage. See
+  [PR B progress and storage requirements](predictive-pr-b.md). No SQL/migration
+  changes yet: persisted replay verifies JSON revision arrays, so raw CSV needs
+  an explicit row/transform/bridge binding before SQL publication.
+- PR B validation: 517 Node tests (54 new), typecheck, lint and diff whitespace
+  checks pass. Retained-file offline assessment and independent Python partition
+  checks agree. No DB path changed and no migration was run.
 - The approved design is [`predictive-real-source-schema.md`](predictive-real-source-schema.md)
   revision 2 and [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md)
   revision 2. Section 14 of the DDL lists what each step built and every
@@ -136,12 +144,16 @@ for test oracles and crash-simulation limits.
    Production migrations, role setup and activation stay behind #95.
 5. No paid access, API key or issue comment is authorized by this work.
 
-## Next: PR B
+## Continue PR B
 
-The first real-data slice: QB passing yards from nflverse through this schema,
+The first real-data slice remains QB passing yards from nflverse through this schema,
 measuring correctness, memory and capture cost. PR B should stamp `decided_at`
 knowledge times from the database clock (DDL section 14, step 8 nuance) and own
 automatic absence detection from real files.
+
+Next implement the CSV provenance/storage design described in `predictive-pr-b.md`,
+with a forward migration only if required. Preserve exact raw data and explicit
+unresolved states; do not substitute fabricated completion or membership bounds.
 
 ## Real-source findings and private evidence
 
@@ -152,11 +164,14 @@ requests at 28, individual response bytes at 8 MB, total consumed bodies at
 20 MB, parsed rows at 80,000 and acquisition elapsed time at 90 seconds. Memory
 is measured, not capped; scheduled/larger use needs a reviewed memory budget.
 
-There are 553 QB team/week roster candidates: 148 resolved statistics matches,
-404 without a match and one unresolved identity. **All 553 have unresolved
-offensive participation.** Five player-stat rows have missing identifier
-matches. Player/team passing sum parity and schedule joins pass, but these are
-same-provider consistency checks, not independent official reconciliation.
+The preserved v1 report has 553 QB team/week candidates, all participation-unresolved.
+PR B's separate F3 assessment finds **148 positive-usage individuals and 405
+unresolved** (404 missing stats, one missing identity), with no confirmed absences.
+Typed projection accepts 4,512 of 4,517 player rows; five lack raw GSIS IDs. All
+130 team rows project. Independent Python CSV/hash checks reproduce the candidate
+partition. Player/team passing parity remains a same-provider consistency check.
+Offline assessment measured 1.86 s wall and 444,760,064 bytes maximum RSS (~424 MiB).
+Actual SQL publication and ready-inputs remain unimplemented/unqualified.
 
 Still unqualified: completion, independent offensive participation and complete
 population enumeration, independent schedule coverage, canonical event/team
@@ -178,6 +193,11 @@ it somewhere permanent outside the checkout.**
   `/private/tmp/dfs-ev-52-source-parity.json`.
 - Projection digest:
   `20b3612bb591839f0e6e4238b7f7da122c2cefefacfcf27cf8cbca28a9052443`.
+- PR B assessment/metrics: `/private/tmp/dfs52-prb-assessment.json` and
+  `/private/tmp/dfs52-prb-assessment-metrics.txt`; independent check:
+  `/private/tmp/dfs52-prb-parity.py` and `/private/tmp/dfs52-prb-parity.json`.
+- PR B candidate evidence digest:
+  `e4e59e643e54de3f9e5096d0944958ff65ee7d85fc0edc692ecc8b8df3b6dfd1`.
 
 Offline TypeScript verification and independent Python CSV/hash/ZoneInfo checks
 agree on the source hashes/counts, selected digest, roster partition, player/team

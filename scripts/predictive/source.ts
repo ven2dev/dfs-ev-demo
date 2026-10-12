@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { assertNoApplicationCredentials } from "../../tests/db/target.mts";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { captureSourcePrototype, verifySourcePrototype } from "../../src/lib/predictive/sourcePrototype.ts";
+import { assessSourcePrototype } from "../../src/lib/predictive/sourceReadiness.ts";
 import { SOURCE_LIMITS } from "../../src/lib/predictive/sourceTransport.ts";
 import { sourceAsset } from "../../src/lib/predictive/sourceAdapters.ts";
 
@@ -17,10 +18,11 @@ export const runSourcePrototype = async (args: string[], environment: NodeJS.Pro
     const store = await openArtifactStore(directory, SOURCE_LIMITS.responseBytes);
     return captureSourcePrototype(store, Number(first), second);
   }
-  if (mode === "verify" && firstOption === "--journal" && /^[a-f0-9]{64}\.json$/.test(first) && secondOption === "--journal-bytes" && /^\d+$/.test(second)) {
+  if (["verify", "assess"].includes(mode) && firstOption === "--journal" && /^[a-f0-9]{64}\.json$/.test(first) && secondOption === "--journal-bytes" && /^\d+$/.test(second)) {
     if (!Number.isSafeInteger(Number(second)) || Number(second) < 1 || Number(second) > SOURCE_LIMITS.responseBytes) throw new Error("source-arguments-refused");
     const store = await openArtifactStore(directory, SOURCE_LIMITS.responseBytes);
-    return verifySourcePrototype(store, { reference: first, sha256: first.slice(0, -5), byteSize: Number(second) });
+    const journal = { reference: first, sha256: first.slice(0, -5), byteSize: Number(second) };
+    return mode === "assess" ? assessSourcePrototype(store, journal) : verifySourcePrototype(store, journal);
   }
   throw new Error("source-arguments-refused");
 };

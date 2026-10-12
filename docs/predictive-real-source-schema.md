@@ -6,8 +6,10 @@ amendment, and implemented in PR A** on `feature/dfsEV-52-evidence-schema`
 [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md). Revision 2 incorporates the
 2026-10-09 design review. It continues from the relay handoff
 (`docs/predictive-session-handoff.md`, `1ef86ba`) on
-`feature/dfsEV-52-predictive-cutoff-replay`. The next gate after approval is the
-column-level DDL draft.
+`feature/dfsEV-52-predictive-cutoff-replay`. PR A merged in
+[PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102); migration 0003 is
+frozen. [PR B](predictive-pr-b.md) now owns actual-source qualification,
+raw CSV publication and measured cutoff replay.
 
 ## 0. Decisions and scope
 
@@ -316,6 +318,9 @@ bytes, raw blob growth per day under content addressing, and peak RSS under a
 streaming parse.
 
 ## 9. Migration and branch plan
+
+Historical reset procedure below was completed in PR A before merge. Migration
+0003 is now released; any further schema extension requires a forward migration.
 
 1. **Disposable-only history:** Codex confirmed (2026-10-09, from its saved
    execution history and the test harness) that v3/v4 ran only in temporary local
