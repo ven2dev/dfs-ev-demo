@@ -1,6 +1,6 @@
 # #52 session handoff
 
-Updated 2026-10-12 after PR B shared consumer witnesses. Resume from this state; do not restart the
+Updated 2026-10-12 after PR B SQL witness parity (0008). Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
 The owner asked whether the issue's ACs are complete. **No:** the
@@ -28,8 +28,8 @@ database: PR B uses Docker project `dfs-ev-52-prb-test` and `[::1]:54329`, not t
 default project at `127.0.0.1:54329`.
 
 Historical checkpoint logs/paragraphs below retain the original private prefix
-numbers; current files are 0005 (claims), 0006 (bindings) and 0007 (unavailable
-plans). The old maximum-known 6 is historical: current maximum-known is 7 and
+numbers; current files are 0005 (claims), 0006 (bindings), 0007 (unavailable
+plans) and 0008 (SQL witnesses). The old maximum-known 6 is historical: current maximum-known is 8 and
 minimum readiness remains 2. No hosted activation is authorized.
 
 ## Current state: PR A merged; PR B bound source revisions in internal research staging
@@ -207,7 +207,7 @@ for test oracles and crash-simulation limits.
    evidence, with strict ambiguity validation. Step 6 recompute-and-cite.
 3. The §7b candidate features (weather, venue, depth/teammate absences,
    targets per snap) and a defensive-scheme slot are reserved, not implemented.
-4. App readiness minimum remains **2**; this branch's maximum-known is **7**.
+4. App readiness minimum remains **2**; this branch's maximum-known is **8**.
    Production migrations, role setup and activation stay behind #95.
 5. No paid access, API key or issue comment is authorized by this work.
 
@@ -544,3 +544,47 @@ renumbered files for behavioral changes. Source qualification and the parent AC
 audit remain open; research witnesses and passing tests are not usable real
 predictive inputs. PR B remains local/unpushed; use an explicit feature
 destination if later authorized to push.
+
+## Latest checkpoint: SQL witness parity (0008)
+
+The shared SQL head/witness kernel now exists in forward 0008. It reconstructs
+every recorded raw chain in explicit profiles before canonical filtering,
+reproduces historical v1/v2 plans, replans cutoff-visible routing and mirrors
+application head/binding/token/withheld/missing evidence. The guarded public
+reader uses the database clock for current rights; only replay/recorder members
+can execute it and neither can call the private kernels or provide an access
+clock. Every canonical research read independently verifies files, then compares
+its witness with SQL in the same read-only/repeatable-read transaction. Any
+mismatch refuses. The private current-use checker rejects rehashed forgeries,
+stale recaptures, missing/withheld and unchanged empty evidence, while historical
+cutoffs preserve their original binding.
+
+**Scope:** this checkpoint does not activate features, decisions or labels and
+adds no consumer table/retention procedure. The original consumer FKs still
+point to ordinary observations; real-source writers remain gated. SQL metadata
+cannot replace byte proof, qualified completion/population/membership or
+use-specific rights. **Next:** append 0009 for coordinated consumer recorder,
+manifest, replay and retention integration. Do not modify 0001–0008 to add that
+behavior. Parent #52 and PR B remain incomplete and PR B stays local/unpushed.
+
+Final gates pass **873 jsdom + 633 Node tests**, **75 Node DB checks + 110 database
+tests**, all **85 mandatory predictive** and **8 creator-corpus** cases,
+typecheck, full lint, CI gate and the production Webpack build. Seven new SQL
+cases cover typed parity, rehashed forgeries, currentness/recapture/empty sets,
+unrecorded and unresolved routing, non-superuser roles/access clock, v7 upgrade
+and injected mismatch rollback. Released 0001–0004 and existing private
+0005–0007 SQL/catalog contracts are unchanged; readiness is minimum 2/maximum 8.
+Legacy literal-v7 ledger assertions were updated to v8; historical fixture/data
+expectations were preserved. The browser suite required permission for its
+loopback listeners. Evidence:
+`/private/tmp/dfs52-prb-sql-witness-{db,node,jsdom,typecheck,lint,ci,build}.log`.
+
+The schema-8 retained-file proof at 2026-10-12 21:28 UTC made zero requests. It
+restored the same 4,517 player rows (4,512 typed/five refused) and 130 typed team
+rows. Both SQL-cross-checked witnesses are unavailable with unresolved
+`game-bridge-missing`; no active canonical observation/feature/label exists.
+Player/team fact reads measured 389/59 ms, whole-process wall time 8.08 seconds,
+maximum RSS 428,195,840 bytes (~408 MiB), measured rather than capped. Evidence:
+`/private/tmp/dfs52-prb-sql-witness-proof.log` and
+`/private/tmp/dfs52-prb-sql-witness-proof-metrics.log`. Scratch databases/private
+proof files were removed. Preserve the retained archive; no new fetch is needed.

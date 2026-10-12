@@ -101,6 +101,13 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV canonical fact reads preserve unresolved routing when no historical canonical destination exists",
   "CSV consumer witnesses bind unchanged recaptures and post-window evidence through a replay-only login",
   "CSV consumer checks withhold stale routing and revoked access instead of reviving earlier selected values",
+  "CSV SQL witnesses match verified player and team reads, missing scope and equivalent rights renewal",
+  "CSV SQL witness checker rejects rehashed omissions, fabricated heads and forged unavailable reasons",
+  "CSV SQL current witness checks invalidate same-revision recaptures and refuse unchanged empty evidence",
+  "CSV SQL witnesses expand unrecorded reroutes and unresolved identity before canonical filtering",
+  "CSV SQL witness access uses database-clock rights and denies private kernels and unbounded requests",
+  "CSV SQL witness migration upgrades v7 preserving bindings and prior migration history",
+  "CSV SQL witness mismatch fails closed and restores the read-only replay transaction",
 ]);
 
 export const CORPUS_REQUIRED_CASES = Object.freeze([

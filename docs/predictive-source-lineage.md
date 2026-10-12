@@ -164,8 +164,8 @@ confirmation alone establishes none of the other final-label checks, including
 qualified completion, identity, current outcome-use rights or a persisted
 participation/reconciliation decision. The witnesses are research application
 preparation, not a new stored decision format or SQL activation. Existing
-features, decisions and labels still use the released contracts until the
-shared SQL rule and forward recorders are implemented together.
+features, decisions and labels still use the released contracts until forward
+recorders adopt the shared SQL rule together.
 
 `sourceFacts.ts` and the persisted `replaySourceStatsFacts()` now implement the
 application's preliminary research read boundary: complete raw-chain discovery
@@ -174,8 +174,42 @@ canonical filtering, explicit withholding and exact binding tokens. Revision
 knowledge is no earlier than its first binding recorder time. A new binding
 can reuse an unchanged revision while preserving its new provenance. This API
 does not feed existing feature, reconciliation, participation or label paths;
-it cannot substitute for the shared SQL head checker those paths still need.
+its output is now independently cross-checked by the SQL witness kernel below.
 Its `recorded-lineages-only` coverage establishes no eligible population.
+
+### Shared SQL witness kernel (0008)
+
+[`0008_predictive_source_witnesses.sql`](../db/migrations/0008_predictive_source_witnesses.sql)
+adds `predictive_source_witness_at` and `predictive_source_witness_check` as private
+kernels for future consumer recorders. They discover every cutoff-visible raw
+lineage in the explicit profiles, reproduce historical v1/v2 plans, replan
+current routing at the requested cutoff and apply canonical filtering last.
+They mirror the application's head references, withheld routing, missing entities
+and digest exactly. Bounds are 16 profiles, 64 entity filters, 256 raw lineages,
+8,192 events and 256 events per lineage; overflow refuses rather than truncates.
+
+The role-checked `predictive_source_witness(request)` wrapper is the only granted
+entry point. Replay and recorder members can call it; PUBLIC and the application
+roles cannot call private kernels or supply an access clock. Current rights use
+the database clock, including every historical context profile. Denial returns
+empty, explicitly unavailable evidence. The verified application reader compares
+the SQL witness with its independently hydrated witness in the same read-only,
+repeatable-read transaction and refuses any mismatch.
+
+For future writers, the private checker first requires the exact recomputed
+witness, so rehashing an omitted or fabricated head cannot satisfy it. With
+`require_current`, it also compares the complete evidence set at recording time
+and refuses withheld, missing or empty selections. An old cutoff witness can
+still verify historically after a later recapture, but cannot authorize current
+use; the revision ID may stay the same while the binding/token changes.
+
+SQL checks database metadata; it cannot verify filesystem bytes. The application
+still proves every cited raw/context file, and the kernel does not supply
+model-input/outcome-use authorization, population qualification, completion or
+participation evidence. No new consumer rows are recorded and no retention
+procedure changes in 0008. Active features/decisions/labels must adopt this
+contract in a later forward migration, together with their existing use-specific
+rights, database recorder clocks and complete retention closure.
 
 The current profile-wide discovery is deliberately conservative and bounded,
 including chains whose unrecorded current plan maps to a new destination.

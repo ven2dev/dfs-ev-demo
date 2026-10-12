@@ -445,3 +445,29 @@ isolated container recreated. A mistakenly renumbered six-row membership count
 was restored after the full gate exposed it; membership scope and runtime SQL
 did not change. The final full gate passes all 75 Node DB checks and 103 database
 tests, including 78 required predictive cases and eight creator-corpus cases.
+
+## PR B SQL witness parity (0008, 2026-10-12)
+
+Seven mandatory PostgreSQL cases establish the shared witness boundary. The
+existing canonical-read cases now also run the independent SQL reconstruction
+on every successful/withheld read. Expected binding/revision IDs, destinations,
+failure reasons and missing entities remain explicit fixture assertions; equality
+between implementations is additional evidence, not the sole oracle.
+
+| Case | Independent reasoning and limits |
+| --- | --- |
+| Player/team and renewal | Exact typed entity keys and recorder-returned binding/revision IDs must survive both readers. A requested unrelated entity is missing. Renewing equivalent internal-research rights changes no input evidence; neither query time nor a rights ID should fabricate a recapture. |
+| Rehashed forgeries | Delete heads, invent binding/revision/token values, alter missingness or change an unavailable reason, then deliberately recompute a valid digest. The SQL checker must still reject the proposal against its own metadata reconstruction. |
+| Current versus historical use | An unchanged recapture reuses its statistical revision but changes binding/token. Before recording the new binding the old witness is stale; afterward it is changed. The old cutoff still verifies historically. An unchanged empty witness cannot authorize current use. |
+| Rerouting before filtering | A bridge changes A to B before B has a stored source revision. A-only and B-only SQL queries must withhold. Expiring that identity makes routing unresolved and must affect an unrelated C filter too. Earlier A remains exactly unchanged. |
+| Privileges and access clock | Actual non-superuser replay and recorder logins can call only the guarded public wrapper. They cannot invoke private kernels or provide an access timestamp. A retention-only login refuses even after an accidental execute grant. Current revocation redacts an old cutoff; malformed/over-limit requests refuse. |
+| Upgrade | Seed real binding/revision rows under the actual v7 prefix, apply only 0008 and compare all source rows and seven historical ledger entries. Rerun is a no-op. The existing released-v4 upgrade separately preserves all five seeded creator-corpus tables through 0008. |
+| Parity failure | Inject a rehashed, omitted-head SQL response while the real application reader proves files in a read-only/repeatable-read transaction. It must throw and roll back without returning a numeric snapshot. The next genuine read succeeds. This is a fault-injection check of the comparison boundary, not another SQL forgery test. |
+
+Migration 0008 adds functions, not tables or retained provider bytes; the
+retention procedure is unchanged. The offline retained-file proof additionally
+cross-checks both real CSV witnesses through SQL with zero downloads and requires
+their unresolved `game-bridge-missing` state. These tests establish metadata/byte
+agreement within recorded-lineage research scope. They do not establish active
+feature/decision/label integration, qualified real bridges, complete population
+or a production scale/performance budget.

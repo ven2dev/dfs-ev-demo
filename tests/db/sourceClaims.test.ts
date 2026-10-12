@@ -248,12 +248,12 @@ it("CSV source migration upgrades released v4 preserving creator corpus evidence
     expect(ledger[3].filename).toBe("0004_creator_corpus_projection.sql");
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7], schemaVersion: 7 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8], schemaVersion: 8 });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(upgraded.slice(0, 4)).toEqual(ledger);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
     await store.publishSourceStats(sourceClaimFixture("after-corpus-upgrade"));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 7 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 8 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
   }, 4);
@@ -722,7 +722,7 @@ it("CSV binding migration upgrades v5 without changing released history and reru
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(7);
+    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(8);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
@@ -978,7 +978,7 @@ it("CSV unavailable retention re-applies pre-v7 legacy events with identical cou
     // Restore the same retained evidence and IDs into a fresh post-v7 database.
     // New timestamps are allowed; the deletion set and audit contract are not.
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(7);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(8);
       expect(await procedure(client)).not.toBe(oldProcedure);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
@@ -1301,6 +1301,190 @@ it("CSV consumer checks withhold stale routing and revoked access instead of rev
     expect(sourceUsageEvidence(denied, factKey()).state).toBe("withheld");
     expect(sourcePostWindowCapture(denied, witness, post).reason).toBe("rights-not-in-force");
     expect(reads).toBe(0);
+  });
+});
+
+const witnessClock = async (client: Client) => (await client.query("SELECT predictive_source_time(clock_timestamp()) AS time")).rows[0].time as string;
+const sqlWitness = async (client: Client, request: ReturnType<typeof factRequest>) =>
+  (await client.query("SELECT predictive_source_witness($1) AS witness", [request])).rows[0].witness;
+const rehashWitness = (witness: ReturnType<typeof sourceFactWitness>) => {
+  const { cutoff: _cutoff, evidenceDigest: _digest, ...fields } = witness;
+  void _cutoff; void _digest;
+  return { ...witness, evidenceDigest: digest(canonical(fields)) };
+};
+
+it("CSV SQL witnesses match verified player and team reads, missing scope and equivalent rights renewal", async () => {
+  for (const feed of ["player", "team"] as const) await withProof(async ({ client, store }) => {
+    const { input, request } = await seedBinding(store, feed);
+    const a = await store.recordSourceNormalization("sql-witness-A", request, null);
+    const key = feed === "player" ? factKey() : "team-game-stats:" + NORMALIZATION_GAME + ":nfl:team:PHI";
+    const scoped = factRequest(request.profileId, a.event.recordedAt, [key]);
+    const witness = await sqlWitness(client, scoped);
+    expect(witness).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(scoped)));
+    expect(witness).toMatchObject({ heads: [{ bindingId: a.event.id, revisionId: a.event.revision!.id, entityKey: key }],
+      withheld: [], missingEntityKeys: [], coverage: "recorded-lineages-only", reason: null });
+    const renewedAt = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,decided_at,evidence_kind,evidence_reference)
+      VALUES ('sql-rights-renewed',$1,$2,'{internal-research}',$3,$3,'synthetic','fixture renewal')`,
+    [request.profileId, input.rightsDecisions[0].id, renewedAt]);
+    const later = await sqlWitness(client, { ...scoped, cutoff: await witnessClock(client) });
+    expect(later.evidenceDigest).toBe(witness.evidenceDigest);
+    expect(await sqlWitness(client, scoped)).toEqual(witness);
+    const missingKey = feed === "player" ? factKey("00-0000002") : "team-game-stats:" + NORMALIZATION_GAME + ":nfl:team:DAL";
+    expect(await sqlWitness(client, { ...scoped, entityKeys: [missingKey] })).toMatchObject({ heads: [], withheld: [], missingEntityKeys: [missingKey] });
+  });
+});
+
+it("CSV SQL witness checker rejects rehashed omissions, fabricated heads and forged unavailable reasons", async () => {
+  await withProof(async ({ client, store }) => {
+    const { request } = await seedBinding(store);
+    const a = await store.recordSourceNormalization("sql-forgery-A", request, null);
+    const witness = await sqlWitness(client, factRequest(request.profileId, a.event.recordedAt));
+    for (const forged of [{ ...witness, heads: [] }, { ...witness, missingEntityKeys: [factKey()] },
+      { ...witness, heads: [{ ...witness.heads[0], bindingId: "fabricated" }] },
+      { ...witness, heads: [{ ...witness.heads[0], revisionId: "fabricated" }] },
+      { ...witness, heads: [{ ...witness.heads[0], headToken: "0".repeat(64) }] }, { ...witness, reason: "rights-not-in-force" }]) {
+      await expect(client.query("SELECT predictive_source_witness_check($1,$2,false)", [rehashWitness(forged), await witnessClock(client)]))
+        .rejects.toMatchObject({ code: "23514", message: "predictive-source-witness-invalid" });
+    }
+    const at = await changeFactPlayer(client, store, "sql-forgery-B", "00-0000002", "player-map");
+    const stale = await sqlWitness(client, factRequest(request.profileId, at, [factKey("00-0000002")]));
+    expect(stale).toMatchObject({ heads: [], withheld: [{ reason: "source-binding-stale", entityKeys: [factKey("00-0000002")] }] });
+    for (const forged of [{ ...stale, withheld: [] }, { ...stale, withheld: [{ ...stale.withheld[0], reason: "source-row-missing" }] }])
+      await expect(client.query("SELECT predictive_source_witness_check($1,$2,false)", [rehashWitness(forged), await witnessClock(client)]))
+        .rejects.toMatchObject({ code: "23514", message: "predictive-source-witness-invalid" });
+    await client.query("SELECT predictive_source_witness_check($1,$2,false)", [stale, await witnessClock(client)]);
+  });
+});
+
+it("CSV SQL current witness checks invalidate same-revision recaptures and refuse unchanged empty evidence", async () => {
+  await withProof(async ({ client, store }) => {
+    const { request } = await seedBinding(store);
+    const a = await store.recordSourceNormalization("sql-current-A", request, null);
+    const witness = await sqlWitness(client, factRequest(request.profileId, a.event.recordedAt));
+    await client.query("SELECT predictive_source_witness_check($1,$2,true)", [witness, await witnessClock(client)]);
+    const empty = await sqlWitness(client, factRequest(request.profileId, a.event.recordedAt, [factKey("00-0000002")]));
+    await client.query("SELECT predictive_source_witness_check($1,$2,false)", [empty, await witnessClock(client)]);
+    await expect(client.query("SELECT predictive_source_witness_check($1,$2,true)", [empty, await witnessClock(client)]))
+      .rejects.toMatchObject({ code: "23514", message: "predictive-source-witness-not-current" });
+    await client.query("SELECT pg_sleep(0.005)");
+    const recapture = sourceClaimFixture("sql-current-recapture"); recapture.capturedAt = await witnessClock(client);
+    await store.publishSourceStats(recapture);
+    // Even before a new binding is recorded the old numerical payload cannot
+    // authorize current use. After recording, the revision is reused but the
+    // binding/token still invalidate the earlier witness.
+    await expect(client.query("SELECT predictive_source_witness_check($1,$2,true)", [witness, await witnessClock(client)]))
+      .rejects.toMatchObject({ code: "23514", message: "predictive-source-witness-not-current" });
+    const b = await store.recordSourceNormalization("sql-current-B", request, a.event.id);
+    expect(b.event.revision).toEqual(a.event.revision);
+    const current = await sqlWitness(client, factRequest(request.profileId, b.event.recordedAt));
+    expect(current.heads[0]).toMatchObject({ bindingId: b.event.id, revisionId: a.event.revision!.id });
+    expect(current.evidenceDigest).not.toBe(witness.evidenceDigest);
+    await client.query("SELECT predictive_source_witness_check($1,$2,true)", [current, await witnessClock(client)]);
+    await client.query("SELECT predictive_source_witness_check($1,$2,false)", [witness, await witnessClock(client)]);
+    await expect(client.query("SELECT predictive_source_witness_check($1,$2,true)", [witness, await witnessClock(client)]))
+      .rejects.toMatchObject({ code: "23514", message: "predictive-source-witness-not-current" });
+  });
+});
+
+it("CSV SQL witnesses expand unrecorded reroutes and unresolved identity before canonical filtering", async () => {
+  await withProof(async ({ client, store }) => {
+    const { request } = await seedBinding(store);
+    const a = await store.recordSourceNormalization("sql-routing-A", request, null);
+    const before = await sqlWitness(client, factRequest(request.profileId, a.event.recordedAt));
+    const at = await changeFactPlayer(client, store, "sql-routing-B", "00-0000002", "player-map");
+    for (const key of [factKey(), factKey("00-0000002")]) {
+      const req = factRequest(request.profileId, at, [key]);
+      expect(await sqlWitness(client, req)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(req)));
+      expect(await sqlWitness(client, req)).toMatchObject({ heads: [], missingEntityKeys: [],
+        withheld: [{ reason: "source-binding-stale", routing: "known-destinations", entityKeys: [key] }] });
+    }
+    const fixture = await normalizationFixture();
+    const prior = fixture.bridgeRows.find((row) => row.id === "player-map")!;
+    if (prior.kind !== "player-bridge") throw new Error("fixture-player-bridge-missing");
+    const removedAt = await witnessClock(client);
+    const context: Dataset = { formatVersion: 2, profiles: [profile(BRIDGE_PROFILE)], rightsDecisions: [], artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+    addCapture(context, "sql-routing-expired", [revision("sql-routing-expired", "player-bridge",
+      { ...prior.data, effectiveTo: "2026-10-01T00:00:00.000Z" }, "sql-routing-B")], removedAt, BRIDGE_PROFILE);
+    await store.publish("sql-routing-expired", context, removedAt);
+    const unrelated = factRequest(request.profileId, removedAt, [factKey("00-0000003")]);
+    expect(await sqlWitness(client, unrelated)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(unrelated)));
+    expect(await sqlWitness(client, unrelated)).toMatchObject({ heads: [], missingEntityKeys: [],
+      withheld: [{ reason: "source-binding-stale", routing: "unresolved", entityKeys: [] }] });
+    expect(await sqlWitness(client, factRequest(request.profileId, a.event.recordedAt))).toEqual(before);
+  });
+});
+
+it("CSV SQL witness access uses database-clock rights and denies private kernels and unbounded requests", async () => {
+  await withProof(async ({ client, store, target }) => {
+    const { request, input } = await seedBinding(store);
+    const a = await store.recordSourceNormalization("sql-access-A", request, null);
+    const req = factRequest(request.profileId, a.event.recordedAt);
+    for (const role of ["predictive_replay", "predictive_recorder"]) await withLogin(client, target, [role], async (login) => {
+      expect(await sqlWitness(login, req)).toMatchObject({ heads: [{ bindingId: a.event.id }], reason: null });
+      for (const sql of ["SELECT predictive_source_witness_at($1,now())", "SELECT predictive_source_witness_check($1,now(),false)"])
+        await expect(login.query(sql, [req])).rejects.toMatchObject({ code: "42501" });
+      await expect(login.query("SELECT predictive_source_witness($1,now())", [req])).rejects.toMatchObject({ code: "42883" });
+    });
+    await withLogin(client, target, ["predictive_retention_owner"], async (login) => {
+      await expect(sqlWitness(login, req)).rejects.toMatchObject({ code: "42501" });
+      // A mistakenly granted EXECUTE still cannot bypass the membership guard.
+      const user = (await login.query("SELECT session_user AS name")).rows[0].name;
+      await client.query(`GRANT EXECUTE ON FUNCTION predictive_source_witness(jsonb) TO ${user}`);
+      await expect(sqlWitness(login, req)).rejects.toMatchObject({ code: "42501", message: "predictive-source-witness-not-authorized" });
+    });
+    for (const bad of [{ ...req, extra: true }, { ...req, profileIds: [] }, { ...req, profileIds: Array(17).fill(request.profileId) },
+      { ...req, entityKeys: Array(65).fill(factKey()) }, { ...req, entityKeys: [factKey() + ":extra"] },
+      { ...req, entityKeys: ["team-game-stats:" + NORMALIZATION_GAME + ":nfl:team:LAR"] }, { ...req, cutoff: "tomorrow" }])
+      await expect(sqlWitness(client, bad)).rejects.toMatchObject({ code: "23514", message: "predictive-source-witness-request-refused" });
+    const revokedAt = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,decided_at,evidence_kind,evidence_reference)
+      VALUES ('sql-access-revoked',$1,$2,'{}',$3,$3,'synthetic','fixture revocation')`, [request.profileId, input.rightsDecisions[0].id, revokedAt]);
+    expect(await sqlWitness(client, req)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(req)));
+    expect(await sqlWitness(client, req)).toMatchObject({ reason: "rights-not-in-force", heads: [], withheld: [], missingEntityKeys: [] });
+  });
+});
+
+it("CSV SQL witness migration upgrades v7 preserving bindings and prior migration history", async () => {
+  await withProof(async ({ client, store, target }) => {
+    const { request } = await seedBinding(store);
+    const a = await store.recordSourceNormalization("sql-upgrade-A", request, null);
+    const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    const bindings = (await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows;
+    const revisions = (await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows;
+    const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
+    const options = { ...target, files, verify: createCatalogVerifier(contracts) };
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8], schemaVersion: 8 });
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 7)).toEqual(ledger);
+    expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
+    expect((await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows).toEqual(revisions);
+    const scoped = factRequest(request.profileId, a.event.recordedAt);
+    expect(await sqlWitness(client, scoped)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(scoped)));
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 8 });
+    // The released-v4 upgrade test above seeds all five corpus tables and now
+    // runs through 0008; this focused v7 test seeds source bindings as well.
+  }, 7);
+});
+
+it("CSV SQL witness mismatch fails closed and restores the read-only replay transaction", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const { request } = await seedBinding(store);
+    const a = await store.recordSourceNormalization("sql-parity-A", request, null);
+    let checks = 0;
+    const tracked = { query: async (sql: string, params?: unknown[]) => {
+      const result = await client.query(sql, params);
+      if (sql === "SELECT public.predictive_source_witness($1) AS witness") {
+        expect((await client.query("SELECT current_setting('transaction_read_only') AS ro,current_setting('transaction_isolation') AS isolation")).rows[0])
+          .toEqual({ ro: "on", isolation: "repeatable read" });
+        result.rows[0].witness = rehashWitness({ ...result.rows[0].witness, heads: [] }); checks++;
+      }
+      return result;
+    } } as unknown as Client;
+    const reader = await createLocalPredictiveStore(tracked, target, artifacts);
+    await expect(reader.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt))).rejects.toThrow("stored-source-witness-mismatch");
+    expect(checks).toBe(1);
+    expect((await client.query("SELECT current_setting('transaction_read_only') AS ro")).rows[0].ro).toBe("off");
+    expect((await store.replaySourceStatsFacts(factRequest(request.profileId, a.event.recordedAt))).heads[0].head.id).toBe(a.event.id);
   });
 });
 

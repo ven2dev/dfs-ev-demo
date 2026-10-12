@@ -8,6 +8,7 @@ import type { SourceStatsFeed } from "./sourceStats.ts";
 import { SOURCE_LINEAGE_VERSION, sourceBindingHeadsAt, sourceStatsRawKey, type SourceBindingEvent } from "./sourceLineage.ts";
 import { planSourceStatsFromReplay as planNormalization, sourceNormalizationBasis, SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
 import { SOURCE_FACT_BOUNDS, sourceFactHeadsAt, sourceFactRequest, sourceFactSnapshot, type SourceFactRequest } from "./sourceFacts.ts";
+import { sourceFactWitness } from "./sourceWitness.ts";
 import type { Artifact, Capture, Dataset, Decision, IdentityLink, Label, Observation, Profile, RecordedRetentionEvent, Request, RetentionEvent, RetentionResult,
   Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
@@ -572,7 +573,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // explicit profiles, verify them, replan, and only then filter canonically.
   // No SQL entity predicate may discard a rerouted successor or a new current
   // destination. Bounds refuse the entire read rather than returning a prefix.
-  const replaySourceStatsFacts = (input: SourceFactRequest) => transaction(async () => {
+  const readSourceStatsFacts = async (input: SourceFactRequest) => {
     const request = sourceFactRequest(input); const clock = await databaseClock();
     if (instant(request.cutoff) > instant(clock)) refuse("source-binding-future-cutoff-refused");
     const profiles = await profilesFor(request.profileIds);
@@ -603,6 +604,15 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const plans: SourceNormalizationPlan[] = [];
     for (const raw of requests) plans.push(await readSourceNormalization(raw, clock));
     return sourceFactHeadsAt(history, plans, request);
+  };
+  const replaySourceStatsFacts = (input: SourceFactRequest) => transaction(async () => {
+    const snapshot = await readSourceStatsFacts(input);
+    // SQL independently expands raw chains before canonical filtering and
+    // recomputes current plans/rights. The reader independently proves bytes;
+    // neither a hashed witness nor SQL metadata can substitute for that proof.
+    const sqlWitness = (await client.query("SELECT public.predictive_source_witness($1) AS witness", [snapshot.request])).rows[0].witness;
+    if (canonical(sqlWitness) !== canonical(sourceFactWitness(snapshot))) refuse("stored-source-witness-mismatch");
+    return snapshot;
   }, true);
 
   const publish = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {

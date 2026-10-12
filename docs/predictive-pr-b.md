@@ -14,7 +14,9 @@ The canonical stats read adapter now follows complete recorded raw lineages
 before filtering by canonical player/game. It reuses the verified binding
 reader, returns explicit withheld states, and pins binding provenance separately
 from unchanged statistical revisions. It remains a read-only research API;
-the shared SQL/feature/decision/label activation is still outstanding.
+the feature/decision/label activation is still outstanding. Forward migration
+0008 now independently recomputes the same witness in SQL, and every canonical
+research read requires exact agreement with it after verifying provider files.
 
 Shared consumer preparation now pins the exact bound head set in
 [`sourceWitness.ts`](../src/lib/predictive/sourceWitness.ts). Read-only
@@ -22,8 +24,8 @@ reconciliation, positive-usage and post-window source-capture checks use this
 same witness, including unresolved contributions. Query time alone does not
 invalidate it; recaptures do, even when they reuse a statistical revision.
 The post-window check follows the selected binding's exact capture. These
-helpers do not activate or persist features, decisions or labels; the SQL and
-downstream integration gate remains open. See
+helpers do not activate or persist features, decisions or labels; the downstream
+recorder integration gate remains open. See
 [the witness contract and limits](predictive-source-lineage.md#remaining-activation-work).
 
 ## Parent #52 acceptance criteria audit (2026-10-12)
@@ -39,7 +41,7 @@ real feed or for a scheduled predictive service.
 | --- | --- | --- |
 | Selected usage/opportunity, injury/availability, opponent and game-environment inputs are ingested | Fixture-backed QB passing-yards bundles; exact real player/team CSV persistence and normalization witnesses; offline schedule, identity and roster assessment. | Persist and qualify all seven selected capture groups, including raw injury/depth; complete applicable nine-market mappings; produce a usable real bundle with player and opponent context. |
 | Every feature value carries source, times, normalized identity and version/provenance | PR A observation/run manifests and PR B raw-row fingerprints, exact normalization dependencies, revision IDs and binding tokens. | Carry the verified CSV bindings through active feature manifests and dependent decisions/labels; prove the provenance contract for the remaining real adapters. |
-| Feature reads honor arbitrary cutoffs | Synthetic bundles and persisted raw/binding research reads cover before/at/after boundaries and late ingestion. | Implement the shared SQL/application binding-aware head rule and integrate real-source feature reads. A research fact snapshot is not yet a feature row. |
+| Feature reads honor arbitrary cutoffs | Synthetic bundles and persisted raw/binding research reads cover before/at/after boundaries and late ingestion. Forward 0008 cross-checks every research witness in SQL. | Integrate the shared SQL/application rule with real-source feature reads and recorder manifests. A research fact snapshot is not yet a feature row. |
 | Corrections preserve history | Immutable captures, append-only observation/raw-binding lineages, recapture/reappearance provenance, prior-cutoff replay and retention restoration regressions. | Preserve these guarantees across the active real-source consumers and remaining feed adapters; do not expose revisions through an older reader that ignores their binding head. |
 | Missing/stale/unsupported/unresolved inputs stay explicit | Missing/refused/ambiguous raw rows, stale/withheld bindings and unresolved routing withhold rather than expose stale numeric payloads; fixture windows retain gaps and known-absence quality. | Apply the same states to real feature construction and qualify injury/depth freshness semantics. Unknown availability cannot become healthy and missing participation cannot become zero. |
 | Identity resolution fails closed | Exact raw identity provenance, both-direction bridge ambiguity checks, kickoff-effective normalization and conservative routing before canonical filtering. | Register qualified real game/player/team bridges and dated membership evidence; integrate the same identity/head checks in downstream decisions and final labels. |
@@ -63,9 +65,10 @@ Evidence: [canonical research reader](../src/lib/predictive/sourceFacts.ts),
 and proof measurements are recorded in the
 [session handoff](predictive-session-handoff.md#latest-checkpoint-canonical-stats-read-adapter).
 
-The next integration unit is the shared binding-aware head rule across SQL and
-application feature, reconciliation, participation, final-label and post-window
-checks. Activate those consumers together. #90's PR #103 merged as `3daf1dc`
+The shared binding-aware SQL head/witness kernel and application research-read
+parity now exist in 0008. The next integration unit is adopting that rule in
+feature, reconciliation, participation, final-label and post-window recorders
+and their application readers. Activate those consumers together. #90's PR #103 merged as `3daf1dc`
 on 2026-10-12; the coordinated merge/renumber now places PR B after its released
 creator-corpus migration. A new forward activation migration can follow.
 Qualified completion, participation/zero-opportunity, complete population,
@@ -569,3 +572,39 @@ time was 7.97 seconds and maximum RSS 498,810,880 bytes (~476 MiB), measured,
 not capped. Evidence: `/private/tmp/dfs52-prb-consumers-proof.log` and
 `/private/tmp/dfs52-prb-consumers-proof-metrics.log`. Source qualification and the
 parent ACs remain incomplete; the #90 sequencing hold is resolved.
+
+## Shared SQL witness checkpoint (0008, 2026-10-12)
+
+Forward migration 0008 adds the private binding-aware witness reconstruction and
+checker plus a role-checked, database-clock public reader. Every
+`replaySourceStatsFacts()` read now verifies provider bytes and requires exact
+agreement between the application and SQL witnesses in one read-only,
+repeatable-read transaction. Rehashed omissions/fabrications refuse. Current-use
+checks reject stale/reused-revision bindings, withheld, missing and empty sets;
+historical witnesses still replay at their own cutoff. Source discovery expands
+all recorded raw lineages before canonical filtering, including destinations
+without stored revisions and unresolved routing.
+
+No new consumer tables, feature/decision/label activation or retention procedure
+are introduced. SQL proves metadata; the application retains byte verification.
+Internal-research access is not model-input/outcome authorization. The next
+forward migration must connect recorders/manifests and retention closure across
+all active consumers together. Source qualification and parent ACs remain open.
+
+Validation passes **873 jsdom + 633 Node tests**, **75 Node DB checks + 110
+database tests**, all **85 mandatory predictive** and **8 creator-corpus** cases,
+typecheck, lint, CI gate and production Webpack build. Seven mandatory tests add
+direct SQL forgery/currentness/roles/upgrade cases; their
+[oracles and limits](predictive-test-review.md#pr-b-sql-witness-parity-0008-2026-10-12)
+are documented. Released 0001–0004 and previous private 0005–0007 SQL/catalog
+contracts remain unchanged. Minimum readiness stays 2; maximum-known becomes 8.
+
+The schema-8 retained-file proof at 2026-10-12 21:28 UTC made **zero requests**,
+restored the same 4,517 player/130 team rows and verified both unavailable
+`game-bridge-missing` witnesses through SQL. Player/team fact reads measured
+389/59 ms; whole-process wall time was 8.08 seconds and maximum RSS 428,195,840
+bytes (~408 MiB), measured rather than capped. It published zero active canonical
+observations/features/labels. All database writes were disposable/local.
+Evidence: `/private/tmp/dfs52-prb-sql-witness-{db,node,jsdom,typecheck,lint,ci,build}.log`,
+`/private/tmp/dfs52-prb-sql-witness-proof.log` and
+`/private/tmp/dfs52-prb-sql-witness-proof-metrics.log`.
