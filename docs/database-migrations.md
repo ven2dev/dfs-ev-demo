@@ -167,6 +167,11 @@ Any local database that recorded the old synthetic v3/v4 must be recreated; the
 runner refuses it (a mandatory DB case checks this). Migration 0003 is frozen
 when PR A passes review, after which changes are new forward migrations.
 
+Independent review approved `d5c5c71` on 2026-10-11 with no confirmed defects,
+and the owner authorized push and opening PR A. The draft reset period is now
+closed: 0003 is frozen and further schema changes require a forward migration.
+Remote CI and the owner's merge remain pending; hosted activation stays behind #95.
+
 ## Generated catalog contracts
 
 `db/catalog-contracts/0001.json` and `0002.json` describe the application catalog

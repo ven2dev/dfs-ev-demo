@@ -1,17 +1,21 @@
 # #52 session handoff
 
-Updated 2026-10-11 after the second implementation review and exact-reference cleanup follow-up. Resume from this state; do not restart the
+Updated 2026-10-11 after independent review approved `d5c5c71` for push and PR. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
-## Current state: PR A implemented, awaiting review
+## Current state: PR A reviewed, approved for publication
 
 - Workspace: `/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo`.
 - Branch: `feature/dfsEV-52-evidence-schema`, taken from the relay WIP tip
   `1ef86ba` (the earlier synthetic-proof work was carried forward, not discarded).
 - PR A (real-source schema and replay core) was built in ten steps, then the
   first review's nine findings, second review's four P1 blockers and two cleanup
-  follow-up findings plus the final-file reference finding were fixed (below). The owner requested no push or PR yet. The next action is independent
-  review of these fixes, then the owner's decision on publishing PR A.
+  follow-up findings plus the final-file reference finding were fixed (below).
+  Independent review found no confirmed defects in `d5c5c71`; the owner approved
+  push and opening PR A on 2026-10-11. Migration 0003 is now frozen under the
+  [review gate](database-migrations.md#pr-a-draft-period-reset-of-migration-0003).
+  Publish this branch for review and require remote CI before merge. Parent #52
+  remains open for PR B and the broader ingestion/operation criteria.
 - The approved design is [`predictive-real-source-schema.md`](predictive-real-source-schema.md)
   revision 2 and [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md)
   revision 2. Section 14 of the DDL lists what each step built and every
