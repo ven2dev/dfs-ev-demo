@@ -38,7 +38,7 @@ export const planSourceStatsFromReplay = (source: SourceStatsReplay, context: Co
     }
   };
   const result = (reason: string | null, candidate: Candidate | null = null) => {
-    const binding = { version: SOURCE_NORMALIZATION_VERSION, cutoff: request.cutoff, sourceInputDigest: source.inputDigest,
+    const binding = { version: SOURCE_NORMALIZATION_VERSION, cutoff: request.cutoff, sourceRequest: { ...request }, sourceInputDigest: source.inputDigest,
       sourceProfileId: request.profileId, rawSourceKey: rows[0]?.rawKeySha256 ?? null,
       sourceCaptures: captures, sourceRows: rows.map(({ id, rowOrdinal, selectedSha256 }) => ({ id, rowOrdinal, selectedSha256 }))
         .sort((a, b) => a.rowOrdinal - b.rowOrdinal),
@@ -126,3 +126,5 @@ export const planSourceStatsNormalization = (source: SourceStatsReplay, context:
   planSourceStatsFromReplay(source, { ...context, replay: source.status === "observed-source-claim"
     ? createReplay(context, source.evidence.request.cutoff, accessAt, "internal-research")
     : replayObservations([], new Set()) }, accessAt);
+
+export type SourceNormalizationPlan = ReturnType<typeof planSourceStatsFromReplay>;

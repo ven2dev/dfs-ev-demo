@@ -4,7 +4,8 @@ Updated 2026-10-11. PR A merged as [PR #102](https://github.com/ven2dev/dfs-ev-d
 `d934432e8aa32a38226c65306592b77e04e05f01`. Migration 0003 is frozen.
 PR B starts from that main revision on `feature/dfsEV-52-real-source-ingestion`
 in `/private/tmp/dfs-ev-52-pr-b`. Offline qualification and local raw CSV claims
-persistence and canonical normalization planning are implemented. Canonical
+persistence and canonical normalization planning are implemented. The raw/canonical
+correction-lineage design also has an executable pure contract. Database binding
 publication remains next; this does not finish PR B or parent #52.
 
 ## Implemented increment
@@ -199,7 +200,13 @@ Evidence: `/private/tmp/dfs52-prb-normalization-proof.json`.
 
 The released JSON observation path still expects revision arrays; it cannot
 hydrate CSV rows as canonical evidence. Staged row projections do not authorize
-normalization. The next adapter must:
+normalization. The [source-lineage design](predictive-source-lineage.md) now defines
+the separate raw binding chain and per-entity canonical chains, with a tested
+append/attach/withhold transition planner and cutoff-head selector. Identity
+rerouting follows the raw chain before selecting a canonical entity, so an old
+player/game contribution cannot remain active. A missing raw row withholds the
+contribution without generating absence, zero or DNP. These are pure functions;
+no binding table or canonical writer is enabled. The next adapter must:
 
 1. Record the planned binding atomically with canonical evidence, revalidating it
    at publication under the database clock. Add database-enforced exact row/
@@ -212,7 +219,8 @@ normalization. The next adapter must:
    publishing `absence-v1`, not a missing-row inference from a probe.
    The released source key includes the canonical entity: an identity correction
    that changes that entity cannot simply be appended to its current chain. The
-   forward binding design must explicitly handle this case before enabling writes.
+   forward recorder must enforce the separate raw/canonical chains described
+   above before enabling writes.
 3. Include row bindings, normalization witnesses and dependent canonical rows in
    retention, and stamp new decision knowledge times with the database clock.
 4. Keep target/player normalization bounds separate from shared full-file parsing.
@@ -281,3 +289,13 @@ cover replay-only access/read isolation, reverse identity conflicts and mixed
 artifact scoping, raw tampering, and schedule alias conflicts outside the mapped
 game. The extended real-file proof above also passes. This increment changes no
 SQL migration, catalog contract, application route or readiness version.
+
+The raw-lineage increment adds **42 pure cases**, bringing the complete Node
+suite to **603**. All **831 jsdom** cases and the PostgreSQL gate (**74 Node
+checks + 62 DB tests**, all **45** required predictive cases) pass, as do
+typecheck and lint. The test fixture for team-only lineage deliberately removes
+player authorization links; the full validation path correctly refuses a
+player link on a team-only source profile. The lineage functions remain outside
+the publication path. Their synthetic history checks do not prove SQL clock,
+privilege, concurrency or retention enforcement. Migration 0003 and its released
+contract remain untouched; no additional migration is introduced here.

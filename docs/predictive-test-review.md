@@ -6,6 +6,32 @@ readiness tests adjusted for v3. The governing behavior is documented in the
 [ingestion contract](predictive-ingestion.md); these tests establish synthetic
 local persistence behavior, not real-source qualification or model validity.
 
+## PR B raw lineage contract tests (2026-10-11)
+
+The next recorder's pure contract adds 42 cases; it adds no DB table or writer.
+Fixtures specify raw binding IDs and per-entity observation predecessors by hand,
+without asking the transition planner to generate expected links. Explicit
+raw-key tuples check profile/player/team identity separation. A/B/A player and
+game rerouting tests assert which actual observation contributes at each cutoff:
+the previous canonical entity cannot retain a contribution after the raw head
+has moved. Returning to an entity resumes its own observation chain. Identical
+recaptures attach the existing observation while retaining the newer binding's
+exact provenance. Team-only lineage uses no player bridge/link.
+
+Missing-row withholding creates no observation, absence, DNP or numeric zero;
+reappearance attaches or appends to the earlier entity chain as appropriate.
+Late recording cannot backdate knowledge to the source capture or plan cutoff.
+Equal recorder times follow explicit predecessors. Branches, missing/cross-profile
+ancestors, cycles, wrong canonical predecessors, duplicate observation reuse,
+changed payloads, unsupported parser/projection versions, knowledge-time
+regression and malformed identities refuse with specific errors. Corrupt future
+bindings leave earlier cutoff heads unchanged; unreadable recorder times refuse.
+
+These are synthetic in-memory events, not stored publication evidence. The
+[lineage design](predictive-source-lineage.md) lists the required recorder,
+head-aware SQL/hydration, current-rights, concurrency and retention integration
+checks. A recomputed plan digest cannot substitute for those checks.
+
 ## PR B normalization planner tests (2026-10-11)
 
 The planner has 32 new pure cases and four additional mandatory DB cases,

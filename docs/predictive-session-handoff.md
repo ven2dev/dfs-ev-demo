@@ -3,7 +3,7 @@
 Updated 2026-10-11 after PR A merged and PR B began. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
-## Current state: PR A merged; PR B normalization planner implemented
+## Current state: PR A merged; PR B normalization and lineage planners implemented
 
 - PR B workspace: `/private/tmp/dfs-ev-52-pr-b`; branch:
   `feature/dfsEV-52-real-source-ingestion`, created from merged main `d934432`.
@@ -34,7 +34,10 @@ completed work or repeat source downloads merely to recover context.
   planning is now implemented too: exact source-row/bridge/schedule bindings,
   kickoff-effective player identity, current internal-research rights and scoped
   conflict detection. The persisted planner works read-only through replay-only
-  access. Actual canonical publication/binding persistence remains next. See
+  access; that checkpoint is committed locally as `f2c681b`. A subsequent pure
+  raw-lineage contract now defines append/attach/withhold, including identity
+  rerouting and cutoff selection before canonical routing. Actual canonical
+  publication/binding persistence remains next. See
   [PR B progress and measurements](predictive-pr-b.md).
 - PR B validation: 831 jsdom + 529 Node tests, typecheck, lint, and the complete
   disposable PostgreSQL gate (74 Node checks + 58 DB tests, all 41 mandatory
@@ -48,6 +51,14 @@ completed work or repeat source downloads merely to recover context.
   proof returns `game-bridge-missing` for both feeds with zero canonical writes.
   It changes no SQL/catalog/readiness artifacts or app route. The earlier
   browser/build numbers describe the CSV-storage checkpoint.
+  The subsequent raw-lineage contract passes all 603 Node tests (42 new cases),
+  alongside the 831 jsdom cases and unchanged full PostgreSQL gate. Typecheck
+  and lint pass. It adds no migration or canonical publication path. Final
+  Node evidence is `/private/tmp/dfs52-prb-lineage-node.log`; the full DB log is
+  `/private/tmp/dfs52-prb-normalization-db.log`. The jsdom portion of
+  `/private/tmp/dfs52-prb-lineage-app.log` passed all 831; that command's Node
+  portion exposed a team fixture with an invalid player identity link, fixed
+  before the final complete Node run.
 - The approved design is [`predictive-real-source-schema.md`](predictive-real-source-schema.md)
   revision 2 and [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md)
   revision 2. Section 14 of the DDL lists what each step built and every
@@ -168,11 +179,14 @@ knowledge times from the database clock (DDL section 14, step 8 nuance) and own
 automatic absence detection from real files.
 
 Next persist canonical source-row/transform/bridge bindings as described in
-`predictive-pr-b.md`. The planner is implemented; its output is ephemeral and
+`predictive-pr-b.md` and the [raw-lineage design](predictive-source-lineage.md).
+The normalization and lineage planners are implemented; their output is ephemeral and
 publishes no revision/predecessor. Revalidate current bindings/rights with the
-database clock at publication and re-parse/recompute them on hydration. Define
-correction behavior when identity mapping changes the canonical entity: v3's
-source key includes that entity, so it cannot simply cross the existing FK chain.
+database clock at publication and re-parse/recompute them on hydration. The
+lineage contract separates one raw binding chain from per-entity canonical
+chains; identity rerouting supersedes the prior raw contribution while preserving
+v3's same-entity FK. SQL replay, reconciliation, participation and label checks
+must all use binding-aware heads; changing only feature replay is insufficient.
 Keep explicit disappearance semantics and retention closure. Preserve unresolved
 completion/population/membership states. 0004 is local and unmerged; coordinate
 numbering before PR review. Never edit 0003.
