@@ -3,6 +3,14 @@
 Updated 2026-10-12 after PR B canonical stats read adapter. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
+The owner asked whether the issue's ACs are complete. **No:** the
+[nine-criterion audit](predictive-pr-b.md#parent-52-acceptance-criteria-audit-2026-10-12)
+maps the tested foundation to the remaining full-parent scope. Real-file proof
+still yields no usable bundle. Shared downstream head activation, qualified
+source evidence, remaining feed/market mappings and bounded operating proofs
+remain outstanding. The audit adds no runtime/schema changes or new validation
+claims; `e8e76e7` remains the latest tested code checkpoint.
+
 ## Current migration coordination (2026-10-12)
 
 The owner approved **#90 merging first and owning 0004**. After it merges, merge

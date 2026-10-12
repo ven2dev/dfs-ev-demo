@@ -16,6 +16,53 @@ reader, returns explicit withheld states, and pins binding provenance separately
 from unchanged statistical revisions. It remains a read-only research API;
 the shared SQL/feature/decision/label activation is still outstanding.
 
+## Parent #52 acceptance criteria audit (2026-10-12)
+
+**Parent #52 is not complete.** This audit follows the nine original criteria in
+[the issue](https://github.com/ven2dev/dfs-ev-demo/issues/52), rather than treating
+the first QB passing-yards slice or passing tests as a scope reduction. PR A's
+merged foundation and PR B's research staging establish the behaviors below
+within their implemented paths; they do not yet establish them for every selected
+real feed or for a scheduled predictive service.
+
+| Acceptance criterion | Evidence in the implemented scope | What remains before parent closure |
+| --- | --- | --- |
+| Selected usage/opportunity, injury/availability, opponent and game-environment inputs are ingested | Fixture-backed QB passing-yards bundles; exact real player/team CSV persistence and normalization witnesses; offline schedule, identity and roster assessment. | Persist and qualify all seven selected capture groups, including raw injury/depth; complete applicable nine-market mappings; produce a usable real bundle with player and opponent context. |
+| Every feature value carries source, times, normalized identity and version/provenance | PR A observation/run manifests and PR B raw-row fingerprints, exact normalization dependencies, revision IDs and binding tokens. | Carry the verified CSV bindings through active feature manifests and dependent decisions/labels; prove the provenance contract for the remaining real adapters. |
+| Feature reads honor arbitrary cutoffs | Synthetic bundles and persisted raw/binding research reads cover before/at/after boundaries and late ingestion. | Implement the shared SQL/application binding-aware head rule and integrate real-source feature reads. A research fact snapshot is not yet a feature row. |
+| Corrections preserve history | Immutable captures, append-only observation/raw-binding lineages, recapture/reappearance provenance, prior-cutoff replay and retention restoration regressions. | Preserve these guarantees across the active real-source consumers and remaining feed adapters; do not expose revisions through an older reader that ignores their binding head. |
+| Missing/stale/unsupported/unresolved inputs stay explicit | Missing/refused/ambiguous raw rows, stale/withheld bindings and unresolved routing withhold rather than expose stale numeric payloads; fixture windows retain gaps and known-absence quality. | Apply the same states to real feature construction and qualify injury/depth freshness semantics. Unknown availability cannot become healthy and missing participation cannot become zero. |
+| Identity resolution fails closed | Exact raw identity provenance, both-direction bridge ambiguity checks, kickoff-effective normalization and conservative routing before canonical filtering. | Register qualified real game/player/team bridges and dated membership evidence; integrate the same identity/head checks in downstream decisions and final labels. |
+| Scheduled syncs are idempotent, bounded, observable and documented | Local exact-ID retries, atomic publication/rollback, acquisition/read caps, private journals and measured disposable-database proofs. | Complete the bounded multi-feed pilot, retry/checkpoint recovery, indexed scale and runtime/memory/storage budgets, then scheduling and hosted operation after #95 and owner-approved rights/persistence/budgets. No scheduler is active. |
+| Tests cover boundaries, corrections, missingness, staleness, ambiguity, retries and no look-ahead | At code checkpoint `e8e76e7`, 831 jsdom + 616 Node tests and 74 Node DB checks + 92 DB tests passed, including 75 mandatory predictive cases. | Add SQL/application parity and end-to-end real-binding cases for features, reconciliation, participation, labels and post-window captures; test remaining adapters and pilot failure/retry behavior. Current counts are not evidence of unimplemented behavior. |
+| Storage, indexes, retention, provider cost and licensing/display constraints are documented | Reviewed schema/operations guides, private content-addressed artifacts, execute-only retention/recovery, cross-version audit parity and local row/index/process measurements. | Qualify indexed roster-scale queries and enforce measured operating budgets; resolve outstanding provider-use/retention and hosted rollout gates. Research measurements are not production capacity evidence. |
+
+The latest retained-file proof (2026-10-12 17:46 UTC, code `e8e76e7`) made zero
+requests and restored 4,517 player rows (4,512 typed, five refused) plus 130 typed
+team rows. Both canonical reads returned **zero usable heads** and a
+`game-bridge-missing` binding with unresolved routing. It published **no active
+canonical observations, features or labels**. This demonstrates safe refusal and
+reproducible storage, not usable real predictive inputs or model readiness.
+
+Evidence: [canonical research reader](../src/lib/predictive/sourceFacts.ts),
+[persisted reader and publication](../src/lib/predictive/persistence.ts),
+[pure routing/provenance cases](../tests/predictive/sourceFacts.test.ts),
+[mandatory database cases](../tests/db/sourceClaims.test.ts),
+[test reasoning](predictive-test-review.md), and
+[operating and rights policy](predictive-data-operations.md). The checkpoint logs
+and proof measurements are recorded in the
+[session handoff](predictive-session-handoff.md#latest-checkpoint-canonical-stats-read-adapter).
+
+The next integration unit is the shared binding-aware head rule across SQL and
+application feature, reconciliation, participation, final-label and post-window
+checks. Activate those consumers together. #90's PR #103 is still open at this
+audit; its merge must precede PR B migration renumbering and a new activation
+migration. Application preparation can continue while that ordering is pending.
+Qualified completion, participation/zero-opportunity, complete population,
+membership and schedule/history evidence remain separate source gates; a
+correct head rule cannot manufacture them. Model evaluation belongs to #54 and
+product UI integration to #53, rather than being additional #52 implementation.
+
 ## Migration ordering decision (2026-10-12)
 
 The owner approved #90 landing first: its creator-corpus migration owns 0004.
