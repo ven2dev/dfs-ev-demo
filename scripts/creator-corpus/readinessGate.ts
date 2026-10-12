@@ -106,6 +106,21 @@ export const parsePrivateGateRecord = (input: unknown): PrivateGateRecord => {
   return { formatVersion: 1, eligibleCreatorKeys: keys, saltHex: value.saltHex };
 };
 
+export const verifyReadinessGate = (
+  gate: ReadinessGate,
+  privateRecord: PrivateGateRecord,
+  creatorKeys: readonly string[]
+): void => {
+  const keys = sortedUniqueKeys(creatorKeys);
+  if (
+    JSON.stringify(keys) !== JSON.stringify(privateRecord.eligibleCreatorKeys) ||
+    gate.eligibleCreatorCount !== keys.length ||
+    computeGateCommitment(keys, privateRecord.saltHex) !== gate.commitment.digest
+  ) {
+    fail("readiness-gate-verification-failed");
+  }
+};
+
 export const buildReadinessGate = ({
   keys,
   saltHex,

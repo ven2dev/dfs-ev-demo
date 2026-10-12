@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { CaptureEvent, CaptionKind } from "../../src/lib/creatorCaptures.ts";
 import type { DecisionEvent, DecisionsFile } from "../../src/lib/creatorDecisions.ts";
 import type { ClassificationStatus, ReasonCode } from "../../src/lib/creatorVideoRule.ts";
-import { rebuildDiscovery } from "./commands.ts";
+import { CommandError, rebuildDiscovery } from "./commands.ts";
 import type { Registration } from "./creatorInputs.ts";
 import type { DecisionNotApplied, DiscoveryFile } from "./discoveryFile.ts";
 import type { ReadinessGate } from "./readinessGate.ts";
@@ -129,6 +129,16 @@ export type CorpusStoredState = {
   imports: CorpusStoredImport[];
 };
 
+export type CorpusImportSource = {
+  captures: readonly CaptureEvent[];
+  decisions: DecisionsFile;
+  discovery: DiscoveryFile;
+  registration: Registration;
+  gate: ReadinessGate;
+  fingerprints: CorpusInputFingerprints;
+  now: Date;
+};
+
 export type CorpusImportAudit = Omit<CorpusStoredImport, "importId">;
 
 export type CorpusHistoryRefusal = {
@@ -177,7 +187,7 @@ const captureProjections = (events: readonly CaptureEvent[]): CorpusCaptureProje
       captionKind: event.captionKind,
       transcriptSha256: event.sha256,
       transcriptCharacters: event.characters,
-      capturedAt: event.capturedAt,
+      capturedAt: new Date(event.capturedAt).toISOString(),
     };
   });
 };
@@ -192,7 +202,7 @@ const decisionProjections = (file: DecisionsFile): CorpusDecisionProjection[] =>
       decisionKind: event.decision,
       reason: event.reason,
       ruleVersion: event.ruleVersion,
-      decidedAt: event.decidedAt,
+      decidedAt: new Date(event.decidedAt).toISOString(),
     }))
   );
 
@@ -210,7 +220,7 @@ const gateProjection = (gate: ReadinessGate): CorpusGateProjection => ({
   endWeek: gate.collectionWindow.endWeek,
   collectionSeasonType: gate.collectionWindow.seasonType,
   ruleVersion: gate.ruleVersion,
-  registeredAt: gate.registeredAt,
+  registeredAt: new Date(gate.registeredAt).toISOString(),
 });
 
 const apiProjections = (discovery: DiscoveryFile): CorpusApiVideoProjection[] => {
@@ -236,10 +246,10 @@ const apiProjections = (discovery: DiscoveryFile): CorpusApiVideoProjection[] =>
       return {
         creatorKey: creator.key,
         videoId: video.videoId,
-        publishedAt: video.publishedAt,
+        publishedAt: new Date(publishedAt).toISOString(),
         durationSeconds: video.durationSeconds,
         liveBroadcastContent: video.liveBroadcastContent,
-        apiFetchedAt: video.apiFetchedAt,
+        apiFetchedAt: new Date(fetchedAt).toISOString(),
         season: classified.season,
         week: classified.week,
         seasonWeekProvenance: CORPUS_SEASON_WEEK_PROVENANCE,
@@ -317,21 +327,18 @@ export const planCorpusImport = ({
   fingerprints,
   stored,
   now,
-}: {
-  captures: readonly CaptureEvent[];
-  decisions: DecisionsFile;
-  discovery: DiscoveryFile;
-  registration: Registration;
-  gate: ReadinessGate;
-  fingerprints: CorpusInputFingerprints;
-  stored: CorpusStoredState;
-  now: Date;
-}): CorpusImportPlan => {
+}: CorpusImportSource & { stored: CorpusStoredState }): CorpusImportPlan => {
   assertInputsCoherent({ registration, gate, discovery, fingerprints });
   if (!Number.isFinite(now.getTime())) fail("invalid-import-time");
   const creatorKeys = new Set(discovery.creators.map((creator) => creator.key));
   if (captures.some((event) => !creatorKeys.has(event.creatorKey))) fail("unknown-capture-creator");
-  const rebuilt = rebuildDiscovery({ discovery, decisions, now });
+  let rebuilt: DiscoveryFile;
+  try {
+    rebuilt = rebuildDiscovery({ discovery, decisions, now });
+  } catch (error) {
+    if (error instanceof CommandError) return fail(error.code);
+    throw error;
+  }
   const decisionsNotApplied = rebuilt.decisionsNotApplied ?? [];
   const captureRows = captureProjections(captures);
   const decisionRows = decisionProjections(decisions);

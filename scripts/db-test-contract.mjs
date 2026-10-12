@@ -61,6 +61,9 @@ export const CORPUS_REQUIRED_CASES = Object.freeze([
   "corpus schema stores only bounded metadata and keeps owner, API and derived statuses separate",
   "corpus owner events, imports and gate registrations are append-only while API rows are replace-or-delete",
   "corpus importer role has only local projection privileges and PUBLIC/runtime roles have none",
+  "corpus importer publishes one atomic snapshot, appends only owner tails and reruns as a no-op",
+  "corpus importer verifies the connected local role before loading any private source",
+  "corpus importer fails on lock contention and rolls back a later publication error without partial rows",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({
