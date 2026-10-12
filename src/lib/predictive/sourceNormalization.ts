@@ -15,8 +15,8 @@ type Candidate = { kind: "player-game-stats"; data: PlayerGameStats } | { kind: 
 type Context = Pick<Dataset, "profiles" | "rightsDecisions" | "identityLinks"> & { replay: Replay };
 
 // This plans normalization from a verified raw replay; it cannot publish a
-// revision or infer its predecessor. Persistence must revalidate the binding
-// when it eventually records canonical observations. No IDs/windows are minted.
+// revision or infer its predecessor. The recorder independently revalidates
+// its binding before storing a research revision. No IDs/windows are minted.
 export const planSourceStatsFromReplay = (source: SourceStatsReplay, context: Context, accessAt: string) => {
   const { request, captures, rows } = source.evidence;
   const cutoff = instant(request.cutoff); const now = instant(accessAt);

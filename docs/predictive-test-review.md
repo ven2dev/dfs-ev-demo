@@ -6,6 +6,61 @@ readiness tests adjusted for v3. The governing behavior is documented in the
 [ingestion contract](predictive-ingestion.md); these tests establish synthetic
 local persistence behavior, not real-source qualification or model validity.
 
+## PR B bound source revisions tests (2026-10-11)
+
+Thirteen mandatory PostgreSQL cases bring the predictive requirement list to 58.
+The recorder test uses an actual non-superuser login with recorder/replay/harness
+memberships: it can execute the recorder and read evidence, but cannot INSERT
+bindings, revisions or association rows. Its returned timestamp lies between
+independent client wall-clock bounds, and SQL chooses it. A replay-only login
+probes `read only` / `repeatable read`; it cannot execute the recorder. Canonical
+observation, feature and label counts stay zero even though research revisions
+exist. The one-millisecond boundary checks visibility by recording time.
+
+Expected numeric values and predecessors are hand-specified: 80 becomes 95,
+identical recapture attaches the same revision, routing to player B creates a new
+entity root, and returning to A attaches A's prior unchanged revision. The test
+checks the actual contributing player at both cutoffs. Later capture/bridge times
+are deliberately distinct from earlier recording times. Disappearance, refused
+numbers and duplicate differing rows each produce a null-revision head, and
+reappearance follows that same raw chain without inventing zero or absence.
+
+Direct SQL negatives recompute both candidate and plan hashes after changing
+payload, row fingerprint, dependency set, raw identity, request context, links or
+rights. Hash equality cannot authorize a forged witness. Extra/null fields and
+unsupported request identities are refused. Immutable binding/revision mutation
+and generated JSON under a real CSV profile are refused too. Raw tampering uses
+a same-size byte mutation; association tampering deliberately bypasses only the
+fixture's administrator trigger. Hydration must refuse both. Rights revocation
+uses a later knowledge time and blocks historical reads and exact retries before
+byte hydration, including when those bytes are subsequently damaged.
+
+Freshness tests add new raw bytes, schedule correction and a reverse player
+conflict without recording a successor. Each current read has a null head; the
+complete earlier result stays equal. A later query clock alone stays usable.
+Concurrency creates two non-superuser sessions, observes both waiting behind a
+held publication lock and releases them together. Exactly one proposal with the
+same expected head commits; the other gets head-conflict, with one new binding
+and no duplicate unchanged revision.
+
+Retention tests independently count complete lineages, including an ancestor
+whose source file is outside the scope being retained. No older/newer binding
+can survive to become a head. Unrelated team evidence and out-of-scope raw bytes
+remain. A real retention-only login performs the removal and file cleanup through
+execute-only APIs. Tombstone IDs independently match the canonical audit digest.
+A second fresh database reconstructs identical evidence/binding IDs and re-applies
+the bridge deletion with matching counts/digest; its new recorder clocks need
+not match. This proves deletion-set parity, not recovery of old SQL timestamps.
+The v4 upgrade test preserves complete existing raw rows and all four ledger
+entries, then verifies v5 and its no-op. The bootstrap table inventory and older
+v2/v3 upgrade assertions are explicitly extended for the new prefix.
+
+Synthetic fixtures establish these storage contracts. They qualify no real
+bridge/provider, completion source or population and activate no model/labels.
+No generated source blob is introduced; released rollback, orphan sweep and
+queued-cleanup cases remain the filesystem crash/recovery proof. Full downstream
+activation and recording of unavailable context plans are still next.
+
 ## PR B raw lineage contract tests (2026-10-11)
 
 The next recorder's pure contract adds 42 cases; it adds no DB table or writer.

@@ -1,9 +1,10 @@
 # PR B canonical source lineage
 
-This is the next recorder's design and executable pure contract, implemented in
-`sourceLineage.ts`. **It is not a database schema or a publication API.** The
-read-only normalization planner is implemented; canonical CSV publication,
-binding storage and hydration remain unimplemented. Migration 0003 is frozen.
+The pure contract in `sourceLineage.ts` now has a PostgreSQL recorder and verified
+hydration path under forward migration 0005. **These canonical source revisions
+remain internal research staging.** They do not enter `predictive_observations`,
+model inputs, participation/reconciliation decisions or labels. Full activation
+must update every reader's head rules together. Migration 0003 is frozen.
 
 ## Two identities, two chains
 
@@ -55,9 +56,57 @@ same raw chain. An actual provider change to a raw-key component is a separate
 remove/add case requiring compatible complete snapshot evidence; do not infer
 a relationship from names or equal numeric values.
 
-## Required database implementation
+## Storage checkpoint implemented in 0005
 
-The following remains work for a forward migration and its integration tests:
+`recordSourceNormalization(id, requestWithoutCutoff, expectedHeadId)` chooses its
+cutoff from the database clock, verifies raw CSV/JSON evidence and calls the
+execute-only recorder. SQL independently reconstructs the exact raw rows,
+canonical identity, effective player bridge, schedule context, links, decisions,
+rights and candidate. A correctly rehashed forged candidate is refused. A global
+publication lock and SHARE evidence locks protect the validation; expected-head
+comparison prevents concurrent branching. Binding ID retries must match the
+original request/predecessor and have current rights, and reverify original files.
+No caller supplies `recorded_at`.
+
+Bindings reference raw captures/rows, every relevant bridge/schedule head,
+identity links, reconciliation decisions and rights through restrictive foreign
+keys. Positive candidates append or attach revisions in
+`predictive_source_stats_revisions`; unavailable raw rows create a null-revision
+binding. This checkpoint records `source-row-missing`, `source-row-refused` and
+`source-row-ambiguous`. Missing/ambiguous captures and unresolved/conflicting
+context remain read-only plans and are not recordable yet. A disappeared row
+never becomes zero, confirmed absence or an absence-v1 observation.
+
+`replaySourceNormalization(request)` uses a replay-only, repeatable-read,
+read-only snapshot. It verifies stored association sets, recomputes each original
+plan using its original knowledge/access clocks and independently validates the
+raw/canonical lineage. It separately checks current research rights before
+hydrating historical bytes. It then replans at the requested cutoff: unrecorded
+new raw/context evidence withholds the contribution as `source-binding-stale`.
+There is no fallback to an older usable binding. A cutoff-only change or renewal
+of equivalent research rights does not manufacture a statistical correction.
+Stale/revoked responses expose no historical canonical payload.
+
+Verified files are cached only within one operation and the cache is discarded
+at transaction end. Reads refuse more than 256 bindings or 20 MB of distinct
+verified source bytes. These are explicit operation bounds, not a production
+throughput guarantee. A generated JSON artifact under a real CSV profile cannot
+bypass the staging boundary; the existing synthetic JSON harness remains separate.
+
+Retention deletes every binding and canonical revision in an affected raw
+lineage, including ancestors and descendants, whenever it removes a cited raw
+capture/row, bridge/schedule capture/artifact/observation or decision. This is
+stronger than removing only the tail: an earlier binding cannot reactivate.
+Raw files not included in the requested source scope may survive, but require
+fresh recording. Associations are deleted before their restrictive references.
+New audit kinds/counts appear only when those rows exist, preserving older
+retention audit parity. Blob removal still uses the released execute-only APIs
+and digest locks. There are no new generated blob files to recover.
+
+## Remaining activation work
+
+The original implementation requirements below distinguish the completed
+storage boundary from the downstream work still needed:
 
 1. Add raw binding events with immutable ID, profile/raw key, unique predecessor,
    database recorder time, requested cutoff, plan/transform versions, state and
@@ -123,6 +172,21 @@ backdate knowledge to its source capture. Future invalid payloads do not poison
 earlier cutoffs, while unreadable recorder timestamps refuse because visibility
 cannot be decided.
 
-These tests exercise an in-memory contract. They do not establish database clock
-authority, role isolation, concurrency, rights enforcement, retention closure or
-raw-file authenticity. Those are mandatory in the forward integration above.
+The pure tests exercise an in-memory contract. Thirteen additional mandatory
+PostgreSQL cases establish recorder clock/role isolation, linear concurrent head
+selection, exact corrections and rerouting, missing/refused/ambiguous withholding,
+rehashed forgery refusal, raw-byte and association tamper refusal, current-rights
+revocation, stale unrecorded context, immutable rows, the JSON bypass guard,
+retention of whole raw lineages, restored deletion-set parity and v4 upgrade/no-op
+preservation. Expected values, revision predecessors and removal counts are
+hand-specified. Two independent sessions are observed waiting behind a held lock
+before the concurrent test releases them; it is not a timing-only race test.
+
+Restoration tests re-import identical evidence into fresh scratch databases and
+recreate binding IDs. They prove deletion-set/count/digest parity, not restoration
+of original database clocks. Tampering uses privileged fixture mutation solely
+to verify hydration refusal; those privileges are not granted to replay or
+recorder users. This checkpoint creates no generated file, so the released blob
+rollback/crash suite remains the filesystem recovery proof. Synthetic bridges
+and corrections do not qualify real providers or demonstrate observed provider
+corrections. Full feature/decision/label activation remains outstanding.

@@ -205,8 +205,10 @@ the separate raw binding chain and per-entity canonical chains, with a tested
 append/attach/withhold transition planner and cutoff-head selector. Identity
 rerouting follows the raw chain before selecting a canonical entity, so an old
 player/game contribution cannot remain active. A missing raw row withholds the
-contribution without generating absence, zero or DNP. These are pure functions;
-no binding table or canonical writer is enabled. The next adapter must:
+contribution without generating absence, zero or DNP. These functions defined
+the initial pure contract. The subsequent 0005 storage checkpoint below implements
+bindings and canonical source revisions in research staging. Activation still
+requires the following complete adapter boundary:
 
 1. Record the planned binding atomically with canonical evidence, revalidating it
    at publication under the database clock. Add database-enforced exact row/
@@ -299,3 +301,39 @@ player link on a team-only source profile. The lineage functions remain outside
 the publication path. Their synthetic history checks do not prove SQL clock,
 privilege, concurrency or retention enforcement. Migration 0003 and its released
 contract remain untouched; no additional migration is introduced here.
+
+
+## Bound source revisions checkpoint
+
+Forward migration 0005 now persists canonical source statistics, exact raw and
+context associations, and separate raw/canonical correction chains in internal
+research staging. The local store exposes `recordSourceNormalization` and
+`replaySourceNormalization`. Recorder-only writes, database clocks, complete
+SQL recomputation, original-byte hydration, expected-head concurrency, current
+research rights and whole-lineage retention are covered by mandatory disposable
+PostgreSQL tests. See [the implemented storage boundary](predictive-source-lineage.md#storage-checkpoint-implemented-in-0005).
+
+This supersedes the earlier statement that binding storage is unimplemented.
+It does **not** activate canonical observations, model reads or labels. The
+existing real archive still has no registered game bridges, so its normalization
+remains `game-bridge-missing`; no download or provider qualification occurred in
+this increment. The recorder currently accepts positive normalization plus
+missing/refused/ambiguous raw-row states. Context failures remain unrecordable
+read-only plans. The next implementation must expand those states and give
+feature, reconciliation, participation and label reads the same binding-aware
+heads before activation. Migration 0003 and committed 0004 remain unchanged;
+maximum-known advances to 5 while application readiness minimum stays 2.
+
+
+The bound-revision checkpoint passes **831 jsdom + 603 Node tests** with two
+workers, the complete disposable PostgreSQL gate (**74 Node DB checks + 75 DB
+Vitest tests**, all **58** mandatory predictive cases), typecheck, lint, CI-gate
+checks, `git diff --check` and local links in the four updated guides. Two default
+worker-count app attempts had timeouts in untouched UI/creator files under local
+machine load; all the same cases pass with `--maxWorkers=2`. No test timeout or
+repository test configuration was changed. The scratch lifecycle removed its
+Docker database. Logs: `/private/tmp/dfs52-prb-bindings-jsdom.log`,
+`/private/tmp/dfs52-prb-bindings-node.log` and
+`/private/tmp/dfs52-prb-bindings-db.log`. The new storage behavior is verified with
+synthetic fixtures; no additional provider download or real bridge qualification
+was performed. No persistent dev, hosted or Production database received 0005.

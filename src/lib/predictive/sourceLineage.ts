@@ -9,8 +9,8 @@ export const SOURCE_LINEAGE_VERSION = "source-normalization-lineage-v1";
 const MAX_EVENTS = 8192;
 type StatsRevision = Revision<"player-game-stats"> | Revision<"team-game-stats">;
 
-// This is an executable design for the next recorder, not a publication API.
-// A binding's clock/IDs must eventually be assigned by that database recorder.
+// Pure lineage validation is independent of the database recorder. The
+// recorder assigns binding IDs/clocks; these functions authorize no writes.
 // A plan's digest is an integrity check, never proof of source authorization.
 export type SourceBindingEvent = {
   version: typeof SOURCE_LINEAGE_VERSION; id: string; predecessorId: string | null; recordedAt: string;

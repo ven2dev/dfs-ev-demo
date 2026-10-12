@@ -68,6 +68,19 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV normalization scoped reads include reverse identity conflicts without importing unrelated correction chains",
   "CSV normalization refuses tampered raw files before proposing a canonical payload",
   "CSV normalization scoped reads retain schedule alias conflicts outside the mapped canonical game",
+  "CSV binding recorder uses database time and execute-only writes while replay remains read-only research staging",
+  "CSV bindings preserve numeric corrections, unchanged recaptures and player A to B to A canonical chains",
+  "CSV bindings withhold disappearing, refused and conflicting raw rows and allow evidenced reappearance",
+  "CSV binding SQL rejects rehashed payload, row, dependency and raw identity forgeries and malformed plans",
+  "CSV binding stale source or bridge evidence withholds replay and SQL refuses stale heads and proposals",
+  "CSV binding hydration refuses altered associations and source bytes and current rights revocation blocks reads and retries",
+  "CSV binding retention removes entire cited raw lineages through execute-only access and preserves unrelated evidence",
+  "CSV binding team statistics persist independently and cutoff-only changes do not mark a binding stale",
+  "CSV binding concurrent recorders serialize and exactly one expected-head proposal commits",
+  "CSV binding unrecorded bridge conflicts withhold the current raw contribution without poisoning earlier cutoffs",
+  "CSV binding bridge retention removes ancestors and descendants and identical restored evidence re-applies its audit",
+  "CSV binding migration upgrades v4 without changing released history and reruns are no-ops",
+  "CSV binding canonical guard refuses generated JSON under real source profiles and immutable bindings cannot be rewritten",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({

@@ -21,6 +21,11 @@
       "version": 4,
       "filename": "0004_predictive_source_claims.sql",
       "sha256": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a"
+    },
+    {
+      "version": 5,
+      "filename": "0005_predictive_source_bindings.sql",
+      "sha256": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19"
     }
   ]
 }

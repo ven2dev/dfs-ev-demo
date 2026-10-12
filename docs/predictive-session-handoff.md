@@ -3,7 +3,7 @@
 Updated 2026-10-11 after PR A merged and PR B began. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
-## Current state: PR A merged; PR B normalization and lineage planners implemented
+## Current state: PR A merged; PR B bound source revisions in internal research staging
 
 - PR B workspace: `/private/tmp/dfs-ev-52-pr-b`; branch:
   `feature/dfsEV-52-real-source-ingestion`, created from merged main `d934432`.
@@ -37,7 +37,9 @@ completed work or repeat source downloads merely to recover context.
   access; that checkpoint is committed locally as `f2c681b`. A subsequent pure
   raw-lineage contract now defines append/attach/withhold, including identity
   rerouting and cutoff selection before canonical routing. Actual canonical
-  publication/binding persistence remains next. See
+  binding storage and hydration are now implemented in forward migration 0005
+  as internal research staging; activation in features/decisions/labels remains
+  next. See
   [PR B progress and measurements](predictive-pr-b.md).
 - PR B validation: 831 jsdom + 529 Node tests, typecheck, lint, and the complete
   disposable PostgreSQL gate (74 Node checks + 58 DB tests, all 41 mandatory
@@ -48,7 +50,7 @@ completed work or repeat source downloads merely to recover context.
   Production Webpack build, CI gate and diff whitespace checks also pass.
   The subsequent planner passes 561 Node tests, 74 DB Node checks and 62 DB
   tests (all 45 mandatory predictive cases), typecheck and lint. Its real-file
-  proof returns `game-bridge-missing` for both feeds with zero canonical writes.
+  proof returns `game-bridge-missing` for both feeds with zero active canonical writes.
   It changes no SQL/catalog/readiness artifacts or app route. The earlier
   browser/build numbers describe the CSV-storage checkpoint.
   The subsequent raw-lineage contract passes all 603 Node tests (42 new cases),
@@ -59,6 +61,15 @@ completed work or repeat source downloads merely to recover context.
   `/private/tmp/dfs52-prb-lineage-app.log` passed all 831; that command's Node
   portion exposed a team fixture with an invalid player identity link, fixed
   before the final complete Node run.
+- The bound-revision checkpoint passes 831 jsdom + 603 Node tests (two workers),
+  74 Node DB checks + 75 DB tests, all 58 mandatory predictive cases, typecheck,
+  lint, CI-gate, whitespace and changed-guide links. Default worker-count app
+  runs timed out in untouched UI/creator tests under machine load; the same full
+  suites pass with `--maxWorkers=2`. Test timeouts/configuration were unchanged.
+  Evidence: `/private/tmp/dfs52-prb-bindings-jsdom.log`,
+  `/private/tmp/dfs52-prb-bindings-node.log`,
+  `/private/tmp/dfs52-prb-bindings-db.log`. Only disposable Docker databases
+  received 0005; the harness removed them. No provider files were downloaded.
 - The approved design is [`predictive-real-source-schema.md`](predictive-real-source-schema.md)
   revision 2 and [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md)
   revision 2. Section 14 of the DDL lists what each step built and every
@@ -167,7 +178,7 @@ for test oracles and crash-simulation limits.
    evidence, with strict ambiguity validation. Step 6 recompute-and-cite.
 3. The §7b candidate features (weather, venue, depth/teammate absences,
    targets per snap) and a defensive-scheme slot are reserved, not implemented.
-4. App readiness minimum remains **2**; this branch's maximum-known is **4**.
+4. App readiness minimum remains **2**; this branch's maximum-known is **5**.
    Production migrations, role setup and activation stay behind #95.
 5. No paid access, API key or issue comment is authorized by this work.
 
@@ -178,18 +189,20 @@ measuring correctness, memory and capture cost. PR B should stamp `decided_at`
 knowledge times from the database clock (DDL section 14, step 8 nuance) and own
 automatic absence detection from real files.
 
-Next persist canonical source-row/transform/bridge bindings as described in
-`predictive-pr-b.md` and the [raw-lineage design](predictive-source-lineage.md).
-The normalization and lineage planners are implemented; their output is ephemeral and
-publishes no revision/predecessor. Revalidate current bindings/rights with the
-database clock at publication and re-parse/recompute them on hydration. The
-lineage contract separates one raw binding chain from per-entity canonical
-chains; identity rerouting supersedes the prior raw contribution while preserving
-v3's same-entity FK. SQL replay, reconciliation, participation and label checks
-must all use binding-aware heads; changing only feature replay is insufficient.
-Keep explicit disappearance semantics and retention closure. Preserve unresolved
-completion/population/membership states. 0004 is local and unmerged; coordinate
-numbering before PR review. Never edit 0003.
+Bound canonical source revisions now persist and hydrate in internal research
+staging under 0005; see [the storage checkpoint](predictive-source-lineage.md#storage-checkpoint-implemented-in-0005).
+The recorder revalidates exact raw/context/current rights with database time;
+replay recomputes original plans from verified files and withholds unrecorded
+changes. Retention removes complete affected raw lineages, including ancestors,
+and associated canonical source revisions. These rows remain outside
+`predictive_observations`, features, decisions and labels. Positive plans and
+missing/refused/ambiguous raw rows are recordable; unavailable captures and
+context plans are not yet recordable. Expand those states, then implement one
+binding-aware head contract across SQL replay, reconciliation, participation,
+label and post-window checks before activating them. Changing only feature
+replay is insufficient. Preserve unresolved completion/population/membership.
+0004/0005 are local and unmerged; coordinate numbering before PR review. Never
+edit/reset 0003. No persistent dev, hosted or Production migration was run.
 
 ## Real-source findings and private evidence
 
@@ -208,7 +221,7 @@ Typed projection accepts 4,512 of 4,517 player rows; five lack raw GSIS IDs. All
 partition. Player/team passing parity remains a same-provider consistency check.
 Offline assessment measured 1.86 s wall and 444,760,064 bytes maximum RSS (~424 MiB).
 Raw SQL claims publication now imports all 4,517 player and 130 team records,
-with all five player refusals preserved. Canonical publication and ready-inputs
+with all five player refusals preserved. Active canonical publication and ready-inputs
 remain unimplemented/unqualified. The final retained-file proof at 2026-10-12
 02:29 UTC (2026-10-11 Los Angeles) measured player publish/replay at 3,031/289 ms,
 team at 111/12 ms, source-row relation storage at 5,922,816 bytes and whole-process
