@@ -1,8 +1,866 @@
 {
-  "catalogFingerprint": "12fd711c116f5d15a0ccb982ad80df3402c6ec63c53e9d02e50d19e1e90f0018",
+  "catalogFingerprint": "f7cc6ddec0e41825894ea357cb6e84157884e1aec6c5dd6fe2a6d03dac12f7c7",
   "contractVersion": 1,
   "formatVersion": 1,
   "objects": [
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.api_fetched_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "character varying(64)[]"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.classification_reasons"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "character varying(8)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.classification_rule_version"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "character varying(12)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.classification_status"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "character varying(32)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.creator_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 4,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.duration_seconds"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "character varying(8)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.live_broadcast_content"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.published_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 13,
+        "type": "character varying(12)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.review_status"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 7,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.season"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.season_week_provenance"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 14,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.snapshot_import_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "character varying(11)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.video_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 8,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.week"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 11,
+        "type": "character varying(14)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.caption_kind"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 14,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.captured_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "character varying(32)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.creator_key"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.event_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "character varying(11)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.event_kind"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 15,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.first_import_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.log_position"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "date"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.published_date"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "character varying(3)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.published_date_precision"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "character varying(48)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.published_date_provenance"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 13,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.transcript_characters"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 12,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.transcript_sha256"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "character varying(32)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.transcript_source"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "character varying(32)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.usage_status"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "character varying(11)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.video_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "character varying(32)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.creator_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.decided_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "character varying(7)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.decision_kind"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.event_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.file_position"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.first_import_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "character varying(500)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.reason"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "character varying(8)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.rule_version"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "character varying(11)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.video_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "character varying(7)"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.collection_season_type"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "character varying(16)"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.commitment_algorithm"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.commitment_digest"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.commitment_version"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.eligible_creator_count"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.end_season"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.end_week"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 16,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.first_import_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "date_trunc('milliseconds'::text, clock_timestamp())",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 15,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.imported_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.maximum_feature_count"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.minimum_reviewed_gradable_picks_overall"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.minimum_reviewed_gradable_picks_per_creator"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 14,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.registered_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 13,
+        "type": "character varying(8)"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.rule_version"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.start_season"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.start_week"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_imports.api_video_count"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_imports.capture_event_count"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.capture_input_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_imports.decision_event_count"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.decision_input_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.discovery_input_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.gate_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "a",
+        "not_null": true,
+        "position": 1,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "corpus_imports.import_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "date_trunc('milliseconds'::text, clock_timestamp())",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_imports.imported_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.importer_version"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.registration_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "character varying(8)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.rule_version"
+    },
     {
       "definition": {
         "collation": null,
@@ -4682,6 +5540,2028 @@
       },
       "kind": "column",
       "name": "sync_state.updated_at"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL api_fetched_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_api_fetched_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(api_fetched_at) AND api_fetched_at = date_trunc('milliseconds'::text, api_fetched_at) AND api_fetched_at >= published_at)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((season IS NULL) = (week IS NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (cardinality(classification_reasons) >= 1 AND cardinality(classification_reasons) <= 18 AND array_position(classification_reasons, NULL::character varying) IS NULL AND classification_reasons <@ ARRAY['prop-and-nfl-signal-in-title'::character varying(64), 'invalid-published-at'::character varying(64), 'outside-registered-regular-season'::character varying(64), 'after-registered-end-week'::character varying(64), 'not-yet-vod'::character varying(64), 'short-form'::character varying(64), 'other-league-in-title'::character varying(64), 'fantasy-in-title'::character varying(64), 'no-prop-signal'::character varying(64), 'no-nfl-signal'::character varying(64), 'duration-unknown'::character varying(64), 'mixed-league-title'::character varying(64), 'title-week-mismatch'::character varying(64), 'multiple-week-references'::character varying(64), 'nfl-signal-team-name-only'::character varying(64), 'nfl-signal-description-only'::character varying(64), 'picks-without-prop-signal'::character varying(64), 'prop-signal-description-only'::character varying(64)])",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_reasons_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL classification_reasons",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_reasons_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (classification_rule_version::text ~ '^v[0-9]{1,3}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_rule_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL classification_rule_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_rule_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (classification_status::text = ANY (ARRAY['candidate'::character varying, 'needs-review'::character varying, 'excluded'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_status_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL classification_status",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_status_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (creator_key::text ~ '^[a-z0-9][a-z0-9-]{0,31}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_creator_key_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL creator_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_creator_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (duration_seconds >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_duration_seconds_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (live_broadcast_content::text = ANY (ARRAY['none'::character varying, 'upcoming'::character varying, 'live'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_live_broadcast_content_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL live_broadcast_content",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_live_broadcast_content_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (creator_key, video_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(published_at) AND published_at = date_trunc('milliseconds'::text, published_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_published_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL published_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_published_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (review_status::text = ANY (ARRAY['present'::character varying, 'needs-review'::character varying, 'excluded'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_review_status_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL review_status",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_review_status_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (season >= 1920 AND season <= 9999)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_season_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (season_week_provenance::text ~ '^[a-z0-9][a-z0-9.-]{2,63}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_season_week_provenance_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL season_week_provenance",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_season_week_provenance_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (snapshot_import_id) REFERENCES corpus_imports(import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.corpus_api_videos",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_api_videos",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_snapshot_import_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL snapshot_import_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_snapshot_import_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (video_id::text ~ '^[A-Za-z0-9_-]{11}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_video_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL video_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_video_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (week >= 1 AND week <= 18)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_week_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (caption_kind::text = ANY (ARRAY['unknown'::character varying, 'auto-generated'::character varying, 'uploaded'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_caption_kind_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(captured_at) AND captured_at = date_trunc('milliseconds'::text, captured_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_captured_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL captured_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_captured_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (event_kind::text = 'unavailable'::text AND caption_kind IS NULL AND transcript_sha256 IS NULL AND transcript_characters IS NULL OR (event_kind::text = ANY (ARRAY['captured'::character varying, 'replaced'::character varying]::text[])) AND caption_kind IS NOT NULL AND transcript_sha256 IS NOT NULL AND transcript_characters IS NOT NULL)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (creator_key::text ~ '^[a-z0-9][a-z0-9-]{0,31}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_creator_key_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL creator_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_creator_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (event_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_event_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_event_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (event_kind::text = ANY (ARRAY['captured'::character varying, 'replaced'::character varying, 'unavailable'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_event_kind_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_kind",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_event_kind_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (first_import_id) REFERENCES corpus_imports(import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.corpus_capture_events",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_capture_events",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_first_import_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL first_import_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_first_import_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (log_position > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_log_position_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL log_position",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_log_position_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (creator_key, log_position)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL published_date",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_published_date_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (published_date_precision::text = 'day'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_published_date_precision_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL published_date_precision",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_published_date_precision_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (published_date_provenance::text = 'owner-confirmed-video-page-pacific-date'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_published_date_provenance_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL published_date_provenance",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_published_date_provenance_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (transcript_characters > 0 AND transcript_characters <= 512000)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_transcript_characters_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (transcript_sha256::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_transcript_sha256_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (transcript_source::text = 'manual-owner-paste'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_transcript_source_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL transcript_source",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_transcript_source_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (usage_status::text = 'internal-research-only'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_usage_status_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL usage_status",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_usage_status_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (video_id::text ~ '^[A-Za-z0-9_-]{11}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_video_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL video_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_video_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (creator_key::text ~ '^[a-z0-9][a-z0-9-]{0,31}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_creator_key_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL creator_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_creator_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(decided_at) AND decided_at = date_trunc('milliseconds'::text, decided_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_decided_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL decided_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_decided_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (decision_kind::text = ANY (ARRAY['include'::character varying, 'exclude'::character varying, 'clear'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_decision_kind_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL decision_kind",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_decision_kind_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (event_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_event_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_event_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (file_position > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_file_position_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL file_position",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_file_position_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (first_import_id) REFERENCES corpus_imports(import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.corpus_decision_events",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_decision_events",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_first_import_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL first_import_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_first_import_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (creator_key, file_position)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (length(btrim(reason::text)) > 0 AND reason::text !~ '[[:cntrl:]]'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_reason_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL reason",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_reason_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (rule_version::text ~ '^v[0-9]{1,3}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_rule_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL rule_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_rule_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (video_id::text ~ '^[A-Za-z0-9_-]{11}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_video_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL video_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_video_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(imported_at) AND imported_at = date_trunc('milliseconds'::text, imported_at) AND imported_at >= registered_at)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (end_season > start_season OR end_season = start_season AND end_week >= start_week)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (minimum_reviewed_gradable_picks_overall >= minimum_reviewed_gradable_picks_per_creator)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_check2"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (collection_season_type::text = 'regular'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_collection_season_type_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL collection_season_type",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_collection_season_type_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (commitment_algorithm::text = 'sha256'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_algorithm_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL commitment_algorithm",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_algorithm_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (commitment_digest::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_digest_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL commitment_digest",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_digest_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (commitment_version > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL commitment_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (eligible_creator_count >= 1 AND eligible_creator_count <= 20)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_eligible_creator_count_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL eligible_creator_count",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_eligible_creator_count_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (end_season >= 1920 AND end_season <= 9999)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_end_season_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL end_season",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_end_season_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (end_week >= 1 AND end_week <= 18)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_end_week_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL end_week",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_end_week_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (first_import_id) REFERENCES corpus_imports(import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.corpus_gate_registrations",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_gate_registrations",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_first_import_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (first_import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_first_import_id_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL first_import_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_first_import_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL imported_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_imported_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (maximum_feature_count > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_maximum_feature_count_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL maximum_feature_count",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_maximum_feature_count_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL minimum_reviewed_gradable_picks_per_creator",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_minimum_reviewed_gradable_p_not_null1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL minimum_reviewed_gradable_picks_overall",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_minimum_reviewed_gradable_pi_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (minimum_reviewed_gradable_picks_per_creator > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_minimum_reviewed_gradable_pick_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (minimum_reviewed_gradable_picks_overall > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_minimum_reviewed_gradable_picks_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (commitment_digest)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(registered_at) AND registered_at = date_trunc('milliseconds'::text, registered_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_registered_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL registered_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_registered_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (rule_version::text ~ '^v[0-9]{1,3}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_rule_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL rule_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_rule_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (start_season >= 1920 AND start_season <= 9999)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_start_season_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL start_season",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_start_season_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (start_week >= 1 AND start_week <= 18)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_start_week_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL start_week",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_start_week_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (api_video_count >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_api_video_count_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL api_video_count",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_api_video_count_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (capture_event_count >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_capture_event_count_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL capture_event_count",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_capture_event_count_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (capture_input_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_capture_input_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL capture_input_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_capture_input_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (decision_event_count >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_decision_event_count_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL decision_event_count",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_decision_event_count_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (decision_input_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_decision_input_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL decision_input_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_decision_input_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (discovery_input_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_discovery_input_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL discovery_input_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_discovery_input_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (gate_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_gate_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL gate_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_gate_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL import_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_import_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(imported_at) AND imported_at = date_trunc('milliseconds'::text, imported_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_imported_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL imported_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_imported_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (importer_version::text ~ '^[a-z0-9][a-z0-9.-]{0,63}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_importer_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL importer_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_importer_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (importer_version, rule_version, registration_fingerprint, gate_fingerprint, capture_input_fingerprint, decision_input_fingerprint, discovery_input_fingerprint)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_importer_version_rule_version_registration_f_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (registration_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_registration_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL registration_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_registration_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (rule_version::text ~ '^v[0-9]{1,3}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_rule_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL rule_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_rule_version_not_null"
     },
     {
       "definition": {
@@ -15679,6 +18559,204 @@
     },
     {
       "definition": {
+        "definition": "CREATE INDEX corpus_api_videos_expiry_idx ON corpus_api_videos USING btree (api_fetched_at)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_api_videos",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_api_videos_expiry_idx"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_api_videos_pkey ON corpus_api_videos USING btree (creator_key, video_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_api_videos",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_api_videos_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX corpus_api_videos_slot_idx ON corpus_api_videos USING btree (creator_key, season, week, review_status)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_api_videos",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_api_videos_slot_idx"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_capture_events_pkey ON corpus_capture_events USING btree (creator_key, log_position)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_capture_events",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_capture_events_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX corpus_capture_events_video_idx ON corpus_capture_events USING btree (creator_key, video_id, log_position DESC)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_capture_events",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_capture_events_video_idx"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_decision_events_pkey ON corpus_decision_events USING btree (creator_key, file_position)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_decision_events",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_decision_events_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX corpus_decision_events_video_idx ON corpus_decision_events USING btree (creator_key, video_id, decided_at DESC, file_position DESC)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_decision_events",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_decision_events_video_idx"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_gate_registrations_first_import_id_key ON corpus_gate_registrations USING btree (first_import_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_gate_registrations",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_gate_registrations_first_import_id_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_gate_registrations_pkey ON corpus_gate_registrations USING btree (commitment_digest)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_gate_registrations",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_gate_registrations_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_imports_importer_version_rule_version_registration_f_key ON corpus_imports USING btree (importer_version, rule_version, registration_fingerprint, gate_fingerprint, capture_input_fingerprint, decision_input_fingerprint, discovery_input_fingerprint)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_imports",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_imports_importer_version_rule_version_registration_f_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_imports_pkey ON corpus_imports USING btree (import_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_imports",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_imports_pkey"
+    },
+    {
+      "definition": {
         "definition": "CREATE UNIQUE INDEX creator_video_submissions_pkey ON creator_video_submissions USING btree (id)",
         "exclusion": false,
         "immediate": true,
@@ -17510,6 +20588,91 @@
         "view_definition": null
       },
       "kind": "relation",
+      "name": "corpus_api_videos"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "corpus_capture_events"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "corpus_decision_events"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "corpus_gate_registrations"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "corpus_imports"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
       "name": "creator_video_submissions"
     },
     {
@@ -18330,6 +21493,24 @@
     },
     {
       "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.corpus_api_replace_only()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'corpus-api-replace-required' USING ERRCODE = '23514';\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "corpus_api_replace_only()"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.corpus_append_only()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'corpus-append-only' USING ERRCODE = '23514';\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "corpus_append_only()"
+    },
+    {
+      "definition": {
         "definition": "CREATE OR REPLACE FUNCTION public.predictive_absence_valid(absence_id text)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE\nAS $function$\nDECLARE a public.predictive_observations; p public.predictive_observations; cov public.predictive_captures;\n  ca public.predictive_artifacts; pa public.predictive_artifacts; pc public.predictive_captures; ac public.predictive_captures; field text;\nBEGIN\n  SELECT * INTO a FROM public.predictive_observations WHERE id = absence_id;\n  SELECT * INTO p FROM public.predictive_observations WHERE id = a.predecessor_id;\n  IF p.id IS NULL OR p.id <> a.data->>'priorObservationId' OR p.kind = 'source-row-absent' OR p.entity_key <> a.data->>'priorEntityKey' THEN RETURN false; END IF;\n  FOREACH field IN ARRAY ARRAY['gameId','playerId','teamId','season','seasonType'] LOOP\n    IF (p.data ? field) <> (a.data ? field) OR (p.data->field) IS DISTINCT FROM (a.data->field) THEN RETURN false; END IF;\n  END LOOP;\n  SELECT c.* INTO cov FROM public.predictive_captures c JOIN public.predictive_ingestion_runs r ON r.id = c.run_id\n    WHERE c.id = a.data->>'coveringCaptureId' AND c.state = 'published' AND r.status = 'published'\n      AND c.body_complete AND c.header_verified AND c.parser_succeeded;\n  IF cov.id IS NULL THEN RETURN false; END IF;\n  SELECT * INTO ca FROM public.predictive_artifacts WHERE id = cov.artifact_id;\n  IF ca.profile_id <> a.profile_id OR ca.scope_kind <> a.data->>'scopeKind' OR ca.scope_season IS DISTINCT FROM (a.data->>'scopeSeason')::integer\n    OR ca.scope_week IS DISTINCT FROM (a.data->>'scopeWeek')::integer OR ca.scope_game_id IS DISTINCT FROM (a.data->>'scopeGameId')::uuid\n    OR ca.scope_filter IS DISTINCT FROM a.data->>'scopeFilter' THEN RETURN false; END IF;\n  SELECT c.* INTO pc FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n    JOIN public.predictive_ingestion_runs r ON r.id = c.run_id\n    WHERE l.observation_id = p.id AND c.state = 'published' AND r.status = 'published'\n    ORDER BY c.ingested_at, c.available_at, c.captured_at, c.id COLLATE \"C\" LIMIT 1;\n  SELECT * INTO pa FROM public.predictive_artifacts WHERE id = pc.artifact_id;\n  IF NOT (ca.retrieval_kind = 'full' AND ca.profile_id = pa.profile_id AND ca.scope_filter IS NOT DISTINCT FROM pa.scope_filter\n      AND ca.scope_kind <> 'manual' AND pa.scope_kind <> 'manual' AND (\n        ca.scope_kind = 'all-seasons'\n        OR (ca.scope_kind = 'season-file' AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season AND pa.scope_kind IN ('season-file','week-file','game'))\n        OR (ca.scope_kind = 'week-file' AND pa.scope_kind IN ('week-file','game') AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season\n          AND ca.scope_week IS NOT DISTINCT FROM pa.scope_week)\n        OR (ca.scope_kind = 'game' AND pa.scope_kind = 'game' AND ca.scope_season IS NOT DISTINCT FROM pa.scope_season\n          AND ca.scope_game_id IS NOT DISTINCT FROM pa.scope_game_id))) THEN RETURN false; END IF;\n  IF EXISTS (SELECT 1 FROM public.predictive_artifact_observations l JOIN public.predictive_observations o ON o.id = l.observation_id\n      WHERE l.artifact_id = ca.id AND o.source_key = a.source_key) THEN RETURN false; END IF;\n  SELECT c.* INTO ac FROM public.predictive_artifact_observations l JOIN public.predictive_captures c ON c.artifact_id = l.artifact_id\n    WHERE l.observation_id = a.id AND c.state = 'published' ORDER BY c.ingested_at, c.available_at, c.captured_at, c.id COLLATE \"C\" LIMIT 1;\n  RETURN cov.available_at >= pc.available_at AND cov.ingested_at >= pc.ingested_at\n    AND ac.available_at >= cov.available_at AND ac.ingested_at >= cov.ingested_at;\nEND\n$function$\n",
         "kind": "f",
         "security_definer": false
@@ -18573,7 +21754,7 @@
     },
     {
       "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_retention_execute(event_id text, event_reason text, event_authority text, event_decided_at timestamp with time zone, event_scope jsonb, event_audit_level text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pg_temp'\nAS $function$\nDECLARE\n  profiles text[]; captured_from timestamptz; captured_before timestamptz; as_of timestamptz;\n  arts text[] := '{}'; caps text[] := '{}'; obs text[] := '{}'; decs text[] := '{}'; labs text[] := '{}';\n  runs text[] := '{}'; pins text[] := '{}'; blobs text[] := '{}'; refs text[]; source_rows text[] := '{}'; bindings text[] := '{}'; revisions text[] := '{}'; binding_links integer;\n  removed_kinds text[]; removed_ids text[]; counts jsonb; ids_digest text; links integer; inputs integer; dependencies integer; unpins integer;\nBEGIN\n  IF NOT pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER') THEN\n    RAISE EXCEPTION 'predictive-retention-not-authorized' USING ERRCODE = '42501';\n  END IF;\n  IF event_decided_at IS NULL OR event_decided_at > pg_catalog.now() OR NOT public.predictive_retention_scope_valid(event_reason, event_scope) THEN\n    RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514';\n  END IF;\n  PERFORM pg_catalog.pg_advisory_xact_lock(520052,1);\n  LOCK TABLE public.predictive_source_bindings,public.predictive_source_stats_revisions IN SHARE ROW EXCLUSIVE MODE;\n  IF event_scope->>'kind' = 'source' THEN\n    profiles := ARRAY(SELECT jsonb_array_elements_text(event_scope->'profileIds'));\n    IF EXISTS (SELECT 1 FROM unnest(profiles) p WHERE NOT EXISTS (SELECT 1 FROM public.predictive_source_profiles sp WHERE sp.id = p)) THEN\n      RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514';\n    END IF;\n    captured_from := (event_scope->>'capturedFrom')::timestamptz; captured_before := (event_scope->>'capturedBefore')::timestamptz;\n    -- An artifact with any capture in range is removed whole, bytes and captures.\n    arts := ARRAY(SELECT DISTINCT a.id FROM public.predictive_artifacts a JOIN public.predictive_captures c ON c.artifact_id = a.id\n      WHERE a.profile_id = ANY(profiles) AND (captured_from IS NULL OR c.captured_at >= captured_from)\n        AND (captured_before IS NULL OR c.captured_at < captured_before));\n    caps := ARRAY(SELECT c.id FROM public.predictive_captures c WHERE c.artifact_id = ANY(arts));\n    obs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT o.id FROM public.predictive_observations o JOIN public.predictive_artifact_observations l ON l.observation_id = o.id\n        WHERE l.artifact_id = ANY(arts) AND o.profile_id = ANY(profiles)\n        UNION SELECT n.id FROM public.predictive_observations n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    decs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT DISTINCT i.decision_id AS id FROM public.predictive_decision_inputs i WHERE i.observation_id = ANY(obs)\n        UNION SELECT n.id FROM public.predictive_decisions n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    labs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT l.id FROM public.predictive_outcome_labels l WHERE l.completion_decision_id = ANY(decs) OR l.participation_decision_id = ANY(decs)\n          OR l.reconciliation_decision_id = ANY(decs) OR l.selected_observation_id = ANY(obs) OR l.post_window_capture_id = ANY(caps)\n          OR l.player_bridge_observation_id = ANY(obs)\n        UNION SELECT n.id FROM public.predictive_outcome_labels n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    runs := ARRAY(SELECT DISTINCT d.feature_run_id FROM public.predictive_feature_run_dependencies d\n      WHERE d.observation_id = ANY(obs) OR d.decision_id = ANY(decs));\n  ELSE\n    as_of := (event_scope->>'asOf')::timestamptz;\n    IF as_of > pg_catalog.now() THEN RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514'; END IF;\n    runs := ARRAY(SELECT f.id FROM public.predictive_feature_runs f WHERE public.predictive_feature_run_expired(f.id, as_of));\n  END IF;\n  source_rows := ARRAY(SELECT s.id FROM public.predictive_source_stats_rows s WHERE s.capture_id = ANY(caps));\n  bindings := ARRAY(WITH affected AS (\n      SELECT b.profile_id,b.raw_key_sha256 FROM public.predictive_source_bindings b WHERE\n        (b.profile_id=ANY(profiles) AND NOT EXISTS (SELECT 1 FROM public.predictive_source_binding_captures x WHERE x.binding_id=b.id))\n        OR EXISTS (SELECT 1 FROM public.predictive_source_binding_captures x WHERE x.binding_id=b.id AND x.capture_id=ANY(caps))\n        OR EXISTS (SELECT 1 FROM public.predictive_source_binding_rows x WHERE x.binding_id=b.id AND x.row_id=ANY(source_rows))\n        OR EXISTS (SELECT 1 FROM public.predictive_source_binding_dependencies x WHERE x.binding_id=b.id\n          AND (x.observation_id=ANY(obs) OR x.capture_id=ANY(caps) OR x.artifact_id=ANY(arts)))\n        OR EXISTS (SELECT 1 FROM public.predictive_source_binding_decisions x WHERE x.binding_id=b.id AND x.decision_id=ANY(decs)))\n    SELECT DISTINCT b.id FROM public.predictive_source_bindings b JOIN affected a USING(profile_id,raw_key_sha256));\n  revisions := ARRAY(SELECT r.id FROM public.predictive_source_stats_revisions r WHERE EXISTS (\n    SELECT 1 FROM public.predictive_source_bindings b WHERE b.id=ANY(bindings) AND b.profile_id=r.profile_id AND b.raw_key_sha256=r.source_record_id));\n  pins := ARRAY(SELECT p.id FROM public.predictive_feature_run_pins p WHERE p.feature_run_id = ANY(runs));\n  blobs := ARRAY(SELECT DISTINCT b.sha256 FROM public.predictive_blobs b\n    WHERE (b.sha256 IN (SELECT a.blob_sha256 FROM public.predictive_artifacts a WHERE a.id = ANY(arts))\n        OR b.sha256 IN (SELECT f.bundle_blob_sha256 FROM public.predictive_feature_runs f WHERE f.id = ANY(runs)))\n      AND NOT EXISTS (SELECT 1 FROM public.predictive_artifacts a WHERE a.blob_sha256 = b.sha256 AND NOT a.id = ANY(arts))\n      AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_runs f WHERE f.bundle_blob_sha256 = b.sha256 AND NOT f.id = ANY(runs)));\n  refs := ARRAY(SELECT b.storage_ref FROM public.predictive_blobs b WHERE b.sha256 = ANY(blobs) ORDER BY b.storage_ref COLLATE \"C\");\n\n  -- Parallel arrays, never a temp table: a caller could pre-create a pg_temp\n  -- relation that this definer function would then use.\n  SELECT coalesce(array_agg(k ORDER BY k COLLATE \"C\", v COLLATE \"C\"), '{}'), coalesce(array_agg(v ORDER BY k COLLATE \"C\", v COLLATE \"C\"), '{}')\n    INTO removed_kinds, removed_ids FROM (\n      SELECT 'observation', v FROM unnest(obs) v UNION ALL SELECT 'artifact', v FROM unnest(arts) v\n      UNION ALL SELECT 'capture', v FROM unnest(caps) v UNION ALL SELECT 'decision', v FROM unnest(decs) v\n      UNION ALL SELECT 'label', v FROM unnest(labs) v UNION ALL SELECT 'feature-run', v FROM unnest(runs) v\n      UNION ALL SELECT 'pin', v FROM unnest(pins) v UNION ALL SELECT 'blob', v FROM unnest(blobs) v\n      UNION ALL SELECT 'source-stats-row', v FROM unnest(source_rows) v\n      UNION ALL SELECT 'source-binding', v FROM unnest(bindings) v UNION ALL SELECT 'source-stats-revision', v FROM unnest(revisions) v) t(k, v);\n  -- The canonical JSON array of {\"id\",\"kind\"} pairs ordered by (kind, id),\n  -- mirrored by retentionIdsDigest() in persistence.ts. JSON escaping keeps it\n  -- unambiguous whatever an identifier contains.\n  SELECT encode(sha256(convert_to('[' || coalesce(string_agg('{\"id\":' || to_json(r.v)::text || ',\"kind\":' || to_json(r.k)::text || '}', ','\n      ORDER BY r.n), '') || ']', 'UTF8')), 'hex')\n    INTO ids_digest FROM unnest(removed_kinds, removed_ids) WITH ORDINALITY r(k, v, n);\n  SELECT count(*) INTO links FROM public.predictive_artifact_observations l WHERE l.observation_id = ANY(obs) OR l.artifact_id = ANY(arts);\n  SELECT count(*) INTO inputs FROM public.predictive_decision_inputs i WHERE i.decision_id = ANY(decs);\n  SELECT count(*) INTO dependencies FROM public.predictive_feature_run_dependencies d WHERE d.feature_run_id = ANY(runs);\n  SELECT count(*) INTO unpins FROM public.predictive_feature_run_unpins u WHERE u.pin_id = ANY(pins);\n  counts := jsonb_build_object('observations', cardinality(obs), 'artifacts', cardinality(arts), 'captures', cardinality(caps),\n    'decisions', cardinality(decs), 'labels', cardinality(labs), 'featureRuns', cardinality(runs), 'pins', cardinality(pins),\n    'blobs', cardinality(blobs), 'links', links, 'decisionInputs', inputs, 'featureRunDependencies', dependencies, 'unpins', unpins);\n\n  -- Preserve old zero-row event counts/digests for backup re-apply parity.\n  IF cardinality(source_rows) > 0 THEN counts := counts || jsonb_build_object('sourceStatsRows', cardinality(source_rows)); END IF;\n  IF cardinality(bindings)>0 THEN\n    SELECT sum(n)::integer INTO binding_links FROM (\n      SELECT count(*) AS n FROM public.predictive_source_binding_captures WHERE binding_id=ANY(bindings)\n      UNION ALL SELECT count(*) FROM public.predictive_source_binding_rows WHERE binding_id=ANY(bindings)\n      UNION ALL SELECT count(*) FROM public.predictive_source_binding_dependencies WHERE binding_id=ANY(bindings)\n      UNION ALL SELECT count(*) FROM public.predictive_source_binding_links WHERE binding_id=ANY(bindings)\n      UNION ALL SELECT count(*) FROM public.predictive_source_binding_decisions WHERE binding_id=ANY(bindings)\n      UNION ALL SELECT count(*) FROM public.predictive_source_binding_rights WHERE binding_id=ANY(bindings)) x;\n    counts:=counts || jsonb_build_object('sourceBindings',cardinality(bindings),'sourceStatsRevisions',cardinality(revisions),'sourceBindingLinks',binding_links);\n  END IF;\n  INSERT INTO public.predictive_retention_events (id,reason,authority,decided_at,scope_descriptor,audit_level,removed_counts,removed_ids_digest,executed_at)\n    VALUES (event_id, event_reason, event_authority, event_decided_at, event_scope, event_audit_level, counts, ids_digest, pg_catalog.now());\n  INSERT INTO public.predictive_retention_authorizations (txid, retention_event_id) VALUES (pg_catalog.pg_current_xact_id(), event_id);\n  DELETE FROM public.predictive_source_binding_captures WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_binding_rows WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_binding_dependencies WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_binding_links WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_binding_decisions WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_binding_rights WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_bindings WHERE id=ANY(bindings);\n  DELETE FROM public.predictive_source_stats_revisions WHERE id=ANY(revisions);\n  DELETE FROM public.predictive_feature_run_unpins WHERE pin_id = ANY(pins);\n  DELETE FROM public.predictive_feature_run_pins WHERE id = ANY(pins);\n  DELETE FROM public.predictive_feature_run_dependencies WHERE feature_run_id = ANY(runs);\n  DELETE FROM public.predictive_feature_runs WHERE id = ANY(runs);\n  DELETE FROM public.predictive_outcome_labels WHERE id = ANY(labs);\n  DELETE FROM public.predictive_decision_inputs WHERE decision_id = ANY(decs);\n  DELETE FROM public.predictive_decisions WHERE id = ANY(decs);\n  DELETE FROM public.predictive_artifact_observations WHERE observation_id = ANY(obs) OR artifact_id = ANY(arts);\n  DELETE FROM public.predictive_observations WHERE id = ANY(obs);\n  DELETE FROM public.predictive_source_stats_rows WHERE id = ANY(source_rows);\n  DELETE FROM public.predictive_captures WHERE id = ANY(caps);\n  DELETE FROM public.predictive_artifacts WHERE id = ANY(arts);\n  DELETE FROM public.predictive_blobs WHERE sha256 = ANY(blobs);\n  INSERT INTO public.predictive_blob_removals (storage_ref, queued_at) SELECT r, pg_catalog.now() FROM unnest(refs) r ON CONFLICT DO NOTHING;\n  IF event_audit_level = 'full' THEN\n    INSERT INTO public.predictive_retention_tombstones (retention_event_id, target_kind, target_id)\n      SELECT event_id, r.k, r.v FROM unnest(removed_kinds, removed_ids) r(k, v);\n  END IF;\n  DELETE FROM public.predictive_retention_authorizations WHERE txid = pg_catalog.pg_current_xact_id();\n  -- Blob references are returned to the caller for file removal, never stored\n  -- for digest-only events.\n  RETURN jsonb_build_object('eventId', event_id, 'removedCounts', counts, 'removedIdsDigest', ids_digest, 'removedBlobRefs', to_jsonb(refs));\nEND\n$function$\n",
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_retention_execute(event_id text, event_reason text, event_authority text, event_decided_at timestamp with time zone, event_scope jsonb, event_audit_level text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pg_temp'\nAS $function$\nDECLARE\n  profiles text[]; captured_from timestamptz; captured_before timestamptz; as_of timestamptz;\n  arts text[] := '{}'; caps text[] := '{}'; obs text[] := '{}'; decs text[] := '{}'; labs text[] := '{}';\n  runs text[] := '{}'; pins text[] := '{}'; blobs text[] := '{}'; refs text[]; source_rows text[] := '{}'; bindings text[] := '{}'; revisions text[] := '{}'; binding_links integer;\n  removed_kinds text[]; removed_ids text[]; counts jsonb; ids_digest text; links integer; inputs integer; dependencies integer; unpins integer;\nBEGIN\n  IF NOT pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER') THEN\n    RAISE EXCEPTION 'predictive-retention-not-authorized' USING ERRCODE = '42501';\n  END IF;\n  IF event_decided_at IS NULL OR event_decided_at > pg_catalog.now() OR NOT public.predictive_retention_scope_valid(event_reason, event_scope) THEN\n    RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514';\n  END IF;\n  PERFORM pg_catalog.pg_advisory_xact_lock(520052,1);\n  LOCK TABLE public.predictive_source_bindings,public.predictive_source_stats_revisions IN SHARE ROW EXCLUSIVE MODE;\n  IF event_scope->>'kind' = 'source' THEN\n    profiles := ARRAY(SELECT jsonb_array_elements_text(event_scope->'profileIds'));\n    IF EXISTS (SELECT 1 FROM unnest(profiles) p WHERE NOT EXISTS (SELECT 1 FROM public.predictive_source_profiles sp WHERE sp.id = p)) THEN\n      RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514';\n    END IF;\n    captured_from := (event_scope->>'capturedFrom')::timestamptz; captured_before := (event_scope->>'capturedBefore')::timestamptz;\n    -- An artifact with any capture in range is removed whole, bytes and captures.\n    arts := ARRAY(SELECT DISTINCT a.id FROM public.predictive_artifacts a JOIN public.predictive_captures c ON c.artifact_id = a.id\n      WHERE a.profile_id = ANY(profiles) AND (captured_from IS NULL OR c.captured_at >= captured_from)\n        AND (captured_before IS NULL OR c.captured_at < captured_before));\n    caps := ARRAY(SELECT c.id FROM public.predictive_captures c WHERE c.artifact_id = ANY(arts));\n    obs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT o.id FROM public.predictive_observations o JOIN public.predictive_artifact_observations l ON l.observation_id = o.id\n        WHERE l.artifact_id = ANY(arts) AND o.profile_id = ANY(profiles)\n        UNION SELECT n.id FROM public.predictive_observations n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    decs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT DISTINCT i.decision_id AS id FROM public.predictive_decision_inputs i WHERE i.observation_id = ANY(obs)\n        UNION SELECT n.id FROM public.predictive_decisions n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    labs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT l.id FROM public.predictive_outcome_labels l WHERE l.completion_decision_id = ANY(decs) OR l.participation_decision_id = ANY(decs)\n          OR l.reconciliation_decision_id = ANY(decs) OR l.selected_observation_id = ANY(obs) OR l.post_window_capture_id = ANY(caps)\n          OR l.player_bridge_observation_id = ANY(obs)\n        UNION SELECT n.id FROM public.predictive_outcome_labels n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    runs := ARRAY(SELECT DISTINCT d.feature_run_id FROM public.predictive_feature_run_dependencies d\n      WHERE d.observation_id = ANY(obs) OR d.decision_id = ANY(decs));\n  ELSE\n    as_of := (event_scope->>'asOf')::timestamptz;\n    IF as_of > pg_catalog.now() THEN RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514'; END IF;\n    runs := ARRAY(SELECT f.id FROM public.predictive_feature_runs f WHERE public.predictive_feature_run_expired(f.id, as_of));\n  END IF;\n  source_rows := ARRAY(SELECT s.id FROM public.predictive_source_stats_rows s WHERE s.capture_id = ANY(caps));\n  bindings := ARRAY(WITH affected AS (\n      SELECT b.profile_id,b.raw_key_sha256 FROM public.predictive_source_bindings b WHERE\n        EXISTS (SELECT 1 FROM public.predictive_source_binding_captures x WHERE x.binding_id=b.id AND x.capture_id=ANY(caps))\n        OR EXISTS (SELECT 1 FROM public.predictive_source_binding_rows x WHERE x.binding_id=b.id AND x.row_id=ANY(source_rows))\n        OR EXISTS (SELECT 1 FROM public.predictive_source_binding_dependencies x WHERE x.binding_id=b.id\n          AND (x.observation_id=ANY(obs) OR x.capture_id=ANY(caps) OR x.artifact_id=ANY(arts)))\n        OR EXISTS (SELECT 1 FROM public.predictive_source_binding_decisions x WHERE x.binding_id=b.id AND x.decision_id=ANY(decs)))\n    SELECT DISTINCT b.id FROM public.predictive_source_bindings b JOIN affected a USING(profile_id,raw_key_sha256));\n  revisions := ARRAY(SELECT r.id FROM public.predictive_source_stats_revisions r WHERE EXISTS (\n    SELECT 1 FROM public.predictive_source_bindings b WHERE b.id=ANY(bindings) AND b.profile_id=r.profile_id AND b.raw_key_sha256=r.source_record_id));\n  pins := ARRAY(SELECT p.id FROM public.predictive_feature_run_pins p WHERE p.feature_run_id = ANY(runs));\n  blobs := ARRAY(SELECT DISTINCT b.sha256 FROM public.predictive_blobs b\n    WHERE (b.sha256 IN (SELECT a.blob_sha256 FROM public.predictive_artifacts a WHERE a.id = ANY(arts))\n        OR b.sha256 IN (SELECT f.bundle_blob_sha256 FROM public.predictive_feature_runs f WHERE f.id = ANY(runs)))\n      AND NOT EXISTS (SELECT 1 FROM public.predictive_artifacts a WHERE a.blob_sha256 = b.sha256 AND NOT a.id = ANY(arts))\n      AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_runs f WHERE f.bundle_blob_sha256 = b.sha256 AND NOT f.id = ANY(runs)));\n  refs := ARRAY(SELECT b.storage_ref FROM public.predictive_blobs b WHERE b.sha256 = ANY(blobs) ORDER BY b.storage_ref COLLATE \"C\");\n\n  -- Parallel arrays, never a temp table: a caller could pre-create a pg_temp\n  -- relation that this definer function would then use.\n  SELECT coalesce(array_agg(k ORDER BY k COLLATE \"C\", v COLLATE \"C\"), '{}'), coalesce(array_agg(v ORDER BY k COLLATE \"C\", v COLLATE \"C\"), '{}')\n    INTO removed_kinds, removed_ids FROM (\n      SELECT 'observation', v FROM unnest(obs) v UNION ALL SELECT 'artifact', v FROM unnest(arts) v\n      UNION ALL SELECT 'capture', v FROM unnest(caps) v UNION ALL SELECT 'decision', v FROM unnest(decs) v\n      UNION ALL SELECT 'label', v FROM unnest(labs) v UNION ALL SELECT 'feature-run', v FROM unnest(runs) v\n      UNION ALL SELECT 'pin', v FROM unnest(pins) v UNION ALL SELECT 'blob', v FROM unnest(blobs) v\n      UNION ALL SELECT 'source-stats-row', v FROM unnest(source_rows) v\n      UNION ALL SELECT 'source-binding', v FROM unnest(bindings) v UNION ALL SELECT 'source-stats-revision', v FROM unnest(revisions) v) t(k, v);\n  -- The canonical JSON array of {\"id\",\"kind\"} pairs ordered by (kind, id),\n  -- mirrored by retentionIdsDigest() in persistence.ts. JSON escaping keeps it\n  -- unambiguous whatever an identifier contains.\n  SELECT encode(sha256(convert_to('[' || coalesce(string_agg('{\"id\":' || to_json(r.v)::text || ',\"kind\":' || to_json(r.k)::text || '}', ','\n      ORDER BY r.n), '') || ']', 'UTF8')), 'hex')\n    INTO ids_digest FROM unnest(removed_kinds, removed_ids) WITH ORDINALITY r(k, v, n);\n  SELECT count(*) INTO links FROM public.predictive_artifact_observations l WHERE l.observation_id = ANY(obs) OR l.artifact_id = ANY(arts);\n  SELECT count(*) INTO inputs FROM public.predictive_decision_inputs i WHERE i.decision_id = ANY(decs);\n  SELECT count(*) INTO dependencies FROM public.predictive_feature_run_dependencies d WHERE d.feature_run_id = ANY(runs);\n  SELECT count(*) INTO unpins FROM public.predictive_feature_run_unpins u WHERE u.pin_id = ANY(pins);\n  counts := jsonb_build_object('observations', cardinality(obs), 'artifacts', cardinality(arts), 'captures', cardinality(caps),\n    'decisions', cardinality(decs), 'labels', cardinality(labs), 'featureRuns', cardinality(runs), 'pins', cardinality(pins),\n    'blobs', cardinality(blobs), 'links', links, 'decisionInputs', inputs, 'featureRunDependencies', dependencies, 'unpins', unpins);\n\n  -- Preserve old zero-row event counts/digests for backup re-apply parity.\n  IF cardinality(source_rows) > 0 THEN counts := counts || jsonb_build_object('sourceStatsRows', cardinality(source_rows)); END IF;\n  IF cardinality(bindings)>0 THEN\n    SELECT sum(n)::integer INTO binding_links FROM (\n      SELECT count(*) AS n FROM public.predictive_source_binding_captures WHERE binding_id=ANY(bindings)\n      UNION ALL SELECT count(*) FROM public.predictive_source_binding_rows WHERE binding_id=ANY(bindings)\n      UNION ALL SELECT count(*) FROM public.predictive_source_binding_dependencies WHERE binding_id=ANY(bindings)\n      UNION ALL SELECT count(*) FROM public.predictive_source_binding_links WHERE binding_id=ANY(bindings)\n      UNION ALL SELECT count(*) FROM public.predictive_source_binding_decisions WHERE binding_id=ANY(bindings)\n      UNION ALL SELECT count(*) FROM public.predictive_source_binding_rights WHERE binding_id=ANY(bindings)) x;\n    counts:=counts || jsonb_build_object('sourceBindings',cardinality(bindings),'sourceStatsRevisions',cardinality(revisions),'sourceBindingLinks',binding_links);\n  END IF;\n  INSERT INTO public.predictive_retention_events (id,reason,authority,decided_at,scope_descriptor,audit_level,removed_counts,removed_ids_digest,executed_at)\n    VALUES (event_id, event_reason, event_authority, event_decided_at, event_scope, event_audit_level, counts, ids_digest, pg_catalog.now());\n  INSERT INTO public.predictive_retention_authorizations (txid, retention_event_id) VALUES (pg_catalog.pg_current_xact_id(), event_id);\n  DELETE FROM public.predictive_source_binding_captures WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_binding_rows WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_binding_dependencies WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_binding_links WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_binding_decisions WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_binding_rights WHERE binding_id=ANY(bindings);\n  DELETE FROM public.predictive_source_bindings WHERE id=ANY(bindings);\n  DELETE FROM public.predictive_source_stats_revisions WHERE id=ANY(revisions);\n  DELETE FROM public.predictive_feature_run_unpins WHERE pin_id = ANY(pins);\n  DELETE FROM public.predictive_feature_run_pins WHERE id = ANY(pins);\n  DELETE FROM public.predictive_feature_run_dependencies WHERE feature_run_id = ANY(runs);\n  DELETE FROM public.predictive_feature_runs WHERE id = ANY(runs);\n  DELETE FROM public.predictive_outcome_labels WHERE id = ANY(labs);\n  DELETE FROM public.predictive_decision_inputs WHERE decision_id = ANY(decs);\n  DELETE FROM public.predictive_decisions WHERE id = ANY(decs);\n  DELETE FROM public.predictive_artifact_observations WHERE observation_id = ANY(obs) OR artifact_id = ANY(arts);\n  DELETE FROM public.predictive_observations WHERE id = ANY(obs);\n  DELETE FROM public.predictive_source_stats_rows WHERE id = ANY(source_rows);\n  DELETE FROM public.predictive_captures WHERE id = ANY(caps);\n  DELETE FROM public.predictive_artifacts WHERE id = ANY(arts);\n  DELETE FROM public.predictive_blobs WHERE sha256 = ANY(blobs);\n  INSERT INTO public.predictive_blob_removals (storage_ref, queued_at) SELECT r, pg_catalog.now() FROM unnest(refs) r ON CONFLICT DO NOTHING;\n  IF event_audit_level = 'full' THEN\n    INSERT INTO public.predictive_retention_tombstones (retention_event_id, target_kind, target_id)\n      SELECT event_id, r.k, r.v FROM unnest(removed_kinds, removed_ids) r(k, v);\n  END IF;\n  DELETE FROM public.predictive_retention_authorizations WHERE txid = pg_catalog.pg_current_xact_id();\n  -- Blob references are returned to the caller for file removal, never stored\n  -- for digest-only events.\n  RETURN jsonb_build_object('eventId', event_id, 'removedCounts', counts, 'removedIdsDigest', ids_digest, 'removedBlobRefs', to_jsonb(refs));\nEND\n$function$\n",
         "kind": "f",
         "security_definer": true
       },
@@ -18708,39 +21889,12 @@
     },
     {
       "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_source_plan_basis(plan jsonb)\n RETURNS jsonb\n LANGUAGE sql\n IMMUTABLE STRICT\nAS $function$ SELECT jsonb_build_object('reason',$1->'reason','candidate',$1->'candidate',\n  'binding',($1->'binding')-ARRAY['version','cutoff','sourceInputDigest','rightsDecisionIds','sourceRequest'],\n  'request',($1->'binding'->'sourceRequest')-'cutoff') $function$\n",
-        "kind": "f",
-        "security_definer": false
-      },
-      "kind": "routine",
-      "name": "predictive_source_plan_basis(plan jsonb)"
-    },
-    {
-      "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_source_plan_check(proposed jsonb, rights_time timestamp with time zone, require_current boolean)\n RETURNS void\n LANGUAGE plpgsql\n STABLE\nAS $function$\nDECLARE req jsonb:=proposed->'binding'->'sourceRequest'; expected jsonb; current_plan jsonb;\nBEGIN\n  IF require_current IS NULL THEN RAISE EXCEPTION 'predictive-source-plan-invalid' USING ERRCODE='23514'; END IF;\n  IF proposed->'binding'->>'version'='nflverse-stats-normalization-plan-v1' AND NOT require_current THEN\n    PERFORM public.predictive_source_plan_check_v1(proposed,rights_time,false); RETURN; END IF;\n  IF proposed->'binding'->>'version' IS DISTINCT FROM 'nflverse-stats-normalization-plan-v2' THEN\n    RAISE EXCEPTION 'predictive-source-plan-version-invalid' USING ERRCODE='23514'; END IF;\n  expected:=public.predictive_source_plan_v2(req,rights_time);\n  IF proposed IS DISTINCT FROM expected THEN RAISE EXCEPTION 'predictive-source-plan-witness-invalid' USING ERRCODE='23514'; END IF;\n  IF require_current THEN\n    current_plan:=public.predictive_source_plan_v2(jsonb_set(req,'{cutoff}',to_jsonb(public.predictive_source_time(rights_time))),rights_time);\n    IF public.predictive_source_plan_basis(proposed) IS DISTINCT FROM public.predictive_source_plan_basis(current_plan) THEN\n      RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514'; END IF;\n  END IF;\nEND\n$function$\n",
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_source_plan_check(proposed jsonb, rights_time timestamp with time zone, require_current boolean)\n RETURNS void\n LANGUAGE plpgsql\n STABLE\nAS $function$\nDECLARE b jsonb := proposed->'binding'; req jsonb := b->'sourceRequest'; p public.predictive_source_profiles;\n  t timestamptz; raw_key text; caps jsonb; cap jsonb; source_rows jsonb; row_refs jsonb; stats jsonb;\n  expected_reason text; expected_candidate jsonb; deps jsonb := '[]'; links jsonb := '[]'; decisions jsonb := '[]'; rights_ids jsonb;\n  ids text[]; current_ids text[]; role_name text; fact text; game text; team text; opponent text; player text; chosen text;\n  schedule jsonb; parts text[]; decision_ids text[]; values_count integer; bad boolean; candidate_data jsonb; d public.predictive_decisions;\nBEGIN\n  IF public.predictive_source_exact(proposed,ARRAY['status','reason','candidate','dataDigest','binding','planDigest',\n        'observationsPublished','featuresPublished','labelsFinalized','populationCoverage']) IS NOT TRUE\n      OR public.predictive_source_exact(b,ARRAY['version','cutoff','sourceRequest','sourceInputDigest','sourceProfileId','rawSourceKey',\n        'sourceCaptures','sourceRows','parserVersion','projectionVersion','dependencies','identityLinks','decisions','rightsDecisionIds']) IS NOT TRUE THEN\n    RAISE EXCEPTION 'predictive-source-plan-invalid' USING ERRCODE='23514'; END IF;\n  raw_key:=public.predictive_source_request_key(req);\n  IF jsonb_typeof(b->'sourceCaptures') IS DISTINCT FROM 'array' OR jsonb_typeof(b->'sourceRows') IS DISTINCT FROM 'array'\n      OR jsonb_typeof(b->'dependencies') IS DISTINCT FROM 'array' OR jsonb_typeof(b->'identityLinks') IS DISTINCT FROM 'array'\n      OR jsonb_typeof(b->'decisions') IS DISTINCT FROM 'array' OR jsonb_typeof(b->'rightsDecisionIds') IS DISTINCT FROM 'array'\n      OR b->>'cutoff' IS DISTINCT FROM req->>'cutoff' THEN\n    RAISE EXCEPTION 'predictive-source-plan-invalid' USING ERRCODE='23514'; END IF;\n  t:=(b->>'cutoff')::timestamptz;\n  IF rights_time IS NULL OR NOT isfinite(rights_time) OR require_current IS NULL OR b->>'version' IS DISTINCT FROM 'nflverse-stats-normalization-plan-v1' OR b->>'parserVersion' IS DISTINCT FROM 'nflverse-csv-qualification-v1'\n      OR b->>'projectionVersion' IS DISTINCT FROM 'nflverse-raw-stats-v1' OR public.predictive_instant(b->>'cutoff') IS NOT TRUE\n      OR t > rights_time OR req->>'cutoff' IS DISTINCT FROM b->>'cutoff' OR req->>'profileId' IS DISTINCT FROM b->>'sourceProfileId'\n      OR proposed->'observationsPublished' IS DISTINCT FROM 'false'::jsonb OR proposed->'featuresPublished' IS DISTINCT FROM 'false'::jsonb\n      OR proposed->'labelsFinalized' IS DISTINCT FROM 'false'::jsonb OR proposed->>'populationCoverage' IS DISTINCT FROM 'unqualified'\n      OR proposed->>'planDigest' IS DISTINCT FROM public.predictive_source_digest(jsonb_build_object('reason',proposed->'reason','candidate',proposed->'candidate','binding',b)) THEN\n    RAISE EXCEPTION 'predictive-source-plan-invalid' USING ERRCODE='23514';\n  END IF;\n  SELECT * INTO p FROM public.predictive_source_profiles WHERE id=b->>'sourceProfileId';\n  IF p.id IS NULL OR p.provider <> 'nflverse' OR p.parser_version <> 'nflverse-csv-qualification-v1' OR p.feed NOT IN ('player','team')\n      OR public.predictive_rights_allow(p.id,rights_time,rights_time,'internal-research') IS NOT TRUE\n      OR p.allowlist_version IS DISTINCT FROM 'predictive-raw-allowlist-v1'\n      OR (p.feed='player') IS DISTINCT FROM (req->'rawPlayerId'<>'null'::jsonb) THEN\n    RAISE EXCEPTION 'predictive-source-plan-rights-profile-invalid' USING ERRCODE='23514';\n  END IF;\n  WITH eligible AS (SELECT c.*,dense_rank() OVER (ORDER BY c.captured_at DESC) AS rank\n    FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id\n    JOIN public.predictive_blobs bl ON bl.sha256=a.blob_sha256 JOIN public.predictive_ingestion_runs r ON r.id=c.run_id\n    WHERE a.profile_id=p.id AND a.scope_kind='season-file' AND a.scope_season=2026 AND a.scope_filter IS NULL AND bl.media_type='text/csv'\n      AND c.state='published' AND r.status='published' AND c.available_at <= t AND c.ingested_at <= t)\n  SELECT jsonb_agg(jsonb_build_object('id',c.id,'runId',c.run_id,'artifactId',c.artifact_id,'capturedAt',public.predictive_source_time(c.captured_at),\n    'availableAt',public.predictive_source_time(c.available_at),'ingestedAt',public.predictive_source_time(c.ingested_at),\n    'parsedRows',c.parsed_rows,'sha256',a.blob_sha256,'storageRef',bl.storage_ref,'byteSize',bl.byte_size) ORDER BY c.ingested_at,c.id COLLATE \"C\")\n    INTO caps FROM eligible c JOIN public.predictive_artifacts a ON a.id=c.artifact_id JOIN public.predictive_blobs bl ON bl.sha256=a.blob_sha256 WHERE c.rank=1;\n  -- Uncaptured/ambiguous raw evidence and unresolved bridges are not recordable\n  -- in this increment. Their read-only plans remain explicitly unavailable.\n  IF caps IS NULL OR jsonb_array_length(caps)>256 OR (SELECT count(DISTINCT x->>'sha256') FROM jsonb_array_elements(caps) x) <> 1 THEN\n    RAISE EXCEPTION 'predictive-source-plan-not-recordable' USING ERRCODE='23514';\n  END IF;\n  cap := caps->0;\n  IF require_current AND EXISTS (SELECT 1 FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id\n      JOIN public.predictive_ingestion_runs r ON r.id=c.run_id JOIN public.predictive_blobs bl ON bl.sha256=a.blob_sha256\n      WHERE a.profile_id=p.id AND a.scope_kind='season-file' AND a.scope_season=2026 AND a.scope_filter IS NULL\n        AND c.state='published' AND r.status='published' AND bl.media_type='text/csv' AND c.available_at <= rights_time AND c.ingested_at <= rights_time\n        AND (c.captured_at > (cap->>'capturedAt')::timestamptz OR (c.captured_at=(cap->>'capturedAt')::timestamptz AND a.blob_sha256 IS DISTINCT FROM (cap->>'sha256')))) THEN\n    RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514';\n  END IF;\n  SELECT coalesce(jsonb_agg(jsonb_build_object('id',s.id,'rowOrdinal',s.row_ordinal,'rawKeySha256',s.raw_key_sha256,\n      'selectedSha256',s.selected_sha256,'projection',s.projection,'failureCode',s.failure_code) ORDER BY s.row_ordinal),'[]'::jsonb),\n    coalesce(jsonb_agg(jsonb_build_object('id',s.id,'rowOrdinal',s.row_ordinal,'selectedSha256',s.selected_sha256) ORDER BY s.row_ordinal),'[]'::jsonb)\n    INTO source_rows,row_refs FROM public.predictive_source_stats_rows s WHERE s.capture_id=cap->>'id' AND s.raw_key_sha256=raw_key;\n  caps := jsonb_build_array(cap);\n  IF b->'sourceCaptures' IS DISTINCT FROM caps OR b->'sourceRows' IS DISTINCT FROM row_refs\n      OR b->'rawSourceKey' IS DISTINCT FROM (CASE WHEN jsonb_array_length(source_rows)=0 THEN 'null'::jsonb ELSE to_jsonb(raw_key) END)\n      OR b->>'sourceInputDigest' IS DISTINCT FROM public.predictive_source_digest(jsonb_build_object('version','nflverse-csv-source-claims-v1',\n        'request',req,'captures',caps,'rows',source_rows)) THEN\n    RAISE EXCEPTION 'predictive-source-plan-rows-invalid' USING ERRCODE='23514';\n  END IF;\n  IF jsonb_array_length(source_rows)=0 THEN expected_reason := 'source-row-missing';\n  ELSIF (SELECT count(DISTINCT x->>'selectedSha256') FROM jsonb_array_elements(source_rows) x)>1 THEN expected_reason := 'source-row-ambiguous';\n  ELSIF source_rows->0->>'failureCode' IS NOT NULL THEN expected_reason := 'source-row-refused'; END IF;\n  IF expected_reason IS NOT NULL THEN\n    IF proposed->>'reason' IS DISTINCT FROM expected_reason OR proposed->'candidate' IS DISTINCT FROM 'null'::jsonb OR proposed->'dataDigest' IS DISTINCT FROM 'null'::jsonb\n        OR proposed->>'status' IS DISTINCT FROM 'unavailable-source-normalization' OR b->'dependencies' IS DISTINCT FROM '[]'::jsonb OR b->'decisions' IS DISTINCT FROM '[]'::jsonb\n        OR b->'identityLinks' IS DISTINCT FROM '[]'::jsonb OR b->'rightsDecisionIds' IS DISTINCT FROM '[]'::jsonb THEN\n      RAISE EXCEPTION 'predictive-source-plan-unavailable-invalid' USING ERRCODE='23514';\n    END IF;\n    RETURN;\n  END IF;\n  stats := source_rows->0->'projection';\n  FOREACH role_name IN ARRAY ARRAY['game-bridge','team-alias','opponent-alias'] LOOP\n    fact := CASE role_name WHEN 'game-bridge' THEN 'game-bridge:nflverse:' || (stats->>'rawGameId')\n      WHEN 'team-alias' THEN 'team-alias:nflverse:' || (stats->>'rawTeam') ELSE 'team-alias:nflverse:' || (stats->>'rawOpponent') END;\n    SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO ids FROM public.predictive_observations o\n      WHERE o.entity_key=fact AND public.predictive_source_is_head(o.id,t,rights_time);\n    IF require_current THEN\n      SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO current_ids FROM public.predictive_observations o\n        WHERE o.entity_key=fact AND public.predictive_source_is_head(o.id,rights_time,rights_time);\n      IF ids<>current_ids THEN RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514'; END IF;\n    END IF;\n    SELECT count(DISTINCT CASE role_name WHEN 'game-bridge' THEN o.data->>'gameId' ELSE o.data->>'teamId' END),\n      coalesce(bool_or(o.kind='source-row-absent'),false), min(CASE role_name WHEN 'game-bridge' THEN o.data->>'gameId' ELSE o.data->>'teamId' END)\n      FILTER (WHERE role_name='game-bridge' OR ((o.data->>'effectiveFromSeason')::integer <= (stats->>'season')::integer\n        AND (o.data->>'effectiveToSeason')::integer >= (stats->>'season')::integer)) INTO values_count,bad,chosen\n      FROM public.predictive_observations o WHERE o.id=ANY(ids) AND (role_name='game-bridge' OR o.kind='source-row-absent'\n        OR ((o.data->>'effectiveFromSeason')::integer <= (stats->>'season')::integer AND (o.data->>'effectiveToSeason')::integer >= (stats->>'season')::integer));\n    IF values_count<>1 OR bad OR chosen IS NULL THEN RAISE EXCEPTION 'predictive-source-plan-bridge-invalid' USING ERRCODE='23514'; END IF;\n    IF role_name='game-bridge' THEN game:=chosen; ELSIF role_name='team-alias' THEN team:=chosen; ELSE opponent:=chosen; END IF;\n    deps := deps || public.predictive_source_dependencies(ids,role_name,t);\n  END LOOP;\n  IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.kind='game-bridge' AND o.game_id=game::uuid\n      AND o.data->>'provider'='nflverse' AND (o.data->>'rawGameId') IS DISTINCT FROM (stats->>'rawGameId')\n      AND (public.predictive_source_is_head(o.id,t,rights_time) OR (require_current AND public.predictive_source_is_head(o.id,rights_time,rights_time)))) THEN\n    RAISE EXCEPTION 'predictive-source-plan-bridge-invalid' USING ERRCODE='23514';\n  END IF;\n  SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO ids FROM public.predictive_observations o\n    WHERE o.entity_key='schedule:' || game AND public.predictive_source_is_head(o.id,t,rights_time);\n  IF require_current THEN\n    SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO current_ids FROM public.predictive_observations o\n      WHERE o.entity_key='schedule:' || game AND public.predictive_source_is_head(o.id,rights_time,rights_time);\n    IF ids<>current_ids THEN RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514'; END IF;\n  END IF;\n  IF cardinality(ids)=1 THEN chosen:=ids[1];\n  ELSIF cardinality(ids)>1 THEN\n    SELECT array_agg(x.id) INTO decision_ids FROM public.predictive_decisions x WHERE x.entity_key='reconciliation:schedule:' || game AND x.kind='reconciliation'\n      AND x.decided_at <= t AND NOT EXISTS (SELECT 1 FROM public.predictive_decisions n WHERE n.predecessor_id=x.id AND n.decided_at<=t)\n      AND (SELECT r.status FROM public.predictive_ingestion_runs r WHERE r.id=x.run_id)='published';\n    IF cardinality(decision_ids) IS DISTINCT FROM 1 THEN RAISE EXCEPTION 'predictive-source-plan-schedule-invalid' USING ERRCODE='23514'; END IF;\n    SELECT * INTO d FROM public.predictive_decisions WHERE id=decision_ids[1];\n    IF d.outcome->>'result' IS DISTINCT FROM 'selected' OR public.predictive_decision_current(d.id,t) IS NOT TRUE\n        OR (require_current AND (SELECT array_agg(x.id ORDER BY x.id COLLATE \"C\") FROM public.predictive_decisions x\n        JOIN public.predictive_ingestion_runs r ON r.id=x.run_id WHERE x.entity_key=d.entity_key AND x.kind='reconciliation' AND r.status='published'\n          AND x.decided_at<=rights_time AND NOT EXISTS (SELECT 1 FROM public.predictive_decisions n WHERE n.predecessor_id=x.id AND n.decided_at<=rights_time)) IS DISTINCT FROM decision_ids) THEN\n      RAISE EXCEPTION 'predictive-source-plan-schedule-invalid' USING ERRCODE='23514'; END IF;\n    chosen:=d.outcome->>'selectedObservationId';\n    decisions:=jsonb_build_array(jsonb_build_object('id',d.id,'kind',d.kind,'entityKey',d.entity_key,'policyId',d.policy_id,'mode',d.mode,\n      'decidedAt',public.predictive_source_time(d.decided_at),'predecessorId',d.predecessor_id,'outcome',d.outcome,'inputs',\n      (SELECT jsonb_agg(jsonb_build_object('observationId',i.observation_id,'role',i.role) ORDER BY i.observation_id COLLATE \"C\") FROM public.predictive_decision_inputs i WHERE i.decision_id=d.id)));\n  ELSE RAISE EXCEPTION 'predictive-source-plan-schedule-invalid' USING ERRCODE='23514'; END IF;\n  SELECT data INTO schedule FROM public.predictive_observations WHERE id=chosen AND kind='schedule' AND id=ANY(ids);\n  IF schedule IS NULL OR EXISTS (SELECT 1 FROM public.predictive_observations s JOIN public.predictive_observations a ON a.kind='schedule'\n      AND a.raw_game_id=s.raw_game_id AND a.game_id<>s.game_id WHERE s.id=ANY(ids)\n        AND (public.predictive_source_is_head(a.id,t,rights_time) OR (require_current AND public.predictive_source_is_head(a.id,rights_time,rights_time)))) THEN\n    RAISE EXCEPTION 'predictive-source-plan-schedule-invalid' USING ERRCODE='23514'; END IF;\n  deps:=deps || public.predictive_source_dependencies(ids,'schedule',t);\n  parts:=string_to_array(stats->>'rawGameId','_');\n  IF schedule->'season' IS DISTINCT FROM stats->'season' OR schedule->'week' IS DISTINCT FROM stats->'week' OR schedule->'seasonType' IS DISTINCT FROM stats->'seasonType' OR team=opponent\n      OR (schedule->>'homeTeamId') IS DISTINCT FROM (CASE WHEN (stats->>'rawTeam')=parts[4] THEN team ELSE opponent END)\n      OR (schedule->>'awayTeamId') IS DISTINCT FROM (CASE WHEN (stats->>'rawTeam')=parts[3] THEN team ELSE opponent END) THEN\n    RAISE EXCEPTION 'predictive-source-plan-context-invalid' USING ERRCODE='23514'; END IF;\n  candidate_data:=jsonb_build_object('gameId',game,'rawGameId',stats->'rawGameId','teamId',team,'rawTeam',stats->'rawTeam',\n    'season',stats->'season','seasonType',stats->'seasonType','missing',stats->'missing') || (stats->'values');\n  IF p.feed='player' THEN\n    SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO ids FROM public.predictive_observations o\n      WHERE o.entity_key='player-bridge:gsis:' || (stats->>'rawPlayerId') AND public.predictive_source_is_head(o.id,t,rights_time);\n    IF require_current THEN\n      SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO current_ids FROM public.predictive_observations o\n        WHERE o.entity_key='player-bridge:gsis:' || (stats->>'rawPlayerId') AND public.predictive_source_is_head(o.id,rights_time,rights_time);\n      IF ids<>current_ids THEN RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514'; END IF;\n    END IF;\n    IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='source-row-absent') THEN\n      RAISE EXCEPTION 'predictive-source-plan-player-invalid' USING ERRCODE='23514'; END IF;\n    SELECT count(DISTINCT o.player_id),min(o.player_id) INTO values_count,player FROM public.predictive_observations o WHERE o.id=ANY(ids)\n      AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz;\n    IF values_count<>1 OR EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.kind='player-bridge' AND o.player_id=player\n        AND o.data->>'provider'='gsis' AND (o.data->>'rawPlayerId') IS DISTINCT FROM (stats->>'rawPlayerId')\n        AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz\n        AND (public.predictive_source_is_head(o.id,t,rights_time) OR (require_current AND public.predictive_source_is_head(o.id,rights_time,rights_time)))) THEN\n      RAISE EXCEPTION 'predictive-source-plan-player-invalid' USING ERRCODE='23514'; END IF;\n    SELECT coalesce(jsonb_agg(jsonb_build_object('id',k.id,'statsProfileId',k.stats_profile_id,'bridgeProfileId',k.bridge_profile_id,\n      'provider',k.provider,'decidedAt',public.predictive_source_time(k.decided_at))),'[]'::jsonb) INTO links FROM public.predictive_profile_identity_links k\n      WHERE k.stats_profile_id=p.id AND k.provider='gsis' AND k.decided_at<=t AND EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids)\n        AND o.profile_id=k.bridge_profile_id AND o.player_id=player AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz\n        AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz);\n    IF require_current AND EXISTS (SELECT 1 FROM public.predictive_profile_identity_links k\n        WHERE k.stats_profile_id=p.id AND k.provider='gsis' AND k.decided_at>t AND k.decided_at<=rights_time\n          AND EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.profile_id=k.bridge_profile_id\n            AND o.player_id=player AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz\n            AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz)) THEN\n      RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514'; END IF;\n    IF links='[]'::jsonb THEN RAISE EXCEPTION 'predictive-source-plan-player-invalid' USING ERRCODE='23514'; END IF;\n    deps:=deps || public.predictive_source_dependencies(ids,'player-bridge',t);\n    candidate_data:=candidate_data || jsonb_build_object('playerId',player,'rawPlayerId',stats->'rawPlayerId','playerIdProvider','gsis');\n  END IF;\n  SELECT jsonb_agg(to_jsonb(public.predictive_rights_in_force(id,rights_time,rights_time))) INTO rights_ids FROM (\n    SELECT p.id UNION SELECT x->>'profileId' FROM jsonb_array_elements(deps) x) profiles(id);\n  expected_candidate:=jsonb_build_object('kind',CASE p.feed WHEN 'player' THEN 'player-game-stats' ELSE 'team-game-stats' END,'data',candidate_data);\n  IF proposed->>'status' IS DISTINCT FROM 'planned-source-normalization' OR proposed->'reason' IS DISTINCT FROM 'null'::jsonb\n      OR proposed->'candidate' IS DISTINCT FROM expected_candidate OR proposed->>'dataDigest' IS DISTINCT FROM public.predictive_source_digest(expected_candidate)\n      OR public.predictive_source_set_equal(b->'dependencies',deps) IS NOT TRUE OR public.predictive_source_set_equal(b->'identityLinks',links) IS NOT TRUE\n      OR public.predictive_source_set_equal(b->'decisions',decisions) IS NOT TRUE OR public.predictive_source_set_equal(b->'rightsDecisionIds',rights_ids) IS NOT TRUE THEN\n    RAISE EXCEPTION 'predictive-source-plan-normalization-invalid' USING ERRCODE='23514'; END IF;\nEND\n$function$\n",
         "kind": "f",
         "security_definer": false
       },
       "kind": "routine",
       "name": "predictive_source_plan_check(proposed jsonb, rights_time timestamp with time zone, require_current boolean)"
-    },
-    {
-      "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_source_plan_check_v1(proposed jsonb, rights_time timestamp with time zone, require_current boolean)\n RETURNS void\n LANGUAGE plpgsql\n STABLE\nAS $function$\nDECLARE b jsonb := proposed->'binding'; req jsonb := b->'sourceRequest'; p public.predictive_source_profiles;\n  t timestamptz; raw_key text; caps jsonb; cap jsonb; source_rows jsonb; row_refs jsonb; stats jsonb;\n  expected_reason text; expected_candidate jsonb; deps jsonb := '[]'; links jsonb := '[]'; decisions jsonb := '[]'; rights_ids jsonb;\n  ids text[]; current_ids text[]; role_name text; fact text; game text; team text; opponent text; player text; chosen text;\n  schedule jsonb; parts text[]; decision_ids text[]; values_count integer; bad boolean; candidate_data jsonb; d public.predictive_decisions;\nBEGIN\n  IF public.predictive_source_exact(proposed,ARRAY['status','reason','candidate','dataDigest','binding','planDigest',\n        'observationsPublished','featuresPublished','labelsFinalized','populationCoverage']) IS NOT TRUE\n      OR public.predictive_source_exact(b,ARRAY['version','cutoff','sourceRequest','sourceInputDigest','sourceProfileId','rawSourceKey',\n        'sourceCaptures','sourceRows','parserVersion','projectionVersion','dependencies','identityLinks','decisions','rightsDecisionIds']) IS NOT TRUE THEN\n    RAISE EXCEPTION 'predictive-source-plan-invalid' USING ERRCODE='23514'; END IF;\n  raw_key:=public.predictive_source_request_key(req);\n  IF jsonb_typeof(b->'sourceCaptures') IS DISTINCT FROM 'array' OR jsonb_typeof(b->'sourceRows') IS DISTINCT FROM 'array'\n      OR jsonb_typeof(b->'dependencies') IS DISTINCT FROM 'array' OR jsonb_typeof(b->'identityLinks') IS DISTINCT FROM 'array'\n      OR jsonb_typeof(b->'decisions') IS DISTINCT FROM 'array' OR jsonb_typeof(b->'rightsDecisionIds') IS DISTINCT FROM 'array'\n      OR b->>'cutoff' IS DISTINCT FROM req->>'cutoff' THEN\n    RAISE EXCEPTION 'predictive-source-plan-invalid' USING ERRCODE='23514'; END IF;\n  t:=(b->>'cutoff')::timestamptz;\n  IF rights_time IS NULL OR NOT isfinite(rights_time) OR require_current IS NULL OR b->>'version' IS DISTINCT FROM 'nflverse-stats-normalization-plan-v1' OR b->>'parserVersion' IS DISTINCT FROM 'nflverse-csv-qualification-v1'\n      OR b->>'projectionVersion' IS DISTINCT FROM 'nflverse-raw-stats-v1' OR public.predictive_instant(b->>'cutoff') IS NOT TRUE\n      OR t > rights_time OR req->>'cutoff' IS DISTINCT FROM b->>'cutoff' OR req->>'profileId' IS DISTINCT FROM b->>'sourceProfileId'\n      OR proposed->'observationsPublished' IS DISTINCT FROM 'false'::jsonb OR proposed->'featuresPublished' IS DISTINCT FROM 'false'::jsonb\n      OR proposed->'labelsFinalized' IS DISTINCT FROM 'false'::jsonb OR proposed->>'populationCoverage' IS DISTINCT FROM 'unqualified'\n      OR proposed->>'planDigest' IS DISTINCT FROM public.predictive_source_digest(jsonb_build_object('reason',proposed->'reason','candidate',proposed->'candidate','binding',b)) THEN\n    RAISE EXCEPTION 'predictive-source-plan-invalid' USING ERRCODE='23514';\n  END IF;\n  SELECT * INTO p FROM public.predictive_source_profiles WHERE id=b->>'sourceProfileId';\n  IF p.id IS NULL OR p.provider <> 'nflverse' OR p.parser_version <> 'nflverse-csv-qualification-v1' OR p.feed NOT IN ('player','team')\n      OR public.predictive_rights_allow(p.id,rights_time,rights_time,'internal-research') IS NOT TRUE\n      OR p.allowlist_version IS DISTINCT FROM 'predictive-raw-allowlist-v1'\n      OR (p.feed='player') IS DISTINCT FROM (req->'rawPlayerId'<>'null'::jsonb) THEN\n    RAISE EXCEPTION 'predictive-source-plan-rights-profile-invalid' USING ERRCODE='23514';\n  END IF;\n  WITH eligible AS (SELECT c.*,dense_rank() OVER (ORDER BY c.captured_at DESC) AS rank\n    FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id\n    JOIN public.predictive_blobs bl ON bl.sha256=a.blob_sha256 JOIN public.predictive_ingestion_runs r ON r.id=c.run_id\n    WHERE a.profile_id=p.id AND a.scope_kind='season-file' AND a.scope_season=2026 AND a.scope_filter IS NULL AND bl.media_type='text/csv'\n      AND c.state='published' AND r.status='published' AND c.available_at <= t AND c.ingested_at <= t)\n  SELECT jsonb_agg(jsonb_build_object('id',c.id,'runId',c.run_id,'artifactId',c.artifact_id,'capturedAt',public.predictive_source_time(c.captured_at),\n    'availableAt',public.predictive_source_time(c.available_at),'ingestedAt',public.predictive_source_time(c.ingested_at),\n    'parsedRows',c.parsed_rows,'sha256',a.blob_sha256,'storageRef',bl.storage_ref,'byteSize',bl.byte_size) ORDER BY c.ingested_at,c.id COLLATE \"C\")\n    INTO caps FROM eligible c JOIN public.predictive_artifacts a ON a.id=c.artifact_id JOIN public.predictive_blobs bl ON bl.sha256=a.blob_sha256 WHERE c.rank=1;\n  -- Uncaptured/ambiguous raw evidence and unresolved bridges are not recordable\n  -- in this increment. Their read-only plans remain explicitly unavailable.\n  IF caps IS NULL OR jsonb_array_length(caps)>256 OR (SELECT count(DISTINCT x->>'sha256') FROM jsonb_array_elements(caps) x) <> 1 THEN\n    RAISE EXCEPTION 'predictive-source-plan-not-recordable' USING ERRCODE='23514';\n  END IF;\n  cap := caps->0;\n  IF require_current AND EXISTS (SELECT 1 FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id\n      JOIN public.predictive_ingestion_runs r ON r.id=c.run_id JOIN public.predictive_blobs bl ON bl.sha256=a.blob_sha256\n      WHERE a.profile_id=p.id AND a.scope_kind='season-file' AND a.scope_season=2026 AND a.scope_filter IS NULL\n        AND c.state='published' AND r.status='published' AND bl.media_type='text/csv' AND c.available_at <= rights_time AND c.ingested_at <= rights_time\n        AND (c.captured_at > (cap->>'capturedAt')::timestamptz OR (c.captured_at=(cap->>'capturedAt')::timestamptz AND a.blob_sha256 IS DISTINCT FROM (cap->>'sha256')))) THEN\n    RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514';\n  END IF;\n  SELECT coalesce(jsonb_agg(jsonb_build_object('id',s.id,'rowOrdinal',s.row_ordinal,'rawKeySha256',s.raw_key_sha256,\n      'selectedSha256',s.selected_sha256,'projection',s.projection,'failureCode',s.failure_code) ORDER BY s.row_ordinal),'[]'::jsonb),\n    coalesce(jsonb_agg(jsonb_build_object('id',s.id,'rowOrdinal',s.row_ordinal,'selectedSha256',s.selected_sha256) ORDER BY s.row_ordinal),'[]'::jsonb)\n    INTO source_rows,row_refs FROM public.predictive_source_stats_rows s WHERE s.capture_id=cap->>'id' AND s.raw_key_sha256=raw_key;\n  caps := jsonb_build_array(cap);\n  IF b->'sourceCaptures' IS DISTINCT FROM caps OR b->'sourceRows' IS DISTINCT FROM row_refs\n      OR b->'rawSourceKey' IS DISTINCT FROM (CASE WHEN jsonb_array_length(source_rows)=0 THEN 'null'::jsonb ELSE to_jsonb(raw_key) END)\n      OR b->>'sourceInputDigest' IS DISTINCT FROM public.predictive_source_digest(jsonb_build_object('version','nflverse-csv-source-claims-v1',\n        'request',req,'captures',caps,'rows',source_rows)) THEN\n    RAISE EXCEPTION 'predictive-source-plan-rows-invalid' USING ERRCODE='23514';\n  END IF;\n  IF jsonb_array_length(source_rows)=0 THEN expected_reason := 'source-row-missing';\n  ELSIF (SELECT count(DISTINCT x->>'selectedSha256') FROM jsonb_array_elements(source_rows) x)>1 THEN expected_reason := 'source-row-ambiguous';\n  ELSIF source_rows->0->>'failureCode' IS NOT NULL THEN expected_reason := 'source-row-refused'; END IF;\n  IF expected_reason IS NOT NULL THEN\n    IF proposed->>'reason' IS DISTINCT FROM expected_reason OR proposed->'candidate' IS DISTINCT FROM 'null'::jsonb OR proposed->'dataDigest' IS DISTINCT FROM 'null'::jsonb\n        OR proposed->>'status' IS DISTINCT FROM 'unavailable-source-normalization' OR b->'dependencies' IS DISTINCT FROM '[]'::jsonb OR b->'decisions' IS DISTINCT FROM '[]'::jsonb\n        OR b->'identityLinks' IS DISTINCT FROM '[]'::jsonb OR b->'rightsDecisionIds' IS DISTINCT FROM '[]'::jsonb THEN\n      RAISE EXCEPTION 'predictive-source-plan-unavailable-invalid' USING ERRCODE='23514';\n    END IF;\n    RETURN;\n  END IF;\n  stats := source_rows->0->'projection';\n  FOREACH role_name IN ARRAY ARRAY['game-bridge','team-alias','opponent-alias'] LOOP\n    fact := CASE role_name WHEN 'game-bridge' THEN 'game-bridge:nflverse:' || (stats->>'rawGameId')\n      WHEN 'team-alias' THEN 'team-alias:nflverse:' || (stats->>'rawTeam') ELSE 'team-alias:nflverse:' || (stats->>'rawOpponent') END;\n    SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO ids FROM public.predictive_observations o\n      WHERE o.entity_key=fact AND public.predictive_source_is_head(o.id,t,rights_time);\n    IF require_current THEN\n      SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO current_ids FROM public.predictive_observations o\n        WHERE o.entity_key=fact AND public.predictive_source_is_head(o.id,rights_time,rights_time);\n      IF ids<>current_ids THEN RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514'; END IF;\n    END IF;\n    SELECT count(DISTINCT CASE role_name WHEN 'game-bridge' THEN o.data->>'gameId' ELSE o.data->>'teamId' END),\n      coalesce(bool_or(o.kind='source-row-absent'),false), min(CASE role_name WHEN 'game-bridge' THEN o.data->>'gameId' ELSE o.data->>'teamId' END)\n      FILTER (WHERE role_name='game-bridge' OR ((o.data->>'effectiveFromSeason')::integer <= (stats->>'season')::integer\n        AND (o.data->>'effectiveToSeason')::integer >= (stats->>'season')::integer)) INTO values_count,bad,chosen\n      FROM public.predictive_observations o WHERE o.id=ANY(ids) AND (role_name='game-bridge' OR o.kind='source-row-absent'\n        OR ((o.data->>'effectiveFromSeason')::integer <= (stats->>'season')::integer AND (o.data->>'effectiveToSeason')::integer >= (stats->>'season')::integer));\n    IF values_count<>1 OR bad OR chosen IS NULL THEN RAISE EXCEPTION 'predictive-source-plan-bridge-invalid' USING ERRCODE='23514'; END IF;\n    IF role_name='game-bridge' THEN game:=chosen; ELSIF role_name='team-alias' THEN team:=chosen; ELSE opponent:=chosen; END IF;\n    deps := deps || public.predictive_source_dependencies(ids,role_name,t);\n  END LOOP;\n  IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.kind='game-bridge' AND o.game_id=game::uuid\n      AND o.data->>'provider'='nflverse' AND (o.data->>'rawGameId') IS DISTINCT FROM (stats->>'rawGameId')\n      AND (public.predictive_source_is_head(o.id,t,rights_time) OR (require_current AND public.predictive_source_is_head(o.id,rights_time,rights_time)))) THEN\n    RAISE EXCEPTION 'predictive-source-plan-bridge-invalid' USING ERRCODE='23514';\n  END IF;\n  SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO ids FROM public.predictive_observations o\n    WHERE o.entity_key='schedule:' || game AND public.predictive_source_is_head(o.id,t,rights_time);\n  IF require_current THEN\n    SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO current_ids FROM public.predictive_observations o\n      WHERE o.entity_key='schedule:' || game AND public.predictive_source_is_head(o.id,rights_time,rights_time);\n    IF ids<>current_ids THEN RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514'; END IF;\n  END IF;\n  IF cardinality(ids)=1 THEN chosen:=ids[1];\n  ELSIF cardinality(ids)>1 THEN\n    SELECT array_agg(x.id) INTO decision_ids FROM public.predictive_decisions x WHERE x.entity_key='reconciliation:schedule:' || game AND x.kind='reconciliation'\n      AND x.decided_at <= t AND NOT EXISTS (SELECT 1 FROM public.predictive_decisions n WHERE n.predecessor_id=x.id AND n.decided_at<=t)\n      AND (SELECT r.status FROM public.predictive_ingestion_runs r WHERE r.id=x.run_id)='published';\n    IF cardinality(decision_ids) IS DISTINCT FROM 1 THEN RAISE EXCEPTION 'predictive-source-plan-schedule-invalid' USING ERRCODE='23514'; END IF;\n    SELECT * INTO d FROM public.predictive_decisions WHERE id=decision_ids[1];\n    IF d.outcome->>'result' IS DISTINCT FROM 'selected' OR public.predictive_decision_current(d.id,t) IS NOT TRUE\n        OR (require_current AND (SELECT array_agg(x.id ORDER BY x.id COLLATE \"C\") FROM public.predictive_decisions x\n        JOIN public.predictive_ingestion_runs r ON r.id=x.run_id WHERE x.entity_key=d.entity_key AND x.kind='reconciliation' AND r.status='published'\n          AND x.decided_at<=rights_time AND NOT EXISTS (SELECT 1 FROM public.predictive_decisions n WHERE n.predecessor_id=x.id AND n.decided_at<=rights_time)) IS DISTINCT FROM decision_ids) THEN\n      RAISE EXCEPTION 'predictive-source-plan-schedule-invalid' USING ERRCODE='23514'; END IF;\n    chosen:=d.outcome->>'selectedObservationId';\n    decisions:=jsonb_build_array(jsonb_build_object('id',d.id,'kind',d.kind,'entityKey',d.entity_key,'policyId',d.policy_id,'mode',d.mode,\n      'decidedAt',public.predictive_source_time(d.decided_at),'predecessorId',d.predecessor_id,'outcome',d.outcome,'inputs',\n      (SELECT jsonb_agg(jsonb_build_object('observationId',i.observation_id,'role',i.role) ORDER BY i.observation_id COLLATE \"C\") FROM public.predictive_decision_inputs i WHERE i.decision_id=d.id)));\n  ELSE RAISE EXCEPTION 'predictive-source-plan-schedule-invalid' USING ERRCODE='23514'; END IF;\n  SELECT data INTO schedule FROM public.predictive_observations WHERE id=chosen AND kind='schedule' AND id=ANY(ids);\n  IF schedule IS NULL OR EXISTS (SELECT 1 FROM public.predictive_observations s JOIN public.predictive_observations a ON a.kind='schedule'\n      AND a.raw_game_id=s.raw_game_id AND a.game_id<>s.game_id WHERE s.id=ANY(ids)\n        AND (public.predictive_source_is_head(a.id,t,rights_time) OR (require_current AND public.predictive_source_is_head(a.id,rights_time,rights_time)))) THEN\n    RAISE EXCEPTION 'predictive-source-plan-schedule-invalid' USING ERRCODE='23514'; END IF;\n  deps:=deps || public.predictive_source_dependencies(ids,'schedule',t);\n  parts:=string_to_array(stats->>'rawGameId','_');\n  IF schedule->'season' IS DISTINCT FROM stats->'season' OR schedule->'week' IS DISTINCT FROM stats->'week' OR schedule->'seasonType' IS DISTINCT FROM stats->'seasonType' OR team=opponent\n      OR (schedule->>'homeTeamId') IS DISTINCT FROM (CASE WHEN (stats->>'rawTeam')=parts[4] THEN team ELSE opponent END)\n      OR (schedule->>'awayTeamId') IS DISTINCT FROM (CASE WHEN (stats->>'rawTeam')=parts[3] THEN team ELSE opponent END) THEN\n    RAISE EXCEPTION 'predictive-source-plan-context-invalid' USING ERRCODE='23514'; END IF;\n  candidate_data:=jsonb_build_object('gameId',game,'rawGameId',stats->'rawGameId','teamId',team,'rawTeam',stats->'rawTeam',\n    'season',stats->'season','seasonType',stats->'seasonType','missing',stats->'missing') || (stats->'values');\n  IF p.feed='player' THEN\n    SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO ids FROM public.predictive_observations o\n      WHERE o.entity_key='player-bridge:gsis:' || (stats->>'rawPlayerId') AND public.predictive_source_is_head(o.id,t,rights_time);\n    IF require_current THEN\n      SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO current_ids FROM public.predictive_observations o\n        WHERE o.entity_key='player-bridge:gsis:' || (stats->>'rawPlayerId') AND public.predictive_source_is_head(o.id,rights_time,rights_time);\n      IF ids<>current_ids THEN RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514'; END IF;\n    END IF;\n    IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='source-row-absent') THEN\n      RAISE EXCEPTION 'predictive-source-plan-player-invalid' USING ERRCODE='23514'; END IF;\n    SELECT count(DISTINCT o.player_id),min(o.player_id) INTO values_count,player FROM public.predictive_observations o WHERE o.id=ANY(ids)\n      AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz;\n    IF values_count<>1 OR EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.kind='player-bridge' AND o.player_id=player\n        AND o.data->>'provider'='gsis' AND (o.data->>'rawPlayerId') IS DISTINCT FROM (stats->>'rawPlayerId')\n        AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz\n        AND (public.predictive_source_is_head(o.id,t,rights_time) OR (require_current AND public.predictive_source_is_head(o.id,rights_time,rights_time)))) THEN\n      RAISE EXCEPTION 'predictive-source-plan-player-invalid' USING ERRCODE='23514'; END IF;\n    SELECT coalesce(jsonb_agg(jsonb_build_object('id',k.id,'statsProfileId',k.stats_profile_id,'bridgeProfileId',k.bridge_profile_id,\n      'provider',k.provider,'decidedAt',public.predictive_source_time(k.decided_at))),'[]'::jsonb) INTO links FROM public.predictive_profile_identity_links k\n      WHERE k.stats_profile_id=p.id AND k.provider='gsis' AND k.decided_at<=t AND EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids)\n        AND o.profile_id=k.bridge_profile_id AND o.player_id=player AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz\n        AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz);\n    IF require_current AND EXISTS (SELECT 1 FROM public.predictive_profile_identity_links k\n        WHERE k.stats_profile_id=p.id AND k.provider='gsis' AND k.decided_at>t AND k.decided_at<=rights_time\n          AND EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.profile_id=k.bridge_profile_id\n            AND o.player_id=player AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz\n            AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz)) THEN\n      RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514'; END IF;\n    IF links='[]'::jsonb THEN RAISE EXCEPTION 'predictive-source-plan-player-invalid' USING ERRCODE='23514'; END IF;\n    deps:=deps || public.predictive_source_dependencies(ids,'player-bridge',t);\n    candidate_data:=candidate_data || jsonb_build_object('playerId',player,'rawPlayerId',stats->'rawPlayerId','playerIdProvider','gsis');\n  END IF;\n  SELECT jsonb_agg(to_jsonb(public.predictive_rights_in_force(id,rights_time,rights_time))) INTO rights_ids FROM (\n    SELECT p.id UNION SELECT x->>'profileId' FROM jsonb_array_elements(deps) x) profiles(id);\n  expected_candidate:=jsonb_build_object('kind',CASE p.feed WHEN 'player' THEN 'player-game-stats' ELSE 'team-game-stats' END,'data',candidate_data);\n  IF proposed->>'status' IS DISTINCT FROM 'planned-source-normalization' OR proposed->'reason' IS DISTINCT FROM 'null'::jsonb\n      OR proposed->'candidate' IS DISTINCT FROM expected_candidate OR proposed->>'dataDigest' IS DISTINCT FROM public.predictive_source_digest(expected_candidate)\n      OR public.predictive_source_set_equal(b->'dependencies',deps) IS NOT TRUE OR public.predictive_source_set_equal(b->'identityLinks',links) IS NOT TRUE\n      OR public.predictive_source_set_equal(b->'decisions',decisions) IS NOT TRUE OR public.predictive_source_set_equal(b->'rightsDecisionIds',rights_ids) IS NOT TRUE THEN\n    RAISE EXCEPTION 'predictive-source-plan-normalization-invalid' USING ERRCODE='23514'; END IF;\nEND\n$function$\n",
-        "kind": "f",
-        "security_definer": false
-      },
-      "kind": "routine",
-      "name": "predictive_source_plan_check_v1(proposed jsonb, rights_time timestamp with time zone, require_current boolean)"
-    },
-    {
-      "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_source_plan_v2(req jsonb, rights_time timestamp with time zone)\n RETURNS jsonb\n LANGUAGE plpgsql\n STABLE\nAS $function$\nDECLARE p public.predictive_source_profiles; t timestamptz; raw_key text;\n  caps jsonb; cap jsonb; source_rows jsonb:='[]'; row_refs jsonb:='[]'; stats jsonb;\n  reason text; candidate jsonb; deps jsonb:='[]'; links jsonb:='[]'; decisions jsonb:='[]'; rights_ids jsonb;\n  ids text[]; rivals text[]; role_name text; fact text; game text; team text; opponent text; player text; chosen text;\n  schedule jsonb; parts text[]; decision_ids text[]; values_count integer; bad boolean; data jsonb; b jsonb;\n  d public.predictive_decisions;\nBEGIN\n  raw_key:=public.predictive_source_request_key(req); t:=(req->>'cutoff')::timestamptz;\n  SELECT * INTO p FROM public.predictive_source_profiles WHERE id=req->>'profileId';\n  IF rights_time IS NULL OR NOT isfinite(rights_time) OR t>rights_time OR p.id IS NULL OR p.provider<>'nflverse'\n      OR p.parser_version<>'nflverse-csv-qualification-v1' OR p.allowlist_version<>'predictive-raw-allowlist-v1'\n      OR p.feed NOT IN ('player','team') OR (p.feed='player') IS DISTINCT FROM (req->'rawPlayerId'<>'null'::jsonb)\n      OR public.predictive_rights_allow(p.id,rights_time,rights_time,'internal-research') IS NOT TRUE THEN\n    RAISE EXCEPTION 'predictive-source-plan-rights-profile-invalid' USING ERRCODE='23514'; END IF;\n\n  WITH eligible AS (SELECT c.*,dense_rank() OVER (ORDER BY c.captured_at DESC) AS rank\n    FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id\n    JOIN public.predictive_blobs bl ON bl.sha256=a.blob_sha256 JOIN public.predictive_ingestion_runs r ON r.id=c.run_id\n    WHERE a.profile_id=p.id AND a.scope_kind='season-file' AND a.scope_season=2026 AND a.scope_filter IS NULL AND bl.media_type='text/csv'\n      AND c.state='published' AND r.status='published' AND c.available_at<=t AND c.ingested_at<=t)\n  SELECT coalesce(jsonb_agg(jsonb_build_object('id',c.id,'runId',c.run_id,'artifactId',c.artifact_id,\n    'capturedAt',public.predictive_source_time(c.captured_at),'availableAt',public.predictive_source_time(c.available_at),\n    'ingestedAt',public.predictive_source_time(c.ingested_at),'parsedRows',c.parsed_rows,'sha256',a.blob_sha256,\n    'storageRef',bl.storage_ref,'byteSize',bl.byte_size) ORDER BY c.ingested_at,c.id COLLATE \"C\"),'[]')\n    INTO caps FROM eligible c JOIN public.predictive_artifacts a ON a.id=c.artifact_id\n    JOIN public.predictive_blobs bl ON bl.sha256=a.blob_sha256 WHERE c.rank=1;\n  IF jsonb_array_length(caps)>256 THEN RAISE EXCEPTION 'predictive-source-plan-bounds-refused' USING ERRCODE='23514'; END IF;\n\n  <<normalization>> BEGIN\n    IF caps='[]'::jsonb THEN\n      reason:=CASE WHEN EXISTS (SELECT 1 FROM public.predictive_retention_events\n        WHERE scope_descriptor->>'kind'='source' AND scope_descriptor->'profileIds' ? p.id\n          AND (scope_descriptor->>'capturedFrom' IS NULL OR (scope_descriptor->>'capturedFrom')::timestamptz<=t))\n        THEN 'retained-evidence-removed' ELSE 'source-capture-missing' END;\n      EXIT normalization;\n    END IF;\n    IF (SELECT count(DISTINCT x->>'sha256') FROM jsonb_array_elements(caps) x)>1 THEN\n      reason:='source-capture-ambiguous'; EXIT normalization; END IF;\n    cap:=caps->0; caps:=jsonb_build_array(cap);\n    SELECT coalesce(jsonb_agg(jsonb_build_object('id',s.id,'rowOrdinal',s.row_ordinal,'rawKeySha256',s.raw_key_sha256,\n        'selectedSha256',s.selected_sha256,'projection',s.projection,'failureCode',s.failure_code) ORDER BY s.row_ordinal),'[]'),\n      coalesce(jsonb_agg(jsonb_build_object('id',s.id,'rowOrdinal',s.row_ordinal,'selectedSha256',s.selected_sha256) ORDER BY s.row_ordinal),'[]')\n      INTO source_rows,row_refs FROM public.predictive_source_stats_rows s WHERE s.capture_id=cap->>'id' AND s.raw_key_sha256=raw_key;\n    IF source_rows='[]'::jsonb THEN reason:='source-row-missing'; EXIT normalization;\n    ELSIF (SELECT count(DISTINCT x->>'selectedSha256') FROM jsonb_array_elements(source_rows) x)>1 THEN\n      reason:='source-row-ambiguous'; EXIT normalization;\n    ELSIF source_rows->0->>'failureCode' IS NOT NULL THEN reason:='source-row-refused'; EXIT normalization; END IF;\n    stats:=source_rows->0->'projection';\n\n    FOREACH role_name IN ARRAY ARRAY['game-bridge','team-alias','opponent-alias'] LOOP\n      fact:=CASE role_name WHEN 'game-bridge' THEN 'game-bridge:nflverse:' || (stats->>'rawGameId')\n        WHEN 'team-alias' THEN 'team-alias:nflverse:' || (stats->>'rawTeam') ELSE 'team-alias:nflverse:' || (stats->>'rawOpponent') END;\n      SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO ids FROM public.predictive_observations o\n        WHERE o.entity_key=fact AND public.predictive_source_is_head(o.id,t,rights_time);\n      deps:=deps || public.predictive_source_dependencies(ids,role_name,t);\n      SELECT count(DISTINCT CASE role_name WHEN 'game-bridge' THEN o.data->>'gameId' ELSE o.data->>'teamId' END),\n        min(CASE role_name WHEN 'game-bridge' THEN o.data->>'gameId' ELSE o.data->>'teamId' END)\n        INTO values_count,chosen FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind=CASE role_name WHEN 'game-bridge' THEN 'game-bridge' ELSE 'team-alias' END\n          AND (role_name='game-bridge' OR ((o.data->>'effectiveFromSeason')::integer <= (stats->>'season')::integer\n            AND (o.data->>'effectiveToSeason')::integer >= (stats->>'season')::integer));\n      IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='source-row-absent') OR values_count>1 THEN\n        reason:=role_name || '-conflict'; EXIT normalization;\n      ELSIF values_count=0 THEN reason:=role_name || '-missing'; EXIT normalization; END IF;\n      IF role_name='game-bridge' THEN\n        game:=chosen;\n        SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO rivals FROM public.predictive_observations o\n          WHERE o.kind='game-bridge' AND o.data->>'provider'=p.provider AND o.game_id=game::uuid\n            AND o.data->>'rawGameId'<>stats->>'rawGameId' AND public.predictive_source_is_head(o.id,t,rights_time);\n        IF cardinality(rivals)>0 THEN deps:=deps || public.predictive_source_dependencies(rivals,role_name,t);\n          reason:='game-bridge-conflict'; EXIT normalization; END IF;\n      ELSIF role_name='team-alias' THEN team:=chosen; ELSE opponent:=chosen; END IF;\n    END LOOP;\n\n    SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO ids FROM public.predictive_observations o\n      WHERE o.entity_key='schedule:' || game AND public.predictive_source_is_head(o.id,t,rights_time);\n    IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='source-row-absent') THEN\n      deps:=deps || public.predictive_source_dependencies(ids,'schedule',t); reason:='normalization-schedule-absent'; EXIT normalization; END IF;\n    SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO ids FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='schedule';\n    SELECT EXISTS (SELECT 1 FROM public.predictive_observations s JOIN public.predictive_observations a\n      ON a.kind='schedule' AND a.raw_game_id=s.raw_game_id AND a.game_id<>s.game_id\n      WHERE s.id=ANY(ids) AND public.predictive_source_is_head(a.id,t,rights_time)) INTO bad;\n    IF bad THEN\n      SELECT array_agg(o.id ORDER BY o.id COLLATE \"C\") INTO rivals FROM public.predictive_observations o WHERE o.kind='schedule'\n        AND o.raw_game_id IN (SELECT s.raw_game_id FROM public.predictive_observations s WHERE s.id=ANY(ids))\n        AND public.predictive_source_is_head(o.id,t,rights_time);\n      deps:=deps || public.predictive_source_dependencies(rivals,'schedule',t); reason:='normalization-schedule-ambiguous'; EXIT normalization;\n    END IF;\n    deps:=deps || public.predictive_source_dependencies(ids,'schedule',t);\n    IF cardinality(ids)=0 THEN reason:='normalization-schedule-missing'; EXIT normalization;\n    ELSIF cardinality(ids)=1 THEN chosen:=ids[1];\n    ELSE\n      SELECT array_agg(x.id ORDER BY x.id COLLATE \"C\") INTO decision_ids FROM public.predictive_decisions x\n        JOIN public.predictive_ingestion_runs r ON r.id=x.run_id WHERE x.entity_key='reconciliation:schedule:' || game AND x.kind='reconciliation'\n        AND r.status='published' AND x.decided_at<=t\n        AND NOT EXISTS (SELECT 1 FROM public.predictive_decisions n WHERE n.predecessor_id=x.id AND n.decided_at<=t);\n      IF cardinality(decision_ids) IS DISTINCT FROM 1 THEN reason:='normalization-schedule-ambiguous'; EXIT normalization; END IF;\n      SELECT * INTO d FROM public.predictive_decisions WHERE id=decision_ids[1];\n      IF d.outcome->>'result' IS DISTINCT FROM 'selected' OR (d.outcome->>'selectedObservationId')<>ALL(ids)\n          OR (SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE \"C\") FROM public.predictive_decision_inputs i WHERE i.decision_id=d.id) IS DISTINCT FROM ids THEN\n        reason:='normalization-schedule-ambiguous'; EXIT normalization; END IF;\n      chosen:=d.outcome->>'selectedObservationId';\n      decisions:=jsonb_build_array(jsonb_build_object('id',d.id,'kind',d.kind,'entityKey',d.entity_key,'policyId',d.policy_id,'mode',d.mode,\n        'decidedAt',public.predictive_source_time(d.decided_at),'predecessorId',d.predecessor_id,'outcome',d.outcome,'inputs',\n        (SELECT jsonb_agg(jsonb_build_object('observationId',i.observation_id,'role',i.role) ORDER BY i.observation_id COLLATE \"C\") FROM public.predictive_decision_inputs i WHERE i.decision_id=d.id)));\n    END IF;\n    SELECT o.data INTO schedule FROM public.predictive_observations o WHERE o.id=chosen;\n    parts:=string_to_array(stats->>'rawGameId','_');\n    IF schedule->'season' IS DISTINCT FROM stats->'season' OR schedule->'week' IS DISTINCT FROM stats->'week'\n        OR schedule->'seasonType' IS DISTINCT FROM stats->'seasonType' OR team=opponent\n        OR (schedule->>'homeTeamId') IS DISTINCT FROM (CASE WHEN (stats->>'rawTeam')=parts[4] THEN team ELSE opponent END)\n        OR (schedule->>'awayTeamId') IS DISTINCT FROM (CASE WHEN (stats->>'rawTeam')=parts[3] THEN team ELSE opponent END) THEN\n      reason:='source-schedule-context-conflict'; EXIT normalization; END IF;\n    data:=jsonb_build_object('gameId',game,'rawGameId',stats->'rawGameId','teamId',team,'rawTeam',stats->'rawTeam',\n      'season',stats->'season','seasonType',stats->'seasonType','missing',stats->'missing') || (stats->'values');\n    IF p.feed='player' THEN\n      SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO ids FROM public.predictive_observations o\n        WHERE o.entity_key='player-bridge:gsis:' || (stats->>'rawPlayerId') AND public.predictive_source_is_head(o.id,t,rights_time);\n      deps:=deps || public.predictive_source_dependencies(ids,'player-bridge',t);\n      SELECT count(DISTINCT o.player_id),min(o.player_id) INTO values_count,player FROM public.predictive_observations o\n        WHERE o.id=ANY(ids) AND o.kind='player-bridge' AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz\n        AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz;\n      IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='source-row-absent') OR values_count>1 THEN\n        reason:='player-bridge-conflict'; EXIT normalization;\n      ELSIF values_count=0 THEN reason:='player-bridge-missing'; EXIT normalization; END IF;\n      SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE \"C\"),'{}') INTO rivals FROM public.predictive_observations o\n        WHERE o.kind='player-bridge' AND o.player_id=player AND o.data->>'provider'='gsis'\n        AND (o.data->>'rawPlayerId') IS DISTINCT FROM (stats->>'rawPlayerId')\n        AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz\n        AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz AND public.predictive_source_is_head(o.id,t,rights_time);\n      IF cardinality(rivals)>0 THEN deps:=deps || public.predictive_source_dependencies(rivals,'player-bridge',t);\n        reason:='player-bridge-conflict'; EXIT normalization; END IF;\n      SELECT coalesce(jsonb_agg(jsonb_build_object('id',k.id,'statsProfileId',k.stats_profile_id,'bridgeProfileId',k.bridge_profile_id,\n        'provider',k.provider,'decidedAt',public.predictive_source_time(k.decided_at)) ORDER BY k.id COLLATE \"C\"),'[]') INTO links\n        FROM public.predictive_profile_identity_links k WHERE k.stats_profile_id=p.id AND k.provider='gsis' AND k.decided_at<=t\n        AND EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='player-bridge'\n          AND o.profile_id=k.bridge_profile_id AND o.player_id=player AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz\n          AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz);\n      IF links='[]'::jsonb THEN reason:='player-bridge-link-missing'; EXIT normalization; END IF;\n      data:=data || jsonb_build_object('playerId',player,'rawPlayerId',stats->'rawPlayerId','playerIdProvider','gsis');\n    END IF;\n    candidate:=jsonb_build_object('kind',CASE p.feed WHEN 'player' THEN 'player-game-stats' ELSE 'team-game-stats' END,'data',data);\n  END normalization;\n\n  SELECT coalesce(jsonb_agg(x ORDER BY x->>'role' COLLATE \"C\",x->>'observationId' COLLATE \"C\"),'[]') INTO deps FROM jsonb_array_elements(deps) x;\n  SELECT jsonb_agg(to_jsonb(public.predictive_rights_in_force(id,rights_time,rights_time))\n    ORDER BY public.predictive_rights_in_force(id,rights_time,rights_time) COLLATE \"C\") INTO rights_ids FROM (\n    SELECT p.id UNION SELECT x->>'profileId' FROM jsonb_array_elements(deps) x) profiles(id);\n  IF EXISTS (SELECT 1 FROM jsonb_array_elements(deps) x WHERE public.predictive_rights_allow(x->>'profileId',rights_time,rights_time,'internal-research') IS NOT TRUE) THEN\n    RAISE EXCEPTION 'predictive-source-plan-rights-profile-invalid' USING ERRCODE='23514'; END IF;\n  b:=jsonb_build_object('version','nflverse-stats-normalization-plan-v2','cutoff',req->'cutoff','sourceRequest',req,\n    'sourceInputDigest',public.predictive_source_digest(jsonb_build_object('version','nflverse-csv-source-claims-v1','request',req,'captures',caps,'rows',source_rows)),\n    'sourceProfileId',p.id,'rawSourceKey',CASE WHEN source_rows='[]'::jsonb THEN NULL ELSE raw_key END,\n    'sourceCaptures',caps,'sourceRows',row_refs,'parserVersion','nflverse-csv-qualification-v1','projectionVersion','nflverse-raw-stats-v1',\n    'dependencies',deps,'identityLinks',links,'decisions',decisions,'rightsDecisionIds',rights_ids);\n  RETURN jsonb_build_object('status',CASE WHEN reason IS NULL THEN 'planned-source-normalization' ELSE 'unavailable-source-normalization' END,\n    'reason',reason,'candidate',candidate,'dataDigest',public.predictive_source_digest(candidate),'binding',b,\n    'planDigest',public.predictive_source_digest(jsonb_build_object('reason',reason,'candidate',candidate,'binding',b)),\n    'observationsPublished',false,'featuresPublished',false,'labelsFinalized',false,'populationCoverage','unqualified');\nEND\n$function$\n",
-        "kind": "f",
-        "security_definer": false
-      },
-      "kind": "routine",
-      "name": "predictive_source_plan_v2(req jsonb, rights_time timestamp with time zone)"
     },
     {
       "definition": {
@@ -18813,6 +21967,22 @@
         "maximum": "9223372036854775807",
         "minimum": "1",
         "owned_by": [
+          "public.corpus_imports.import_id"
+        ],
+        "start": "1",
+        "type": "bigint"
+      },
+      "kind": "sequence",
+      "name": "corpus_imports_import_id_seq"
+    },
+    {
+      "definition": {
+        "cache": "1",
+        "cycle": false,
+        "increment": "1",
+        "maximum": "9223372036854775807",
+        "minimum": "1",
+        "owned_by": [
           "public.creator_video_submissions.id"
         ],
         "start": "1",
@@ -18868,6 +22038,86 @@
       },
       "kind": "sequence",
       "name": "player_game_stats_id_seq"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_api_videos_no_truncate BEFORE TRUNCATE ON corpus_api_videos FOR EACH STATEMENT EXECUTE FUNCTION corpus_api_replace_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_api_videos.corpus_api_videos_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_api_videos_no_update BEFORE UPDATE ON corpus_api_videos FOR EACH ROW EXECUTE FUNCTION corpus_api_replace_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_api_videos.corpus_api_videos_no_update"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_capture_events_immutable BEFORE DELETE OR UPDATE ON corpus_capture_events FOR EACH ROW EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_capture_events.corpus_capture_events_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_capture_events_no_truncate BEFORE TRUNCATE ON corpus_capture_events FOR EACH STATEMENT EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_capture_events.corpus_capture_events_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_decision_events_immutable BEFORE DELETE OR UPDATE ON corpus_decision_events FOR EACH ROW EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_decision_events.corpus_decision_events_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_decision_events_no_truncate BEFORE TRUNCATE ON corpus_decision_events FOR EACH STATEMENT EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_decision_events.corpus_decision_events_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_gate_registrations_immutable BEFORE DELETE OR UPDATE ON corpus_gate_registrations FOR EACH ROW EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_gate_registrations_no_truncate BEFORE TRUNCATE ON corpus_gate_registrations FOR EACH STATEMENT EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_imports_immutable BEFORE DELETE OR UPDATE ON corpus_imports FOR EACH ROW EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_imports.corpus_imports_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_imports_no_truncate BEFORE TRUNCATE ON corpus_imports FOR EACH STATEMENT EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_imports.corpus_imports_no_truncate"
     },
     {
       "definition": {
@@ -19483,18 +22733,18 @@
         "version": 3
       },
       {
-        "filename": "0004_predictive_source_claims.sql",
-        "sha256": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a",
+        "filename": "0004_creator_corpus_projection.sql",
+        "sha256": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba",
         "version": 4
       },
       {
-        "filename": "0005_predictive_source_bindings.sql",
-        "sha256": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19",
+        "filename": "0005_predictive_source_claims.sql",
+        "sha256": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a",
         "version": 5
       },
       {
-        "filename": "0006_predictive_unavailable_bindings.sql",
-        "sha256": "fc10fe50cb8913c2c755db8ff15c0aa3d40e49b5a92d2471fff86c89c4409679",
+        "filename": "0006_predictive_source_bindings.sql",
+        "sha256": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19",
         "version": 6
       }
     ]

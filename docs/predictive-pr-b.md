@@ -65,9 +65,9 @@ and proof measurements are recorded in the
 
 The next integration unit is the shared binding-aware head rule across SQL and
 application feature, reconciliation, participation, final-label and post-window
-checks. Activate those consumers together. #90's PR #103 is still open at this
-audit; its merge must precede PR B migration renumbering and a new activation
-migration. Application preparation can continue while that ordering is pending.
+checks. Activate those consumers together. #90's PR #103 merged as `3daf1dc`
+on 2026-10-12; the coordinated merge/renumber now places PR B after its released
+creator-corpus migration. A new forward activation migration can follow.
 Qualified completion, participation/zero-opportunity, complete population,
 membership and schedule/history evidence remain separate source gates; a
 correct head rule cannot manufacture them. Model evaluation belongs to #54 and
@@ -76,12 +76,23 @@ product UI integration to #53, rather than being additional #52 implementation.
 ## Migration ordering decision (2026-10-12)
 
 The owner approved #90 landing first: its creator-corpus migration owns 0004.
-After that merge, merge main into this branch and move PR B's three unmerged
-migrations from **0004–0006 to 0005–0007**, then regenerate catalog/readiness
-artifacts and update migration-prefix tests. The owner confirmed they have run
-only in disposable databases. Released 0001–0003 remain frozen. No further
-PR B migrations will be added until this ordering is resolved. References below
-use the current filenames pending #90's merge; renumbering has not occurred.
+PR #103 merged as `3daf1dc` at 2026-10-12 19:27:45 UTC. Main is merged into
+this branch without rebasing, and PR B's three unmerged migrations are moved
+from **0004–0006 to 0005–0007**. Their SQL bytes/checksums are unchanged; catalog
+prefix contracts and generated manifests now include the creator-corpus schema.
+The owner confirmed the old private prefixes ran only in disposable databases.
+Released 0001–0004 SQL/checksums/catalog contracts remain unchanged.
+
+| Current migration | Earlier private filename |
+| --- | --- |
+| `0005_predictive_source_claims.sql` | `0004_predictive_source_claims.sql` |
+| `0006_predictive_source_bindings.sql` | `0005_predictive_source_bindings.sql` |
+| `0007_predictive_unavailable_bindings.sql` | `0006_predictive_unavailable_bindings.sql` |
+
+Historical checkpoint logs below retain their original numeric schema versions;
+those disposable databases have been removed. Recreate any old private prefix
+rather than attempting to migrate its obsolete ledger. The runner's checksum
+and target guards remain intact.
 
 Capture-less bindings cannot prove they fall outside a time-scoped source
 deletion. Keep the conservative closure: remove those bindings and their entire
@@ -177,7 +188,7 @@ durable archive.
 
 ## Local raw CSV claims persistence
 
-Forward migration `0004_predictive_source_claims.sql` adds immutable raw-source
+Forward migration `0005_predictive_source_claims.sql` adds immutable raw-source
 rows, not canonical observations. The complete, unfiltered 2026 player/team
 season-file is the supported scope, capped at 8 MB and 8,192 parsed records.
 Each row records its capture, record ordinal, raw-key hash, allowlisted row hash
@@ -342,7 +353,7 @@ append/attach/withhold transition planner and cutoff-head selector. Identity
 rerouting follows the raw chain before selecting a canonical entity, so an old
 player/game contribution cannot remain active. A missing raw row withholds the
 contribution without generating absence, zero or DNP. These functions defined
-the initial pure contract. The subsequent 0005 storage checkpoint below implements
+the initial pure contract. The subsequent binding storage checkpoint below implements
 bindings and canonical source revisions in research staging. Activation still
 requires the following complete adapter boundary:
 
@@ -367,7 +378,9 @@ requires the following complete adapter boundary:
 
 Any schema extension must be forward from frozen 0003, with generated catalog/
 readiness artifacts and disposable empty, upgrade, no-op and retention proofs.
-Coordinate migration numbering before review; 0004 is still local/unmerged.
+The coordinated merge now sequences this work at 0005–0007 after #90's released
+0004, preserving the SQL bytes. Historical evidence below uses its original
+private prefix numbers.
 
 ## Source gates before usable passing-yards inputs
 
@@ -447,7 +460,7 @@ research staging. The local store exposes `recordSourceNormalization` and
 `replaySourceNormalization`. Recorder-only writes, database clocks, complete
 SQL recomputation, original-byte hydration, expected-head concurrency, current
 research rights and whole-lineage retention are covered by mandatory disposable
-PostgreSQL tests. See [the implemented storage boundary](predictive-source-lineage.md#storage-checkpoint-implemented-in-0005).
+PostgreSQL tests. See [the implemented storage boundary](predictive-source-lineage.md#storage-checkpoint-implemented-in-0006).
 
 This supersedes the earlier statement that binding storage is unimplemented.
 It does **not** activate canonical observations, model reads or labels. The
@@ -523,3 +536,36 @@ Evidence: `/private/tmp/dfs52-prb-unavailable-jsdom.log`,
 `/private/tmp/dfs52-prb-unavailable-node.log`,
 `/private/tmp/dfs52-prb-unavailable-db.log`,
 `/private/tmp/dfs52-prb-unavailable-proof.log`.
+
+## Latest verified checkpoint: consumer witnesses and #90 merge
+
+Commit `4319a6b` implements shared application witnesses and read-only
+reconciliation/usage/post-window source-capture checks. Seventeen pure cases
+and two mandatory database cases prove exact binding provenance, reuse of an
+unchanged statistical revision with fresh capture evidence, unresolved-provider
+withholding and replay-only access. These remain research helpers; active
+feature/decision/label integration and the matching SQL rule are still next.
+
+Main/#90 `3daf1dc` is now merged without rebasing, with PR B files at 0005–0007.
+Released SQL/catalog contracts 0001–0004 match main exactly and the renamed SQL
+keeps its old checksums. Generated prefixes/readiness include creator-corpus
+0004; minimum readiness remains 2 and maximum-known is 7. A mandatory v4-upgrade
+case seeds all five creator-corpus tables and proves that predictive migrations,
+CSV publication and no-op reruns preserve their rows and recorded history.
+
+The final gates pass **873 jsdom + 633 Node tests**, **75 Node DB checks + 103
+DB tests**, all **78 mandatory predictive** and **8 creator-corpus** cases,
+typecheck, full lint, CI gate, Firebase Admin runtime, the production Webpack
+build, migration/catalog/readiness verification and whitespace/link checks.
+Only PR B's isolated disposable project was used and removed. No persistent
+dev, Neon or Production migration ran. Evidence logs are
+`/private/tmp/dfs52-prb-consumers-{jsdom,node,db,typecheck,lint,ci,build}.log`.
+
+The version-7 retained-file proof at 2026-10-12 20:00 UTC made zero requests,
+restored the same 4,517 player/130 team rows, and returned zero usable heads with
+`game-bridge-missing` and unavailable consumer witnesses for both feeds. It
+published no active canonical observations/features/labels. Whole-process wall
+time was 7.97 seconds and maximum RSS 498,810,880 bytes (~476 MiB), measured,
+not capped. Evidence: `/private/tmp/dfs52-prb-consumers-proof.log` and
+`/private/tmp/dfs52-prb-consumers-proof-metrics.log`. Source qualification and the
+parent ACs remain incomplete; the #90 sequencing hold is resolved.

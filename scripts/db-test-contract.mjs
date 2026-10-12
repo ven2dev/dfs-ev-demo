@@ -63,6 +63,7 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV source ingest and replay work without superuser and retention removes rows and resumes files with execute-only access",
   "CSV source replay keeps equal-time conflicts ambiguous and late older imports cannot replace a newer snapshot",
   "CSV source migration upgrades released v3 without changing existing evidence or its recorded checksum",
+  "CSV source migration upgrades released v4 preserving creator corpus evidence and recorded history",
   "CSV source retention re-applies identical row deletion after re-importing retained files into a fresh database",
   "CSV normalization plans verify raw rows and exact bridges in a read-only snapshot through a replay-only login",
   "CSV normalization scoped reads include reverse identity conflicts without importing unrelated correction chains",
@@ -79,15 +80,15 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV binding concurrent recorders serialize and exactly one expected-head proposal commits",
   "CSV binding unrecorded bridge conflicts withhold the current raw contribution without poisoning earlier cutoffs",
   "CSV binding bridge retention removes ancestors and descendants and identical restored evidence re-applies its audit",
-  "CSV binding migration upgrades v4 without changing released history and reruns are no-ops",
+  "CSV binding migration upgrades v5 without changing released history and reruns are no-ops",
   "CSV binding canonical guard refuses generated JSON under real source profiles and immutable bindings cannot be rewritten",
   "CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries",
   "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
   "CSV unavailable bindings supersede usable context and recover without inventing numeric corrections or changing earlier cutoffs",
   "CSV unavailable bindings verify every ambiguous capture file and allow evidenced conflict recovery",
   "CSV capture-less unavailable bindings keep source rights and whole-lineage retention through execute-only ownership",
-  "CSV unavailable migration upgrades v5 preserving v1 positive and withheld plans, exact retries and recorded history",
-  "CSV unavailable retention re-applies pre-v6 legacy events with identical counts and digests after restoration",
+  "CSV unavailable migration upgrades v6 preserving v1 positive and withheld plans, exact retries and recorded history",
+  "CSV unavailable retention re-applies pre-v7 legacy events with identical counts and digests after restoration",
   "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
   "CSV unavailable planning checks context rights before file hydration and revocation blocks saved conflicts and retries",
   "CSV binding schedule reconciliation pins only a current exact selection and a new conflicting head can be recorded unavailable",
@@ -100,6 +101,17 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV canonical fact reads preserve unresolved routing when no historical canonical destination exists",
   "CSV consumer witnesses bind unchanged recaptures and post-window evidence through a replay-only login",
   "CSV consumer checks withhold stale routing and revoked access instead of reviving earlier selected values",
+]);
+
+export const CORPUS_REQUIRED_CASES = Object.freeze([
+  "corpus schema stores only bounded metadata and keeps owner, API and derived statuses separate",
+  "corpus owner events, imports and gate registrations are append-only while API rows are replace-or-delete",
+  "corpus importer role has only local projection privileges and PUBLIC/runtime roles have none",
+  "corpus importer publishes one atomic snapshot, appends only owner tails and reruns as a no-op",
+  "corpus importer verifies the connected local role before loading any private source",
+  "corpus importer fails on lock contention and rolls back a later publication error without partial rows",
+  "corpus readiness reads one consistent local projection and keeps coverage dimensions separate",
+  "corpus API expiry removes complete stale snapshots while preserving permanent owner history",
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({
@@ -117,6 +129,7 @@ export const NODE_REQUIRED_CASES = Object.freeze({
     "Vitest DB report preserves all required lease cases and refuses missing, skipped, todo or failed results",
     "Vitest DB report requires the readiness cases independently of the existing 13 lease cases",
     "Vitest DB report requires every predictive persistence case independently of lease and readiness cases",
+    "Vitest DB report requires every corpus schema case independently of the other DB suites",
   ]),
   "tests/db/readiness-manifest-unit.check.mjs": Object.freeze([
     "readiness generation binds the explicit minimum to validated migration and table contracts",
@@ -232,3 +245,4 @@ export function validateLeaseDbReport(report, required = LEASE_REQUIRED_CASES) {
 
 export const validateReadinessDbReport = (report) => validateLeaseDbReport(report, READINESS_REQUIRED_CASES);
 export const validatePredictiveDbReport = (report) => validateLeaseDbReport(report, PREDICTIVE_REQUIRED_CASES);
+export const validateCorpusDbReport = (report) => validateLeaseDbReport(report, CORPUS_REQUIRED_CASES);

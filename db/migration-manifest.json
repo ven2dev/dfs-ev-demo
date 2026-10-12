@@ -19,17 +19,22 @@
     },
     {
       "version": 4,
-      "filename": "0004_predictive_source_claims.sql",
-      "sha256": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a"
+      "filename": "0004_creator_corpus_projection.sql",
+      "sha256": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba"
     },
     {
       "version": 5,
-      "filename": "0005_predictive_source_bindings.sql",
-      "sha256": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19"
+      "filename": "0005_predictive_source_claims.sql",
+      "sha256": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a"
     },
     {
       "version": 6,
-      "filename": "0006_predictive_unavailable_bindings.sql",
+      "filename": "0006_predictive_source_bindings.sql",
+      "sha256": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19"
+    },
+    {
+      "version": 7,
+      "filename": "0007_predictive_unavailable_bindings.sql",
       "sha256": "fc10fe50cb8913c2c755db8ff15c0aa3d40e49b5a92d2471fff86c89c4409679"
     }
   ]

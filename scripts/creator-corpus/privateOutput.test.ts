@@ -9,7 +9,9 @@ import {
   assertPrivateOutputAvailable,
   deletePrivateFile,
   readPrivateJson,
+  readPrivateJsonSource,
   readPrivateJsonOptional,
+  readPrivateText,
   readPrivateTextOptional,
   reapStaleLock,
   replacePrivateJson,
@@ -110,6 +112,22 @@ describe("readPrivateJsonOptional", () => {
     await writeFile(join(directory, "bad.json"), "{nope");
     expect(await code(readPrivateJsonOptional(join(directory, "bad.json")))).toBe("input-unreadable");
     expect(await code(readPrivateJsonOptional(join(process.cwd(), "package.json")))).toBe("must-be-outside-repository");
+  });
+});
+
+describe("strict import source readers", () => {
+  it("return exact owner-only bytes and refuse missing, linked or broadly readable input", async () => {
+    const json = join(directory, "source.json");
+    const jsonl = join(directory, "source.jsonl");
+    await writeFile(json, '{ "k": 1 }\n', { mode: 0o600 });
+    await writeFile(jsonl, '{"event":1}\n', { mode: 0o600 });
+    expect(await readPrivateJsonSource(json)).toEqual({ text: '{ "k": 1 }\n', value: { k: 1 } });
+    expect(await readPrivateText(jsonl)).toBe('{"event":1}\n');
+    await chmod(json, 0o644);
+    expect(await code(readPrivateJsonSource(json))).toBe("insecure-file-permissions");
+    expect(await code(readPrivateText(join(directory, "missing.jsonl")))).toBe("input-unreadable");
+    await symlink(jsonl, join(directory, "alias.jsonl"));
+    expect(await code(readPrivateText(join(directory, "alias.jsonl")))).toBe("symlink-not-allowed");
   });
 });
 

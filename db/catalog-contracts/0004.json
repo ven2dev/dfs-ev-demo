@@ -1,8 +1,866 @@
 {
-  "catalogFingerprint": "e741a1509cd45bcb68bef44c4130cfec24f0ff25d277d4baf3334d46654f544e",
+  "catalogFingerprint": "d2fe8734e7f8d572cc584c2ac3ac564f10bf2e55cf5fea1a4c6b4153672597a2",
   "contractVersion": 1,
   "formatVersion": 1,
   "objects": [
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.api_fetched_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "character varying(64)[]"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.classification_reasons"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "character varying(8)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.classification_rule_version"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "character varying(12)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.classification_status"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "character varying(32)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.creator_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 4,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.duration_seconds"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "character varying(8)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.live_broadcast_content"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.published_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 13,
+        "type": "character varying(12)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.review_status"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 7,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.season"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.season_week_provenance"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 14,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.snapshot_import_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "character varying(11)"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.video_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 8,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_api_videos.week"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 11,
+        "type": "character varying(14)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.caption_kind"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 14,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.captured_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "character varying(32)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.creator_key"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.event_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "character varying(11)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.event_kind"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 15,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.first_import_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.log_position"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "date"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.published_date"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "character varying(3)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.published_date_precision"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "character varying(48)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.published_date_provenance"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 13,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.transcript_characters"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": false,
+        "position": 12,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.transcript_sha256"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "character varying(32)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.transcript_source"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "character varying(32)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.usage_status"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "character varying(11)"
+      },
+      "kind": "column",
+      "name": "corpus_capture_events.video_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "character varying(32)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.creator_key"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.decided_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "character varying(7)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.decision_kind"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.event_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.file_position"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.first_import_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "character varying(500)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.reason"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "character varying(8)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.rule_version"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "character varying(11)"
+      },
+      "kind": "column",
+      "name": "corpus_decision_events.video_id"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "character varying(7)"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.collection_season_type"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "character varying(16)"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.commitment_algorithm"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 1,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.commitment_digest"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.commitment_version"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.eligible_creator_count"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.end_season"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.end_week"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 16,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.first_import_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "date_trunc('milliseconds'::text, clock_timestamp())",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 15,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.imported_at"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.maximum_feature_count"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.minimum_reviewed_gradable_picks_overall"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.minimum_reviewed_gradable_picks_per_creator"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 14,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.registered_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 13,
+        "type": "character varying(8)"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.rule_version"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.start_season"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_gate_registrations.start_week"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 12,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_imports.api_video_count"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 10,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_imports.capture_event_count"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 7,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.capture_input_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 11,
+        "type": "integer"
+      },
+      "kind": "column",
+      "name": "corpus_imports.decision_event_count"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 8,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.decision_input_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 9,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.discovery_input_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 6,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.gate_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": null,
+        "generated": "",
+        "identity": "a",
+        "not_null": true,
+        "position": 1,
+        "type": "bigint"
+      },
+      "kind": "column",
+      "name": "corpus_imports.import_id"
+    },
+    {
+      "definition": {
+        "collation": null,
+        "default": "date_trunc('milliseconds'::text, clock_timestamp())",
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 2,
+        "type": "timestamp with time zone"
+      },
+      "kind": "column",
+      "name": "corpus_imports.imported_at"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 3,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.importer_version"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 5,
+        "type": "character varying(64)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.registration_fingerprint"
+    },
+    {
+      "definition": {
+        "collation": "pg_catalog.default",
+        "default": null,
+        "generated": "",
+        "identity": "",
+        "not_null": true,
+        "position": 4,
+        "type": "character varying(8)"
+      },
+      "kind": "column",
+      "name": "corpus_imports.rule_version"
+    },
     {
       "definition": {
         "collation": null,
@@ -4131,97 +4989,6 @@
         "generated": "",
         "identity": "",
         "not_null": true,
-        "position": 2,
-        "type": "text"
-      },
-      "kind": "column",
-      "name": "predictive_source_stats_rows.capture_id"
-    },
-    {
-      "definition": {
-        "collation": "pg_catalog.default",
-        "default": null,
-        "generated": "",
-        "identity": "",
-        "not_null": false,
-        "position": 7,
-        "type": "text"
-      },
-      "kind": "column",
-      "name": "predictive_source_stats_rows.failure_code"
-    },
-    {
-      "definition": {
-        "collation": "pg_catalog.default",
-        "default": null,
-        "generated": "",
-        "identity": "",
-        "not_null": true,
-        "position": 1,
-        "type": "text"
-      },
-      "kind": "column",
-      "name": "predictive_source_stats_rows.id"
-    },
-    {
-      "definition": {
-        "collation": null,
-        "default": null,
-        "generated": "",
-        "identity": "",
-        "not_null": false,
-        "position": 6,
-        "type": "jsonb"
-      },
-      "kind": "column",
-      "name": "predictive_source_stats_rows.projection"
-    },
-    {
-      "definition": {
-        "collation": "pg_catalog.default",
-        "default": null,
-        "generated": "",
-        "identity": "",
-        "not_null": true,
-        "position": 4,
-        "type": "text"
-      },
-      "kind": "column",
-      "name": "predictive_source_stats_rows.raw_key_sha256"
-    },
-    {
-      "definition": {
-        "collation": null,
-        "default": null,
-        "generated": "",
-        "identity": "",
-        "not_null": true,
-        "position": 3,
-        "type": "integer"
-      },
-      "kind": "column",
-      "name": "predictive_source_stats_rows.row_ordinal"
-    },
-    {
-      "definition": {
-        "collation": "pg_catalog.default",
-        "default": null,
-        "generated": "",
-        "identity": "",
-        "not_null": true,
-        "position": 5,
-        "type": "text"
-      },
-      "kind": "column",
-      "name": "predictive_source_stats_rows.selected_sha256"
-    },
-    {
-      "definition": {
-        "collation": "pg_catalog.default",
-        "default": null,
-        "generated": "",
-        "identity": "",
-        "not_null": true,
         "position": 1,
         "type": "text"
       },
@@ -4266,6 +5033,2028 @@
       },
       "kind": "column",
       "name": "sync_state.updated_at"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL api_fetched_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_api_fetched_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(api_fetched_at) AND api_fetched_at = date_trunc('milliseconds'::text, api_fetched_at) AND api_fetched_at >= published_at)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK ((season IS NULL) = (week IS NULL))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (cardinality(classification_reasons) >= 1 AND cardinality(classification_reasons) <= 18 AND array_position(classification_reasons, NULL::character varying) IS NULL AND classification_reasons <@ ARRAY['prop-and-nfl-signal-in-title'::character varying(64), 'invalid-published-at'::character varying(64), 'outside-registered-regular-season'::character varying(64), 'after-registered-end-week'::character varying(64), 'not-yet-vod'::character varying(64), 'short-form'::character varying(64), 'other-league-in-title'::character varying(64), 'fantasy-in-title'::character varying(64), 'no-prop-signal'::character varying(64), 'no-nfl-signal'::character varying(64), 'duration-unknown'::character varying(64), 'mixed-league-title'::character varying(64), 'title-week-mismatch'::character varying(64), 'multiple-week-references'::character varying(64), 'nfl-signal-team-name-only'::character varying(64), 'nfl-signal-description-only'::character varying(64), 'picks-without-prop-signal'::character varying(64), 'prop-signal-description-only'::character varying(64)])",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_reasons_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL classification_reasons",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_reasons_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (classification_rule_version::text ~ '^v[0-9]{1,3}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_rule_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL classification_rule_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_rule_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (classification_status::text = ANY (ARRAY['candidate'::character varying, 'needs-review'::character varying, 'excluded'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_status_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL classification_status",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_classification_status_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (creator_key::text ~ '^[a-z0-9][a-z0-9-]{0,31}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_creator_key_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL creator_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_creator_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (duration_seconds >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_duration_seconds_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (live_broadcast_content::text = ANY (ARRAY['none'::character varying, 'upcoming'::character varying, 'live'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_live_broadcast_content_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL live_broadcast_content",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_live_broadcast_content_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (creator_key, video_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(published_at) AND published_at = date_trunc('milliseconds'::text, published_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_published_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL published_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_published_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (review_status::text = ANY (ARRAY['present'::character varying, 'needs-review'::character varying, 'excluded'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_review_status_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL review_status",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_review_status_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (season >= 1920 AND season <= 9999)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_season_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (season_week_provenance::text ~ '^[a-z0-9][a-z0-9.-]{2,63}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_season_week_provenance_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL season_week_provenance",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_season_week_provenance_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (snapshot_import_id) REFERENCES corpus_imports(import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.corpus_api_videos",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_api_videos",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_snapshot_import_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL snapshot_import_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_snapshot_import_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (video_id::text ~ '^[A-Za-z0-9_-]{11}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_video_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL video_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_video_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (week >= 1 AND week <= 18)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_api_videos.corpus_api_videos_week_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (caption_kind::text = ANY (ARRAY['unknown'::character varying, 'auto-generated'::character varying, 'uploaded'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_caption_kind_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(captured_at) AND captured_at = date_trunc('milliseconds'::text, captured_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_captured_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL captured_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_captured_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (event_kind::text = 'unavailable'::text AND caption_kind IS NULL AND transcript_sha256 IS NULL AND transcript_characters IS NULL OR (event_kind::text = ANY (ARRAY['captured'::character varying, 'replaced'::character varying]::text[])) AND caption_kind IS NOT NULL AND transcript_sha256 IS NOT NULL AND transcript_characters IS NOT NULL)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (creator_key::text ~ '^[a-z0-9][a-z0-9-]{0,31}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_creator_key_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL creator_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_creator_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (event_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_event_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_event_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (event_kind::text = ANY (ARRAY['captured'::character varying, 'replaced'::character varying, 'unavailable'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_event_kind_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_kind",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_event_kind_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (first_import_id) REFERENCES corpus_imports(import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.corpus_capture_events",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_capture_events",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_first_import_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL first_import_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_first_import_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (log_position > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_log_position_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL log_position",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_log_position_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (creator_key, log_position)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL published_date",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_published_date_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (published_date_precision::text = 'day'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_published_date_precision_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL published_date_precision",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_published_date_precision_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (published_date_provenance::text = 'owner-confirmed-video-page-pacific-date'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_published_date_provenance_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL published_date_provenance",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_published_date_provenance_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (transcript_characters > 0 AND transcript_characters <= 512000)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_transcript_characters_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (transcript_sha256::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_transcript_sha256_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (transcript_source::text = 'manual-owner-paste'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_transcript_source_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL transcript_source",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_transcript_source_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (usage_status::text = 'internal-research-only'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_usage_status_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL usage_status",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_usage_status_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (video_id::text ~ '^[A-Za-z0-9_-]{11}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_video_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL video_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_capture_events.corpus_capture_events_video_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (creator_key::text ~ '^[a-z0-9][a-z0-9-]{0,31}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_creator_key_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL creator_key",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_creator_key_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(decided_at) AND decided_at = date_trunc('milliseconds'::text, decided_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_decided_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL decided_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_decided_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (decision_kind::text = ANY (ARRAY['include'::character varying, 'exclude'::character varying, 'clear'::character varying]::text[]))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_decision_kind_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL decision_kind",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_decision_kind_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (event_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_event_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL event_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_event_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (file_position > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_file_position_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL file_position",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_file_position_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (first_import_id) REFERENCES corpus_imports(import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.corpus_decision_events",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_decision_events",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_first_import_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL first_import_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_first_import_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (creator_key, file_position)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (length(btrim(reason::text)) > 0 AND reason::text !~ '[[:cntrl:]]'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_reason_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL reason",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_reason_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (rule_version::text ~ '^v[0-9]{1,3}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_rule_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL rule_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_rule_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (video_id::text ~ '^[A-Za-z0-9_-]{11}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_video_id_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL video_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_decision_events.corpus_decision_events_video_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(imported_at) AND imported_at = date_trunc('milliseconds'::text, imported_at) AND imported_at >= registered_at)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (end_season > start_season OR end_season = start_season AND end_week >= start_week)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (minimum_reviewed_gradable_picks_overall >= minimum_reviewed_gradable_picks_per_creator)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_check2"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (collection_season_type::text = 'regular'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_collection_season_type_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL collection_season_type",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_collection_season_type_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (commitment_algorithm::text = 'sha256'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_algorithm_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL commitment_algorithm",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_algorithm_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (commitment_digest::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_digest_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL commitment_digest",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_digest_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (commitment_version > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL commitment_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_commitment_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (eligible_creator_count >= 1 AND eligible_creator_count <= 20)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_eligible_creator_count_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL eligible_creator_count",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_eligible_creator_count_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (end_season >= 1920 AND end_season <= 9999)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_end_season_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL end_season",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_end_season_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (end_week >= 1 AND end_week <= 18)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_end_week_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL end_week",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_end_week_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "FOREIGN KEY (first_import_id) REFERENCES corpus_imports(import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": [
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_ins",
+            "initially_deferred": false,
+            "table": "public.corpus_gate_registrations",
+            "type": 5
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_check_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_gate_registrations",
+            "type": 17
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_del",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 9
+          },
+          {
+            "deferrable": false,
+            "enabled": "O",
+            "function": "pg_catalog.RI_FKey_noaction_upd",
+            "initially_deferred": false,
+            "table": "public.corpus_imports",
+            "type": 17
+          }
+        ],
+        "type": "f",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_first_import_id_fkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (first_import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_first_import_id_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL first_import_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_first_import_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL imported_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_imported_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (maximum_feature_count > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_maximum_feature_count_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL maximum_feature_count",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_maximum_feature_count_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL minimum_reviewed_gradable_picks_per_creator",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_minimum_reviewed_gradable_p_not_null1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL minimum_reviewed_gradable_picks_overall",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_minimum_reviewed_gradable_pi_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (minimum_reviewed_gradable_picks_per_creator > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_minimum_reviewed_gradable_pick_check1"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (minimum_reviewed_gradable_picks_overall > 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_minimum_reviewed_gradable_picks_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (commitment_digest)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(registered_at) AND registered_at = date_trunc('milliseconds'::text, registered_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_registered_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL registered_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_registered_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (rule_version::text ~ '^v[0-9]{1,3}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_rule_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL rule_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_rule_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (start_season >= 1920 AND start_season <= 9999)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_start_season_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL start_season",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_start_season_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (start_week >= 1 AND start_week <= 18)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_start_week_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL start_week",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_start_week_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (api_video_count >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_api_video_count_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL api_video_count",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_api_video_count_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (capture_event_count >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_capture_event_count_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL capture_event_count",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_capture_event_count_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (capture_input_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_capture_input_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL capture_input_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_capture_input_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (decision_event_count >= 0)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_decision_event_count_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL decision_event_count",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_decision_event_count_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (decision_input_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_decision_input_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL decision_input_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_decision_input_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (discovery_input_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_discovery_input_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL discovery_input_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_discovery_input_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (gate_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_gate_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL gate_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_gate_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL import_id",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_import_id_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (isfinite(imported_at) AND imported_at = date_trunc('milliseconds'::text, imported_at))",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_imported_at_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL imported_at",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_imported_at_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (importer_version::text ~ '^[a-z0-9][a-z0-9.-]{0,63}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_importer_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL importer_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_importer_version_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "UNIQUE (importer_version, rule_version, registration_fingerprint, gate_fingerprint, capture_input_fingerprint, decision_input_fingerprint, discovery_input_fingerprint)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "u",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_importer_version_rule_version_registration_f_key"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "PRIMARY KEY (import_id)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": true,
+        "trigger_states": null,
+        "type": "p",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_pkey"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (registration_fingerprint::text ~ '^[a-f0-9]{64}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_registration_fingerprint_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL registration_fingerprint",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_registration_fingerprint_not_null"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "CHECK (rule_version::text ~ '^v[0-9]{1,3}$'::text)",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "c",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_rule_version_check"
+    },
+    {
+      "definition": {
+        "deferrable": false,
+        "definition": "NOT NULL rule_version",
+        "enforced": true,
+        "initially_deferred": false,
+        "no_inherit": false,
+        "trigger_states": null,
+        "type": "n",
+        "validated": true
+      },
+      "kind": "constraint",
+      "name": "corpus_imports.corpus_imports_rule_version_not_null"
     },
     {
       "definition": {
@@ -8270,20 +11059,6 @@
       },
       "kind": "constraint",
       "name": "predictive_captures.predictive_check_captures"
-    },
-    {
-      "definition": {
-        "deferrable": true,
-        "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED",
-        "enforced": true,
-        "initially_deferred": true,
-        "no_inherit": true,
-        "trigger_states": null,
-        "type": "t",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_captures.predictive_source_capture_check"
     },
     {
       "definition": {
@@ -12414,7 +15189,7 @@
     {
       "definition": {
         "deferrable": false,
-        "definition": "CHECK (target_kind = ANY (ARRAY['observation'::text, 'artifact'::text, 'capture'::text, 'decision'::text, 'label'::text, 'feature-run'::text, 'pin'::text, 'blob'::text, 'source-stats-row'::text]))",
+        "definition": "CHECK (target_kind = ANY (ARRAY['observation'::text, 'artifact'::text, 'capture'::text, 'decision'::text, 'label'::text, 'feature-run'::text, 'pin'::text, 'blob'::text]))",
         "enforced": true,
         "initially_deferred": false,
         "no_inherit": false,
@@ -13245,263 +16020,6 @@
     },
     {
       "definition": {
-        "deferrable": true,
-        "definition": "TRIGGER DEFERRABLE INITIALLY DEFERRED",
-        "enforced": true,
-        "initially_deferred": true,
-        "no_inherit": true,
-        "trigger_states": null,
-        "type": "t",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_row_check"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "FOREIGN KEY (capture_id) REFERENCES predictive_captures(id)",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": true,
-        "trigger_states": [
-          {
-            "deferrable": false,
-            "enabled": "O",
-            "function": "pg_catalog.RI_FKey_noaction_del",
-            "initially_deferred": false,
-            "table": "public.predictive_captures",
-            "type": 9
-          },
-          {
-            "deferrable": false,
-            "enabled": "O",
-            "function": "pg_catalog.RI_FKey_noaction_upd",
-            "initially_deferred": false,
-            "table": "public.predictive_captures",
-            "type": 17
-          },
-          {
-            "deferrable": false,
-            "enabled": "O",
-            "function": "pg_catalog.RI_FKey_check_ins",
-            "initially_deferred": false,
-            "table": "public.predictive_source_stats_rows",
-            "type": 5
-          },
-          {
-            "deferrable": false,
-            "enabled": "O",
-            "function": "pg_catalog.RI_FKey_check_upd",
-            "initially_deferred": false,
-            "table": "public.predictive_source_stats_rows",
-            "type": 17
-          }
-        ],
-        "type": "f",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_capture_id_fkey"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "NOT NULL capture_id",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "n",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_capture_id_not_null"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "UNIQUE (capture_id, row_ordinal)",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": true,
-        "trigger_states": null,
-        "type": "u",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_capture_id_row_ordinal_key"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "CHECK ((projection IS NULL) = (failure_code IS NOT NULL))",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "c",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_check"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "CHECK (failure_code = ANY (ARRAY['source-stats-context-refused'::text, 'source-stats-player-refused'::text, 'source-number-refused'::text, 'source-stats-denominator-refused'::text, 'source-stats-scope-refused'::text]))",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "c",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_failure_code_check"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "CHECK (id ~ '^source-row:[a-f0-9]{64}$'::text)",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "c",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_id_check"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "NOT NULL id",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "n",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_id_not_null"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "PRIMARY KEY (id)",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": true,
-        "trigger_states": null,
-        "type": "p",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_pkey"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "CHECK (projection IS NULL OR predictive_source_projection_valid(projection) IS TRUE)",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "c",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_projection_check"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "CHECK (raw_key_sha256 ~ '^[a-f0-9]{64}$'::text)",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "c",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_raw_key_sha256_check"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "NOT NULL raw_key_sha256",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "n",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_raw_key_sha256_not_null"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "CHECK (row_ordinal >= 1 AND row_ordinal <= 8192)",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "c",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_row_ordinal_check"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "NOT NULL row_ordinal",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "n",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_row_ordinal_not_null"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "CHECK (selected_sha256 ~ '^[a-f0-9]{64}$'::text)",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "c",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_selected_sha256_check"
-    },
-    {
-      "definition": {
-        "deferrable": false,
-        "definition": "NOT NULL selected_sha256",
-        "enforced": true,
-        "initially_deferred": false,
-        "no_inherit": false,
-        "trigger_states": null,
-        "type": "n",
-        "validated": true
-      },
-      "kind": "constraint",
-      "name": "predictive_source_stats_rows.predictive_source_stats_rows_selected_sha256_not_null"
-    },
-    {
-      "definition": {
         "deferrable": false,
         "definition": "CHECK (id = ANY (ARRAY['nfl:team:ARI'::text, 'nfl:team:ATL'::text, 'nfl:team:BAL'::text, 'nfl:team:BUF'::text, 'nfl:team:CAR'::text, 'nfl:team:CHI'::text, 'nfl:team:CIN'::text, 'nfl:team:CLE'::text, 'nfl:team:DAL'::text, 'nfl:team:DEN'::text, 'nfl:team:DET'::text, 'nfl:team:GB'::text, 'nfl:team:HOU'::text, 'nfl:team:IND'::text, 'nfl:team:JAX'::text, 'nfl:team:KC'::text, 'nfl:team:LA'::text, 'nfl:team:LAC'::text, 'nfl:team:LV'::text, 'nfl:team:MIA'::text, 'nfl:team:MIN'::text, 'nfl:team:NE'::text, 'nfl:team:NO'::text, 'nfl:team:NYG'::text, 'nfl:team:NYJ'::text, 'nfl:team:PHI'::text, 'nfl:team:PIT'::text, 'nfl:team:SEA'::text, 'nfl:team:SF'::text, 'nfl:team:TB'::text, 'nfl:team:TEN'::text, 'nfl:team:WAS'::text]))",
         "enforced": true,
@@ -13597,6 +16115,204 @@
       },
       "kind": "constraint",
       "name": "sync_state.sync_state_updated_at_not_null"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX corpus_api_videos_expiry_idx ON corpus_api_videos USING btree (api_fetched_at)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_api_videos",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_api_videos_expiry_idx"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_api_videos_pkey ON corpus_api_videos USING btree (creator_key, video_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_api_videos",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_api_videos_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX corpus_api_videos_slot_idx ON corpus_api_videos USING btree (creator_key, season, week, review_status)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_api_videos",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_api_videos_slot_idx"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_capture_events_pkey ON corpus_capture_events USING btree (creator_key, log_position)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_capture_events",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_capture_events_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX corpus_capture_events_video_idx ON corpus_capture_events USING btree (creator_key, video_id, log_position DESC)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_capture_events",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_capture_events_video_idx"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_decision_events_pkey ON corpus_decision_events USING btree (creator_key, file_position)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_decision_events",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_decision_events_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE INDEX corpus_decision_events_video_idx ON corpus_decision_events USING btree (creator_key, video_id, decided_at DESC, file_position DESC)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_decision_events",
+        "unique": false,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_decision_events_video_idx"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_gate_registrations_first_import_id_key ON corpus_gate_registrations USING btree (first_import_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_gate_registrations",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_gate_registrations_first_import_id_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_gate_registrations_pkey ON corpus_gate_registrations USING btree (commitment_digest)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_gate_registrations",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_gate_registrations_pkey"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_imports_importer_version_rule_version_registration_f_key ON corpus_imports USING btree (importer_version, rule_version, registration_fingerprint, gate_fingerprint, capture_input_fingerprint, decision_input_fingerprint, discovery_input_fingerprint)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": false,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_imports",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_imports_importer_version_rule_version_registration_f_key"
+    },
+    {
+      "definition": {
+        "definition": "CREATE UNIQUE INDEX corpus_imports_pkey ON corpus_imports USING btree (import_id)",
+        "exclusion": false,
+        "immediate": true,
+        "live": true,
+        "nulls_not_distinct": false,
+        "options": null,
+        "primary": true,
+        "ready": true,
+        "replica_identity": false,
+        "table": "corpus_imports",
+        "unique": true,
+        "valid": true
+      },
+      "kind": "index",
+      "name": "corpus_imports_pkey"
     },
     {
       "definition": {
@@ -14986,24 +17702,6 @@
     },
     {
       "definition": {
-        "definition": "CREATE INDEX predictive_source_capture_scope_idx ON predictive_artifacts USING btree (profile_id, scope_season) WHERE scope_kind = 'season-file'::text",
-        "exclusion": false,
-        "immediate": true,
-        "live": true,
-        "nulls_not_distinct": false,
-        "options": null,
-        "primary": false,
-        "ready": true,
-        "replica_identity": false,
-        "table": "predictive_artifacts",
-        "unique": false,
-        "valid": true
-      },
-      "kind": "index",
-      "name": "predictive_source_capture_scope_idx"
-    },
-    {
-      "definition": {
         "definition": "CREATE UNIQUE INDEX predictive_source_profiles_pkey ON predictive_source_profiles USING btree (id)",
         "exclusion": false,
         "immediate": true,
@@ -15019,60 +17717,6 @@
       },
       "kind": "index",
       "name": "predictive_source_profiles_pkey"
-    },
-    {
-      "definition": {
-        "definition": "CREATE INDEX predictive_source_stats_key_idx ON predictive_source_stats_rows USING btree (capture_id, raw_key_sha256)",
-        "exclusion": false,
-        "immediate": true,
-        "live": true,
-        "nulls_not_distinct": false,
-        "options": null,
-        "primary": false,
-        "ready": true,
-        "replica_identity": false,
-        "table": "predictive_source_stats_rows",
-        "unique": false,
-        "valid": true
-      },
-      "kind": "index",
-      "name": "predictive_source_stats_key_idx"
-    },
-    {
-      "definition": {
-        "definition": "CREATE UNIQUE INDEX predictive_source_stats_rows_capture_id_row_ordinal_key ON predictive_source_stats_rows USING btree (capture_id, row_ordinal)",
-        "exclusion": false,
-        "immediate": true,
-        "live": true,
-        "nulls_not_distinct": false,
-        "options": null,
-        "primary": false,
-        "ready": true,
-        "replica_identity": false,
-        "table": "predictive_source_stats_rows",
-        "unique": true,
-        "valid": true
-      },
-      "kind": "index",
-      "name": "predictive_source_stats_rows_capture_id_row_ordinal_key"
-    },
-    {
-      "definition": {
-        "definition": "CREATE UNIQUE INDEX predictive_source_stats_rows_pkey ON predictive_source_stats_rows USING btree (id)",
-        "exclusion": false,
-        "immediate": true,
-        "live": true,
-        "nulls_not_distinct": false,
-        "options": null,
-        "primary": true,
-        "ready": true,
-        "replica_identity": false,
-        "table": "predictive_source_stats_rows",
-        "unique": true,
-        "valid": true
-      },
-      "kind": "index",
-      "name": "predictive_source_stats_rows_pkey"
     },
     {
       "definition": {
@@ -15109,6 +17753,91 @@
       },
       "kind": "index",
       "name": "sync_state_pkey"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "corpus_api_videos"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "corpus_capture_events"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "corpus_decision_events"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "corpus_gate_registrations"
+    },
+    {
+      "definition": {
+        "access_method": "heap",
+        "force_row_security": false,
+        "kind": "r",
+        "options": null,
+        "parents": null,
+        "partition_bound": null,
+        "partition_key": null,
+        "persistence": "p",
+        "replica_identity": "d",
+        "row_security": false,
+        "view_definition": null
+      },
+      "kind": "relation",
+      "name": "corpus_imports"
     },
     {
       "definition": {
@@ -15771,23 +18500,6 @@
         "view_definition": null
       },
       "kind": "relation",
-      "name": "predictive_source_stats_rows"
-    },
-    {
-      "definition": {
-        "access_method": "heap",
-        "force_row_security": false,
-        "kind": "r",
-        "options": null,
-        "parents": null,
-        "partition_bound": null,
-        "partition_key": null,
-        "persistence": "p",
-        "replica_identity": "d",
-        "row_security": false,
-        "view_definition": null
-      },
-      "kind": "relation",
       "name": "predictive_teams"
     },
     {
@@ -15806,6 +18518,24 @@
       },
       "kind": "relation",
       "name": "sync_state"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.corpus_api_replace_only()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'corpus-api-replace-required' USING ERRCODE = '23514';\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "corpus_api_replace_only()"
+    },
+    {
+      "definition": {
+        "definition": "CREATE OR REPLACE FUNCTION public.corpus_append_only()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'corpus-append-only' USING ERRCODE = '23514';\nEND\n$function$\n",
+        "kind": "f",
+        "security_definer": false
+      },
+      "kind": "routine",
+      "name": "corpus_append_only()"
     },
     {
       "definition": {
@@ -16043,7 +18773,7 @@
     },
     {
       "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_retention_execute(event_id text, event_reason text, event_authority text, event_decided_at timestamp with time zone, event_scope jsonb, event_audit_level text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pg_temp'\nAS $function$\nDECLARE\n  profiles text[]; captured_from timestamptz; captured_before timestamptz; as_of timestamptz;\n  arts text[] := '{}'; caps text[] := '{}'; obs text[] := '{}'; decs text[] := '{}'; labs text[] := '{}';\n  runs text[] := '{}'; pins text[] := '{}'; blobs text[] := '{}'; refs text[]; source_rows text[] := '{}';\n  removed_kinds text[]; removed_ids text[]; counts jsonb; ids_digest text; links integer; inputs integer; dependencies integer; unpins integer;\nBEGIN\n  IF NOT pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER') THEN\n    RAISE EXCEPTION 'predictive-retention-not-authorized' USING ERRCODE = '42501';\n  END IF;\n  IF event_decided_at IS NULL OR event_decided_at > pg_catalog.now() OR NOT public.predictive_retention_scope_valid(event_reason, event_scope) THEN\n    RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514';\n  END IF;\n  IF event_scope->>'kind' = 'source' THEN\n    profiles := ARRAY(SELECT jsonb_array_elements_text(event_scope->'profileIds'));\n    IF EXISTS (SELECT 1 FROM unnest(profiles) p WHERE NOT EXISTS (SELECT 1 FROM public.predictive_source_profiles sp WHERE sp.id = p)) THEN\n      RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514';\n    END IF;\n    captured_from := (event_scope->>'capturedFrom')::timestamptz; captured_before := (event_scope->>'capturedBefore')::timestamptz;\n    -- An artifact with any capture in range is removed whole, bytes and captures.\n    arts := ARRAY(SELECT DISTINCT a.id FROM public.predictive_artifacts a JOIN public.predictive_captures c ON c.artifact_id = a.id\n      WHERE a.profile_id = ANY(profiles) AND (captured_from IS NULL OR c.captured_at >= captured_from)\n        AND (captured_before IS NULL OR c.captured_at < captured_before));\n    caps := ARRAY(SELECT c.id FROM public.predictive_captures c WHERE c.artifact_id = ANY(arts));\n    obs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT o.id FROM public.predictive_observations o JOIN public.predictive_artifact_observations l ON l.observation_id = o.id\n        WHERE l.artifact_id = ANY(arts) AND o.profile_id = ANY(profiles)\n        UNION SELECT n.id FROM public.predictive_observations n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    decs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT DISTINCT i.decision_id AS id FROM public.predictive_decision_inputs i WHERE i.observation_id = ANY(obs)\n        UNION SELECT n.id FROM public.predictive_decisions n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    labs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT l.id FROM public.predictive_outcome_labels l WHERE l.completion_decision_id = ANY(decs) OR l.participation_decision_id = ANY(decs)\n          OR l.reconciliation_decision_id = ANY(decs) OR l.selected_observation_id = ANY(obs) OR l.post_window_capture_id = ANY(caps)\n          OR l.player_bridge_observation_id = ANY(obs)\n        UNION SELECT n.id FROM public.predictive_outcome_labels n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    runs := ARRAY(SELECT DISTINCT d.feature_run_id FROM public.predictive_feature_run_dependencies d\n      WHERE d.observation_id = ANY(obs) OR d.decision_id = ANY(decs));\n  ELSE\n    as_of := (event_scope->>'asOf')::timestamptz;\n    IF as_of > pg_catalog.now() THEN RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514'; END IF;\n    runs := ARRAY(SELECT f.id FROM public.predictive_feature_runs f WHERE public.predictive_feature_run_expired(f.id, as_of));\n  END IF;\n  source_rows := ARRAY(SELECT s.id FROM public.predictive_source_stats_rows s WHERE s.capture_id = ANY(caps));\n  pins := ARRAY(SELECT p.id FROM public.predictive_feature_run_pins p WHERE p.feature_run_id = ANY(runs));\n  blobs := ARRAY(SELECT DISTINCT b.sha256 FROM public.predictive_blobs b\n    WHERE (b.sha256 IN (SELECT a.blob_sha256 FROM public.predictive_artifacts a WHERE a.id = ANY(arts))\n        OR b.sha256 IN (SELECT f.bundle_blob_sha256 FROM public.predictive_feature_runs f WHERE f.id = ANY(runs)))\n      AND NOT EXISTS (SELECT 1 FROM public.predictive_artifacts a WHERE a.blob_sha256 = b.sha256 AND NOT a.id = ANY(arts))\n      AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_runs f WHERE f.bundle_blob_sha256 = b.sha256 AND NOT f.id = ANY(runs)));\n  refs := ARRAY(SELECT b.storage_ref FROM public.predictive_blobs b WHERE b.sha256 = ANY(blobs) ORDER BY b.storage_ref COLLATE \"C\");\n\n  -- Parallel arrays, never a temp table: a caller could pre-create a pg_temp\n  -- relation that this definer function would then use.\n  SELECT coalesce(array_agg(k ORDER BY k COLLATE \"C\", v COLLATE \"C\"), '{}'), coalesce(array_agg(v ORDER BY k COLLATE \"C\", v COLLATE \"C\"), '{}')\n    INTO removed_kinds, removed_ids FROM (\n      SELECT 'observation', v FROM unnest(obs) v UNION ALL SELECT 'artifact', v FROM unnest(arts) v\n      UNION ALL SELECT 'capture', v FROM unnest(caps) v UNION ALL SELECT 'decision', v FROM unnest(decs) v\n      UNION ALL SELECT 'label', v FROM unnest(labs) v UNION ALL SELECT 'feature-run', v FROM unnest(runs) v\n      UNION ALL SELECT 'pin', v FROM unnest(pins) v UNION ALL SELECT 'blob', v FROM unnest(blobs) v\n      UNION ALL SELECT 'source-stats-row', v FROM unnest(source_rows) v) t(k, v);\n  -- The canonical JSON array of {\"id\",\"kind\"} pairs ordered by (kind, id),\n  -- mirrored by retentionIdsDigest() in persistence.ts. JSON escaping keeps it\n  -- unambiguous whatever an identifier contains.\n  SELECT encode(sha256(convert_to('[' || coalesce(string_agg('{\"id\":' || to_json(r.v)::text || ',\"kind\":' || to_json(r.k)::text || '}', ','\n      ORDER BY r.n), '') || ']', 'UTF8')), 'hex')\n    INTO ids_digest FROM unnest(removed_kinds, removed_ids) WITH ORDINALITY r(k, v, n);\n  SELECT count(*) INTO links FROM public.predictive_artifact_observations l WHERE l.observation_id = ANY(obs) OR l.artifact_id = ANY(arts);\n  SELECT count(*) INTO inputs FROM public.predictive_decision_inputs i WHERE i.decision_id = ANY(decs);\n  SELECT count(*) INTO dependencies FROM public.predictive_feature_run_dependencies d WHERE d.feature_run_id = ANY(runs);\n  SELECT count(*) INTO unpins FROM public.predictive_feature_run_unpins u WHERE u.pin_id = ANY(pins);\n  counts := jsonb_build_object('observations', cardinality(obs), 'artifacts', cardinality(arts), 'captures', cardinality(caps),\n    'decisions', cardinality(decs), 'labels', cardinality(labs), 'featureRuns', cardinality(runs), 'pins', cardinality(pins),\n    'blobs', cardinality(blobs), 'links', links, 'decisionInputs', inputs, 'featureRunDependencies', dependencies, 'unpins', unpins);\n\n  -- Preserve old zero-row event counts/digests for backup re-apply parity.\n  IF cardinality(source_rows) > 0 THEN counts := counts || jsonb_build_object('sourceStatsRows', cardinality(source_rows)); END IF;\n  INSERT INTO public.predictive_retention_events (id,reason,authority,decided_at,scope_descriptor,audit_level,removed_counts,removed_ids_digest,executed_at)\n    VALUES (event_id, event_reason, event_authority, event_decided_at, event_scope, event_audit_level, counts, ids_digest, pg_catalog.now());\n  INSERT INTO public.predictive_retention_authorizations (txid, retention_event_id) VALUES (pg_catalog.pg_current_xact_id(), event_id);\n  DELETE FROM public.predictive_feature_run_unpins WHERE pin_id = ANY(pins);\n  DELETE FROM public.predictive_feature_run_pins WHERE id = ANY(pins);\n  DELETE FROM public.predictive_feature_run_dependencies WHERE feature_run_id = ANY(runs);\n  DELETE FROM public.predictive_feature_runs WHERE id = ANY(runs);\n  DELETE FROM public.predictive_outcome_labels WHERE id = ANY(labs);\n  DELETE FROM public.predictive_decision_inputs WHERE decision_id = ANY(decs);\n  DELETE FROM public.predictive_decisions WHERE id = ANY(decs);\n  DELETE FROM public.predictive_artifact_observations WHERE observation_id = ANY(obs) OR artifact_id = ANY(arts);\n  DELETE FROM public.predictive_observations WHERE id = ANY(obs);\n  DELETE FROM public.predictive_source_stats_rows WHERE id = ANY(source_rows);\n  DELETE FROM public.predictive_captures WHERE id = ANY(caps);\n  DELETE FROM public.predictive_artifacts WHERE id = ANY(arts);\n  DELETE FROM public.predictive_blobs WHERE sha256 = ANY(blobs);\n  INSERT INTO public.predictive_blob_removals (storage_ref, queued_at) SELECT r, pg_catalog.now() FROM unnest(refs) r ON CONFLICT DO NOTHING;\n  IF event_audit_level = 'full' THEN\n    INSERT INTO public.predictive_retention_tombstones (retention_event_id, target_kind, target_id)\n      SELECT event_id, r.k, r.v FROM unnest(removed_kinds, removed_ids) r(k, v);\n  END IF;\n  DELETE FROM public.predictive_retention_authorizations WHERE txid = pg_catalog.pg_current_xact_id();\n  -- Blob references are returned to the caller for file removal, never stored\n  -- for digest-only events.\n  RETURN jsonb_build_object('eventId', event_id, 'removedCounts', counts, 'removedIdsDigest', ids_digest, 'removedBlobRefs', to_jsonb(refs));\nEND\n$function$\n",
+        "definition": "CREATE OR REPLACE FUNCTION public.predictive_retention_execute(event_id text, event_reason text, event_authority text, event_decided_at timestamp with time zone, event_scope jsonb, event_audit_level text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'pg_temp'\nAS $function$\nDECLARE\n  profiles text[]; captured_from timestamptz; captured_before timestamptz; as_of timestamptz;\n  arts text[] := '{}'; caps text[] := '{}'; obs text[] := '{}'; decs text[] := '{}'; labs text[] := '{}';\n  runs text[] := '{}'; pins text[] := '{}'; blobs text[] := '{}'; refs text[];\n  removed_kinds text[]; removed_ids text[]; counts jsonb; ids_digest text; links integer; inputs integer; dependencies integer; unpins integer;\nBEGIN\n  IF NOT pg_catalog.pg_has_role(session_user, 'predictive_retention_owner', 'MEMBER') THEN\n    RAISE EXCEPTION 'predictive-retention-not-authorized' USING ERRCODE = '42501';\n  END IF;\n  IF event_decided_at IS NULL OR event_decided_at > pg_catalog.now() OR NOT public.predictive_retention_scope_valid(event_reason, event_scope) THEN\n    RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514';\n  END IF;\n  IF event_scope->>'kind' = 'source' THEN\n    profiles := ARRAY(SELECT jsonb_array_elements_text(event_scope->'profileIds'));\n    IF EXISTS (SELECT 1 FROM unnest(profiles) p WHERE NOT EXISTS (SELECT 1 FROM public.predictive_source_profiles sp WHERE sp.id = p)) THEN\n      RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514';\n    END IF;\n    captured_from := (event_scope->>'capturedFrom')::timestamptz; captured_before := (event_scope->>'capturedBefore')::timestamptz;\n    -- An artifact with any capture in range is removed whole, bytes and captures.\n    arts := ARRAY(SELECT DISTINCT a.id FROM public.predictive_artifacts a JOIN public.predictive_captures c ON c.artifact_id = a.id\n      WHERE a.profile_id = ANY(profiles) AND (captured_from IS NULL OR c.captured_at >= captured_from)\n        AND (captured_before IS NULL OR c.captured_at < captured_before));\n    caps := ARRAY(SELECT c.id FROM public.predictive_captures c WHERE c.artifact_id = ANY(arts));\n    obs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT o.id FROM public.predictive_observations o JOIN public.predictive_artifact_observations l ON l.observation_id = o.id\n        WHERE l.artifact_id = ANY(arts) AND o.profile_id = ANY(profiles)\n        UNION SELECT n.id FROM public.predictive_observations n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    decs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT DISTINCT i.decision_id AS id FROM public.predictive_decision_inputs i WHERE i.observation_id = ANY(obs)\n        UNION SELECT n.id FROM public.predictive_decisions n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    labs := ARRAY(WITH RECURSIVE chain AS (\n        SELECT l.id FROM public.predictive_outcome_labels l WHERE l.completion_decision_id = ANY(decs) OR l.participation_decision_id = ANY(decs)\n          OR l.reconciliation_decision_id = ANY(decs) OR l.selected_observation_id = ANY(obs) OR l.post_window_capture_id = ANY(caps)\n          OR l.player_bridge_observation_id = ANY(obs)\n        UNION SELECT n.id FROM public.predictive_outcome_labels n JOIN chain ON n.predecessor_id = chain.id)\n      SELECT id FROM chain);\n    runs := ARRAY(SELECT DISTINCT d.feature_run_id FROM public.predictive_feature_run_dependencies d\n      WHERE d.observation_id = ANY(obs) OR d.decision_id = ANY(decs));\n  ELSE\n    as_of := (event_scope->>'asOf')::timestamptz;\n    IF as_of > pg_catalog.now() THEN RAISE EXCEPTION 'predictive-retention-invalid' USING ERRCODE = '23514'; END IF;\n    runs := ARRAY(SELECT f.id FROM public.predictive_feature_runs f WHERE public.predictive_feature_run_expired(f.id, as_of));\n  END IF;\n  pins := ARRAY(SELECT p.id FROM public.predictive_feature_run_pins p WHERE p.feature_run_id = ANY(runs));\n  blobs := ARRAY(SELECT DISTINCT b.sha256 FROM public.predictive_blobs b\n    WHERE (b.sha256 IN (SELECT a.blob_sha256 FROM public.predictive_artifacts a WHERE a.id = ANY(arts))\n        OR b.sha256 IN (SELECT f.bundle_blob_sha256 FROM public.predictive_feature_runs f WHERE f.id = ANY(runs)))\n      AND NOT EXISTS (SELECT 1 FROM public.predictive_artifacts a WHERE a.blob_sha256 = b.sha256 AND NOT a.id = ANY(arts))\n      AND NOT EXISTS (SELECT 1 FROM public.predictive_feature_runs f WHERE f.bundle_blob_sha256 = b.sha256 AND NOT f.id = ANY(runs)));\n  refs := ARRAY(SELECT b.storage_ref FROM public.predictive_blobs b WHERE b.sha256 = ANY(blobs) ORDER BY b.storage_ref COLLATE \"C\");\n\n  -- Parallel arrays, never a temp table: a caller could pre-create a pg_temp\n  -- relation that this definer function would then use.\n  SELECT coalesce(array_agg(k ORDER BY k COLLATE \"C\", v COLLATE \"C\"), '{}'), coalesce(array_agg(v ORDER BY k COLLATE \"C\", v COLLATE \"C\"), '{}')\n    INTO removed_kinds, removed_ids FROM (\n      SELECT 'observation', v FROM unnest(obs) v UNION ALL SELECT 'artifact', v FROM unnest(arts) v\n      UNION ALL SELECT 'capture', v FROM unnest(caps) v UNION ALL SELECT 'decision', v FROM unnest(decs) v\n      UNION ALL SELECT 'label', v FROM unnest(labs) v UNION ALL SELECT 'feature-run', v FROM unnest(runs) v\n      UNION ALL SELECT 'pin', v FROM unnest(pins) v UNION ALL SELECT 'blob', v FROM unnest(blobs) v) t(k, v);\n  -- The canonical JSON array of {\"id\",\"kind\"} pairs ordered by (kind, id),\n  -- mirrored by retentionIdsDigest() in persistence.ts. JSON escaping keeps it\n  -- unambiguous whatever an identifier contains.\n  SELECT encode(sha256(convert_to('[' || coalesce(string_agg('{\"id\":' || to_json(r.v)::text || ',\"kind\":' || to_json(r.k)::text || '}', ','\n      ORDER BY r.n), '') || ']', 'UTF8')), 'hex')\n    INTO ids_digest FROM unnest(removed_kinds, removed_ids) WITH ORDINALITY r(k, v, n);\n  SELECT count(*) INTO links FROM public.predictive_artifact_observations l WHERE l.observation_id = ANY(obs) OR l.artifact_id = ANY(arts);\n  SELECT count(*) INTO inputs FROM public.predictive_decision_inputs i WHERE i.decision_id = ANY(decs);\n  SELECT count(*) INTO dependencies FROM public.predictive_feature_run_dependencies d WHERE d.feature_run_id = ANY(runs);\n  SELECT count(*) INTO unpins FROM public.predictive_feature_run_unpins u WHERE u.pin_id = ANY(pins);\n  counts := jsonb_build_object('observations', cardinality(obs), 'artifacts', cardinality(arts), 'captures', cardinality(caps),\n    'decisions', cardinality(decs), 'labels', cardinality(labs), 'featureRuns', cardinality(runs), 'pins', cardinality(pins),\n    'blobs', cardinality(blobs), 'links', links, 'decisionInputs', inputs, 'featureRunDependencies', dependencies, 'unpins', unpins);\n\n  INSERT INTO public.predictive_retention_events (id,reason,authority,decided_at,scope_descriptor,audit_level,removed_counts,removed_ids_digest,executed_at)\n    VALUES (event_id, event_reason, event_authority, event_decided_at, event_scope, event_audit_level, counts, ids_digest, pg_catalog.now());\n  INSERT INTO public.predictive_retention_authorizations (txid, retention_event_id) VALUES (pg_catalog.pg_current_xact_id(), event_id);\n  DELETE FROM public.predictive_feature_run_unpins WHERE pin_id = ANY(pins);\n  DELETE FROM public.predictive_feature_run_pins WHERE id = ANY(pins);\n  DELETE FROM public.predictive_feature_run_dependencies WHERE feature_run_id = ANY(runs);\n  DELETE FROM public.predictive_feature_runs WHERE id = ANY(runs);\n  DELETE FROM public.predictive_outcome_labels WHERE id = ANY(labs);\n  DELETE FROM public.predictive_decision_inputs WHERE decision_id = ANY(decs);\n  DELETE FROM public.predictive_decisions WHERE id = ANY(decs);\n  DELETE FROM public.predictive_artifact_observations WHERE observation_id = ANY(obs) OR artifact_id = ANY(arts);\n  DELETE FROM public.predictive_observations WHERE id = ANY(obs);\n  DELETE FROM public.predictive_captures WHERE id = ANY(caps);\n  DELETE FROM public.predictive_artifacts WHERE id = ANY(arts);\n  DELETE FROM public.predictive_blobs WHERE sha256 = ANY(blobs);\n  INSERT INTO public.predictive_blob_removals (storage_ref, queued_at) SELECT r, pg_catalog.now() FROM unnest(refs) r ON CONFLICT DO NOTHING;\n  IF event_audit_level = 'full' THEN\n    INSERT INTO public.predictive_retention_tombstones (retention_event_id, target_kind, target_id)\n      SELECT event_id, r.k, r.v FROM unnest(removed_kinds, removed_ids) r(k, v);\n  END IF;\n  DELETE FROM public.predictive_retention_authorizations WHERE txid = pg_catalog.pg_current_xact_id();\n  -- Blob references are returned to the caller for file removal, never stored\n  -- for digest-only events.\n  RETURN jsonb_build_object('eventId', event_id, 'removedCounts', counts, 'removedIdsDigest', ids_digest, 'removedBlobRefs', to_jsonb(refs));\nEND\n$function$\n",
         "kind": "f",
         "security_definer": true
       },
@@ -16106,42 +18836,6 @@
     },
     {
       "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_source_canonical_guard()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n  IF EXISTS (SELECT 1 FROM public.predictive_artifacts a JOIN public.predictive_blobs b ON b.sha256 = a.blob_sha256\n      JOIN public.predictive_source_profiles p ON p.id = a.profile_id WHERE a.id = NEW.artifact_id\n      AND b.media_type = 'text/csv' AND p.parser_version = 'nflverse-csv-qualification-v1') THEN\n    RAISE EXCEPTION 'predictive-source-canonical-binding-required' USING ERRCODE = '23514';\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
-        "kind": "f",
-        "security_definer": false
-      },
-      "kind": "routine",
-      "name": "predictive_source_canonical_guard()"
-    },
-    {
-      "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_source_claim_check()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE cap public.predictive_captures; art public.predictive_artifacts; profile public.predictive_source_profiles;\n  media text; n integer; maximum integer; minimum integer; expected_key text;\nBEGIN\n  IF TG_TABLE_NAME = 'predictive_captures' THEN SELECT * INTO cap FROM public.predictive_captures WHERE id = NEW.id;\n  ELSE SELECT * INTO cap FROM public.predictive_captures WHERE id = NEW.capture_id; END IF;\n  SELECT * INTO art FROM public.predictive_artifacts WHERE id = cap.artifact_id;\n  SELECT * INTO profile FROM public.predictive_source_profiles WHERE id = art.profile_id;\n  SELECT media_type INTO media FROM public.predictive_blobs WHERE sha256 = art.blob_sha256;\n  -- Existing diagnostic CSVs and the released JSON proof retain their contracts.\n  IF TG_TABLE_NAME = 'predictive_captures' AND (media <> 'text/csv' OR profile.parser_version <> 'nflverse-csv-qualification-v1') THEN RETURN NULL; END IF;\n  IF media <> 'text/csv' OR profile.parser_version <> 'nflverse-csv-qualification-v1'\n      OR profile.allowlist_version <> 'predictive-raw-allowlist-v1' OR profile.feed NOT IN ('player','team')\n      OR profile.purpose NOT IN ('source','synthetic-test') OR profile.provider <> 'nflverse'\n      OR profile.release_tag IS DISTINCT FROM 'stats_' || profile.feed\n      OR profile.asset_pattern IS DISTINCT FROM 'stats_' || profile.feed || '_week_2026.csv'\n      OR profile.header_profile_sha256 IS NULL\n      OR NOT (CASE profile.feed WHEN 'player' THEN 'player-game-stats' ELSE 'team-game-stats' END = ANY(profile.evidence_kinds))\n      OR cap.state <> 'published' OR art.retrieval_kind <> 'full' OR art.scope_kind <> 'season-file'\n      OR art.scope_season <> 2026 OR art.scope_filter IS NOT NULL OR cap.published_at IS NOT NULL\n      OR cap.available_at <> cap.captured_at OR cap.ingested_at > clock_timestamp()\n      OR NOT public.predictive_rights_allow(profile.id, clock_timestamp(), clock_timestamp(), 'internal-research') THEN\n    RAISE EXCEPTION 'predictive-source-claim-envelope-invalid' USING ERRCODE = '23514';\n  END IF;\n  IF TG_TABLE_NAME = 'predictive_captures' THEN\n    SELECT count(*), min(row_ordinal), max(row_ordinal) INTO n, minimum, maximum\n      FROM public.predictive_source_stats_rows WHERE capture_id = cap.id;\n    IF n <> cap.parsed_rows OR n < 1 OR minimum <> 1 OR maximum <> n THEN\n      RAISE EXCEPTION 'predictive-source-claim-coverage-invalid' USING ERRCODE = '23514';\n    END IF;\n  END IF;\n  IF TG_TABLE_NAME = 'predictive_source_stats_rows' THEN\n    IF NEW.row_ordinal > cap.parsed_rows THEN RAISE EXCEPTION 'predictive-source-claim-coverage-invalid' USING ERRCODE = '23514'; END IF;\n    IF NEW.id <> 'source-row:' || encode(sha256(convert_to('[' || to_json(NEW.capture_id)::text || ',' || NEW.row_ordinal::text || ']', 'UTF8')), 'hex') THEN\n      RAISE EXCEPTION 'predictive-source-claim-id-invalid' USING ERRCODE = '23514';\n    END IF;\n    IF NEW.projection IS NOT NULL THEN\n      expected_key := '[' || to_json(NEW.projection->>'rawGameId')::text || ',' || to_json(NEW.projection->>'rawTeam')::text\n        || CASE profile.feed WHEN 'player' THEN ',' || to_json(NEW.projection->>'rawPlayerId')::text ELSE '' END || ']';\n      IF NEW.projection->>'feed' <> profile.feed OR NEW.raw_key_sha256 <> encode(sha256(convert_to(expected_key, 'UTF8')), 'hex') THEN\n        RAISE EXCEPTION 'predictive-source-claim-key-invalid' USING ERRCODE = '23514';\n      END IF;\n    END IF;\n  END IF;\n  RETURN NULL;\nEND\n$function$\n",
-        "kind": "f",
-        "security_definer": false
-      },
-      "kind": "routine",
-      "name": "predictive_source_claim_check()"
-    },
-    {
-      "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_source_ingestion_clock()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nDECLARE profile_id text;\nBEGIN\n  SELECT p.id INTO profile_id FROM public.predictive_artifacts a JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256\n      JOIN public.predictive_source_profiles p ON p.id=a.profile_id WHERE a.id=NEW.artifact_id\n      AND b.media_type='text/csv' AND p.parser_version='nflverse-csv-qualification-v1';\n  IF profile_id IS NOT NULL THEN\n    PERFORM pg_advisory_xact_lock(520053, hashtext(profile_id));\n    NEW.ingested_at := date_trunc('milliseconds', clock_timestamp());\n  END IF;\n  RETURN NEW;\nEND\n$function$\n",
-        "kind": "f",
-        "security_definer": false
-      },
-      "kind": "routine",
-      "name": "predictive_source_ingestion_clock()"
-    },
-    {
-      "definition": {
-        "definition": "CREATE OR REPLACE FUNCTION public.predictive_source_projection_valid(data jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\n STABLE STRICT\nAS $function$\nDECLARE fields text[]; stats text[]; parts text[]; field text;\nBEGIN\n  SELECT array_agg(key ORDER BY key COLLATE \"C\") INTO fields FROM jsonb_object_keys(data) key;\n  FOREACH field IN ARRAY ARRAY['feed','version','rawGameId','rawTeam','rawOpponent','seasonType'] LOOP\n    IF jsonb_typeof(data->field) IS DISTINCT FROM 'string' THEN RETURN false; END IF;\n  END LOOP;\n  IF fields <> ARRAY['feed','missing','playerIdProvider','rawGameId','rawOpponent','rawPlayerId','rawTeam','season','seasonType','values','version','week']\n      OR data->>'version' <> 'nflverse-raw-stats-v1' OR data->>'feed' NOT IN ('player','team')\n      OR NOT public.predictive_integer(data->'season', 2026, 2026)\n      OR NOT public.predictive_integer(data->'week', 1, 22) OR data->>'seasonType' NOT IN ('REG','POST')\n      OR data->>'rawGameId' !~ '^[0-9]{4}_[0-9]{2}_[A-Z]{2,3}_[A-Z]{2,3}$' THEN RETURN false; END IF;\n  parts := string_to_array(data->>'rawGameId', '_');\n  IF parts[1]::integer <> (data->>'season')::integer OR parts[2]::integer <> (data->>'week')::integer\n      OR parts[3] = parts[4] OR data->>'rawTeam' = data->>'rawOpponent'\n      OR data->>'rawTeam' <> ALL(parts[3:4]) OR data->>'rawOpponent' <> ALL(parts[3:4])\n      OR NOT EXISTS (SELECT 1 FROM public.predictive_teams WHERE id = 'nfl:team:' || parts[3])\n      OR NOT EXISTS (SELECT 1 FROM public.predictive_teams WHERE id = 'nfl:team:' || parts[4]) THEN RETURN false; END IF;\n  IF data->>'feed' = 'player' THEN\n    IF data->>'rawPlayerId' !~ '^00-[0-9]{7}$' OR data->>'playerIdProvider' <> 'gsis'\n        OR jsonb_typeof(data->'rawPlayerId') <> 'string' OR jsonb_typeof(data->'playerIdProvider') <> 'string' THEN RETURN false; END IF;\n  ELSIF data->'rawPlayerId' <> 'null'::jsonb OR data->'playerIdProvider' <> 'null'::jsonb THEN RETURN false; END IF;\n  SELECT array_agg(key ORDER BY key COLLATE \"C\") INTO stats FROM jsonb_object_keys(data->'values') key;\n  RETURN stats = ARRAY['attempts','carries','completions','passingInterceptions','passingTds','passingYards','receivingYards','receptions','rushingYards','targets']\n    AND public.predictive_stats_valid((data->'values') || jsonb_build_object('missing', data->'missing'));\nEXCEPTION WHEN OTHERS THEN RETURN false;\nEND\n$function$\n",
-        "kind": "f",
-        "security_definer": false
-      },
-      "kind": "routine",
-      "name": "predictive_source_projection_valid(data jsonb)"
-    },
-    {
-      "definition": {
         "definition": "CREATE OR REPLACE FUNCTION public.predictive_stats_valid(data jsonb)\n RETURNS boolean\n LANGUAGE plpgsql\n IMMUTABLE STRICT\nAS $function$\nDECLARE name text; missing jsonb := data->'missing';\nBEGIN\n  IF jsonb_typeof(missing) <> 'object' THEN RETURN false; END IF;\n  IF EXISTS (SELECT 1 FROM jsonb_each(missing) m WHERE m.key NOT IN ('attempts','completions','passingYards','passingTds',\n      'passingInterceptions','carries','rushingYards','targets','receptions','receivingYards')\n      OR m.value NOT IN ('\"source-blank\"'::jsonb, '\"source-missing\"'::jsonb)) THEN RETURN false; END IF;\n  FOREACH name IN ARRAY ARRAY['attempts','completions','passingYards','passingTds','passingInterceptions',\n      'carries','rushingYards','targets','receptions','receivingYards'] LOOP\n    IF data->name = 'null'::jsonb THEN\n      IF NOT missing ? name THEN RETURN false; END IF;\n    ELSE\n      IF missing ? name THEN RETURN false; END IF;\n      IF name LIKE '%Yards' THEN\n        IF NOT public.predictive_integer(data->name, -10000, 10000) THEN RETURN false; END IF;\n      ELSIF NOT public.predictive_integer(data->name, 0, 1000) THEN RETURN false; END IF;\n    END IF;\n  END LOOP;\n  IF data->'attempts' <> 'null'::jsonb AND data->'completions' <> 'null'::jsonb\n      AND (data->>'completions')::integer > (data->>'attempts')::integer THEN RETURN false; END IF;\n  IF data->'targets' <> 'null'::jsonb AND data->'receptions' <> 'null'::jsonb\n      AND (data->>'receptions')::integer > (data->>'targets')::integer THEN RETURN false; END IF;\n  RETURN true;\nEXCEPTION WHEN OTHERS THEN RETURN false;\nEND\n$function$\n",
         "kind": "f",
         "security_definer": false
@@ -16166,6 +18860,22 @@
       },
       "kind": "routine",
       "name": "predictive_unpin_check()"
+    },
+    {
+      "definition": {
+        "cache": "1",
+        "cycle": false,
+        "increment": "1",
+        "maximum": "9223372036854775807",
+        "minimum": "1",
+        "owned_by": [
+          "public.corpus_imports.import_id"
+        ],
+        "start": "1",
+        "type": "bigint"
+      },
+      "kind": "sequence",
+      "name": "corpus_imports_import_id_seq"
     },
     {
       "definition": {
@@ -16233,6 +18943,86 @@
     },
     {
       "definition": {
+        "definition": "CREATE TRIGGER corpus_api_videos_no_truncate BEFORE TRUNCATE ON corpus_api_videos FOR EACH STATEMENT EXECUTE FUNCTION corpus_api_replace_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_api_videos.corpus_api_videos_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_api_videos_no_update BEFORE UPDATE ON corpus_api_videos FOR EACH ROW EXECUTE FUNCTION corpus_api_replace_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_api_videos.corpus_api_videos_no_update"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_capture_events_immutable BEFORE DELETE OR UPDATE ON corpus_capture_events FOR EACH ROW EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_capture_events.corpus_capture_events_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_capture_events_no_truncate BEFORE TRUNCATE ON corpus_capture_events FOR EACH STATEMENT EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_capture_events.corpus_capture_events_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_decision_events_immutable BEFORE DELETE OR UPDATE ON corpus_decision_events FOR EACH ROW EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_decision_events.corpus_decision_events_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_decision_events_no_truncate BEFORE TRUNCATE ON corpus_decision_events FOR EACH STATEMENT EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_decision_events.corpus_decision_events_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_gate_registrations_immutable BEFORE DELETE OR UPDATE ON corpus_gate_registrations FOR EACH ROW EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_gate_registrations_no_truncate BEFORE TRUNCATE ON corpus_gate_registrations FOR EACH STATEMENT EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_gate_registrations.corpus_gate_registrations_no_truncate"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_imports_immutable BEFORE DELETE OR UPDATE ON corpus_imports FOR EACH ROW EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_imports.corpus_imports_immutable"
+    },
+    {
+      "definition": {
+        "definition": "CREATE TRIGGER corpus_imports_no_truncate BEFORE TRUNCATE ON corpus_imports FOR EACH STATEMENT EXECUTE FUNCTION corpus_append_only()",
+        "enabled": "O"
+      },
+      "kind": "trigger",
+      "name": "corpus_imports.corpus_imports_no_truncate"
+    },
+    {
+      "definition": {
         "definition": "CREATE CONSTRAINT TRIGGER predictive_check_links AFTER INSERT ON predictive_artifact_observations DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION predictive_publication_check()",
         "enabled": "O"
       },
@@ -16254,14 +19044,6 @@
       },
       "kind": "trigger",
       "name": "predictive_artifact_observations.predictive_links_no_truncate"
-    },
-    {
-      "definition": {
-        "definition": "CREATE TRIGGER predictive_source_canonical_guard BEFORE INSERT ON predictive_artifact_observations FOR EACH ROW EXECUTE FUNCTION predictive_source_canonical_guard()",
-        "enabled": "O"
-      },
-      "kind": "trigger",
-      "name": "predictive_artifact_observations.predictive_source_canonical_guard"
     },
     {
       "definition": {
@@ -16318,22 +19100,6 @@
       },
       "kind": "trigger",
       "name": "predictive_captures.predictive_check_captures"
-    },
-    {
-      "definition": {
-        "definition": "CREATE CONSTRAINT TRIGGER predictive_source_capture_check AFTER INSERT ON predictive_captures DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION predictive_source_claim_check()",
-        "enabled": "O"
-      },
-      "kind": "trigger",
-      "name": "predictive_captures.predictive_source_capture_check"
-    },
-    {
-      "definition": {
-        "definition": "CREATE TRIGGER predictive_source_ingestion_clock BEFORE INSERT ON predictive_captures FOR EACH ROW EXECUTE FUNCTION predictive_source_ingestion_clock()",
-        "enabled": "O"
-      },
-      "kind": "trigger",
-      "name": "predictive_captures.predictive_source_ingestion_clock"
     },
     {
       "definition": {
@@ -16657,30 +19423,6 @@
     },
     {
       "definition": {
-        "definition": "CREATE CONSTRAINT TRIGGER predictive_source_row_check AFTER INSERT ON predictive_source_stats_rows DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION predictive_source_claim_check()",
-        "enabled": "O"
-      },
-      "kind": "trigger",
-      "name": "predictive_source_stats_rows.predictive_source_row_check"
-    },
-    {
-      "definition": {
-        "definition": "CREATE TRIGGER predictive_source_rows_immutable BEFORE DELETE OR UPDATE ON predictive_source_stats_rows FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
-        "enabled": "O"
-      },
-      "kind": "trigger",
-      "name": "predictive_source_stats_rows.predictive_source_rows_immutable"
-    },
-    {
-      "definition": {
-        "definition": "CREATE TRIGGER predictive_source_rows_no_truncate BEFORE TRUNCATE ON predictive_source_stats_rows FOR EACH STATEMENT EXECUTE FUNCTION predictive_append_only()",
-        "enabled": "O"
-      },
-      "kind": "trigger",
-      "name": "predictive_source_stats_rows.predictive_source_rows_no_truncate"
-    },
-    {
-      "definition": {
         "definition": "CREATE TRIGGER predictive_teams_immutable BEFORE DELETE OR UPDATE ON predictive_teams FOR EACH ROW EXECUTE FUNCTION predictive_append_only()",
         "enabled": "O"
       },
@@ -16717,8 +19459,8 @@
         "version": 3
       },
       {
-        "filename": "0004_predictive_source_claims.sql",
-        "sha256": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a",
+        "filename": "0004_creator_corpus_projection.sql",
+        "sha256": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba",
         "version": 4
       }
     ]

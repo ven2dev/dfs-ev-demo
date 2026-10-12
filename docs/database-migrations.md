@@ -173,9 +173,9 @@ closed: 0003 is frozen and further schema changes require a forward migration.
 PR #102 passed remote CI and merged as `d934432` on 2026-10-11. Hosted
 activation stays behind #95.
 
-## PR B forward migration 0004
+## PR B forward migrations after creator-corpus 0004
 
-`0004_predictive_source_claims.sql` stages complete nflverse player/team CSV
+`0005_predictive_source_claims.sql` stages complete nflverse player/team CSV
 snapshots as immutable typed claims or explicit row refusals. It adds no
 canonical observations and rejects direct canonical links to the staged CSV
 artifacts until a reviewed row/bridge normalization contract exists. A database
@@ -183,11 +183,20 @@ trigger stamps CSV ingestion time; original archive capture times remain
 separate. Source rows join the existing scoped-retention graph and audit digest,
 including queued CSV file removal through the execute-only owner APIs.
 
-The generated schema, prefix contract, manifest and maximum-known readiness
-version advance to 4; the application's minimum remains 2. Empty database,
-released-v3 upgrade, v2 upgrade and no-op tests run only in the disposable
-harness. Released 0001–0003 SQL/checksums/contracts remain unchanged. This
-unmerged 0004 is a local PR B checkpoint, not hosted migration authorization.
+After #90 merged as `3daf1dc`, PR B merged main without rebasing and renumbered
+its private claims/bindings/unavailable-plan files from 0004–0006 to 0005–0007.
+The SQL bytes/checksums are unchanged; generated prefix contracts now include
+the independent creator-corpus schema at released 0004. The owner confirmed
+these private prefixes were applied only to disposable databases; old private
+ledgers must be recreated. The generator and runner guards are unchanged.
+
+The generated schema, prefix contracts, manifest and maximum-known readiness
+version now advance to 7; the application's minimum remains 2. Empty database,
+released-v3/v4 upgrades, v2 upgrade and no-op tests run only in the disposable
+harness. The v4 upgrade seeds every creator-corpus table and preserves its rows
+and recorded history across predictive migration and no-op replay. Released
+0001–0004 SQL/checksums/contracts remain unchanged. Unmerged PR B migrations
+remain local checkpoints, not hosted migration authorization.
 See [PR B progress](predictive-pr-b.md) for the measured retained-file proof,
 current scope and remaining canonical bindings.
 

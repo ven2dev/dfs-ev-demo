@@ -41,7 +41,7 @@ npm run test:db:down
 
 The command accepts only the registered scratch harness and creates, migrates and removes fresh random databases in the disposable service. It refuses the shared primary database as a mutation target, unregistered targets and ambient application credentials. The supplied artifact directory survives database cleanup; keep it private. It contains a registration marker, exact source bytes addressed by SHA-256, and a content-addressed JSON journal of run IDs, capture metadata and artifact references. SQL stores relative content references, never this local directory path.
 
-The report adds `proof: synthetic-postgres-cutoff-replay-v1`, `schemaVersion: 4`, `earlierReplayUnchanged`, `restoredReplayUnchanged`, `archive` and `restored` to the A/B/unavailable scenarios above. It asserts equality between A before and after B, a different B digest, explicit unavailable completion, and exact A restoration into another fresh database. This proves application-data replay; the synthetic timestamps do not claim a historical production acquisition. The earlier saved delivery-2 report used schema version 3.
+The report adds `proof: synthetic-postgres-cutoff-replay-v1`, the current `schemaVersion` (7 on PR B after merging #90), `earlierReplayUnchanged`, `restoredReplayUnchanged`, `archive` and `restored` to the A/B/unavailable scenarios above. It asserts equality between A before and after B, a different B digest, explicit unavailable completion, and exact A restoration into another fresh database. This proves application-data replay; the synthetic timestamps do not claim a historical production acquisition. The earlier saved delivery-2 report used schema version 3.
 
 To restore the journal later, start the same disposable service, retain all referenced source files, and substitute the archive reference and byte count printed by your report:
 
@@ -54,7 +54,7 @@ Restoration verifies the journal and each referenced file's hash and byte size, 
 
 ## Persistence contract
 
-**Superseded on 2026-10-10 (PR A step 2).** The branch-only synthetic migrations (`0003_predictive_local_replay.sql`, `0004_predictive_team_identity.sql`) were replaced by the real-source `0003_predictive_evidence.sql` described in the [real-source schema](predictive-real-source-schema.md) and [column-level DDL](predictive-evidence-ddl.md). It adds immutable source profiles, effective-dated rights decisions with knowledge time, content-addressed blobs separate from artifacts, capture completeness, exactly 32 seeded teams (`nfl:team:LA` for the Rams; no role may insert), and observations keyed by entity and per-provider source keys so a correction never crosses providers. Synthetic proof data now uses a `synthetic-test` profile accepted only from the disposable harness role. Readiness minimum stays **2**; maximum-known is **3**. The reset procedure is in [database migrations](database-migrations.md#pr-a-draft-period-reset-of-migration-0003).
+**Superseded on 2026-10-10 (PR A step 2).** The branch-only synthetic migrations (`0003_predictive_local_replay.sql`, `0004_predictive_team_identity.sql`) were replaced by the real-source `0003_predictive_evidence.sql` described in the [real-source schema](predictive-real-source-schema.md) and [column-level DDL](predictive-evidence-ddl.md). It adds immutable source profiles, effective-dated rights decisions with knowledge time, content-addressed blobs separate from artifacts, capture completeness, exactly 32 seeded teams (`nfl:team:LA` for the Rams; no role may insert), and observations keyed by entity and per-provider source keys so a correction never crosses providers. Synthetic proof data now uses a `synthetic-test` profile accepted only from the disposable harness role. Readiness minimum stays **2**; after merging creator-corpus 0004 and renumbering PR B's private migrations to 0005–0007, maximum-known is **7**. The reset procedure is in [database migrations](database-migrations.md#pr-a-draft-period-reset-of-migration-0003).
 
 | Table | Stored truth |
 | --- | --- |
@@ -143,7 +143,20 @@ For a known former team, cutoff-known QB membership ranges also establish expect
 
 Owner decision on 2026-10-09 after branch review: **option B — hold delivery 2 off main until the real-source schema is designed**. PR A implemented that real-source schema and replay core, passed independent review and remote CI, and merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102) on 2026-10-11. Its branch-only synthetic migrations were replaced under the documented [draft reset procedure](database-migrations.md#pr-a-draft-period-reset-of-migration-0003). Migration 0003 is now frozen. Delivery 3's real-source adapters and qualification remain PR B work.
 
-PR B now has offline typed-statistics qualification, local raw CSV claims persistence under forward migration 0004, and read-only normalization planning. The planner verifies exact source rows, cutoff-visible game/team/player bridges, schedule context, identity authorization and current research rights before proposing a canonical payload. The persisted planner rechecks the retained bytes in one read-only repeatable-read transaction. The [source-lineage contract](predictive-source-lineage.md) defines and tests correction behavior when a bridge changes canonical identity, with raw heads selected before canonical routing. These planners publish no canonical observation, feature or label. Next is database-enforced binding/publication and hydration, followed by the unresolved completion/population/source gates. See [PR B progress](predictive-pr-b.md) for measurements and limits. The **45** mandatory predictive database cases join the existing lease/readiness report gates; missing, filtered, skipped, todo or failed cases cannot produce a passing DB run. Pure replay/storage/source cases remain in the Node Vitest suite.
+PR B now has offline typed-statistics qualification, exact raw CSV persistence
+(0005), database-enforced research bindings and hydration (0006), and complete
+unavailable normalization witnesses (0007). The verified canonical research
+reader follows raw heads before filtering by player/game, preserves binding
+provenance when a revision is reused and withholds unresolved current routing.
+Shared application witnesses prepare reconciliation, usage and post-window
+capture checks; they do not activate canonical observations, features, decisions
+or labels. Next is the shared SQL/application activation boundary, alongside the
+unresolved completion/population/source gates. See the
+[source-lineage contract](predictive-source-lineage.md) and
+[PR B progress](predictive-pr-b.md) for the nine-AC audit, measurements and limits.
+The **78** mandatory predictive database cases join the lease/readiness and
+creator-corpus report gates; missing, filtered, skipped, todo or failed cases
+cannot produce a passing DB run. Pure cases remain in the Node Vitest suite.
 
 The [test reasoning review](predictive-test-review.md) maps each new case to its contract and evidence, records the strengthened failure checks and isolated fault-injection results, and explains the limits of the synthetic proof.
 

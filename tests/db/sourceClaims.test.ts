@@ -214,6 +214,51 @@ it("CSV source migration upgrades released v3 without changing existing evidence
   }, 3);
 });
 
+it("CSV source migration upgrades released v4 preserving creator corpus evidence and recorded history", async () => {
+  await withProof(async ({ client, store, target }) => {
+    const importedAt = "2026-10-12T00:00:00.000Z";
+    const importId = (await client.query(`INSERT INTO corpus_imports
+      (imported_at,importer_version,rule_version,registration_fingerprint,gate_fingerprint,capture_input_fingerprint,
+        decision_input_fingerprint,discovery_input_fingerprint,capture_event_count,decision_event_count,api_video_count)
+      VALUES ($1,'corpus-import-v1','v1',repeat('1',64),repeat('2',64),repeat('3',64),repeat('4',64),repeat('5',64),1,1,1)
+      RETURNING import_id`, [importedAt])).rows[0].import_id;
+    await client.query(`INSERT INTO corpus_gate_registrations
+      (commitment_digest,commitment_algorithm,commitment_version,eligible_creator_count,
+        minimum_reviewed_gradable_picks_overall,minimum_reviewed_gradable_picks_per_creator,maximum_feature_count,
+        start_season,start_week,end_season,end_week,collection_season_type,rule_version,registered_at,imported_at,first_import_id)
+      VALUES (repeat('6',64),'sha256',1,4,500,100,10,2024,1,2026,4,'regular','v1',$1,$1,$2)`, [importedAt, importId]);
+    await client.query(`INSERT INTO corpus_capture_events
+      (creator_key,log_position,event_fingerprint,video_id,event_kind,published_date,published_date_precision,published_date_provenance,
+        transcript_source,usage_status,caption_kind,transcript_sha256,transcript_characters,captured_at,first_import_id)
+      VALUES ('creator-a',1,repeat('7',64),'aaaaaaaaaaa','captured','2026-09-10','day','owner-confirmed-video-page-pacific-date',
+        'manual-owner-paste','internal-research-only','uploaded',repeat('8',64),1234,$1,$2)`, [importedAt, importId]);
+    await client.query(`INSERT INTO corpus_decision_events
+      (creator_key,file_position,event_fingerprint,video_id,decision_kind,reason,rule_version,decided_at,first_import_id)
+      VALUES ('creator-a',1,repeat('9',64),'aaaaaaaaaaa','include','Synthetic upgrade proof','v1',$1,$2)`, [importedAt, importId]);
+    await client.query(`INSERT INTO corpus_api_videos
+      (creator_key,video_id,published_at,duration_seconds,live_broadcast_content,api_fetched_at,season,week,season_week_provenance,
+        classification_status,classification_reasons,classification_rule_version,review_status,snapshot_import_id)
+      VALUES ('creator-a','aaaaaaaaaaa','2026-09-10T17:00:00.000Z',1800,'none',$1,2026,1,'youtube-api-published-at.nfl-calendar-v1',
+        'candidate','{prop-and-nfl-signal-in-title}','v1','present',$2)`, [importedAt, importId]);
+    const tables = ["corpus_imports", "corpus_gate_registrations", "corpus_capture_events", "corpus_decision_events", "corpus_api_videos"];
+    const before = new Map<string, unknown[]>();
+    for (const table of tables) before.set(table, (await client.query(`SELECT * FROM ${table}`)).rows);
+    const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    expect(ledger).toHaveLength(4);
+    expect(ledger[3].filename).toBe("0004_creator_corpus_projection.sql");
+    const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
+    const options = { ...target, files, verify: createCatalogVerifier(contracts) };
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7], schemaVersion: 7 });
+    const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    expect(upgraded.slice(0, 4)).toEqual(ledger);
+    for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
+    await store.publishSourceStats(sourceClaimFixture("after-corpus-upgrade"));
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 7 });
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
+    for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
+  }, 4);
+});
+
 it("CSV source ingest and replay work without superuser and retention removes rows and resumes files with execute-only access", async () => {
   await withProof(async ({ client, artifacts, target }) => {
     const a = sourceClaimFixture("non-superuser", "team");
@@ -669,19 +714,19 @@ it("CSV binding bridge retention removes ancestors and descendants and identical
   });
 });
 
-it("CSV binding migration upgrades v4 without changing released history and reruns are no-ops", async () => {
+it("CSV binding migration upgrades v5 without changing released history and reruns are no-ops", async () => {
   await withProof(async ({ client, target, store }) => {
-    const input = sourceClaimFixture("before-v5"); await store.publishSourceStats(input);
+    const input = sourceClaimFixture("before-v6"); await store.publishSourceStats(input);
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const raw = (await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 4)).toEqual(ledger); expect(upgraded).toHaveLength(6);
+    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(7);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
-  }, 4);
+  }, 5);
 });
 
 it("CSV binding canonical guard refuses generated JSON under real source profiles and immutable bindings cannot be rewritten", async () => {
@@ -856,7 +901,7 @@ it("CSV capture-less unavailable bindings keep source rights and whole-lineage r
   });
 });
 
-it("CSV unavailable migration upgrades v5 preserving v1 positive and withheld plans, exact retries and recorded history", async () => {
+it("CSV unavailable migration upgrades v6 preserving v1 positive and withheld plans, exact retries and recorded history", async () => {
   for (const player of ["00-0000001", "00-0000002"]) await withProof(async ({ client, store, target }) => {
     const { input, request } = await seedBinding(store);
     request.rawPlayerId = player;
@@ -869,7 +914,7 @@ it("CSV unavailable migration upgrades v5 preserving v1 positive and withheld pl
     const binding = (await client.query("SELECT * FROM predictive_source_bindings")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
-    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 5)).toEqual(ledger);
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 6)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings")).rows).toEqual(binding);
     expect(await store.recordSourceNormalization("legacy-v1", request, null)).toMatchObject({ reused: true, event: { plan } });
     expect(await store.replaySourceNormalization({ ...request, cutoff: saved.recordedAt })).toMatchObject(player === "00-0000001"
@@ -879,10 +924,10 @@ it("CSV unavailable migration upgrades v5 preserving v1 positive and withheld pl
     if (plan.candidate) expect(next.event.revision?.id).toBe((await client.query("SELECT revision_id FROM predictive_source_bindings WHERE id='legacy-v1'")).rows[0].revision_id);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM predictive_source_bindings WHERE id='legacy-v1'")).rows).toEqual(binding);
-  }, 5);
+  }, 6);
 });
 
-it("CSV unavailable retention re-applies pre-v6 legacy events with identical counts and digests after restoration", async () => {
+it("CSV unavailable retention re-applies pre-v7 legacy events with identical counts and digests after restoration", async () => {
   for (const auditLevel of ["full", "digest-only"] as const) {
     const fixture = passingYardsFixture(false);
     const other: Dataset = { formatVersion: 2, profiles: [profile("retention-survivor")], rightsDecisions: [rights("retention-survivor")],
@@ -912,7 +957,7 @@ it("CSV unavailable retention re-applies pre-v6 legacy events with identical cou
     const procedure = async (client: Client) => (await client.query(`SELECT pg_get_functiondef(
       'public.predictive_retention_execute(text,text,text,timestamptz,jsonb,text)'::regprocedure) AS definition`)).rows[0].definition as string;
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(5);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(6);
       oldProcedure = await procedure(client);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
@@ -929,11 +974,11 @@ it("CSV unavailable retention re-applies pre-v6 legacy events with identical cou
       expect(history[1].removedCounts).toEqual(removedCounts);
       expect(history[1].removedIdsDigest).not.toBe(history[0].removedIdsDigest);
       await assertDeleted(client, artifacts);
-    }, 5);
-    // Restore the same retained evidence and IDs into a fresh post-v6 database.
+    }, 6);
+    // Restore the same retained evidence and IDs into a fresh post-v7 database.
     // New timestamps are allowed; the deletion set and audit contract are not.
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(6);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(7);
       expect(await procedure(client)).not.toBe(oldProcedure);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {

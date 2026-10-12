@@ -1,7 +1,7 @@
 # PR B canonical source lineage
 
 The pure contract in `sourceLineage.ts` now has a PostgreSQL recorder and verified
-hydration path under forward migrations 0005 and 0006. **These canonical source revisions
+hydration path under forward migrations 0006 and 0007. **These canonical source revisions
 remain internal research staging.** They do not enter `predictive_observations`,
 model inputs, participation/reconciliation decisions or labels. Full activation
 must update every reader's head rules together. Migration 0003 is frozen.
@@ -56,7 +56,7 @@ same raw chain. An actual provider change to a raw-key component is a separate
 remove/add case requiring compatible complete snapshot evidence; do not infer
 a relationship from names or equal numeric values.
 
-## Storage checkpoint implemented in 0005
+## Storage checkpoint implemented in 0006
 
 `recordSourceNormalization(id, requestWithoutCutoff, expectedHeadId)` chooses its
 cutoff from the database clock, verifies raw CSV/JSON evidence and calls the
@@ -72,8 +72,8 @@ Bindings reference raw captures/rows, every relevant bridge/schedule head,
 identity links, reconciliation decisions and rights through restrictive foreign
 keys. Positive candidates append or attach revisions in
 `predictive_source_stats_revisions`; unavailable raw rows create a null-revision
-binding. The original 0005 checkpoint records `source-row-missing`,
-`source-row-refused` and `source-row-ambiguous`; 0006 expands unavailable states
+binding. The original 0006 checkpoint records `source-row-missing`,
+`source-row-refused` and `source-row-ambiguous`; 0007 expands unavailable states
 as described below. A disappeared row never becomes zero, confirmed absence
 or an absence-v1 observation.
 
@@ -103,7 +103,7 @@ New audit kinds/counts appear only when those rows exist, preserving older
 retention audit parity. Blob removal still uses the released execute-only APIs
 and digest locks. There are no new generated blob files to recover.
 
-## Unavailable states implemented in 0006
+## Unavailable states implemented in 0007
 
 Plan v2 pins current research rights on every result, including early failures,
 except an access-refused response. The SQL planner independently reconstructs
@@ -262,7 +262,7 @@ PostgreSQL cases establish recorder clock/role isolation, linear concurrent head
 selection, exact corrections and rerouting, missing/refused/ambiguous withholding,
 rehashed forgery refusal, raw-byte and association tamper refusal, current-rights
 revocation, stale unrecorded context, immutable rows, the JSON bypass guard,
-retention of whole raw lineages, restored deletion-set parity and v4 upgrade/no-op
+retention of whole raw lineages, restored deletion-set parity and v5 upgrade/no-op
 preservation. Expected values, revision predecessors and removal counts are
 hand-specified. Two independent sessions are observed waiting behind a held lock
 before the concurrent test releases them; it is not a timing-only race test.
@@ -280,7 +280,7 @@ corrections. Full feature/decision/label activation remains outstanding.
 Nine additional mandatory PostgreSQL cases cover exact failure-prefix and
 conflict witnesses, rehashed failure/rights/dependency forgeries, usable →
 unavailable → recovered history, every conflicting capture's byte integrity,
-capture-less source retention through a non-superuser owner, v5 upgrade with
+capture-less source retention through a non-superuser owner, v6 upgrade with
 v1 positive/withheld plans and retries, absence heads and effective-window
 boundaries, current/stale schedule reconciliation and rights before hydration.
 Expected failure reasons, dependency roles, revision counts and canonical

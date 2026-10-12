@@ -8,26 +8,29 @@ The owner asked whether the issue's ACs are complete. **No:** the
 maps the tested foundation to the remaining full-parent scope. Real-file proof
 still yields no usable bundle. Shared downstream head activation, qualified
 source evidence, remaining feed/market mappings and bounded operating proofs
-remain outstanding. The audit adds no runtime/schema changes or new validation
-claims; `e8e76e7` remains the latest tested code checkpoint.
+remain outstanding. The audit describes code checkpoint `e8e76e7`; the shared
+consumer witnesses and coordinated merge validation follow below. Neither
+checkpoint closes the parent issue or qualifies real predictive inputs.
 
 ## Current migration coordination (2026-10-12)
 
-The owner approved **#90 merging first and owning 0004**. After it merges, merge
-main into PR B (no rebase), move this branch's three unmerged migrations from
-**0004–0006 to 0005–0007**, regenerate catalog/readiness artifacts and update the
-prefix/version tests. The owner confirmed none ran outside disposable databases.
-Released 0001–0003 stay frozen. Hold further PR B migration additions until this
-ordering is resolved; the filenames below have not yet been changed.
+The owner approved **#90 merging first and owning 0004**. PR #103 merged as
+`3daf1dc` at 2026-10-12 19:27:45 UTC. Main is merged into PR B without rebasing;
+PR B's three unmerged migrations move from **0004–0006 to 0005–0007**, preserving
+their SQL bytes/checksums and regenerating prefix/readiness artifacts. Released
+0001–0004 stay frozen. The owner confirmed the old private prefixes ran only in
+disposable databases. Recreate those databases; never repair an obsolete ledger.
+The final merge verification is recorded in the latest checkpoint below.
 
 The old relay handoff now has this notice too. Do not use its historical October 9
 instructions as current schema/merge guidance. Preserve the creator session's
 database: PR B uses Docker project `dfs-ev-52-prb-test` and `[::1]:54329`, not the
 default project at `127.0.0.1:54329`.
 
-PR #103 merged at 2026-10-12 19:27:45 UTC as `3daf1dc`. The shared consumer
-witness checkpoint is being committed before the coordinated merge/renumber;
-that merge and its regenerated artifacts must be completed next.
+Historical checkpoint logs/paragraphs below retain the original private prefix
+numbers; current files are 0005 (claims), 0006 (bindings) and 0007 (unavailable
+plans). The old maximum-known 6 is historical: current maximum-known is 7 and
+minimum readiness remains 2. No hosted activation is authorized.
 
 ## Current state: PR A merged; PR B bound source revisions in internal research staging
 
@@ -204,7 +207,7 @@ for test oracles and crash-simulation limits.
    evidence, with strict ambiguity validation. Step 6 recompute-and-cite.
 3. The §7b candidate features (weather, venue, depth/teammate absences,
    targets per snap) and a defensive-scheme slot are reserved, not implemented.
-4. App readiness minimum remains **2**; this branch's maximum-known is **6**.
+4. App readiness minimum remains **2**; this branch's maximum-known is **7**.
    Production migrations, role setup and activation stay behind #95.
 5. No paid access, API key or issue comment is authorized by this work.
 
@@ -216,19 +219,21 @@ knowledge times from the database clock (DDL section 14, step 8 nuance) and own
 automatic absence detection from real files.
 
 Bound canonical source revisions now persist and hydrate in internal research
-staging under 0005; see [the storage checkpoint](predictive-source-lineage.md#storage-checkpoint-implemented-in-0005).
+staging under 0006; see [the storage checkpoint](predictive-source-lineage.md#storage-checkpoint-implemented-in-0006).
 The recorder revalidates exact raw/context/current rights with database time;
 replay recomputes original plans from verified files and withholds unrecorded
 changes. Retention removes complete affected raw lineages, including ancestors,
 and associated canonical source revisions. These rows remain outside
 `predictive_observations`, features, decisions and labels. Positive plans, unavailable captures, raw-row failures and unavailable
-context are now recordable through forward 0006/v2. Existing v1 plans keep exact
+context are now recordable through forward 0007/v2. Existing v1 plans keep exact
 historical hydration and retries. Implement one
 binding-aware head contract across SQL replay, reconciliation, participation,
 label and post-window checks before activating them. Changing only feature
 replay is insufficient. Preserve unresolved completion/population/membership.
-0004/0005/0006 are local and unmerged; coordinate numbering before PR review. Never
-edit/reset committed 0003/0004/0005 (or 0006 after this checkpoint). No persistent dev, hosted or Production migration was run.
+0005–0007 are local and unmerged, now sequenced after #90's released 0004.
+Further behavior changes require a forward migration; the coordinated
+renumbering preserves SQL bytes. Released 0001–0004 remain frozen. No persistent
+dev, hosted or Production migration was run.
 
 ## Real-source findings and private evidence
 
@@ -446,8 +451,9 @@ No migration was added or renumbered. #90's PR #103 is still open at this
 checkpoint. SQL must still implement the same current head rule before wiring
 features, reconciliation/participation decisions, labels and post-window capture
 checks together. This research reader activates none of those existing paths.
-After #90 merges, merge main, renumber the current three migrations to 0005–0007
-and regenerate/test their artifacts before adding a forward activation migration.
+The later coordinated merge now includes #90 and renumbers these private
+migrations to 0005–0007; see the latest checkpoint before adding a forward
+activation migration.
 Large-roster indexed discovery must preserve unrecorded destination and unresolved
 routing semantics; the profile-wide research reader is not a scale qualification.
 
@@ -485,16 +491,14 @@ an unchanged revision can be reconfirmed by a later recapture, but an earlier
 capture cannot be substituted. These remain read-only research helpers: no
 SQL activation or active feature/decision/label write path has been added.
 
-Seventeen pure cases and two mandatory database cases cover those invariants,
-including a non-superuser replay-only login. The complete pre-merge database gate
-passes **74 Node checks + 94 DB tests**, all **77 mandatory predictive cases**.
-The full Node run passed 632 cases before the final zero-usage-rival case was
-added; the final focused witness run passes all 17 cases. All **831 jsdom**
-cases, typecheck, lint, CI gate and Firebase Admin runtime pass. The DB/app
-suites needed loopback permission for local connections/listeners; test guards
-and timeouts were unchanged. A final complete post-merge run remains necessary.
-The retained-file CLI proof was extended to assert witness withholding but has
-not yet been rerun in this checkpoint.
+Commit `4319a6b` adds seventeen pure cases and two mandatory database cases for
+those invariants, including a non-superuser replay-only login. After merging
+main/#90 and renumbering, the complete gates pass **873 jsdom + 633 Node tests**,
+**75 Node DB checks + 103 database tests**, all **78 mandatory predictive** and
+**8 creator-corpus** cases. Typecheck, full lint, CI gate, Firebase Admin runtime,
+the production Webpack build, migration/catalog/readiness checks, whitespace and
+55 local file/heading links pass. The DB/app suites needed loopback permission
+for local connections/listeners; guards and timeouts were unchanged.
 
 Evidence: `/private/tmp/dfs52-prb-consumers-node.log`,
 `/private/tmp/dfs52-prb-consumers-focused.log`,
@@ -502,4 +506,41 @@ Evidence: `/private/tmp/dfs52-prb-consumers-node.log`,
 `/private/tmp/dfs52-prb-consumers-db.log`,
 `/private/tmp/dfs52-prb-consumers-typecheck.log`,
 `/private/tmp/dfs52-prb-consumers-lint.log`,
-`/private/tmp/dfs52-prb-consumers-ci.log`.
+`/private/tmp/dfs52-prb-consumers-ci.log`,
+`/private/tmp/dfs52-prb-consumers-build.log`.
+
+## Latest checkpoint: merged #90 and renumbered PR B
+
+Main `3daf1dc` (#90/PR #103) is merged without rebasing. Released SQL and catalog
+contracts 0001–0004 match main byte for byte. PR B's renamed 0005–0007 SQL retains
+its old checksums; generated catalog prefixes, schema/manifest and readiness
+now include the creator-corpus migration. Minimum readiness remains 2 and
+maximum-known is 7. A new mandatory released-v4 upgrade test seeds every
+creator-corpus table, preserves all rows and the first four ledger records,
+imports predictive CSV and proves the migration rerun is a no-op. Existing raw
+binding upgrades and cross-version retention tests now use the correct v5/v6/v7
+boundaries. Old private disposable ledgers must be recreated; no guard was
+relaxed and no persistent dev, Neon or Production migration ran.
+
+The retained-file proof ran at 2026-10-12 20:00 UTC with **zero requests** under
+schema version 7. It restored 4,517 player rows (4,512 typed, five refused) and
+130 typed team rows. Both canonical reads have zero usable heads, one unresolved
+`game-bridge-missing` binding and an unavailable consumer witness. Player/team
+fact reads measured 360/51 ms. Whole-process wall time was 7.97 seconds and
+maximum RSS 498,810,880 bytes (~476 MiB), measured rather than capped. No active
+canonical observation, feature or label was published. Scratch databases/private
+proof files and PR B's isolated container were removed; the retained source
+archive and creator session's default database were preserved.
+
+Proof evidence: `/private/tmp/dfs52-prb-consumers-proof.log`,
+`/private/tmp/dfs52-prb-consumers-proof-metrics.log`.
+Catalog regeneration: `/private/tmp/dfs52-prb-renumber-contracts.log`.
+
+**Next:** implement the shared binding-aware SQL head rule and forward recorder/
+application integration across features, reconciliation, participation, labels
+and post-window checks together. The #90 sequencing hold is resolved; future
+schema work can append 0008. Do not modify released 0001–0004 or repurpose the
+renumbered files for behavioral changes. Source qualification and the parent AC
+audit remain open; research witnesses and passing tests are not usable real
+predictive inputs. PR B remains local/unpushed; use an explicit feature
+destination if later authorized to push.

@@ -424,3 +424,24 @@ database-clock recording, rights and complete raw-chain validation belong to
 the persisted reader/recorders. SQL binding-aware feature/decision/label
 activation and real provider qualification remain outstanding; these tests do
 not claim either is complete.
+
+## PR B migration sequencing after #90 (2026-10-12)
+
+The new released-v4 upgrade case seeds one row in each of the five creator-corpus
+tables before applying predictive 0005–0007. It compares the complete rows and
+the first four ledger records before/after migration, imports a synthetic CSV
+through the predictive store, then requires a no-op rerun to preserve both sets.
+The test starts from the actual released creator-corpus prefix and uses the full
+catalog verifier; the prefix is not recreated by a mocked schema. Existing raw
+binding upgrades now start at v5/v6, and retention compatibility compares the
+same legacy procedure boundary at v6/v7 after renumbering. Their expected
+deletion sets and hashes are unchanged.
+
+Independent byte checks against merged main require released SQL and catalog
+contracts 0001–0004 to remain identical. Renamed PR B SQL must retain its previous
+checksums. Generation runs through registered scratch databases with the normal
+history/target guards. An old private ledger was correctly refused and the
+isolated container recreated. A mistakenly renumbered six-row membership count
+was restored after the full gate exposed it; membership scope and runtime SQL
+did not change. The final full gate passes all 75 Node DB checks and 103 database
+tests, including 78 required predictive cases and eight creator-corpus cases.
