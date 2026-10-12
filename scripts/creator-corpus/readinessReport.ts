@@ -293,6 +293,12 @@ export const generateCorpusReadinessReport = async ({
       const { rows: [mode] } = await client.query("SHOW transaction_read_only");
       if (mode.transaction_read_only !== "on") return fail("corpus-readiness-read-only-refused");
       const source = await readSource(client, now);
+      // The report must not turn expired API-derived classification or week
+      // placement into current evidence. Cleanup remains a separate explicit
+      // owner operation so this transaction can stay read-only.
+      if (source.apiVideos.some((video) => isApiDataStale(video.apiFetchedAt, now))) {
+        return fail("corpus-readiness-api-expiry-required");
+      }
       if (
         privateRecord.eligibleCreatorKeys.length !== source.gate.eligibleCreatorCount ||
         computeGateCommitment(privateRecord.eligibleCreatorKeys, privateRecord.saltHex) !== source.gate.commitmentDigest

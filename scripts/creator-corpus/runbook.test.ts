@@ -71,7 +71,7 @@ describe("creator corpus runbook", () => {
   it("maps the complete synthetic acceptance matrix to tracked tests", () => {
     for (const phrase of [
       "identical no-op", "owner-tail append", "API snapshot replacement", "Changed, truncated",
-      "rolls back", "unavailable status", "Equal-time decisions", "physically removed",
+      "rolls back", "unavailable status", "Equal-time decisions", "Readiness refuses",
       "Transcript text", "Every preregistered slot", "read-only database snapshot", "before private corpus sources",
     ]) expect(MATRIX).toContain(phrase);
     const paths = [...MATRIX.matchAll(/`((?:scripts|tests)\/[A-Za-z0-9_./-]+)`/g)].map((match) => match[1]);

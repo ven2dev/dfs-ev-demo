@@ -61,7 +61,7 @@ history is refused, but it does not copy those free-text fields.
 | `event_fingerprint` | Derived | SHA-256 of the canonical whole decision event; detects alteration. |
 | `video_id` | Owner | Permanent video identifier. |
 | `decision_kind` | Owner | `include`, `exclude`, or `clear`; active state is derived without changing this event. |
-| `reason` | Owner | Required nonempty explanation, permanent. |
+| `reason` | Owner | Required nonempty explanation, stored verbatim and permanent. Do not quote or copy video titles, descriptions or other API-derived text into it. |
 | `rule_version` | Owner-run tool | Inclusion rule version under which the decision was made, permanent. |
 | `decided_at` | Owner-run tool | Event time. Events are applied by this instant, with `file_position` breaking ties. |
 | `first_import_id` | Importer | Audit link to the first successful import that appended this event. Permanent. |
@@ -146,9 +146,12 @@ UTF8("dfs-ev-demo:creator-readiness-gate:v1\0")
 
 `maximumFeatureCount` counts fitted non-intercept parameters, not friendly
 feature labels. One-hot columns, transformed columns and interactions each
-count. A model that needs more than 10 requires a new registration before any
-holdout is inspected. Reaching the pick thresholds only opens the next
-evaluation step; picks from the same video or game remain correlated.
+count. The cap is 10 because the 500-pick overall gate is not 500 independent
+examples for each market: picks remain clustered by creator, video and game,
+and some markets will have materially fewer usable outcomes. A model that needs
+more than 10 requires a new registration before any holdout is inspected.
+Reaching the pick thresholds only opens the next evaluation step; it does not
+establish model validity.
 
 The committed public gate contains only the algorithm/version, digest, creator
 count, thresholds, registered window/rule and registration time. The raw

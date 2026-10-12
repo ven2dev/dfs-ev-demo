@@ -11,17 +11,34 @@ const registration = parseCorpusDatabaseRegistration({
 });
 
 describe("creator corpus import target", () => {
-  it("accepts only the exact registered local database and dedicated role", () => {
+  it.each([
+    ["localhost", "postgresql://corpus_importer:secret@localhost:55432/dfs_ev_corpus", "127.0.0.1"],
+    ["canonical IPv4", "postgresql://corpus_importer:secret@127.0.0.1:55432/dfs_ev_corpus", "127.0.0.1"],
+    ["expanded IPv6 loopback", "postgresql://corpus_importer:secret@[0:0:0:0:0:0:0:1]:55432/dfs_ev_corpus", "::1"],
+    ["an encoded exact database name", "postgresql://corpus_importer:secret@127.0.0.1:55432/dfs_ev_%63orpus", "127.0.0.1"],
+  ])("accepts the exact registered target through %s", (_label, url, host) => {
     const config = parseCorpusDatabaseTarget({
-      CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@localhost:55432/dfs_ev_corpus",
+      CORPUS_DATABASE_URL: url,
     }, registration);
-    expect(config).toMatchObject({ host: "127.0.0.1", port: 55432, database: "dfs_ev_corpus", user: "corpus_importer", ssl: false });
+    expect(config).toMatchObject({ host, port: 55432, database: "dfs_ev_corpus", user: "corpus_importer", ssl: false });
     expect(JSON.stringify(config)).not.toContain("postgresql://");
   });
 
   it.each([
     ["a hosted URL", { CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@ep-example.neon.tech:5432/dfs_ev_corpus" }],
+    ["userinfo that disguises a hosted URL", {
+      CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret%40127.0.0.1@ep-example.neon.tech:55432/dfs_ev_corpus",
+    }],
+    ["another IPv4 loopback address", {
+      CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.2:55432/dfs_ev_corpus",
+    }],
+    ["a hexadecimal IPv4 spelling", {
+      CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@0x7f000001:55432/dfs_ev_corpus",
+    }],
     ["a misleading database", { CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.1:55432/production" }],
+    ["an encoded misleading database", {
+      CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.1:55432/%70roduction",
+    }],
     ["the wrong role", { CORPUS_DATABASE_URL: "postgresql://postgres:secret@127.0.0.1:55432/dfs_ev_corpus" }],
     ["URL options", { CORPUS_DATABASE_URL: "postgresql://corpus_importer:secret@127.0.0.1:55432/dfs_ev_corpus?sslmode=require" }],
     ["ordinary application configuration", {

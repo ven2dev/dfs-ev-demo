@@ -183,14 +183,24 @@ it("corpus API expiry removes complete stale snapshots while preserving permanen
     expect(await expireCorpusApiEvidence({ config, now: atLimit })).toMatchObject({
       outcome: "expired", creatorsExpired: 0, videosDeleted: 0,
     });
+    const expiredAt = new Date(atLimit.getTime() + 1);
+    await expect(generateCorpusReadinessReport({
+      config,
+      now: expiredAt,
+      loadPrivateGateRecord: async () => ({
+        formatVersion: 1,
+        eligibleCreatorKeys: ["creator-a", "creator-b"],
+        saltHex: "f".repeat(64),
+      }),
+    })).rejects.toMatchObject({ code: "corpus-readiness-api-expiry-required" });
     await owner.query("SELECT pg_advisory_lock($1,$2)", [CORPUS_LOCK_NAMESPACE, CORPUS_LOCK_KEY]);
     try {
-      await expect(expireCorpusApiEvidence({ config, now: new Date(atLimit.getTime() + 1) }))
+      await expect(expireCorpusApiEvidence({ config, now: expiredAt }))
         .rejects.toMatchObject({ code: "corpus-api-expiry-lock-busy" });
     } finally {
       await owner.query("SELECT pg_advisory_unlock($1,$2)", [CORPUS_LOCK_NAMESPACE, CORPUS_LOCK_KEY]);
     }
-    expect(await expireCorpusApiEvidence({ config, now: new Date(atLimit.getTime() + 1) })).toMatchObject({
+    expect(await expireCorpusApiEvidence({ config, now: expiredAt })).toMatchObject({
       outcome: "expired", creatorsExpired: 2, videosDeleted: 3,
     });
     expect((await owner.query(`SELECT
@@ -203,7 +213,7 @@ it("corpus API expiry removes complete stale snapshots while preserving permanen
     });
     const report = await generateCorpusReadinessReport({
       config,
-      now: new Date(atLimit.getTime() + 1),
+      now: expiredAt,
       loadPrivateGateRecord: async () => ({
         formatVersion: 1,
         eligibleCreatorKeys: ["creator-a", "creator-b"],

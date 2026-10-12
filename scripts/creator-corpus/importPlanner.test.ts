@@ -216,4 +216,19 @@ describe("planCorpusImport", () => {
       expect.objectContaining({ code: "invalid-api-video-projection" })
     );
   });
+
+  it("refuses stale discovery even when new owner history would otherwise append", () => {
+    const first = appendPlan();
+    const staleDiscovery = discoveryFor([
+      record(1, { apiFetchedAt: "2026-08-01T00:00:00.000Z" }),
+      record(2, { apiFetchedAt: "2026-08-01T00:00:00.000Z" }),
+    ], [record(900, { apiFetchedAt: "2026-08-01T00:00:00.000Z" })]);
+
+    expect(() => planCorpusImport(inputs({
+      captures: [capture(1), capture(1, "new owner correction ".repeat(20), "replace")],
+      discovery: staleDiscovery,
+      fingerprints: { ...fingerprints(), captures: "1".repeat(64), discovery: "2".repeat(64) },
+      stored: storedFrom(first),
+    }))).toThrow(expect.objectContaining({ code: "stale-discovery-data" }));
+  });
 });

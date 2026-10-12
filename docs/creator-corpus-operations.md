@@ -438,7 +438,23 @@ no-op. Appended owner events are accepted; changed or truncated prior history
 is refused. A failed transaction leaves the previous projection intact, so the
 safe response to an interrupted import is to rerun the same command.
 
-### 13. Generate the readiness report
+### 13. Enforce API retention in Postgres
+
+Run this before the readiness report and as part of routine local maintenance:
+
+```bash
+npm run creators -- expire-api \
+  --database-registration ~/.config/dfs-ev-demo/creators/database-registration.json
+```
+
+At exactly 30 days an API row is still retained; once any row in a creator's
+validated snapshot is older, the command atomically deletes that creator's
+complete API snapshot. It shares the import advisory lock, so it cannot race a
+replacement. Owner decisions, capture history, transcript fingerprints, gate
+registration and import audit remain. The readiness report then labels the
+missing API state `unknown` and keeps every preregistered slot visible.
+
+### 14. Generate the readiness report
 
 ```bash
 npm run creators -- readiness \
@@ -452,30 +468,16 @@ owner-only video identity. Inclusion, active transcript availability, API
 freshness and public-use clearance remain separate. Capture percentages always
 show their included-video numerator and denominator. Public-use clearance is
 0% for a nonempty corpus under the current `internal-research-only` contract
-and unavailable for an empty corpus.
+and unavailable for an empty corpus. If any persisted API row has crossed its
+30-day deadline, the command refuses with `corpus-readiness-api-expiry-required`
+instead of using expired classification or week placement. Run step 13 and
+retry.
 
 Pick-level market, missing-line, unresolved-player and outcome metrics remain
 `not available: extraction/grading pending (#35/#36)`. Extraction, grading and
 model readiness stay blocked. Meeting the registered pick counts will permit
 the next evaluation step only; it will not establish model validity, and picks
 from the same video or game remain correlated.
-
-### 14. Enforce API retention in Postgres
-
-Run this before relying on a readiness report and as part of routine local
-maintenance:
-
-```bash
-npm run creators -- expire-api \
-  --database-registration ~/.config/dfs-ev-demo/creators/database-registration.json
-```
-
-At exactly 30 days an API row is still retained; once any row in a creator's
-validated snapshot is older, the command atomically deletes that creator's
-complete API snapshot. It shares the import advisory lock, so it cannot race a
-replacement. Owner decisions, capture history, transcript fingerprints, gate
-registration and import audit remain. The readiness report then labels the
-missing API state `unknown` and keeps every preregistered slot visible.
 
 When finished, clear the credential from the terminal:
 
@@ -543,6 +545,7 @@ Every failure prints one line, `creator-corpus: <code>`.
 | `corpus-import-lock-busy`, `corpus-api-expiry-lock-busy` | Another import or expiry transaction owns the corpus lock. Let it finish and retry. |
 | `corpus-import-database-failure`, `corpus-api-expiry-database-failure`, `corpus-readiness-database-failure` | The local transaction failed safely. Check PostgreSQL, then rerun; do not repair projection rows by hand. |
 | `corpus-import-refused` | Previously imported owner history was changed/truncated or a projection no longer matches its audit. Restore the authoritative private source and rerun. |
+| `corpus-readiness-api-expiry-required` | Persisted API evidence has crossed its 30-day deadline. Run `expire-api`, then rerun `readiness`; the report will not use expired classification or week placement. |
 | `readiness-gate-verification-failed`, `corpus-readiness-gate-missing`, `corpus-readiness-gate-ambiguous`, `corpus-readiness-import-missing` | The private commitment and imported immutable gate/audit do not form one verified report source. Stop instead of guessing or replacing the gate. |
 | `invalid-private-gate-record`, `invalid-gate-salt` | The private gate record is damaged or malformed. Restore the original private record; never generate a replacement salt for an existing registration. |
 | `gate-creators-changed` | The current creators file does not contain exactly the eligible keys bound by the private gate record. Use the original eligible set or create a separately reviewed future registration. |
