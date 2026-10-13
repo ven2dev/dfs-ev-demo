@@ -509,7 +509,7 @@ it("predictive archive restoration recreates the same cutoff bundles in fresh sc
   const root = await realpath(await mkdtemp(join(tmpdir(), "dfs-ev-predictive-restore-")));
   try {
     const captured = await runLocalProof(["demo", "--artifact-root", root], process.env);
-    expect(captured).toMatchObject({ schemaVersion: 11, earlierReplayUnchanged: true, restoredReplayUnchanged: true });
+    expect(captured).toMatchObject({ schemaVersion: 12, earlierReplayUnchanged: true, restoredReplayUnchanged: true });
     const restored = await runLocalProof(["restore", "--artifact-root", root, "--archive", captured.archive.reference,
       "--archive-bytes", String(captured.archive.byteSize)], process.env);
     expect(restored.capturedA).toEqual(captured.capturedA); expect(restored.laterB).toEqual(captured.laterB);
@@ -525,10 +525,10 @@ it("predictive v2 upgrade preserves application rows and no-op migrations preser
       await client.query("INSERT INTO creators (channel_name) VALUES ('Synthetic v2 survivor')");
       const before = (await client.query("SELECT * FROM creators")).rows;
       const historical = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 11, executed: [3, 4, 5, 6, 7, 8, 9, 10, 11] });
+      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 12, executed: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12] });
       expect((await client.query("SELECT * FROM creators")).rows).toEqual(before);
       const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-      expect(upgraded.slice(0, 2)).toEqual(historical); expect(upgraded).toHaveLength(11);
+      expect(upgraded.slice(0, 2)).toEqual(historical); expect(upgraded).toHaveLength(12);
       expect(upgraded[2]).toMatchObject({ version: 3, filename: "0003_predictive_evidence.sql", provenance: "executed" });
       expect(upgraded[3]).toMatchObject({ version: 4, filename: "0004_creator_corpus_projection.sql", provenance: "executed" });
       expect(upgraded[4]).toMatchObject({ version: 5, filename: "0005_predictive_source_claims.sql", provenance: "executed" });
@@ -536,7 +536,7 @@ it("predictive v2 upgrade preserves application rows and no-op migrations preser
       expect(upgraded[6]).toMatchObject({ version: 7, filename: "0007_predictive_unavailable_bindings.sql", provenance: "executed" });
       expect(upgraded[7]).toMatchObject({ version: 8, filename: "0008_predictive_source_witnesses.sql", provenance: "executed" });
       expect(upgraded[8]).toMatchObject({ version: 9, filename: "0009_predictive_source_decisions.sql", provenance: "executed" });
-      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 11, executed: [] });
+      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 12, executed: [] });
       expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     });
   } finally { await harness.close(); }
