@@ -1,14 +1,18 @@
 # #106 / #118 feature and label handoff proposal
 
-Status: **revised proposal, awaiting contract agreement and #106 history-scope
-selection before runtime implementation**.
+Status: **contract agreed by the owner on 2026-10-13 at reviewed proposal
+`b7db281`; #118 implementation authorized**. #106 retains existing v1's
+multi-season policy: one QB/game proof, target-relative three-season schedule
+coverage and at most 16 numerical history slots. The 2026-only proposal is
+withdrawn.
 Prepared 2026-10-13 from merged-main `716d7559f6b3d402b098810efa5e6646f99e6709`
 (PR #105). Relay owns [#118](https://github.com/ven2dev/dfs-ev-demo/issues/118);
 the real-slice session owns [#106](https://github.com/ven2dev/dfs-ev-demo/issues/106).
-This document specifies a contract to review, not an implemented API or a claim
-that real data is qualified. Both branches start from merged main.
+This document specifies the agreed contract, not a claim that its entire API is
+implemented or real data is qualified. Both branches start from merged main.
 Relay branch: `feature/dfsEV-118-training-reads-retention`. This checkpoint
-changes this proposal only; no runtime code, schema or migration has changed.
+initially published this contract without runtime/schema changes. Implementation
+progress and remaining gates are recorded below.
 
 ## Shared boundary
 
@@ -36,11 +40,9 @@ apply the population and historical-version gates before validated training.
 
 ## History policy and version compatibility
 
-**#106's history scope is not yet approved.** Its proposed 2026-only slice is a
-different feature contract from existing v1; neither session may silently change
-v1 to make that slice usable. The following names for history policies and the
-2026-only candidate/feature are proposed contract identifiers, not implemented
-exports or approved statistical policies.
+**#106's approved history scope uses existing v1.** Neither session may silently
+change it to make a slice usable. The history-policy identifier below names the
+existing producer's fixed rules; it does not rewrite legacy recorded bodies.
 
 The existing three-season policy remains the default reader contract. A 2026-only
 option would bound one engineering proof, not the project's collection or
@@ -51,13 +53,13 @@ to 2026 targets cannot cover the older creator picks in a historical comparison.
 Cross-season evaluation needs a compatible policy and qualified historical NFL
 evidence for each target; collecting older final statistics now does not establish
 their availability at a past cutoff. The owner's request for broader creator
-context leaves the 2026-only choice unapproved.
+context led to withdrawal of the 2026-only option.
 
 | Candidate | Feature version | History policy | Compatibility / activation |
 | --- | --- | --- | --- |
 | `stats-v1:player_pass_yds` | `passing-yards-source-v1` | `qb-passing-history-three-season-v1` | Existing producer; player history only, without team/opponent summaries |
 | `player-opponent-v1:player_pass_yds` | `passing-yards-source-v1` | `qb-passing-history-three-season-v1` | Existing producer; player, team and opposing-offense histories plus scheduled rest; current compatible choice for the enriched #106 proof |
-| `player-opponent-2026-v1:player_pass_yds` | `passing-yards-source-2026-v1` | `qb-passing-history-2026-v1` | Proposed and **inactive**; only for 2026 targets, pending scope agreement, separate producer/recorder/replay support and independent review |
+| `player-opponent-2026-v1:player_pass_yds` | `passing-yards-source-2026-v1` | `qb-passing-history-2026-v1` | **Withdrawn and unsupported**; no producer/reader activation is authorized |
 
 The two existing candidates share these implemented history rules:
 
@@ -81,14 +83,11 @@ For legacy v1 records, #118 derives the history-policy identity from the verifie
 candidate/feature pair and this fixed definition; it does not invent a field in
 or rewrite the recorded body.
 
-If approved, the proposed 2026 policy restricts expected history and independent
-schedule coverage to season 2026, keeps same-season-type 4/8/16 slot summaries,
-and explicitly flags genuinely shorter history. It preserves absence,
-participation, missing-row, completion, opponent and denominator rules. Its rest
-policy uses the prior team game within that scope; a missing in-scope predecessor
-is disclosed as unavailable rest, with no silent import of 2025 context. The
-selected target, cutoff, concrete history/opponent windows and any remaining
-policy details must be fixed in #106's scope inventory before activation.
+The withdrawn 2026-only policy is not an alternative selection or fallback. Any
+future history-policy change requires a new agreement and separately versioned
+producer, database recording, verification and historical replay support. #106
+will inventory prior-season source qualification and enforce its file-size limit
+under the existing policy.
 
 Feature selection and the sealed dataset identity include **candidate, feature
 version, history-policy ID/version and definition digest**, plus resolved season
@@ -102,10 +101,9 @@ policy, its approval reference and evidence-basis disposition remain visible to
 The proposed reader activates only allowlisted combinations whose producer,
 database recording, verification and historical replay paths support that exact
 contract. Unknown or inactive candidates, feature versions, policy hashes or
-combinations refuse explicitly, even when no matching record exists. Choosing
-2026-only scope does not itself activate its row. Label version
+combinations refuse explicitly, even when no matching record exists. Label version
 `source-final-label-v1` is independent of feature history and remains compatible
-with either policy only when its own identity/finality/rights checks pass.
+with the supported candidates only when its own identity/finality/rights checks pass.
 
 ## Objects exchanged by #106 and #118
 
@@ -378,12 +376,20 @@ before activation; creating more shards does not waive it.
 
 ## Delivery and coordination
 
-1. **Agree this handoff.** #106 can inventory its real dependencies in parallel.
-   Select #106's history scope and agree its candidate/feature/history identities.
-   Confirm clocks, consumer/version references, run/fold and cross-partition
-   accounting, immutable paging and pin/deletion semantics before runtime
-   implementation. A 2026-only scope additionally requires separately reviewed
-   producer/recorder/replay support; existing v1 remains unchanged.
+Implementation checkpoint: `src/lib/predictive/training.ts` now validates the
+supported history/version combinations and complete run requests, and selects
+exact/latest feature and label versions from an already verified inventory.
+It preserves missing/unavailable/expired states, uses run-wide event exclusion,
+and discloses label supersession without returning future correction values.
+This is a pure core, **not** an exported database reader or a sealed dataset API:
+database enforcement, guarded batch I/O, indexes, manifests/pins, retention and
+benchmarks remain outstanding. The pure selector cannot authorize rights or
+validate durable pins; its adapter must supply those verified facts.
+
+1. **Handoff agreed (2026-10-13).** The owner reviewed `b7db281`, approved existing
+   v1 for #106 and authorized #118 implementation. #106 inventories its real
+   dependencies in parallel. Clocks, exact version/history references, run-wide
+   accounting, immutable paging and pin/deletion semantics remain binding.
 2. **Indexed batch readers and label heads.** Implement the agreed QB interface,
    coherent snapshot preparation and bounded verification reuse. Use synthetic
    consumers to prove mechanics; this alone is not #118 completion.
