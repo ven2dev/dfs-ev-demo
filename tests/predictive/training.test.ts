@@ -4,6 +4,7 @@ import { sourceConsumerExecutionDigest, sourceConsumerInputDigest, type SourceCo
 import { fittingRunRequestDigest, normalizeFittingRunRequest, normalizeTrainingSelection, selectTrainingRows,
   TRAINING_HISTORY_POLICY, TRAINING_HISTORY_SHA256, trainingHistoryDefinition, type FittingRunRequest, type TrainingSlot } from "../../src/lib/predictive/training.ts";
 import { canonical, digest } from "../../src/lib/predictive/validation.ts";
+import { checkTrainingMetadataSelection } from "../../src/lib/predictive/trainingSql.ts";
 import { CUTOFF_A, gameId, passingYardsFixture, PLAYER, PROFILE, request, TARGET } from "./fixtures/passingYards.ts";
 
 const SNAPSHOT = "2026-10-20T00:00:00.000Z";
@@ -130,6 +131,13 @@ describe("training request history and event separation", () => {
 });
 
 describe("deterministic training selection over verified records", () => {
+  it("refuses missing or repeated metadata ordinals instead of collapsing ambiguous heads", () => {
+    const item = { ordinal: 0, featureId: null, labelId: null, labelSupersededAsOf: false, labelSupersededAtSnapshot: false };
+    expect(checkTrainingMetadataSelection([item], 1)).toEqual([item]);
+    expect(() => checkTrainingMetadataSelection([], 1)).toThrow("training-selection-inventory-mismatch");
+    expect(() => checkTrainingMetadataSelection([item, item], 2)).toThrow("training-selection-inventory-mismatch");
+    expect(() => checkTrainingMetadataSelection([], 0)).toThrow("training-selection-inventory-mismatch");
+  });
   it("retains every requested slot and computes target-relative coverage without fabricating labels", () => {
     const rows = selectTrainingRows(runRequest([slot(), trainingSlot({ season: 2024 })]), SNAPSHOT, []);
     expect(rows.map((row) => [row.ordinal, row.slot.partition, row.feature.state, row.label.state])).toEqual([
@@ -146,6 +154,10 @@ describe("deterministic training selection over verified records", () => {
   it("uses explicit C ordering for equal-time records", () => {
     const row = selectTrainingRows(runRequest(), SNAPSHOT, [feature("z"), feature("Z")])[0];
     expect(row.feature.reference?.id).toBe("z");
+    // UTF-16 ordering differs from PostgreSQL C/UTF-8 for these two valid IDs.
+    const unicode = selectTrainingRows(runRequest(), SNAPSHOT, [feature("\ue000"), feature("\u{10000}")])[0];
+    expect(unicode.feature.reference?.id).toBe("\u{10000}");
+    expect(selectTrainingRows(runRequest([slot({ featureRef: "\u{10000}" })]), SNAPSHOT, [feature("\u{10000}")])[0].feature.state).toBe("usable");
   });
   it("binds exact IDs to player, event, cutoff, profile and supported feature version", () => {
     const selected = feature();

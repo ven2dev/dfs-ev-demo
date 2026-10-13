@@ -67,7 +67,10 @@ const identity = (value: unknown) => {
 const sha256 = (value: unknown) => {
   if (typeof value !== "string" || !/^[a-f0-9]{64}$/.test(value)) refuse("training-digest-refused");
 };
-const optionalIdentity = (value: unknown) => { if (value !== null) identity(value); };
+const evidenceIdentity = (value: unknown) => {
+  if (typeof value !== "string" || !value.trim() || value.length > 256 || /[\u0000-\u001f\u007f|]/.test(value)) refuse("training-identity-refused");
+};
+const optionalIdentity = (value: unknown) => { if (value !== null) evidenceIdentity(value); };
 const compareSlots = (a: TrainingSlot, b: TrainingSlot) =>
   // Explicit partition order; locale/string ordering would put evaluation first.
   (a.partition === b.partition ? 0 : a.partition === "training" ? -1 : 1) ||
@@ -109,7 +112,7 @@ export const normalizeFittingRunRequest = (input: FittingRunRequest, snapshotAt:
   const targets = new Set<string>(); const datasets = new Map<string, number>();
   for (const slot of input.slots) {
     exact(slot, ["datasetId", "partition", "playerId", "gameId", "season", "seasonType", "kickoff", "kickoffObservationId", "featureCutoff", "labelsAsOf", "featureRef", "labelRef"]);
-    identity(slot.datasetId); identity(slot.kickoffObservationId); playerIdentity(slot.playerId); gameIdentity(slot.gameId);
+    identity(slot.datasetId); evidenceIdentity(slot.kickoffObservationId); playerIdentity(slot.playerId); gameIdentity(slot.gameId);
     optionalIdentity(slot.featureRef); optionalIdentity(slot.labelRef);
     if (!["training", "evaluation"].includes(slot.partition) || !["REG", "POST"].includes(slot.seasonType) ||
         !Number.isInteger(slot.season) || slot.season < 1999 || slot.season > 2100) refuse("training-slot-refused");
@@ -136,7 +139,7 @@ export const fittingRunRequestDigest = (request: FittingRunRequest, snapshotAt: 
 const reference = (record: SourceConsumerRecord): ConsumerReference => ({ id: record.id, bodySha256: record.bodySha256,
   executionDigest: record.executionDigest, recordedAt: record.recordedAt, predecessorId: record.predecessorId, inputDigest: record.body.inputDigest });
 const byRecorded = (a: SourceConsumerRecord, b: SourceConsumerRecord) =>
-  compareText(a.recordedAt, b.recordedAt) || compareText(a.id, b.id);
+  compareText(a.recordedAt, b.recordedAt) || Buffer.compare(Buffer.from(a.id, "utf8"), Buffer.from(b.id, "utf8"));
 const profilesEqual = (a: string[], b: string[]) => canonical(a) === canonical(b);
 const featureMatches = (record: SourceConsumerRecord, slot: TrainingSlot, selection: TrainingSelection) => {
   const body = record.body;

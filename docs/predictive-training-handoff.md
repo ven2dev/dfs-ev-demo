@@ -381,10 +381,30 @@ supported history/version combinations and complete run requests, and selects
 exact/latest feature and label versions from an already verified inventory.
 It preserves missing/unavailable/expired states, uses run-wide event exclusion,
 and discloses label supersession without returning future correction values.
+`trainingSql.ts` adds one parameterized batch metadata query that retains every
+requested ordinal, selects exact/latest feature IDs and historical label heads,
+and reports supersession separately. Two mandatory PostgreSQL cases exercise
+it against recorded source consumers. It does not read protected artifact bytes
+or establish access/pin authorization; it is not exposed by the store yet.
 This is a pure core, **not** an exported database reader or a sealed dataset API:
 database enforcement, guarded batch I/O, indexes, manifests/pins, retention and
 benchmarks remain outstanding. The pure selector cannot authorize rights or
 validate durable pins; its adapter must supply those verified facts.
+
+Checkpoint validation: **696 Node tests** (including 33 training-core cases),
+**75 Node database checks + 138 PostgreSQL tests** (including two new metadata
+selection cases), TypeScript and affected-file ESLint pass. This verifies the
+selection increment, not the later reader/pin security or throughput contract.
+No new migration is allocated, and frozen 0001–0011 remain unchanged. Tests used
+only the isolated `dfs-ev-118-test` Docker project on permitted `[::1]:54329`;
+no persistent-dev, hosted or Production database was migrated.
+
+Next increment: guard current rights/deletion across the complete batch before
+private byte access, load and verify shared evidence without per-row SQL round
+trips, add indexed lookup and restricted-login/concurrent-writer tests. Coordinate
+the forward-migration landing order with #106/#115 before allocating new DDL.
+Then implement atomic durable manifests/pins and the agreed retention behavior;
+do not expose the current metadata selector as a training-ready API.
 
 1. **Handoff agreed (2026-10-13).** The owner reviewed `b7db281`, approved existing
    v1 for #106 and authorized #118 implementation. #106 inventories its real

@@ -35,6 +35,8 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV QB migration upgrades v9 preserving binding and decision history and is idempotent",
   "CSV QB consumers operate through non-superuser execute-only recorders and replay refuses damaged bytes or links",
   "CSV QB consumer retention removes features labels and complete label lineage through the retention-only login",
+  "QB training metadata batches exact and latest features without dropping missing slots",
+  "QB training metadata keeps label clocks and supersession separate from prediction cutoffs",
   "predictive PostgreSQL seeds exactly the application team identities, refuses others and publishes Rams replay inputs",
   "predictive PostgreSQL A/B replay preserves the earlier bundle and uses later corrections",
   "predictive scoped reads retain corrections that move evidence out of the indexed scope",

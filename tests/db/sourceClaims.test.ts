@@ -21,6 +21,8 @@ import { selectSourceFact, SOURCE_FACT_BOUNDS } from "../../src/lib/predictive/s
 import { checkSourceWitness, sourceFactWitness, sourcePostWindowCapture, sourceReconciliationEvidence, sourceUsageEvidence } from "../../src/lib/predictive/sourceWitness.ts";
 import { sourceDecisionBasis, type SourceDecisionPlan, type SourceDecisionRequest } from "../../src/lib/predictive/sourceDecisions.ts";
 import { sourceConsumerInputDigest, type SourceConsumerBody } from "../../src/lib/predictive/sourceConsumers.ts";
+import { TRAINING_HISTORY_POLICY, TRAINING_HISTORY_SHA256, type FittingRunRequest, type TrainingSlot } from "../../src/lib/predictive/training.ts";
+import { checkTrainingMetadataSelection, TRAINING_SELECTION_SQL, trainingSelectionParameters, type TrainingMetadataSelection } from "../../src/lib/predictive/trainingSql.ts";
 import { recordCompletion } from "../../src/lib/predictive/completion.ts";
 import { prepareSourceClaims, projectSourceClaim } from "../../src/lib/predictive/sourceClaims.ts";
 import { sourceClaimFixture } from "../predictive/fixtures/sourceClaims.ts";
@@ -2030,6 +2032,61 @@ const sqlConsumer = async (client: Client,body: SourceConsumerBody,id = "forged-
     [sha,Buffer.byteLength(canonical(body)),sha + ".json"]);
   return client.query("SELECT predictive_record_source_consumer($1,$2,$3)",[id,head,body]);
 };
+
+const metadataRun = (slots: TrainingSlot[], profileIds: string[], fitCutoff: string): FittingRunRequest => ({
+  version: "qb-training-read-v1", fittingRunId: "metadata-run", evaluationPlanId: "metadata-plan", foldId: "metadata-fold", fitCutoff,
+  selection: { market: "player_pass_yds", stat: "passing_yards", candidate: "stats-v1:player_pass_yds", featureVersion: "passing-yards-source-v1",
+    labelVersion: "source-final-label-v1", historyPolicy: TRAINING_HISTORY_POLICY, historyPolicySha256: TRAINING_HISTORY_SHA256, profileIds },
+  modelIdentity: { modelVersion: "synthetic-proof", codeCommit: "a".repeat(40), configurationSha256: "b".repeat(64) },
+  splitPolicy: { version: "target-event-disjoint-v1", evaluationMode: "walk-forward", aggregationPolicyId: "unique-events-v1", aggregationPolicySha256: "c".repeat(64) },
+  population: { status: "unqualified", enumerationOrigin: "synthetic-explicit-slots", enumerationSha256: "d".repeat(64) }, slots,
+});
+
+it("QB training metadata batches exact and latest features without dropping missing slots", async () => {
+  await withProof(async ({ client, store }) => {
+    const seed = await seedConsumers(store);
+    const a = await store.recordSourcePassingYards("batch-feature-A", seed.request, seed.profiles);
+    const b = await store.recordSourcePassingYards("batch-feature-B", seed.request, seed.profiles);
+    const clock = await witnessClock(client);
+    const first: TrainingSlot = { datasetId: "batch-shard", partition: "evaluation", playerId: seed.request.playerId, gameId: seed.request.gameId,
+      season: 2026, seasonType: "REG", kickoff: "2026-10-18T17:00:00.000Z", kickoffObservationId: "source-target",
+      featureCutoff: seed.request.cutoff, labelsAsOf: clock, featureRef: null, labelRef: null };
+    const input = metadataRun([first, { ...first, playerId: "00-0000002" }], seed.profiles, seed.request.cutoff);
+    const query = async (at: string) => checkTrainingMetadataSelection((await client.query<TrainingMetadataSelection>(TRAINING_SELECTION_SQL,
+      [...trainingSelectionParameters(input, at)])).rows, 2);
+    expect(await query(clock)).toEqual([
+      { ordinal: 0, featureId: b.id, labelId: null, labelSupersededAsOf: false, labelSupersededAtSnapshot: false },
+      { ordinal: 1, featureId: null, labelId: null, labelSupersededAsOf: false, labelSupersededAtSnapshot: false },
+    ]);
+    input.slots[0].featureRef = a.id;
+    expect((await query(clock))[0].featureId).toBe(a.id);
+    // An existing ID with the wrong scope must reach the verifier and refuse,
+    // rather than being represented as a legitimate missing requested record.
+    input.slots[1].featureRef = a.id;
+    expect((await query(clock))[1].featureId).toBe(a.id);
+  });
+});
+
+it("QB training metadata keeps label clocks and supersession separate from prediction cutoffs", async () => {
+  await withProof(async ({ client, store }) => {
+    const seed = await seedConsumers(store);
+    const a = await store.recordSourceFinalLabel("batch-label-A", seed.labelRequest, null);
+    await client.query("SELECT pg_sleep(0.005)");
+    const b = await store.recordSourceFinalLabel("batch-label-B", seed.labelRequest, a.id);
+    const clock = await witnessClock(client);
+    const first: TrainingSlot = { datasetId: "training-shard", partition: "training", playerId: seed.request.playerId, gameId: seed.labelRequest.gameId,
+      season: 2026, seasonType: "REG", kickoff: "2026-10-04T17:00:00.000Z", kickoffObservationId: "schedule-context",
+      featureCutoff: "2026-10-04T12:00:00.000Z", labelsAsOf: a.recordedAt, featureRef: null, labelRef: null };
+    const input = metadataRun([first], seed.profiles, clock);
+    const query = async () => checkTrainingMetadataSelection((await client.query<TrainingMetadataSelection>(TRAINING_SELECTION_SQL,
+      [...trainingSelectionParameters(input, clock)])).rows, 1)[0];
+    expect(await query()).toEqual({ ordinal: 0, featureId: null, labelId: a.id, labelSupersededAsOf: false, labelSupersededAtSnapshot: true });
+    input.slots[0].labelsAsOf = b.recordedAt;
+    expect(await query()).toMatchObject({ labelId: b.id, labelSupersededAsOf: false, labelSupersededAtSnapshot: false });
+    input.slots[0].labelRef = a.id;
+    expect(await query()).toMatchObject({ labelId: a.id, labelSupersededAsOf: true, labelSupersededAtSnapshot: true });
+  });
+});
 
 it("CSV QB consumers record explicit source manifests and final labels without ordinary stats observations", async () => {
   await withProof(async ({ client,store }) => {
