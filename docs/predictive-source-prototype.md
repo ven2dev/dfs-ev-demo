@@ -1,5 +1,13 @@
 # Bounded source qualification prototype
 
+**2026-10-11 update:** PR A merged and migration 0003 is frozen. The separate
+[PR B assessment](predictive-pr-b.md) now applies approved F3 to these retained
+samples: positive usage supports individual participation, while population
+coverage remains unqualified. It preserves the v1 journal/report and its original
+all-unresolved qualification rule below. Approved F4 rejects PFR, superseding
+this document's older conditional-source recommendation. Use `assess` for the
+current qualification layer and `verify` to restore the original v1 report.
+
 This is delivery 3 work in progress for [#52](https://github.com/ven2dev/dfs-ev-demo/issues/52#issuecomment-6054299022). It captures public nflverse research samples, retains exact private bytes and recomputes their selected projections offline. It produces **no feature batch, label, prediction or SQL observations**. The [source decision](predictive-data-sources.md), [operating policy](predictive-data-operations.md) and [synthetic persistence contract](predictive-ingestion.md) still apply.
 
 ## Commands and scope

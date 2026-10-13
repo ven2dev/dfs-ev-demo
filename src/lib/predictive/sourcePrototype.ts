@@ -91,7 +91,7 @@ const checkedReference = (value: unknown, maximum: number): SourceReference => {
   return row as SourceReference;
 };
 const failure = (value: unknown) => typeof value === "string" && /^[a-z][a-z0-9-]{1,96}$/.test(value);
-export const verifySourcePrototype = async (store: ArtifactStore, journal: SourceReference) => {
+export const readVerifiedSourcePrototype = async (store: ArtifactStore, journal: SourceReference) => {
   checkedReference(journal, SOURCE_LIMITS.responseBytes);
   const report = exact(JSON.parse(await store.read(journal.reference, journal.sha256, journal.byteSize)), ["formatVersion", "prototypeVersion", "parserVersion",
     "rightsReviewVersion", "usage", "season", "targetGameId", "finishedAt", "status", "failureCode", "featuresPublished", "limits", "metrics", "captures", "qualification"]);
@@ -166,5 +166,14 @@ export const verifySourcePrototype = async (store: ArtifactStore, journal: Sourc
     if (report.status !== "refused" || !(error instanceof PredictiveError)) refuse("source-restoration-mismatch");
   }
   if (canonical(qualification) !== canonical(report.qualification)) refuse("source-restoration-mismatch");
-  return { verified: true, featuresPublished: false, captures: report.captures.length, qualification: report.qualification };
+  return { verified: true, featuresPublished: false, captures: report.captures.length, qualification: report.qualification,
+    samples, sourceCaptures: report.captures as unknown as Capture[], season: report.season,
+    targetGameId: report.targetGameId, finishedAt: report.finishedAt as string, reportStatus: report.status };
+};
+
+// Preserve the v1 verifier's public result and immutable report semantics. PR B
+// can assess the fully reverified source fields under a separately versioned rule.
+export const verifySourcePrototype = async (store: ArtifactStore, journal: SourceReference) => {
+  const result = await readVerifiedSourcePrototype(store, journal);
+  return { verified: result.verified, featuresPublished: result.featuresPublished, captures: result.captures, qualification: result.qualification };
 };

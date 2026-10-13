@@ -407,7 +407,7 @@ it("predictive PostgreSQL enforces rights knowledge time, harness-only synthetic
         VALUES ('display',$1,'revoked','{public-display}','2026-10-09T13:00:00Z','2026-10-09T13:00:00Z','synthetic','probe')`, [PROFILE]))
         .rejects.toMatchObject({ code: "23514", message: "predictive-synthetic-rights-refused" });
     });
-    // Synthetic evidence outside the harness role is refused at commit.
+    // Synthetic evidence outside the harness role is refused before insertion.
     const outsider = new Client(target.expected);
     try {
       await outsider.connect();
@@ -423,9 +423,9 @@ it("predictive PostgreSQL enforces rights knowledge time, harness-only synthetic
         await outsider.query(`INSERT INTO predictive_ingestion_runs (id,request_sha256,code_version,started_at,finished_at,status,failure_code,
           budget,requests,consumed_bytes,artifact_count,capture_count,row_count) VALUES ($1,$2,'probe',$3,$3,'refused','publication-refused','{}',0,0,0,1,0)`,
         [runId, "0".repeat(64), NOW]);
-        await outsider.query(`INSERT INTO predictive_captures (id,run_id,artifact_id,captured_at,available_at,ingested_at,state,body_complete,header_verified,parser_succeeded,parsed_rows)
-          VALUES ('outsider-capture',$1,'A-schedule',$2,$2,$2,'incomplete',true,true,true,0)`, [runId, CAPTURE_A]);
-        await expect(outsider.query("SET CONSTRAINTS ALL IMMEDIATE")).rejects.toMatchObject({ code: "23514", message: "predictive-synthetic-outside-harness" });
+        await expect(outsider.query(`INSERT INTO predictive_captures (id,run_id,artifact_id,captured_at,available_at,ingested_at,state,body_complete,header_verified,parser_succeeded,parsed_rows)
+          VALUES ('outsider-capture',$1,'A-schedule',$2,$2,$2,'incomplete',true,true,true,0)`, [runId, CAPTURE_A]))
+          .rejects.toMatchObject({ code: "23514", message: "predictive-synthetic-outside-harness" });
       } finally { await outsider.query("ROLLBACK"); }
     } finally {
       await outsider.query("REVOKE ALL ON ALL TABLES IN SCHEMA public FROM predictive_outsider_probe").catch(() => undefined);
@@ -509,7 +509,7 @@ it("predictive archive restoration recreates the same cutoff bundles in fresh sc
   const root = await realpath(await mkdtemp(join(tmpdir(), "dfs-ev-predictive-restore-")));
   try {
     const captured = await runLocalProof(["demo", "--artifact-root", root], process.env);
-    expect(captured).toMatchObject({ schemaVersion: 4, earlierReplayUnchanged: true, restoredReplayUnchanged: true });
+    expect(captured).toMatchObject({ schemaVersion: 11, earlierReplayUnchanged: true, restoredReplayUnchanged: true });
     const restored = await runLocalProof(["restore", "--artifact-root", root, "--archive", captured.archive.reference,
       "--archive-bytes", String(captured.archive.byteSize)], process.env);
     expect(restored.capturedA).toEqual(captured.capturedA); expect(restored.laterB).toEqual(captured.laterB);
@@ -525,13 +525,18 @@ it("predictive v2 upgrade preserves application rows and no-op migrations preser
       await client.query("INSERT INTO creators (channel_name) VALUES ('Synthetic v2 survivor')");
       const before = (await client.query("SELECT * FROM creators")).rows;
       const historical = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 4, executed: [3, 4] });
+      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 11, executed: [3, 4, 5, 6, 7, 8, 9, 10, 11] });
       expect((await client.query("SELECT * FROM creators")).rows).toEqual(before);
       const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-      expect(upgraded.slice(0, 2)).toEqual(historical); expect(upgraded).toHaveLength(4);
+      expect(upgraded.slice(0, 2)).toEqual(historical); expect(upgraded).toHaveLength(11);
       expect(upgraded[2]).toMatchObject({ version: 3, filename: "0003_predictive_evidence.sql", provenance: "executed" });
       expect(upgraded[3]).toMatchObject({ version: 4, filename: "0004_creator_corpus_projection.sql", provenance: "executed" });
-      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 4, executed: [] });
+      expect(upgraded[4]).toMatchObject({ version: 5, filename: "0005_predictive_source_claims.sql", provenance: "executed" });
+      expect(upgraded[5]).toMatchObject({ version: 6, filename: "0006_predictive_source_bindings.sql", provenance: "executed" });
+      expect(upgraded[6]).toMatchObject({ version: 7, filename: "0007_predictive_unavailable_bindings.sql", provenance: "executed" });
+      expect(upgraded[7]).toMatchObject({ version: 8, filename: "0008_predictive_source_witnesses.sql", provenance: "executed" });
+      expect(upgraded[8]).toMatchObject({ version: 9, filename: "0009_predictive_source_decisions.sql", provenance: "executed" });
+      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 11, executed: [] });
       expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     });
   } finally { await harness.close(); }

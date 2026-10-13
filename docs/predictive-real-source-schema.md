@@ -6,8 +6,10 @@ amendment, and implemented in PR A** on `feature/dfsEV-52-evidence-schema`
 [`predictive-evidence-ddl.md`](predictive-evidence-ddl.md). Revision 2 incorporates the
 2026-10-09 design review. It continues from the relay handoff
 (`docs/predictive-session-handoff.md`, `1ef86ba`) on
-`feature/dfsEV-52-predictive-cutoff-replay`. The next gate after approval is the
-column-level DDL draft.
+`feature/dfsEV-52-predictive-cutoff-replay`. PR A merged in
+[PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102); migration 0003 is
+frozen. [PR B](predictive-pr-b.md) now owns actual-source qualification,
+raw CSV publication and measured cutoff replay.
 
 ## 0. Decisions and scope
 
@@ -317,6 +319,9 @@ streaming parse.
 
 ## 9. Migration and branch plan
 
+Historical reset procedure below was completed in PR A before merge. Migration
+0003 is now released; any further schema extension requires a forward migration.
+
 1. **Disposable-only history:** Codex confirmed (2026-10-09, from its saved
    execution history and the test harness) that v3/v4 ran only in temporary local
    Docker test databases that were dropped afterwards. Its earlier `db:migrate:dev`
@@ -330,7 +335,7 @@ streaming parse.
    `docs/database-migrations.md`. Any local database that has the old v3/v4 must be
    recreated. The migration runner is **not** changed to accept edited checksums.
 3. Readiness minimum stays at 2; after the independent creator-corpus
-   projection migration, maximum-known is 4.
+   projection migration 0004 and PR B private migrations 0005–0007, maximum-known is 7.
 
 ## 10. Delivery sequence
 

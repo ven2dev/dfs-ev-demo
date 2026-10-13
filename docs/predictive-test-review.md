@@ -6,6 +6,150 @@ readiness tests adjusted for v3. The governing behavior is documented in the
 [ingestion contract](predictive-ingestion.md); these tests establish synthetic
 local persistence behavior, not real-source qualification or model validity.
 
+## PR B bound source revisions tests (2026-10-11)
+
+Thirteen mandatory PostgreSQL cases bring the predictive requirement list to 58.
+The recorder test uses an actual non-superuser login with recorder/replay/harness
+memberships: it can execute the recorder and read evidence, but cannot INSERT
+bindings, revisions or association rows. Its returned timestamp lies between
+independent client wall-clock bounds, and SQL chooses it. A replay-only login
+probes `read only` / `repeatable read`; it cannot execute the recorder. Canonical
+observation, feature and label counts stay zero even though research revisions
+exist. The one-millisecond boundary checks visibility by recording time.
+
+Expected numeric values and predecessors are hand-specified: 80 becomes 95,
+identical recapture attaches the same revision, routing to player B creates a new
+entity root, and returning to A attaches A's prior unchanged revision. The test
+checks the actual contributing player at both cutoffs. Later capture/bridge times
+are deliberately distinct from earlier recording times. Disappearance, refused
+numbers and duplicate differing rows each produce a null-revision head, and
+reappearance follows that same raw chain without inventing zero or absence.
+
+Direct SQL negatives recompute both candidate and plan hashes after changing
+payload, row fingerprint, dependency set, raw identity, request context, links or
+rights. Hash equality cannot authorize a forged witness. Extra/null fields and
+unsupported request identities are refused. Immutable binding/revision mutation
+and generated JSON under a real CSV profile are refused too. Raw tampering uses
+a same-size byte mutation; association tampering deliberately bypasses only the
+fixture's administrator trigger. Hydration must refuse both. Rights revocation
+uses a later knowledge time and blocks historical reads and exact retries before
+byte hydration, including when those bytes are subsequently damaged.
+
+Freshness tests add new raw bytes, schedule correction and a reverse player
+conflict without recording a successor. Each current read has a null head; the
+complete earlier result stays equal. A later query clock alone stays usable.
+Concurrency creates two non-superuser sessions, observes both waiting behind a
+held publication lock and releases them together. Exactly one proposal with the
+same expected head commits; the other gets head-conflict, with one new binding
+and no duplicate unchanged revision.
+
+Retention tests independently count complete lineages, including an ancestor
+whose source file is outside the scope being retained. No older/newer binding
+can survive to become a head. Unrelated team evidence and out-of-scope raw bytes
+remain. A real retention-only login performs the removal and file cleanup through
+execute-only APIs. Tombstone IDs independently match the canonical audit digest.
+A second fresh database reconstructs identical evidence/binding IDs and re-applies
+the bridge deletion with matching counts/digest; its new recorder clocks need
+not match. This proves deletion-set parity, not recovery of old SQL timestamps.
+The v4 upgrade test preserves complete existing raw rows and all four ledger
+entries, then verifies v5 and its no-op. The bootstrap table inventory and older
+v2/v3 upgrade assertions are explicitly extended for the new prefix.
+
+Synthetic fixtures establish these storage contracts. They qualify no real
+bridge/provider, completion source or population and activate no model/labels.
+No generated source blob is introduced; released rollback, orphan sweep and
+queued-cleanup cases remain the filesystem crash/recovery proof. Full downstream
+activation and recording of unavailable context plans are still next.
+
+## PR B raw lineage contract tests (2026-10-11)
+
+The next recorder's pure contract adds 42 cases; it adds no DB table or writer.
+Fixtures specify raw binding IDs and per-entity observation predecessors by hand,
+without asking the transition planner to generate expected links. Explicit
+raw-key tuples check profile/player/team identity separation. A/B/A player and
+game rerouting tests assert which actual observation contributes at each cutoff:
+the previous canonical entity cannot retain a contribution after the raw head
+has moved. Returning to an entity resumes its own observation chain. Identical
+recaptures attach the existing observation while retaining the newer binding's
+exact provenance. Team-only lineage uses no player bridge/link.
+
+Missing-row withholding creates no observation, absence, DNP or numeric zero;
+reappearance attaches or appends to the earlier entity chain as appropriate.
+Late recording cannot backdate knowledge to the source capture or plan cutoff.
+Equal recorder times follow explicit predecessors. Branches, missing/cross-profile
+ancestors, cycles, wrong canonical predecessors, duplicate observation reuse,
+changed payloads, unsupported parser/projection versions, knowledge-time
+regression and malformed identities refuse with specific errors. Corrupt future
+bindings leave earlier cutoff heads unchanged; unreadable recorder times refuse.
+
+These are synthetic in-memory events, not stored publication evidence. The
+[lineage design](predictive-source-lineage.md) lists the required recorder,
+head-aware SQL/hydration, current-rights, concurrency and retention integration
+checks. A recomputed plan digest cannot substitute for those checks.
+
+## PR B normalization planner tests (2026-10-11)
+
+The planner has 32 new pure cases and four additional mandatory DB cases,
+bringing the required predictive list to 45. The first pure positive case spells
+out the exact canonical IDs, 10 attempts / 80 yards, eight blank-count reasons,
+five bridge/schedule references and the raw row's ordinal/fingerprint. It does
+not use the projector as its expected-value oracle. Team-only plans omit player
+requirements. Known zero/signed values stay distinct from blanks.
+
+Negative and boundary cases independently remove each bridge/schedule/link,
+change the link namespace or knowledge time, put player effective bounds exactly
+at kickoff, disagree on schedule context and introduce both directions of
+cross-profile mapping conflicts. A later bridge correction changes the later
+plan and preserves the complete earlier one. Unrelated evidence, ordering and
+unchanged-rights access time leave the plan equal. Default model-input replay
+remains blocked by research-only rights, while normalization can use its explicit
+research permission. A caller-supplied replay with post-cutoff evidence is refused.
+
+The DB positive control uses an actual replay-only NOSUPERUSER login and probes
+the planner's transaction settings (`read only`, `repeatable read`). It has no
+INSERT grant, creates no canonical stats row, and returns the same complete plan
+as the harness reader. Removing bridge bytes/rows while keeping registrations
+and identity links returns missing evidence rather than a candidate or exception.
+The scoped regression keeps an unrelated correction's ancestor in another
+artifact: the relevant plan still succeeds. A second raw ID mapped to the same
+player in another profile must then withhold it. A separate schedule decoy has
+the same raw alias but a different canonical game and must also withhold the
+plan. Raw-byte tampering fails before any candidate is proposed.
+
+The real-file proof intentionally has no registered canonical bridges. Both
+feeds return `game-bridge-missing`, with zero canonical observations/features/
+labels. This proves the gate holds; synthetic bridge tests do not qualify a real
+provider bridge, completion source, population or membership bounds. Plans do
+not yet test atomic canonical publication, binding-table retention or persisted
+canonical hydration, because those paths are still unimplemented.
+
+## PR B raw CSV claims tests (2026-10-11)
+
+The nine mandatory CSV database cases extend the required predictive list to
+41. Twelve pure/CLI cases cover record ordinals, excluded columns, typed refusals,
+profile/header/media/scope incompatibility and pre-I/O argument/credential guards.
+
+| Case | Contract and independent evidence |
+| --- | --- |
+| Import clock / A-B replay | An archived capture has an old source time; SQL ingestion is later. The claim is missing one millisecond before ingestion and visible exactly at it, with hand-specified 10 attempts / 80 yards. B changes yards to 95; the entire earlier replay remains equal. Retry preserves the timestamp, one-row count and digest. No canonical observations exist. A/B content is synthetic, not an observed provider correction. |
+| Missing / refused / ambiguous / zero | Two differing rows for one raw key remain ambiguous. A third row with noninteger attempts retains its ordinal and `source-number-refused`. A later complete snapshot omitting the original player returns missing, while an explicit zero-attempt row returns observed zero. The earlier ambiguous replay remains unchanged. None establishes absence or complete participation. |
+| Raw and stored integrity | A same-size raw-file mutation fails specifically with `artifact-integrity-failed`. Restoring the raw bytes and corrupting the stored selected hash under temporarily disabled administrator immutability then fails with `stored-source-row-mismatch`. This proves replay recomputes against raw bytes independently of SQL's shape constraints; the same projection function is not an independent numerical oracle. |
+| Rollback / current rights | Changed bytes with an existing run ID fail with `run-id-conflict`; a later capture-ID conflict fails after publication work begins. SQL run state stays unchanged and unpublished CSV bytes are removed. A separately appended rights revocation blocks historical replay and new publication, whose rollback also leaves no final file. |
+| Direct SQL boundary | UPDATE/DELETE/TRUNCATE fail with the append-only code. Strict payload examples independently reject unexpected fields, null type, wrong raw identity, same team/opponent and completions greater than attempts. Missing/sparse record coverage and incorrect raw keys fail their specific deferred checks. A valid direct insert copied from an older capture receives a new ingestion timestamp. Direct canonical links fail with `predictive-source-canonical-binding-required`. |
+| Snapshot order | Same-time different raw hashes remain ambiguous. A newer source capture supersedes them. A still later SQL import of an older source snapshot cannot displace the newer source claim. The original conflict cutoff remains ambiguous. |
+| Released upgrade / no-op | Existing v3 observations and all original ledger fields/checksums survive applying only 0004. A no-op preserves the full ledger, and a source publication then succeeds. The separate v2 upgrade case now expects `[3,4]` while preserving the authentic older history and application rows. |
+| Least privilege / retention | Real NOSUPERUSER logins publish/replay only with intended memberships; direct source-row deletion remains denied. A retention-only login cannot SELECT source rows. Scoped retention deletes them and records their count/digest; injected CSV unlink failure leaves the queue recoverable through execute-only resume. A later replay explicitly reports removed evidence. |
+| Retention re-apply | Two retained source files contain three records, including one refused row. Digest-only retention removes all three and both CSV files without full tombstones. Re-importing those same files/capture IDs into a fresh database gets a new ingestion time, but re-applying the recorded deletion matches the original counts and ID digest; a second application is idempotent. This checks deletion-set parity after raw-file restoration, not historical SQL-timestamp restoration or a real database backup. |
+
+The real retained-file proof supplies sample-scale parity: 4,517 player rows
+(4,512 typed, five refused) and 130 typed team rows, exact raw hashes, no earlier
+SQL visibility, idempotent replay, measured time/storage/RSS and zero canonical
+observations. It uses one previously captured source snapshot, so it does not
+prove real-provider correction history, official completion, population coverage,
+canonical bridge normalization or readiness for a model. The source-row relation
+is not a backup archive; restoring imported knowledge timestamps still needs a
+reviewed backup workflow before hosted use.
+
 ## Second implementation review regressions (2026-10-11)
 
 These checks address the reported failures without using a shared pure function
@@ -165,3 +309,304 @@ app/Node tests passed. V1/v2/v3 migration SQL and catalog contracts are unchange
 The owner selected option B: delivery 2 stays off main until the real-source
 schema is designed. These are WIP proof repairs, not approval to merge the
 synthetic schema or include source qualification in a delivery-1/2 PR.
+
+
+## PR B unavailable-state test reasoning (2026-10-12)
+
+The v2 failure witness is reconstructed independently in PostgreSQL, not accepted
+from the TypeScript digest. Negative cases alter a reason, rights set or relevant
+dependency and recompute the digest; each must still fail with a check violation.
+Missing-context cases assert hand-written prefix dependency roles and rights,
+while both identity conflict directions and schedule aliases must cite every
+competing observation. Effective-window cases distinguish observed but
+non-applicable mappings from conflicting mappings. Coverage-proven absence heads
+remain conflicts/absent schedules rather than inferred zero statistics.
+
+A usable → incompatible schedule → recovered schedule sequence keeps A's
+earlier replay, withholds B, and attaches C to A's exact unchanged revision:
+one statistical revision, three binding events. Every file in an ambiguous
+capture pair is separately damaged; recording/retry/replay must reject either
+damage. Revoked context bytes are also damaged to demonstrate that current
+permission is checked before opening them, not merely after successful hydration.
+
+A v5 database contains positive or missing-row v1 plans before upgrading to v6.
+Original rows and ledger prefixes must be unchanged, old IDs retry exactly,
+historical replay still works and new v2 bindings do not manufacture numeric
+corrections. Capture-less retention is exercised with an execute-only,
+non-superuser owner and a time-scoped source deletion. These are storage and
+policy proofs; they do not qualify real bridges or establish source completion,
+population completeness, historical availability or production throughput.
+
+## PR B cross-version retention audit (2026-10-12)
+
+The required `pre-v6 legacy events` case actually executes the pre-0006
+retention procedure in a v5 scratch database, then re-imports the same immutable
+evidence and IDs into a fresh v6 database. It checks the ledger tips and verifies
+that the two procedure definitions differ; a same-version restore cannot satisfy
+this regression. Both full and digest-only audit modes cover an empty time scope
+and a nonempty legacy JSON deletion with no source-stat rows or bindings.
+
+Expected counts are hand-counted: 60 observations, seven artifacts/captures/blobs
+and 60 links, with every other legacy count zero and no new source-count keys.
+Reapplication must match the original counts and digest exactly. Full audit also
+checks all 81 tombstones against the digest; digest-only audit has no tombstones.
+Both phases use a real non-superuser retention-only login. The tests check actual
+file removal, an empty removal queue, surviving unrelated evidence and an
+unchanged second reapplication. This proves the zero-new-row audit compatibility
+claimed by the replacement procedure; it restores retained evidence, not a
+physical PostgreSQL backup, and does not cover nonzero new source kinds (which
+have their own same-version restore cases).
+
+## PR B canonical fact reader (2026-10-12)
+
+Twelve pure cases use hand-authored binding/revision IDs and predecessor links.
+They assert selected values and actual destinations across player/game reroutes,
+unrecorded corrections, disappearance/reappearance, equal-clock predecessor
+ordering, late recording, multiple providers, a withheld expected provider,
+unrecorded usable plans, witness/scope/bounds refusal and equivalent rights
+renewal. Unresolved current routing cannot be assumed outside a canonical filter merely
+because it has no historical destination (or only an older destination).
+The binding-token oracle independently hashes the explicit binding ID,
+revision ID and stored plan digest. No expected lineage is generated by the
+selector under test. Pure plans/rights IDs are ledger fixtures, not byte or
+permission qualification; the persisted reader supplies that separate proof.
+
+Seven mandatory database cases establish the adapter behavior:
+
+| Case | Reasoning and oracle |
+| --- | --- |
+| Recorded A → B → A | Old A routing disappears at B's cutoff; B is selected. Returning to A reuses its revision but changes binding provenance and keeps its original first recorder time. A real non-superuser replay-only login observes read-only/repeatable-read discovery and cannot call the recorder. Earlier A replay is exactly unchanged. |
+| Unrecorded destination | A bridge maps to B before B has any stored source revision. Both A-only and B-only queries explicitly withhold the raw contribution, and neither returns old numeric values. This would fail a discovery query based only on historical canonical routing. |
+| Missing row and recovery | A later complete raw capture drops the selected player row. Before recording, it is stale; after recording, it is explicitly missing-row. Reappearance uses the same numeric revision with a new binding/capture token, preserving A's original cutoff result. |
+| Current rights before bytes | Independently revoke the source profile or its cited bridge profile, then damage the raw CSV. The response is redacted and no file-read call occurs; it must not open the damage and report an integrity error first. |
+| Integrity and bounds | A damaged raw CSV refuses even a canonical query that would otherwise filter the chain away. A mocked 257-lineage discovery result refuses before any hydration and leaves the session usable. This is a query-overflow boundary probe, not a database load/throughput test. |
+| Typed identities and knowledge | Separate player/team databases preserve each kind and never invent a team row's player ID. Raw import alone and one millisecond before canonical recording produce no usable canonical head; equality at the recorder time does. Equivalent rights renewal preserves the complete snapshot. |
+| Unresolved routing | A root binding has raw evidence but no game bridge and no canonical revision. A-only, B-only and unrestricted reads all retain `routing: unresolved`; none may silently treat the unknown destination as irrelevant or return numeric values. |
+
+The actual retained-file proof now exercises this read adapter too: both feeds
+have zero usable canonical heads and one `game-bridge-missing` binding. It makes
+zero requests and publishes no active observations/features/labels. Tests prove
+read semantics and provenance, not qualified real bridges, complete population,
+historical source availability, indexed roster-scale performance or the pending
+SQL/feature/decision/label activation.
+## PR B shared consumer witnesses (2026-10-12)
+
+The pure witness cases specify binding/revision IDs and predecessor links by
+hand, using separately normalized synthetic CSV/context fixtures. Expected
+selected IDs, missing destinations, withheld routing, usage states and boundary
+timestamps are explicit assertions, not values calculated by the witness helper.
+They cover query-time invariance, same-revision recapture invalidation, canonical
+rerouting, unrecorded mapping changes, unresolved rivals, agreeing/conflicting
+providers, unrelated destinations, empty sets and narrowed/changed scopes.
+Usage controls distinguish blank/zero/missing from positive attempts/carries/
+targets; a positive rival cannot erase another provider's zero-usage evidence.
+An unchanged empty witness is explicitly not a usable selection.
+
+Post-window cases set the eligible boundary independently of the helper and
+check equality versus one millisecond before it. They distinguish capture time
+from later ingestion and select the current binding's raw capture, rather than
+the reused revision's original capture. Old witnesses, wrong capture/binding IDs
+and conflicting selections refuse. These are isolated source-capture checks,
+not proofs of completion, licensed outcome use or full label finalization.
+
+Two mandatory PostgreSQL cases exercise actual persisted reader output: a
+non-superuser replay-only login observes a reused statistical revision with a
+new binding/capture, and stale identity/current-rights changes withhold every
+consumer. The tests require unchanged earlier replay, refusal of publication
+through the reader login and zero active statistics observations/features/labels.
+The rights case counts provider file reads and requires zero after revocation.
+The actual retained-file CLI proof also creates a witness and requires its
+`game-bridge-missing` evidence to remain unavailable. It acquires no new files.
+
+Snapshot/witness digest checks detect accidental mutation; a correctly rehashed
+forgery remains outside this pure contract's authority. Byte verification,
+database-clock recording, rights and complete raw-chain validation belong to
+the persisted reader/recorders. SQL binding-aware feature/decision/label
+activation and real provider qualification remain outstanding; these tests do
+not claim either is complete.
+
+## PR B migration sequencing after #90 (2026-10-12)
+
+The new released-v4 upgrade case seeds one row in each of the five creator-corpus
+tables before applying predictive 0005–0007. It compares the complete rows and
+the first four ledger records before/after migration, imports a synthetic CSV
+through the predictive store, then requires a no-op rerun to preserve both sets.
+The test starts from the actual released creator-corpus prefix and uses the full
+catalog verifier; the prefix is not recreated by a mocked schema. Existing raw
+binding upgrades now start at v5/v6, and retention compatibility compares the
+same legacy procedure boundary at v6/v7 after renumbering. Their expected
+deletion sets and hashes are unchanged.
+
+Independent byte checks against merged main require released SQL and catalog
+contracts 0001–0004 to remain identical. Renamed PR B SQL must retain its previous
+checksums. Generation runs through registered scratch databases with the normal
+history/target guards. An old private ledger was correctly refused and the
+isolated container recreated. A mistakenly renumbered six-row membership count
+was restored after the full gate exposed it; membership scope and runtime SQL
+did not change. The final full gate passes all 75 Node DB checks and 103 database
+tests, including 78 required predictive cases and eight creator-corpus cases.
+
+## PR B SQL witness parity (0008, 2026-10-12)
+
+Seven mandatory PostgreSQL cases establish the shared witness boundary. The
+existing canonical-read cases now also run the independent SQL reconstruction
+on every successful/withheld read. Expected binding/revision IDs, destinations,
+failure reasons and missing entities remain explicit fixture assertions; equality
+between implementations is additional evidence, not the sole oracle.
+
+| Case | Independent reasoning and limits |
+| --- | --- |
+| Player/team and renewal | Exact typed entity keys and recorder-returned binding/revision IDs must survive both readers. A requested unrelated entity is missing. Renewing equivalent internal-research rights changes no input evidence; neither query time nor a rights ID should fabricate a recapture. |
+| Rehashed forgeries | Delete heads, invent binding/revision/token values, alter missingness or change an unavailable reason, then deliberately recompute a valid digest. The SQL checker must still reject the proposal against its own metadata reconstruction. |
+| Current versus historical use | An unchanged recapture reuses its statistical revision but changes binding/token. Before recording the new binding the old witness is stale; afterward it is changed. The old cutoff still verifies historically. An unchanged empty witness cannot authorize current use. |
+| Rerouting before filtering | A bridge changes A to B before B has a stored source revision. A-only and B-only SQL queries must withhold. Expiring that identity makes routing unresolved and must affect an unrelated C filter too. Earlier A remains exactly unchanged. |
+| Privileges and access clock | Actual non-superuser replay and recorder logins can call only the guarded public wrapper. They cannot invoke private kernels or provide an access timestamp. A retention-only login refuses even after an accidental execute grant. Current revocation redacts an old cutoff; malformed/over-limit requests refuse. |
+| Upgrade | Seed real binding/revision rows under the actual v7 prefix, apply only 0008 and compare all source rows and seven historical ledger entries. Rerun is a no-op. The existing released-v4 upgrade separately preserves all five seeded creator-corpus tables through 0008. |
+| Parity failure | Inject a rehashed, omitted-head SQL response while the real application reader proves files in a read-only/repeatable-read transaction. It must throw and roll back without returning a numeric snapshot. The next genuine read succeeds. This is a fault-injection check of the comparison boundary, not another SQL forgery test. |
+
+Migration 0008 adds functions, not tables or retained provider bytes; the
+retention procedure is unchanged. The offline retained-file proof additionally
+cross-checks both real CSV witnesses through SQL with zero downloads and requires
+their unresolved `game-bridge-missing` state. These tests establish metadata/byte
+agreement within recorded-lineage research scope. They do not establish active
+feature/decision/label integration, qualified real bridges, complete population
+or a production scale/performance budget.
+
+## PR B persisted research decision tests (0009, 2026-10-12)
+
+Four pure cases and fourteen mandatory database cases exercise the new research
+ledger. The expected outcomes come from the reviewed reconciliation-v1 and
+participation-v1 policies: one provider selects; agreeing providers choose the
+lexically first source; differing yards conflict; positive attempts establish
+individual offensive participation; zero/blank usage alone stays unresolved;
+explicit inactivity plus positive usage conflicts. Player and team agreement
+and disagreement are both tested. Exact expected binding/revision references,
+predecessors, source values and native IDs are supplied independently of the
+SQL recorder. Future/duplicate/native-scope inputs refuse in the pure layer.
+
+Database-clock results lie between independent client wall-clock bounds. Exact
+ID retries preserve the original cutoff/record; scope/head conflicts refuse.
+Recapturing identical CSV bytes preserves the numeric revision but changes the
+binding/token and invalidates current decisions before and after rebinding.
+Every earlier cutoff still equals its original replay. Unavailable schedule
+context records a null outcome; recovery reuses unchanged numeric history with
+fresh selected provenance. Query-time plans use a different cutoff/digest and
+are compared by their evidence basis, not whole-plan equality.
+
+Direct SQL tests recompute plan/witness hashes after forging outcomes, inputs,
+head omissions, selected bindings, scope/mode/policy or adding fields. Exact
+SQL reconstruction refuses them. Actual non-superuser logins prove recorder
+execution, denied direct INSERT/private kernels, replay-only transactions,
+denied writer calls and harness-only synthetic recording. Current source,
+historical context and native revocation each block historical replay/retry
+before **any** file read, with an independent zero read counter. Byte damage
+and association omissions refuse; an injected SQL mismatch rolls back and
+restores the read-only setting. Two real concurrent recorders wait behind a
+held advisory lock; exactly one expected-head proposal commits.
+
+Retention runs through a retention-only login, counts links/decisions and
+independently hashes tombstone IDs. It removes complete affected scope lineages,
+including a positive ancestor that did not cite a subsequently deleted native
+claim; that ancestor cannot revive as a current decision. Unrelated scopes
+survive. A second fresh database reconstructs identical source/binding/decision
+IDs and re-applies the audit with identical counts/digest; recorder clocks need
+not be restored. Capture-less time-window deletion is deliberately conservative.
+The v8 upgrade preserves exact binding rows, witnesses and ledger entries and
+then reruns as a no-op. Released legacy retention re-apply tests run through v9
+with zero new decision rows, checking that their counts/digests remain intact.
+
+The catalog extension probe now formats versions with four-digit padding, so
+its synthetic version 10 loads `0010.json`; it continues to prove that extension
+members cannot hide unrelated application drift. Existing SQL/catalog prefixes
+0001–0008 stay byte-for-byte unchanged. Synthetic cases do not qualify real
+native participation, population coverage, completion or usable feature/labels.
+This ledger introduces no new blob format or filesystem publication path;
+existing rollback/lock/orphan/removal-queue tests retain those responsibilities.
+
+
+## PR B QB source-consumer tests (0010, 2026-10-13)
+
+Eight mandatory DB cases exercise the new recorders and readers against actual
+PostgreSQL, private artifacts and genuine restricted logins. The positive
+fixture has one prior completed game, a future target, explicit schedule
+coverage/membership, and CSV bytes with ten attempts/eighty passing yards.
+Expected counts and the eight-yards-per-attempt ratio are hand-specified. The
+fixture supplies completion after kickoff and a source capture after the final
+window; it does not infer completion from elapsed time or CSV appearance.
+It asserts that no ordinary stats observation or legacy feature run was created.
+A later coverage-proven absence of the completion marker refuses new finalization
+while the existing historical label still replays exactly.
+
+A later unchanged CSV recapture reuses the numerical revision while changing its
+binding/token. The test keeps the earlier bundle and sealed run exactly equal,
+withholds current features/finalization until both research decisions are
+refreshed, then checks the new exact provenance. Separate cases reject a
+pre-window capture and unresolved all-zero usage; zero is never treated as proof
+of absence. Existing window-policy regressions continue to cover known absence,
+missing newest schedules, former-team gaps and no target outcomes.
+
+Direct SQL negative cases rehash forged manifest/selection/value/identity and
+completion changes, including both the feature's body and nested input digest.
+Thus rejection is not explained by a stale checksum. The SQL checker independently
+recomputes witnesses and current decision references and compares values with
+the selected payload. Application replay independently reproduces the full
+window calculation; these tests do not claim SQL duplicates that whole algorithm.
+
+A file-read counter stays at zero when source, normalization-context or a
+separate native-participation profile loses model/outcome permission while
+retaining internal-research permission. Native participation is ingested after
+the earlier decision, at its actual later test clock, rather than backdated.
+A non-superuser recorder/replay login records and reads both consumer kinds,
+gets 42501 for direct INSERT, refuses damaged body bytes and detects an omitted
+association. These use real permissions, not SET ROLE on a superuser connection.
+
+The v9 upgrade checks preserved ledger entries and replayed research decisions,
+then proves migration reruns are no-ops. Retention uses an execute-only,
+non-superuser owner login, deletes a feature and both versions of a dependent
+label, independently hashes tombstone IDs, drains the removal queue and proves
+the body file disappeared. Existing restored-backup cross-version retention
+cases now run through v10 and preserve legacy counts/digests when no consumers
+exist. The full gate enforces all eight new named cases, so deleting/skipping
+one cannot silently shrink validation. These fixtures establish integration
+behavior; they do not qualify real completion/population/providers or the
+remaining markets, scheduler, hosted rollout or capacity budgets.
+
+
+## PR B independent-review regressions (0011, 2026-10-13)
+
+Four mandatory PostgreSQL cases target the two independent-review blockers.
+They exercise actual store operations and restricted logins, not mocked SQL.
+
+The retention test records a legitimately unavailable enriched QB feature with
+missing opponent coverage. It keeps both the computed answer and sealed record,
+then publishes and deletes a different profile whose capture interval starts
+strictly after that feature's cutoff. The deletion must remove a source row;
+therefore this is not a no-op audit. Both earlier answers must remain exactly
+unchanged. Before the query fix it failed with a new `retained-evidence-removed`
+reason and digest. Existing broad-deletion tests continue to exercise actual
+loss of cited evidence; this case does not waive retention of older bytes.
+
+The ordinary-clock test uses artificial JSON evidence under a non-synthetic
+profile, with fixture source times deliberately older than receipt. It publishes
+through a genuine non-superuser login with `predictive_ingest` and no harness
+membership, then inserts a second capture directly through the same login and
+forces deferred constraints. Both receipts must be at or after a database clock
+sample rather than the supplied old time. The original old cutoff cannot see the
+observation; the exact receipt cutoff can. An idempotent retry preserves the
+receipt rather than stamping a new one. This proves the new-write boundary; it
+does not qualify the artificial provider or assert existing history was repaired.
+
+The harness test preserves fixed times for non-CSV synthetic fixtures while an
+ordinary ingest login cannot insert another synthetic capture. It checks refusal
+and the absence of a committed capture. Existing CSV tests retain their
+DB-clock assertions, including synthetic CSV profiles. A v10 upgrade test
+compares complete capture rows and the old migration ledger before/after 0011,
+then verifies migration reruns are no-ops. Historical rows are never rewritten.
+
+The full DB contract requires all four case names. Schema-latest assertions
+advance to 11; fixed historical prefixes remain fixed. One existing synthetic
+outsider test now expects refusal at INSERT because the new BEFORE trigger
+rejects earlier than the deferred guard; it still verifies the same harness
+boundary. SQL/catalog prefixes 0001–0010 remain unchanged. These tests establish
+receipt/cutoff behavior, not real-source readiness, population coverage, hosted
+activation or implementation approval.

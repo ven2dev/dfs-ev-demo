@@ -41,7 +41,7 @@ npm run test:db:down
 
 The command accepts only the registered scratch harness and creates, migrates and removes fresh random databases in the disposable service. It refuses the shared primary database as a mutation target, unregistered targets and ambient application credentials. The supplied artifact directory survives database cleanup; keep it private. It contains a registration marker, exact source bytes addressed by SHA-256, and a content-addressed JSON journal of run IDs, capture metadata and artifact references. SQL stores relative content references, never this local directory path.
 
-The report adds `proof: synthetic-postgres-cutoff-replay-v1`, `schemaVersion: 4`, `earlierReplayUnchanged`, `restoredReplayUnchanged`, `archive` and `restored` to the A/B/unavailable scenarios above. It asserts equality between A before and after B, a different B digest, explicit unavailable completion, and exact A restoration into another fresh database. This proves application-data replay; the synthetic timestamps do not claim a historical production acquisition. The earlier saved delivery-2 report used schema version 3.
+The report adds `proof: synthetic-postgres-cutoff-replay-v1`, the current `schemaVersion` (7 on PR B after merging #90), `earlierReplayUnchanged`, `restoredReplayUnchanged`, `archive` and `restored` to the A/B/unavailable scenarios above. It asserts equality between A before and after B, a different B digest, explicit unavailable completion, and exact A restoration into another fresh database. This proves application-data replay; the synthetic timestamps do not claim a historical production acquisition. The earlier saved delivery-2 report used schema version 3.
 
 To restore the journal later, start the same disposable service, retain all referenced source files, and substitute the archive reference and byte count printed by your report:
 
@@ -54,7 +54,7 @@ Restoration verifies the journal and each referenced file's hash and byte size, 
 
 ## Persistence contract
 
-**Superseded on 2026-10-10 (PR A step 2).** The branch-only synthetic migrations (`0003_predictive_local_replay.sql`, `0004_predictive_team_identity.sql`) were replaced by the real-source `0003_predictive_evidence.sql` described in the [real-source schema](predictive-real-source-schema.md) and [column-level DDL](predictive-evidence-ddl.md). It adds immutable source profiles, effective-dated rights decisions with knowledge time, content-addressed blobs separate from artifacts, capture completeness, exactly 32 seeded teams (`nfl:team:LA` for the Rams; no role may insert), and observations keyed by entity and per-provider source keys so a correction never crosses providers. Synthetic proof data now uses a `synthetic-test` profile accepted only from the disposable harness role. Readiness minimum stays **2**; after the independent creator-corpus projection migration, maximum-known is **4**. The reset procedure is in [database migrations](database-migrations.md#pr-a-draft-period-reset-of-migration-0003).
+**Superseded on 2026-10-10 (PR A step 2).** The branch-only synthetic migrations (`0003_predictive_local_replay.sql`, `0004_predictive_team_identity.sql`) were replaced by the real-source `0003_predictive_evidence.sql` described in the [real-source schema](predictive-real-source-schema.md) and [column-level DDL](predictive-evidence-ddl.md). It adds immutable source profiles, effective-dated rights decisions with knowledge time, content-addressed blobs separate from artifacts, capture completeness, exactly 32 seeded teams (`nfl:team:LA` for the Rams; no role may insert), and observations keyed by entity and per-provider source keys so a correction never crosses providers. Synthetic proof data now uses a `synthetic-test` profile accepted only from the disposable harness role. Readiness minimum stays **2**; after merging creator-corpus 0004 and renumbering PR B's private migrations to 0005–0007, maximum-known is **7**. The reset procedure is in [database migrations](database-migrations.md#pr-a-draft-period-reset-of-migration-0003).
 
 | Table | Stored truth |
 | --- | --- |
@@ -139,15 +139,29 @@ The proof requires complete scoped schedule evidence and detects omitted expecte
 
 For a known former team, cutoff-known QB membership ranges also establish expected history slots: a team game with kickoff at or after `effectiveFrom` and strictly before `effectiveTo` remains in the window even when its own membership row is missing. The slot reports `membership-missing` and withholds the bundle. A range never substitutes for per-game membership, participation or numeric evidence. Selected corrections control the range at each cutoff; conflicting heads remain unavailable. Dependencies retain the membership and schedule evidence that established a retained gap. Games outside the range stay outside player history unless independently included by per-game evidence or the current-team gap rule.
 
-## Next review gate
+## PR A merged; PR B foundation awaiting review
 
-Owner decision on 2026-10-09 after branch review: **option B — hold delivery 2 off main until the real-source schema is designed**. PR A now implements that real-source schema and replay core; its branch-only synthetic migrations were replaced by draft `0003_predictive_evidence.sql` under the documented [draft reset procedure](database-migrations.md#pr-a-draft-period-reset-of-migration-0003). Delivery 3's real-source adapters and qualification remain PR B work. PR A still needs independent review, and the owner has requested no push or PR yet.
+Owner decision on 2026-10-09 after branch review: **option B — hold delivery 2 off main until the real-source schema is designed**. PR A implemented that real-source schema and replay core, passed independent review and remote CI, and merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102) on 2026-10-11. Its branch-only synthetic migrations were replaced under the documented [draft reset procedure](database-migrations.md#pr-a-draft-period-reset-of-migration-0003). Migration 0003 is now frozen. On 2026-10-13, the owner supported a [revised PR B foundation boundary](predictive-pr-b.md#revised-pr-b-acceptance-boundary-2026-10-13), subject to independent review. The usable real vertical slice now has [follow-up acceptance criteria](predictive-followups.md#first-usable-real-qb-passing-yards-slice).
 
-The next merge gate is independent review of PR A's schema and replay core. Review should cover typed payload/lineage/immutability constraints, atomic publication and retry behavior, quarantine of partial/refused diagnostics, exact-byte verification, correction closure in scoped reads, restoration into a fresh scratch database, exact row-level identity provenance, role-restricted retention and blob recovery. The **30** mandatory predictive database cases join the existing lease/readiness report gates; missing, filtered, skipped, todo or failed cases cannot produce a passing DB run. Pure replay/storage/source cases remain in the Node Vitest suite.
+PR B now has offline typed-statistics qualification, exact raw CSV persistence
+(0005), database-enforced research bindings and hydration (0006), and complete
+unavailable normalization witnesses (0007). The verified canonical research
+reader follows raw heads before filtering by player/game, preserves binding
+provenance when a revision is reused and withholds unresolved current routing.
+0008 adds SQL/application witness parity, 0009 persists source decisions and
+0010 records/replays fixture-backed QB features and final labels in a separate
+source-consumer ledger. These do not publish CSV revisions into ordinary
+observations. Independent review, including that architecture boundary, is next;
+real completion/population/source qualification remains outstanding. See the
+[source-lineage contract](predictive-source-lineage.md) and
+[PR B progress](predictive-pr-b.md) for the nine-AC audit, measurements and limits.
+The **107** mandatory predictive database cases at the 0010 checkpoint join the lease/readiness and
+creator-corpus report gates; missing, filtered, skipped, todo or failed cases
+cannot produce a passing DB run. Pure cases remain in the Node Vitest suite.
 
 The [test reasoning review](predictive-test-review.md) maps each new case to its contract and evidence, records the strengthened failure checks and isolated fault-injection results, and explains the limits of the synthetic proof.
 
-Delivery 3 must qualify the source adapters and evidence described above, measure request/byte/runtime/storage cost under a reviewed acquisition budget, and report missing completion, participation and membership enumeration before expanding capture. Synthetic passing tests do not qualify a real source, its rights, historical coverage or model population. Remaining markets/injury/depth feeds follow their own contracts. Scheduled rest remains the raw kickoff interval, including offseason gaps; flagging or capping belongs to #54's reviewed modeling transformations.
+The first-real-slice follow-up must qualify the source adapters and evidence described above, enforce and measure request/byte/runtime/memory/storage cost under a reviewed acquisition budget, and report missing completion, participation and membership enumeration before expanding capture. The retained real proof is schema 9 with zero usable canonical heads, bundles or labels; the schema-10 consumer proof is fixture-backed. Synthetic passing tests do not qualify a real source, its rights, historical coverage or model population. Remaining markets/injury/depth feeds follow their own contracts. Scheduled rest remains the raw kickoff interval, including offseason gaps; flagging or capping belongs to #54's reviewed modeling transformations.
 
 Hosted schema activation remains separately gated by [#95](https://github.com/ven2dev/dfs-ev-demo/issues/95). This increment supplies a local additive migration and changes no app route, existing stats sync or remote schema. Do not run Production `up` as part of either proof.
 

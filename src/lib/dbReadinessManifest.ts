@@ -2,7 +2,7 @@
 // Runtime data only: no SQL files, catalog definitions or migration tooling.
 export const DB_READINESS_MANIFEST = {
   "minimumVersion": 2,
-  "maximumKnownVersion": 4,
+  "maximumKnownVersion": 11,
   "runnerVersion": 1,
   "migrations": [
     {
@@ -24,6 +24,41 @@ export const DB_READINESS_MANIFEST = {
       "version": 4,
       "filename": "0004_creator_corpus_projection.sql",
       "sha256": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba"
+    },
+    {
+      "version": 5,
+      "filename": "0005_predictive_source_claims.sql",
+      "sha256": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a"
+    },
+    {
+      "version": 6,
+      "filename": "0006_predictive_source_bindings.sql",
+      "sha256": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19"
+    },
+    {
+      "version": 7,
+      "filename": "0007_predictive_unavailable_bindings.sql",
+      "sha256": "fc10fe50cb8913c2c755db8ff15c0aa3d40e49b5a92d2471fff86c89c4409679"
+    },
+    {
+      "version": 8,
+      "filename": "0008_predictive_source_witnesses.sql",
+      "sha256": "ea824b2f2b943feafc576ed0cb7130f0f78ea37376859995f7a1fa0b2e139cfb"
+    },
+    {
+      "version": 9,
+      "filename": "0009_predictive_source_decisions.sql",
+      "sha256": "f861c1afd210c65886628581b78a1f135bb950f6b5e5d00989d065930a49ea31"
+    },
+    {
+      "version": 10,
+      "filename": "0010_predictive_source_consumers.sql",
+      "sha256": "813ca0e75d014bc5e38c9d454c481a479890f1c43e16128400442da6ad57ee35"
+    },
+    {
+      "version": 11,
+      "filename": "0011_predictive_capture_ingestion_clock.sql",
+      "sha256": "3908fa33bcb79301a870dca9a6c18dddacf755580a303025610d20bb20716d67"
     }
   ],
   "requiredTables": [

@@ -49,7 +49,7 @@ export const validatePassingYardsRequest = (request: Request) => {
   return cutoff;
 };
 
-export const buildPassingYardsFromReplay = (replay: Replay, request: Request): Bundle => {
+export const buildPassingYardsFromReplay = (replay: Replay, request: Request, sourceStats?: Pick<Replay, "select" | "participation">): Bundle => {
   const cutoff = validatePassingYardsRequest(request);
   const dependencyRows = new Map<string, Observation>();
   const reasons = new Set<string>();
@@ -57,7 +57,8 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
   const excludedSchedule: Exclusion[] = [];
   const enrich = request.candidate === "player-opponent-v1:player_pass_yds";
   const select = <K extends Kind>(kind: K, game: string, entity?: string) => {
-    const result = replay.select(kind, key(kind, game, entity));
+    const result = sourceStats && (kind === "player-game-stats" || kind === "team-game-stats")
+      ? sourceStats.select(kind, key(kind, game, entity)) : replay.select(kind, key(kind, game, entity));
     for (const row of result.dependencies) dependencyRows.set(row.revision.id, row);
     return result;
   };
@@ -156,7 +157,7 @@ export const buildPassingYardsFromReplay = (replay: Replay, request: Request): B
         const stats = !reason ? select("player-game-stats", game.gameId, request.playerId) : null;
         if (!reason && (stats!.state === "ambiguous" || stats!.state === "absent")) reason = "player-stats-" + stats!.state;
         if (!reason) {
-          const participation = replay.participation(game.gameId, request.playerId);
+          const participation = (sourceStats ?? replay).participation(game.gameId, request.playerId);
           retain(participation.inputs);
           if (participation.state !== "offensive-participant") reason = "participation-" + participation.state;
         }

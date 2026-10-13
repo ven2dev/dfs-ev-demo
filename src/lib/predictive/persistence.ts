@@ -1,6 +1,16 @@
 import type { Client } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
-import type { PrivateArtifactStore } from "./artifacts.ts";
+import type { ArtifactMediaType, PrivateArtifactStore } from "./artifacts.ts";
+import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
+  type SourceClaimRow, type SourceStatsPublication, type SourceStatsRequest, type SourceStatsReplay, type SourceStatsCapture } from "./sourceClaims.ts";
+import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
+import type { SourceStatsFeed } from "./sourceStats.ts";
+import { SOURCE_LINEAGE_VERSION, sourceBindingHeadsAt, sourceStatsRawKey, type SourceBindingEvent } from "./sourceLineage.ts";
+import { planSourceStatsFromReplay as planNormalization, sourceNormalizationBasis, SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
+import { SOURCE_FACT_BOUNDS, sourceFactHeadsAt, sourceFactRequest, sourceFactSnapshot, type SourceFactRequest } from "./sourceFacts.ts";
+import { sourceFactWitness } from "./sourceWitness.ts";
+import { sourceDecisionBasis, sourceDecisionPlan, sourceDecisionRequest, type SourceDecisionPlan, type SourceDecisionRecord, type SourceDecisionRequest } from "./sourceDecisions.ts";
+import { buildSourceFinalLabel, buildSourcePassingYards, sourceConsumerExecutionDigest, sourceConsumerInputDigest, type SourceConsumerBody, type SourceConsumerFact, type SourceConsumerRecord } from "./sourceConsumers.ts";
 import type { Artifact, Capture, Dataset, Decision, IdentityLink, Label, Observation, Profile, RecordedRetentionEvent, Request, RetentionEvent, RetentionResult,
   Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
@@ -8,8 +18,17 @@ import { validateParticipationDecisions } from "./participation.ts";
 import { executionDigest, FEATURE_CODE_VERSION, featureRunRequest } from "./featureRuns.ts";
 import { buildPassingYardsFromReplay, validatePassingYardsRequest } from "./passingYards.ts";
 import { blockedProfiles, replayObservations } from "./replay.ts";
-import { canonical, compareText, digest, entityKey, instant, observation, refuse, sourceKey, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
+import { allows, canonical, compareText, digest, entityKey, exact, instant, observation, refuse, rightsInForce, sourceKey, validateDataset, validateDecisions, validateObservations } from "./validation.ts";
 
+// Only evidence changes affect freshness. A later query clock or a renewed
+// rights decision must not manufacture a statistical correction. Access is
+// checked separately, against the database clock, on every read and retry.
+export { sourceNormalizationBasis } from "./sourceNormalization.ts";
+export type SourceNormalizationReplay = {
+  status: "observed-source-normalization" | "unavailable-source-normalization"; reason: string | null;
+  head: SourceBindingEvent | null; currentPlan: SourceNormalizationPlan;
+  observationsPublished: false; featuresPublished: false; labelsFinalized: false; populationCoverage: "unqualified";
+};
 export const PERSISTENCE_BOUNDS = { artifacts: 256, captures: 512, bytes: 8_000_000, rows: 8192 } as const;
 const LOCK_NAMESPACE = 520052;
 // Per-digest session locks coordinating artifact-store files with blob rows.
@@ -56,6 +75,9 @@ const idReadSql = closureSql("o.id=ANY($2::text[])");
 const decisionScopeReadSql = closureSql("o.entity_key=ANY($2::text[]) OR o.entity_key LIKE ANY($3::text[])");
 const aliasReadSql = closureSql("o.kind='schedule' AND o.raw_game_id=ANY($2::text[])");
 const coverageReadSql = closureSql("o.kind='schedule-coverage' AND o.team_id=ANY($2::text[]) AND o.data->>'fromSeason'=$3 AND o.data->>'throughSeason'=$4");
+const normalizationBridgeReadSql = closureSql("o.entity_key=ANY($2::text[])");
+const normalizationReverseReadSql = closureSql("(o.kind='game-bridge' AND o.game_id=ANY($2::uuid[])) OR (o.kind='player-bridge' AND o.player_id=ANY($3::text[]))");
+const normalizationScheduleReadSql = closureSql("o.kind='schedule' AND o.game_id=ANY($2::uuid[])");
 const PROFILE_SQL = `SELECT jsonb_build_object('id',id,'purpose',purpose,'provider',provider,'feed',feed,'releaseTag',release_tag,
   'assetPattern',asset_pattern,'headerProfileSha256',header_profile_sha256,'parserVersion',parser_version,'allowlistVersion',allowlist_version,
   'license',license,'attribution',attribution,'evidenceKinds',to_jsonb(evidence_kinds),'registeredAt',${timestamp("registered_at")}) AS profile
@@ -97,17 +119,28 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const assertTarget = async () => { target.assertTarget(target.expected); await checkConnectedTarget(client, target.expected); };
   await assertTarget();
   let busy = false;
+  let verifiedBytes = 0;
+  const verifiedDigests = new Set<string>();
+  const verifiedCsvFiles = new Map<string, { feed: SourceStatsFeed; parsed: Awaited<ReturnType<typeof parseSourceCsv>> }>();
+  const verifiedJson = new Map<string, { artifact: Artifact; revisions: Map<string, Revision> }>();
+  const verifiedCsv = new Map<string, { capture: SourceStatsCapture; expected: SourceClaimRow[] }>();
+  const reserveVerifiedBytes = (bytes: number, sha256: string) => {
+    if (verifiedDigests.has(sha256)) return;
+    verifiedDigests.add(sha256); verifiedBytes += bytes;
+    if (verifiedBytes > 20_000_000) refuse("source-verification-byte-bounds-refused");
+  };
   const profilesFor = async (ids: string[]): Promise<Profile[]> =>
     (await client.query(PROFILE_SQL, [ids])).rows.map((row) => row.profile as Profile);
   const hydrate = async (raw: Raw[]): Promise<Observation[]> => {
     if (raw.length > PERSISTENCE_BOUNDS.rows) refuse("replay-row-bounds-refused");
     const profiles = new Map((await profilesFor([...new Set(raw.map((row) => row.artifact.profileId))])).map((profile) => [profile.id, profile]));
-    const parsed = new Map<string, { artifact: Artifact; revisions: Map<string, Revision> }>();
+    const parsed = verifiedJson;
     const result: Observation[] = [];
     for (const row of raw) {
       let stored = parsed.get(row.artifact.id);
       if (!stored) {
         const { byteSize, storageRef, ...metadata } = row.artifact;
+        reserveVerifiedBytes(Number(byteSize), metadata.sha256);
         const artifact: Artifact = { ...metadata, bytes: await artifacts.read(storageRef, metadata.sha256, byteSize) };
         // Every stored row is re-verified against its immutable source bytes.
         const checked = validateDataset({ formatVersion: 2, profiles: [profiles.get(artifact.profileId)!], rightsDecisions: [], artifacts: [artifact], captures: [], decisions: [], labels: [], identityLinks: [] });
@@ -122,6 +155,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const read = async (sql: string, values: unknown[]) => hydrate((await client.query(sql, values)).rows.map((row) => row.envelope as Raw));
   const transaction = async <T>(work: () => Promise<T>, readonly = false): Promise<T> => {
     if (busy) refuse("predictive-session-busy"); busy = true;
+    verifiedBytes = 0; verifiedJson.clear(); verifiedCsv.clear(); verifiedCsvFiles.clear(); verifiedDigests.clear();
     try {
       await assertTarget();
       await client.query(readonly ? "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY" : "BEGIN");
@@ -133,7 +167,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         if (!readonly) await client.query("SELECT pg_advisory_xact_lock($1,1)", [LOCK_NAMESPACE]);
         const result = await work(); await client.query("COMMIT"); return result;
       } catch (error) { await client.query("ROLLBACK"); throw error; }
-    } finally { busy = false; }
+    } finally { verifiedJson.clear(); verifiedCsv.clear(); verifiedCsvFiles.clear(); verifiedDigests.clear(); verifiedBytes = 0; busy = false; }
   };
   // Acquired in ascending key order with a bounded wait; released in finally. A
   // lost connection drops the locks and fails every later query, so no unlink
@@ -161,15 +195,16 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // Files precede the SQL commit. After success or rollback, remove only bytes
   // that the committed database does not own, while retaining the digest locks.
   // A disconnected/crashed process leaves files for the bounded-age orphan sweep.
-  const withBlobPublication = <T>(digests: string[], work: () => Promise<T>) => withBlobLocks(digests, async () => {
+  const withBlobReferences = <T>(references: string[], work: () => Promise<T>) => withBlobLocks(references.map((reference) => reference.slice(0, 64)), async () => {
     try { return await work(); }
     finally {
-      for (const sha256 of new Set(digests.filter((value) => /^[a-f0-9]{64}$/.test(value)))) {
-        const reference = sha256 + ".json"; // These publication paths write JSON.
-        if (!await blobReferenced(reference)) await artifacts.remove(reference, sha256);
+      for (const reference of new Set(references.filter((value) => /^[a-f0-9]{64}\.(json|csv)$/.test(value)))) {
+        if (!await blobReferenced(reference)) await artifacts.remove(reference, reference.slice(0, 64));
       }
     }
   });
+  const withBlobPublication = <T>(digests: string[], work: () => Promise<T>) =>
+    withBlobReferences(digests.map((sha256) => sha256 + ".json"), work);
   const priorRun = async (id: string, sha256: string): Promise<RunResult | null> => {
     const row = (await client.query("SELECT request_sha256,status,failure_code FROM public.predictive_ingestion_runs WHERE id=$1", [id])).rows[0];
     if (!row) return null;
@@ -177,11 +212,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return { id, status: row.status, failureCode: row.failure_code, reused: true };
   };
   const insertRun = async (id: string, sha256: string, now: string, status: RunResult["status"], failureCode: string | null,
-    counts: { artifacts: number; captures: number; rows: number }, consumedBytes: number) => {
+    counts: { artifacts: number; captures: number; rows: number }, consumedBytes: number,
+    codeVersion = "predictive-local-store-v2", peakRssBytes: number | null = null) => {
     await client.query(`INSERT INTO public.predictive_ingestion_runs
       (id,request_sha256,code_version,started_at,finished_at,status,failure_code,budget,requests,consumed_bytes,artifact_count,capture_count,row_count,peak_rss_bytes)
-      VALUES ($1,$2,'predictive-local-store-v2',$3,$3,$4,$5,$6,0,$7,$8,$9,$10,NULL)`,
-      [id, sha256, now, status, failureCode, PERSISTENCE_BOUNDS, consumedBytes, counts.artifacts, counts.captures, counts.rows]);
+      VALUES ($1,$2,$11,$3,$3,$4,$5,$6,0,$7,$8,$9,$10,$12)`,
+      [id, sha256, now, status, failureCode, PERSISTENCE_BOUNDS, consumedBytes, counts.artifacts, counts.captures, counts.rows, codeVersion, peakRssBytes]);
   };
   // Registrations are immutable: a repeated ID must carry identical content.
   const persistProfile = async (profile: Profile) => {
@@ -200,12 +236,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       [decision.id, decision.profileId, decision.predecessorId, decision.allowedUses, decision.effectiveFrom, decision.effectiveTo,
         decision.decidedAt, decision.evidenceKind, decision.evidenceReference]);
   };
-  const persistArtifact = async (artifact: Artifact) => {
+  const persistArtifact = async (artifact: Artifact, mediaType: ArtifactMediaType = "application/json") => {
     const byteSize = Buffer.byteLength(artifact.bytes);
-    await client.query(`INSERT INTO public.predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'application/json',$3)
-      ON CONFLICT (sha256) DO NOTHING`, [artifact.sha256, byteSize, artifact.sha256 + ".json"]);
+    await client.query(`INSERT INTO public.predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,$3,$4)
+      ON CONFLICT (sha256) DO NOTHING`, [artifact.sha256, byteSize, mediaType, artifact.sha256 + (mediaType === "text/csv" ? ".csv" : ".json")]);
     const blob = (await client.query("SELECT byte_size,media_type FROM public.predictive_blobs WHERE sha256=$1", [artifact.sha256])).rows[0];
-    if (blob.byte_size !== byteSize || blob.media_type !== "application/json") refuse("blob-conflict");
+    if (blob.byte_size !== byteSize || blob.media_type !== mediaType) refuse("blob-conflict");
     const values = [artifact.id, artifact.sha256, artifact.profileId, artifact.retrievalKind, artifact.origin, artifact.providerEtag,
       artifact.providerLastModified, artifact.releaseUpdatedAt, artifact.scopeKind, artifact.scopeSeason, artifact.scopeWeek, artifact.scopeGameId, artifact.scopeFilter];
     const row = (await client.query(`SELECT id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,provider_last_modified,
@@ -288,6 +324,533 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id
     WHERE c.run_id=$1 AND c.state='published' AND public.predictive_rights_in_force(a.profile_id, c.captured_at, c.captured_at) IS NOT NULL
     ON CONFLICT DO NOTHING`, [runId]);
+
+  const publishSourceStats = async (input: SourceStatsPublication): Promise<RunResult> => {
+    const prepared = await prepareSourceClaims(input);
+    const { artifact } = input; const reference = artifact.sha256 + ".csv";
+    const requestHash = digest(canonical({ version: SOURCE_CLAIM_VERSION, input }));
+    return withBlobReferences([reference], async () => {
+      await artifacts.write(artifact.bytes, artifact.sha256, "text/csv");
+      return transaction(async () => {
+        const existing = await priorRun(input.id, requestHash); if (existing) return existing;
+        await client.query("SELECT pg_advisory_xact_lock(520053,hashtext($1))", [input.profile.id]);
+        // Importing an old archive is knowledge now, never a historical SQL write.
+        const now = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string;
+        if (instant(input.capturedAt) > instant(now)) refuse("source-publication-time-refused");
+        await persistRegistrations({ formatVersion: 2, profiles: [input.profile], rightsDecisions: input.rightsDecisions,
+          artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] });
+        await insertRun(input.id, requestHash, now, "published", null, { artifacts: 1, captures: 1, rows: prepared.rows.length }, Buffer.byteLength(artifact.bytes),
+          SOURCE_CLAIM_VERSION, process.resourceUsage().maxRSS * 1024);
+        await persistArtifact(artifact, "text/csv");
+        await persistCapture({ id: input.captureId, artifactId: artifact.id, capturedAt: input.capturedAt, availableAt: input.capturedAt,
+          ingestedAt: now, publishedAt: null, publicationEvidence: null, state: "published", bodyComplete: true,
+          headerVerified: true, parserSucceeded: true, parsedRows: prepared.rows.length }, input.id);
+        for (const row of prepared.rows) await client.query(`INSERT INTO public.predictive_source_stats_rows
+          (id,capture_id,row_ordinal,raw_key_sha256,selected_sha256,projection,failure_code) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          [row.id, input.captureId, row.rowOrdinal, row.rawKeySha256, row.selectedSha256, row.projection, row.failureCode]);
+        await recordRunRights(input.id);
+        return { id: input.id, status: "published", failureCode: null, reused: false };
+      });
+    });
+  };
+
+  const readSourceStats = async (request: SourceStatsRequest, accessAt?: string): Promise<SourceStatsReplay> => {
+    instant(request.cutoff);
+    if (typeof request.profileId !== "string" || !request.profileId.trim() || request.profileId.length > 256 ||
+        !/^2026_\d{2}_[A-Z]{2,3}_[A-Z]{2,3}$/.test(request.rawGameId) || !/^[A-Z]{2,3}$/.test(request.rawTeam) ||
+        (request.rawPlayerId !== null && !/^00-\d{7}$/.test(request.rawPlayerId))) refuse("source-replay-request-refused");
+    const profile = (await profilesFor([request.profileId]))[0];
+    if (!profile || !["player", "team"].includes(profile.feed) || profile.parserVersion !== SOURCE_PROFILE_VERSION ||
+        profile.allowlistVersion !== "predictive-raw-allowlist-v1" ||
+        (profile.feed === "player") !== (request.rawPlayerId !== null)) refuse("source-replay-profile-refused");
+    const feed = profile.feed as SourceStatsFeed;
+    const accessible = (await client.query(`SELECT public.predictive_rights_allow($1,coalesce($2::timestamptz,clock_timestamp()),coalesce($2::timestamptz,clock_timestamp()),'internal-research') AS allowed`, [profile.id, accessAt ?? null])).rows[0].allowed;
+    const result = (reason: string | null, captures: SourceStatsCapture[], rows: SourceClaimRow[]): SourceStatsReplay => {
+      const evidence = { version: SOURCE_CLAIM_VERSION, request, captures, rows };
+      return { status: reason ? "unavailable-source-claim" : "observed-source-claim", reason, evidence,
+        inputDigest: digest(canonical(evidence)), featuresPublished: false, labelsFinalized: false, populationCoverage: "unqualified" };
+    };
+    if (!accessible) return result("rights-not-in-force", [], []);
+    // The newest source snapshot visible at cutoff wins, not the last imported
+    // old archive. Equal-time contradictory captures remain ambiguous.
+    const captures = (await client.query(`WITH eligible AS (
+      SELECT c.*, dense_rank() OVER (ORDER BY c.captured_at DESC) AS rank
+      FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id
+      JOIN public.predictive_ingestion_runs r ON r.id=c.run_id JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256
+      WHERE a.profile_id=$1 AND a.scope_kind='season-file' AND a.scope_season=$2 AND a.scope_filter IS NULL
+        AND b.media_type='text/csv' AND c.state='published' AND r.status='published'
+        AND c.available_at <= $3::timestamptz AND c.ingested_at <= $3::timestamptz)
+      SELECT c.id,c.run_id AS "runId",c.artifact_id AS "artifactId",${timestamp("c.captured_at")} AS "capturedAt",
+        ${timestamp("c.available_at")} AS "availableAt",${timestamp("c.ingested_at")} AS "ingestedAt",c.parsed_rows AS "parsedRows",
+        b.sha256,b.storage_ref AS "storageRef",b.byte_size AS "byteSize"
+      FROM eligible c JOIN public.predictive_artifacts a ON a.id=c.artifact_id JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256
+      WHERE rank=1 ORDER BY c.ingested_at,c.id COLLATE "C" LIMIT 257`, [profile.id, SOURCE_SAMPLE_SEASON, request.cutoff])).rows as SourceStatsCapture[];
+    if (captures.length > 256) refuse("source-replay-bounds-refused");
+    if (!captures.length) {
+      const removed = (await client.query(`SELECT 1 FROM public.predictive_retention_events
+        WHERE scope_descriptor->>'kind'='source' AND scope_descriptor->'profileIds' ? $1
+          AND (scope_descriptor->>'capturedFrom' IS NULL OR (scope_descriptor->>'capturedFrom')::timestamptz <= $2::timestamptz) LIMIT 1`,
+        [profile.id, request.cutoff])).rows.length > 0;
+      return result(removed ? "retained-evidence-removed" : "source-capture-missing", [], []);
+    }
+    // Every cited capture is verified, including equal-time conflicts.
+    for (const capture of captures) {
+      let verified = verifiedCsv.get(capture.id);
+      if (verified && canonical(verified.capture) !== canonical(capture)) refuse("stored-source-capture-mismatch");
+      if (!verified) {
+        reserveVerifiedBytes(Number(capture.byteSize), capture.sha256);
+        let file = verifiedCsvFiles.get(capture.sha256);
+        if (file && file.feed !== feed) refuse("stored-source-capture-mismatch");
+        if (!file) {
+          const bytes = await artifacts.read(capture.storageRef, capture.sha256, Number(capture.byteSize));
+          file = { feed, parsed: await parseSourceCsv(feed, bytes, PERSISTENCE_BOUNDS.rows) };
+          verifiedCsvFiles.set(capture.sha256, file);
+        }
+        const parsed = file.parsed;
+        if (parsed.headerSha256 !== profile.headerProfileSha256 || parsed.rows.length !== capture.parsedRows) refuse("stored-source-capture-mismatch");
+        verified = { capture, expected: parsed.rows.map((row, index) => projectSourceClaim(capture.id, feed, row, index + 1)) };
+        verifiedCsv.set(capture.id, verified);
+      }
+      const expectedRows = verified.expected;
+      const stored = (await client.query(`SELECT id,row_ordinal AS "rowOrdinal",raw_key_sha256 AS "rawKeySha256",
+        selected_sha256 AS "selectedSha256",projection,failure_code AS "failureCode"
+        FROM public.predictive_source_stats_rows WHERE capture_id=$1 ORDER BY row_ordinal LIMIT 8193`, [capture.id])).rows;
+      if (canonical(stored) !== canonical(expectedRows)) refuse("stored-source-row-mismatch");
+    }
+    if (new Set(captures.map((capture) => capture.sha256)).size > 1) return result("source-capture-ambiguous", captures, []);
+    const capture = captures[0]; const expected = verifiedCsv.get(capture.id)!.expected;
+    const key = sourceClaimKey({ game_id: request.rawGameId, team: request.rawTeam, player_id: request.rawPlayerId ?? "" }, feed);
+    const matches = expected.filter((row) => row.rawKeySha256 === key);
+    if (!matches.length) return result("source-row-missing", [capture], []);
+    if (new Set(matches.map((row) => row.selectedSha256)).size > 1) return result("source-row-ambiguous", [capture], matches);
+    return result(matches[0].failureCode ? "source-row-refused" : null, [capture], matches);
+  };
+  const replaySourceStats = (request: SourceStatsRequest) => transaction(() => readSourceStats(request), true);
+
+  const readSourceNormalization = async (request: SourceStatsRequest, accessAt?: string, version: string = SOURCE_NORMALIZATION_VERSION) => {
+    const source = await readSourceStats(request, accessAt);
+    const clock = accessAt ?? (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string;
+    const context: Dataset = { formatVersion: 2, profiles: [], rightsDecisions: [], artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+    if (source.status !== "observed-source-claim") {
+      context.profiles = await profilesFor([request.profileId]);
+      context.rightsDecisions = (await client.query(RIGHTS_SQL, [[request.profileId]])).rows.map((row) => row.decision as RightsDecision);
+      return planNormalization(source, { ...context, replay: replayObservations([], new Set()) }, clock, version);
+    }
+    const stats = source.evidence.rows[0].projection!;
+    const readContext = async (sql: string, values: unknown[]) => {
+      const raw = (await client.query(sql, values)).rows.map((row) => row.envelope as Raw);
+      const ids = [...new Set(raw.map((row) => row.artifact.profileId))];
+      const rights = (await client.query(RIGHTS_SQL, [ids])).rows.map((row) => row.decision as RightsDecision);
+      const blocked = blockedProfiles(rights, ids, clock, "internal-research");
+      // Permission is checked before opening context bytes, including when the
+      // resulting plan is unavailable. Historical hydration uses its audit
+      // clock only after the separate current-access gate has passed.
+      return hydrate(raw.filter((row) => !blocked.has(row.artifact.profileId)));
+    };
+    const keys = ["game-bridge:nflverse:" + stats.rawGameId, "team-alias:nflverse:" + stats.rawTeam,
+      "team-alias:nflverse:" + stats.rawOpponent, ...(stats.rawPlayerId ? ["player-bridge:gsis:" + stats.rawPlayerId] : [])];
+    const bridges = await readContext(normalizationBridgeReadSql, [request.cutoff, keys]);
+    const games = [...new Set(bridges.flatMap((row) => row.revision.kind === "game-bridge" ? [row.revision.data.gameId] : []))];
+    const players = [...new Set(bridges.flatMap((row) => row.revision.kind === "player-bridge" ? [row.revision.data.playerId] : []))];
+    const reverse = await readContext(normalizationReverseReadSql, [request.cutoff, games, players]);
+    const schedules = await readContext(normalizationScheduleReadSql, [request.cutoff, games]);
+    const rawScheduleIds = [...new Set(schedules.flatMap((row) => row.revision.kind === "schedule" ? [row.revision.data.rawGameId] : []))];
+    const aliases = await readContext(aliasReadSql, [request.cutoff, rawScheduleIds]);
+    const observations = [...bridges, ...reverse, ...schedules, ...aliases];
+    if (observations.length > PERSISTENCE_BOUNDS.rows) refuse("replay-row-bounds-refused");
+    context.identityLinks = (await client.query(`SELECT id,stats_profile_id AS "statsProfileId",bridge_profile_id AS "bridgeProfileId",
+      provider,${timestamp("decided_at")} AS "decidedAt" FROM public.predictive_profile_identity_links
+      WHERE stats_profile_id=$1 AND decided_at <= $2::timestamptz ORDER BY id COLLATE "C" LIMIT 257`, [request.profileId, request.cutoff])).rows as IdentityLink[];
+    if (context.identityLinks.length > 256) refuse("source-normalization-link-bounds-refused");
+    const profileIds = [...new Set([request.profileId, ...observations.map((row) => row.artifact.profileId),
+      ...context.identityLinks.map((link) => link.bridgeProfileId)])];
+    context.profiles = await profilesFor(profileIds);
+    context.rightsDecisions = (await client.query(RIGHTS_SQL, [profileIds])).rows.map((row) => row.decision as RightsDecision);
+    const decisionKeys = games.map((id) => "reconciliation:schedule:" + id);
+    context.decisions = (await client.query(DECISION_SQL, [request.cutoff, decisionKeys])).rows.map((row) => row.decision as Decision);
+    const checked = validateDataset({ ...context, decisions: [] });
+    const visible = validateObservations(observations);
+    validateDecisions(context.decisions, visible, checked.profiles);
+    // hydrate() already verified every chosen row against its exact JSON bytes.
+    // Reconstructing a full Dataset from partially selected artifacts would
+    // pull unrelated corrections into this scoped read without their ancestors.
+    const replay = replayObservations([...visible.values()], blockedProfiles(context.rightsDecisions, profileIds, clock, "internal-research"), context.decisions);
+    return planNormalization(source, { ...context, replay }, clock, version);
+  };
+  const planSourceStatsNormalization = (request: SourceStatsRequest) => transaction(() => readSourceNormalization(request), true);
+
+  const bindingHistory = async (request: SourceStatsRequest, cutoff: string): Promise<SourceBindingEvent[]> => {
+    const key = sourceStatsRawKey(request);
+    const records = (await client.query(`SELECT b.id,b.predecessor_id AS "predecessorId",${timestamp("b.recorded_at")} AS "recordedAt",b.plan,
+      CASE WHEN r.id IS NULL THEN NULL ELSE jsonb_build_object('id',r.id,'kind',r.kind,'sourceRecordId',r.source_record_id,
+        'predecessorId',r.predecessor_id,'correctionReason',r.correction_reason,'data',r.data) END AS revision,
+      b.profile_id AS "profileId",b.raw_key_sha256 AS "rawKey",${timestamp("b.cutoff")} AS cutoff,
+      coalesce((SELECT jsonb_agg(x.capture_id ORDER BY x.capture_id COLLATE "C") FROM public.predictive_source_binding_captures x WHERE x.binding_id=b.id),'[]'::jsonb) AS captures,
+      coalesce((SELECT jsonb_agg(x.row_id ORDER BY x.row_id COLLATE "C") FROM public.predictive_source_binding_rows x WHERE x.binding_id=b.id),'[]'::jsonb) AS rows,
+      coalesce((SELECT jsonb_agg(jsonb_build_object('observationId',x.observation_id,'role',x.role,'captureId',x.capture_id,'artifactId',x.artifact_id)
+        ORDER BY x.role COLLATE "C",x.observation_id COLLATE "C") FROM public.predictive_source_binding_dependencies x WHERE x.binding_id=b.id),'[]'::jsonb) AS dependencies,
+      coalesce((SELECT jsonb_agg(x.link_id ORDER BY x.link_id COLLATE "C") FROM public.predictive_source_binding_links x WHERE x.binding_id=b.id),'[]'::jsonb) AS links,
+      coalesce((SELECT jsonb_agg(x.decision_id ORDER BY x.decision_id COLLATE "C") FROM public.predictive_source_binding_decisions x WHERE x.binding_id=b.id),'[]'::jsonb) AS decisions,
+      coalesce((SELECT jsonb_agg(x.rights_decision_id ORDER BY x.rights_decision_id COLLATE "C") FROM public.predictive_source_binding_rights x WHERE x.binding_id=b.id),'[]'::jsonb) AS rights
+      FROM public.predictive_source_bindings b LEFT JOIN public.predictive_source_stats_revisions r ON r.id=b.revision_id
+      WHERE b.profile_id=$1 AND b.raw_key_sha256=$2 AND b.recorded_at <= $3::timestamptz ORDER BY b.recorded_at,b.id COLLATE "C" LIMIT 257`,
+      [request.profileId, key, cutoff])).rows;
+    if (records.length > 256) refuse("source-binding-history-bounds-refused");
+    const events: SourceBindingEvent[] = [];
+    for (const row of records) {
+      const plan = row.plan as SourceNormalizationPlan; const binding = plan.binding;
+      if (row.profileId !== binding.sourceProfileId || row.rawKey !== sourceStatsRawKey(binding.sourceRequest) || row.cutoff !== binding.cutoff)
+        refuse("stored-source-binding-mismatch");
+      const ids = (values: string[]) => [...values].sort(compareText);
+      const deps = binding.dependencies.map(({ observationId, role, captureId, artifactId }) => ({ observationId, role, captureId, artifactId }))
+        .sort((a, b) => compareText(a.role, b.role) || compareText(a.observationId, b.observationId));
+      if (canonical(row.captures) !== canonical(ids(binding.sourceCaptures.map((item) => item.id))) ||
+          canonical(row.rows) !== canonical(ids(binding.sourceRows.map((item) => item.id))) || canonical(row.dependencies) !== canonical(deps) ||
+          canonical(row.links) !== canonical(ids(binding.identityLinks.map((item) => item.id))) ||
+          canonical(row.decisions) !== canonical(ids(binding.decisions.map((item) => item.id))) || canonical(row.rights) !== canonical(ids(binding.rightsDecisionIds)))
+        refuse("stored-source-binding-associations-mismatch");
+      events.push({ version: SOURCE_LINEAGE_VERSION, id: row.id, predecessorId: row.predecessorId, recordedAt: row.recordedAt, plan, revision: row.revision });
+    }
+    return events;
+  };
+  const databaseClock = async () => (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string;
+  const currentBindingAccess = async (history: Pick<SourceBindingEvent, "plan">[], clock: string) => {
+    const profiles = [...new Set(history.flatMap((event) => [event.plan.binding.sourceProfileId, ...event.plan.binding.dependencies.map((dep) => dep.profileId)]))];
+    const rights = (await client.query(RIGHTS_SQL, [profiles])).rows.map((row) => row.decision as RightsDecision);
+    return profiles.every((profile) => allows(rightsInForce(rights, profile, instant(clock), instant(clock)), "internal-research"));
+  };
+  const verifyBindingHistory = async (history: SourceBindingEvent[], cutoff: string) => {
+    // Recompute the original proposal against immutable CSV/JSON bytes and its
+    // original knowledge/access clocks; current access is a separate gate.
+    for (const event of history) {
+      const reproduced = await readSourceNormalization(event.plan.binding.sourceRequest, event.recordedAt, event.plan.binding.version);
+      if (canonical(reproduced) !== canonical(event.plan)) refuse("stored-source-binding-plan-mismatch");
+    }
+    return sourceBindingHeadsAt(history, cutoff);
+  };
+  const recordSourceNormalization = (id: string, request: Omit<SourceStatsRequest, "cutoff">, expectedHeadId: string | null) => transaction(async () => {
+    exact(request, ["profileId", "rawGameId", "rawTeam", "rawPlayerId"]);
+    const clock = await databaseClock(); const scoped = { ...request, cutoff: clock }; sourceStatsRawKey(scoped);
+    const existing = (await client.query("SELECT profile_id,raw_key_sha256,predecessor_id,plan FROM public.predictive_source_bindings WHERE id=$1", [id])).rows[0];
+    if (existing && (existing.profile_id !== request.profileId || existing.raw_key_sha256 !== sourceStatsRawKey(scoped) || existing.predecessor_id !== expectedHeadId))
+      refuse("source-binding-id-conflict");
+    const plan = existing?.plan as SourceNormalizationPlan | undefined ?? await readSourceNormalization(scoped, clock);
+    if (existing && !await currentBindingAccess([{ plan }], clock)) refuse("predictive-source-plan-rights-profile-invalid");
+    // Retries re-verify their original files too. SQL independently checks
+    // current rights on both new records and exact retries.
+    if (existing && canonical(await readSourceNormalization(plan.binding.sourceRequest, (await client.query(
+      `SELECT ${timestamp("recorded_at")} AS now FROM public.predictive_source_bindings WHERE id=$1`, [id])).rows[0].now, plan.binding.version)) !== canonical(plan))
+      refuse("stored-source-binding-plan-mismatch");
+    const result = (await client.query("SELECT public.predictive_record_source_binding($1,$2,$3) AS result", [id, expectedHeadId, JSON.stringify(plan)])).rows[0].result;
+    const history = await bindingHistory(scoped, result.recordedAt);
+    const event = history.find((row) => row.id === id) ?? refuse("stored-source-binding-missing");
+    sourceBindingHeadsAt(history, result.recordedAt);
+    return { event, reused: result.reused as boolean, observationsPublished: false as const, featuresPublished: false as const, labelsFinalized: false as const };
+  });
+  const replaySourceNormalization = (request: SourceStatsRequest): Promise<SourceNormalizationReplay> => transaction(async () => {
+    sourceStatsRawKey(request); const clock = await databaseClock();
+    if (instant(request.cutoff) > instant(clock)) refuse("source-binding-future-cutoff-refused");
+    const history = await bindingHistory(request, request.cutoff);
+    const result = (reason: string | null, head: SourceBindingEvent | null, currentPlan: SourceNormalizationPlan): SourceNormalizationReplay => ({
+      status: reason ? "unavailable-source-normalization" : "observed-source-normalization", reason, head, currentPlan,
+      observationsPublished: false, featuresPublished: false, labelsFinalized: false, populationCoverage: "unqualified" });
+    if (!await currentBindingAccess(history, clock)) {
+      // Do not hydrate revoked provider bytes or return historical payloads.
+      const source = { status: "unavailable-source-claim" as const, reason: "rights-not-in-force",
+        evidence: { version: SOURCE_CLAIM_VERSION, request, captures: [], rows: [] }, inputDigest: "", featuresPublished: false as const,
+        labelsFinalized: false as const, populationCoverage: "unqualified" as const };
+      source.inputDigest = digest(canonical(source.evidence));
+      return result("rights-not-in-force", null, planNormalization(source, { profiles: [], rightsDecisions: [], identityLinks: [], replay: replayObservations([], new Set()) }, clock));
+    }
+    const heads = await verifyBindingHistory(history, request.cutoff);
+    const currentPlan = await readSourceNormalization(request, clock);
+    const head = heads[0];
+    if (!head) return result("source-binding-missing", null, currentPlan);
+    if (sourceNormalizationBasis(head.plan) !== sourceNormalizationBasis(currentPlan)) return result("source-binding-stale", null, currentPlan);
+    if (!head.revision) return result(head.plan.reason ?? "source-binding-withheld", null, currentPlan);
+    return result(null, head, currentPlan);
+  }, true);
+
+  // Research read adapter: enumerate complete recorded raw lineages inside the
+  // explicit profiles, verify them, replan, and only then filter canonically.
+  // No SQL entity predicate may discard a rerouted successor or a new current
+  // destination. Bounds refuse the entire read rather than returning a prefix.
+  const readSourceStatsFacts = async (input: SourceFactRequest) => {
+    const request = sourceFactRequest(input); const clock = await databaseClock();
+    if (instant(request.cutoff) > instant(clock)) refuse("source-binding-future-cutoff-refused");
+    const profiles = await profilesFor(request.profileIds);
+    if (profiles.length !== request.profileIds.length) return sourceFactSnapshot(request, [], [], "source-profile-missing");
+    if (profiles.some((profile) => profile.provider !== "nflverse" || !["player", "team"].includes(profile.feed) ||
+        profile.parserVersion !== SOURCE_PROFILE_VERSION || profile.allowlistVersion !== "predictive-raw-allowlist-v1"))
+      return sourceFactSnapshot(request, [], [], "source-profile-refused");
+    const rights = (await client.query(RIGHTS_SQL, [request.profileIds])).rows.map((row) => row.decision as RightsDecision);
+    if (blockedProfiles(rights, request.profileIds, clock, "internal-research").size)
+      return sourceFactSnapshot(request, [], [], "rights-not-in-force");
+    const records = (await client.query(`SELECT DISTINCT b.profile_id AS "profileId",b.raw_key_sha256 AS "rawKey",
+      (b.plan->'binding'->'sourceRequest') - 'cutoff' AS request FROM public.predictive_source_bindings b
+      WHERE b.profile_id=ANY($1::text[]) AND b.recorded_at <= $2::timestamptz
+      ORDER BY "profileId","rawKey",request LIMIT ${SOURCE_FACT_BOUNDS.lineages + 1}`, [request.profileIds, request.cutoff])).rows;
+    if (records.length > SOURCE_FACT_BOUNDS.lineages) refuse("source-fact-bounds-refused");
+    const requests: SourceStatsRequest[] = []; const history: SourceBindingEvent[] = [];
+    for (const row of records) {
+      exact(row.request, ["profileId", "rawGameId", "rawTeam", "rawPlayerId"]);
+      const raw = { ...row.request, cutoff: request.cutoff } as SourceStatsRequest;
+      if (row.profileId !== raw.profileId || row.rawKey !== sourceStatsRawKey(raw)) refuse("stored-source-binding-mismatch");
+      requests.push(raw); history.push(...await bindingHistory(raw, request.cutoff));
+      if (history.length > SOURCE_FACT_BOUNDS.events) refuse("source-fact-bounds-refused");
+    }
+    // Check every historical context profile before opening any provider bytes.
+    // An inaccessible chain cannot be proven irrelevant by reading its payload.
+    if (!await currentBindingAccess(history, clock)) return sourceFactSnapshot(request, [], [], "rights-not-in-force");
+    await verifyBindingHistory(history, request.cutoff);
+    const plans: SourceNormalizationPlan[] = [];
+    for (const raw of requests) plans.push(await readSourceNormalization(raw, clock));
+    return sourceFactHeadsAt(history, plans, request);
+  };
+  const checkedSourceFacts = async (input: SourceFactRequest) => {
+    const snapshot = await readSourceStatsFacts(input);
+    // SQL independently expands raw chains before canonical filtering and
+    // recomputes current plans/rights. The reader independently proves bytes;
+    // neither a hashed witness nor SQL metadata can substitute for that proof.
+    const sqlWitness = (await client.query("SELECT public.predictive_source_witness($1) AS witness", [snapshot.request])).rows[0].witness;
+    if (canonical(sqlWitness) !== canonical(sourceFactWitness(snapshot))) refuse("stored-source-witness-mismatch");
+    return snapshot;
+  };
+  const replaySourceStatsFacts = (input: SourceFactRequest) => transaction(() => checkedSourceFacts(input), true);
+
+  const sourceDecisionProfiles = async (request: SourceDecisionRequest, nativeProfiles: string[]) => (await client.query(`
+    SELECT DISTINCT id COLLATE "C" AS id FROM (
+      SELECT unnest($1::text[]) AS id UNION SELECT unnest($3::text[]) AS id
+      UNION SELECT x->>'profileId' FROM public.predictive_source_bindings b CROSS JOIN LATERAL jsonb_array_elements(b.plan->'binding'->'dependencies') x
+        WHERE b.profile_id=ANY($1::text[]) AND b.recorded_at <= $2::timestamptz) profiles ORDER BY 1`,
+  [request.profileIds, request.cutoff, nativeProfiles])).rows.map((row) => row.id as string);
+  const readSourceDecisionPlan = async (input: SourceDecisionRequest) => {
+    const request = sourceDecisionRequest(input);
+    let rawNative: Raw[] = [];
+    if (request.kind === "participation") {
+      const prefix = "participation-evidence:" + request.entityKey.slice("player-game-stats:".length) + ":%";
+      rawNative = (await client.query(decisionScopeReadSql, [request.cutoff, [], [prefix]])).rows.map((row) => row.envelope as Raw);
+      const profiles = [...new Set(rawNative.map((row) => row.artifact.profileId))];
+      const clock = await databaseClock();
+      const rights = (await client.query(RIGHTS_SQL, [profiles])).rows.map((row) => row.decision as RightsDecision);
+      if (blockedProfiles(rights, profiles, clock, "internal-research").size) refuse("source-decision-access-refused");
+    }
+    // SQL checks access and native-head bounds using metadata before any files.
+    // The independent file-backed plan still must agree with it afterwards.
+    const sqlPlan = (await client.query("SELECT public.predictive_source_decision_plan($1) AS plan", [request])).rows[0].plan;
+    // Gate native and source/context rights before opening either kind of file.
+    const snapshot = await checkedSourceFacts({ profileIds: request.profileIds, entityKeys: [request.entityKey], cutoff: request.cutoff });
+    if (snapshot.reason === "rights-not-in-force") refuse("source-decision-access-refused");
+    if (snapshot.reason) refuse(snapshot.reason);
+    const visible = [...validateObservations(await hydrate(rawNative)).values()];
+    const superseded = new Set(visible.map((row) => row.revision.predecessorId));
+    const native = visible.filter((row) => !superseded.has(row.revision.id));
+    const profiles = await profilesFor(await sourceDecisionProfiles(request, native.map((row) => row.artifact.profileId)));
+    const mode = profiles.some((profile) => profile.purpose === "synthetic-test") ? "synthetic-proof" : "production-research";
+    const plan = sourceDecisionPlan(snapshot, request, native, mode);
+    if (canonical(sqlPlan) !== canonical(plan)) refuse("stored-source-decision-plan-mismatch");
+    return plan;
+  };
+  const planSourceDecision = (request: SourceDecisionRequest) => transaction(() => readSourceDecisionPlan(request), true);
+  const sourceDecisionHistory = async (request: SourceDecisionRequest): Promise<SourceDecisionRecord[]> => {
+    const records = (await client.query(`SELECT id,predecessor_id AS "predecessorId",${timestamp("recorded_at")} AS "recordedAt",plan
+      FROM public.predictive_source_decisions WHERE kind=$1 AND entity_key=$2 AND scope_digest=$3 AND recorded_at <= $4::timestamptz
+      ORDER BY recorded_at,id COLLATE "C" LIMIT 257`, [request.kind, request.entityKey, digest(canonical(request.profileIds)), request.cutoff])).rows as SourceDecisionRecord[];
+    if (records.length > 256) refuse("source-decision-history-bounds-refused");
+    const remaining = new Map(records.map((row) => [row.id, row])); const ordered: SourceDecisionRecord[] = [];
+    let predecessor: string | null = null;
+    while (remaining.size) {
+      const next = [...remaining.values()].filter((row) => row.predecessorId === predecessor);
+      if (next.length !== 1) refuse("stored-source-decision-history-mismatch");
+      const record = next[0]; remaining.delete(record.id); ordered.push(record); predecessor = record.id;
+      if (instant(record.plan.witness.cutoff) > instant(record.recordedAt) || (ordered.length > 1 &&
+          (instant(ordered.at(-2)!.recordedAt) > instant(record.recordedAt) || instant(ordered.at(-2)!.plan.witness.cutoff) > instant(record.plan.witness.cutoff))))
+        refuse("stored-source-decision-history-mismatch");
+    }
+    return ordered;
+  };
+  const verifySourceDecision = async (record: SourceDecisionRecord) => {
+    const request = sourceDecisionRequest({ kind: record.plan.kind, entityKey: record.plan.entityKey,
+      profileIds: record.plan.witness.profileIds, cutoff: record.plan.witness.cutoff });
+    if (canonical(await readSourceDecisionPlan(request)) !== canonical(record.plan)) refuse("stored-source-decision-plan-mismatch");
+    const sorted = (values: string[]) => [...new Set(values)].sort(compareText);
+    const expectedBindings = (await client.query(`SELECT id FROM public.predictive_source_bindings
+      WHERE profile_id=ANY($1::text[]) AND recorded_at <= $2::timestamptz ORDER BY id COLLATE "C"`, [request.profileIds, request.cutoff])).rows.map((row) => row.id);
+    const links = (await client.query(`SELECT
+      ARRAY(SELECT binding_id FROM public.predictive_source_decision_bindings WHERE decision_id=$1 ORDER BY binding_id COLLATE "C") AS bindings,
+      ARRAY(SELECT observation_id FROM public.predictive_source_decision_inputs WHERE decision_id=$1 ORDER BY observation_id COLLATE "C") AS inputs,
+      ARRAY(SELECT rights_decision_id FROM public.predictive_source_decision_rights WHERE decision_id=$1 ORDER BY rights_decision_id COLLATE "C") AS rights`, [record.id])).rows[0];
+    const profiles = await sourceDecisionProfiles(request, record.plan.nativeInputs.map((row) => row.profileId));
+    const rights = (await client.query(RIGHTS_SQL, [profiles])).rows.map((row) => row.decision as RightsDecision);
+    const expectedRights = profiles.map((profile) => rightsInForce(rights, profile, instant(record.recordedAt), instant(record.recordedAt))?.id ?? refuse("stored-source-decision-rights-mismatch"));
+    if (canonical(links.bindings) !== canonical(expectedBindings) || canonical(links.inputs) !== canonical(sorted(record.plan.nativeInputs.map((row) => row.observationId))) ||
+        canonical(links.rights) !== canonical(sorted(expectedRights))) refuse("stored-source-decision-associations-mismatch");
+  };
+  const recordSourceDecision = (id: string, input: Omit<SourceDecisionRequest, "cutoff">, expectedHeadId: string | null) => transaction(async () => {
+    exact(input, ["kind", "profileIds", "entityKey"]);
+    const request = sourceDecisionRequest({ ...input, cutoff: await databaseClock() });
+    const old = (await client.query(`SELECT id,predecessor_id AS "predecessorId",${timestamp("recorded_at")} AS "recordedAt",plan
+      FROM public.predictive_source_decisions WHERE id=$1`, [id])).rows[0] as SourceDecisionRecord | undefined;
+    if (old && (old.plan.kind !== request.kind || old.plan.entityKey !== request.entityKey ||
+        canonical(old.plan.witness.profileIds) !== canonical(request.profileIds) || old.predecessorId !== expectedHeadId)) refuse("source-decision-id-conflict");
+    const plan = old?.plan ?? await readSourceDecisionPlan(request);
+    if (old) await verifySourceDecision(old);
+    const { reused, ...record } = (await client.query("SELECT public.predictive_record_source_decision($1,$2,$3) AS result", [id, expectedHeadId, plan])).rows[0].result as SourceDecisionRecord & { reused: boolean };
+    if (record.id !== id || record.predecessorId !== expectedHeadId || canonical(record.plan) !== canonical(plan)) refuse("stored-source-decision-record-mismatch");
+    return { record, reused, featuresPublished: false as const, labelsFinalized: false as const };
+  });
+  const readSourceDecision = async (input: SourceDecisionRequest) => {
+    const request = sourceDecisionRequest(input);
+    const unavailable = (reason: string, currentPlan: SourceDecisionPlan | null = null) => ({
+      status: "unavailable-source-decision" as const, reason, record: null, currentPlan, featuresPublished: false as const, labelsFinalized: false as const });
+    try {
+      const currentPlan = await readSourceDecisionPlan(request);
+      const history = await sourceDecisionHistory(request);
+      for (const record of history) await verifySourceDecision(record);
+      const head = history.at(-1);
+      if (!head) return unavailable("source-decision-missing", currentPlan);
+      if (sourceDecisionBasis(head.plan) !== sourceDecisionBasis(currentPlan)) return unavailable("source-decision-stale", currentPlan);
+      if (currentPlan.state === "withheld") return unavailable("source-evidence-withheld", currentPlan);
+      return { status: "current-source-decision" as const, reason: null, record: head, currentPlan, featuresPublished: false as const, labelsFinalized: false as const };
+    } catch (error) {
+      if (error instanceof Error && error.message === "source-decision-access-refused") return unavailable("rights-not-in-force");
+      throw error;
+    }
+  };
+  const replaySourceDecision = (input: SourceDecisionRequest) => transaction(() => readSourceDecision(input), true);
+
+  // Discover native context from routing metadata. Use-specific rights for all
+  // source history/context/native evidence are checked BEFORE file hydration.
+  const sourceFeatureRaw = async (request: Request) => {
+    const load = async (sql: string, values: unknown[]) => (await client.query(sql,values)).rows.map((row) => row.envelope as Raw);
+    const initial = await load(ENTITY_READ_SQL,[request.cutoff,[request.gameId],request.playerId]);
+    const routing = replayObservations(initial.map((row) => observation(row.revision,row.capture,{ ...row.artifact,bytes: "" })),new Set());
+    const target = routing.select("schedule","schedule:" + request.gameId).observation?.revision.data;
+    const member = routing.select("membership","membership:" + request.gameId + ":" + request.playerId).observation?.revision.data;
+    let rows = initial;
+    if (target && member) {
+      const from = target.season - 2;
+      const members = await load(MEMBERSHIP_READ_SQL,[request.cutoff,request.playerId,target.kickoff,`${from}-01-01T00:00:00.000Z`]);
+      const teams = new Set([member.teamId]);
+      members.forEach((row) => { if (row.revision.kind === "membership") teams.add(row.revision.data.teamId); });
+      if (request.candidate === "player-opponent-v1:player_pass_yds") teams.add(target.homeTeamId === member.teamId ? target.awayTeamId : target.homeTeamId);
+      const schedules = await load(SCHEDULE_READ_SQL,[request.cutoff,[...teams],from,target.season]);
+      const coverage = await load(coverageReadSql,[request.cutoff,[...teams],String(from),String(target.season)]);
+      const games = new Set([request.gameId]); const aliases = new Set<string>();
+      for (const row of [...schedules,...members,...coverage]) {
+        if ("gameId" in row.revision.data && row.revision.data.gameId) games.add(row.revision.data.gameId);
+        if (row.revision.kind === "schedule") aliases.add(row.revision.data.rawGameId);
+        if (row.revision.kind === "schedule-coverage") row.revision.data.gameIds.forEach((id) => games.add(id));
+      }
+      rows = [...initial,...members,...schedules,...coverage,...await load(aliasReadSql,[request.cutoff,[...aliases]]),
+        ...await load(ENTITY_READ_SQL,[request.cutoff,[...games],request.playerId])];
+    }
+    return [...new Map(rows.filter((row) => !["player-game-stats","team-game-stats"].includes(row.revision.kind))
+      .map((row) => [row.revision.id + "|" + row.capture.id,row])).values()];
+  };
+  const sourceAccess = async (profileIds: string[], cutoff: string, observations: string[], entityKeys: string[], use: "model-input" | "outcome-label") => {
+    return (await client.query("SELECT public.predictive_source_consumer_access($1) AS profiles",[{
+      profileIds,cutoff,observations,entityKeys,use,
+    }])).rows[0].profiles as string[];
+  };
+  const sourceConsumerFacts = async (profileIds: string[], entityKeys: string[], cutoff: string) => {
+    const snapshot = await checkedSourceFacts({ profileIds,entityKeys,cutoff });
+    const facts = new Map<string,SourceConsumerFact>();
+    for (const entityKey of entityKeys) {
+      const rec = await readSourceDecision({ kind: "reconciliation",profileIds,entityKey,cutoff });
+      const part = entityKey.startsWith("player-game-stats:") ? await readSourceDecision({ kind: "participation",profileIds,entityKey,cutoff }) : null;
+      facts.set(entityKey,{ snapshot,reconciliation: rec.record,participation: part?.record ?? null,
+        reconciliationReason: rec.reason,participationReason: part?.reason ?? null });
+    }
+    return facts;
+  };
+  const readSourcePassingYards = async (request: Request, inputProfiles: string[]) => {
+    validatePassingYardsRequest(request);
+    const profiles = sourceFactRequest({ profileIds: inputProfiles,entityKeys: [],cutoff: request.cutoff }).profileIds;
+    const raw = await sourceFeatureRaw(request);
+    await sourceAccess(profiles,request.cutoff,raw.map((row) => row.revision.id),[],"model-input");
+    const rows = await hydrate(raw); const visible = validateObservations(rows);
+    const decisionKeys = [...new Set(rows.flatMap((row) => ["reconciliation:" + row.entityKey,
+      ...("gameId" in row.revision.data ? ["completion:" + row.revision.data.gameId] : [])]))];
+    const decisions = (await client.query(DECISION_SQL,[request.cutoff,decisionKeys])).rows.map((row) => row.decision as Decision);
+    const profileMap = new Map((await profilesFor([...new Set(rows.map((row) => row.artifact.profileId))])).map((row) => [row.id,row]));
+    validateDecisions(decisions,visible,profileMap); validateCompletionDecisions(decisions,visible,profileMap);
+    const retention = (await client.query(`SELECT scope_descriptor->'profileIds' AS profiles FROM public.predictive_retention_events
+      WHERE scope_descriptor->>'kind'='source' AND (scope_descriptor->>'capturedFrom' IS NULL
+        OR (scope_descriptor->>'capturedFrom')::timestamptz <= $1::timestamptz)`, [request.cutoff])).rows.flatMap((row) => row.profiles as string[]);
+    const replay = replayObservations(rows,new Set(),decisions,retention);
+    const requested = new Set<string>();
+    // Discover exactly the slots the existing coverage/window policy queries,
+    // instead of loading three seasons of league-wide source dependencies.
+    buildPassingYardsFromReplay(replay,request,{
+      select: (_kind,key) => { requested.add(key); return { state: "missing",observation: null,dependencies: [] }; },
+      participation: (game,player) => { requested.add("player-game-stats:" + game + ":" + player); return { state: "unresolved",inputs: [] }; },
+    });
+    if (request.candidate === "player-opponent-v1:player_pass_yds") for (const key of [...requested]) if (key.startsWith("player-game-stats:")) {
+      const game = key.split(":")[1];
+      const member = replay.select("membership","membership:" + game + ":" + request.playerId).observation?.revision.data;
+      if (member) requested.add("team-game-stats:" + game + ":" + member.teamId);
+    }
+    const keys = [...requested].sort(compareText);
+    const accessed = await sourceAccess(profiles,request.cutoff,raw.map((row) => row.revision.id),keys,"model-input");
+    const synthetic = (await profilesFor(accessed)).some((row) => row.purpose === "synthetic-test");
+    return buildSourcePassingYards(replay,request,profiles,await sourceConsumerFacts(profiles,keys,request.cutoff),synthetic);
+  };
+  const replaySourcePassingYards = (request: Request,profileIds: string[]) => transaction(() => readSourcePassingYards(request,profileIds),true);
+  const saveSourceConsumer = async (id: string,body: SourceConsumerBody,expectedHeadId: string | null): Promise<SourceConsumerRecord> => {
+    const bytes = canonical(body); const sha256 = digest(bytes);
+    return withBlobPublication([sha256],() => transaction(async () => {
+      await artifacts.write(bytes,sha256);
+      await client.query(`INSERT INTO public.predictive_blobs(sha256,byte_size,media_type,storage_ref) VALUES($1,$2,'application/json',$3)
+        ON CONFLICT(sha256) DO NOTHING`,[sha256,Buffer.byteLength(bytes),sha256 + ".json"]);
+      const record = (await client.query("SELECT public.predictive_record_source_consumer($1,$2,$3) AS result",[id,expectedHeadId,body])).rows[0].result as SourceConsumerRecord;
+      if (record.id !== id || record.bodySha256 !== sha256 || canonical(record.body) !== canonical(body) ||
+          record.executionDigest !== sourceConsumerExecutionDigest(sha256,record.rightsDecisions,record.recordedAt)) refuse("source-consumer-record-mismatch");
+      return record;
+    }));
+  };
+  const recordSourcePassingYards = async (id: string,request: Request,profileIds: string[]) =>
+    saveSourceConsumer(id,await replaySourcePassingYards(request,profileIds),null);
+  const readSourceFinalLabel = async (request: { playerId: string; gameId: string; profileIds: string[] },cutoff: string) => {
+    exact(request,["playerId","gameId","profileIds"]);
+    const entityKey = "player-game-stats:" + request.gameId + ":" + request.playerId;
+    const profiles = sourceFactRequest({ profileIds: request.profileIds,entityKeys: [entityKey],cutoff }).profileIds;
+    const raw = (await client.query(ENTITY_READ_SQL,[cutoff,[request.gameId],request.playerId])).rows.map((row) => row.envelope as Raw)
+      // Preserve absence and rerouted successor heads; filtering by kind
+      // alone would resurrect the predecessor's completion marker.
+      .filter((row) => row.revision.kind === "event-state-marker" ||
+        (row.revision.kind === "source-row-absent" && row.revision.data.priorEntityKey.startsWith("event-state-marker:")));
+    await sourceAccess(profiles,cutoff,raw.map((row) => row.revision.id),[entityKey],"outcome-label");
+    const rows = await hydrate(raw); const decisions = (await client.query(DECISION_SQL,[cutoff,["completion:" + request.gameId]])).rows.map((row) => row.decision as Decision);
+    const profileMap = new Map((await profilesFor([...new Set(rows.map((row) => row.artifact.profileId))])).map((row) => [row.id,row]));
+    validateCompletionDecisions(decisions,validateObservations(rows),profileMap);
+    const replay = replayObservations(rows,new Set(),decisions); const completion = replay.completion(request.gameId);
+    const cited = replay.citedCompletions()[0];
+    if (completion.state !== "completed" || !cited || !completion.completionObservedAt) refuse("source-label-completion-refused");
+    const fact = (await sourceConsumerFacts(profiles,[entityKey],cutoff)).get(entityKey)!;
+    const result = buildSourceFinalLabel(fact,{ id: cited.id,completionObservedAt: completion.completionObservedAt },profiles);
+    result.manifest.observations = rows.map((row) => row.revision.id).sort(compareText);
+    result.inputDigest = sourceConsumerInputDigest(result);
+    return result;
+  };
+  const recordSourceFinalLabel = async (id: string,request: { playerId: string; gameId: string; profileIds: string[] },expectedHeadId: string | null) => {
+    const body = await transaction(async () => readSourceFinalLabel(request,await databaseClock()),true);
+    return saveSourceConsumer(id,body,expectedHeadId);
+  };
+  const replaySourceConsumer = (id: string) => transaction(async () => {
+    // The SQL reader checks current use rights and sealed association closure
+    // before the application opens either the run blob or source evidence.
+    const record = (await client.query("SELECT public.predictive_source_consumer_check($1) AS result",[id])).rows[0].result as SourceConsumerRecord | null;
+    if (!record) return null;
+    const bytes = canonical(record.body);
+    if (await artifacts.read(record.bodySha256 + ".json",record.bodySha256,Buffer.byteLength(bytes)) !== bytes ||
+        record.executionDigest !== sourceConsumerExecutionDigest(record.bodySha256,record.rightsDecisions,record.recordedAt)) refuse("stored-source-consumer-mismatch");
+    const body = record.body.kind === "feature"
+      ? await readSourcePassingYards({ ...record.body.bundle.request,computedAt: record.body.bundle.computedAt },record.body.manifest.profileIds)
+      : await readSourceFinalLabel({ playerId: record.body.playerId,gameId: record.body.gameId,profileIds: record.body.manifest.profileIds },record.body.manifest.cutoff);
+    if (canonical(body) !== canonical(record.body)) refuse("stored-source-consumer-mismatch");
+    return record;
+  },true);
 
   const publish = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
     if (typeof id !== "string" || !id.trim() || id.length > 256) refuse("invalid-run-id"); instant(now);
@@ -556,5 +1119,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
-  return { publish, replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
+  return { publish, publishSourceStats, replaySourceStats, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
+    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer,
+    replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

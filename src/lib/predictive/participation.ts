@@ -1,4 +1,4 @@
-import type { Decision, Observation, ParticipationRecord, Profile } from "./types.ts";
+import type { Decision, Observation, ParticipationRecord, Profile, Revision } from "./types.ts";
 import { canonical, compareText, instant, refuse } from "./validation.ts";
 
 // participation-v1, shared by replay and decision validation, and mirrored by
@@ -9,10 +9,11 @@ import { canonical, compareText, instant, refuse } from "./validation.ts";
 // here establishes a complete eligible population.
 export type ParticipationState = ParticipationRecord["outcome"]["state"];
 
-export const participationFromHeads = (heads: Observation[]): { state: ParticipationState } => {
-  const evidence = heads.filter((row) => row.entityKey.startsWith("participation-evidence:"));
-  const stats = heads.filter((row) => row.entityKey.startsWith("player-game-stats:"));
-  const byKind = new Map<string, Observation[]>();
+export const hasPositivePlayerUsage = (revision: Revision) => revision.kind === "player-game-stats" &&
+  [revision.data.attempts, revision.data.carries, revision.data.targets].some((value) => value !== null && value > 0);
+
+export const participationOutcome = (evidence: Pick<Observation, "entityKey" | "revision">[], positiveUsage: boolean): { state: ParticipationState } => {
+  const byKind = new Map<string, typeof evidence>();
   for (const row of evidence) {
     const kind = row.entityKey.split(":")[3];
     byKind.set(kind, [...(byKind.get(kind) ?? []), row]);
@@ -21,12 +22,15 @@ export const participationFromHeads = (heads: Observation[]): { state: Participa
   const claims = new Set(evidence.flatMap((row) => row.revision.kind === "participation-evidence" ? [row.revision.data.claim] : []));
   // Usage counts only when every stats head is present and shows an attempt,
   // carry or target; providers that disagree about usage supply no usage evidence.
-  const positive = (row: Observation) => row.revision.kind === "player-game-stats" &&
-    [row.revision.data.attempts, row.revision.data.carries, row.revision.data.targets].some((value) => value !== null && value > 0);
-  if (stats.length && stats.every(positive)) claims.add("offensive-participant");
+  if (positiveUsage) claims.add("offensive-participant");
   if (claims.size > 1) return { state: "conflicting" };
   const [claim] = claims;
   return { state: claim ?? "unresolved" };
+};
+export const participationFromHeads = (heads: Observation[]): { state: ParticipationState } => {
+  const stats = heads.filter((row) => row.entityKey.startsWith("player-game-stats:"));
+  return participationOutcome(heads.filter((row) => row.entityKey.startsWith("participation-evidence:")),
+    stats.length > 0 && stats.every((row) => hasPositivePlayerUsage(row.revision)));
 };
 
 // The evidence scope for one player-game: every participation-evidence fact
