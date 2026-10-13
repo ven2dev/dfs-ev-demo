@@ -570,3 +570,43 @@ exist. The full gate enforces all eight new named cases, so deleting/skipping
 one cannot silently shrink validation. These fixtures establish integration
 behavior; they do not qualify real completion/population/providers or the
 remaining markets, scheduler, hosted rollout or capacity budgets.
+
+
+## PR B independent-review regressions (0011, 2026-10-13)
+
+Four mandatory PostgreSQL cases target the two independent-review blockers.
+They exercise actual store operations and restricted logins, not mocked SQL.
+
+The retention test records a legitimately unavailable enriched QB feature with
+missing opponent coverage. It keeps both the computed answer and sealed record,
+then publishes and deletes a different profile whose capture interval starts
+strictly after that feature's cutoff. The deletion must remove a source row;
+therefore this is not a no-op audit. Both earlier answers must remain exactly
+unchanged. Before the query fix it failed with a new `retained-evidence-removed`
+reason and digest. Existing broad-deletion tests continue to exercise actual
+loss of cited evidence; this case does not waive retention of older bytes.
+
+The ordinary-clock test uses artificial JSON evidence under a non-synthetic
+profile, with fixture source times deliberately older than receipt. It publishes
+through a genuine non-superuser login with `predictive_ingest` and no harness
+membership, then inserts a second capture directly through the same login and
+forces deferred constraints. Both receipts must be at or after a database clock
+sample rather than the supplied old time. The original old cutoff cannot see the
+observation; the exact receipt cutoff can. An idempotent retry preserves the
+receipt rather than stamping a new one. This proves the new-write boundary; it
+does not qualify the artificial provider or assert existing history was repaired.
+
+The harness test preserves fixed times for non-CSV synthetic fixtures while an
+ordinary ingest login cannot insert another synthetic capture. It checks refusal
+and the absence of a committed capture. Existing CSV tests retain their
+DB-clock assertions, including synthetic CSV profiles. A v10 upgrade test
+compares complete capture rows and the old migration ledger before/after 0011,
+then verifies migration reruns are no-ops. Historical rows are never rewritten.
+
+The full DB contract requires all four case names. Schema-latest assertions
+advance to 11; fixed historical prefixes remain fixed. One existing synthetic
+outsider test now expects refusal at INSERT because the new BEFORE trigger
+rejects earlier than the deferred guard; it still verifies the same harness
+boundary. SQL/catalog prefixes 0001–0010 remain unchanged. These tests establish
+receipt/cutoff behavior, not real-source readiness, population coverage, hosted
+activation or implementation approval.

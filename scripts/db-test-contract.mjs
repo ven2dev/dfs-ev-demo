@@ -25,6 +25,10 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV QB consumers record explicit source manifests and final labels without ordinary stats observations",
   "CSV QB consumers preserve earlier cutoffs while recaptures withhold current decisions and labels",
+  "CSV QB consumers preserve earlier unavailable replay after a later unrelated source deletion",
+  "ordinary evidence stamps database ingestion time for application and direct SQL writers without backdating cutoff visibility",
+  "ordinary synthetic capture times remain harness-only and cannot bypass production ingestion clocks",
+  "ordinary ingestion clock migration upgrades v10 without rewriting captures and reruns as a no-op",
   "CSV QB final labels refuse pre-window captures and unresolved participation without invented zeros",
   "CSV QB SQL refuses rehashed source manifests forged values identity and completion",
   "CSV QB consumers enforce use-specific rights before files for source context and native evidence",

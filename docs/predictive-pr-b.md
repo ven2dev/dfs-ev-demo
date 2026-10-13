@@ -18,8 +18,12 @@ publication and unavailable-state persistence are implemented in internal resear
 staging. Persisted binding-aware reconciliation and participation research
 decisions follow in forward 0009. Forward 0010 now connects those decisions to
 fixture-backed QB passing-yards feature manifests and final labels. The latest
-implementation checkpoint is `4f1b976`. This code has passed local gates, but its
-latest consumer integration still requires independent review.
+consumer checkpoint is `4f1b976`; draft PR #105 opened at `2f897e9`. The owner
+supplied a conditional independent assessment of that head. Review fixes now
+filter later source deletions from old cutoffs and add forward 0011 for ordinary
+database-clock ingestion. Those affected paths and 0011 require renewed review;
+the [written disposition](predictive-pr-b-review.md) records the findings and
+required architecture follow-ups. No implementation or merge approval is recorded.
 
 ## Revised PR B acceptance boundary (2026-10-13)
 
@@ -33,14 +37,14 @@ merge does not complete that issue or qualify real predictive inputs.
 
 PR B's completion checklist is:
 
-- [ ] Independent review covers migrations **0005–0010**, their application
+- [ ] Independent review covers migrations **0005–0011**, their application
   recorders/readers/consumers, privilege boundaries and retention/recovery paths.
 - [ ] Review blockers are resolved and the final integrated merge candidate
   passes required checks and remote CI. Record the exact reviewed SHA, reviewer,
   local results and CI links in the [review record](predictive-pr-b-review.md)
   or its linked PR review. Changes invalidate approval of affected code and
-  require renewed review. Existing local results are evidence for `4f1b976`, not
-  evidence that independent review or final-candidate remote CI has completed.
+  require renewed review. The conditional assessment of `2f897e9` and its green
+  CI do not approve the new review-fix candidate.
 - [x] Fixture-backed usable QB passing-yards features and final labels are
   demonstrated, including replay, stale/missing evidence, provenance, rights and
   retention refusal cases. These do not qualify a provider or model population.
@@ -49,15 +53,18 @@ PR B's completion checklist is:
   usable canonical heads, feature bundles or labels**. The **schema-10** consumer
   checkpoint is fixture-backed; it did not rerun that real-data proof or produce
   usable real outputs.
-- [ ] The independent reviewer writes an architecture disposition covering both
+- [x] The owner supplied an independent architecture disposition covering both
   ledgers' rights, cutoff selection, finalization and retention, plus policy
   duplication when adding a market. The current architecture must be judged
   correct and maintainable before consolidation can be deferred to a ticket;
   any required redesign is resolved before merge rather than left implicit.
+  Verdict at `2f897e9`: no redesign needed for the QB-only foundation, merge with
+  conditions. Affected-code/0011 review and attributable final approval remain
+  unchecked gates; this item records the assessment, not merge approval.
 - [x] The [follow-up acceptance criteria](predictive-followups.md) identify the
-  usable real slice and remaining parent work. They are local issue drafts;
-  GitHub issue links must replace the draft-only coordination before parent
-  closure. No follow-up ticket is evidence that this foundation passed review.
+  usable real slice and remaining parent work. They link native #52 children
+  #106–#112 and architecture/review follow-ups #114–#117. Create their feature
+  branches after the foundation merges. Tickets do not approve this foundation.
 
 The next real slice must select one QB, target game, history window and opponent
 window, then inventory every required dependency and its permitted source before
@@ -85,21 +92,21 @@ and labels, `replaySourceConsumer`). It must not read ordinary feature/label
 tables as though they contain CSV consumers or use them as an automatic fallback.
 #54 integration and model validation are not implemented by this checkpoint.
 
-Independent review must provide a written assessment of rights, cutoff
-selection, finalization and retention across both ledgers, duplicated policy,
-replay consistency and the cost of adding another market. The separate ledger is the
-current compatibility strategy; permanent coexistence has not been approved.
-Record the reviewed SHA, correctness/maintainability conclusion and evidence in
-the [review record](predictive-pr-b-review.md) or its linked PR review. A later
-unified facade/consolidation ticket is acceptable only after the current design
-has passed that assessment; a ticket cannot defer a present correctness or
-maintainability blocker.
+The owner-supplied assessment of `2f897e9` found no redesign necessary for this
+QB-only foundation, with conditions recorded in the [review record](predictive-pr-b-review.md).
+[#114](https://github.com/ven2dev/dfs-ev-demo/issues/114) adds market/stat identity
+before #109; [#115](https://github.com/ven2dev/dfs-ev-demo/issues/115) decomposes
+retention; [#116](https://github.com/ven2dev/dfs-ev-demo/issues/116) closes the
+ordinary-label rights gap before hosted activation. Profile-wide associations
+remain conservative and need measured optimization in #111/#117. The separate
+ledger is the current compatibility strategy; permanent coexistence is not
+approved. The review fixes and 0011 need renewed independent review.
 Any consolidation must preserve recorded provenance and historical replay with
 forward changes; it must not rewrite frozen migrations or existing records.
 
 Sections below retain earlier implementation checkpoints. Statements that the
 real vertical slice or consumer activation is "next" describe those checkpoints;
-this acceptance boundary and the final 0010 section govern the current finish line.
+this acceptance boundary and the review record govern the current finish line.
 
 The canonical stats read adapter now follows complete recorded raw lineages
 before filtering by canonical player/game. It reuses the verified binding

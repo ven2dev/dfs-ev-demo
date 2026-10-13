@@ -96,6 +96,90 @@ it("CSV source persistence stamps import time, is idempotent and preserves A/B c
   });
 });
 
+it("ordinary evidence stamps database ingestion time for application and direct SQL writers without backdating cutoff visibility", async () => {
+  await withProof(async ({ client,target,artifacts }) => {
+    const id = "ordinary-clock-source"; const old = "2026-10-07T12:00:00.000Z";
+    // Artificial payload under a non-synthetic profile exercises production
+    // receipt semantics; it is not a real provider or rights qualification.
+    const dataset: Dataset = { formatVersion: 2,profiles: [{ ...profile(id),purpose: "source" }],
+      rightsDecisions: [rights(id,{ evidenceKind: "terms-review",evidenceReference: "disposable clock test only" })],
+      artifacts: [],captures: [],decisions: [],labels: [],identityLinks: [] };
+    addCapture(dataset,"ordinary-clock",[revision("ordinary-clock-game","game-bridge",{
+      provider: "nflverse",rawGameId: "clock-game",gameId: gameId(88),
+    })],old,id);
+    await withLogin(client,target,["predictive_ingest"],async (login,loginTarget) => {
+      expect((await login.query("SELECT predictive_harness_session() AS harness")).rows[0].harness).toBe(false);
+      const writer = await createLocalPredictiveStore(login,loginTarget,artifacts);
+      const before = await witnessClock(client);
+      expect(await writer.publish("ordinary-clock-run",dataset,before)).toMatchObject({ status: "published",reused: false });
+      const actual = await captureTime(client,"capture-ordinary-clock");
+      expect(Date.parse(actual)).toBeGreaterThanOrEqual(Date.parse(before));
+      expect(actual).not.toBe(old);
+      expect((await client.query("SELECT predictive_observation_usable('ordinary-clock-game',$1) AS usable",[old])).rows[0].usable).toBe(false);
+      expect((await client.query("SELECT predictive_observation_usable('ordinary-clock-game',$1) AS usable",[actual])).rows[0].usable).toBe(true);
+      expect(await writer.publish("ordinary-clock-run",dataset,before)).toMatchObject({ reused: true });
+      expect(await captureTime(client,"capture-ordinary-clock")).toBe(actual);
+      await login.query("BEGIN");
+      try {
+        await login.query(`INSERT INTO predictive_ingestion_runs(id,request_sha256,code_version,started_at,finished_at,status,
+          failure_code,budget,requests,consumed_bytes,artifact_count,capture_count,row_count)
+          SELECT 'direct-clock-run',request_sha256,code_version,started_at,finished_at,status,
+          failure_code,budget,requests,consumed_bytes,artifact_count,capture_count,row_count
+          FROM predictive_ingestion_runs WHERE id='ordinary-clock-run'`);
+        await login.query(`INSERT INTO predictive_run_rights SELECT 'direct-clock-run',rights_decision_id
+          FROM predictive_run_rights WHERE run_id='ordinary-clock-run'`);
+        const directBefore = await witnessClock(client);
+        await login.query(`INSERT INTO predictive_captures(id,run_id,artifact_id,captured_at,available_at,ingested_at,published_at,
+          publication_evidence,state,body_complete,header_verified,parser_succeeded,parsed_rows)
+          SELECT 'direct-clock-capture','direct-clock-run',artifact_id,captured_at,available_at,$1,published_at,
+          publication_evidence,state,body_complete,header_verified,parser_succeeded,parsed_rows
+          FROM predictive_captures WHERE id='capture-ordinary-clock'`,[old]);
+        await login.query("SET CONSTRAINTS ALL IMMEDIATE");
+        const direct = await captureTime(login,"direct-clock-capture");
+        expect(Date.parse(direct)).toBeGreaterThanOrEqual(Date.parse(directBefore));
+        expect(direct).not.toBe(old);
+      } finally { await login.query("ROLLBACK"); }
+    });
+  });
+});
+
+it("ordinary synthetic capture times remain harness-only and cannot bypass production ingestion clocks", async () => {
+  await withProof(async ({ client,store,target,artifacts }) => {
+    const id = "clock-synthetic"; const old = "2026-10-07T12:00:00.000Z";
+    const dataset: Dataset = { formatVersion: 2,profiles: [profile(id)],rightsDecisions: [rights(id)],
+      artifacts: [],captures: [],decisions: [],labels: [],identityLinks: [] };
+    addCapture(dataset,"synthetic-clock",[revision("synthetic-clock-game","game-bridge",{
+      provider: "nflverse",rawGameId: "synthetic-clock-game",gameId: gameId(89),
+    })],old,id);
+    expect(await store.publish("synthetic-clock-run",dataset,old)).toMatchObject({ status: "published" });
+    expect(await captureTime(client,"capture-synthetic-clock")).toBe(old);
+    const outside: Dataset = { ...dataset,artifacts: [],captures: [] };
+    addCapture(outside,"outside-clock",[],old,id);
+    await withLogin(client,target,["predictive_ingest"],async (login,loginTarget) => {
+      const writer = await createLocalPredictiveStore(login,loginTarget,artifacts);
+      await expect(writer.publish("outside-clock-run",outside,old)).rejects.toThrow("predictive-synthetic-outside-harness");
+    });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_captures WHERE id='capture-outside-clock'")).rows[0].n).toBe(0);
+  });
+});
+
+it("ordinary ingestion clock migration upgrades v10 without rewriting captures and reruns as a no-op", async () => {
+  await withProof(async ({ client,store,target }) => {
+    const dataset: Dataset = { formatVersion: 2,profiles: [profile()],rightsDecisions: [rights()],
+      artifacts: [],captures: [],decisions: [],labels: [],identityLinks: [] };
+    addCapture(dataset,"pre-clock",[],"2026-10-07T12:00:00.000Z");
+    await store.publish("pre-clock-run",dataset,"2026-10-08T12:00:00.000Z");
+    const captures = (await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows;
+    const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
+    const options = { ...target,files,verify: createCatalogVerifier(contracts) };
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11],schemaVersion: 11 });
+    expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,10)).toEqual(ledger);
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 11 });
+  },10);
+});
+
 it("CSV source replay exposes missing, refused and ambiguous rows without inventing zero", async () => {
   await withProof(async ({ client, store }) => {
     const row = sourceSamples().player[0];
@@ -251,12 +335,12 @@ it("CSV source migration upgrades released v4 preserving creator corpus evidence
     expect(ledger[3].filename).toBe("0004_creator_corpus_projection.sql");
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10], schemaVersion: 10 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11], schemaVersion: 11 });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(upgraded.slice(0, 4)).toEqual(ledger);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
     await store.publishSourceStats(sourceClaimFixture("after-corpus-upgrade"));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 10 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 11 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
   }, 4);
@@ -725,7 +809,7 @@ it("CSV binding migration upgrades v5 without changing released history and reru
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(10);
+    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(11);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
@@ -981,7 +1065,7 @@ it("CSV unavailable retention re-applies pre-v7 legacy events with identical cou
     // Restore the same retained evidence and IDs into a fresh post-v7 database.
     // New timestamps are allowed; the deletion set and audit contract are not.
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(10);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(11);
       expect(await procedure(client)).not.toBe(oldProcedure);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
@@ -1457,13 +1541,13 @@ it("CSV SQL witness migration upgrades v7 preserving bindings and prior migratio
     const revisions = (await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10], schemaVersion: 10 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11], schemaVersion: 11 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 7)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect((await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows).toEqual(revisions);
     const scoped = factRequest(request.profileId, a.event.recordedAt);
     expect(await sqlWitness(client, scoped)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(scoped)));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 10 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 11 });
     // The released-v4 upgrade test above seeds all five corpus tables and now
     // runs through 0008; this focused v7 test seeds source bindings as well.
   }, 7);
@@ -1872,11 +1956,11 @@ it("CSV source decision migration upgrades v8 preserving recorded bindings and w
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10], schemaVersion: 10 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11], schemaVersion: 11 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 8)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect(await sqlWitness(client, req)).toEqual(witness);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 10 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 11 });
     const decision = await store.recordSourceDecision("after-decision-upgrade", decisionScope(request.profileId), null);
     expect(decision.record.plan.witness.heads).toEqual(witness.heads);
   }, 8);
@@ -2001,6 +2085,32 @@ it("CSV QB consumers preserve earlier cutoffs while recaptures withhold current 
   });
 });
 
+it("CSV QB consumers preserve earlier unavailable replay after a later unrelated source deletion", async () => {
+  await withProof(async ({ client,store }) => {
+    const seed = await seedConsumers(store);
+    // The fixture has no opponent schedule coverage. This is a legitimate
+    // unavailable answer whose reasons must not acquire later retention history.
+    const request = { ...seed.request,candidate: "player-opponent-v1:player_pass_yds" as const };
+    const saved = await store.recordSourcePassingYards("earlier-unavailable",request,seed.profiles);
+    expect(saved.body.kind).toBe("feature");
+    if (saved.body.kind !== "feature") throw new Error("expected feature");
+    expect(saved.body.bundle.status).toBe("unavailable-inputs");
+    expect(saved.body.bundle.reasons).not.toContain("retained-evidence-removed");
+    const original = await store.replaySourcePassingYards(request,seed.profiles);
+    expect(await store.replaySourceConsumer(saved.id)).toEqual(saved);
+    const laterAt = await witnessClock(client);
+    expect(Date.parse(laterAt)).toBeGreaterThan(Date.parse(request.cutoff));
+    const unrelated = sourceClaimFixture("later-unrelated-team","team");
+    unrelated.capturedAt = laterAt;
+    await store.publishSourceStats(unrelated);
+    const removed = await store.retain({ id: "later-unrelated-deletion",reason: "provider-request",authority: "synthetic retention regression",
+      decidedAt: laterAt,scope: { kind: "source",profileIds: [unrelated.profile.id],capturedFrom: laterAt,capturedBefore: null },auditLevel: "full" });
+    expect(removed.removedCounts.sourceStatsRows).toBe(1);
+    expect(await store.replaySourcePassingYards(request,seed.profiles)).toEqual(original);
+    expect(await store.replaySourceConsumer(saved.id)).toEqual(saved);
+  });
+});
+
 it("CSV QB final labels refuse pre-window captures and unresolved participation without invented zeros", async () => {
   await withProof(async ({ store }) => {
     const seed = await seedConsumers(store,"2026-10-09T12:00:00.000Z");
@@ -2074,10 +2184,10 @@ it("CSV QB migration upgrades v9 preserving binding and decision history and is 
     const ledger=(await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files=await checkMigrationArtifacts(); const contracts=await loadCatalogContracts(files);
     const options={ ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10],schemaVersion: 10 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11],schemaVersion: 11 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,9)).toEqual(ledger);
     expect(await store.replaySourceDecision({ ...decisionScope(request.profileId),cutoff: decision.record.recordedAt })).toMatchObject({ record: decision.record });
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 10 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 11 });
   },9);
 });
 

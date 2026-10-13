@@ -1,59 +1,84 @@
 # #52 session handoff
 
-Updated 2026-10-13 after the PR B foundation scope decision. Resume from this state; do not restart the
-completed work or repeat source downloads merely to recover context.
+Updated 2026-10-13 after the independent PR #105 assessment and review fixes.
+Resume from this state; preserve historical evidence and do not repeat downloads.
 
-## Current finish line: foundation review
+## Current finish line: affected-code review
 
-On 2026-10-13 the owner authorized proceeding with the draft-PR review process
-for the foundation checkpoint. This approves the process, not implementation
-or merge. Independent review of the latest consumer integration is outstanding.
-The [revised PR B checklist](predictive-pr-b.md#revised-pr-b-acceptance-boundary-2026-10-13)
-now replaces the previous real vertical-slice finish line. The
-[follow-up issue drafts](predictive-followups.md) retain that slice and the full
-parent criteria; no GitHub tickets have been opened by this update.
+[Draft PR #105](https://github.com/ven2dev/dfs-ev-demo/pull/105) is the versioned
+source foundation on `feature/dfsEV-52-real-source-ingestion`, workspace
+`/private/tmp/dfs-ev-52-pr-b`. The owner supplied three independent read-only
+reviews of **`2f897e9472c83bf895a7dd234c4e06545efc927d`**. Verdict: merge with
+conditions; no redesign required for this QB-only foundation. The
+[written assessment](predictive-pr-b-review.md) records both ledgers' rights,
+cutoffs, finalization, retention, maintenance limits and #54 handoff.
+Reviewer identities/linked approval were not supplied. Affected-code and 0011
+re-review remain pending; implementation and merge are not approved.
 
-Latest implementation commit: `4f1b976`, `feat(predictive): integrate QB source
-consumers`. Branch: `feature/dfsEV-52-real-source-ingestion`, workspace:
-`/private/tmp/dfs-ev-52-pr-b`. Review base: **`3daf1dc`**, which includes PR A and
-#90; do not compare against stale local `main`. The implementation adds 14
-commits and 57 changed files relative to that base, before this documentation
-checkpoint. At `13d8b7a`, PR B was local/unpushed with no open PR. The owner has
-now authorized pushing this feature branch and opening a draft foundation PR.
-Consult that PR for current publication/check status. Remote `main` was fetched
-on 2026-10-13 and remains `3daf1dc26f1bf737da57b094b0075446381eb92c`; there are no
-additional target changes or migration collisions at draft opening.
+The historical review baseline and freshly fetched remote main remain
+**`3daf1dc26f1bf737da57b094b0075446381eb92c`**, including PR A and #90.
+Compare against that base, not stale local `main`. PR #105 records the full
+pushed review-fix SHA and remote checks. Earlier green CI at `2f897e9` is not
+approval of this new candidate.
 
-Independent review of 0005–0010 and their consumers remains outstanding.
-Record a written 0010 separate-ledger architecture disposition, including rights,
-cutoffs, finalization, retention, policy duplication for new markets and the #54
-handoff boundary. Use the [review record](predictive-pr-b-review.md) or a linked
-PR review to bind reviewer approval and validation/CI results to the final SHA.
-Changes require renewed approval of affected code. Passing local fixture checks does not approve merge.
-After review, resolve blockers, run affected checks and required final gates,
-then remote CI before merge. No code changed in this scope-documentation update;
-the existing local test evidence below remains tied to `4f1b976`.
+## Schema-11 review-fix checkpoint
+
+- Source feature reads now include source retention scopes only when unbounded
+  or `capturedFrom <= cutoff`, matching the ordinary reader. A regression first
+  failed with changed reasons/digest, then reproduced an earlier unavailable
+  feature and its sealed replay unchanged after a real later unrelated deletion.
+- New forward **0011** extends the existing capture trigger to stamp ordinary
+  non-synthetic `ingested_at` from the database clock after the profile lock.
+  Source capture/availability times remain provenance and old rows are preserved.
+  Non-CSV synthetic fixture times are accepted only in the disposable harness;
+  the qualified-CSV clock contract remains intact. Restricted application and
+  direct-SQL writers cannot backdate new receipts.
+- Three clock tests cover old-cutoff refusal, exact DB receipt visibility,
+  idempotent receipt reuse, the harness exception, and v10 upgrade/no-op history.
+  The fourth new regression covers later retention. All four are mandatory gates.
+- SQL/catalog prefixes **0001–0010 are frozen and unchanged**. Generated schema,
+  migration/catalog/readiness artifacts add 0011; readiness remains minimum 2,
+  maximum 11. No persistent-dev, hosted or Production migration was run.
+
+Validation of this review-fix implementation: **873 jsdom + 637 Node tests**;
+**75 Node DB checks + 136 DB tests**, including all **111 mandatory predictive**
+and **8 corpus** cases; types, lint, CI gate, DB guards, Firestore rules,
+production Webpack build and production dependency audit (**zero vulnerabilities**).
+Logs: `/private/tmp/dfs52-prb-review-{db,app,misc,build,firestore,focused,typecheck,contracts}.log`.
+The new deletion regression's pre-fix failure is retained in
+`/private/tmp/dfs52-prb-review-retention-before.log`. Final SHA/remote CI are
+recorded in PR #105 after push. A local Turbopack worker-port restriction remains;
+remote App checks must pass the default build. See the
+[test reasoning](predictive-test-review.md#pr-b-independent-review-regressions-0011-2026-10-13).
+
+## Remaining review and parent work
+
+Re-review the changed retention query, ordinary receipt-clock trigger, 0011 and
+its consumers/tests. Record attributable approval against the final full SHA;
+check its remote CI and recheck current main before merge. No merge is authorized
+by the process approval. The [PR B acceptance checklist](predictive-pr-b.md#revised-pr-b-acceptance-boundary-2026-10-13)
+remains the foundation finish line; parent #52 retains its original criteria.
+
+Native #52 child issues **#106–#112** cover the first real QB slice, population,
+remaining raw feeds/markets, snaps, broader operations and hosted activation.
+New review follow-ups are **#114** (stat/market identity, blocks #109), **#115**
+(per-ledger retention helpers), **#116** (ordinary-label rights or writer
+retirement, blocks #112) and **#117** (deferred contract/test gaps).
+[Follow-up criteria](predictive-followups.md) link every ticket. The owner chose
+child issues only; create feature branches from then-current main after PR B
+merges. No child branches were created. #54 may proceed with fixtures/scaffolding;
+real-data-dependent evaluation remains blocked on qualified evidence.
 
 Keep the **schema-9 retained real proof** (zero usable canonical heads, bundles
-or labels) separate from the **schema-10 fixture-backed consumer proof**. The real
-proof has not been rerun at schema 10. Previous engineering-day ranges were
-provisional planning ranges, not established forecasts; select the QB/event/
-history/opponent scope and inventory permitted dependencies before estimating.
-
-The next work is opening the authorized draft PR and independent foundation
-review, not another implementation increment. Keep #52 open. Recheck current
-remote main and validate any final integrated state before merge. Hosted
-operation remains gated by #95. Preserve migrations 0001–0010 and the retained archive.
-Historical continuation paragraphs below are superseded by this finish line.
-
-The owner asked whether the issue's ACs are complete. **No:** the
-[nine-criterion audit](predictive-pr-b.md#parent-52-acceptance-criteria-audit-2026-10-12)
-maps the tested foundation to the remaining full-parent scope. Real-file proof
-still yields no usable bundle. Qualified
-source evidence, remaining feed/market mappings and bounded operating proofs
-remain outstanding. The audit describes code checkpoint `e8e76e7`; the shared
-consumer witnesses and coordinated merge validation follow below. Neither
-checkpoint closes the parent issue or qualifies real predictive inputs.
+or labels) separate from the **schema-10 fixture consumer proof** and the new
+**schema-11 regressions**. No new real-source proof ran. Select one QB/event/
+history/opponent scope and inventory permitted dependencies before estimating
+#106. Hosted operation remains gated by #95 and the linked activation blockers.
+Use only disposable Docker project `dfs-ev-52-prb-test` at `[::1]:54329` for PR B;
+preserve the creator session's default IPv4 database and the retained provider
+archive `/private/tmp/dfs-ev-52-source-proof.utpDdL`. Shutdown status is recorded
+in the final PR update. Historical continuation paragraphs below are superseded
+by this checkpoint.
 
 ## Current migration coordination (2026-10-12)
 
@@ -72,7 +97,8 @@ default project at `127.0.0.1:54329`.
 
 Historical checkpoint logs/paragraphs below retain the original private prefix
 numbers; current files are 0005 (claims), 0006 (bindings), 0007 (unavailable
-plans), 0008 (SQL witnesses), 0009 (research decisions) and 0010 (QB consumers). The old maximum-known 6 is historical: current maximum-known is 10 and
+plans), 0008 (SQL witnesses), 0009 (research decisions), 0010 (QB consumers) and
+0011 (ordinary receipt clock). The old maximum-known 6 is historical: current maximum-known is 11 and
 minimum readiness remains 2. No hosted activation is authorized.
 
 ## Current state: PR A merged; PR B bound source revisions in internal research staging

@@ -776,7 +776,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const profileMap = new Map((await profilesFor([...new Set(rows.map((row) => row.artifact.profileId))])).map((row) => [row.id,row]));
     validateDecisions(decisions,visible,profileMap); validateCompletionDecisions(decisions,visible,profileMap);
     const retention = (await client.query(`SELECT scope_descriptor->'profileIds' AS profiles FROM public.predictive_retention_events
-      WHERE scope_descriptor->>'kind'='source'`)).rows.flatMap((row) => row.profiles as string[]);
+      WHERE scope_descriptor->>'kind'='source' AND (scope_descriptor->>'capturedFrom' IS NULL
+        OR (scope_descriptor->>'capturedFrom')::timestamptz <= $1::timestamptz)`, [request.cutoff])).rows.flatMap((row) => row.profiles as string[]);
     const replay = replayObservations(rows,new Set(),decisions,retention);
     const requested = new Set<string>();
     // Discover exactly the slots the existing coverage/window policy queries,
