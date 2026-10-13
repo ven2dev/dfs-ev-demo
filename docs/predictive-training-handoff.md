@@ -1,6 +1,7 @@
 # #106 / #118 feature and label handoff proposal
 
-Status: **proposed, awaiting agreement before runtime implementation**.
+Status: **revised proposal, awaiting contract agreement and #106 history-scope
+selection before runtime implementation**.
 Prepared 2026-10-13 from merged-main `716d7559f6b3d402b098810efa5e6646f99e6709`
 (PR #105). Relay owns [#118](https://github.com/ven2dev/dfs-ev-demo/issues/118);
 the real-slice session owns [#106](https://github.com/ven2dev/dfs-ev-demo/issues/106).
@@ -11,8 +12,10 @@ changes this proposal only; no runtime code, schema or migration has changed.
 
 ## Shared boundary
 
-V1 supports **QB `player_pass_yds` only**, with stat `passing_yards`, feature
-version `passing-yards-source-v1` and label version `source-final-label-v1`.
+The initial reader supports **QB `player_pass_yds` only**, with stat
+`passing_yards` and label version `source-final-label-v1`. Feature support is
+defined by the explicit candidate/version/history matrix below, not by accepting
+any passing-yards version string.
 It consumes the verified source-consumer ledger introduced by 0010. There is no
 fallback to ordinary feature/label tables. #114 gates additional markets; an
 unsupported market/version refuses explicitly rather than sharing label keys.
@@ -31,6 +34,79 @@ successful single QB proof. #118 does not create qualified participants by
 enumerating whichever rows happen to have labels. #54 Part B must independently
 apply the population and historical-version gates before validated training.
 
+## History policy and version compatibility
+
+**#106's history scope is not yet approved.** Its proposed 2026-only slice is a
+different feature contract from existing v1; neither session may silently change
+v1 to make that slice usable. The following names for history policies and the
+2026-only candidate/feature are proposed contract identifiers, not implemented
+exports or approved statistical policies.
+
+The existing three-season policy remains the default reader contract. A 2026-only
+option would bound one engineering proof, not the project's collection or
+evaluation horizon. The registered creator corpus remains **2024 Week 1 through
+2026 Week 4** ([corpus contract](creator-corpus-persistence-contract.md)); creator
+transcripts are separate from NFL numerical feature history. A candidate limited
+to 2026 targets cannot cover the older creator picks in a historical comparison.
+Cross-season evaluation needs a compatible policy and qualified historical NFL
+evidence for each target; collecting older final statistics now does not establish
+their availability at a past cutoff. The owner's request for broader creator
+context leaves the 2026-only choice unapproved.
+
+| Candidate | Feature version | History policy | Compatibility / activation |
+| --- | --- | --- | --- |
+| `stats-v1:player_pass_yds` | `passing-yards-source-v1` | `qb-passing-history-three-season-v1` | Existing producer; player history only, without team/opponent summaries |
+| `player-opponent-v1:player_pass_yds` | `passing-yards-source-v1` | `qb-passing-history-three-season-v1` | Existing producer; player, team and opposing-offense histories plus scheduled rest; current compatible choice for the enriched #106 proof |
+| `player-opponent-2026-v1:player_pass_yds` | `passing-yards-source-2026-v1` | `qb-passing-history-2026-v1` | Proposed and **inactive**; only for 2026 targets, pending scope agreement, separate producer/recorder/replay support and independent review |
+
+The two existing candidates share these implemented history rules:
+
+- Independently evidenced schedule coverage spans the target season and its two
+  preceding seasons for relevant teams, including known former teams; coverage
+  does not assert that three full seasons of player statistics are required.
+- Numerical history uses the latest at most 16 expected games before the feature
+  cutoff, matching the target's REG/POST season type, with 4/8/16 summaries. An
+  available shorter history is flagged; missing evidence cannot shrink the
+  expected chronology or silently move a window backwards.
+- Player slots preserve the approved absence policy. Enriched team and opponent
+  windows use their own expected games; opponent values are the offenses that
+  faced that opponent. Scheduled rest crosses REG/POST boundaries and uses the
+  prior scheduled team game under the existing intervening-game rules.
+
+These rules follow [scheduleContext.ts](../src/lib/predictive/scheduleContext.ts)
+and [passingYards.ts](../src/lib/predictive/passingYards.ts) at base `716d755`.
+The coverage range is target-relative: a 2024 target requires 2022–2024 coverage,
+whereas a 2026 target requires 2024–2026 coverage.
+For legacy v1 records, #118 derives the history-policy identity from the verified
+candidate/feature pair and this fixed definition; it does not invent a field in
+or rewrite the recorded body.
+
+If approved, the proposed 2026 policy restricts expected history and independent
+schedule coverage to season 2026, keeps same-season-type 4/8/16 slot summaries,
+and explicitly flags genuinely shorter history. It preserves absence,
+participation, missing-row, completion, opponent and denominator rules. Its rest
+policy uses the prior team game within that scope; a missing in-scope predecessor
+is disclosed as unavailable rest, with no silent import of 2025 context. The
+selected target, cutoff, concrete history/opponent windows and any remaining
+policy details must be fixed in #106's scope inventory before activation.
+
+Feature selection and the sealed dataset identity include **candidate, feature
+version, history-policy ID/version and definition digest**, plus resolved season
+bounds and window sizes per slot. Exact consumer IDs must match these fields as
+strictly as latest-match selection. No v1 body may be relabeled 2026-only, and a
+2026 body cannot satisfy a v1 request. A dataset has one fixed combination;
+comparisons across policies use separately identified datasets/runs. The selected
+policy, its approval reference and evidence-basis disposition remain visible to
+#54, including `population-unqualified` where applicable.
+
+The proposed reader activates only allowlisted combinations whose producer,
+database recording, verification and historical replay paths support that exact
+contract. Unknown or inactive candidates, feature versions, policy hashes or
+combinations refuse explicitly, even when no matching record exists. Choosing
+2026-only scope does not itself activate its row. Label version
+`source-final-label-v1` is independent of feature history and remains compatible
+with either policy only when its own identity/finality/rights checks pass.
+
 ## Objects exchanged by #106 and #118
 
 #106 records ordinary identity/schedule/completion evidence and the source
@@ -42,8 +118,8 @@ For each requested player/event slot, the handoff names:
 
 | Field | Meaning |
 | --- | --- |
-| Slot identity | Canonical GSIS player ID, canonical game ID, season/season type, kickoff version, market and training/evaluation partition |
-| Pregame feature request | Exact `candidate`, profile IDs, prediction cutoff and history policy/window; enriched first-real-slice proof uses opponent context |
+| Slot identity | Fitting-run/fold reference, canonical GSIS player ID, canonical game ID, season/season type, kickoff version, market and training/evaluation partition |
+| Pregame feature request | Exact candidate/feature/history-policy combination, definition digest, profile IDs, prediction cutoff, resolved season bounds and windows; enriched first-real-slice proof uses opponent context |
 | Feature reference | Source-consumer ID, input digest, body hash, artifact recording time and feature version, or an explicit missing/unavailable disposition |
 | Label reference | Source-consumer ID, predecessor/head identity, input digest, body hash, recording time and label version, or explicit finalization/participation missingness |
 | Evidence provenance | Exact binding/revision/capture references, raw player bridge, reconciliation/participation/completion decisions and rights decisions already cited by the consumer |
@@ -77,7 +153,8 @@ promote reconstructed history to strict historical validation.
 
 Feature selection is explicit: either an exact consumer ID, or the last matching
 sealed record visible at dataset snapshot time for the **exact** player, game,
-candidate, profile set and feature cutoff. Ties use `(recorded_at, id COLLATE "C")`
+candidate, feature version, history policy, profile set and feature cutoff. Ties
+use `(recorded_at, id COLLATE "C")`
 and are recorded. There is no nearest-cutoff substitution, older-window fallback
 or preference for a usable record over a later unavailable matching record.
 
@@ -99,6 +176,63 @@ Ordinary labels cannot satisfy this reader through the weaker path tracked in
 It must not put a target/evaluation label into `fitBaseline.history` or replace
 actual availability with the prediction cutoff merely to pass its checks.
 
+## Fitting-run identity and enforced evaluation separation
+
+Each dataset belongs to a sealed **fitting run**, not a free-standing partition.
+Its immutable identity contains `fittingRunId`, `evaluationPlanId`, `foldId`,
+`fitCutoff`, the split-policy version/hash, the exact feature/history combination,
+profile scope, model/configuration/code identity and the complete requested
+training/evaluation inventory hash. One fitting run represents one fit for one
+fold. Reusing its ID with different inputs refuses; another fold or changed fit
+requires another run ID. An evaluation plan declares its folds and their run
+identities explicitly, including walk-forward reuse.
+
+Before any member dataset is sealed, a role-checked atomic operation seals the
+complete run inventory, including every requested partition/slot and every shard.
+It rejects the intersection of canonical **target game IDs** in training and
+evaluation across that whole inventory. This is an event-level rule: different
+players, cutoffs, kickoff revisions, consumer IDs, candidate versions, missing
+labels or unavailable features cannot make the same game independent. No row is
+dropped before this check. Unresolved event identity refuses run sealing. Within
+a partition, duplicate player/game targets refuse, including repeats with another
+cutoff or in another shard. Different players in one partition may share a game,
+but counts disclose that shared event.
+
+Every dataset/shard references that run's sealed inventory/hash and contains only
+its exact assigned slots. Run preparation materializes the selected consumer IDs
+and missing states for all shards from one coherent database snapshot. Subsequent
+dataset preparation verifies and pins that already-fixed subset; it cannot run
+a fresh latest-selection query. If evidence loses eligibility before sealing,
+refuse instead of substituting it; reselection requires a new run/snapshot. No
+transaction stays open across API calls, and pages never discover additional
+members. Enforce the event/partition constraint in the database across all shards,
+concurrent preparations and direct
+SQL callers, rather than just validating each request in application code. A run
+is not available for fitting/scoring until every declared shard is sealed and
+their slots/counts reconcile to the complete parent inventory. A late new shard
+or partition change requires a new run; it cannot extend a sealed inventory.
+
+Training label eligibility is at/before `fitCutoff`. For a prospective or
+walk-forward fold, each evaluation slot must satisfy
+`fitCutoff <= featureCutoff < eligible target kickoff`; its scoring cutoff is
+separate. Actual feature/label recording times and historical evidence basis
+remain disclosed, so retrospectively recorded artifacts do not become a claim
+of prospective validation. Evaluation outcomes must never enter the fitting
+inputs, including `fitBaseline.history`. Any supervised history used to fit is
+part of the declared training inventory, even if supplied through a different
+adapter. Legitimately prior feature context still follows its own cutoff rules;
+shared context alone is not counted as another supervised target.
+
+Explicit walk-forward folds may reuse an event across **different fitting runs**
+(for example, an earlier evaluation event can become a later run's training event
+once its label is eligible). Each run still enforces its own disjoint target
+sets. The evaluation-plan inventory records these memberships and reports unique
+target events, player/game targets and repeated memberships separately. Repeated
+predictions or folds are correlated uses of the same evidence; they cannot be
+reported as independent events or silently pooled as additional sample size.
+An evaluation plan fixes its aggregation/reuse policy before scores are inspected;
+#118 exposes the accounting, and #54 must enforce that policy when evaluating.
+
 ## Proposed versioned service surface
 
 Names below specify behavior; they are documentation, not exported code yet.
@@ -106,11 +240,12 @@ Every request carries `version: "qb-training-read-v1"`.
 
 | Operation | Result / restriction |
 | --- | --- |
-| `prepareDataset(request)` | Seal an immutable selection manifest from a bounded explicit slot enumeration, versioned selection policy, feature/label clocks, code identity and population reference; create its durable pin atomically or refuse the whole request |
+| `prepareFittingRun(request)` | Atomically seal the complete run/fold inventory, shard assignments, split/history policies and fit/score clocks; reject cross-partition target-event overlap and materialize metadata selections/missing states for all shards at one snapshot |
+| `prepareDataset(request)` | Verify an exact assigned selection from the sealed fitting run, seal its immutable manifest with feature/history identity, clocks and population reference; create its durable pin atomically or refuse the whole request |
 | `readDatasetPage(datasetId, cursor, limits)` | Return exact rows from that sealed manifest, deterministic ordinal order and a next cursor; verify current access and evidence before payloads |
 | `readCurrentLabels(keys, limits)` | Bounded batch of heads at one database-clock cutoff, including explicit missing/finalization/refusal states; separate from pregame feature selection |
 | `readLabelsAt(keys, labelsAsOf, limits)` | The same batch semantics for historical label heads, including exact version/correction metadata |
-| `pinDataset(datasetId, pinId, runIdentity)` | Audited idempotent additional pin on the existing immutable selection, subject to rights, quota and evidence availability |
+| `pinDataset(datasetId, pinId, fittingRunRef)` | Audited idempotent additional pin on the existing immutable selection, matching its owning run/hash and subject to rights, quota and evidence availability |
 | `releaseDatasetPin(pinId)` | Append a database-clock release event; it cannot rewrite the pin, extend provider retention or restore erased evidence |
 
 A dataset row carries its ordinal and requested key/cutoffs, selected feature
@@ -121,7 +256,8 @@ participation, missing/expired/stale/refused evidence and unavailable bundles st
 distinct; none is silently dropped, converted to zero or scored as a Push.
 
 The manifest records requested versus selected identities, original request,
-selection-policy/code versions, windows/partitions, source-consumer manifests,
+selection-policy/code versions, candidate/feature/history identity, fitting-run/
+fold and complete inventory reference, windows/partitions, source-consumer manifests,
 dependency and body hashes, and covered/excluded/unresolved counts **separately
 for training, evaluation and feature-history**. Counts reconcile to the requested
 enumeration, not just successfully labeled rows. `sealed` means reproducible
@@ -131,14 +267,16 @@ selection, not qualified population or validated training.
 
 Use materialized immutable membership, not an open transaction held across user
 pages and not OFFSET over a live "latest" query. Preparation selects all eligible
-IDs and missing-state rows from one coherent database snapshot. The committed
-manifest fixes their order and source versions. A cursor binds dataset identity,
+IDs and missing-state rows from one coherent run snapshot; dataset sealing
+verifies/pins its assigned subset without reselection. The committed manifest
+fixes their order and source versions. A cursor binds dataset identity,
 manifest hash, last ordinal and policy version; it cannot change filters or splice
 pages from another dataset. Repeating a cursor reproduces the same selection.
 V1 assigns ordinals by training/evaluation partition, feature cutoff, player ID
-and game ID using explicit `C` text ordering. A selection policy fixes candidate
-and profile scope; duplicate player/game slots within a partition refuse instead
-of being deduplicated or counted as independent training examples.
+and game ID using explicit `C` text ordering. A selection policy fixes the exact
+candidate/feature/history combination and profile scope. The run-wide inventory
+enforces duplicate and cross-partition event rules before paging; local shard
+checks cannot replace it.
 
 New ingestion or corrections between pages do not change membership or swap
 versions. A new dataset sees the new heads. Current rights revocation, mandatory
@@ -190,6 +328,9 @@ Those operations invalidate affected datasets/runs and remove protected bytes
 and identifiers as required by the event's audit policy. Only permitted minimal
 audit/digests remain where identifiers cannot be retained. No hidden training
 copy, unmanaged manifest blob or journal may preserve deleted provider payloads.
+The same rules cover parent run inventories and pending shard selections, even
+before they acquire a pin; their metadata is not an escape from deletion/access
+controls. An incomplete run never becomes training-ready through a pin alone.
 Pins/releases/invalidation and retention replay must restore/re-apply consistently
 after backup recovery; training snapshots do not revive deleted evidence.
 
@@ -209,12 +350,12 @@ retained evidence. No overflow silently truncates a dataset or skips a slot.
 
 | Bound | Proposed V1 ceiling |
 | --- | --- |
-| Requested slots per dataset | 256, with at most 16 source profiles |
+| Requested slots per dataset / fitting run | 256 per dataset and 1,024 across the complete run inventory, with at most 16 source profiles per run; shards cannot bypass run-wide accounting |
 | Returned rows per page/label batch | 64 |
 | Serialized page payload | 8 MB |
 | Unique private bytes verified per protected batch | 20 MB, preserving the existing verification ceiling |
 | Dependency associations per sealed dataset | 65,536; count the conservative closure, not just selected stats |
-| Preparation / page wall time | 30 seconds / 10 seconds, with cancellation and bounded lock/statement waits |
+| Run preparation / dataset preparation / page wall time | 30 seconds / 30 seconds / 10 seconds, with cancellation and bounded lock/statement waits |
 | Durable retention quota | At most 32 active datasets, 256 MiB charged closure per dataset and 1 GiB total charged active closure for this local owner store |
 
 Charge complete required blobs by actual size, plus serialized manifest bodies;
@@ -231,13 +372,18 @@ per-consumer reader in a loop. Demonstrate shared fetch/verification and avoid
 row-multiplied network round trips. Set numeric benchmark thresholds from those
 measurements before final review; synthetic timings alone do not establish
 real-source capacity. Larger populations use explicitly partitioned manifests
-with a complete parent inventory, never silent "first 256" sampling.
+with a complete parent run inventory, never silent "first 256" sampling. If that
+inventory exceeds the proposed 1,024-slot bound, revise and benchmark the bound
+before activation; creating more shards does not waive it.
 
 ## Delivery and coordination
 
 1. **Agree this handoff.** #106 can inventory its real dependencies in parallel.
-   Confirm clocks, consumer/version references, requested-slot accounting,
-   immutable paging and pin/deletion semantics before runtime implementation.
+   Select #106's history scope and agree its candidate/feature/history identities.
+   Confirm clocks, consumer/version references, run/fold and cross-partition
+   accounting, immutable paging and pin/deletion semantics before runtime
+   implementation. A 2026-only scope additionally requires separately reviewed
+   producer/recorder/replay support; existing v1 remains unchanged.
 2. **Indexed batch readers and label heads.** Implement the agreed QB interface,
    coherent snapshot preparation and bounded verification reuse. Use synthetic
    consumers to prove mechanics; this alone is not #118 completion.
@@ -254,8 +400,13 @@ regenerated manifests/contracts. Never modify a released/applied prefix.
 
 Required adversarial checks include inclusive receipt/cutoff boundaries, late
 ingestion, corrections and unavailable heads between pages, deterministic cursor
-retry, current/historical labels and supersession, unresolved versus affirmative
-zero participation, revocation before byte access (including concurrent direct
+retry, exact candidate/feature/history compatibility (including unknown/inactive
+versions and v1 relabeling), cross-partition same-game rejection across players,
+cutoffs, missing states and shards, concurrent run sealing, duplicate targets
+across shards, invalid run/fold reuse, valid cross-run walk-forward reuse with
+unique-event accounting, fixed shard selection despite later heads, incomplete
+run refusal, current/historical labels and supersession, unresolved versus
+affirmative zero participation, revocation before byte access (including concurrent direct
 SQL changes), pinned expiry after day 90, multiple-pin release, quota contention,
 narrow/broad mandatory deletion, rollback/crash recovery and backup audit parity.
 Use hand-specified expected rows/versions/counts, restricted logins and actual
