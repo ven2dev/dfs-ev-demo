@@ -2,9 +2,14 @@
 
 Updated 2026-10-13. PR A merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102),
 `d934432e8aa32a38226c65306592b77e04e05f01`. Migration 0003 is frozen.
-PR B's review base is merged-main checkpoint `3daf1dc`, which includes PR A and
-creator-corpus PR #103. Review `git diff 3daf1dc...HEAD`; the checkout's stale
-local `main` is not the correct base. The branch is
+PR B's historical review baseline is merged-main checkpoint `3daf1dc`, which
+includes PR A and creator-corpus PR #103. Remote `main` was fetched on 2026-10-13
+and still resolves to `3daf1dc26f1bf737da57b094b0075446381eb92c`; no additional
+integration or migration renumbering is needed at draft opening. Review
+`git diff 3daf1dc...HEAD`; the checkout's stale local `main` is not the correct
+base. GitHub compares against current remote `main`: fetch again before merging,
+inspect new changes/migration numbering, and validate the final integrated state
+if that target has advanced. The branch is
 `feature/dfsEV-52-real-source-ingestion` in `/private/tmp/dfs-ev-52-pr-b`.
 Offline qualification and local raw CSV claims
 persistence and canonical normalization planning are implemented. The raw/canonical
@@ -18,8 +23,10 @@ latest consumer integration still requires independent review.
 
 ## Revised PR B acceptance boundary (2026-10-13)
 
-The owner supports closing PR B as a **versioned source foundation checkpoint**,
-provided this acceptance boundary is explicit and independent review passes.
+On 2026-10-13 the owner authorized proceeding with the draft-PR review process
+for a **versioned source foundation checkpoint**, provided this acceptance
+boundary is explicit and independent review passes. This is authorization of
+the review process, not approval of the implementation or permission to merge.
 This replaces PR B's previous responsibility for the first usable real-data QB
 vertical slice. Parent #52 retains its original acceptance criteria. A foundation
 merge does not complete that issue or qualify real predictive inputs.
@@ -28,9 +35,12 @@ PR B's completion checklist is:
 
 - [ ] Independent review covers migrations **0005–0010**, their application
   recorders/readers/consumers, privilege boundaries and retention/recovery paths.
-- [ ] Review blockers are resolved and the reviewed commit passes required final
-  checks and remote CI. Existing local results are evidence for `4f1b976`, not
-  evidence that independent review or remote CI has completed.
+- [ ] Review blockers are resolved and the final integrated merge candidate
+  passes required checks and remote CI. Record the exact reviewed SHA, reviewer,
+  local results and CI links in the [review record](predictive-pr-b-review.md)
+  or its linked PR review. Changes invalidate approval of affected code and
+  require renewed review. Existing local results are evidence for `4f1b976`, not
+  evidence that independent review or final-candidate remote CI has completed.
 - [x] Fixture-backed usable QB passing-yards features and final labels are
   demonstrated, including replay, stale/missing evidence, provenance, rights and
   retention refusal cases. These do not qualify a provider or model population.
@@ -39,9 +49,11 @@ PR B's completion checklist is:
   usable canonical heads, feature bundles or labels**. The **schema-10** consumer
   checkpoint is fixture-backed; it did not rerun that real-data proof or produce
   usable real outputs.
-- [ ] The independent reviewer assesses the two-ledger architecture described
-  below and records its disposition; any required redesign is resolved before
-  merge rather than left implicit.
+- [ ] The independent reviewer writes an architecture disposition covering both
+  ledgers' rights, cutoff selection, finalization and retention, plus policy
+  duplication when adding a market. The current architecture must be judged
+  correct and maintainable before consolidation can be deferred to a ticket;
+  any required redesign is resolved before merge rather than left implicit.
 - [x] The [follow-up acceptance criteria](predictive-followups.md) identify the
   usable real slice and remaining parent work. They are local issue drafts;
   GitHub issue links must replace the draft-only coordination before parent
@@ -73,11 +85,15 @@ and labels, `replaySourceConsumer`). It must not read ordinary feature/label
 tables as though they contain CSV consumers or use them as an automatic fallback.
 #54 integration and model validation are not implemented by this checkpoint.
 
-Independent review must assess duplicated policy, retention closure, replay
-consistency and the cost of future market adapters. The separate ledger is the
+Independent review must provide a written assessment of rights, cutoff
+selection, finalization and retention across both ledgers, duplicated policy,
+replay consistency and the cost of adding another market. The separate ledger is the
 current compatibility strategy; permanent coexistence has not been approved.
-Record whether retaining that boundary is acceptable for this foundation and
-whether a later unified facade/consolidation needs its own acceptance criteria.
+Record the reviewed SHA, correctness/maintainability conclusion and evidence in
+the [review record](predictive-pr-b-review.md) or its linked PR review. A later
+unified facade/consolidation ticket is acceptable only after the current design
+has passed that assessment; a ticket cannot defer a present correctness or
+maintainability blocker.
 Any consolidation must preserve recorded provenance and historical replay with
 forward changes; it must not rewrite frozen migrations or existing records.
 

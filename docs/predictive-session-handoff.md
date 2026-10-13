@@ -5,9 +5,10 @@ completed work or repeat source downloads merely to recover context.
 
 ## Current finish line: foundation review
 
-The owner supports closing PR B as a foundation checkpoint, conditional on its
-formal acceptance boundary and independent review of the latest consumer
-integration. The [revised PR B checklist](predictive-pr-b.md#revised-pr-b-acceptance-boundary-2026-10-13)
+On 2026-10-13 the owner authorized proceeding with the draft-PR review process
+for the foundation checkpoint. This approves the process, not implementation
+or merge. Independent review of the latest consumer integration is outstanding.
+The [revised PR B checklist](predictive-pr-b.md#revised-pr-b-acceptance-boundary-2026-10-13)
 now replaces the previous real vertical-slice finish line. The
 [follow-up issue drafts](predictive-followups.md) retain that slice and the full
 parent criteria; no GitHub tickets have been opened by this update.
@@ -17,11 +18,18 @@ consumers`. Branch: `feature/dfsEV-52-real-source-ingestion`, workspace:
 `/private/tmp/dfs-ev-52-pr-b`. Review base: **`3daf1dc`**, which includes PR A and
 #90; do not compare against stale local `main`. The implementation adds 14
 commits and 57 changed files relative to that base, before this documentation
-checkpoint. PR B is local/unpushed and has no open PR.
+checkpoint. At `13d8b7a`, PR B was local/unpushed with no open PR. The owner has
+now authorized pushing this feature branch and opening a draft foundation PR.
+Consult that PR for current publication/check status. Remote `main` was fetched
+on 2026-10-13 and remains `3daf1dc26f1bf737da57b094b0075446381eb92c`; there are no
+additional target changes or migration collisions at draft opening.
 
 Independent review of 0005–0010 and their consumers remains outstanding.
-Record the 0010 separate-ledger architecture disposition and the #54 handoff
-boundary described in PR B. Passing local fixture checks does not approve merge.
+Record a written 0010 separate-ledger architecture disposition, including rights,
+cutoffs, finalization, retention, policy duplication for new markets and the #54
+handoff boundary. Use the [review record](predictive-pr-b-review.md) or a linked
+PR review to bind reviewer approval and validation/CI results to the final SHA.
+Changes require renewed approval of affected code. Passing local fixture checks does not approve merge.
 After review, resolve blockers, run affected checks and required final gates,
 then remote CI before merge. No code changed in this scope-documentation update;
 the existing local test evidence below remains tied to `4f1b976`.
@@ -32,9 +40,10 @@ proof has not been rerun at schema 10. Previous engineering-day ranges were
 provisional planning ranges, not established forecasts; select the QB/event/
 history/opponent scope and inventory permitted dependencies before estimating.
 
-The next work is foundation review preparation, not another implementation
-increment. Remote push/opening a PR requires owner instruction. Hosted operation
-remains gated by #95. Preserve migrations 0001–0010 and the retained archive.
+The next work is opening the authorized draft PR and independent foundation
+review, not another implementation increment. Keep #52 open. Recheck current
+remote main and validate any final integrated state before merge. Hosted
+operation remains gated by #95. Preserve migrations 0001–0010 and the retained archive.
 Historical continuation paragraphs below are superseded by this finish line.
 
 The owner asked whether the issue's ACs are complete. **No:** the

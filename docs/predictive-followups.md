@@ -1,8 +1,10 @@
 # #52 follow-up issue drafts
 
-These are local acceptance-criteria drafts, not opened GitHub issues. The owner
-approved the [PR B foundation boundary](predictive-pr-b.md#revised-pr-b-acceptance-boundary-2026-10-13)
-subject to independent review. Keep #52 as the parent; a foundation merge does
+These are local acceptance-criteria drafts, not opened GitHub issues. On
+2026-10-13 the owner authorized the draft-PR review process for the
+[PR B foundation boundary](predictive-pr-b.md#revised-pr-b-acceptance-boundary-2026-10-13).
+Implementation approval and merge remain pending independent review and final
+checks. Keep #52 as the parent; a foundation merge does
 not close its original criteria. Preserve the existing commits and frozen
 migrations. Create new branches from merged main for the follow-ups.
 
@@ -102,10 +104,14 @@ does not clear #95 or authorize a hosted/dev/Production migration.
 
 ## Review and merge sequencing
 
-Review the existing foundation as one PR against the correct merged-main base
-`3daf1dc` (refresh main before opening the PR if it has advanced). Resolve review
-blockers, including the 0010 two-ledger architecture disposition, and pass final
-checks/remote CI. Only then merge. Follow-up tickets track the remaining work;
+Open the existing foundation as a **draft PR** titled "versioned source
+foundation", with a non-closing reference to #52. Preserve `3daf1dc` as the
+historical baseline, but fetch current remote main before opening and merging;
+inspect new target changes and migration numbering if it advances. Resolve review
+blockers, including a written 0010 two-ledger architecture disposition, and pass
+final checks/remote CI on the final integrated commit. Record its reviewed SHA
+and results in the [review record](predictive-pr-b-review.md) or linked PR review.
+Changes require renewed approval of affected code. Only then merge. Follow-up tickets track the remaining work;
 they do not approve this branch for merge. Keep the commits intact and create
 follow-up branches from main after the foundation merge. Until then, any child
 implementation depending on it is explicitly stacked and blocked on that merge.
