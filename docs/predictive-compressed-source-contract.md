@@ -216,3 +216,46 @@ PostgreSQL tests pass, with the required-case report verified. Typecheck, lint,
 migration artifacts, readiness manifest and whitespace checks pass. The disposable
 database service was removed after testing. These database checks verify existing
 publication and retention behavior; gzip SQL publication remains unimplemented.
+
+## Complete-file claim preparation checkpoint
+
+#106 integrated Relay's published schema-13 checkpoint `da24ab9`. The decoder
+now has a separate preparation entry point that retains allowlisted rows only
+for callers that need them; the streaming inspector still returns metadata only.
+No row callback or partial result escapes before complete gzip CRC, UTF-8,
+header and work-limit verification. `prepareCompressedSourceClaims` accepts
+player/team files scoped to 2025 or 2026, retains every full-file ordinal and
+records invalid numbers, context, IDs and wrong-season rows as explicit refusals.
+Roster effective-window qualification remains separate. The released text
+projector and publisher retain their existing 2026-only interface and behavior.
+
+Six new cases independently specify signed/zero values, raw key and selected-row
+identities, full-file ordinals with interleaved refused rows, team/player separation,
+scope limits, mutable-input pinning, CRC/truncation and independent work limits.
+An isolated copy passed the baseline; disabling scope enforcement, filtering out
+refused claims or disabling wire-hash verification each caused assertion failures.
+The working-tree source was not fault-injected. This is selected test sensitivity,
+not exhaustive mutation coverage or independent review of a publication writer.
+
+The retained complete 2025 player gzip produced 19,422 claims: 19,400 projectable
+raw rows and 22 `source-stats-player-refused` rows. An independent Python gzip/CSV
+and numeric projection pass matched every ordinal/ID/key/selected hash, refusal
+and typed payload via aggregate claim SHA-256
+`804909c4205efaa46a84df9194ac5b59e788fcaea764fec3034e50edf422785a`.
+It also matched the wire/decoded/selected-record identities. Diagnostics remain
+private; no new acquisition or provider rows were committed. Measured preparation
+peak RSS was 214,122,496 bytes (about 204 MiB); the proposed process ceiling is
+still not enforced, and bounded decoded bytes/rows do not establish an RSS cap.
+
+This is pure preparation, not rights authorization, SQL codec registration,
+canonical evidence or training readiness. No runtime writer or guarded batch
+calls it yet. 0013 still rejects published gzip; #118 owns 0014, and no 0015 was
+allocated in this checkpoint. Next activation needs the versioned SQL envelope,
+guarded binary reads, separate decoded-work accounting and the process ceiling,
+followed by publication/deletion/restoration and full-consumer reproduction checks.
+
+Checkpoint validation: all 742 Node tests, 75 database checks and 151 PostgreSQL
+tests pass, including the required-case report. Typecheck, lint, generated
+catalog/migration/readiness checks and whitespace checks pass. The disposable
+database service was removed. The pure preparation API is still outside runtime
+publication and guarded training reads.

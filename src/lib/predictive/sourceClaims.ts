@@ -26,11 +26,13 @@ export type SourceStatsReplay = {
   inputDigest: string; featuresPublished: false; labelsFinalized: false; populationCoverage: "unqualified";
 };
 export const sourceClaimKey = (row: SourceRow, feed: SourceStatsFeed) => digest(sourceStatsKey(row, feed === "player"));
-export const projectSourceClaim = (captureId: string, feed: SourceStatsFeed, row: SourceRow, rowOrdinal: number): SourceClaimRow => {
+export const projectScopedSourceClaim = (captureId: string, feed: SourceStatsFeed, row: SourceRow, rowOrdinal: number,
+  scopeSeason: 2025 | 2026): SourceClaimRow => {
+  if (scopeSeason !== 2025 && scopeSeason !== 2026) refuse("source-stats-scope-refused");
   let projection: SourceStats | null = null; let failureCode: string | null = null;
   try {
     projection = projectSourceStats(feed, row);
-    if (projection.season !== SOURCE_SAMPLE_SEASON) refuse("source-stats-scope-refused");
+    if (projection.season !== scopeSeason) refuse("source-stats-scope-refused");
   } catch (error) {
     if (!(error instanceof PredictiveError)) throw error;
     projection = null; failureCode = error.code;
@@ -38,6 +40,10 @@ export const projectSourceClaim = (captureId: string, feed: SourceStatsFeed, row
   return { id: "source-row:" + digest(canonical([captureId, rowOrdinal])), rowOrdinal,
     rawKeySha256: sourceClaimKey(row, feed), selectedSha256: digest(canonical(row)), projection, failureCode };
 };
+
+// The released text qualification interface retains its 2026-only semantics.
+export const projectSourceClaim = (captureId: string, feed: SourceStatsFeed, row: SourceRow, rowOrdinal: number): SourceClaimRow =>
+  projectScopedSourceClaim(captureId, feed, row, rowOrdinal, SOURCE_SAMPLE_SEASON);
 
 // Full CSV snapshots of raw claims. Canonical identities, completion decisions
 // and labels cannot be inferred here. The source capture time is preserved;

@@ -5,6 +5,7 @@ import { setImmediate as yieldImmediate } from "node:timers/promises";
 import { createGunzip } from "node:zlib";
 import { parse } from "csv-parse";
 import { SOURCE_HEADERS } from "./sourceHeaders.ts";
+import type { SourceRow } from "./sourceAdapters.ts";
 import { RAW_ALLOWLISTS, canonical, exact, PredictiveError, refuse } from "./validation.ts";
 
 /** Qualification-only profile. Not registered for publication or database reads. */
@@ -21,12 +22,13 @@ export interface CompressedInspectionRequest {
 }
 
 /**
- * Verifies a complete gzip CSV without returning rows or invoking publication
- * callbacks. CRC, UTF-8, header and budgets must pass before any result returns.
+ * Verifies a complete gzip CSV before returning a report or retained records.
+ * No publication callbacks; CRC, UTF-8, header and budgets pass before return.
  * Hash exact wire/decoded bytes separately; record ordinals count CSV records.
  */
-export async function inspectCompressedSource(source: Uint8Array, request: CompressedInspectionRequest,
-  options: { limits?: Partial<Limits>; signal?: AbortSignal } = {}) {
+type DecodeOptions = { limits?: Partial<Limits>; signal?: AbortSignal };
+async function processCompressedSource(source: Uint8Array, request: CompressedInspectionRequest,
+  options: DecodeOptions, retainRows: boolean) {
   exact(request, ["feed", "season", "wireSha256", "wireBytes"]);
   request = { ...request };
   const signal = options.signal;
@@ -57,6 +59,7 @@ export async function inspectCompressedSource(source: Uint8Array, request: Compr
   const decodedHash = createHash("sha256"), selectedHash = createHash("sha256");
   const utf8 = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true });
   let decodedBytes = 0, rows = 0, inScopeRows = 0, headerSha256 = "";
+  const selectedRows: SourceRow[] = [];
   const decode = new Transform({
     transform(chunk: Buffer, _encoding, done) {
       try {
@@ -94,15 +97,17 @@ export async function inspectCompressedSource(source: Uint8Array, request: Compr
           if (rows > limits.rows) refuse("compressed-row-budget-exceeded");
           if (row.season === String(request.season)) inScopeRows++;
           selectedHash.update(canonical([rows, row]) + "\n");
+          if (retainRows) selectedRows.push(row);
           if (rows % 1024 === 0) await yieldImmediate(undefined, { signal: controller.signal });
         }
       }, { signal: controller.signal });
     check();
     if (!headerSha256 || rows === 0) refuse("compressed-empty-csv");
-    return { codecVersion: COMPRESSED_SOURCE_CODEC, feed: request.feed, season: request.season,
+    const inspection = { codecVersion: COMPRESSED_SOURCE_CODEC, feed: request.feed, season: request.season,
       wireSha256: request.wireSha256, wireBytes: bytes.length, decodedSha256: decodedHash.digest("hex"), decodedBytes,
       headerSha256, selectedRecordsSha256: selectedHash.digest("hex"), rows, inScopeRows, outOfScopeRows: rows - inScopeRows,
       limits, inspection: "complete-codec-proof-only", publicationSupported: false, featuresPublished: false, labelsFinalized: false };
+    return { inspection, selectedRows };
   } catch (error) {
     if (expired) refuse("compressed-deadline-exceeded");
     if (signal?.aborted) refuse("compressed-cancelled");
@@ -113,4 +118,18 @@ export async function inspectCompressedSource(source: Uint8Array, request: Compr
     clearTimeout(timer);
     signal?.removeEventListener("abort", cancel);
   }
+}
+
+export async function inspectCompressedSource(source: Uint8Array, request: CompressedInspectionRequest,
+  options: DecodeOptions = {}) {
+  return (await processCompressedSource(source, request, options, false)).inspection;
+}
+
+// Preparation only. Retain every allowlisted record, with no callback or partial
+// result before complete CRC/UTF-8/header/budget verification. The streaming
+// inspector above still avoids retaining rows. Production use additionally needs
+// the process-memory ceiling, rights gate and SQL codec envelope.
+export async function decodeCompressedSource(source: Uint8Array, request: CompressedInspectionRequest,
+  options: DecodeOptions = {}) {
+  return processCompressedSource(source, request, options, true);
 }

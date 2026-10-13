@@ -123,3 +123,21 @@ The first full database run exposed a stale twelve-entry bootstrap ledger
 expectation; after adding the explicit thirteenth entry, the complete mandatory
 gate passed. The disposable service was removed. These results validate staging
 and the integrated existing readers, not a future compressed publication path.
+
+## #106 complete-file preparation continuation
+
+#106 integrated Relay's `da24ab9` checkpoint and added pure complete-file player/
+team claim preparation for the proposed 2025/2026 compressed scope. The existing
+text projector stays 2026-only. Full-file ordinals include refused rows; no claims
+return before gzip CRC, header, UTF-8 and work-budget verification. The complete
+retained 2025 player file has independent Python parity for every prepared claim,
+including 22 explicit player-ID refusals. Details and memory measurements are in
+the [compressed-source contract](predictive-compressed-source-contract.md).
+
+No migration was allocated or schema changed by this continuation. **0014 stays
+with #118.** #106's SQL envelope/guarded binary activation will use **0015 or
+later**, coordinated here after Relay publishes its fixed 0014 prefix and
+deletion interfaces. The new preparation API is not connected to the current
+writer or batch reader. The process memory ceiling is still a prerequisite.
+Combined checks pass: 742 Node tests, 75 DB checks, 151 PostgreSQL tests,
+typecheck, lint and generated-artifact/whitespace checks.
