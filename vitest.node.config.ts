@@ -12,7 +12,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["src/lib/*.server.test.ts", "tests/predictive/**/*.test.ts"],
+    include: ["src/lib/*.server.test.ts", "tests/predictive/**/*.test.ts", "tests/projection/**/*.test.ts"],
   },
   ssr: {
     resolve: {
