@@ -7,14 +7,15 @@ in `/private/tmp/dfs-ev-52-pr-b`. Offline qualification and local raw CSV claims
 persistence and canonical normalization planning are implemented. The raw/canonical
 correction-lineage design also has an executable pure contract. Database binding
 publication and unavailable-state persistence are implemented in internal research
-staging. Shared feature/decision/label activation remains next; this does not
+staging. Persisted binding-aware reconciliation and participation research
+decisions now follow in forward 0009. Shared feature/label activation remains next; this does not
 finish PR B or parent #52.
 
 The canonical stats read adapter now follows complete recorded raw lineages
 before filtering by canonical player/game. It reuses the verified binding
 reader, returns explicit withheld states, and pins binding provenance separately
 from unchanged statistical revisions. It remains a read-only research API;
-the feature/decision/label activation is still outstanding. Forward migration
+the active feature/label integration is still outstanding. Forward migration
 0008 now independently recomputes the same witness in SQL, and every canonical
 research read requires exact agreement with it after verifying provider files.
 
@@ -24,8 +25,9 @@ reconciliation, positive-usage and post-window source-capture checks use this
 same witness, including unresolved contributions. Query time alone does not
 invalidate it; recaptures do, even when they reuse a statistical revision.
 The post-window check follows the selected binding's exact capture. These
-helpers do not activate or persist features, decisions or labels; the downstream
-recorder integration gate remains open. See
+helpers do not activate features or labels. The 0009 research recorder persists
+decisions using the same verified witness; the active consumer integration
+gate remains open. See
 [the witness contract and limits](predictive-source-lineage.md#remaining-activation-work).
 
 ## Parent #52 acceptance criteria audit (2026-10-12)
@@ -67,8 +69,9 @@ and proof measurements are recorded in the
 
 The shared binding-aware SQL head/witness kernel and application research-read
 parity now exist in 0008. The next integration unit is adopting that rule in
-feature, reconciliation, participation, final-label and post-window recorders
-and their application readers. Activate those consumers together. #90's PR #103 merged as `3daf1dc`
+feature, final-label and post-window recorders and their application readers.
+0009 implements the isolated research decision recorder described below;
+activate the dependent feature/label consumers together. #90's PR #103 merged as `3daf1dc`
 on 2026-10-12; the coordinated merge/renumber now places PR B after its released
 creator-corpus migration. A new forward activation migration can follow.
 Qualified completion, participation/zero-opportunity, complete population,
@@ -608,3 +611,28 @@ observations/features/labels. All database writes were disposable/local.
 Evidence: `/private/tmp/dfs52-prb-sql-witness-{db,node,jsdom,typecheck,lint,ci,build}.log`,
 `/private/tmp/dfs52-prb-sql-witness-proof.log` and
 `/private/tmp/dfs52-prb-sql-witness-proof-metrics.log`.
+
+## Persisted research decision checkpoint (0009, 2026-10-12)
+
+Forward 0009 adds append-only reconciliation and participation decision records,
+exact binding/native/right associations, an execute-only database-clock recorder
+and verified read-only replay. It shares the 0008 witness and recomputes policies
+independently in SQL. Exact retries, stale recaptures, unavailable recovery,
+current-rights revocation before files, non-superuser permissions and expected-head
+concurrency are covered. Retention removes entire affected scope lineages so a
+deleted contradictory successor cannot revive a positive ancestor; conservative
+capture-less deletion and restored-backup audit parity are tested.
+
+These are **internal-research records**. Existing feature/run and final-label
+writers remain gated; the next migration must integrate their binding-aware
+manifests, current heads, completion/post-window/raw-identity checks, use-specific
+rights and retention together. A current insufficient/conflicting/unresolved
+research decision is not usable label evidence. Real sources remain unqualified
+for game bridges, completion, membership and complete population. No scheduler,
+hosted rollout, source request or active real feature/label is added here.
+
+The [lineage contract](predictive-source-lineage.md#persisted-research-decisions-0009)
+and [fourteen database test oracles](predictive-test-review.md#pr-b-persisted-research-decision-tests-0009-2026-10-12)
+cover the scope and limits. Previous SQL/catalog prefixes 0001–0008 are unchanged;
+minimum readiness remains 2, maximum-known becomes 9. Validation results and
+measurements are recorded in the latest session handoff checkpoint.

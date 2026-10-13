@@ -9,6 +9,7 @@ import { SOURCE_LINEAGE_VERSION, sourceBindingHeadsAt, sourceStatsRawKey, type S
 import { planSourceStatsFromReplay as planNormalization, sourceNormalizationBasis, SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
 import { SOURCE_FACT_BOUNDS, sourceFactHeadsAt, sourceFactRequest, sourceFactSnapshot, type SourceFactRequest } from "./sourceFacts.ts";
 import { sourceFactWitness } from "./sourceWitness.ts";
+import { sourceDecisionBasis, sourceDecisionPlan, sourceDecisionRequest, type SourceDecisionPlan, type SourceDecisionRecord, type SourceDecisionRequest } from "./sourceDecisions.ts";
 import type { Artifact, Capture, Dataset, Decision, IdentityLink, Label, Observation, Profile, RecordedRetentionEvent, Request, RetentionEvent, RetentionResult,
   Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
@@ -605,7 +606,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     for (const raw of requests) plans.push(await readSourceNormalization(raw, clock));
     return sourceFactHeadsAt(history, plans, request);
   };
-  const replaySourceStatsFacts = (input: SourceFactRequest) => transaction(async () => {
+  const checkedSourceFacts = async (input: SourceFactRequest) => {
     const snapshot = await readSourceStatsFacts(input);
     // SQL independently expands raw chains before canonical filtering and
     // recomputes current plans/rights. The reader independently proves bytes;
@@ -613,6 +614,107 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const sqlWitness = (await client.query("SELECT public.predictive_source_witness($1) AS witness", [snapshot.request])).rows[0].witness;
     if (canonical(sqlWitness) !== canonical(sourceFactWitness(snapshot))) refuse("stored-source-witness-mismatch");
     return snapshot;
+  };
+  const replaySourceStatsFacts = (input: SourceFactRequest) => transaction(() => checkedSourceFacts(input), true);
+
+  const sourceDecisionProfiles = async (request: SourceDecisionRequest, nativeProfiles: string[]) => (await client.query(`
+    SELECT DISTINCT id COLLATE "C" AS id FROM (
+      SELECT unnest($1::text[]) AS id UNION SELECT unnest($3::text[]) AS id
+      UNION SELECT x->>'profileId' FROM public.predictive_source_bindings b CROSS JOIN LATERAL jsonb_array_elements(b.plan->'binding'->'dependencies') x
+        WHERE b.profile_id=ANY($1::text[]) AND b.recorded_at <= $2::timestamptz) profiles ORDER BY 1`,
+  [request.profileIds, request.cutoff, nativeProfiles])).rows.map((row) => row.id as string);
+  const readSourceDecisionPlan = async (input: SourceDecisionRequest) => {
+    const request = sourceDecisionRequest(input);
+    let rawNative: Raw[] = [];
+    if (request.kind === "participation") {
+      const prefix = "participation-evidence:" + request.entityKey.slice("player-game-stats:".length) + ":%";
+      rawNative = (await client.query(decisionScopeReadSql, [request.cutoff, [], [prefix]])).rows.map((row) => row.envelope as Raw);
+      const profiles = [...new Set(rawNative.map((row) => row.artifact.profileId))];
+      const clock = await databaseClock();
+      const rights = (await client.query(RIGHTS_SQL, [profiles])).rows.map((row) => row.decision as RightsDecision);
+      if (blockedProfiles(rights, profiles, clock, "internal-research").size) refuse("source-decision-access-refused");
+    }
+    // SQL checks access and native-head bounds using metadata before any files.
+    // The independent file-backed plan still must agree with it afterwards.
+    const sqlPlan = (await client.query("SELECT public.predictive_source_decision_plan($1) AS plan", [request])).rows[0].plan;
+    // Gate native and source/context rights before opening either kind of file.
+    const snapshot = await checkedSourceFacts({ profileIds: request.profileIds, entityKeys: [request.entityKey], cutoff: request.cutoff });
+    if (snapshot.reason === "rights-not-in-force") refuse("source-decision-access-refused");
+    if (snapshot.reason) refuse(snapshot.reason);
+    const visible = [...validateObservations(await hydrate(rawNative)).values()];
+    const superseded = new Set(visible.map((row) => row.revision.predecessorId));
+    const native = visible.filter((row) => !superseded.has(row.revision.id));
+    const profiles = await profilesFor(await sourceDecisionProfiles(request, native.map((row) => row.artifact.profileId)));
+    const mode = profiles.some((profile) => profile.purpose === "synthetic-test") ? "synthetic-proof" : "production-research";
+    const plan = sourceDecisionPlan(snapshot, request, native, mode);
+    if (canonical(sqlPlan) !== canonical(plan)) refuse("stored-source-decision-plan-mismatch");
+    return plan;
+  };
+  const planSourceDecision = (request: SourceDecisionRequest) => transaction(() => readSourceDecisionPlan(request), true);
+  const sourceDecisionHistory = async (request: SourceDecisionRequest): Promise<SourceDecisionRecord[]> => {
+    const records = (await client.query(`SELECT id,predecessor_id AS "predecessorId",${timestamp("recorded_at")} AS "recordedAt",plan
+      FROM public.predictive_source_decisions WHERE kind=$1 AND entity_key=$2 AND scope_digest=$3 AND recorded_at <= $4::timestamptz
+      ORDER BY recorded_at,id COLLATE "C" LIMIT 257`, [request.kind, request.entityKey, digest(canonical(request.profileIds)), request.cutoff])).rows as SourceDecisionRecord[];
+    if (records.length > 256) refuse("source-decision-history-bounds-refused");
+    const remaining = new Map(records.map((row) => [row.id, row])); const ordered: SourceDecisionRecord[] = [];
+    let predecessor: string | null = null;
+    while (remaining.size) {
+      const next = [...remaining.values()].filter((row) => row.predecessorId === predecessor);
+      if (next.length !== 1) refuse("stored-source-decision-history-mismatch");
+      const record = next[0]; remaining.delete(record.id); ordered.push(record); predecessor = record.id;
+      if (instant(record.plan.witness.cutoff) > instant(record.recordedAt) || (ordered.length > 1 &&
+          (instant(ordered.at(-2)!.recordedAt) > instant(record.recordedAt) || instant(ordered.at(-2)!.plan.witness.cutoff) > instant(record.plan.witness.cutoff))))
+        refuse("stored-source-decision-history-mismatch");
+    }
+    return ordered;
+  };
+  const verifySourceDecision = async (record: SourceDecisionRecord) => {
+    const request = sourceDecisionRequest({ kind: record.plan.kind, entityKey: record.plan.entityKey,
+      profileIds: record.plan.witness.profileIds, cutoff: record.plan.witness.cutoff });
+    if (canonical(await readSourceDecisionPlan(request)) !== canonical(record.plan)) refuse("stored-source-decision-plan-mismatch");
+    const sorted = (values: string[]) => [...new Set(values)].sort(compareText);
+    const expectedBindings = (await client.query(`SELECT id FROM public.predictive_source_bindings
+      WHERE profile_id=ANY($1::text[]) AND recorded_at <= $2::timestamptz ORDER BY id COLLATE "C"`, [request.profileIds, request.cutoff])).rows.map((row) => row.id);
+    const links = (await client.query(`SELECT
+      ARRAY(SELECT binding_id FROM public.predictive_source_decision_bindings WHERE decision_id=$1 ORDER BY binding_id COLLATE "C") AS bindings,
+      ARRAY(SELECT observation_id FROM public.predictive_source_decision_inputs WHERE decision_id=$1 ORDER BY observation_id COLLATE "C") AS inputs,
+      ARRAY(SELECT rights_decision_id FROM public.predictive_source_decision_rights WHERE decision_id=$1 ORDER BY rights_decision_id COLLATE "C") AS rights`, [record.id])).rows[0];
+    const profiles = await sourceDecisionProfiles(request, record.plan.nativeInputs.map((row) => row.profileId));
+    const rights = (await client.query(RIGHTS_SQL, [profiles])).rows.map((row) => row.decision as RightsDecision);
+    const expectedRights = profiles.map((profile) => rightsInForce(rights, profile, instant(record.recordedAt), instant(record.recordedAt))?.id ?? refuse("stored-source-decision-rights-mismatch"));
+    if (canonical(links.bindings) !== canonical(expectedBindings) || canonical(links.inputs) !== canonical(sorted(record.plan.nativeInputs.map((row) => row.observationId))) ||
+        canonical(links.rights) !== canonical(sorted(expectedRights))) refuse("stored-source-decision-associations-mismatch");
+  };
+  const recordSourceDecision = (id: string, input: Omit<SourceDecisionRequest, "cutoff">, expectedHeadId: string | null) => transaction(async () => {
+    exact(input, ["kind", "profileIds", "entityKey"]);
+    const request = sourceDecisionRequest({ ...input, cutoff: await databaseClock() });
+    const old = (await client.query(`SELECT id,predecessor_id AS "predecessorId",${timestamp("recorded_at")} AS "recordedAt",plan
+      FROM public.predictive_source_decisions WHERE id=$1`, [id])).rows[0] as SourceDecisionRecord | undefined;
+    if (old && (old.plan.kind !== request.kind || old.plan.entityKey !== request.entityKey ||
+        canonical(old.plan.witness.profileIds) !== canonical(request.profileIds) || old.predecessorId !== expectedHeadId)) refuse("source-decision-id-conflict");
+    const plan = old?.plan ?? await readSourceDecisionPlan(request);
+    if (old) await verifySourceDecision(old);
+    const { reused, ...record } = (await client.query("SELECT public.predictive_record_source_decision($1,$2,$3) AS result", [id, expectedHeadId, plan])).rows[0].result as SourceDecisionRecord & { reused: boolean };
+    if (record.id !== id || record.predecessorId !== expectedHeadId || canonical(record.plan) !== canonical(plan)) refuse("stored-source-decision-record-mismatch");
+    return { record, reused, featuresPublished: false as const, labelsFinalized: false as const };
+  });
+  const replaySourceDecision = (input: SourceDecisionRequest) => transaction(async () => {
+    const request = sourceDecisionRequest(input);
+    const unavailable = (reason: string, currentPlan: SourceDecisionPlan | null = null) => ({
+      status: "unavailable-source-decision" as const, reason, record: null, currentPlan, featuresPublished: false as const, labelsFinalized: false as const });
+    try {
+      const currentPlan = await readSourceDecisionPlan(request);
+      const history = await sourceDecisionHistory(request);
+      for (const record of history) await verifySourceDecision(record);
+      const head = history.at(-1);
+      if (!head) return unavailable("source-decision-missing", currentPlan);
+      if (sourceDecisionBasis(head.plan) !== sourceDecisionBasis(currentPlan)) return unavailable("source-decision-stale", currentPlan);
+      if (currentPlan.state === "withheld") return unavailable("source-evidence-withheld", currentPlan);
+      return { status: "current-source-decision" as const, reason: null, record: head, currentPlan, featuresPublished: false as const, labelsFinalized: false as const };
+    } catch (error) {
+      if (error instanceof Error && error.message === "source-decision-access-refused") return unavailable("rights-not-in-force");
+      throw error;
+    }
   }, true);
 
   const publish = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
@@ -883,5 +985,6 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return results;
   };
   return { publish, publishSourceStats, replaySourceStats, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
+    planSourceDecision, recordSourceDecision, replaySourceDecision,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

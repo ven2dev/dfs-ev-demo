@@ -471,3 +471,54 @@ their unresolved `game-bridge-missing` state. These tests establish metadata/byt
 agreement within recorded-lineage research scope. They do not establish active
 feature/decision/label integration, qualified real bridges, complete population
 or a production scale/performance budget.
+
+## PR B persisted research decision tests (0009, 2026-10-12)
+
+Four pure cases and fourteen mandatory database cases exercise the new research
+ledger. The expected outcomes come from the reviewed reconciliation-v1 and
+participation-v1 policies: one provider selects; agreeing providers choose the
+lexically first source; differing yards conflict; positive attempts establish
+individual offensive participation; zero/blank usage alone stays unresolved;
+explicit inactivity plus positive usage conflicts. Player and team agreement
+and disagreement are both tested. Exact expected binding/revision references,
+predecessors, source values and native IDs are supplied independently of the
+SQL recorder. Future/duplicate/native-scope inputs refuse in the pure layer.
+
+Database-clock results lie between independent client wall-clock bounds. Exact
+ID retries preserve the original cutoff/record; scope/head conflicts refuse.
+Recapturing identical CSV bytes preserves the numeric revision but changes the
+binding/token and invalidates current decisions before and after rebinding.
+Every earlier cutoff still equals its original replay. Unavailable schedule
+context records a null outcome; recovery reuses unchanged numeric history with
+fresh selected provenance. Query-time plans use a different cutoff/digest and
+are compared by their evidence basis, not whole-plan equality.
+
+Direct SQL tests recompute plan/witness hashes after forging outcomes, inputs,
+head omissions, selected bindings, scope/mode/policy or adding fields. Exact
+SQL reconstruction refuses them. Actual non-superuser logins prove recorder
+execution, denied direct INSERT/private kernels, replay-only transactions,
+denied writer calls and harness-only synthetic recording. Current source,
+historical context and native revocation each block historical replay/retry
+before **any** file read, with an independent zero read counter. Byte damage
+and association omissions refuse; an injected SQL mismatch rolls back and
+restores the read-only setting. Two real concurrent recorders wait behind a
+held advisory lock; exactly one expected-head proposal commits.
+
+Retention runs through a retention-only login, counts links/decisions and
+independently hashes tombstone IDs. It removes complete affected scope lineages,
+including a positive ancestor that did not cite a subsequently deleted native
+claim; that ancestor cannot revive as a current decision. Unrelated scopes
+survive. A second fresh database reconstructs identical source/binding/decision
+IDs and re-applies the audit with identical counts/digest; recorder clocks need
+not be restored. Capture-less time-window deletion is deliberately conservative.
+The v8 upgrade preserves exact binding rows, witnesses and ledger entries and
+then reruns as a no-op. Released legacy retention re-apply tests run through v9
+with zero new decision rows, checking that their counts/digests remain intact.
+
+The catalog extension probe now formats versions with four-digit padding, so
+its synthetic version 10 loads `0010.json`; it continues to prove that extension
+members cannot hide unrelated application drift. Existing SQL/catalog prefixes
+0001–0008 stay byte-for-byte unchanged. Synthetic cases do not qualify real
+native participation, population coverage, completion or usable feature/labels.
+This ledger introduces no new blob format or filesystem publication path;
+existing rollback/lock/orphan/removal-queue tests retain those responsibilities.

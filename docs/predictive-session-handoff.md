@@ -1,6 +1,6 @@
 # #52 session handoff
 
-Updated 2026-10-12 after PR B SQL witness parity (0008). Resume from this state; do not restart the
+Updated 2026-10-12 after PR B persisted research decisions (0009). Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
 The owner asked whether the issue's ACs are complete. **No:** the
@@ -29,7 +29,7 @@ default project at `127.0.0.1:54329`.
 
 Historical checkpoint logs/paragraphs below retain the original private prefix
 numbers; current files are 0005 (claims), 0006 (bindings), 0007 (unavailable
-plans) and 0008 (SQL witnesses). The old maximum-known 6 is historical: current maximum-known is 8 and
+plans), 0008 (SQL witnesses) and 0009 (research decisions). The old maximum-known 6 is historical: current maximum-known is 9 and
 minimum readiness remains 2. No hosted activation is authorized.
 
 ## Current state: PR A merged; PR B bound source revisions in internal research staging
@@ -207,7 +207,7 @@ for test oracles and crash-simulation limits.
    evidence, with strict ambiguity validation. Step 6 recompute-and-cite.
 3. The §7b candidate features (weather, venue, depth/teammate absences,
    targets per snap) and a defensive-scheme slot are reserved, not implemented.
-4. App readiness minimum remains **2**; this branch's maximum-known is **8**.
+4. App readiness minimum remains **2**; this branch's maximum-known is **9**.
    Production migrations, role setup and activation stay behind #95.
 5. No paid access, API key or issue comment is authorized by this work.
 
@@ -588,3 +588,62 @@ maximum RSS 428,195,840 bytes (~408 MiB), measured rather than capped. Evidence:
 `/private/tmp/dfs52-prb-sql-witness-proof.log` and
 `/private/tmp/dfs52-prb-sql-witness-proof-metrics.log`. Scratch databases/private
 proof files were removed. Preserve the retained archive; no new fetch is needed.
+
+## Latest checkpoint: persisted research decisions (0009)
+
+Forward 0009 adds an isolated research ledger for reconciliation-v1 and
+participation-v1, using exact CSV binding/revision/token witnesses and native
+participation provenance. SQL independently reconstructs the policies and mode;
+the execute-only recorder takes evidence/publication locks before its database
+clock, compares current evidence and checks the expected predecessor. Exact
+retries preserve original history. Read-only/repeatable-read replay verifies
+files, every recorded event and its full binding/native/right association sets.
+Current source/context/native rights and SQL head bounds precede any file reads.
+Unavailable states record null results; recovery gets fresh provenance without
+rewriting earlier cutoffs. Current insufficient/conflicting/unresolved outcomes
+remain unusable for final labels.
+
+Retention removes the entire affected decision scope lineage, including an
+ancestor that did not cite a later deleted native claim. A contradictory
+successor's deletion cannot revive that ancestor as current. All visible binding
+history inside the explicit profiles is cited conservatively. Capture-less
+scopes are conservatively removed even by narrow time-window deletion. Unrelated
+scopes survive; restored-backup re-apply matches independent audit counts/digests.
+No new blobs or active feature/label paths are introduced. Internal research
+rights still authorize neither model inputs nor outcome labels.
+
+Final validation passes **873 jsdom + 637 Node tests**, **75 Node DB checks + 124
+database tests**, all **99 mandatory predictive** and **8 corpus** cases,
+typecheck, lint, CI gate, Firebase Admin runtime and the production Webpack build.
+Four pure and fourteen mandatory DB cases are described in
+[the test reasoning review](predictive-test-review.md#pr-b-persisted-research-decision-tests-0009-2026-10-12).
+The catalog extension test now handles its synthetic version 10 with four-digit
+padding. Prior SQL/catalog prefixes 0001–0008 remain byte-for-byte unchanged;
+readiness stays minimum 2/maximum 9. Draft 0009 was regenerated only in disposable
+PR B databases; the obsolete disposable ledger was recreated, never repaired.
+After moving SQL metadata authorization ahead of file hydration, the fourteen
+focused DB cases were rerun and passed. Logs:
+`/private/tmp/dfs52-prb-decisions-{db,db-focused,node,jsdom,typecheck,lint,ci,build,runtime}.log`.
+
+The schema-9 offline proof at **2026-10-13 04:08 UTC** (October 12 Pacific) made
+**zero requests**, restored 4,517 player rows (4,512 typed/five refused) and 130
+typed team rows. Both feeds have zero usable heads and unresolved
+`game-bridge-missing`; there is no qualified canonical game on which to record a
+real participation/reconciliation result. No active canonical observation,
+feature or label was published. Fact reads measured 379/62 ms; whole-process
+wall time 8.15 seconds; maximum RSS 495,828,992 bytes (~473 MiB), measured rather
+than capped. Proof files/scratch databases were removed by the harness.
+Evidence: `/private/tmp/dfs52-prb-decisions-proof{,-metrics}.log`. Preserve the
+retained source archive; PR B's isolated Docker project is shut down after checks.
+
+**Next delivery:** integrate the verified source decisions/witnesses in feature
+reads and sealed run manifests, final-label/post-window selection and exact raw
+identity provenance, with their use-specific rights and complete retention
+closure in a forward migration. Existing observation-only consumers remain
+gated for real CSV evidence. Qualified completion, membership, schedule/history,
+participation/population sources and remaining feed/market/operating proofs are
+still outstanding. Parent #52 and PR B are incomplete. The branch remains
+local/unpushed; development and local commits are authorized, but remote push
+or opening PR B needs owner instruction. Do not modify 0001–0009 to add new
+behavior after this checkpoint. No hosted, persistent-dev or Production
+migration, paid/key setup, new provider request or scheduler was run.

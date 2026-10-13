@@ -19,6 +19,7 @@ import { sourceNormalizationBasis } from "../../src/lib/predictive/persistence.t
 import { SOURCE_NORMALIZATION_V1 } from "../../src/lib/predictive/sourceNormalization.ts";
 import { selectSourceFact, SOURCE_FACT_BOUNDS } from "../../src/lib/predictive/sourceFacts.ts";
 import { checkSourceWitness, sourceFactWitness, sourcePostWindowCapture, sourceReconciliationEvidence, sourceUsageEvidence } from "../../src/lib/predictive/sourceWitness.ts";
+import { sourceDecisionBasis, type SourceDecisionPlan, type SourceDecisionRequest } from "../../src/lib/predictive/sourceDecisions.ts";
 import { prepareSourceClaims, projectSourceClaim } from "../../src/lib/predictive/sourceClaims.ts";
 import { sourceClaimFixture } from "../predictive/fixtures/sourceClaims.ts";
 import { sourceCsv, sourceGameId, sourceSamples } from "../predictive/fixtures/source.ts";
@@ -248,12 +249,12 @@ it("CSV source migration upgrades released v4 preserving creator corpus evidence
     expect(ledger[3].filename).toBe("0004_creator_corpus_projection.sql");
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8], schemaVersion: 8 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9], schemaVersion: 9 });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(upgraded.slice(0, 4)).toEqual(ledger);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
     await store.publishSourceStats(sourceClaimFixture("after-corpus-upgrade"));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 8 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 9 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
   }, 4);
@@ -722,7 +723,7 @@ it("CSV binding migration upgrades v5 without changing released history and reru
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(8);
+    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(9);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
@@ -978,7 +979,7 @@ it("CSV unavailable retention re-applies pre-v7 legacy events with identical cou
     // Restore the same retained evidence and IDs into a fresh post-v7 database.
     // New timestamps are allowed; the deletion set and audit contract are not.
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(8);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(9);
       expect(await procedure(client)).not.toBe(oldProcedure);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
@@ -1454,13 +1455,13 @@ it("CSV SQL witness migration upgrades v7 preserving bindings and prior migratio
     const revisions = (await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8], schemaVersion: 8 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9], schemaVersion: 9 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 7)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect((await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows).toEqual(revisions);
     const scoped = factRequest(request.profileId, a.event.recordedAt);
     expect(await sqlWitness(client, scoped)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(scoped)));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 8 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 9 });
     // The released-v4 upgrade test above seeds all five corpus tables and now
     // runs through 0008; this focused v7 test seeds source bindings as well.
   }, 7);
@@ -1503,5 +1504,409 @@ it("CSV unavailable planning checks context rights before file hydration and rev
     await expect(store.recordSourceNormalization("rights-unavailable", request, null)).rejects.toThrow("predictive-source-plan-rights-profile-invalid");
     expect(await store.planSourceStatsNormalization({ ...request, cutoff: revokedAt })).toMatchObject({ reason: "game-bridge-missing", binding: { dependencies: [] } });
     expect((await store.recordSourceNormalization("rights-new-unavailable", request, saved.event.id)).event.plan.reason).toBe("game-bridge-missing");
+  });
+});
+
+const decisionScope = (profileId: string, kind: SourceDecisionRequest["kind"] = "reconciliation", entityKey = factKey()) =>
+  ({ kind, profileIds: [profileId], entityKey });
+const rehashDecision = (plan: SourceDecisionPlan) => {
+  const { planDigest: _digest, ...fields } = plan; void _digest;
+  return { ...plan, planDigest: digest(canonical(fields)) };
+};
+const publishInactive = async (store: Store, id = "native-inactive", predecessor: string | null = null,
+  claim: "inactive-or-dnp" | "offensive-participant" = "inactive-or-dnp", at = "2026-10-09T12:00:00.000Z") => {
+  const dataset: Dataset = { formatVersion: 2, profiles: [profile("native-participation")],
+    rightsDecisions: predecessor ? [] : [rights("native-participation", { allowedUses: ["internal-research"] })],
+    artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+  addCapture(dataset, id, [revision(id, "participation-evidence", { gameId: NORMALIZATION_GAME, playerId: "00-0000001",
+    teamId: "nfl:team:PHI", evidenceKind: "participation-feed", claim }, predecessor)], at, "native-participation");
+  expect(await store.publish(id, dataset, at)).toMatchObject({ status: "published" });
+  return dataset;
+};
+
+it("CSV source decisions persist exact witnesses at database time with immutable history and idempotent retries", async () => {
+  await withProof(async ({ client, store }) => {
+    const { request } = await seedBinding(store);
+    const binding = await store.recordSourceNormalization("decision-binding", request, null);
+    for (const kind of ["reconciliation", "participation"] as const) {
+      const scope = decisionScope(request.profileId, kind); const before = Date.now();
+      const a = await store.recordSourceDecision("decision-" + kind, scope, null); const after = Date.now();
+      expect(a).toMatchObject({ reused: false, featuresPublished: false, labelsFinalized: false,
+        record: { predecessorId: null, plan: { mode: "synthetic-proof", state: "evaluated",
+          witness: { heads: [{ bindingId: binding.event.id, revisionId: binding.event.revision!.id }] } } } });
+      expect(Date.parse(a.record.recordedAt)).toBeGreaterThanOrEqual(before);
+      expect(Date.parse(a.record.recordedAt)).toBeLessThanOrEqual(after);
+      expect(a.record.plan.witness.cutoff <= a.record.recordedAt).toBe(true);
+      expect(a.record.plan.outcome).toEqual(kind === "participation" ? { state: "offensive-participant" } :
+        { result: "selected", rule: "single-source", selectedObservationId: binding.event.revision!.id });
+      const atA = { ...scope, cutoff: a.record.recordedAt };
+      const original = await store.replaySourceDecision(atA);
+      expect(original).toMatchObject({ status: "current-source-decision", record: a.record });
+      expect(await store.recordSourceDecision(a.record.id, scope, null)).toEqual({ ...a, reused: true });
+      const b = await store.recordSourceDecision("successor-" + kind, scope, a.record.id);
+      expect(sourceDecisionBasis(b.record.plan)).toBe(sourceDecisionBasis(a.record.plan));
+      expect(await store.replaySourceDecision(atA)).toEqual(original);
+      expect(await store.replaySourceDecision({ ...scope, cutoff: b.record.recordedAt })).toMatchObject({ record: b.record });
+      await expect(store.recordSourceDecision(a.record.id, { ...scope, entityKey: factKey("00-0000002") }, null))
+        .rejects.toThrow("source-decision-id-conflict");
+      await expect(store.recordSourceDecision("bad-head-" + kind, scope, a.record.id)).rejects.toThrow("source-decision-head-conflict");
+      for (const sql of ["UPDATE predictive_source_decisions SET plan=plan", "DELETE FROM predictive_source_decisions", "TRUNCATE predictive_source_decisions CASCADE"])
+        await probe(client, async () => { await expect(client.query(sql)).rejects.toThrow("predictive-append-only"); });
+    }
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_feature_runs")).rows[0].n).toBe(0);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_outcome_labels")).rows[0].n).toBe(0);
+  });
+});
+
+it("CSV source decision recaptures invalidate current records without changing earlier replay or numerical revisions", async () => {
+  await withProof(async ({ client, store }) => {
+    const { request } = await seedBinding(store); const binding = await store.recordSourceNormalization("recapture-binding-A", request, null);
+    const scope = decisionScope(request.profileId); const a = await store.recordSourceDecision("recapture-decision-A", scope, null);
+    const atA = { ...scope, cutoff: a.record.recordedAt }; const original = await store.replaySourceDecision(atA);
+    const recapture = sourceClaimFixture("decision-recapture"); recapture.capturedAt = await witnessClock(client);
+    await store.publishSourceStats(recapture);
+    const stale = await store.replaySourceDecision({ ...scope, cutoff: await witnessClock(client) });
+    expect(stale).toMatchObject({ status: "unavailable-source-decision", reason: "source-decision-stale", record: null,
+      currentPlan: { state: "withheld", selected: null, outcome: null } });
+    await probe(client, async () => { await expect(client.query("SELECT predictive_record_source_decision('stale',NULL,$1)", [a.record.plan]))
+      .rejects.toThrow("source-decision-plan-stale"); });
+    const nextBinding = await store.recordSourceNormalization("recapture-binding-B", request, binding.event.id);
+    expect(nextBinding.event.revision).toEqual(binding.event.revision);
+    expect(await store.replaySourceDecision({ ...scope, cutoff: nextBinding.event.recordedAt })).toMatchObject({ reason: "source-decision-stale", record: null });
+    const b = await store.recordSourceDecision("recapture-decision-B", scope, a.record.id);
+    expect(b.record.plan.selected).toMatchObject({ bindingId: nextBinding.event.id, revisionId: binding.event.revision!.id });
+    expect(sourceDecisionBasis(b.record.plan)).not.toBe(sourceDecisionBasis(a.record.plan));
+    expect(await store.replaySourceDecision(atA)).toEqual(original);
+    expect(await store.recordSourceDecision(a.record.id, scope, null)).toEqual({ ...a, reused: true });
+  });
+});
+
+it("CSV source participation combines native claims with positive usage and never infers absence from zero or blank statistics", async () => {
+  for (const usage of ["positive", "zero", "blank"] as const) await withProof(async ({ client, store }) => {
+    const row = { ...sourceSamples().player[0], attempts: usage === "positive" ? "10" : usage === "zero" ? "0" : "",
+      carries: usage === "blank" ? "" : "0", targets: usage === "blank" ? "" : "0" };
+    const fixture = await normalizationFixture("player", sourceCsv("player", [row]));
+    await store.publishSourceStats(fixture.input); await store.publish("participation-context", fixture.context, "2026-10-11T00:00:00.000Z");
+    const raw = { profileId: fixture.input.profile.id, rawGameId: sourceGameId, rawTeam: "PHI", rawPlayerId: "00-0000001" };
+    await store.recordSourceNormalization("participation-binding", raw, null);
+    const scope = decisionScope(raw.profileId, "participation");
+    const a = await store.recordSourceDecision("participation-A", scope, null);
+    expect(a.record.plan.outcome).toEqual({ state: usage === "positive" ? "offensive-participant" : "unresolved" });
+    const before = await store.replaySourceDecision({ ...scope, cutoff: a.record.recordedAt });
+    await publishInactive(store, "inactive-claim", null, "inactive-or-dnp", await witnessClock(client));
+    expect(await store.replaySourceDecision({ ...scope, cutoff: await witnessClock(client) })).toMatchObject({ reason: "source-decision-stale", record: null });
+    const b = await store.recordSourceDecision("participation-B", scope, a.record.id);
+    expect(b.record.plan.outcome).toEqual({ state: usage === "positive" ? "conflicting" : "inactive-or-dnp" });
+    expect(b.record.plan.nativeInputs).toMatchObject([{ observationId: "inactive-claim", profileId: "native-participation" }]);
+    expect(await store.replaySourceDecision({ ...scope, cutoff: a.record.recordedAt })).toEqual(before);
+    await publishInactive(store, "active-claim", "inactive-claim", "offensive-participant", await witnessClock(client));
+    const c = await store.recordSourceDecision("participation-C", scope, b.record.id);
+    expect(c.record.plan.outcome).toEqual({ state: "offensive-participant" });
+    expect(c.record.plan.nativeInputs.map((input) => input.observationId)).toEqual(["active-claim"]);
+  });
+});
+
+it("CSV source decisions persist unavailable plans and recover without stale selections while missing facts remain insufficient", async () => {
+  await withProof(async ({ client, store }) => {
+    const { request, bridgeRows } = await seedBinding(store);
+    const bindingA = await store.recordSourceNormalization("recovery-binding-A", request, null);
+    const scope = decisionScope(request.profileId);
+    const a = await store.recordSourceDecision("recovery-decision-A", scope, null);
+    const original = await store.replaySourceDecision({ ...scope, cutoff: a.record.recordedAt });
+    const schedule = bridgeRows.find((row) => row.kind === "schedule")!;
+    const changes: Dataset = { formatVersion: 2, profiles: [profile(BRIDGE_PROFILE)], rightsDecisions: [], artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+    const atB = await witnessClock(client);
+    addCapture(changes, "decision-wrong-schedule", [revision("decision-wrong-schedule", "schedule", { ...schedule.data, week: 5 }, schedule.id)], atB, BRIDGE_PROFILE);
+    await store.publish("decision-wrong-schedule", changes, atB);
+    const bindingB = await store.recordSourceNormalization("recovery-binding-B", request, bindingA.event.id);
+    const b = await store.recordSourceDecision("recovery-decision-B", scope, a.record.id);
+    expect(b.record.plan).toMatchObject({ state: "withheld", outcome: null, selected: null,
+      witness: { withheld: [{ bindingId: bindingB.event.id, reason: "source-schedule-context-conflict" }] } });
+    const unavailable = await store.replaySourceDecision({ ...scope, cutoff: b.record.recordedAt });
+    expect(unavailable).toMatchObject({ reason: "source-evidence-withheld", record: null });
+    expect(sourceDecisionBasis(unavailable.currentPlan!)).toBe(sourceDecisionBasis(b.record.plan));
+    const recovery = await witnessClock(client); changes.artifacts = []; changes.captures = [];
+    addCapture(changes, "decision-recovered-schedule", [revision("decision-recovered-schedule", "schedule", schedule.data, "decision-wrong-schedule")], recovery, BRIDGE_PROFILE);
+    await store.publish("decision-recovered-schedule", changes, recovery);
+    const bindingC = await store.recordSourceNormalization("recovery-binding-C", request, bindingB.event.id);
+    const c = await store.recordSourceDecision("recovery-decision-C", scope, b.record.id);
+    expect(c.record.plan).toMatchObject({ state: "evaluated", outcome: { result: "selected" }, selected: { bindingId: bindingC.event.id, revisionId: bindingA.event.revision!.id } });
+    expect(await store.replaySourceDecision({ ...scope, cutoff: c.record.recordedAt })).toMatchObject({ status: "current-source-decision", record: c.record });
+    expect(await store.replaySourceDecision({ ...scope, cutoff: a.record.recordedAt })).toEqual(original);
+    expect(await store.replaySourceDecision({ ...scope, cutoff: b.record.recordedAt })).toMatchObject({ reason: "source-evidence-withheld" });
+    const missingScope = decisionScope(request.profileId, "reconciliation", factKey("00-0000002"));
+    const missing = await store.recordSourceDecision("missing-decision", missingScope, null);
+    expect(missing.record.plan).toMatchObject({ state: "evaluated", selected: null,
+      outcome: { result: "insufficient-sources", selectedObservationId: null, rule: "no-candidates" } });
+    expect(await store.replaySourceDecision({ ...missingScope, cutoff: missing.record.recordedAt })).toMatchObject({ status: "current-source-decision", record: missing.record });
+    // Current means the immutable calculation is fresh; it does not imply that
+    // an unresolved/conflicting/empty calculation is usable in a final label.
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_outcome_labels")).rows[0].n).toBe(0);
+  });
+});
+
+it("CSV source decision SQL recomputes rehashed outcomes, exact inputs, witness scope, selection and mode", async () => {
+  await withProof(async ({ client, store }) => {
+    const { request } = await seedBinding(store); await store.recordSourceNormalization("forgery-binding", request, null);
+    await publishInactive(store);
+    for (const kind of ["reconciliation", "participation"] as const) {
+      const plan = await store.planSourceDecision({ ...decisionScope(request.profileId, kind), cutoff: await witnessClock(client) });
+      const variants = [
+        { ...plan, outcome: kind === "reconciliation" ? { result: "conflict", selectedObservationId: null, rule: "material-discrepancy" } : { state: "offensive-participant" } },
+        { ...plan, selected: null, outcome: null }, { ...plan, mode: "production-research" },
+        { ...plan, state: "withheld" }, { ...plan, nativeInputs: [] },
+        { ...plan, witness: rehashWitness({ ...plan.witness, heads: [] }) },
+        { ...plan, witness: rehashWitness({ ...plan.witness, entityKeys: [factKey("00-0000002")] }) },
+        { ...plan, selected: plan.selected ? { ...plan.selected, bindingId: "forged-binding" } : { bindingId: "forged-binding" } },
+        { ...plan, policyId: "invented-v9" }, { ...plan, invented: true },
+      ];
+      for (const candidate of variants) {
+        if (canonical(candidate) === canonical(plan)) continue;
+        await probe(client, async () => {
+          await expect(client.query("SELECT predictive_record_source_decision('forged',NULL,$1)", [rehashDecision(candidate as SourceDecisionPlan)]))
+            .rejects.toMatchObject({ code: "23514", message: "source-decision-plan-invalid" });
+        });
+      }
+    }
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_decisions")).rows[0].n).toBe(0);
+  });
+});
+
+it("CSV source decision recorder and replay enforce actual non-superuser privileges and database-clock access", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const { request } = await seedBinding(store); await store.recordSourceNormalization("roles-binding", request, null);
+    const scope = decisionScope(request.profileId);
+    await withLogin(client, target, ["predictive_recorder", "predictive_replay", "predictive_harness"], async (writer, writerTarget) => {
+      const restricted = await createLocalPredictiveStore(writer, writerTarget, artifacts);
+      const a = await restricted.recordSourceDecision("roles-decision", scope, null);
+      for (const table of ["predictive_source_decisions", "predictive_source_decision_bindings", "predictive_source_decision_inputs", "predictive_source_decision_rights"])
+        await expect(writer.query(`INSERT INTO ${table} DEFAULT VALUES`)).rejects.toMatchObject({ code: "42501" });
+      await expect(writer.query("SELECT predictive_source_decision_plan_at($1,clock_timestamp())", [{ ...scope, cutoff: a.record.recordedAt }]))
+        .rejects.toMatchObject({ code: "42501" });
+      await withLogin(client, target, ["predictive_replay"], async (reader, readerTarget) => {
+        let checked = 0;
+        const tracked = { query: async (sql: string, params?: unknown[]) => {
+          if (sql === "SELECT public.predictive_source_decision_plan($1) AS plan") {
+            expect((await reader.query("SELECT current_setting('transaction_read_only') AS ro,current_setting('transaction_isolation') AS isolation")).rows[0])
+              .toEqual({ ro: "on", isolation: "repeatable read" }); checked++;
+          }
+          return reader.query(sql, params);
+        } } as unknown as Client;
+        const replay = await createLocalPredictiveStore(tracked, readerTarget, artifacts);
+        expect(await replay.replaySourceDecision({ ...scope, cutoff: a.record.recordedAt })).toMatchObject({ status: "current-source-decision", record: a.record });
+        expect(checked).toBeGreaterThan(0);
+        await expect(reader.query("SELECT predictive_record_source_decision('denied',NULL,$1)", [a.record.plan])).rejects.toMatchObject({ code: "42501" });
+        await expect(reader.query("SELECT predictive_source_decision_basis($1)", [a.record.plan])).rejects.toMatchObject({ code: "42501" });
+      });
+    });
+    await withLogin(client, target, ["predictive_recorder", "predictive_replay"], async (writer, writerTarget) => {
+      const restricted = await createLocalPredictiveStore(writer, writerTarget, artifacts);
+      await expect(restricted.recordSourceDecision("no-harness", scope, "roles-decision")).rejects.toThrow("predictive-synthetic-outside-harness");
+    });
+    await withLogin(client, target, ["predictive_retention_owner"], async (owner) => {
+      await expect(owner.query("SELECT predictive_source_decision_plan($1)", [{ ...scope, cutoff: await witnessClock(client) }])).rejects.toMatchObject({ code: "42501" });
+    });
+  });
+});
+
+it("CSV source decision current source, historical context and native rights are checked before any file opens", async () => {
+  for (const revoked of ["source", "context", "native"] as const) await withProof(async ({ client, store, artifacts, target }) => {
+    const { request, input } = await seedBinding(store); await store.recordSourceNormalization("rights-decision-binding", request, null);
+    await publishInactive(store);
+    const scope = decisionScope(request.profileId, "participation"); const a = await store.recordSourceDecision("rights-decision", scope, null);
+    const profileId = revoked === "source" ? input.profile.id : revoked === "context" ? BRIDGE_PROFILE : "native-participation";
+    const prior = revoked === "source" ? input.rightsDecisions[0].id : "rights-" + profileId;
+    const at = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,decided_at,evidence_kind,evidence_reference)
+      VALUES ('decision-revoked',$1,$2,'{}',$3,$3,'synthetic','fixture revocation')`, [profileId, prior, at]);
+    let reads = 0;
+    const denied = async () => { reads++; throw new Error("provider bytes opened before access check"); };
+    const gated = await createLocalPredictiveStore(client, target, { ...artifacts, database: { ...artifacts.database, read: denied } });
+    expect(await gated.replaySourceDecision({ ...scope, cutoff: a.record.recordedAt })).toMatchObject({ reason: "rights-not-in-force", record: null, currentPlan: null });
+    await expect(gated.recordSourceDecision(a.record.id, scope, null)).rejects.toThrow("source-decision-access-refused");
+    await expect(client.query("SELECT predictive_source_decision_plan($1)", [{ ...scope, cutoff: a.record.recordedAt }])).rejects.toThrow("source-decision-access-refused");
+    expect(reads).toBe(0);
+  });
+});
+
+it("CSV source decision replay refuses corrupted source and native bytes, association omissions and SQL parity mismatches", async () => {
+  await withProof(async ({ client, store, root, artifacts, target }) => {
+    const { request, input } = await seedBinding(store); await store.recordSourceNormalization("integrity-decision-binding", request, null);
+    const native = await publishInactive(store); const scope = decisionScope(request.profileId, "participation");
+    const a = await store.recordSourceDecision("integrity-decision", scope, null); const req = { ...scope, cutoff: a.record.recordedAt };
+    for (const [ref, bytes] of [[input.artifact.sha256 + ".csv", input.artifact.bytes], [native.artifacts[0].sha256 + ".json", native.artifacts[0].bytes]]) {
+      await writeFile(join(root, ".db-blobs", ref), "damaged", { mode: 0o600 });
+      await expect(store.replaySourceDecision(req)).rejects.toThrow("artifact-integrity-failed");
+      await writeFile(join(root, ".db-blobs", ref), bytes, { mode: 0o600 });
+    }
+    for (const table of ["predictive_source_decision_bindings", "predictive_source_decision_inputs", "predictive_source_decision_rights"]) {
+      const rows = (await client.query(`SELECT * FROM ${table} WHERE decision_id=$1`, [a.record.id])).rows;
+      expect(rows.length).toBeGreaterThan(0);
+      await client.query(`ALTER TABLE ${table} DISABLE TRIGGER USER`);
+      await client.query(`DELETE FROM ${table} WHERE decision_id=$1`, [a.record.id]);
+      await expect(store.replaySourceDecision(req)).rejects.toThrow("stored-source-decision-associations-mismatch");
+      for (const row of rows) await client.query(`INSERT INTO ${table} VALUES ($1,$2)`, Object.values(row));
+      await client.query(`ALTER TABLE ${table} ENABLE TRIGGER USER`);
+    }
+    const tracked = { query: async (sql: string, params?: unknown[]) => {
+      const result = await client.query(sql, params);
+      if (sql === "SELECT public.predictive_source_decision_plan($1) AS plan")
+        result.rows[0].plan = rehashDecision({ ...result.rows[0].plan, outcome: { state: "offensive-participant" } });
+      return result;
+    } } as unknown as Client;
+    const corrupt = await createLocalPredictiveStore(tracked, target, artifacts);
+    await expect(corrupt.replaySourceDecision(req)).rejects.toThrow("stored-source-decision-plan-mismatch");
+    expect((await client.query("SELECT current_setting('transaction_read_only') AS ro")).rows[0].ro).toBe("off");
+    expect(await store.replaySourceDecision(req)).toMatchObject({ status: "current-source-decision", record: a.record });
+  });
+});
+
+it("CSV source decision concurrent recorders commit exactly one proposal for the expected head", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const { request } = await seedBinding(store); await store.recordSourceNormalization("decision-race-binding", request, null);
+    const scope = decisionScope(request.profileId); const a = await store.recordSourceDecision("decision-race-A", scope, null);
+    await withLogin(client, target, ["predictive_recorder", "predictive_replay", "predictive_harness"], async (one, oneTarget) => {
+      await withLogin(client, target, ["predictive_recorder", "predictive_replay", "predictive_harness"], async (two, twoTarget) => {
+        const first = await createLocalPredictiveStore(one, oneTarget, artifacts);
+        const second = await createLocalPredictiveStore(two, twoTarget, artifacts);
+        await client.query("BEGIN"); await client.query("SELECT pg_advisory_xact_lock(520052,1)");
+        const pending = Promise.allSettled([first.recordSourceDecision("decision-race-B", scope, a.record.id),
+          second.recordSourceDecision("decision-race-C", scope, a.record.id)]);
+        try {
+          let blocked = false;
+          for (let n = 0; n < 50; n++) {
+            const waiting = (await client.query(`SELECT count(*)::integer AS n FROM pg_stat_activity
+              WHERE datname=current_database() AND wait_event_type='Lock' AND pid<>pg_backend_pid()`)).rows[0].n;
+            if (waiting >= 2) { blocked = true; break; }
+            await client.query("SELECT pg_sleep(0.01)");
+          }
+          expect(blocked).toBe(true);
+        } finally { await client.query("COMMIT"); }
+        const result = await pending;
+        expect(result.filter((row) => row.status === "fulfilled")).toHaveLength(1);
+        const failed = result.find((row) => row.status === "rejected");
+        expect(failed?.status === "rejected" && failed.reason.message).toBe("source-decision-head-conflict");
+        expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_decisions")).rows[0].n).toBe(2);
+      });
+    });
+  });
+});
+
+it("CSV source decision retention removes cited source history and descendants with identical restored-backup audit", async () => {
+  const fixture = await normalizationFixture(); let history: RecordedRetentionEvent[] = [];
+  const publishChain = async (store: Store) => {
+    await store.publishSourceStats(fixture.input); await store.publish("decision-retention-context", fixture.context, "2026-10-11T00:00:00.000Z");
+    const raw = { profileId: fixture.input.profile.id, rawGameId: sourceGameId, rawTeam: "PHI", rawPlayerId: "00-0000001" };
+    await store.recordSourceNormalization("retained-decision-binding", raw, null);
+    const scope = decisionScope(raw.profileId);
+    await store.recordSourceDecision("retained-decision-A", scope, null);
+    await store.recordSourceDecision("retained-decision-B", scope, "retained-decision-A");
+    const unrelated = sourceClaimFixture("decision-unrelated-team", "team"); await store.publishSourceStats(unrelated);
+    await store.recordSourceDecision("unrelated-decision", decisionScope(unrelated.profile.id, "reconciliation",
+      "team-game-stats:" + NORMALIZATION_GAME + ":nfl:team:PHI"), null);
+  };
+  await withProof(async ({ client, store, artifacts, target }) => {
+    await publishChain(store);
+    await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+      const owner = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      const retained = await owner.retain({ id: "source-decision-retention", reason: "provider-request", authority: "synthetic test",
+        decidedAt: fixture.input.capturedAt, scope: { kind: "source", profileIds: [fixture.input.profile.id], capturedFrom: null, capturedBefore: null }, auditLevel: "full" });
+      expect(retained.removedCounts).toMatchObject({ sourceDecisions: 2, sourceDecisionLinks: 6 });
+      expect(retained.removedIdsDigest).toBe(retentionIdsDigest((await client.query("SELECT target_kind AS kind,target_id AS id FROM predictive_retention_tombstones")).rows));
+      history = await owner.retentionEvents();
+    });
+    expect((await client.query("SELECT id FROM predictive_source_decisions ORDER BY id")).rows).toEqual([{ id: "unrelated-decision" }]);
+  });
+  await withProof(async ({ client, store }) => {
+    await publishChain(store);
+    expect(await store.reapply(history)).toEqual([{ eventId: "source-decision-retention", status: "reapplied", matched: true }]);
+    expect(await store.reapply(history)).toEqual([{ eventId: "source-decision-retention", status: "present", matched: true }]);
+    expect((await client.query("SELECT id FROM predictive_source_decisions ORDER BY id")).rows).toEqual([{ id: "unrelated-decision" }]);
+  });
+});
+
+it("CSV source decision native retention deletes the entire affected lineage without reviving an earlier positive record", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const { request } = await seedBinding(store); await store.recordSourceNormalization("native-retention-binding", request, null);
+    const scope = decisionScope(request.profileId, "participation");
+    const a = await store.recordSourceDecision("native-retention-A", scope, null);
+    await publishInactive(store);
+    const b = await store.recordSourceDecision("native-retention-B", scope, a.record.id);
+    await store.recordSourceDecision("native-retention-C", scope, b.record.id);
+    const unrelated = await store.recordSourceDecision("native-retention-unrelated", decisionScope(request.profileId), null);
+    await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+      const owner = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      const retained = await owner.retain({ id: "native-decision-retention", reason: "provider-request", authority: "synthetic test",
+        decidedAt: "2026-10-09T12:00:00.000Z", scope: { kind: "source", profileIds: ["native-participation"], capturedFrom: null, capturedBefore: null }, auditLevel: "full" });
+      expect(retained.removedCounts).toMatchObject({ sourceDecisions: 3, sourceDecisionLinks: 13, observations: 1 });
+      expect(retained.removedIdsDigest).toBe(retentionIdsDigest((await client.query("SELECT target_kind AS kind,target_id AS id FROM predictive_retention_tombstones")).rows));
+    });
+    expect((await client.query("SELECT id FROM predictive_source_decisions ORDER BY id")).rows).toEqual([{ id: unrelated.record.id }]);
+    expect(await store.replaySourceDecision({ ...scope, cutoff: await witnessClock(client) })).toMatchObject({ reason: "source-decision-missing", record: null });
+    expect((await client.query("SELECT id FROM predictive_source_bindings")).rows).toEqual([{ id: "native-retention-binding" }]);
+  });
+});
+
+it("CSV source decision retention conservatively removes capture-less scopes inside time-limited source deletions", async () => {
+  await withProof(async ({ client, store }) => {
+    const fixture = await normalizationFixture(); await store.publish("decision-capture-less", fixture.context, "2026-10-11T00:00:00.000Z");
+    const scope = decisionScope(fixture.input.profile.id);
+    const a = await store.recordSourceDecision("capture-less-decision-A", scope, null);
+    await store.recordSourceDecision("capture-less-decision-B", scope, a.record.id);
+    expect(a.record.plan.outcome).toMatchObject({ result: "insufficient-sources" });
+    const retained = await store.retain({ id: "capture-less-decision-retention", reason: "provider-request", authority: "synthetic test",
+      decidedAt: fixture.input.capturedAt, scope: { kind: "source", profileIds: [fixture.input.profile.id],
+        capturedFrom: "2026-10-01T00:00:00.000Z", capturedBefore: "2026-10-02T00:00:00.000Z" }, auditLevel: "digest-only" });
+    expect(retained.removedCounts).toMatchObject({ sourceDecisions: 2, sourceDecisionLinks: 2 });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_decisions")).rows[0].n).toBe(0);
+  });
+});
+
+it("CSV source decision migration upgrades v8 preserving recorded bindings and witnesses and reruns as a no-op", async () => {
+  await withProof(async ({ client, target, store }) => {
+    const { request } = await seedBinding(store); const a = await store.recordSourceNormalization("decision-upgrade-binding", request, null);
+    const req = factRequest(request.profileId, a.event.recordedAt); const witness = await sqlWitness(client, req);
+    const bindings = (await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows;
+    const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
+    const options = { ...target, files, verify: createCatalogVerifier(contracts) };
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9], schemaVersion: 9 });
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 8)).toEqual(ledger);
+    expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
+    expect(await sqlWitness(client, req)).toEqual(witness);
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 9 });
+    const decision = await store.recordSourceDecision("after-decision-upgrade", decisionScope(request.profileId), null);
+    expect(decision.record.plan.witness.heads).toEqual(witness.heads);
+  }, 8);
+});
+
+it("CSV source reconciliation evaluates every bound provider and deterministic agreement also supports team facts", async () => {
+  for (const feed of ["player", "team"] as const) await withProof(async ({ client, store }) => {
+    const { request, input } = await seedBinding(store, feed);
+    const a = await store.recordSourceNormalization("provider-A-binding", request, null);
+    const key = feed === "player" ? factKey() : "team-game-stats:" + NORMALIZATION_GAME + ":nfl:team:PHI";
+    const second = sourceClaimFixture("provider-B", feed);
+    const other = "csv-other-" + feed; second.profile.id = other;
+    second.artifact.profileId = other; second.rightsDecisions[0] = { ...second.rightsDecisions[0], id: "rights:" + other, profileId: other };
+    await store.publishSourceStats(second);
+    if (feed === "player") await client.query(`INSERT INTO predictive_profile_identity_links VALUES
+      ('provider-B-link',$1,$2,'gsis','2026-01-01T00:00:00Z')`, [other, BRIDGE_PROFILE]);
+    const raw = { ...request, profileId: other };
+    const b = await store.recordSourceNormalization("provider-B-binding", raw, null);
+    expect(b.event.revision?.data).toEqual(a.event.revision?.data);
+    const scope = { ...decisionScope(input.profile.id, "reconciliation", key), profileIds: [other, input.profile.id] };
+    const agreed = await store.recordSourceDecision("providers-agree", scope, null);
+    const expected = input.profile.id < other ? a.event : b.event;
+    expect(agreed.record.plan).toMatchObject({ witness: { heads: [{}, {}] }, outcome: {
+      result: "selected", rule: "sources-agree", selectedObservationId: expected.revision!.id }, selected: { bindingId: expected.id } });
+    const original = await store.replaySourceDecision({ ...scope, cutoff: agreed.record.recordedAt });
+    const changed = sourceClaimFixture("provider-B-corrected", feed, sourceCsv(feed, [{ ...sourceSamples()[feed][0], passing_yards: "95" }]));
+    changed.profile = second.profile; changed.artifact.profileId = other; changed.rightsDecisions = [];
+    changed.capturedAt = await witnessClock(client); await store.publishSourceStats(changed);
+    await store.recordSourceNormalization("provider-B-binding-corrected", raw, b.event.id);
+    const disputed = await store.recordSourceDecision("providers-disagree", scope, agreed.record.id);
+    expect(disputed.record.plan).toMatchObject({ outcome: { result: "conflict", rule: "material-discrepancy", selectedObservationId: null }, selected: null });
+    expect(await store.replaySourceDecision({ ...scope, cutoff: disputed.record.recordedAt })).toMatchObject({ status: "current-source-decision", record: disputed.record });
+    expect(await store.replaySourceDecision({ ...scope, cutoff: agreed.record.recordedAt })).toEqual(original);
   });
 });

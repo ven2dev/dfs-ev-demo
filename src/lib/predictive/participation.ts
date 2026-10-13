@@ -12,10 +12,8 @@ export type ParticipationState = ParticipationRecord["outcome"]["state"];
 export const hasPositivePlayerUsage = (revision: Revision) => revision.kind === "player-game-stats" &&
   [revision.data.attempts, revision.data.carries, revision.data.targets].some((value) => value !== null && value > 0);
 
-export const participationFromHeads = (heads: Observation[]): { state: ParticipationState } => {
-  const evidence = heads.filter((row) => row.entityKey.startsWith("participation-evidence:"));
-  const stats = heads.filter((row) => row.entityKey.startsWith("player-game-stats:"));
-  const byKind = new Map<string, Observation[]>();
+export const participationOutcome = (evidence: Pick<Observation, "entityKey" | "revision">[], positiveUsage: boolean): { state: ParticipationState } => {
+  const byKind = new Map<string, typeof evidence>();
   for (const row of evidence) {
     const kind = row.entityKey.split(":")[3];
     byKind.set(kind, [...(byKind.get(kind) ?? []), row]);
@@ -24,10 +22,15 @@ export const participationFromHeads = (heads: Observation[]): { state: Participa
   const claims = new Set(evidence.flatMap((row) => row.revision.kind === "participation-evidence" ? [row.revision.data.claim] : []));
   // Usage counts only when every stats head is present and shows an attempt,
   // carry or target; providers that disagree about usage supply no usage evidence.
-  if (stats.length && stats.every((row) => hasPositivePlayerUsage(row.revision))) claims.add("offensive-participant");
+  if (positiveUsage) claims.add("offensive-participant");
   if (claims.size > 1) return { state: "conflicting" };
   const [claim] = claims;
   return { state: claim ?? "unresolved" };
+};
+export const participationFromHeads = (heads: Observation[]): { state: ParticipationState } => {
+  const stats = heads.filter((row) => row.entityKey.startsWith("player-game-stats:"));
+  return participationOutcome(heads.filter((row) => row.entityKey.startsWith("participation-evidence:")),
+    stats.length > 0 && stats.every((row) => hasPositivePlayerUsage(row.revision)));
 };
 
 // The evidence scope for one player-game: every participation-evidence fact

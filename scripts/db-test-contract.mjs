@@ -108,6 +108,20 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "CSV SQL witness access uses database-clock rights and denies private kernels and unbounded requests",
   "CSV SQL witness migration upgrades v7 preserving bindings and prior migration history",
   "CSV SQL witness mismatch fails closed and restores the read-only replay transaction",
+  "CSV source decisions persist exact witnesses at database time with immutable history and idempotent retries",
+  "CSV source decision recaptures invalidate current records without changing earlier replay or numerical revisions",
+  "CSV source participation combines native claims with positive usage and never infers absence from zero or blank statistics",
+  "CSV source decisions persist unavailable plans and recover without stale selections while missing facts remain insufficient",
+  "CSV source decision SQL recomputes rehashed outcomes, exact inputs, witness scope, selection and mode",
+  "CSV source decision recorder and replay enforce actual non-superuser privileges and database-clock access",
+  "CSV source decision current source, historical context and native rights are checked before any file opens",
+  "CSV source decision replay refuses corrupted source and native bytes, association omissions and SQL parity mismatches",
+  "CSV source decision concurrent recorders commit exactly one proposal for the expected head",
+  "CSV source decision retention removes cited source history and descendants with identical restored-backup audit",
+  "CSV source decision native retention deletes the entire affected lineage without reviving an earlier positive record",
+  "CSV source decision retention conservatively removes capture-less scopes inside time-limited source deletions",
+  "CSV source decision migration upgrades v8 preserving recorded bindings and witnesses and reruns as a no-op",
+  "CSV source reconciliation evaluates every bound provider and deterministic agreement also supports team facts",
 ]);
 
 export const CORPUS_REQUIRED_CASES = Object.freeze([

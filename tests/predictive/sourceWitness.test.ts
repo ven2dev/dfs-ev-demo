@@ -6,6 +6,10 @@ import { checkSourceWitness, sourceFactWitness, sourcePostWindowCapture, sourceR
 import { canonical, digest } from "../../src/lib/predictive/validation.ts";
 import { normalizationFixture, NORMALIZATION_GAME, rewriteNormalizationRows } from "./fixtures/sourceNormalization.ts";
 import { sourceCsv, sourceSamples } from "./fixtures/source.ts";
+import { sourceDecisionBasis, sourceDecisionPlan, sourceDecisionRequest } from "../../src/lib/predictive/sourceDecisions.ts";
+import { addCapture, profile, revision, rights } from "./fixtures/passingYards.ts";
+import { createReplay } from "../../src/lib/predictive/replay.ts";
+import type { Dataset } from "../../src/lib/predictive/types.ts";
 
 const A = "2026-10-10T12:00:00.000Z";
 const B = "2026-10-10T13:00:00.000Z";
@@ -54,6 +58,64 @@ const facts = (events: SourceBindingEvent[], plans: SourceNormalizationPlan[], c
   sourceFactHeadsAt(events, plans, { profileIds: [...new Set(plans.map((plan) => plan.binding.sourceProfileId))], entityKeys, cutoff });
 const postRequest = (snapshot: SourceFactSnapshot, eligibleAt = A) => ({ entityKey: key(),
   bindingId: snapshot.heads[0].head.id, captureId: snapshot.heads[0].head.plan.binding.sourceCaptures[0].id, eligibleAt });
+
+const decisionRequest = (snapshot: SourceFactSnapshot, kind: "reconciliation" | "participation" = "reconciliation") => ({
+  kind, profileIds: snapshot.request.profileIds, entityKey: key(), cutoff: snapshot.request.cutoff,
+});
+const nativeInactive = (id = "inactive") => {
+  const dataset: Dataset = { formatVersion: 2, profiles: [profile("native-participation")], rightsDecisions: [rights("native-participation")],
+    artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
+  const fact = "participation-evidence:" + NORMALIZATION_GAME + ":00-0000001:official-inactive-list";
+  addCapture(dataset, id, [revision(id, "participation-evidence", { gameId: NORMALIZATION_GAME, playerId: "00-0000001",
+    rawPlayerId: "00-0000001", playerIdProvider: "gsis", teamId: "nfl:team:PHI", evidenceKind: "official-inactive-list", claim: "inactive-or-dnp" })],
+  "2026-10-09T12:00:00.000Z", "native-participation");
+  return createReplay(dataset, A, A, "internal-research").heads(fact);
+};
+
+it("source decision plans retain exact selection provenance and query time alone does not stale them", async () => {
+  const a = event("decision-A", await planAt()); const snapshot = facts([a], [a.plan]);
+  const plan = sourceDecisionPlan(snapshot, decisionRequest(snapshot), [], "synthetic-proof");
+  expect(plan).toMatchObject({ state: "evaluated", outcome: { result: "selected", selectedObservationId: "revision-decision-A" },
+    selected: { bindingId: "decision-A", revisionId: "revision-decision-A" }, nativeInputs: [] });
+  const later = facts([a], [queryAt(a.plan, B)], B);
+  expect(sourceDecisionBasis(sourceDecisionPlan(later, decisionRequest(later), [], "synthetic-proof"))).toBe(sourceDecisionBasis(plan));
+  expect(sourceDecisionPlan(later, decisionRequest(later), [], "synthetic-proof").planDigest).not.toBe(plan.planDigest);
+});
+
+it("source participation plans combine explicit evidence with positive usage without turning zero into absence", async () => {
+  const positive = event("decision-positive", await planAt()); const snapshot = facts([positive], [positive.plan]);
+  expect(sourceDecisionPlan(snapshot, decisionRequest(snapshot, "participation"), [], "synthetic-proof").outcome).toEqual({ state: "offensive-participant" });
+  const native = nativeInactive();
+  expect(sourceDecisionPlan(snapshot, decisionRequest(snapshot, "participation"), native, "synthetic-proof").outcome).toEqual({ state: "conflicting" });
+  const zero = event("decision-zero", await planAt(A, { values: { attempts: "0", carries: "0", targets: "0" } }));
+  const zeroFacts = facts([zero], [zero.plan]);
+  expect(sourceDecisionPlan(zeroFacts, decisionRequest(zeroFacts, "participation"), [], "synthetic-proof").outcome).toEqual({ state: "unresolved" });
+  expect(sourceDecisionPlan(zeroFacts, decisionRequest(zeroFacts, "participation"), native, "synthetic-proof").outcome).toEqual({ state: "inactive-or-dnp" });
+});
+
+it("source decisions preserve withheld evidence and native provenance changes invalidate freshness", async () => {
+  const a = event("decision-withheld", await planAt(A, { missing: true })); const snapshot = facts([a], [a.plan]);
+  for (const kind of ["reconciliation", "participation"] as const)
+    expect(sourceDecisionPlan(snapshot, decisionRequest(snapshot, kind), kind === "participation" ? nativeInactive() : [], "synthetic-proof"))
+      .toMatchObject({ state: "withheld", outcome: null, selected: null });
+  const empty = sourceFactSnapshot(snapshot.request, [], []);
+  expect(sourceDecisionPlan(empty, decisionRequest(empty), [], "synthetic-proof").outcome).toMatchObject({ result: "insufficient-sources" });
+  const original = sourceDecisionPlan(empty, decisionRequest(empty, "participation"), nativeInactive("original"), "synthetic-proof");
+  const changed = sourceDecisionPlan(empty, decisionRequest(empty, "participation"), nativeInactive("recaptured"), "synthetic-proof");
+  expect(changed.outcome).toEqual(original.outcome);
+  expect(sourceDecisionBasis(changed)).not.toBe(sourceDecisionBasis(original));
+});
+
+it("source decision plans refuse future native evidence, duplicate inputs and widened statistics scope", async () => {
+  const a = event("decision-scope", await planAt()); const snapshot = facts([a], [a.plan]); const native = nativeInactive();
+  const future = structuredClone(native); future[0].capture.ingestedAt = B;
+  for (const inputs of [future, [...native, ...native]])
+    expect(() => sourceDecisionPlan(snapshot, decisionRequest(snapshot, "participation"), inputs, "synthetic-proof")).toThrow("source-decision-native-scope-refused");
+  expect(() => sourceDecisionPlan(snapshot, decisionRequest(snapshot), native, "synthetic-proof")).toThrow("source-decision-native-scope-refused");
+  expect(() => sourceDecisionRequest({ ...decisionRequest(snapshot, "participation"), entityKey: "team-game-stats:" + NORMALIZATION_GAME + ":nfl:team:PHI" }))
+    .toThrow("source-decision-request-refused");
+  expect(() => sourceDecisionPlan(snapshot, { ...decisionRequest(snapshot), profileIds: ["unrequested"] }, [], "synthetic-proof")).toThrow("source-decision-scope-refused");
+});
 
 it("consumer witnesses pin exact binding and revision references without retaining numeric payloads or query-time freshness", async () => {
   const a = event("A", await planAt()); const snapshot = facts([a], [a.plan]); const witness = sourceFactWitness(snapshot);

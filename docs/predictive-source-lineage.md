@@ -3,7 +3,8 @@
 The pure contract in `sourceLineage.ts` now has a PostgreSQL recorder and verified
 hydration path under forward migrations 0006 and 0007. **These canonical source revisions
 remain internal research staging.** They do not enter `predictive_observations`,
-model inputs, participation/reconciliation decisions or labels. Full activation
+model inputs, released participation/reconciliation consumers or labels. 0009 adds
+a separate research decision ledger below. Full activation
 must update every reader's head rules together. Migration 0003 is frozen.
 
 ## Two identities, two chains
@@ -163,9 +164,9 @@ and does not establish a usable selection or complete population. Capture
 confirmation alone establishes none of the other final-label checks, including
 qualified completion, identity, current outcome-use rights or a persisted
 participation/reconciliation decision. The witnesses are research application
-preparation, not a new stored decision format or SQL activation. Existing
-features, decisions and labels still use the released contracts until forward
-recorders adopt the shared SQL rule together.
+preparation. 0009 adds the isolated stored research decisions below. Existing
+features and labels still use the released contracts until their coordinated
+recorders adopt the shared SQL rule.
 
 `sourceFacts.ts` and the persisted `replaySourceStatsFacts()` now implement the
 application's preliminary research read boundary: complete raw-chain discovery
@@ -320,3 +321,63 @@ boundaries, current/stale schedule reconciliation and rights before hydration.
 Expected failure reasons, dependency roles, revision counts and canonical
 reconciliation input order are hand-specified. These synthetic tests do not
 qualify real-source identity, completion, population coverage or history.
+
+### Persisted research decisions (0009)
+
+[`sourceDecisions.ts`](../src/lib/predictive/sourceDecisions.ts) and
+[`0009_predictive_source_decisions.sql`](../db/migrations/0009_predictive_source_decisions.sql)
+add an isolated append-only decision ledger. These records use the verified
+CSV binding heads, not observation-only foreign keys. Existing feature and
+label writers remain gated pending their coordinated integration.
+
+`recordSourceDecision(id, requestWithoutCutoff, expectedHeadId)` records either
+reconciliation-v1 for one player/team statistics fact or participation-v1 for
+one player statistics fact. Its explicit profile set is part of the natural
+scope. The application verifies all source/context files; SQL independently
+reconstructs the witness, exact selected binding/revision/token, native
+participation heads, policy result and mode. The recorder takes the publication
+lock and SHARE evidence locks before stamping `recorded_at` with the database
+clock. Current rights and evidence freshness are checked under those locks.
+Private kernels and direct INSERT are unavailable to application roles. Actual
+non-superuser recorder/replay/harness sessions exercise the supported path.
+
+Unavailable source evidence is a recordable null-outcome plan; a later usable
+record supersedes it without rewriting earlier cutoffs. Missing reconciliation
+is an evaluated `insufficient-sources` result. Participation combines every
+native evidence head (including absence/conflict) with positive usage across
+all statistics heads. Zero/blank usage alone remains unresolved; an explicit
+inactive claim conflicting with positive usage stays conflicting. Native JSON
+heads retain the released earliest-capture provenance rule; raw CSV recaptures
+replace their binding token even when their numeric revision is unchanged.
+
+`replaySourceDecision(request)` runs read-only/repeatable-read, re-verifies every
+visible record at its original cutoff and checks its complete association sets.
+It then compares the latest record with the current evidence basis, excluding
+query time. New source recaptures/native corrections invalidate current use.
+Stale or withheld results expose no saved selected record. `current` means the
+recorded calculation matches its evidence: an insufficient/conflicting/unresolved
+outcome is still unsuitable for a final label. Current source, historical
+normalization-context and native rights are checked before opening any files;
+revocation also blocks exact retries. Research permission grants neither
+model-input nor outcome-label permission.
+
+A decision cites **all visible binding history in its explicit profiles**, not
+only the selected witness heads. That is the conservative closure needed to
+reproduce raw discovery and gate historical access. Native inputs and rights
+have separate immutable association tables. Deleting any cited binding/native
+input deletes the **entire affected decision scope lineage**, including ancestors:
+removing a newer contradictory claim must not revive an earlier positive record.
+Scopes without binding history are conservatively removed by a deletion naming
+an explicit profile, even if a narrow capture window contains no source bytes.
+This can remove more research history than the requested time window; unrelated
+scopes survive. New counts/audit kinds occur only for nonempty removals, preserving
+legacy backup re-apply digests. New evidence must be freshly recorded after
+retention; removed decisions never become a fallback.
+
+Bounds remain 16 source profiles, 256 raw lineages, 8,192 binding events and
+256 events per raw lineage. Decisions add a 256-record history limit and 256
+native-head limit; overflow refuses rather than truncates. There are no new
+provider/blob files in this ledger. These tests qualify the local storage and
+policy boundary, not real game bridges, completion, population, membership or
+provider rights for final labels. Full feature/run-manifest and final-label
+integration is the next delivery.

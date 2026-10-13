@@ -197,10 +197,10 @@ test("contract generation refuses unsupported managed objects and cleans up its 
 
 test("an extension can be explicitly contracted without its members hiding application drift", async () => {
   const sql = "CREATE EXTENSION pg_trgm WITH SCHEMA public;\n";
-  const extensionFiles = [...files, { version: files.length + 1, filename: "0004_synthetic_extension.sql", sql, sha256: fingerprint(sql) }];
+  const extensionFiles = [...files, { version: files.length + 1, filename: String(files.length + 1).padStart(4, "0") + "_synthetic_extension.sql", sql, sha256: fingerprint(sql) }];
   const artifacts = await buildCatalogContracts(harness, extensionFiles);
   const extensionContracts = { ledger: JSON.parse(artifacts.get("ledger.json")),
-    migrations: extensionFiles.map((file) => file.version).map((version) => JSON.parse(artifacts.get("000" + version + ".json"))) };
+    migrations: extensionFiles.map((file) => file.version).map((version) => JSON.parse(artifacts.get(String(version).padStart(4, "0") + ".json"))) };
   assert.deepEqual(compareCatalogs(contracts.migrations.at(-1), extensionContracts.migrations.at(-1)), ["Unexpected extension:pg_trgm"]);
   await harness.withDatabase(async (client, expected) => {
     await runScratchMigrations(client, optionsFor(expected));
