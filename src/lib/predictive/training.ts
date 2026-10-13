@@ -60,6 +60,10 @@ export type TrainingSelectedRow = {
   history: { policy: typeof TRAINING_HISTORY_POLICY; definitionSha256: string; fromSeason: number; throughSeason: number; windows: number[]; maximumSlots: 16 };
   feature: TrainingFeatureSelection; label: TrainingLabelSelection;
 };
+export type TrainingMetadataSelection = {
+  ordinal: number; featureId: string | null; labelId: string | null;
+  labelSupersededAsOf: boolean; labelSupersededAtSnapshot: boolean;
+};
 
 const identity = (value: unknown) => {
   if (typeof value !== "string" || !/^[\x21-\x7e]{1,256}$/.test(value) || value.includes("|")) refuse("training-identity-refused");
@@ -161,8 +165,15 @@ const labelMatches = (record: SourceConsumerRecord, slot: TrainingSlot, selectio
 // Future label records are used only to disclose current supersession, never to
 // return a later value at an earlier label clock.
 export const selectTrainingRows = (request: FittingRunRequest, snapshotAt: string, records: SourceConsumerRecord[],
-  activePinnedFeatureIds: ReadonlySet<string> = new Set()): TrainingSelectedRow[] => {
+  activePinnedFeatureIds: ReadonlySet<string> = new Set(), fixedSelection?: TrainingMetadataSelection[]): TrainingSelectedRow[] => {
   const run = normalizeFittingRunRequest(request, snapshotAt); const snapshot = instant(snapshotAt);
+  // A database-selected subset does not contain the rest of each label chain.
+  // Preserve its exact IDs and full-lineage supersession flags; never run a new
+  // latest/head selection over that subset. The adapter must establish SQL
+  // completeness and authorize/verify all of these records first.
+  if (fixedSelection && (fixedSelection.length !== run.slots.length || fixedSelection.some((row, i) => row.ordinal !== i))) {
+    refuse("training-selection-inventory-mismatch");
+  }
   if (records.length > TRAINING_BOUNDS.consumers) refuse("training-consumer-bounds-refused");
   const inventory = new Map<string, SourceConsumerRecord>();
   const featuresByRequest = new Map<string, SourceConsumerRecord[]>();
@@ -186,9 +197,12 @@ export const selectTrainingRows = (request: FittingRunRequest, snapshotAt: strin
   }
   for (const group of featuresByRequest.values()) group.sort(byRecorded);
   return run.slots.map((slot, ordinal) => {
+    const fixed = fixedSelection?.[ordinal];
+    if (fixed && [fixed.featureId, fixed.labelId].some((id) => id !== null && !inventory.has(id))) refuse("training-selection-inventory-mismatch");
     const features = (featuresByRequest.get(featureKey(slot.playerId, slot.gameId, slot.featureCutoff)) ?? [])
       .filter((record) => featureMatches(record, slot, run.selection));
-    const feature = slot.featureRef === null ? features.at(-1) ?? null : inventory.get(slot.featureRef) ?? null;
+    const feature = fixed ? (fixed.featureId === null ? null : inventory.get(fixed.featureId)!) :
+      slot.featureRef === null ? features.at(-1) ?? null : inventory.get(slot.featureRef) ?? null;
     if (feature && (!featureMatches(feature, slot, run.selection) || instant(feature.recordedAt) > snapshot)) refuse("training-feature-reference-mismatch");
     let featureSelection: TrainingFeatureSelection = { state: "missing", reason: "feature-not-recorded", reasons: [], quality: [], reference: null, record: null };
     if (feature && feature.body.kind === "feature") {
@@ -208,7 +222,8 @@ export const selectTrainingRows = (request: FittingRunRequest, snapshotAt: strin
     const successors = new Set(labels.flatMap((record) => record.predecessorId ? [record.predecessorId] : []));
     const heads = labels.filter((record) => !successors.has(record.id));
     if (heads.length > 1) refuse("training-label-lineage-ambiguous");
-    const label = slot.labelRef === null ? heads[0] ?? null : inventory.get(slot.labelRef) ?? null;
+    const label = fixed ? (fixed.labelId === null ? null : inventory.get(fixed.labelId)!) :
+      slot.labelRef === null ? heads[0] ?? null : inventory.get(slot.labelRef) ?? null;
     if (label && (!labelMatches(label, slot, run.selection) || instant(label.recordedAt) > instant(slot.labelsAsOf))) {
       if (slot.labelRef !== null) refuse("training-label-reference-mismatch");
     }
@@ -219,8 +234,8 @@ export const selectTrainingRows = (request: FittingRunRequest, snapshotAt: strin
         fromSeason: slot.season - 2, throughSeason: slot.season, windows: [4, 8, 16], maximumSlots: 16 },
       feature: featureSelection,
       label: { state: selected ? "usable" : "missing", reason: selected ? null : label ? "label-profile-mismatch" : "label-not-recorded",
-        reference: selected ? reference(selected) : null, supersededAsOf: selected ? successors.has(selected.id) : false,
-        supersededNow: Boolean(currentSuccessor), record: selected },
+        reference: selected ? reference(selected) : null, supersededAsOf: selected ? fixed?.labelSupersededAsOf ?? successors.has(selected.id) : false,
+        supersededNow: selected ? fixed?.labelSupersededAtSnapshot ?? Boolean(currentSuccessor) : false, record: selected },
     };
   });
 };

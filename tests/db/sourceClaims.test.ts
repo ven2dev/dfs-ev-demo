@@ -1999,7 +1999,7 @@ it("CSV source reconciliation evaluates every bound provider and deterministic a
   });
 });
 
-const seedConsumers = async (store: Store, captureAt = "2026-10-11T12:00:00.000Z") => {
+const seedConsumers = async (store: Store, captureAt = "2026-10-11T12:00:00.000Z", pregameSchedule = false) => {
   const fixture = await normalizationFixture();
   fixture.input.capturedAt = captureAt;
   fixture.input.rightsDecisions[0].allowedUses = ["internal-research","model-input","outcome-label"];
@@ -2013,6 +2013,8 @@ const seedConsumers = async (store: Store, captureAt = "2026-10-11T12:00:00.000Z
   rewriteNormalizationRows(fixture.context,rows);
   Object.assign(fixture.context.artifacts[0],{ scopeKind: "season-file",scopeSeason: 2026 });
   fixture.context.captures[0].capturedAt=fixture.context.captures[0].availableAt=fixture.context.captures[0].ingestedAt="2026-10-07T12:00:00.000Z";
+  if (pregameSchedule) addCapture(fixture.context, "prior-pregame-schedule", rows.filter((row) => row.id === "game-schedule"),
+    "2026-10-01T12:00:00.000Z", BRIDGE_PROFILE);
   const native = createReplay(fixture.context,"2026-10-12T12:00:00.000Z","2026-10-12T12:00:00.000Z","internal-research");
   fixture.context.decisions=[recordCompletion("source-prior-completed",prior.gameId,native.completion(prior.gameId).inputs,
     "2026-10-08T12:00:00.000Z","synthetic-proof")];
@@ -2040,6 +2042,163 @@ const metadataRun = (slots: TrainingSlot[], profileIds: string[], fitCutoff: str
   modelIdentity: { modelVersion: "synthetic-proof", codeCommit: "a".repeat(40), configurationSha256: "b".repeat(64) },
   splitPolicy: { version: "target-event-disjoint-v1", evaluationMode: "walk-forward", aggregationPolicyId: "unique-events-v1", aggregationPolicySha256: "c".repeat(64) },
   population: { status: "unqualified", enumerationOrigin: "synthetic-explicit-slots", enumerationSha256: "d".repeat(64) }, slots,
+});
+const previewRequest = async (client: Client, seed: Awaited<ReturnType<typeof seedConsumers>>) => {
+  const slot: TrainingSlot = { datasetId: "preview-evaluation", partition: "evaluation", playerId: seed.request.playerId,
+    gameId: seed.request.gameId, season: 2026, seasonType: "REG", kickoff: "2026-10-18T17:00:00.000Z",
+    kickoffObservationId: "source-target", featureCutoff: seed.request.cutoff, labelsAsOf: await witnessClock(client),
+    featureRef: null, labelRef: null };
+  return metadataRun([slot], seed.profiles, seed.request.cutoff);
+};
+
+it("QB run preview verifies kickoff context and complete selections through restricted replay without publishing a dataset", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    const a = await store.recordSourcePassingYards("preview-feature-A", seed.request, seed.profiles);
+    const b = await store.recordSourcePassingYards("preview-feature-B", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed);
+    input.slots.push({ ...input.slots[0], playerId: "00-0000002", datasetId: "preview-other-shard" });
+    input.slots.reverse();
+    const before = (await client.query("SELECT id FROM predictive_source_consumers ORDER BY id")).rows;
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reads: string[] = [];
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads.push(args[0]); return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const preview = await reader.previewFittingRun(input);
+      expect(preview).toMatchObject({ status: "preview-only", fittingReady: false, populationCoverage: "unqualified",
+        counts: [{ partition: "training", slots: 0 }, { partition: "evaluation", slots: 2, targetEvents: 1,
+          features: { usable: 1, unavailable: 0, missing: 1, expired: 0 }, labels: { usable: 0, missing: 2 } }] });
+      expect(preview.rows.map((row) => [row.ordinal, row.slot.playerId, row.feature.reference?.id ?? null])).toEqual([
+        [0, seed.request.playerId, b.id], [1, "00-0000002", null],
+      ]);
+      expect(preview.rows[0].kickoff).toMatchObject({ observationId: "source-target", profileId: BRIDGE_PROFILE,
+        dependencies: [{ observationId: "source-target", captureId: seed.fixture.context.captures[0].id,
+          sha256: seed.fixture.context.artifacts[0].sha256 }] });
+      expect(JSON.stringify(preview)).not.toContain('"passingYardsSum":');
+      expect(JSON.stringify(preview)).not.toContain('"value":');
+      expect(new Set(reads).size).toBe(reads.length);
+      expect(reads).toHaveLength(3); // shared native JSON, selected body JSON, CSV
+      expect((await login.query("SELECT count(*)::integer AS n FROM pg_locks WHERE pid=pg_backend_pid() AND mode='ShareLock'")).rows[0].n).toBe(0);
+      input.slots.find((row) => row.playerId === seed.request.playerId)!.featureRef = a.id;
+      expect((await reader.previewFittingRun(input)).rows[0].feature.reference?.id).toBe(a.id);
+    });
+    expect((await client.query("SELECT id FROM predictive_source_consumers ORDER BY id")).rows).toEqual(before);
+  });
+});
+
+it("QB run preview independently refuses false late and superseded kickoff claims while preserving earlier cutoffs", async () => {
+  await withProof(async ({ client, store }) => {
+    const seed = await seedConsumers(store);
+    await store.recordSourcePassingYards("preview-kickoff-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed);
+    for (const fields of [{ kickoffObservationId: "game-schedule" }, { kickoff: "2026-10-19T17:00:00.000Z" }, { season: 2025 }]) {
+      const changed = structuredClone(input); Object.assign(changed.slots[0], fields);
+      await expect(store.previewFittingRun(changed)).rejects.toThrow("training-kickoff-reference-mismatch");
+    }
+    const late = structuredClone(input); late.slots[0].featureCutoff = late.fitCutoff = "2026-10-06T12:00:00.000Z";
+    await expect(store.previewFittingRun(late)).rejects.toThrow("training-kickoff-missing");
+    const original = await store.previewFittingRun(input);
+    const old = JSON.parse(seed.fixture.context.artifacts[0].bytes).find((row: { id: string }) => row.id === "source-target");
+    const correction = revision("source-target-corrected", "schedule", { ...old.data, kickoff: "2026-10-25T17:00:00.000Z" }, "source-target");
+    const changed: Dataset = { formatVersion: 2, profiles: [profile(BRIDGE_PROFILE)], rightsDecisions: [], artifacts: [], captures: [],
+      decisions: [], labels: [], identityLinks: [] };
+    const clock = await witnessClock(client);
+    addCapture(changed, "preview-later-schedule", [correction], clock, BRIDGE_PROFILE);
+    expect(await store.publish("preview-schedule-correction", changed, clock)).toMatchObject({ status: "published" });
+    expect((await store.previewFittingRun(input)).rows).toEqual(original.rows);
+    const current = structuredClone(input); current.slots[0].featureCutoff = current.fitCutoff = await witnessClock(client);
+    await expect(store.previewFittingRun(current)).rejects.toThrow("training-kickoff-reference-mismatch");
+    current.slots[0].kickoffObservationId = correction.id; current.slots[0].kickoff = correction.data.kickoff;
+    expect((await store.previewFittingRun(current)).rows[0]).toMatchObject({
+      kickoff: { observationId: correction.id }, feature: { state: "missing" }, label: { state: "missing" },
+    });
+  });
+});
+
+it("QB run preview checks missing-slot context rights before bytes and refuses damaged kickoff evidence", async () => {
+  await withProof(async ({ client, store, artifacts, root, target }) => {
+    const seed = await seedConsumers(store);
+    const input = await previewRequest(client, seed); // no consumer exists
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      let reads = 0;
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads++; return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const path = join(root, ".db-blobs", seed.fixture.context.artifacts[0].sha256 + ".json");
+      const original = await readFile(path);
+      await writeFile(path, "damaged", { mode: 0o600 });
+      await expect(reader.previewFittingRun(input)).rejects.toThrow("artifact-integrity-failed");
+      await writeFile(path, original, { mode: 0o600 });
+      const clock = await witnessClock(client);
+      await client.query(`INSERT INTO predictive_rights_decisions
+        (id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+        SELECT 'preview-context-revoke',profile_id,id,ARRAY['internal-research'],$2::timestamptz,NULL,
+          $2::timestamptz,'synthetic','missing-slot context gate'
+        FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [BRIDGE_PROFILE, clock]);
+      reads = 0;
+      await expect(reader.previewFittingRun(input)).rejects.toThrow("source-consumer-rights-refused");
+      expect(reads).toBe(0);
+      expect((await login.query("SELECT count(*)::integer AS n FROM pg_locks WHERE pid=pg_backend_pid() AND mode='ShareLock'")).rows[0].n).toBe(0);
+    });
+  });
+});
+
+it("QB run preview preserves historical label identity and supersession without returning a later outcome", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store, "2026-10-11T12:00:00.000Z", true);
+    const a = await store.recordSourceFinalLabel("preview-label-A", seed.labelRequest, null);
+    const b = await store.recordSourceFinalLabel("preview-label-B", seed.labelRequest, a.id);
+    const first: TrainingSlot = { datasetId: "preview-training", partition: "training", playerId: seed.request.playerId,
+      gameId: seed.labelRequest.gameId, season: 2026, seasonType: "REG", kickoff: "2026-10-04T17:00:00.000Z",
+      kickoffObservationId: "game-schedule", featureCutoff: "2026-10-04T12:00:00.000Z", labelsAsOf: a.recordedAt,
+      featureRef: null, labelRef: null };
+    const input = metadataRun([first], seed.profiles, b.recordedAt);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      const old = await reader.previewFittingRun(input);
+      expect(old.rows[0].label).toMatchObject({ state: "usable", reference: { id: a.id }, supersededAsOf: false, supersededAtSnapshot: true });
+      expect(old.rows[0].selection.labelId).toBe(a.id);
+      expect(JSON.stringify(old)).not.toContain(b.bodySha256);
+      expect(JSON.stringify(old)).not.toContain('"value":');
+      input.slots[0].labelsAsOf = b.recordedAt;
+      expect((await reader.previewFittingRun(input)).rows[0].label).toMatchObject({ reference: { id: b.id },
+        supersededAsOf: false, supersededAtSnapshot: false });
+      input.slots[0].labelRef = a.id;
+      expect((await reader.previewFittingRun(input)).rows[0].label).toMatchObject({ reference: { id: a.id },
+        supersededAsOf: true, supersededAtSnapshot: true });
+    });
+  });
+});
+
+it("QB run preview freezes caller input and excludes concurrent publication from its complete snapshot", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    const saved = await store.recordSourcePassingYards("preview-snapshot-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      let entered!: () => void, unblock!: () => void;
+      const opened = new Promise<void>((resolve) => { entered = resolve; });
+      const gate = new Promise<void>((resolve) => { unblock = resolve; });
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        entered(); await gate; return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const running = reader.previewFittingRun(input).then((value) => ({ value }), (error: unknown) => ({ error }));
+      await opened;
+      input.slots[0].datasetId = "mutated-after-call";
+      try {
+        await client.query("SET lock_timeout='100ms'");
+        await expect(sqlConsumer(client, saved.body, "preview-concurrent-feature")).rejects.toMatchObject({ code: "55P03" });
+      } finally { await client.query("RESET lock_timeout"); unblock(); }
+      const result = await running;
+      if ("error" in result) throw result.error;
+      expect(result.value.rows[0]).toMatchObject({ slot: { datasetId: "preview-evaluation" }, feature: { reference: { id: saved.id } } });
+      expect((await client.query("SELECT id FROM predictive_source_consumers WHERE id='preview-concurrent-feature'")).rows).toEqual([]);
+    });
+  });
 });
 
 it("QB training metadata batches exact and latest features without dropping missing slots", async () => {

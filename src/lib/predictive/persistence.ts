@@ -2,7 +2,9 @@ import type { Client } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
 import type { ArtifactMediaType, PrivateArtifactStore } from "./artifacts.ts";
 import { createEvidenceBatch } from "./batchEvidence.ts";
-import { TRAINING_BOUNDS } from "./training.ts";
+import { normalizeFittingRunRequest, selectTrainingRows, TRAINING_BOUNDS, type FittingRunRequest } from "./training.ts";
+import { checkTrainingMetadataSelection, TRAINING_SELECTION_SQL, trainingSelectionParameters, type TrainingMetadataSelection } from "./trainingSql.ts";
+import { trainingRunPreview, type TrainingKickoffProof } from "./trainingPreview.ts";
 import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
   type SourceClaimRow, type SourceStatsPublication, type SourceStatsRequest, type SourceStatsReplay, type SourceStatsCapture } from "./sourceClaims.ts";
 import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
@@ -874,6 +876,44 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return verifySourceConsumer(record);
   },true);
 
+  // All current use rights and association checks precede the first byte read,
+  // including kickoff context not present in a selected consumer's profile set.
+  const authorizeConsumerBatch = async (ids: string[], extraUses: { profile: string; use: "model-input" }[] = []) => {
+    const check = () => client.query(`SELECT id,public.predictive_source_consumer_check(id) AS result
+      FROM unnest($1::text[]) id ORDER BY id COLLATE "C"`, [ids]);
+    const checked = (await check()).rows as { id: string; result: SourceConsumerRecord | null }[];
+    const records = new Map(checked.map((row) => [row.id, row.result]));
+    if (checked.length !== ids.length || records.size !== ids.length || ids.some((id) => !records.has(id))) refuse("training-evidence-inventory-mismatch");
+    if (Buffer.byteLength(canonical(checked)) > TRAINING_BOUNDS.pageBytes) refuse("training-page-byte-bounds-refused");
+    const rightsIds = [...new Set(checked.flatMap(({ result }) => result?.rightsDecisions ?? []))];
+    const rights = (await client.query("SELECT id,profile_id FROM public.predictive_rights_decisions WHERE id=ANY($1::text[])", [rightsIds])).rows;
+    if (rights.length !== rightsIds.length) refuse("training-evidence-inventory-mismatch");
+    const profileByRight = new Map(rights.map((row) => [row.id, row.profile_id as string]));
+    const consumerUses = checked.flatMap(({ result }) => result?.rightsDecisions.map((id) => {
+      const use = { profile: profileByRight.get(id)!, use: result.kind === "feature" ? "model-input" : "outcome-label" };
+      return use;
+    }) ?? []);
+    const uses = [...new Map([...consumerUses, ...extraUses].map((use) => [canonical(use), use])).values()];
+    // The association/profile closure cannot change under the guard. Clock
+    // expiry still can: check its current rights before EACH unique file and
+    // at delivery, bypassing the metadata cache. Full SQL reconstruction was
+    // already checked per record above and need not be repeated at delivery.
+    batchAccess = async () => {
+      const allowed = (await client.query(`WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS t)
+        SELECT coalesce(bool_and(public.predictive_rights_allow(x.profile,c.t,c.t,'internal-research')
+          AND public.predictive_rights_allow(x.profile,c.t,c.t,x.use)),true) AS allowed
+        FROM jsonb_to_recordset($1::jsonb) x(profile text,use text) CROSS JOIN clock c`, [JSON.stringify(uses)])).rows[0].allowed;
+      if (allowed !== true) refuse("source-consumer-rights-refused");
+    };
+    await batchAccess();
+    return records;
+  };
+  const verifyConsumerBatch = async (records: Map<string, SourceConsumerRecord | null>) => {
+    const results = await Promise.allSettled([...records.values()].map(async (result) => result && verifySourceConsumer(result)));
+    // Drain every branch before rollback/COMMIT; pending work cannot escape
+    // the guard into the next store operation, including on a damaged file.
+    for (const result of results) if (result.status === "rejected") throw result.reason;
+  };
   // Evidence primitive, not a training dataset API: no selection, kickoff
   // assertion, manifest, pin or population qualification is established here.
   // Guarded READ COMMITTED is intentional: acquire all table locks BEFORE
@@ -881,44 +921,81 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const replaySourceConsumers = (input: string[]) => {
     if (!Array.isArray(input) || !input.length || input.length > TRAINING_BOUNDS.pageRows || input.some((id) =>
       typeof id !== "string" || !id.trim() || id.length > 256 || /[\u0000-\u001f\u007f]/.test(id))) refuse("training-consumer-bounds-refused");
-    const ids = [...new Set(input)];
+    const requested = [...input], ids = [...new Set(requested)];
     return transaction(async () => {
-      const check = () => client.query(`SELECT id,public.predictive_source_consumer_check(id) AS result
-        FROM unnest($1::text[]) id ORDER BY id COLLATE "C"`, [ids]);
-      // Every selected record's current use-specific rights and association
-      // closure passes before the FIRST protected file is opened.
-      const checked = (await check()).rows as { id: string; result: SourceConsumerRecord | null }[];
-      const records = new Map(checked.map((row) => [row.id, row.result]));
-      if (checked.length !== ids.length || records.size !== ids.length || ids.some((id) => !records.has(id))) refuse("training-evidence-inventory-mismatch");
-      if (Buffer.byteLength(canonical(input.map((id) => records.get(id)))) > TRAINING_BOUNDS.pageBytes) refuse("training-page-byte-bounds-refused");
-      const rightsIds = [...new Set(checked.flatMap(({ result }) => result?.rightsDecisions ?? []))];
-      const rights = (await client.query("SELECT id,profile_id FROM public.predictive_rights_decisions WHERE id=ANY($1::text[])", [rightsIds])).rows;
-      if (rights.length !== rightsIds.length) refuse("training-evidence-inventory-mismatch");
-      const profileByRight = new Map(rights.map((row) => [row.id, row.profile_id as string]));
-      const uses = [...new Map(checked.flatMap(({ result }) => result?.rightsDecisions.map((id) => {
-        const use = { profile: profileByRight.get(id)!, use: result.kind === "feature" ? "model-input" : "outcome-label" };
-        return [canonical(use), use] as const;
-      }) ?? [])).values()];
-      // The association/profile closure cannot change under the guard. Clock
-      // expiry still can: check its current rights before EACH unique file and
-      // at delivery, bypassing the metadata cache. Full SQL reconstruction was
-      // already checked per record above and need not be repeated at delivery.
-      batchAccess = async () => {
-        const allowed = (await client.query(`WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS t)
-          SELECT coalesce(bool_and(public.predictive_rights_allow(x.profile,c.t,c.t,'internal-research')
-            AND public.predictive_rights_allow(x.profile,c.t,c.t,x.use)),true) AS allowed
-          FROM jsonb_to_recordset($1::jsonb) x(profile text,use text) CROSS JOIN clock c`, [JSON.stringify(uses)])).rows[0].allowed;
-        if (allowed !== true) refuse("source-consumer-rights-refused");
-      };
-      const results = await Promise.allSettled(checked.map(async ({ result }) => result && verifySourceConsumer(result)));
-      // Drain every branch before rollback/COMMIT; pending work cannot escape
-      // the guard into the next store operation, including on a damaged file.
-      for (const result of results) if (result.status === "rejected") throw result.reason;
+      const records = await authorizeConsumerBatch(ids);
+      if (Buffer.byteLength(canonical(requested.map((id) => records.get(id)))) > TRAINING_BOUNDS.pageBytes) refuse("training-page-byte-bounds-refused");
+      await verifyConsumerBatch(records);
       // A lock prevents DML, but not clock-based expiry/scheduled decisions.
       // Recheck at delivery time without the query cache before returning bytes.
-      await batchAccess();
-      return { snapshotAt: batchClock!, records: input.map((id) => records.get(id)!),
+      await batchAccess!();
+      return { snapshotAt: batchClock!, records: requested.map((id) => records.get(id)!),
         verification: { ...batch!.metrics(), verifiedBytes }, populationCoverage: "unqualified" as const };
+    }, false, true);
+  };
+
+  // A bounded rehearsal of complete run selection. It writes no run, manifest
+  // or pin, and its result cannot be supplied as trusted durable membership.
+  // The eventual recorder must independently enforce the request in SQL and
+  // persist selections from its own guarded snapshot, not trust this preview.
+  const previewFittingRun = (input: FittingRunRequest) => {
+    const supplied = structuredClone(input);
+    return transaction(async () => {
+      const snapshotAt = batchClock!, request = normalizeFittingRunRequest(supplied, snapshotAt);
+      const metadata = checkTrainingMetadataSelection((await client.query<TrainingMetadataSelection>(TRAINING_SELECTION_SQL,
+        [...trainingSelectionParameters(request, snapshotAt)])).rows, request.slots.length);
+      const groups = new Map<string, { ordinals: number[]; rows: Raw[]; decisions: Decision[] }>();
+      request.slots.forEach((slot, ordinal) => {
+        const group = groups.get(slot.featureCutoff) ?? { ordinals: [], rows: [], decisions: [] };
+        group.ordinals.push(ordinal); groups.set(slot.featureCutoff, group);
+      });
+      // Expand every visible source chain before resolving the requested head,
+      // including corrections routed to a different game and raw-ID collisions.
+      for (const [cutoff, group] of groups) {
+        const gameIds = [...new Set(group.ordinals.map((i) => request.slots[i].gameId))];
+        const raw = (await readQuery(normalizationScheduleReadSql, [cutoff, gameIds])).rows.map((row) => row.envelope as Raw);
+        const aliases = [...new Set(raw.flatMap((row) => row.revision.kind === "schedule" ? [row.revision.data.rawGameId] : []))];
+        group.rows = aliases.length ? (await readQuery(aliasReadSql, [cutoff, aliases])).rows.map((row) => row.envelope as Raw) : raw;
+        const keys = [...new Set([...gameIds.map((id) => "reconciliation:schedule:" + id), ...group.rows.flatMap((row) =>
+          row.revision.kind === "schedule" ? ["reconciliation:schedule:" + row.revision.data.gameId] : [])])];
+        group.decisions = (await readQuery(DECISION_SQL, [cutoff, keys])).rows.map((row) => row.decision as Decision);
+      }
+      const kickoffProfiles = [...new Set([...groups.values()].flatMap((group) => group.rows.map((row) => row.artifact.profileId)))];
+      const rights = (await readQuery(RIGHTS_SQL, [kickoffProfiles])).rows.map((row) => row.decision as RightsDecision);
+      // Check historical permission too, before any kickoff/consumer file opens.
+      for (const [cutoff, group] of groups) for (const profile of new Set(group.rows.map((row) => row.artifact.profileId))) {
+        const right = rightsInForce(rights, profile, instant(cutoff), instant(cutoff));
+        if (!allows(right, "internal-research") || !allows(right, "model-input")) refuse("training-kickoff-rights-refused");
+      }
+      const ids = [...new Set(metadata.flatMap((row) => [row.featureId, row.labelId].filter((id): id is string => id !== null)))];
+      const records = await authorizeConsumerBatch(ids, kickoffProfiles.map((profile) => ({ profile, use: "model-input" })));
+      if ([...records.values()].some((record) => record === null)) refuse("training-selection-inventory-mismatch");
+      const kickoffs: TrainingKickoffProof[] = new Array(request.slots.length);
+      for (const [, group] of groups) {
+        const observations = await hydrate(group.rows);
+        const profiles = new Map((await profilesFor(kickoffProfiles)).map((profile) => [profile.id, profile]));
+        validateDecisions(group.decisions, new Map(observations.map((row) => [row.revision.id, row])), profiles);
+        const replay = replayObservations(observations, new Set(), group.decisions);
+        for (const ordinal of group.ordinals) {
+          const slot = request.slots[ordinal], chosen = replay.select("schedule", "schedule:" + slot.gameId);
+          if (!chosen.observation) refuse("training-kickoff-" + chosen.state);
+          const row = chosen.observation, schedule = row.revision.data;
+          if (row.revision.id !== slot.kickoffObservationId || schedule.gameId !== slot.gameId || schedule.season !== slot.season ||
+              schedule.seasonType !== slot.seasonType || schedule.kickoff !== slot.kickoff) refuse("training-kickoff-reference-mismatch");
+          kickoffs[ordinal] = { observationId: row.revision.id, profileId: row.artifact.profileId,
+            dependencies: chosen.dependencies.map((dependency) => ({ observationId: dependency.revision.id,
+              captureId: dependency.capture.id, artifactId: dependency.artifact.id, sha256: dependency.artifact.sha256,
+              availableAt: dependency.capture.availableAt, ingestedAt: dependency.capture.ingestedAt }))
+              .sort((a, b) => compareText(a.observationId, b.observationId)),
+            decisions: replay.usedDecisions().filter((decision) => decision.entityKey === "reconciliation:schedule:" + slot.gameId)
+              .map((decision) => ({ id: decision.id, sha256: digest(canonical(decision)) })) };
+        }
+      }
+      await verifyConsumerBatch(records);
+      const selected = selectTrainingRows(request, snapshotAt, [...records.values()].filter((record): record is SourceConsumerRecord => record !== null), new Set(), metadata);
+      const result = trainingRunPreview(request, snapshotAt, selected, metadata, kickoffs);
+      await batchAccess!();
+      return { ...result, verification: { ...batch!.metrics(), verifiedBytes } };
     }, false, true);
   };
 
@@ -1190,6 +1267,6 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return results;
   };
   return { publish, publishSourceStats, replaySourceStats, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
-    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers,
+    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

@@ -5,6 +5,7 @@ import { fittingRunRequestDigest, normalizeFittingRunRequest, normalizeTrainingS
   TRAINING_HISTORY_POLICY, TRAINING_HISTORY_SHA256, trainingHistoryDefinition, type FittingRunRequest, type TrainingSlot } from "../../src/lib/predictive/training.ts";
 import { canonical, digest } from "../../src/lib/predictive/validation.ts";
 import { checkTrainingMetadataSelection } from "../../src/lib/predictive/trainingSql.ts";
+import { trainingRunPreview } from "../../src/lib/predictive/trainingPreview.ts";
 import { CUTOFF_A, gameId, passingYardsFixture, PLAYER, PROFILE, request, TARGET } from "./fixtures/passingYards.ts";
 
 const SNAPSHOT = "2026-10-20T00:00:00.000Z";
@@ -131,6 +132,57 @@ describe("training request history and event separation", () => {
 });
 
 describe("deterministic training selection over verified records", () => {
+  it("preserves fixed missing selections even when another slot supplies a matching older record", () => {
+    const old = feature();
+    const metadata = [{ ordinal: 0, featureId: null, labelId: null, labelSupersededAsOf: false, labelSupersededAtSnapshot: false }];
+    expect(selectTrainingRows(runRequest(), SNAPSHOT, [old], new Set(), metadata)[0].feature.state).toBe("missing");
+  });
+  it("preserves full-lineage supersession when the verified subset contains only the selected ancestor", () => {
+    const a = label();
+    const metadata = [{ ordinal: 0, featureId: null, labelId: a.id, labelSupersededAsOf: false, labelSupersededAtSnapshot: true }];
+    const row = selectTrainingRows(runRequest(), SNAPSHOT, [a], new Set(), metadata)[0];
+    expect(row.label).toMatchObject({ state: "usable", supersededAsOf: false, supersededNow: true });
+    expect(row.label.record?.body).toMatchObject({ value: 200 });
+  });
+  it("keeps an incompatible selected label head missing instead of reviving its compatible ancestor", () => {
+    const a = label(); const b = label("other-profile-head", "2026-10-16T00:00:00.000Z", 240, a.id);
+    b.body.manifest.profileIds = ["another-profile"];
+    const metadata = [{ ordinal: 0, featureId: null, labelId: b.id, labelSupersededAsOf: false, labelSupersededAtSnapshot: false }];
+    const row = selectTrainingRows(runRequest(), SNAPSHOT, [a, b], new Set(), metadata)[0];
+    expect(row.label).toMatchObject({ state: "missing", reason: "label-profile-mismatch", reference: null, record: null });
+  });
+  it("refuses a fixed ID without its verified record rather than converting it to missingness", () => {
+    const metadata = [{ ordinal: 0, featureId: "removed-feature", labelId: null, labelSupersededAsOf: false, labelSupersededAtSnapshot: false }];
+    expect(() => selectTrainingRows(runRequest(), SNAPSHOT, [], new Set(), metadata)).toThrow("training-selection-inventory-mismatch");
+  });
+  it("rejects malformed metadata flags before source files can be opened", () => {
+    const item = { ordinal: 0, featureId: null, labelId: null, labelSupersededAsOf: false, labelSupersededAtSnapshot: false };
+    expect(() => checkTrainingMetadataSelection([{ ...item, labelSupersededAtSnapshot: null } as never], 1))
+      .toThrow("training-selection-inventory-mismatch");
+    expect(() => checkTrainingMetadataSelection([{ ...item, featureId: 42 } as never], 1)).toThrow("training-selection-inventory-mismatch");
+  });
+  it("formats a detached preview with reconciled counts and no numerical feature or outcome bodies", () => {
+    const request = normalizeFittingRunRequest(runRequest([slot(), slot({ playerId: "00-0000002" })]), SNAPSHOT);
+    const records = [feature(), label()];
+    const selected = selectTrainingRows(request, SNAPSHOT, records);
+    const metadata = selected.map((row) => ({ ordinal: row.ordinal, featureId: row.feature.reference?.id ?? null,
+      labelId: row.label.reference?.id ?? null, labelSupersededAsOf: false, labelSupersededAtSnapshot: false }));
+    const kickoffs = selected.map((row) => ({ observationId: row.slot.kickoffObservationId, profileId: PROFILE, dependencies: [], decisions: [] }));
+    const preview = trainingRunPreview(request, SNAPSHOT, selected, metadata, kickoffs);
+    expect(preview).toMatchObject({ status: "preview-only", fittingReady: false, populationCoverage: "unqualified",
+      counts: [{ partition: "training", slots: 0 }, { partition: "evaluation", slots: 2, targetEvents: 1,
+        features: { usable: 1, unavailable: 0, missing: 1, expired: 0 }, labels: { usable: 1, missing: 1 } }] });
+    expect(JSON.stringify(preview)).not.toContain('"record":');
+    expect(JSON.stringify(preview)).not.toContain('"value":');
+    expect(JSON.stringify(preview)).not.toContain('"passingYardsSum":');
+    const originalDigest = preview.selectionSha256;
+    expect(trainingRunPreview(request, SNAPSHOT, selected, metadata, kickoffs).selectionSha256).toBe(originalDigest);
+    request.slots[0].datasetId = "changed"; kickoffs[0].observationId = "changed";
+    expect(preview.rows[0].slot.datasetId).toBe("evaluation-shard");
+    expect(preview.rows[0].kickoff.observationId).not.toBe("changed");
+    expect(trainingRunPreview({ ...preview.request, modelIdentity: { ...preview.request.modelIdentity, codeCommit: "f".repeat(40) } },
+      SNAPSHOT, selected, metadata, preview.rows.map((row) => row.kickoff)).selectionSha256).not.toBe(originalDigest);
+  });
   it("refuses missing or repeated metadata ordinals instead of collapsing ambiguous heads", () => {
     const item = { ordinal: 0, featureId: null, labelId: null, labelSupersededAsOf: false, labelSupersededAtSnapshot: false };
     expect(checkTrainingMetadataSelection([item], 1)).toEqual([item]);

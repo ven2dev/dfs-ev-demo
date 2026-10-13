@@ -1,5 +1,6 @@
-import { normalizeFittingRunRequest, TRAINING_BOUNDS, type FittingRunRequest } from "./training.ts";
+import { normalizeFittingRunRequest, TRAINING_BOUNDS, type FittingRunRequest, type TrainingMetadataSelection } from "./training.ts";
 import { refuse } from "./validation.ts";
+export type { TrainingMetadataSelection } from "./training.ts";
 
 // Metadata selection only: this statement does not authorize access, verify
 // source bytes, pin dependencies or return a training-ready dataset. The guarded
@@ -47,11 +48,6 @@ LEFT JOIN LATERAL (
 ) label ON true
 ORDER BY r.ordinal`;
 
-export type TrainingMetadataSelection = {
-  ordinal: number; featureId: string | null; labelId: string | null;
-  labelSupersededAsOf: boolean; labelSupersededAtSnapshot: boolean;
-};
-
 export const trainingSelectionParameters = (request: FittingRunRequest, snapshotAt: string) =>
   [JSON.stringify(normalizeFittingRunRequest(request, snapshotAt)), snapshotAt] as const;
 
@@ -59,6 +55,8 @@ export const trainingSelectionParameters = (request: FittingRunRequest, snapshot
 // Call this before looking up any selected record's protected body/files.
 export const checkTrainingMetadataSelection = (rows: TrainingMetadataSelection[], expectedSlots: number) => {
   if (!Number.isInteger(expectedSlots) || expectedSlots < 1 || expectedSlots > TRAINING_BOUNDS.slotsPerRun ||
-      rows.length !== expectedSlots || rows.some((row, index) => row.ordinal !== index)) refuse("training-selection-inventory-mismatch");
+      rows.length !== expectedSlots || rows.some((row, index) => row.ordinal !== index ||
+        typeof row.labelSupersededAsOf !== "boolean" || typeof row.labelSupersededAtSnapshot !== "boolean" ||
+        [row.featureId, row.labelId].some((id) => id !== null && (typeof id !== "string" || !id)))) refuse("training-selection-inventory-mismatch");
   return rows;
 };

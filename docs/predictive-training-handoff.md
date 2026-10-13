@@ -385,7 +385,7 @@ and discloses label supersession without returning future correction values.
 requested ordinal, selects exact/latest feature IDs and historical label heads,
 and reports supersession separately. Two mandatory PostgreSQL cases exercise
 it against recorded source consumers. It does not read protected artifact bytes
-or establish access/pin authorization; it is not exposed by the store yet.
+or establish access/pin authorization by itself.
 The selector remains a pure core, **not** a sealed dataset API. Database run
 split enforcement, manifests/pins and retention remain outstanding. The pure
 selector cannot authorize rights or validate durable pins; its adapter must
@@ -422,6 +422,25 @@ plans/memory benchmarks, atomic durable run/dataset manifests and pins, quotas,
 expiry/invalidation and retention/restore integration. The next implementation
 increment is database-enforced immutable run inventory and fixed consumer/missing
 selections, followed by guarded shard verification and durable pins.
+
+The run-preview increment adds `previewFittingRun(request)` on the local store.
+It rehearses a complete inventory under 0012's guard: one metadata selection,
+cutoff-visible kickoff-chain and raw-game-alias resolution, historical/current
+model-input rights, exact kickoff claims and full byte-backed source-consumer
+reproduction. It preserves the database's exact selected IDs and full-lineage
+supersession flags rather than selecting again from the smaller verified subset.
+Every slot remains in the preview with separate feature/label states and
+partition counts. Its request/selection hashes bind the snapshot and kickoff
+dependencies. Numeric feature/outcome bodies are not returned.
+
+The preview is explicitly `preview-only`, `fittingReady: false` and population
+unqualified. It creates no durable inventory, manifest, pin or fitting-run ID
+reservation. A later recorder must reselect at its own guarded snapshot and
+independently validate the whole request in SQL; a preview hash does not
+authorize recording. Five mandatory PostgreSQL cases cover restricted replay,
+late/false/superseded kickoff evidence, missing-slot rights and damaged bytes,
+historical label identity and concurrent publication/caller mutation. This
+increment allocates no migration; the prefix coordination remains binding.
 
 Evidence checkpoint validation: **700 Node tests**, **75 Node DB checks + 142
 PostgreSQL tests**, TypeScript, affected-file ESLint, migration/catalog/readiness

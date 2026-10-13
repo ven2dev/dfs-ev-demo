@@ -1,5 +1,50 @@
 # #118 guarded evidence checkpoint
 
+## Run-selection preview increment
+
+`previewFittingRun(request)` now connects the structural request and SQL selector
+to guarded evidence verification. It takes one post-guard database clock and
+retains the complete normalized training/evaluation/shard inventory. The
+database selects exact/latest consumer references once. The pure selector uses
+those fixed IDs and full-lineage supersession flags; it does not infer heads
+from a smaller returned subset or replace a missing selection with another
+slot's matching record.
+
+The adapter independently verifies each asserted target kickoff against the
+cutoff-visible schedule chain. It expands corrections that route away from the
+game, detects raw-game aliases, validates any reconciliation decision and
+requires the asserted observation, season/type and kickoff to match the selected
+head. Kickoff dependencies may belong to profiles outside the selected source
+feature's profile set. Their historical and current internal-research/model-input
+rights pass before any file is opened, including when every consumer is missing.
+Current gates still run before each unique file and delivery.
+
+The result contains exact references, dependency hashes/clocks, missing/expired/
+unavailable/usable states, label supersession, request and snapshot-selection
+digests and reconciled per-partition counts. It returns no numeric feature or
+label bodies. It is **preview-only**, not a persistent training dataset:
+`fittingReady` is false, population is unqualified, and no run identity,
+membership or pin is recorded. A future database recorder must enforce the
+complete request independently and establish its own snapshot. Preview retries
+can have different snapshot/selection digests, so they are not durable retries.
+
+Five additional mandatory database tests use real files, restricted logins,
+hand-specified selected IDs/counts and concurrent SQL. They cover old/new/exact
+feature selection with missing slots, incorrect/late/corrected schedule claims,
+rights refusal before bytes even for a missing consumer, corrupted context,
+historical label clocks/supersession and input mutation/publication during a
+guarded snapshot. Six pure cases cover fixed-subset semantics, malformed
+metadata and detached preview digests/counts. This increment changes no SQL
+migration or byte format. Durable run/dataset enforcement, pins, release,
+invalidation, retention recovery, deadlines and representative capacity remain
+unfinished.
+
+The preview checkpoint passes **706 Node tests**, **75 Node DB checks + 147
+PostgreSQL tests** (122 mandatory predictive cases), typecheck, affected-file
+ESLint, migration/readiness artifacts and whitespace. Logs:
+`/private/tmp/dfs118-preview-{node,db,focused-db}.log`. The prefix is still
+0001–0012 at this checkpoint; #106's newly declared 0013 will be integrated next.
+
 `replaySourceConsumers(ids)` is a local, restricted evidence primitive. It
 reproduces recorded source features and final labels, returns `null` for missing
 IDs, and preserves input ordering and repeated references. It does not select

@@ -610,3 +610,39 @@ rejects earlier than the deferred guard; it still verifies the same harness
 boundary. SQL/catalog prefixes 0001–0010 remain unchanged. These tests establish
 receipt/cutoff behavior, not real-source readiness, population coverage, hosted
 activation or implementation approval.
+
+## #118 guarded run-preview tests (2026-10-13)
+
+The five mandatory database cases exercise the real store through replay-only
+non-superuser logins and actual private files. Expected IDs, partition counts,
+kickoff observations and supersession flags are specified directly. They are
+not derived by calling the selector again.
+
+The complete-inventory test records A then B, requests both a recorded player
+and another player without consumers in two shards, and expects B plus explicit
+missingness in canonical order. An exact request then selects A. The referenced
+kickoff profile is deliberately outside the source feature's profile set. The
+reader opens each shared file once, releases its guard and changes no consumer
+row. The preview contains no numerical feature or outcome payload.
+
+The kickoff test changes the caller's asserted observation/date/season and
+requires refusal. A pre-receipt cutoff has no eligible kickoff and refuses.
+A later schedule correction cannot change an earlier-cutoff selection; at a
+new cutoff the former observation refuses and the explicitly updated observation
+works. This separates source availability from the database snapshot clock.
+
+The context test has no feature/label consumer at all. Damaged schedule bytes
+still refuse. Revoking model-input permission on its context profile while
+keeping internal-research permission refuses before any byte read; missing
+consumers cannot bypass the context gate. The label test separately seeds a
+genuinely pregame schedule capture, records A then B and checks historical A
+with current supersession, current B, and exact superseded A. No later body or
+outcome appears at the earlier label cutoff.
+
+The concurrency test pauses actual file I/O after the guard, mutates the caller's
+request, and tries direct publication from another connection. The write times
+out, the preview retains its detached original shard and selected feature, and
+no competing consumer commits. Existing guarded evidence tests separately
+exercise revocation/retention races and scheduled rights changes. These prove
+preview behavior only; they do not establish durable SQL split enforcement,
+training readiness, pins, rights after later access or real-source qualification.
