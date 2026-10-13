@@ -8,7 +8,8 @@ enforce durable run splits, create pins or authorize model fitting.
 
 ## Protection and lock order
 
-Migration 0012 is provisional on the #118 branch. Its role-checked
+Migration 0012 is fixed for #106/#118 branch integration, as recorded in the
+[integration handoff](predictive-106-118-integration.md). Its role-checked
 `SECURITY DEFINER` guard explicitly locks the predictive evidence, rights,
 association and retention tables in `SHARE` mode. Only `predictive_replay`
 members may execute it; `PUBLIC` receives no execution privilege. The application

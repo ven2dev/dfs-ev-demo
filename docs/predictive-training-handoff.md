@@ -404,7 +404,8 @@ retention; uncached clock-based access checks precede each unique file and
 delivery. The implementation and lock ordering are documented in
 [predictive-training-evidence.md](predictive-training-evidence.md).
 
-Migration **0012_predictive_training_read_guard** is provisional on #118. It adds
+Migration **0012_predictive_training_read_guard** is fixed for branch integration
+under the [#106/#118 integration handoff](predictive-106-118-integration.md). It adds
 the guard and feature/label lookup indexes without changing frozen 0001–0011 or
 copying the retention procedure. Remote inspection found no other open feature
 PR claiming a migration after 0011; this is not an agreement with another local
@@ -443,8 +444,10 @@ claim. See the evidence checkpoint for measurements and remaining limits.
    retention integration. Benchmark and complete required gates/review once the
    increment is stable.
 
-Frozen migrations are **0001–0011**. No new migration number is allocated by this
-proposal. Coordinate landing order with #106/#115 before either adds DDL. A
+Released migrations are **0001–0011**; **0012** is also fixed for #106/#118 branch
+integration. **0013 is available to #106**; #118 will hold further DDL allocation
+until #106 declares its next complete prefix. Coordinate landing order with
+#106/#115 before merging further DDL. A
 second merger integrates main without rebasing and may renumber only private,
 unapplied-outside-disposable-test migrations, with explicit confirmation and
 regenerated manifests/contracts. Never modify a released/applied prefix.
