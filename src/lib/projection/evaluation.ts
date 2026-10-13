@@ -1,4 +1,4 @@
-import { fitBaseline, instant, probabilityAt, validateTriple, type Input, type Market, type Observation, type Triple, MODEL_VERSION } from "./baseline";
+import { fitBaseline, instant, probabilityAt, validateTriple, type Input, type Market, type Observation, type Triple, MODEL_VERSION } from "./baseline.ts";
 export type Outcome = "over" | "under" | "push";
 const keys = { over: "overProbability", under: "underProbability", push: "pushProbability" } as const;
 export function score(p: Triple, outcome: Outcome) {

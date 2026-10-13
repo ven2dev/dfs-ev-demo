@@ -50,8 +50,10 @@ separate evaluation time, and retains each model/support/training manifest.
 Reports include code artifact identity, cutoff, versions, sample counts, per-market
 three-class Brier (sum over classes, range 0–2), natural-log loss and ten calibration
 bins per class. Impossible observed outcomes have infinite log loss; no clipping
-conceals unsupported tails. Nonfinite metrics require an explicit encoding when
-serializing to JSON (native JSON would silently turn Infinity into null).
+conceals unsupported tails. `serializeReport` exports the versioned `projection-report-json-v1` envelope:
+positive infinity is the string `positive-infinity`, while absent metrics stay
+null. NaN and negative infinity refuse export. Native JSON alone would silently
+turn Infinity into null.
 Optional versioned comparison triples are scored separately and must be available
 by the prediction cutoff. Two-way market odds must not be relabeled as three-way
 unconditional probabilities without a documented push model. The empirical model
@@ -79,3 +81,10 @@ Measure query counts, runtime and plans on realistic batches: roughly ten querie
 per row plus re-verification is not a training API. Preserve rights and current
 access checks when caching verification or retaining evidence. No database or
 external ticket mutation is included in Part A.
+
+## Executable synthetic proof
+
+Run `npm run projection:demo` on Node 24 for deterministic JSON showing integer
+and fractional queries, three-class metrics, manifests and calibration. All
+identities and observations are synthetic; the demo performs no acquisition or
+database access and remains exploratory.

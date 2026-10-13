@@ -45,8 +45,10 @@ behavior only. They do not prove historical source truth, ledger completeness,
 real-data performance, calibration or sufficiency. Nine markets share a naive
 empirical reference; parametric candidates are documented but not implemented.
 Caller history selection and cutoff-honest features still need the Part B adapter.
-Unseen outcomes yield infinite log loss intentionally; exporting reports needs
-an explicit nonfinite-value encoding. No database, hosted activation or product
+Unseen outcomes yield infinite log loss intentionally. The continuation exporter
+uses a versioned envelope and the explicit string `positive-infinity`; its
+independent test requires Brier=2, infinity in both case and aggregate metrics,
+preserved counts, deterministic bytes and NaN refusal. There are now 26 tests. No database, hosted activation or product
 integration was introduced. Part B remains blocked on real features/labels and
 the batch/indexed/label/retention reader work documented in
 [the baseline contract](projection-baseline.md).

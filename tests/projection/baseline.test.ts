@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { fitBaseline, probabilityAt, priceSide, MARKETS, type Input, type Observation } from "../../src/lib/projection/baseline";
+import { serializeReport } from "../../src/lib/projection/report";
 import { evaluate, score } from "../../src/lib/projection/evaluation";
 const row = (value: number, index: number): Observation => ({ id: `r${index}`, eventId: `e${index}`, eventTime: `2026-09-0${index + 1}T00:00:00Z`, featureAvailableAt: "2026-09-10T00:00:00Z", identityAvailableAt: "2026-09-10T00:00:00Z", labelAvailableAt: "2026-09-10T00:00:00Z", featureVersion: "f1", labelVersion: "l1", value, participation: "offensive" });
 const input = (values = [-2, 0, 2, 2]): Input => ({ market: "player_pass_yds", targetEventId: "target", targetEventTime: "2026-10-02T00:00:00Z", cutoff: "2026-10-01T00:00:00Z", featureVersion: "f1", labelVersion: "l1", minimumSamples: 2, history: values.map(row) });
@@ -106,6 +107,18 @@ describe("adherence QC: independent boundaries and evaluation accounting", () =>
     expect(report.coverage).toEqual(options.coverage);
     const pushBins = report.groups[0].calibration.filter(b => b.side === "push" && b.count);
     expect(pushBins).toMatchObject([{ count: 1, meanProbability: .25, outcomeRate: 1 }, { count: 1, meanProbability: .5, outcomeRate: 0 }]);
+  });
+  it("exports impossible outcomes explicitly and deterministically", () => {
+    const c = testCase(input([2, 2]), 0);
+    const report = evaluate([c], options);
+    const text = serializeReport(report);
+    expect(text).toBe(serializeReport(report));
+    const saved = JSON.parse(text);
+    expect(saved.encodingVersion).toBe("projection-report-json-v1");
+    expect(saved.report.rows[0].scores).toEqual({ brier: 2, logLoss: "positive-infinity" });
+    expect(saved.report.groups[0].logLoss).toBe("positive-infinity");
+    expect(saved.report.groups[0].count).toBe(1);
+    expect(() => serializeReport({ ...report, groups: [{ ...report.groups[0], brier: NaN }] })).toThrow("invalid nonfinite report value");
   });
   it("refuses duplicate evaluation with a different label revision", () => {
     const c = testCase();
