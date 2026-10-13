@@ -174,3 +174,20 @@ No migration number was reserved and no binary publication path is active.
 Full inspection also establishes a concrete dependency: `2025_18_WAS_PHI` has
 no Hurts statistics claim, despite a weekly roster claim. Preserve its slot and
 qualify explicit participation/absence evidence rather than infer a zero or DNP.
+
+## Shared-prefix storage continuation
+
+#106 has integrated #118's handoff at `42de9fb` and added forward migration
+`0013_predictive_compressed_blob_staging.sql`; 0001–0012 remain unchanged.
+The [integration handoff](predictive-106-118-integration.md) records the exact
+prefix/hash and validation boundaries. Binary filesystem and SQL address/queue
+handling now cover `.csv.gz`. Every compressed receipt uses the database clock,
+including unknown synthetic parsers. Compressed captures remain incomplete;
+raw claim and canonical publication bypasses are refused.
+
+Next: a versioned complete-file codec envelope and qualified multi-season claims,
+with guarded binary reads that retain #118's fresh-rights and stored-byte gates
+and independently cap decoded work. Follow with compressed publication rollback,
+restored retention, rights/deletion races and full consumer reconstruction tests.
+The missing 2025 Week 18 participation/absence evidence and other real-source
+qualification requirements above remain prerequisites for the selected real proof.

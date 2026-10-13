@@ -23,6 +23,10 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "gzip staging stamps database receipt time and refuses published captures and raw claim bypasses",
+  "gzip synthetic unknown parsers cannot bypass receipt clocks or canonical binding guards",
+  "gzip exact-address cleanup retains referenced bytes and resumes deletion through execute-only roles",
+  "gzip staging migration upgrades fixed v12 without rewriting evidence or prior ledger history",
   "CSV QB consumers record explicit source manifests and final labels without ordinary stats observations",
   "CSV QB consumers preserve earlier cutoffs while recaptures withhold current decisions and labels",
   "CSV QB consumers preserve earlier unavailable replay after a later unrelated source deletion",
