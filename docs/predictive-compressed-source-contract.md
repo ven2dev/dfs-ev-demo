@@ -187,3 +187,32 @@ Final code checks for this checkpoint: all 686 Node tests pass; typecheck
 (including readiness verification), lint and `git diff --check` pass. Existing
 UI/database/publication behavior is unchanged; no DB test service or migration
 was needed for this inspection-only increment. No provider data was committed.
+
+## Binary filesystem checkpoint
+
+The private artifact store now exposes `writeBinary` and `readBinary` for exact
+wire bytes at `<wire-sha256>.csv.gz`, alongside the existing text methods. Writes
+copy mutable input before awaiting filesystem work, use exclusive private
+temporary files and atomic links, and verify the final hash and size. Reads are
+bounded even if a file grows, check private single-link files and registration,
+and return independent buffers. The byte store makes no assertion about gzip
+validity, source rights or publication eligibility.
+
+Removal and age-gated orphan discovery recognize the exact gzip suffix. Cleanup
+is confined to `.db-blobs`; root archive files remain outside orphan discovery.
+Seven regression cases cover concurrent/idempotent writes, caller mutation,
+buffer isolation, text/binary separation, malformed addresses, tampering,
+permissions, links, registration replacement and exact-address deletion.
+
+The SQL schema remains at its existing prefix: it does not register gzip blobs
+or publish compressed source captures. Relay owns the pending migration 0012.
+Coordination stays in this chat at the owner's request. The next storage step
+is a separately tested SQL patch, followed by a forward migration after the
+shared prefix is settled; neither a migration number nor SQL activation is
+claimed by this filesystem checkpoint.
+
+Checkpoint checks: all 693 Node tests, all 75 Node database checks and all 136
+PostgreSQL tests pass, with the required-case report verified. Typecheck, lint,
+migration artifacts, readiness manifest and whitespace checks pass. The disposable
+database service was removed after testing. These database checks verify existing
+publication and retention behavior; gzip SQL publication remains unimplemented.
