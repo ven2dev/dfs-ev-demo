@@ -1,7 +1,41 @@
 # #52 session handoff
 
-Updated 2026-10-13 after the QB source-consumer checkpoint (0010). Resume from this state; do not restart the
+Updated 2026-10-13 after the PR B foundation scope decision. Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
+
+## Current finish line: foundation review
+
+The owner supports closing PR B as a foundation checkpoint, conditional on its
+formal acceptance boundary and independent review of the latest consumer
+integration. The [revised PR B checklist](predictive-pr-b.md#revised-pr-b-acceptance-boundary-2026-10-13)
+now replaces the previous real vertical-slice finish line. The
+[follow-up issue drafts](predictive-followups.md) retain that slice and the full
+parent criteria; no GitHub tickets have been opened by this update.
+
+Latest implementation commit: `4f1b976`, `feat(predictive): integrate QB source
+consumers`. Branch: `feature/dfsEV-52-real-source-ingestion`, workspace:
+`/private/tmp/dfs-ev-52-pr-b`. Review base: **`3daf1dc`**, which includes PR A and
+#90; do not compare against stale local `main`. The implementation adds 14
+commits and 57 changed files relative to that base, before this documentation
+checkpoint. PR B is local/unpushed and has no open PR.
+
+Independent review of 0005–0010 and their consumers remains outstanding.
+Record the 0010 separate-ledger architecture disposition and the #54 handoff
+boundary described in PR B. Passing local fixture checks does not approve merge.
+After review, resolve blockers, run affected checks and required final gates,
+then remote CI before merge. No code changed in this scope-documentation update;
+the existing local test evidence below remains tied to `4f1b976`.
+
+Keep the **schema-9 retained real proof** (zero usable canonical heads, bundles
+or labels) separate from the **schema-10 fixture-backed consumer proof**. The real
+proof has not been rerun at schema 10. Previous engineering-day ranges were
+provisional planning ranges, not established forecasts; select the QB/event/
+history/opponent scope and inventory permitted dependencies before estimating.
+
+The next work is foundation review preparation, not another implementation
+increment. Remote push/opening a PR requires owner instruction. Hosted operation
+remains gated by #95. Preserve migrations 0001–0010 and the retained archive.
+Historical continuation paragraphs below are superseded by this finish line.
 
 The owner asked whether the issue's ACs are complete. **No:** the
 [nine-criterion audit](predictive-pr-b.md#parent-52-acceptance-criteria-audit-2026-10-12)
@@ -694,10 +728,10 @@ readiness is minimum 2/maximum 10. Draft revisions ran only in this PR B disposa
 Docker project, and obsolete test ledgers were recreated rather than repaired.
 
 The retained provider proof is still the schema-9 run described above: no new
-provider request or usable real feature/label. Preserve its archive. The next
-bounded delivery is qualifying the missing real context/identity/completion
-inputs and demonstrating a usable real QB path with measured operating limits;
-remaining feeds/markets and population coverage also remain before #52 closure.
+provider request or usable real feature/label. Preserve its archive. The revised
+foundation checklist at the top now makes independent review PR B's next step.
+The first usable real QB path and remaining feeds/markets/population are owned
+by the follow-up acceptance criteria and still prevent #52 closure.
 PR B stays local/unpushed. Local work/commits are authorized; remote push/opening
 PR B requires owner instruction. Do not modify 0001–0010 after this checkpoint.
 No hosted, persistent-dev or Production migration ran.

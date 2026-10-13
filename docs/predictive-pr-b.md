@@ -1,16 +1,89 @@
-# #52 PR B: real-source ingestion progress
+# #52 PR B: versioned source foundation
 
 Updated 2026-10-13. PR A merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102),
 `d934432e8aa32a38226c65306592b77e04e05f01`. Migration 0003 is frozen.
-PR B starts from that main revision on `feature/dfsEV-52-real-source-ingestion`
-in `/private/tmp/dfs-ev-52-pr-b`. Offline qualification and local raw CSV claims
+PR B's review base is merged-main checkpoint `3daf1dc`, which includes PR A and
+creator-corpus PR #103. Review `git diff 3daf1dc...HEAD`; the checkout's stale
+local `main` is not the correct base. The branch is
+`feature/dfsEV-52-real-source-ingestion` in `/private/tmp/dfs-ev-52-pr-b`.
+Offline qualification and local raw CSV claims
 persistence and canonical normalization planning are implemented. The raw/canonical
 correction-lineage design also has an executable pure contract. Database binding
 publication and unavailable-state persistence are implemented in internal research
 staging. Persisted binding-aware reconciliation and participation research
 decisions follow in forward 0009. Forward 0010 now connects those decisions to
-fixture-backed QB passing-yards feature manifests and final labels. This does not
-finish PR B or parent #52.
+fixture-backed QB passing-yards feature manifests and final labels. The latest
+implementation checkpoint is `4f1b976`. This code has passed local gates, but its
+latest consumer integration still requires independent review.
+
+## Revised PR B acceptance boundary (2026-10-13)
+
+The owner supports closing PR B as a **versioned source foundation checkpoint**,
+provided this acceptance boundary is explicit and independent review passes.
+This replaces PR B's previous responsibility for the first usable real-data QB
+vertical slice. Parent #52 retains its original acceptance criteria. A foundation
+merge does not complete that issue or qualify real predictive inputs.
+
+PR B's completion checklist is:
+
+- [ ] Independent review covers migrations **0005–0010**, their application
+  recorders/readers/consumers, privilege boundaries and retention/recovery paths.
+- [ ] Review blockers are resolved and the reviewed commit passes required final
+  checks and remote CI. Existing local results are evidence for `4f1b976`, not
+  evidence that independent review or remote CI has completed.
+- [x] Fixture-backed usable QB passing-yards features and final labels are
+  demonstrated, including replay, stale/missing evidence, provenance, rights and
+  retention refusal cases. These do not qualify a provider or model population.
+- [x] Retained real-data refusal evidence is disclosed separately: the
+  **schema-9** proof imported 4,517 player rows and 130 team rows with **zero
+  usable canonical heads, feature bundles or labels**. The **schema-10** consumer
+  checkpoint is fixture-backed; it did not rerun that real-data proof or produce
+  usable real outputs.
+- [ ] The independent reviewer assesses the two-ledger architecture described
+  below and records its disposition; any required redesign is resolved before
+  merge rather than left implicit.
+- [x] The [follow-up acceptance criteria](predictive-followups.md) identify the
+  usable real slice and remaining parent work. They are local issue drafts;
+  GitHub issue links must replace the draft-only coordination before parent
+  closure. No follow-up ticket is evidence that this foundation passed review.
+
+The next real slice must select one QB, target game, history window and opponent
+window, then inventory every required dependency and its permitted source before
+making a delivery forecast. Individual participation/completion, minimum enforced
+resource limits and reproducible recovery belong to that slice. Population
+completeness, broader multi-feed operations, other markets and snap-source
+qualification have separate follow-up criteria.
+
+The previously stated 6–12 and 20–35 engineering-day ranges were provisional
+planning ranges, not substantiated delivery forecasts. Qualification may require
+new adapters or forward schema changes. Estimate again after the selected slice's
+dependency inventory; include independent review and blocker resolution explicitly.
+
+### Source-consumer architecture review
+
+0010 introduces a separate source-consumer ledger so a CSV feature/label can cite
+its exact binding, revision, head token and source decision without pretending
+that a source revision is an ordinary JSON observation. The released
+observation-only feature/label ledger remains supported. This gives the current
+implementation two recording, replay and retention paths.
+
+For the current CSV implementation, #54's data handoff must use the verified
+source-consumer store APIs (`replaySourcePassingYards` and, for recorded features
+and labels, `replaySourceConsumer`). It must not read ordinary feature/label
+tables as though they contain CSV consumers or use them as an automatic fallback.
+#54 integration and model validation are not implemented by this checkpoint.
+
+Independent review must assess duplicated policy, retention closure, replay
+consistency and the cost of future market adapters. The separate ledger is the
+current compatibility strategy; permanent coexistence has not been approved.
+Record whether retaining that boundary is acceptable for this foundation and
+whether a later unified facade/consolidation needs its own acceptance criteria.
+Any consolidation must preserve recorded provenance and historical replay with
+forward changes; it must not rewrite frozen migrations or existing records.
+
+Sections below retain earlier implementation checkpoints. Statements that the
+real vertical slice or consumer activation is "next" describe those checkpoints;
+this acceptance boundary and the final 0010 section govern the current finish line.
 
 The canonical stats read adapter now follows complete recorded raw lineages
 before filtering by canonical player/game. It reuses the verified binding
@@ -412,7 +485,7 @@ Injury/depth semantics and the oversized full depth feed remain separate gates
 for enriched candidates. No account, key, purchase, hosted migration or schedule
 is needed for local storage/adapter development. #95 gates hosted activation.
 
-PR B review evidence must eventually show real-source capture A and later B,
+The usable-real-slice follow-up evidence must show real-source capture A and later B,
 unchanged earlier replay, correctly changed later replay, exact raw/bridge
 dependencies and measured costs. Edited fixtures are useful tests, but cannot
 be described as observed provider corrections. Unqualified completion/population
@@ -689,7 +762,10 @@ PostgreSQL. The retained real-file proof remains the schema-9 proof documented
 in the handoff: zero qualified usable heads, no real feature or label. Passing
 synthetic end-to-end cases does not change that qualification result.
 
-Next delivery: qualify the missing real game/identity, schedule/history,
-membership and completion evidence, then demonstrate a bounded, usable real QB
-bundle/label with operating measurements. Remaining feed/market and population
-qualification ACs still prevent closing parent #52 or presenting PR B as ready.
+PR B's next step is independent foundation review against the revised acceptance
+checklist above. The [first usable real-slice follow-up](predictive-followups.md#first-usable-real-qb-passing-yards-slice)
+owns qualification of game/identity, schedule/history, membership and completion
+evidence and a bounded usable real bundle/label proof. Remaining feed/market and
+population qualification still prevent closing parent #52. Foundation readiness
+requires review, blocker resolution and final checks; fixture results alone do
+not satisfy that gate.

@@ -139,28 +139,29 @@ The proof requires complete scoped schedule evidence and detects omitted expecte
 
 For a known former team, cutoff-known QB membership ranges also establish expected history slots: a team game with kickoff at or after `effectiveFrom` and strictly before `effectiveTo` remains in the window even when its own membership row is missing. The slot reports `membership-missing` and withholds the bundle. A range never substitutes for per-game membership, participation or numeric evidence. Selected corrections control the range at each cutoff; conflicting heads remain unavailable. Dependencies retain the membership and schedule evidence that established a retained gap. Games outside the range stay outside player history unless independently included by per-game evidence or the current-team gap rule.
 
-## PR A merged; PR B in progress
+## PR A merged; PR B foundation awaiting review
 
-Owner decision on 2026-10-09 after branch review: **option B — hold delivery 2 off main until the real-source schema is designed**. PR A implemented that real-source schema and replay core, passed independent review and remote CI, and merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102) on 2026-10-11. Its branch-only synthetic migrations were replaced under the documented [draft reset procedure](database-migrations.md#pr-a-draft-period-reset-of-migration-0003). Migration 0003 is now frozen. Delivery 3's real-source adapters and qualification remain PR B work.
+Owner decision on 2026-10-09 after branch review: **option B — hold delivery 2 off main until the real-source schema is designed**. PR A implemented that real-source schema and replay core, passed independent review and remote CI, and merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102) on 2026-10-11. Its branch-only synthetic migrations were replaced under the documented [draft reset procedure](database-migrations.md#pr-a-draft-period-reset-of-migration-0003). Migration 0003 is now frozen. On 2026-10-13, the owner supported a [revised PR B foundation boundary](predictive-pr-b.md#revised-pr-b-acceptance-boundary-2026-10-13), subject to independent review. The usable real vertical slice now has [follow-up acceptance criteria](predictive-followups.md#first-usable-real-qb-passing-yards-slice).
 
 PR B now has offline typed-statistics qualification, exact raw CSV persistence
 (0005), database-enforced research bindings and hydration (0006), and complete
 unavailable normalization witnesses (0007). The verified canonical research
 reader follows raw heads before filtering by player/game, preserves binding
 provenance when a revision is reused and withholds unresolved current routing.
-Shared application witnesses prepare reconciliation, usage and post-window
-capture checks; they do not activate canonical observations, features, decisions
-or labels. Next is the shared SQL/application activation boundary, alongside the
-unresolved completion/population/source gates. See the
+0008 adds SQL/application witness parity, 0009 persists source decisions and
+0010 records/replays fixture-backed QB features and final labels in a separate
+source-consumer ledger. These do not publish CSV revisions into ordinary
+observations. Independent review, including that architecture boundary, is next;
+real completion/population/source qualification remains outstanding. See the
 [source-lineage contract](predictive-source-lineage.md) and
 [PR B progress](predictive-pr-b.md) for the nine-AC audit, measurements and limits.
-The **78** mandatory predictive database cases join the lease/readiness and
+The **107** mandatory predictive database cases at the 0010 checkpoint join the lease/readiness and
 creator-corpus report gates; missing, filtered, skipped, todo or failed cases
 cannot produce a passing DB run. Pure cases remain in the Node Vitest suite.
 
 The [test reasoning review](predictive-test-review.md) maps each new case to its contract and evidence, records the strengthened failure checks and isolated fault-injection results, and explains the limits of the synthetic proof.
 
-Delivery 3 must qualify the source adapters and evidence described above, measure request/byte/runtime/storage cost under a reviewed acquisition budget, and report missing completion, participation and membership enumeration before expanding capture. Synthetic passing tests do not qualify a real source, its rights, historical coverage or model population. Remaining markets/injury/depth feeds follow their own contracts. Scheduled rest remains the raw kickoff interval, including offseason gaps; flagging or capping belongs to #54's reviewed modeling transformations.
+The first-real-slice follow-up must qualify the source adapters and evidence described above, enforce and measure request/byte/runtime/memory/storage cost under a reviewed acquisition budget, and report missing completion, participation and membership enumeration before expanding capture. The retained real proof is schema 9 with zero usable canonical heads, bundles or labels; the schema-10 consumer proof is fixture-backed. Synthetic passing tests do not qualify a real source, its rights, historical coverage or model population. Remaining markets/injury/depth feeds follow their own contracts. Scheduled rest remains the raw kickoff interval, including offseason gaps; flagging or capping belongs to #54's reviewed modeling transformations.
 
 Hosted schema activation remains separately gated by [#95](https://github.com/ven2dev/dfs-ev-demo/issues/95). This increment supplies a local additive migration and changes no app route, existing stats sync or remote schema. Do not run Production `up` as part of either proof.
 

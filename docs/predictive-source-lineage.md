@@ -2,10 +2,13 @@
 
 The pure contract in `sourceLineage.ts` now has a PostgreSQL recorder and verified
 hydration path under forward migrations 0006 and 0007. **These canonical source revisions
-remain internal research staging.** They do not enter `predictive_observations`,
-model inputs, released participation/reconciliation consumers or labels. 0009 adds
-a separate research decision ledger below. Full activation
-must update every reader's head rules together. Migration 0003 is frozen.
+remain internal research staging.** They do not enter `predictive_observations`
+or the released observation-only feature/label ledger. 0009 adds a separate
+research decision ledger below; 0010 connects it to fixture-backed QB features
+and labels through a separate source-consumer ledger. Real-source qualification
+remains outstanding. The [revised PR B acceptance boundary](predictive-pr-b.md#revised-pr-b-acceptance-boundary-2026-10-13)
+requires independent review of both-ledger replay/retention and the #54 handoff.
+Migration 0003 is frozen; later numbered sections preserve their checkpoint context.
 
 ## Two identities, two chains
 
@@ -379,5 +382,7 @@ Bounds remain 16 source profiles, 256 raw lineages, 8,192 binding events and
 native-head limit; overflow refuses rather than truncates. There are no new
 provider/blob files in this ledger. These tests qualify the local storage and
 policy boundary, not real game bridges, completion, population, membership or
-provider rights for final labels. Full feature/run-manifest and final-label
-integration is the next delivery.
+provider rights for final labels. Fixture-backed feature/run-manifest and label
+integration followed in [0010](predictive-pr-b.md#qb-source-consumers-0010-2026-10-13).
+Independent foundation review remains outstanding; the usable real-data slice
+has separate [follow-up acceptance criteria](predictive-followups.md).
