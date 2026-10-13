@@ -1,6 +1,6 @@
 # #52 PR B: real-source ingestion progress
 
-Updated 2026-10-12. PR A merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102),
+Updated 2026-10-13. PR A merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102),
 `d934432e8aa32a38226c65306592b77e04e05f01`. Migration 0003 is frozen.
 PR B starts from that main revision on `feature/dfsEV-52-real-source-ingestion`
 in `/private/tmp/dfs-ev-52-pr-b`. Offline qualification and local raw CSV claims
@@ -8,14 +8,15 @@ persistence and canonical normalization planning are implemented. The raw/canoni
 correction-lineage design also has an executable pure contract. Database binding
 publication and unavailable-state persistence are implemented in internal research
 staging. Persisted binding-aware reconciliation and participation research
-decisions now follow in forward 0009. Shared feature/label activation remains next; this does not
+decisions follow in forward 0009. Forward 0010 now connects those decisions to
+fixture-backed QB passing-yards feature manifests and final labels. This does not
 finish PR B or parent #52.
 
 The canonical stats read adapter now follows complete recorded raw lineages
 before filtering by canonical player/game. It reuses the verified binding
 reader, returns explicit withheld states, and pins binding provenance separately
 from unchanged statistical revisions. It remains a read-only research API;
-the active feature/label integration is still outstanding. Forward migration
+the QB consumer integration follows in 0010. Forward migration
 0008 now independently recomputes the same witness in SQL, and every canonical
 research read requires exact agreement with it after verifying provider files.
 
@@ -26,8 +27,8 @@ same witness, including unresolved contributions. Query time alone does not
 invalidate it; recaptures do, even when they reuse a statistical revision.
 The post-window check follows the selected binding's exact capture. These
 helpers do not activate features or labels. The 0009 research recorder persists
-decisions using the same verified witness; the active consumer integration
-gate remains open. See
+decisions using the same verified witness; 0010 activates the bounded QB consumer
+path under model-input/outcome-label rights. See
 [the witness contract and limits](predictive-source-lineage.md#remaining-activation-work).
 
 ## Parent #52 acceptance criteria audit (2026-10-12)
@@ -636,3 +637,59 @@ and [fourteen database test oracles](predictive-test-review.md#pr-b-persisted-re
 cover the scope and limits. Previous SQL/catalog prefixes 0001–0008 are unchanged;
 minimum readiness remains 2, maximum-known becomes 9. Validation results and
 measurements are recorded in the latest session handoff checkpoint.
+
+## QB source consumers (0010, 2026-10-13)
+
+`sourceConsumers.ts` and the store's `replaySourcePassingYards`,
+`recordSourcePassingYards`, `recordSourceFinalLabel` and `replaySourceConsumer`
+connect verified CSV facts to the existing QB window policy. This is a new,
+explicit source-consumer ledger; source revisions never masquerade as ordinary
+observations, and released observation-only feature/label tables stay intact.
+Only fixture-backed QB passing yards is activated. Real source qualification,
+other markets, a scheduler and hosted operation remain outstanding.
+
+Each queried fact pins its source witness, exact binding/revision/head token,
+persisted reconciliation and participation heads, and explicit missing/stale
+reasons. Unchanged recaptures stale current decisions even when the statistical
+revision is reused; historical cutoffs and stored runs reproduce their original
+answer. Native schedule/coverage/membership/completion dependencies remain
+ordinary observations and retain their existing semantics. Known absence keeps
+its chronological slot; unknown participation never becomes zero. Computation
+time is excluded from the input digest. Body bytes, current rights and the
+server recording time are bound into a separate execution digest.
+
+The SQL recorder checks the witness and decision head independently (following
+successors, not lexical IDs), validates displayed stats against selected source
+payloads and checks native manifest closure. The application reproduces the full
+window calculation on replay. The recorder is execute-only and stamps its clock
+after evidence/publication locks; consumers and association sets are append-only.
+Replay checks current use rights and association closure before any file opens,
+verifies the body and all relevant provider/context bytes, and reproduces the
+historical calculation in a read-only/repeatable-read transaction.
+
+Internal-research permission alone is insufficient: every source, historical
+normalization context and native-evidence profile also needs the requested
+model-input or outcome-label permission. Final labels require current persisted
+participation/reconciliation, qualified current completion, the existing final
+window, the selected binding's exact post-window capture, and its exact raw-ID
+player bridge with current linked/effective normalization. A planning/recording
+race that changes the witness or decisions refuses finalization.
+
+Retention includes source consumers, their complete association sets and body
+blobs. Deleting a source/binding/native decision removes its dependent features
+and the entire affected label lineage, preventing ancestor revival. Feature
+consumers expire after 90 days; legacy feature-run pins apply only to the legacy
+ledger, and this bounded source-consumer API exposes no pin facility. Empty new
+closures preserve earlier retention counts/digests. Existing digest locks,
+rollback cleanup and queued blob recovery also protect the new body files.
+
+0001–0009 SQL/catalog prefixes remain frozen and unchanged. Readiness stays at
+minimum 2 and maximum-known advances to 10. All execution used disposable local
+PostgreSQL. The retained real-file proof remains the schema-9 proof documented
+in the handoff: zero qualified usable heads, no real feature or label. Passing
+synthetic end-to-end cases does not change that qualification result.
+
+Next delivery: qualify the missing real game/identity, schedule/history,
+membership and completion evidence, then demonstrate a bounded, usable real QB
+bundle/label with operating measurements. Remaining feed/market and population
+qualification ACs still prevent closing parent #52 or presenting PR B as ready.

@@ -10,6 +10,7 @@ import { planSourceStatsFromReplay as planNormalization, sourceNormalizationBasi
 import { SOURCE_FACT_BOUNDS, sourceFactHeadsAt, sourceFactRequest, sourceFactSnapshot, type SourceFactRequest } from "./sourceFacts.ts";
 import { sourceFactWitness } from "./sourceWitness.ts";
 import { sourceDecisionBasis, sourceDecisionPlan, sourceDecisionRequest, type SourceDecisionPlan, type SourceDecisionRecord, type SourceDecisionRequest } from "./sourceDecisions.ts";
+import { buildSourceFinalLabel, buildSourcePassingYards, sourceConsumerExecutionDigest, sourceConsumerInputDigest, type SourceConsumerBody, type SourceConsumerFact, type SourceConsumerRecord } from "./sourceConsumers.ts";
 import type { Artifact, Capture, Dataset, Decision, IdentityLink, Label, Observation, Profile, RecordedRetentionEvent, Request, RetentionEvent, RetentionResult,
   Revision, RightsDecision } from "./types.ts";
 import { validateCompletionDecisions } from "./completion.ts";
@@ -698,7 +699,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (record.id !== id || record.predecessorId !== expectedHeadId || canonical(record.plan) !== canonical(plan)) refuse("stored-source-decision-record-mismatch");
     return { record, reused, featuresPublished: false as const, labelsFinalized: false as const };
   });
-  const replaySourceDecision = (input: SourceDecisionRequest) => transaction(async () => {
+  const readSourceDecision = async (input: SourceDecisionRequest) => {
     const request = sourceDecisionRequest(input);
     const unavailable = (reason: string, currentPlan: SourceDecisionPlan | null = null) => ({
       status: "unavailable-source-decision" as const, reason, record: null, currentPlan, featuresPublished: false as const, labelsFinalized: false as const });
@@ -715,7 +716,140 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       if (error instanceof Error && error.message === "source-decision-access-refused") return unavailable("rights-not-in-force");
       throw error;
     }
-  }, true);
+  };
+  const replaySourceDecision = (input: SourceDecisionRequest) => transaction(() => readSourceDecision(input), true);
+
+  // Discover native context from routing metadata. Use-specific rights for all
+  // source history/context/native evidence are checked BEFORE file hydration.
+  const sourceFeatureRaw = async (request: Request) => {
+    const load = async (sql: string, values: unknown[]) => (await client.query(sql,values)).rows.map((row) => row.envelope as Raw);
+    const initial = await load(ENTITY_READ_SQL,[request.cutoff,[request.gameId],request.playerId]);
+    const routing = replayObservations(initial.map((row) => observation(row.revision,row.capture,{ ...row.artifact,bytes: "" })),new Set());
+    const target = routing.select("schedule","schedule:" + request.gameId).observation?.revision.data;
+    const member = routing.select("membership","membership:" + request.gameId + ":" + request.playerId).observation?.revision.data;
+    let rows = initial;
+    if (target && member) {
+      const from = target.season - 2;
+      const members = await load(MEMBERSHIP_READ_SQL,[request.cutoff,request.playerId,target.kickoff,`${from}-01-01T00:00:00.000Z`]);
+      const teams = new Set([member.teamId]);
+      members.forEach((row) => { if (row.revision.kind === "membership") teams.add(row.revision.data.teamId); });
+      if (request.candidate === "player-opponent-v1:player_pass_yds") teams.add(target.homeTeamId === member.teamId ? target.awayTeamId : target.homeTeamId);
+      const schedules = await load(SCHEDULE_READ_SQL,[request.cutoff,[...teams],from,target.season]);
+      const coverage = await load(coverageReadSql,[request.cutoff,[...teams],String(from),String(target.season)]);
+      const games = new Set([request.gameId]); const aliases = new Set<string>();
+      for (const row of [...schedules,...members,...coverage]) {
+        if ("gameId" in row.revision.data && row.revision.data.gameId) games.add(row.revision.data.gameId);
+        if (row.revision.kind === "schedule") aliases.add(row.revision.data.rawGameId);
+        if (row.revision.kind === "schedule-coverage") row.revision.data.gameIds.forEach((id) => games.add(id));
+      }
+      rows = [...initial,...members,...schedules,...coverage,...await load(aliasReadSql,[request.cutoff,[...aliases]]),
+        ...await load(ENTITY_READ_SQL,[request.cutoff,[...games],request.playerId])];
+    }
+    return [...new Map(rows.filter((row) => !["player-game-stats","team-game-stats"].includes(row.revision.kind))
+      .map((row) => [row.revision.id + "|" + row.capture.id,row])).values()];
+  };
+  const sourceAccess = async (profileIds: string[], cutoff: string, observations: string[], entityKeys: string[], use: "model-input" | "outcome-label") => {
+    return (await client.query("SELECT public.predictive_source_consumer_access($1) AS profiles",[{
+      profileIds,cutoff,observations,entityKeys,use,
+    }])).rows[0].profiles as string[];
+  };
+  const sourceConsumerFacts = async (profileIds: string[], entityKeys: string[], cutoff: string) => {
+    const snapshot = await checkedSourceFacts({ profileIds,entityKeys,cutoff });
+    const facts = new Map<string,SourceConsumerFact>();
+    for (const entityKey of entityKeys) {
+      const rec = await readSourceDecision({ kind: "reconciliation",profileIds,entityKey,cutoff });
+      const part = entityKey.startsWith("player-game-stats:") ? await readSourceDecision({ kind: "participation",profileIds,entityKey,cutoff }) : null;
+      facts.set(entityKey,{ snapshot,reconciliation: rec.record,participation: part?.record ?? null,
+        reconciliationReason: rec.reason,participationReason: part?.reason ?? null });
+    }
+    return facts;
+  };
+  const readSourcePassingYards = async (request: Request, inputProfiles: string[]) => {
+    validatePassingYardsRequest(request);
+    const profiles = sourceFactRequest({ profileIds: inputProfiles,entityKeys: [],cutoff: request.cutoff }).profileIds;
+    const raw = await sourceFeatureRaw(request);
+    await sourceAccess(profiles,request.cutoff,raw.map((row) => row.revision.id),[],"model-input");
+    const rows = await hydrate(raw); const visible = validateObservations(rows);
+    const decisionKeys = [...new Set(rows.flatMap((row) => ["reconciliation:" + row.entityKey,
+      ...("gameId" in row.revision.data ? ["completion:" + row.revision.data.gameId] : [])]))];
+    const decisions = (await client.query(DECISION_SQL,[request.cutoff,decisionKeys])).rows.map((row) => row.decision as Decision);
+    const profileMap = new Map((await profilesFor([...new Set(rows.map((row) => row.artifact.profileId))])).map((row) => [row.id,row]));
+    validateDecisions(decisions,visible,profileMap); validateCompletionDecisions(decisions,visible,profileMap);
+    const retention = (await client.query(`SELECT scope_descriptor->'profileIds' AS profiles FROM public.predictive_retention_events
+      WHERE scope_descriptor->>'kind'='source'`)).rows.flatMap((row) => row.profiles as string[]);
+    const replay = replayObservations(rows,new Set(),decisions,retention);
+    const requested = new Set<string>();
+    // Discover exactly the slots the existing coverage/window policy queries,
+    // instead of loading three seasons of league-wide source dependencies.
+    buildPassingYardsFromReplay(replay,request,{
+      select: (_kind,key) => { requested.add(key); return { state: "missing",observation: null,dependencies: [] }; },
+      participation: (game,player) => { requested.add("player-game-stats:" + game + ":" + player); return { state: "unresolved",inputs: [] }; },
+    });
+    if (request.candidate === "player-opponent-v1:player_pass_yds") for (const key of [...requested]) if (key.startsWith("player-game-stats:")) {
+      const game = key.split(":")[1];
+      const member = replay.select("membership","membership:" + game + ":" + request.playerId).observation?.revision.data;
+      if (member) requested.add("team-game-stats:" + game + ":" + member.teamId);
+    }
+    const keys = [...requested].sort(compareText);
+    const accessed = await sourceAccess(profiles,request.cutoff,raw.map((row) => row.revision.id),keys,"model-input");
+    const synthetic = (await profilesFor(accessed)).some((row) => row.purpose === "synthetic-test");
+    return buildSourcePassingYards(replay,request,profiles,await sourceConsumerFacts(profiles,keys,request.cutoff),synthetic);
+  };
+  const replaySourcePassingYards = (request: Request,profileIds: string[]) => transaction(() => readSourcePassingYards(request,profileIds),true);
+  const saveSourceConsumer = async (id: string,body: SourceConsumerBody,expectedHeadId: string | null): Promise<SourceConsumerRecord> => {
+    const bytes = canonical(body); const sha256 = digest(bytes);
+    return withBlobPublication([sha256],() => transaction(async () => {
+      await artifacts.write(bytes,sha256);
+      await client.query(`INSERT INTO public.predictive_blobs(sha256,byte_size,media_type,storage_ref) VALUES($1,$2,'application/json',$3)
+        ON CONFLICT(sha256) DO NOTHING`,[sha256,Buffer.byteLength(bytes),sha256 + ".json"]);
+      const record = (await client.query("SELECT public.predictive_record_source_consumer($1,$2,$3) AS result",[id,expectedHeadId,body])).rows[0].result as SourceConsumerRecord;
+      if (record.id !== id || record.bodySha256 !== sha256 || canonical(record.body) !== canonical(body) ||
+          record.executionDigest !== sourceConsumerExecutionDigest(sha256,record.rightsDecisions,record.recordedAt)) refuse("source-consumer-record-mismatch");
+      return record;
+    }));
+  };
+  const recordSourcePassingYards = async (id: string,request: Request,profileIds: string[]) =>
+    saveSourceConsumer(id,await replaySourcePassingYards(request,profileIds),null);
+  const readSourceFinalLabel = async (request: { playerId: string; gameId: string; profileIds: string[] },cutoff: string) => {
+    exact(request,["playerId","gameId","profileIds"]);
+    const entityKey = "player-game-stats:" + request.gameId + ":" + request.playerId;
+    const profiles = sourceFactRequest({ profileIds: request.profileIds,entityKeys: [entityKey],cutoff }).profileIds;
+    const raw = (await client.query(ENTITY_READ_SQL,[cutoff,[request.gameId],request.playerId])).rows.map((row) => row.envelope as Raw)
+      // Preserve absence and rerouted successor heads; filtering by kind
+      // alone would resurrect the predecessor's completion marker.
+      .filter((row) => row.revision.kind === "event-state-marker" ||
+        (row.revision.kind === "source-row-absent" && row.revision.data.priorEntityKey.startsWith("event-state-marker:")));
+    await sourceAccess(profiles,cutoff,raw.map((row) => row.revision.id),[entityKey],"outcome-label");
+    const rows = await hydrate(raw); const decisions = (await client.query(DECISION_SQL,[cutoff,["completion:" + request.gameId]])).rows.map((row) => row.decision as Decision);
+    const profileMap = new Map((await profilesFor([...new Set(rows.map((row) => row.artifact.profileId))])).map((row) => [row.id,row]));
+    validateCompletionDecisions(decisions,validateObservations(rows),profileMap);
+    const replay = replayObservations(rows,new Set(),decisions); const completion = replay.completion(request.gameId);
+    const cited = replay.citedCompletions()[0];
+    if (completion.state !== "completed" || !cited || !completion.completionObservedAt) refuse("source-label-completion-refused");
+    const fact = (await sourceConsumerFacts(profiles,[entityKey],cutoff)).get(entityKey)!;
+    const result = buildSourceFinalLabel(fact,{ id: cited.id,completionObservedAt: completion.completionObservedAt },profiles);
+    result.manifest.observations = rows.map((row) => row.revision.id).sort(compareText);
+    result.inputDigest = sourceConsumerInputDigest(result);
+    return result;
+  };
+  const recordSourceFinalLabel = async (id: string,request: { playerId: string; gameId: string; profileIds: string[] },expectedHeadId: string | null) => {
+    const body = await transaction(async () => readSourceFinalLabel(request,await databaseClock()),true);
+    return saveSourceConsumer(id,body,expectedHeadId);
+  };
+  const replaySourceConsumer = (id: string) => transaction(async () => {
+    // The SQL reader checks current use rights and sealed association closure
+    // before the application opens either the run blob or source evidence.
+    const record = (await client.query("SELECT public.predictive_source_consumer_check($1) AS result",[id])).rows[0].result as SourceConsumerRecord | null;
+    if (!record) return null;
+    const bytes = canonical(record.body);
+    if (await artifacts.read(record.bodySha256 + ".json",record.bodySha256,Buffer.byteLength(bytes)) !== bytes ||
+        record.executionDigest !== sourceConsumerExecutionDigest(record.bodySha256,record.rightsDecisions,record.recordedAt)) refuse("stored-source-consumer-mismatch");
+    const body = record.body.kind === "feature"
+      ? await readSourcePassingYards({ ...record.body.bundle.request,computedAt: record.body.bundle.computedAt },record.body.manifest.profileIds)
+      : await readSourceFinalLabel({ playerId: record.body.playerId,gameId: record.body.gameId,profileIds: record.body.manifest.profileIds },record.body.manifest.cutoff);
+    if (canonical(body) !== canonical(record.body)) refuse("stored-source-consumer-mismatch");
+    return record;
+  },true);
 
   const publish = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
     if (typeof id !== "string" || !id.trim() || id.length > 256) refuse("invalid-run-id"); instant(now);
@@ -985,6 +1119,6 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return results;
   };
   return { publish, publishSourceStats, replaySourceStats, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
-    planSourceDecision, recordSourceDecision, replaySourceDecision,
+    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

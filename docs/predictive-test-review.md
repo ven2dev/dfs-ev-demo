@@ -522,3 +522,51 @@ members cannot hide unrelated application drift. Existing SQL/catalog prefixes
 native participation, population coverage, completion or usable feature/labels.
 This ledger introduces no new blob format or filesystem publication path;
 existing rollback/lock/orphan/removal-queue tests retain those responsibilities.
+
+
+## PR B QB source-consumer tests (0010, 2026-10-13)
+
+Eight mandatory DB cases exercise the new recorders and readers against actual
+PostgreSQL, private artifacts and genuine restricted logins. The positive
+fixture has one prior completed game, a future target, explicit schedule
+coverage/membership, and CSV bytes with ten attempts/eighty passing yards.
+Expected counts and the eight-yards-per-attempt ratio are hand-specified. The
+fixture supplies completion after kickoff and a source capture after the final
+window; it does not infer completion from elapsed time or CSV appearance.
+It asserts that no ordinary stats observation or legacy feature run was created.
+A later coverage-proven absence of the completion marker refuses new finalization
+while the existing historical label still replays exactly.
+
+A later unchanged CSV recapture reuses the numerical revision while changing its
+binding/token. The test keeps the earlier bundle and sealed run exactly equal,
+withholds current features/finalization until both research decisions are
+refreshed, then checks the new exact provenance. Separate cases reject a
+pre-window capture and unresolved all-zero usage; zero is never treated as proof
+of absence. Existing window-policy regressions continue to cover known absence,
+missing newest schedules, former-team gaps and no target outcomes.
+
+Direct SQL negative cases rehash forged manifest/selection/value/identity and
+completion changes, including both the feature's body and nested input digest.
+Thus rejection is not explained by a stale checksum. The SQL checker independently
+recomputes witnesses and current decision references and compares values with
+the selected payload. Application replay independently reproduces the full
+window calculation; these tests do not claim SQL duplicates that whole algorithm.
+
+A file-read counter stays at zero when source, normalization-context or a
+separate native-participation profile loses model/outcome permission while
+retaining internal-research permission. Native participation is ingested after
+the earlier decision, at its actual later test clock, rather than backdated.
+A non-superuser recorder/replay login records and reads both consumer kinds,
+gets 42501 for direct INSERT, refuses damaged body bytes and detects an omitted
+association. These use real permissions, not SET ROLE on a superuser connection.
+
+The v9 upgrade checks preserved ledger entries and replayed research decisions,
+then proves migration reruns are no-ops. Retention uses an execute-only,
+non-superuser owner login, deletes a feature and both versions of a dependent
+label, independently hashes tombstone IDs, drains the removal queue and proves
+the body file disappeared. Existing restored-backup cross-version retention
+cases now run through v10 and preserve legacy counts/digests when no consumers
+exist. The full gate enforces all eight new named cases, so deleting/skipping
+one cannot silently shrink validation. These fixtures establish integration
+behavior; they do not qualify real completion/population/providers or the
+remaining markets, scheduler, hosted rollout or capacity budgets.

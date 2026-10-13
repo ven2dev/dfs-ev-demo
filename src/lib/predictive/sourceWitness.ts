@@ -23,7 +23,7 @@ const reference = (row: SourceFactSnapshot["heads"][number]): SourceHeadReferenc
 // Shared application preparation for feature/decision/label dependencies. The
 // input must come from the verified persisted reader; hashing is not authority
 // to read bytes, record decisions or finalize labels. No active consumer uses
-// this contract until the matching SQL head rule/recorders ship together.
+// this contract without the matching SQL head rule/recorder (sourceConsumers).
 export const sourceFactWitness = (snapshot: SourceFactSnapshot, entityKeys = snapshot.request.entityKeys): SourceWitness => {
   const request = sourceFactRequest({ ...snapshot.request, entityKeys });
   if (snapshot.request.entityKeys.length && (!request.entityKeys.length ||

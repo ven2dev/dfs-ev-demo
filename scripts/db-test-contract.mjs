@@ -23,6 +23,14 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "CSV QB consumers record explicit source manifests and final labels without ordinary stats observations",
+  "CSV QB consumers preserve earlier cutoffs while recaptures withhold current decisions and labels",
+  "CSV QB final labels refuse pre-window captures and unresolved participation without invented zeros",
+  "CSV QB SQL refuses rehashed source manifests forged values identity and completion",
+  "CSV QB consumers enforce use-specific rights before files for source context and native evidence",
+  "CSV QB migration upgrades v9 preserving binding and decision history and is idempotent",
+  "CSV QB consumers operate through non-superuser execute-only recorders and replay refuses damaged bytes or links",
+  "CSV QB consumer retention removes features labels and complete label lineage through the retention-only login",
   "predictive PostgreSQL seeds exactly the application team identities, refuses others and publishes Rams replay inputs",
   "predictive PostgreSQL A/B replay preserves the earlier bundle and uses later corrections",
   "predictive scoped reads retain corrections that move evidence out of the indexed scope",

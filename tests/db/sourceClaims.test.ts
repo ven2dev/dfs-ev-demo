@@ -20,11 +20,13 @@ import { SOURCE_NORMALIZATION_V1 } from "../../src/lib/predictive/sourceNormaliz
 import { selectSourceFact, SOURCE_FACT_BOUNDS } from "../../src/lib/predictive/sourceFacts.ts";
 import { checkSourceWitness, sourceFactWitness, sourcePostWindowCapture, sourceReconciliationEvidence, sourceUsageEvidence } from "../../src/lib/predictive/sourceWitness.ts";
 import { sourceDecisionBasis, type SourceDecisionPlan, type SourceDecisionRequest } from "../../src/lib/predictive/sourceDecisions.ts";
+import { sourceConsumerInputDigest, type SourceConsumerBody } from "../../src/lib/predictive/sourceConsumers.ts";
+import { recordCompletion } from "../../src/lib/predictive/completion.ts";
 import { prepareSourceClaims, projectSourceClaim } from "../../src/lib/predictive/sourceClaims.ts";
 import { sourceClaimFixture } from "../predictive/fixtures/sourceClaims.ts";
 import { sourceCsv, sourceGameId, sourceSamples } from "../predictive/fixtures/source.ts";
 import { passingYardsFixture } from "../predictive/fixtures/passingYards.ts";
-import { addCapture, gameId, profile, PROFILE, revision, rights, schedule } from "../predictive/fixtures/passingYards.ts";
+import { addCapture, completionMarkers, coverage, gameId, membership, profile, PROFILE, revision, rights, schedule } from "../predictive/fixtures/passingYards.ts";
 import { BRIDGE_PROFILE, normalizationFixture, NORMALIZATION_GAME, rewriteNormalizationRows } from "../predictive/fixtures/sourceNormalization.ts";
 import { createScratchHarness } from "./scratch.mjs";
 
@@ -249,12 +251,12 @@ it("CSV source migration upgrades released v4 preserving creator corpus evidence
     expect(ledger[3].filename).toBe("0004_creator_corpus_projection.sql");
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9], schemaVersion: 9 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10], schemaVersion: 10 });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(upgraded.slice(0, 4)).toEqual(ledger);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
     await store.publishSourceStats(sourceClaimFixture("after-corpus-upgrade"));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 9 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 10 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
   }, 4);
@@ -723,7 +725,7 @@ it("CSV binding migration upgrades v5 without changing released history and reru
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(9);
+    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(10);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
@@ -979,7 +981,7 @@ it("CSV unavailable retention re-applies pre-v7 legacy events with identical cou
     // Restore the same retained evidence and IDs into a fresh post-v7 database.
     // New timestamps are allowed; the deletion set and audit contract are not.
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(9);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(10);
       expect(await procedure(client)).not.toBe(oldProcedure);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
@@ -1455,13 +1457,13 @@ it("CSV SQL witness migration upgrades v7 preserving bindings and prior migratio
     const revisions = (await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9], schemaVersion: 9 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10], schemaVersion: 10 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 7)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect((await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows).toEqual(revisions);
     const scoped = factRequest(request.profileId, a.event.recordedAt);
     expect(await sqlWitness(client, scoped)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(scoped)));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 9 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 10 });
     // The released-v4 upgrade test above seeds all five corpus tables and now
     // runs through 0008; this focused v7 test seeds source bindings as well.
   }, 7);
@@ -1870,11 +1872,11 @@ it("CSV source decision migration upgrades v8 preserving recorded bindings and w
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9], schemaVersion: 9 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10], schemaVersion: 10 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 8)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect(await sqlWitness(client, req)).toEqual(witness);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 9 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 10 });
     const decision = await store.recordSourceDecision("after-decision-upgrade", decisionScope(request.profileId), null);
     expect(decision.record.plan.witness.heads).toEqual(witness.heads);
   }, 8);
@@ -1908,5 +1910,214 @@ it("CSV source reconciliation evaluates every bound provider and deterministic a
     expect(disputed.record.plan).toMatchObject({ outcome: { result: "conflict", rule: "material-discrepancy", selectedObservationId: null }, selected: null });
     expect(await store.replaySourceDecision({ ...scope, cutoff: disputed.record.recordedAt })).toMatchObject({ status: "current-source-decision", record: disputed.record });
     expect(await store.replaySourceDecision({ ...scope, cutoff: agreed.record.recordedAt })).toEqual(original);
+  });
+});
+
+const seedConsumers = async (store: Store, captureAt = "2026-10-11T12:00:00.000Z") => {
+  const fixture = await normalizationFixture();
+  fixture.input.capturedAt = captureAt;
+  fixture.input.rightsDecisions[0].allowedUses = ["internal-research","model-input","outcome-label"];
+  fixture.context.rightsDecisions = [...fixture.input.rightsDecisions,rights(BRIDGE_PROFILE)];
+  const prior = { ...schedule(6,"2026-10-04T17:00:00.000Z","nfl:team:PHI","nfl:team:CAR"),gameId: NORMALIZATION_GAME,rawGameId: sourceGameId };
+  const target = schedule(77,"2026-10-18T17:00:00.000Z","nfl:team:PHI","nfl:team:CAR");
+  const rows = fixture.bridgeRows.map((row) => row.kind === "schedule" ? { ...row,data: prior } : row);
+  rows.push(revision("source-target","schedule",target),revision("source-coverage","schedule-coverage",coverage("nfl:team:PHI",[prior.gameId,target.gameId])),
+    revision("source-prior-member","membership",membership(prior)),revision("source-target-member","membership",membership(target)),
+    ...completionMarkers(prior));
+  rewriteNormalizationRows(fixture.context,rows);
+  Object.assign(fixture.context.artifacts[0],{ scopeKind: "season-file",scopeSeason: 2026 });
+  fixture.context.captures[0].capturedAt=fixture.context.captures[0].availableAt=fixture.context.captures[0].ingestedAt="2026-10-07T12:00:00.000Z";
+  const native = createReplay(fixture.context,"2026-10-12T12:00:00.000Z","2026-10-12T12:00:00.000Z","internal-research");
+  fixture.context.decisions=[recordCompletion("source-prior-completed",prior.gameId,native.completion(prior.gameId).inputs,
+    "2026-10-08T12:00:00.000Z","synthetic-proof")];
+  await store.publishSourceStats(fixture.input);
+  expect(await store.publish("consumer-context",fixture.context,"2026-10-12T12:00:00.000Z")).toMatchObject({ status: "published" });
+  const raw = { profileId: fixture.input.profile.id,rawGameId: sourceGameId,rawTeam: "PHI",rawPlayerId: "00-0000001" };
+  const binding = await store.recordSourceNormalization("consumer-binding",raw,null);
+  const rec = await store.recordSourceDecision("consumer-reconciliation",decisionScope(raw.profileId),null);
+  const part = await store.recordSourceDecision("consumer-participation",decisionScope(raw.profileId,"participation"),null);
+  const request = { playerId: "00-0000001",gameId: target.gameId,cutoff: part.record.recordedAt,computedAt: part.record.recordedAt,
+    candidate: "stats-v1:player_pass_yds" as const };
+  return { fixture,raw,binding,rec,part,request,profiles: [raw.profileId],labelRequest: { playerId: request.playerId,gameId: prior.gameId,profileIds: [raw.profileId] } };
+};
+const sqlConsumer = async (client: Client,body: SourceConsumerBody,id = "forged-consumer",head: string | null = null) => {
+  const sha = digest(canonical(body));
+  await client.query(`INSERT INTO predictive_blobs(sha256,byte_size,media_type,storage_ref) VALUES($1,$2,'application/json',$3) ON CONFLICT DO NOTHING`,
+    [sha,Buffer.byteLength(canonical(body)),sha + ".json"]);
+  return client.query("SELECT predictive_record_source_consumer($1,$2,$3)",[id,head,body]);
+};
+
+it("CSV QB consumers record explicit source manifests and final labels without ordinary stats observations", async () => {
+  await withProof(async ({ client,store }) => {
+    const seed = await seedConsumers(store);
+    const feature = await store.recordSourcePassingYards("qb-feature",seed.request,seed.profiles);
+    expect(feature.body.kind).toBe("feature"); if (feature.body.kind !== "feature") throw new Error("expected feature");
+    expect(feature.body.bundle).toMatchObject({ status: "ready-inputs",featureVersion: "passing-yards-source-v1" });
+    expect(feature.body.bundle.player[0]).toMatchObject({ attemptsSum: 10,passingYardsSum: 80,expectedGames: 1,observedGames: 1,passingYardsPerAttempt: 8 });
+    expect(feature.body.manifest.sources[0]).toMatchObject({ reconciliationId: seed.rec.record.id,participationId: seed.part.record.id,
+      selected: { bindingId: seed.binding.event.id,revisionId: seed.binding.event.revision!.id } });
+    expect(feature.body.bundle.dependencies.some((row) => row.kind === "player-game-stats")).toBe(false);
+    expect(await store.replaySourceConsumer(feature.id)).toEqual(feature);
+    const label = await store.recordSourceFinalLabel("qb-label",seed.labelRequest,null);
+    expect(label).toMatchObject({ kind: "label",mode: "synthetic-proof",body: { value: 80,stat: "passing_yards",
+      postWindowCaptureId: seed.fixture.input.captureId,playerBridgeObservationId: "player-map" } });
+    expect(await store.replaySourceConsumer(label.id)).toEqual(label);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_observations WHERE kind='player-game-stats'")).rows[0].n).toBe(0);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_feature_runs")).rows[0].n).toBe(0);
+    const absentAt=new Date().toISOString();
+    const next: Dataset={ formatVersion: 2,profiles: [profile(BRIDGE_PROFILE)],rightsDecisions: [],artifacts: [],captures: [],decisions: [],labels: [],identityLinks: [] };
+    addCapture(next,"completion-cover",[],absentAt,BRIDGE_PROFILE);
+    Object.assign(next.artifacts[0],{ scopeKind: "season-file",scopeSeason: 2026 });
+    const marker="final-" + sourceGameId;
+    addCapture(next,"completion-absence",[revision("completion-absent","source-row-absent",{
+      priorObservationId: marker,priorEntityKey: "event-state-marker:" + NORMALIZATION_GAME + ":provider-final-status",
+      coveringCaptureId: "capture-completion-cover",scopeKind: "season-file",scopeSeason: 2026,scopeWeek: null,scopeGameId: null,scopeFilter: null,
+      gameId: NORMALIZATION_GAME,
+    },marker)],absentAt,BRIDGE_PROFILE);
+    expect(await store.publish("completion-absence",next,absentAt)).toMatchObject({ status: "published" });
+    await expect(store.recordSourceFinalLabel("absent-completion-label",seed.labelRequest,label.id)).rejects.toThrow("source-label-completion-refused");
+    expect(await store.replaySourceConsumer(label.id)).toEqual(label);
+  });
+});
+
+it("CSV QB consumers preserve earlier cutoffs while recaptures withhold current decisions and labels", async () => {
+  await withProof(async ({ client,store }) => {
+    const seed = await seedConsumers(store); const original = await store.replaySourcePassingYards(seed.request,seed.profiles);
+    const saved = await store.recordSourcePassingYards("old-feature",seed.request,seed.profiles);
+    const b = sourceClaimFixture("consumer-recapture"); b.capturedAt=seed.part.record.recordedAt;
+    b.rightsDecisions=seed.fixture.input.rightsDecisions; await store.publishSourceStats(b);
+    const binding = await store.recordSourceNormalization("consumer-recapture-binding",seed.raw,seed.binding.event.id);
+    const latest = { ...seed.request,cutoff: binding.event.recordedAt,computedAt: binding.event.recordedAt };
+    expect(await store.replaySourcePassingYards(seed.request,seed.profiles)).toEqual(original);
+    expect(await store.replaySourceConsumer(saved.id)).toEqual(saved);
+    expect((await store.replaySourcePassingYards(latest,seed.profiles)).bundle.status).toBe("unavailable-inputs");
+    await expect(store.recordSourceFinalLabel("stale-label",seed.labelRequest,null)).rejects.toThrow("source-label-inputs-unavailable");
+    const rec = await store.recordSourceDecision("recaptured-reconciliation",decisionScope(seed.raw.profileId),seed.rec.record.id);
+    const part = await store.recordSourceDecision("recaptured-participation",decisionScope(seed.raw.profileId,"participation"),seed.part.record.id);
+    expect((await store.replaySourcePassingYards({ ...latest,cutoff: part.record.recordedAt,computedAt: part.record.recordedAt },seed.profiles)).bundle.status).toBe("ready-inputs");
+    const label = await store.recordSourceFinalLabel("fresh-label",seed.labelRequest,null);
+    expect(label.body.manifest.sources[0].reconciliationId).toBe(rec.record.id);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_stats_revisions")).rows[0].n).toBe(1);
+  });
+});
+
+it("CSV QB final labels refuse pre-window captures and unresolved participation without invented zeros", async () => {
+  await withProof(async ({ store }) => {
+    const seed = await seedConsumers(store,"2026-10-09T12:00:00.000Z");
+    await expect(store.recordSourceFinalLabel("too-early",seed.labelRequest,null)).rejects.toThrow("source-label-post-window-refused");
+    const b = sourceClaimFixture("zero-consumer","player",sourceCsv("player",[{ ...sourceSamples().player[0],attempts: "0",passing_yards: "0" }]));
+    b.capturedAt=seed.part.record.recordedAt; b.rightsDecisions=seed.fixture.input.rightsDecisions;
+    await store.publishSourceStats(b); await store.recordSourceNormalization("zero-binding",seed.raw,seed.binding.event.id);
+    await store.recordSourceDecision("zero-reconciliation",decisionScope(seed.raw.profileId),seed.rec.record.id);
+    const part = await store.recordSourceDecision("zero-participation",decisionScope(seed.raw.profileId,"participation"),seed.part.record.id);
+    const body = await store.replaySourcePassingYards({ ...seed.request,cutoff: part.record.recordedAt,computedAt: part.record.recordedAt },seed.profiles);
+    expect(body.bundle.status).toBe("unavailable-inputs");
+    expect(body.bundle.player[0]).toMatchObject({ observedGames: 0,unknownGames: 1 });
+    await expect(store.recordSourceFinalLabel("zero-label",seed.labelRequest,null)).rejects.toThrow("source-label-inputs-unavailable");
+  });
+});
+
+it("CSV QB SQL refuses rehashed source manifests forged values identity and completion", async () => {
+  await withProof(async ({ client,store }) => {
+    const seed = await seedConsumers(store); const feature = await store.replaySourcePassingYards(seed.request,seed.profiles);
+    const label = (await store.recordSourceFinalLabel("valid-label",seed.labelRequest,null)).body;
+    const mutations: ((body: SourceConsumerBody) => void)[] = [
+      (body) => { body.manifest.sources[0].selected!.headToken="0".repeat(64); },
+      (body) => { body.manifest.sources[0].reconciliationId=null; },
+      (body) => { body.manifest.sources[0].witness.heads=[]; },
+      (body) => { if (body.kind === "feature") body.bundle.player[0].games[0].passingYards=99; else body.value=99; },
+      (body) => { if (body.kind === "feature") body.manifest.sources=[]; else body.playerBridgeObservationId="game-map"; },
+      (body) => { body.manifest.decisions=[]; },
+    ];
+    for (const original of [feature,label]) for (const mutate of mutations) await probe(client,async () => {
+      const body=structuredClone(original); mutate(body); body.inputDigest=sourceConsumerInputDigest(body);
+      if (body.kind === "feature") body.bundle.inputDigest=body.inputDigest;
+      await expect(sqlConsumer(client,body,"forged",original.kind === "label" ? "valid-label" : null)).rejects.toMatchObject({ code: "23514" });
+    });
+    await probe(client,async () => { await expect(client.query("INSERT INTO predictive_source_consumers SELECT * FROM predictive_source_consumers LIMIT 1"))
+      .rejects.toThrow(); });
+  });
+});
+
+it("CSV QB consumers enforce use-specific rights before files for source context and native evidence", async () => {
+  for (const revokeProfile of ["csv-synthetic-player",BRIDGE_PROFILE,"consumer-native"]) await withProof(async ({ client,store,artifacts,target }) => {
+    const seed = await seedConsumers(store);
+    if (revokeProfile === "consumer-native") {
+      const native: Dataset = { formatVersion: 2,profiles: [profile(revokeProfile)],rightsDecisions: [rights(revokeProfile)],
+        artifacts: [],captures: [],decisions: [],labels: [],identityLinks: [] };
+      const nativeAt = new Date().toISOString();
+      addCapture(native,"consumer-native",[revision("consumer-native-participated","participation-evidence",{
+        gameId: NORMALIZATION_GAME,playerId: seed.request.playerId,teamId: "nfl:team:PHI",evidenceKind: "participation-feed",claim: "offensive-participant",
+      })],nativeAt,revokeProfile);
+      await store.publish("consumer-native",native,nativeAt);
+      const part = await store.recordSourceDecision("native-participation",decisionScope(seed.raw.profileId,"participation"),seed.part.record.id);
+      seed.request.cutoff=seed.request.computedAt=part.record.recordedAt;
+    }
+    const saved = await store.recordSourcePassingYards("rights-feature",seed.request,seed.profiles);
+    const t = new Date().toISOString(); const prior = revokeProfile==="csv-synthetic-player" ? "rights:" + revokeProfile : "rights-" + revokeProfile;
+    await client.query(`INSERT INTO predictive_rights_decisions VALUES('consumer-restricted',$1,$2,ARRAY['internal-research'], $3,NULL,$3,'synthetic','test use restriction')`,[revokeProfile,prior,t]);
+    let reads=0;
+    const guarded = { ...artifacts,database: { ...artifacts.database,read: async () => { reads++; throw new Error("unauthorized-file-read"); } } };
+    const restricted = await createLocalPredictiveStore(client,target,guarded);
+    await expect(restricted.replaySourcePassingYards(seed.request,seed.profiles)).rejects.toThrow("source-consumer-rights-refused");
+    await expect(restricted.recordSourceFinalLabel("rights-label",seed.labelRequest,null)).rejects.toThrow("source-consumer-rights-refused");
+    await expect(restricted.replaySourceConsumer(saved.id)).rejects.toThrow("source-consumer-rights-refused");
+    expect(reads).toBe(0);
+  });
+});
+
+it("CSV QB migration upgrades v9 preserving binding and decision history and is idempotent", async () => {
+  await withProof(async ({ client,store,target }) => {
+    const { request } = await seedBinding(store);
+    await store.recordSourceNormalization("pre-consumer-binding",request,null);
+    const decision=await store.recordSourceDecision("pre-consumer-decision",decisionScope(request.profileId),null);
+    const ledger=(await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    const files=await checkMigrationArtifacts(); const contracts=await loadCatalogContracts(files);
+    const options={ ...target,files,verify: createCatalogVerifier(contracts) };
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10],schemaVersion: 10 });
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,9)).toEqual(ledger);
+    expect(await store.replaySourceDecision({ ...decisionScope(request.profileId),cutoff: decision.record.recordedAt })).toMatchObject({ record: decision.record });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 10 });
+  },9);
+});
+
+it("CSV QB consumers operate through non-superuser execute-only recorders and replay refuses damaged bytes or links", async () => {
+  await withProof(async ({ client,store,artifacts,target,root }) => {
+    const seed = await seedConsumers(store);
+    await withLogin(client,target,["predictive_replay","predictive_recorder","predictive_harness"],async (login,loginTarget) => {
+      const restricted = await createLocalPredictiveStore(login,loginTarget,artifacts);
+      const saved = await restricted.recordSourcePassingYards("role-feature",seed.request,seed.profiles);
+      expect(await restricted.replaySourceConsumer(saved.id)).toEqual(saved);
+      const label = await restricted.recordSourceFinalLabel("role-label",seed.labelRequest,null);
+      expect(await restricted.replaySourceConsumer(label.id)).toEqual(label);
+      await expect(login.query("INSERT INTO predictive_source_consumers SELECT * FROM predictive_source_consumers LIMIT 1")).rejects.toMatchObject({ code: "42501" });
+      const path=join(root,".db-blobs",saved.bodySha256 + ".json"); const original=await readFile(path);
+      await writeFile(path,"damaged",{ mode: 0o600 });
+      await expect(restricted.replaySourceConsumer(saved.id)).rejects.toThrow("artifact-integrity-failed"); await writeFile(path,original,{ mode: 0o600 });
+      await client.query("ALTER TABLE predictive_source_consumer_source_decisions DISABLE TRIGGER predictive_source_consumer_source_decisions_immutable");
+      await client.query("DELETE FROM predictive_source_consumer_source_decisions WHERE consumer_id=$1",[saved.id]);
+      await client.query("ALTER TABLE predictive_source_consumer_source_decisions ENABLE TRIGGER predictive_source_consumer_source_decisions_immutable");
+      await expect(restricted.replaySourceConsumer(saved.id)).rejects.toThrow("stored-source-consumer-mismatch");
+    });
+  });
+});
+
+it("CSV QB consumer retention removes features labels and complete label lineage through the retention-only login", async () => {
+  await withProof(async ({ client,store,artifacts,target }) => {
+    const seed = await seedConsumers(store);
+    const feature = await store.recordSourcePassingYards("retained-feature",seed.request,seed.profiles);
+    await store.recordSourceFinalLabel("retained-label-A",seed.labelRequest,null);
+    await store.recordSourceFinalLabel("retained-label-B",seed.labelRequest,"retained-label-A");
+    await withLogin(client,target,["predictive_retention_owner"],async (login,loginTarget) => {
+      const owner=await createLocalPredictiveStore(login,loginTarget,artifacts);
+      const result=await owner.retain({ id: "consumer-retention",reason: "provider-request",authority: "synthetic retention test",decidedAt: seed.fixture.input.capturedAt,
+        scope: { kind: "source",profileIds: [seed.raw.profileId],capturedFrom: null,capturedBefore: null },auditLevel: "full" });
+      expect(result.removedCounts.sourceConsumers).toBe(3);
+      expect(result.removedIdsDigest).toBe(retentionIdsDigest((await client.query("SELECT target_kind AS kind,target_id AS id FROM predictive_retention_tombstones")).rows));
+      expect(await owner.resumeBlobRemovals()).toEqual([]);
+    });
+    expect(await store.replaySourceConsumer(feature.id)).toBeNull();
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_consumers")).rows[0].n).toBe(0);
+    await expect(artifacts.database.read(feature.bodySha256 + ".json",feature.bodySha256,Buffer.byteLength(canonical(feature.body)))).rejects.toMatchObject({ code: "ENOENT" });
   });
 });

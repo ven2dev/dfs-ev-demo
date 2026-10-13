@@ -1,12 +1,12 @@
 # #52 session handoff
 
-Updated 2026-10-12 after PR B persisted research decisions (0009). Resume from this state; do not restart the
+Updated 2026-10-13 after the QB source-consumer checkpoint (0010). Resume from this state; do not restart the
 completed work or repeat source downloads merely to recover context.
 
 The owner asked whether the issue's ACs are complete. **No:** the
 [nine-criterion audit](predictive-pr-b.md#parent-52-acceptance-criteria-audit-2026-10-12)
 maps the tested foundation to the remaining full-parent scope. Real-file proof
-still yields no usable bundle. Shared downstream head activation, qualified
+still yields no usable bundle. Qualified
 source evidence, remaining feed/market mappings and bounded operating proofs
 remain outstanding. The audit describes code checkpoint `e8e76e7`; the shared
 consumer witnesses and coordinated merge validation follow below. Neither
@@ -29,7 +29,7 @@ default project at `127.0.0.1:54329`.
 
 Historical checkpoint logs/paragraphs below retain the original private prefix
 numbers; current files are 0005 (claims), 0006 (bindings), 0007 (unavailable
-plans), 0008 (SQL witnesses) and 0009 (research decisions). The old maximum-known 6 is historical: current maximum-known is 9 and
+plans), 0008 (SQL witnesses), 0009 (research decisions) and 0010 (QB consumers). The old maximum-known 6 is historical: current maximum-known is 10 and
 minimum readiness remains 2. No hosted activation is authorized.
 
 ## Current state: PR A merged; PR B bound source revisions in internal research staging
@@ -647,3 +647,57 @@ local/unpushed; development and local commits are authorized, but remote push
 or opening PR B needs owner instruction. Do not modify 0001–0009 to add new
 behavior after this checkpoint. No hosted, persistent-dev or Production
 migration, paid/key setup, new provider request or scheduler was run.
+
+## Latest checkpoint: QB source features and final labels (0010)
+
+Forward 0010 adds sealed source-consumer records with explicit binding/revision/
+head-token, research-decision, ordinary observation/decision and current-right
+associations. New store methods replay/record QB passing-yards features and
+record final passing-yards labels; `replaySourceConsumer(id)` independently
+checks SQL metadata/rights, bytes and the historical application calculation.
+No source stats revision is inserted into the released ordinary observation or
+feature/label tables. Feature manifests use only queried window facts and keep
+computedAt outside the input digest. Source recaptures stale current decisions;
+old cutoffs and stored bodies stay unchanged. Known absence keeps its slot and
+unknown participation stays unavailable.
+
+Recording is execute-only, uses the post-lock DB clock, and seals associations
+in the same transaction. Rights for model-input/outcome-label, including native
+and historical normalization context, precede every file read. Labels additionally
+require current qualified completion, current research decisions, the selected
+binding's exact post-window capture and raw-player bridge. The SQL checker
+follows decision predecessor/successor chains rather than choosing by lexical
+ID at equal timestamps. Retention removes dependent features, complete affected
+label lineages and unreferenced body blobs. Feature-consumer expiry is 90 days;
+legacy feature pins do not apply to this isolated ledger. No new pin API ships.
+
+Validation: **873 jsdom + 637 Node tests**, **75 Node DB checks + 132 database
+tests**, all **107 mandatory predictive** and **8 corpus** cases, typecheck,
+lint, CI gate, DB guards, production Webpack build and production dependency
+audit (zero vulnerabilities), and Firestore rules. Eight new mandatory DB cases cover source-only QB
+features/final labels, recaptures and historical replay, post-window/unknown
+participation refusal, rehashed forgeries, source/context/native use rights
+before bytes, non-superuser privileges and corrupt bytes/links, v9 upgrade/no-op,
+and retention-only cleanup of features plus full label lineages. The reasoning
+review documents why expectations are independent of the implementation.
+
+The first full DB run exposed latest-schema assertions still naming v9 and a
+new native fixture that backdated ingestion into an earlier decision. Assertions
+now name v10 and the fixture records its actual later ingestion time; no guard
+was weakened. Full DB verification then passed. Final inspection additionally preserved
+completion absence/rerouting heads in the label reader; the eight affected DB
+cases, typecheck and targeted lint were rerun after that change. The browser/emulator gates need
+permission for loopback listeners. Logs:
+`/private/tmp/dfs52-prb-consumers-{db,db-focused,app,typecheck,lint,ci,guard,build,audit,firestore}.log`.
+Released/prior SQL and catalog prefixes 0001–0009 are byte-for-byte unchanged;
+readiness is minimum 2/maximum 10. Draft revisions ran only in this PR B disposable
+Docker project, and obsolete test ledgers were recreated rather than repaired.
+
+The retained provider proof is still the schema-9 run described above: no new
+provider request or usable real feature/label. Preserve its archive. The next
+bounded delivery is qualifying the missing real context/identity/completion
+inputs and demonstrating a usable real QB path with measured operating limits;
+remaining feeds/markets and population coverage also remain before #52 closure.
+PR B stays local/unpushed. Local work/commits are authorized; remote push/opening
+PR B requires owner instruction. Do not modify 0001–0010 after this checkpoint.
+No hosted, persistent-dev or Production migration ran.
