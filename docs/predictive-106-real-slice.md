@@ -161,3 +161,16 @@ and accepting a feature cutoff exactly at kickoff. The working-tree source was
 not mutated. This is selected assertion sensitivity, not exhaustive mutation
 coverage or real-source qualification. The restored archive CLI also runs
 successfully against the actual retained bytes; no DB test service was started.
+
+## Complete compressed proof continuation
+
+The [compressed-source contract](predictive-compressed-source-contract.md) now
+records complete offline decoding and independent Python parity: 19,422 player
+rows and 46,849 roster rows, matching the exact decoded CSV sizes from metadata.
+The inspection-only codec streams with separate wire, decoded, row, record-byte
+and time ceilings; existing publication/store limits and v1 remain unchanged.
+No migration number was reserved and no binary publication path is active.
+
+Full inspection also establishes a concrete dependency: `2025_18_WAS_PHI` has
+no Hurts statistics claim, despite a weekly roster claim. Preserve its slot and
+qualify explicit participation/absence evidence rather than infer a zero or DNP.
