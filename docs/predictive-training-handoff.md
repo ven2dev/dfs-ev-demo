@@ -386,25 +386,50 @@ requested ordinal, selects exact/latest feature IDs and historical label heads,
 and reports supersession separately. Two mandatory PostgreSQL cases exercise
 it against recorded source consumers. It does not read protected artifact bytes
 or establish access/pin authorization; it is not exposed by the store yet.
-This is a pure core, **not** an exported database reader or a sealed dataset API:
-database enforcement, guarded batch I/O, indexes, manifests/pins, retention and
-benchmarks remain outstanding. The pure selector cannot authorize rights or
-validate durable pins; its adapter must supply those verified facts.
+The selector remains a pure core, **not** a sealed dataset API. Database run
+split enforcement, manifests/pins and retention remain outstanding. The pure
+selector cannot authorize rights or validate durable pins; its adapter must
+supply those verified facts.
 
-Checkpoint validation: **696 Node tests** (including 33 training-core cases),
-**75 Node database checks + 138 PostgreSQL tests** (including two new metadata
-selection cases), TypeScript and affected-file ESLint pass. This verifies the
-selection increment, not the later reader/pin security or throughput contract.
-No new migration is allocated, and frozen 0001–0011 remain unchanged. Tests used
-only the isolated `dfs-ev-118-test` Docker project on permitted `[::1]:54329`;
-no persistent-dev, hosted or Production database was migrated.
+The selection checkpoint at `7a3c1b9` passed **696 Node tests**, **75 Node database
+checks + 138 PostgreSQL tests**, TypeScript and affected-file ESLint. It allocated
+no migration and left frozen 0001–0011 unchanged.
 
-Next increment: guard current rights/deletion across the complete batch before
-private byte access, load and verify shared evidence without per-row SQL round
-trips, add indexed lookup and restricted-login/concurrent-writer tests. Coordinate
-the forward-migration landing order with #106/#115 before allocating new DDL.
-Then implement atomic durable manifests/pins and the agreed retention behavior;
-do not expose the current metadata selector as a training-ready API.
+The next checkpoint adds `replaySourceConsumers(ids)`: a restricted local evidence
+primitive that verifies a complete bounded selection before returning protected
+records. It shares transaction-local metadata queries, file reads and complete
+source reconstruction, and checks every selected record before the first private
+byte read. A role-checked table guard covers direct SQL rights changes and
+retention; uncached clock-based access checks precede each unique file and
+delivery. The implementation and lock ordering are documented in
+[predictive-training-evidence.md](predictive-training-evidence.md).
+
+Migration **0012_predictive_training_read_guard** is provisional on #118. It adds
+the guard and feature/label lookup indexes without changing frozen 0001–0011 or
+copying the retention procedure. Remote inspection found no other open feature
+PR claiming a migration after 0011; this is not an agreement with another local
+session. #106/#115 must integrate the final landing order before either merges.
+This migration has run only in the isolated `dfs-ev-118-test` disposable Docker
+project on permitted `[::1]:54329`; no persistent-dev, hosted or Production
+database was migrated.
+
+This primitive does **not** seal datasets, verify caller-supplied kickoff
+assertions, pin dependencies, enforce database run splits or make model fitting
+ready. Its shared-context benchmark is not population qualification or a capacity
+claim. Remaining work includes end-to-end cancellation, representative indexed
+plans/memory benchmarks, atomic durable run/dataset manifests and pins, quotas,
+expiry/invalidation and retention/restore integration. The next implementation
+increment is database-enforced immutable run inventory and fixed consumer/missing
+selections, followed by guarded shard verification and durable pins.
+
+Evidence checkpoint validation: **700 Node tests**, **75 Node DB checks + 142
+PostgreSQL tests**, TypeScript, affected-file ESLint, migration/catalog/readiness
+checks, whitespace and documentation links pass. Four new mandatory DB cases
+cover guarded shared reads, concurrent rights/retention, damaged evidence and
+scheduled revocation. The final 1/16/64 shared-context fixture took about
+0.35/1.21/4.69 seconds with three private file reads each. Per-record SQL work
+still grows linearly; this is not a real-source capacity or training-readiness
+claim. See the evidence checkpoint for measurements and remaining limits.
 
 1. **Handoff agreed (2026-10-13).** The owner reviewed `b7db281`, approved existing
    v1 for #106 and authorized #118 implementation. #106 inventories its real

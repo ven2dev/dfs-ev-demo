@@ -175,10 +175,10 @@ it("ordinary ingestion clock migration upgrades v10 without rewriting captures a
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11],schemaVersion: 11 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11, 12],schemaVersion: 12 });
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,10)).toEqual(ledger);
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 11 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 12 });
   },10);
 });
 
@@ -337,12 +337,12 @@ it("CSV source migration upgrades released v4 preserving creator corpus evidence
     expect(ledger[3].filename).toBe("0004_creator_corpus_projection.sql");
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11], schemaVersion: 11 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11, 12], schemaVersion: 12 });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(upgraded.slice(0, 4)).toEqual(ledger);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
     await store.publishSourceStats(sourceClaimFixture("after-corpus-upgrade"));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 11 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 12 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
   }, 4);
@@ -811,7 +811,7 @@ it("CSV binding migration upgrades v5 without changing released history and reru
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(11);
+    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(12);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
@@ -1067,7 +1067,7 @@ it("CSV unavailable retention re-applies pre-v7 legacy events with identical cou
     // Restore the same retained evidence and IDs into a fresh post-v7 database.
     // New timestamps are allowed; the deletion set and audit contract are not.
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(11);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(12);
       expect(await procedure(client)).not.toBe(oldProcedure);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
@@ -1543,13 +1543,13 @@ it("CSV SQL witness migration upgrades v7 preserving bindings and prior migratio
     const revisions = (await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11], schemaVersion: 11 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11, 12], schemaVersion: 12 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 7)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect((await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows).toEqual(revisions);
     const scoped = factRequest(request.profileId, a.event.recordedAt);
     expect(await sqlWitness(client, scoped)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(scoped)));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 11 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 12 });
     // The released-v4 upgrade test above seeds all five corpus tables and now
     // runs through 0008; this focused v7 test seeds source bindings as well.
   }, 7);
@@ -1958,11 +1958,11 @@ it("CSV source decision migration upgrades v8 preserving recorded bindings and w
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11], schemaVersion: 11 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11, 12], schemaVersion: 12 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 8)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect(await sqlWitness(client, req)).toEqual(witness);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 11 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 12 });
     const decision = await store.recordSourceDecision("after-decision-upgrade", decisionScope(request.profileId), null);
     expect(decision.record.plan.witness.heads).toEqual(witness.heads);
   }, 8);
@@ -2085,6 +2085,166 @@ it("QB training metadata keeps label clocks and supersession separate from predi
     expect(await query()).toMatchObject({ labelId: b.id, labelSupersededAsOf: false, labelSupersededAtSnapshot: false });
     input.slots[0].labelRef = a.id;
     expect(await query()).toMatchObject({ labelId: a.id, labelSupersededAsOf: true, labelSupersededAtSnapshot: true });
+  });
+});
+
+it("QB guarded evidence batches reproduce restricted replay and share files at 1 16 and 64 consumers", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    const saved = await store.recordSourcePassingYards("guarded-feature-0", seed.request, seed.profiles);
+    const ids = [saved.id];
+    for (let i = 1; i < 64; i++) {
+      const id = "guarded-feature-" + i; await sqlConsumer(client, saved.body, id); ids.push(id);
+    }
+    const expected = await store.replaySourceConsumer(saved.id);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      let reads: string[] = [];
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads.push(args[0]); return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const measurements = [];
+      for (const n of [1, 16, 64]) {
+        reads = [];
+        const started = performance.now();
+        const result = await reader.replaySourceConsumers(ids.slice(0, n));
+        const wallMs = performance.now() - started;
+        expect(result.records).toHaveLength(n);
+        expect(result.records[0]).toEqual(expected);
+        expect(result.records.every((record) => canonical(record?.body) === canonical(saved.body))).toBe(true);
+        expect(new Set(reads).size).toBe(reads.length);
+        expect(reads).toHaveLength(3); // consumer JSON, native JSON, source CSV
+        const explain = (await login.query(`EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)
+          SELECT public.predictive_source_consumer_check(id) FROM unnest($1::text[]) id`, [ids.slice(0, n)])).rows[0]["QUERY PLAN"][0];
+        measurements.push({ n, ...result.verification, wallMs: Math.round(wallMs), preflightCalls: n,
+          preflightExecutionMs: explain["Execution Time"], preflightSharedHits: explain.Plan["Shared Hit Blocks"] });
+        expect((await login.query("SELECT count(*)::integer AS n FROM pg_locks WHERE pid=pg_backend_pid() AND mode='ShareLock'")).rows[0].n).toBe(0);
+      }
+      // Equal producer bodies share reconstruction, while every record's SQL
+      // association/access check still runs. Not a diverse-population benchmark.
+      expect(measurements.map((row) => row.queries)).toEqual([measurements[0].queries, measurements[0].queries, measurements[0].queries]);
+      process.stdout.write("guarded evidence shared-context benchmark " + JSON.stringify(measurements) + "\n");
+      expect((await reader.replaySourceConsumers([saved.id, "not-recorded", saved.id])).records).toEqual([expected, null, expected]);
+      expect(() => reader.replaySourceConsumers(Array(65).fill(saved.id))).toThrow("training-consumer-bounds-refused");
+      const label = await store.recordSourceFinalLabel("guarded-label", seed.labelRequest, null);
+      expect((await reader.replaySourceConsumers([saved.id, label.id])).records).toEqual([expected, label]);
+    });
+  });
+});
+
+it("QB guarded evidence blocks direct rights changes and retention until file reads finish", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    const saved = await store.recordSourcePassingYards("guarded-race", seed.request, seed.profiles);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      let unblock!: () => void, entered!: () => void, reads = 0;
+      const opened = new Promise<void>((resolve) => { entered = resolve; });
+      const gate = new Promise<void>((resolve) => { unblock = resolve; });
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads++; entered(); await gate; return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const running = reader.replaySourceConsumers([saved.id]);
+      // Attach rejection handling immediately while deliberately pausing I/O.
+      const settled = running.then((value) => ({ value }), (error: unknown) => ({ error }));
+      await opened;
+      const revoke = `INSERT INTO public.predictive_rights_decisions
+        (id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+        SELECT 'guarded-revoked',profile_id,id,'{}',date_trunc('milliseconds',clock_timestamp()),NULL,
+          date_trunc('milliseconds',clock_timestamp()),'synthetic','disposable concurrency proof'
+        FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`;
+      try {
+        await withLogin(client, target, ["predictive_ingest", "predictive_harness"], async (writer) => {
+          expect((await writer.query("SELECT predictive_harness_session() AS member")).rows[0].member).toBe(true);
+          await writer.query("SET lock_timeout='100ms'");
+          await expect(writer.query(revoke, [seed.raw.profileId])).rejects.toMatchObject({ code: "55P03" });
+        });
+        await withLogin(client, target, ["predictive_retention_owner"], async (owner) => {
+          await owner.query("SET lock_timeout='100ms'");
+          await expect(owner.query(`SELECT predictive_retention_execute('guarded-delete','provider-request','disposable test',
+            date_trunc('milliseconds',now()),$1,'full')`, [{ kind: "source", profileIds: seed.profiles, capturedFrom: null, capturedBefore: null }]))
+            .rejects.toMatchObject({ code: "55P03" });
+        });
+      } finally { unblock(); }
+      const result = await settled;
+      expect("value" in result && result.value.records[0]?.id).toBe(saved.id);
+      await client.query(revoke, [seed.raw.profileId]);
+      const before = reads;
+      await expect(reader.replaySourceConsumers([saved.id])).rejects.toThrow();
+      expect(reads).toBe(before); // committed revocation is seen before any bytes
+    });
+  });
+});
+
+it("QB guarded evidence refuses damaged shared files and associations and releases failed guards", async () => {
+  await withProof(async ({ client, store, artifacts, root, target }) => {
+    const seed = await seedConsumers(store);
+    const saved = await store.recordSourcePassingYards("guarded-damage", seed.request, seed.profiles);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      let reads = 0;
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads++; return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const path = join(root, ".db-blobs", seed.fixture.input.artifact.sha256 + ".csv");
+      const original = await readFile(path);
+      await writeFile(path, "damaged", { mode: 0o600 });
+      await expect(reader.replaySourceConsumers([saved.id, saved.id])).rejects.toThrow("artifact-integrity-failed");
+      expect((await login.query("SELECT count(*)::integer AS n FROM pg_locks WHERE pid=pg_backend_pid() AND mode='ShareLock'")).rows[0].n).toBe(0);
+      await writeFile(path, original, { mode: 0o600 });
+      expect((await reader.replaySourceConsumers([saved.id])).records[0]).toEqual(saved);
+      await client.query("ALTER TABLE predictive_source_consumer_bindings DISABLE TRIGGER predictive_source_consumer_bindings_immutable");
+      await client.query("DELETE FROM predictive_source_consumer_bindings WHERE consumer_id=$1", [saved.id]);
+      await client.query("ALTER TABLE predictive_source_consumer_bindings ENABLE TRIGGER predictive_source_consumer_bindings_immutable");
+      const before = reads;
+      await expect(reader.replaySourceConsumers([saved.id])).rejects.toThrow("stored-source-consumer-mismatch");
+      expect(reads).toBe(before);
+    });
+    // Role membership is checked using session_user, even in SECURITY DEFINER.
+    await withLogin(client, target, ["predictive_ingest"], async (login) => {
+      await expect(login.query("SELECT predictive_training_read_guard()")).rejects.toMatchObject({ code: "42501" });
+    });
+    await withLogin(client, target, ["predictive_replay"], async (login) => {
+      await login.query("BEGIN ISOLATION LEVEL REPEATABLE READ");
+      try { await expect(login.query("SELECT predictive_training_read_guard()")).rejects.toMatchObject({ code: "25000" }); }
+      finally { await login.query("ROLLBACK"); }
+      expect((await login.query("SELECT has_table_privilege(current_user,'predictive_blobs','INSERT') AS allowed")).rows[0].allowed).toBe(false);
+    });
+  });
+});
+
+it("QB guarded evidence rechecks scheduled rights changes before subsequent bytes and delivery", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    const saved = await store.recordSourcePassingYards("guarded-expiry", seed.request, seed.profiles);
+    await client.query(`INSERT INTO public.predictive_rights_decisions
+      (id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'guarded-scheduled-revoke',profile_id,id,'{}',date_trunc('milliseconds',now())+interval '2 seconds',NULL,
+        date_trunc('milliseconds',now()),'synthetic','scheduled refusal test'
+      FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [seed.raw.profileId]);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      let unblock!: () => void, entered!: () => void, reads = 0;
+      const opened = new Promise<void>((resolve) => { entered = resolve; });
+      const gate = new Promise<void>((resolve) => { unblock = resolve; });
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads++; entered(); await gate; return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const result = reader.replaySourceConsumers([saved.id]).then(() => null, (error: unknown) => error);
+      await opened;
+      try {
+        // Wait for the already-recorded effective boundary, not for a new DML
+        // writer. SHARE locks alone cannot stop the passage of time.
+        await client.query(`SELECT pg_sleep(greatest(0,extract(epoch FROM (effective_from-clock_timestamp())))+0.01)
+          FROM predictive_rights_decisions WHERE id='guarded-scheduled-revoke'`);
+      } finally { unblock(); }
+      const refused = await result as Error;
+      expect(refused).toBeInstanceOf(Error);
+      // Native/source access may refuse before the per-file gate is reached.
+      // Both are explicit rights failures; an integrity/SQL error is not a pass.
+      expect(["source-consumer-rights-refused", "predictive-source-plan-rights-profile-invalid"]).toContain(refused.message);
+      expect(reads).toBe(1);
+    });
   });
 });
 
@@ -2241,10 +2401,10 @@ it("CSV QB migration upgrades v9 preserving binding and decision history and is 
     const ledger=(await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files=await checkMigrationArtifacts(); const contracts=await loadCatalogContracts(files);
     const options={ ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11],schemaVersion: 11 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11, 12],schemaVersion: 12 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,9)).toEqual(ledger);
     expect(await store.replaySourceDecision({ ...decisionScope(request.profileId),cutoff: decision.record.recordedAt })).toMatchObject({ record: decision.record });
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 11 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 12 });
   },9);
 });
 
