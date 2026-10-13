@@ -1,0 +1,218 @@
+# #106 compressed prior-season source contract
+
+Status: **qualified decoder proof; proposed publication/storage contract**.
+Prepared 2026-10-13 on the #106 branch, based on merged main 716d755 and
+[the accepted #106/#118 handoff](https://github.com/ven2dev/dfs-ev-demo/blob/b7db281e156ac4decfd181e4d158ce912bef57e0/docs/predictive-training-handoff.md).
+No database profile, migration, binary blob writer or model reader is activated.
+The existing v1 feature/history contract and frozen migrations 0001–0011 remain
+unchanged. This increment has no provider/network or database calls.
+
+## Decision and exact evidence
+
+Retain complete provider `.csv.gz` bytes, rather than raise the global plaintext
+blob limit or pretend a QB-filtered CSV is a provider snapshot. A gzip source is
+an original artifact with a binary wire identity and a separately verified
+complete decoded CSV identity. Compression must not evade decoded, record,
+row, time or aggregate work budgets.
+
+Offline Node inspection of the previously retained, digest-verified provider
+files completed with CRC/EOF validation and no new acquisition:
+
+| Feed, season 2025 | Wire bytes | Decoded bytes | Data records | Scoped records | Elapsed | Peak RSS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Player weekly | 1,262,421 | 8,656,387 | 19,422 | 19,422 | 450 ms | 122,273,792 bytes |
+| Weekly roster | 708,144 | 15,385,661 | 46,849 | 46,849 | 642 ms | 120,209,408 bytes |
+
+These are single-file local measurements, not hosted/page/concurrent capacity
+promises or a hard process-memory bound. Both exact headers match the registered
+2026 column profiles. Independent Python gzip/CSV/hash checks agree on wire and
+decoded identities, all row/scope counts and the ordered selected-record digest.
+Raw artifacts and numerical data remain private outside Git.
+
+The wire sum is 1,970,565 bytes. Plaintext would total 24,042,048 bytes and would
+already exceed #118's proposed 20 MB unique-private-byte verification ceiling
+before other context. Compressed wire identity fits that ceiling but still
+requires about 24 MB of decoded work across these two files.
+
+Private results: `/private/tmp/dfs106-player-decoder.json`,
+`/private/tmp/dfs106-roster-decoder.json`,
+`/private/tmp/dfs106-decoder-python-parity.json`. Original immutable bytes and
+release metadata remain in `/private/tmp/dfs106-source-probe-lzpwbnwa/`.
+Temporary evidence is not durable; do not copy raw source bytes into Git.
+
+## Inspection profile implemented in this increment
+
+`nflverse-gzip-csv-inspection-v1` accepts only player/team/roster and declared
+seasons 2025 or 2026. Accepting a decoder request is not registration for source
+use. Every result explicitly returns `publicationSupported: false`,
+`featuresPublished: false` and `labelsFinalized: false`.
+
+| Ceiling | Inspection limit |
+| --- | ---: |
+| Complete immutable wire bytes | 8,000,000 |
+| Decoded UTF-8 bytes | 20,000,000 |
+| Complete data records | 80,000 |
+| CSV record bytes | 65,536 |
+| Per-inspection wall time | 30 seconds |
+
+These are a separate qualification profile; old blob/claim limits remain
+8 MB/8,192 rows. Callers can lower inspection limits but cannot raise them.
+The decoder copies the input/request before awaiting, verifies the complete
+wire digest/size, streams 16 KiB zlib output, validates UTF-8 across chunks and
+pins the exact full header. It hashes decoded bytes including any BOM; CSV
+ordinals count data records, including invalid-scope rows, not physical lines.
+Quoted commas/newlines and concatenated gzip members representing one CSV
+stream retain their exact semantics. Selected-record hashing is versioned as
+SHA-256 over UTF-8 `canonical([ordinal, allowlistedRow]) + newline` in record order.
+Excluded columns remain in wire/decoded identity, never selected fields.
+
+CRC/truncation, invalid UTF-8, malformed CSV, header drift, empty CSV, cap overflow,
+cancellation or elapsed deadline refuse the whole inspection. There is no row
+callback, iterator or partial result that a caller could publish before EOF/CRC.
+Out-of-scope rows are counted, not filtered; later claim classification must
+retain them as explicit refusals. Scope counts do not qualify numeric values,
+identity, membership, participation, completion, rights or correction finality.
+
+The offline CLI refuses ambient application/database credentials, files inside
+the checkout, insecure parent/file modes, symlinks and hardlinks, changed size/
+mtime and unbounded reads. It has no artifact registration, write/delete,
+provider credentials, acquisition or database connection.
+
+## Proposed production wire/storage contract
+
+1. **Versioned profile.** Register each qualified feed/year/asset/header/codec
+   combination explicitly. Preserve existing `nflverse-csv-qualification-v1`
+   producers and 2026-only semantics. A new gzip/multi-season source profile
+   does not change `passing-yards-source-v1` feature mathematics/history.
+   Initial source qualification is 2025/2026; do not infer approval for 2024 or
+   earlier raw statistics, even though target-relative schedule coverage is broader.
+2. **Binary identity.** Add `application/gzip` with exact `.csv.gz` storage
+   references under the existing private database-blob namespace. The primary
+   digest is SHA-256 of original compressed bytes, never decoded or reserialized
+   content. Add byte-oriented read/write methods while preserving old UTF-8
+   JSON/CSV APIs. No base64-in-JSON wrapper and no unmanaged duplicate cache.
+3. **Codec proof metadata.** Bind a capture to codec/version, exact header hash,
+   declared feed/season, wire digest/size, decoded digest/size, row count and
+   selected-record aggregate digest. Sealed writes use the database clock;
+   source capture provenance remains separate. Metadata and ordinals must bind
+   to that exact capture/artifact/profile; caller fields cannot make a bad wire
+   file usable. Recompute proof from private bytes before consumer payloads.
+4. **Complete source claims.** New player/team publication preserves every
+   original data-record ordinal, including explicit refused rows. Validate full
+   coverage, keys/projections and profile/asset/season compatibility. Expand the
+   source-claim ordinal bound forward for the qualified profile only, with an
+   explicit per-profile maximum; legacy captures keep their 8,192-row contract.
+   Generic semantic projections must still match artifact scope. No row/page
+   filter can substitute for full snapshot verification.
+5. **Roster separation.** Roster gzip is not a statistical claim or automatic
+   ordinary artifact-observation input. Its later native membership adapter needs
+   exact source-row provenance and separately qualified effective bounds. This
+   codec contract does not infer intervals from week numbers or ACT status.
+6. **Same authorization boundary.** Before bytes, apply current rights and
+   historical requested-use checks. Extend canonical guards, clock rules and
+   source readers to recognize new registered codecs. An unrecognized binary
+   profile cannot bypass a text-CSV guard or fall back into ordinary statistics.
+   SQL enforces metadata/role/closure contracts, not an ability to parse gzip
+   bytes it cannot access; application replay must independently verify bytes.
+7. **Same lifecycle.** Publication/digest locks, rollback, diagnostics, orphan
+   sweep, removal queue, exact final-address ownership and restore/re-apply must
+   support `.csv.gz`. A deletion/pin closure includes original wire artifact,
+   codec metadata and dependent claims/bindings/native evidence. No decoded
+   journal/spool survives mandatory deletion outside managed closure. Preserve
+   historical audit parity and coordinate helper integration with #115/#118.
+
+## Proposed runtime budgets for review
+
+Keep 8 MB per wire blob and 20 MB unique wire bytes per protected batch, charging
+quota by the complete retained wire and managed manifest/proof bytes. A compressed
+size is not a licence to decode an unlimited body. Proposed separate work budgets:
+20 MB decoded/file, 80,000 records/file, 64 MB decoded work/batch and 160,000
+records/batch. Per-feed caps can be narrower after measured growth/headroom.
+
+Preserve #118's page/prepare deadlines; pass the remaining caller deadline into
+inspection rather than allow a fresh 30-second timer to extend the operation.
+Verification reuse covers exact wire/decoded/codec/profile identities only inside
+one protected batch. Do not cache approval across pages/rights states.
+
+Use a bounded worker/process for untrusted source decode with a proposed 256 MiB
+memory ceiling and cancellation/termination behavior. A V8 heap limit is not a
+process RSS limit. The current inspector streams and measures RSS but does not
+enforce that proposed process ceiling. Large heap/oversized-entry stress and
+worker termination/recovery are required before production-path activation.
+Concurrent workers must fit an explicit parent budget rather than each claiming
+the whole allowance. Measure native memory and CPU as well as SQL round trips.
+
+These new decoded-work/process budgets are proposed integration limits, not
+changes to the accepted #118 contract by implication. Review and benchmark the
+shared verification contract before either branch activates a writer/reader.
+No migration number is allocated here; add only forward migrations after the
+then-current tip, integrating the first lander's main before the second lands.
+
+## Scope evidence uncovered by full inspection
+
+All ten 2025 player-history slots have a matching weekly roster claim. Nine
+have one Hurts statistics row with positive raw usage. `2025_18_WAS_PHI` has no
+Hurts statistics row. That slot remains unresolved and needs a permitted explicit
+participation/absence route; it is not zero or DNP by inference. Keep it in both
+8/16-slot horizons. Positive claims still need canonical identity, reconciliation,
+completion and recorded participation decisions. The absence route is a concrete
+qualification prerequisite for the selected proof, independent of codec/storage.
+
+## Validation / review gates
+
+The focused tests verify independent wire/decoded/selected hashes, excluded-column
+separation, multiline/BOM/concatenated-member ordinals, inclusive wire/decoded/row
+limits, multibyte record-byte enforcement, highly compressible expansion refusal,
+CRC/truncation/fatal UTF-8/header/schema errors, input immutability, cancellation,
+monotonic deadline and CLI credential/argument refusal. Real complete files have
+independent Python parity, not just agreement with this parser's own helper.
+
+Before schema/publication activation, add actual binary artifact lifecycle and
+restricted-SQL profile/claim/clock regressions, raw/canonical hash parity for
+negative and refused rows, rights/deletion races, restoration and #118 batch
+work/quota tests. Run required app/database/security checks and affected
+independent review. Decoder success is not proof of a usable real feature/label.
+
+Checkpoint adherence QC: all 17 focused tests passed, followed by six selected
+single-fault checks in an isolated copy. Disabling wire integrity, decoded-byte
+limits, row limits, fatal UTF-8, total record-byte limits or decoded identity
+each caused assertion failures. The first fault pass exposed a weak record-size
+oracle (its header exceeded the test limit); the strengthened case now accepts
+the exact full Unicode data-record byte boundary, uses a valid smaller header,
+and refuses one byte less. It detects removal of the explicit total-byte guard.
+No working-tree source was mutated by fault injection. This is selected sensitivity,
+not exhaustive mutation coverage or an independent review of future schema changes.
+
+Final code checks for this checkpoint: all 686 Node tests pass; typecheck
+(including readiness verification), lint and `git diff --check` pass. Existing
+UI/database/publication behavior is unchanged; no DB test service or migration
+was needed for this inspection-only increment. No provider data was committed.
+
+## Binary filesystem checkpoint
+
+The private artifact store now exposes `writeBinary` and `readBinary` for exact
+wire bytes at `<wire-sha256>.csv.gz`, alongside the existing text methods. Writes
+copy mutable input before awaiting filesystem work, use exclusive private
+temporary files and atomic links, and verify the final hash and size. Reads are
+bounded even if a file grows, check private single-link files and registration,
+and return independent buffers. The byte store makes no assertion about gzip
+validity, source rights or publication eligibility.
+
+Removal and age-gated orphan discovery recognize the exact gzip suffix. Cleanup
+is confined to `.db-blobs`; root archive files remain outside orphan discovery.
+Seven regression cases cover concurrent/idempotent writes, caller mutation,
+buffer isolation, text/binary separation, malformed addresses, tampering,
+permissions, links, registration replacement and exact-address deletion.
+
+The SQL schema remains at its existing prefix: it does not register gzip blobs
+or publish compressed source captures. Relay owns the pending migration 0012.
+Coordination stays in this chat at the owner's request. The next storage step
+is a separately tested SQL patch, followed by a forward migration after the
+shared prefix is settled; neither a migration number nor SQL activation is
+claimed by this filesystem checkpoint.
+
+Checkpoint checks: all 693 Node tests, all 75 Node database checks and all 136
+PostgreSQL tests pass, with the required-case report verified. Typecheck, lint,
+migration artifacts, readiness manifest and whitespace checks pass. The disposable
+database service was removed after testing. These database checks verify existing
+publication and retention behavior; gzip SQL publication remains unimplemented.

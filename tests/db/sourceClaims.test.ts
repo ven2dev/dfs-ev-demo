@@ -1,5 +1,6 @@
-import { randomBytes } from "node:crypto";
-import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { createHash, randomBytes } from "node:crypto";
+import { gzipSync } from "node:zlib";
+import { mkdtemp, readFile, realpath, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "pg";
@@ -68,6 +69,111 @@ const withLogin = async (client: Client, target: Target, roles: string[], work: 
     await work(connection, { expected, assertTarget: (config) => { expect(config).toEqual(expected); target.assertTarget(target.expected); } });
   } finally { await connection.end(); await client.query(`DROP OWNED BY ${login}`); await client.query(`DROP ROLE ${login}`); }
 };
+
+// Test-only staging: no runtime compressed publisher exists at prefix 0013.
+const stageGzip = async (client: Client, artifacts: Artifacts, seed: ReturnType<typeof sourceClaimFixture>, id: string, profileId = seed.profile.id) => {
+  const bytes = gzipSync(Buffer.from(seed.artifact.bytes));
+  const sha = createHash("sha256").update(bytes).digest("hex");
+  const ref = await artifacts.database.writeBinary(bytes, sha);
+  await client.query("INSERT INTO predictive_blobs VALUES ($1,$2,'application/gzip',$3) ON CONFLICT DO NOTHING", [sha, bytes.length, ref]);
+  await client.query(`INSERT INTO predictive_artifacts SELECT (jsonb_populate_record(NULL::predictive_artifacts,
+    to_jsonb(a)||jsonb_build_object('id',$1::text,'profile_id',$2::text,'blob_sha256',$3::text))).*
+    FROM predictive_artifacts a WHERE id=$4`, [id + ":artifact", profileId, sha, seed.artifact.id]);
+  await client.query(`INSERT INTO predictive_captures SELECT (jsonb_populate_record(NULL::predictive_captures,
+    to_jsonb(c)||jsonb_build_object('id',$1::text,'artifact_id',$2::text,'ingested_at',c.captured_at,
+      'state','incomplete','body_complete',false,'header_verified',false,'parser_succeeded',false,'parsed_rows',0))).*
+    FROM predictive_captures c WHERE id=$3`, [id + ":capture", id + ":artifact", seed.captureId]);
+  return { bytes, sha, ref };
+};
+
+it("gzip staging stamps database receipt time and refuses published captures and raw claim bypasses", async () => {
+  await withProof(async ({ client, store, artifacts }) => {
+    const seed = sourceClaimFixture(); await store.publishSourceStats(seed);
+    const before = await captureTime(client, seed.captureId);
+    await stageGzip(client, artifacts, seed, "gzip");
+    const at = await captureTime(client, "gzip:capture"); expect(at >= before).toBe(true); expect(at > seed.capturedAt).toBe(true);
+    await probe(client, async () => {
+      await expect(client.query(`INSERT INTO predictive_captures SELECT (jsonb_populate_record(NULL::predictive_captures,
+        to_jsonb(c)||jsonb_build_object('id','gzip:published','state','published','body_complete',true,
+          'header_verified',true,'parser_succeeded',true))).* FROM predictive_captures c WHERE id='gzip:capture'`))
+        .rejects.toThrow("predictive-compressed-publication-not-qualified");
+    });
+    await probe(client, async () => {
+      await client.query(`INSERT INTO predictive_source_stats_rows SELECT (jsonb_populate_record(NULL::predictive_source_stats_rows,
+        to_jsonb(r)||jsonb_build_object('id',$1::text,'capture_id','gzip:capture'))).* FROM predictive_source_stats_rows r LIMIT 1`,
+      ["source-row:" + digest(canonical(["gzip:capture", 1]))]);
+      await expect(client.query("SET CONSTRAINTS ALL IMMEDIATE")).rejects.toThrow("predictive-source-claim-envelope-invalid");
+    });
+    expect(await store.replaySourceStats(replayRequest(at))).toMatchObject({ status: "observed-source-claim" });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_stats_rows WHERE capture_id='gzip:capture'")).rows[0].n).toBe(0);
+  });
+});
+
+it("gzip synthetic unknown parsers cannot bypass receipt clocks or canonical binding guards", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = sourceClaimFixture(); await store.publishSourceStats(seed);
+    await client.query(`INSERT INTO predictive_source_profiles SELECT (jsonb_populate_record(NULL::predictive_source_profiles,
+      to_jsonb(p)||jsonb_build_object('id','gzip-unknown','parser_version','unqualified-codec'))).*
+      FROM predictive_source_profiles p WHERE id=$1`, [seed.profile.id]);
+    await withLogin(client, target, ["predictive_ingest", "predictive_harness"], async (writer) => {
+      await stageGzip(writer, artifacts, seed, "unknown", "gzip-unknown");
+      expect(await captureTime(writer, "unknown:capture") > seed.capturedAt).toBe(true);
+      await probe(writer, async () => {
+        await expect(writer.query("INSERT INTO predictive_artifact_observations VALUES ('unknown:artifact','unqualified-observation')"))
+          .rejects.toThrow("predictive-source-canonical-binding-required");
+      });
+    });
+    await probe(client, async () => {
+      await expect(client.query("INSERT INTO predictive_blobs VALUES ($1,1,'application/gzip',$2)", ["a".repeat(64), "a".repeat(64) + ".csv"]))
+        .rejects.toMatchObject({ code: "23514" });
+    });
+  });
+});
+
+it("gzip exact-address cleanup retains referenced bytes and resumes deletion through execute-only roles", async () => {
+  await withProof(async ({ client, store, artifacts, target, root }) => {
+    const seed = sourceClaimFixture(); await store.publishSourceStats(seed);
+    const gzip = await stageGzip(client, artifacts, seed, "retained-gzip");
+    const archive = await artifacts.writeBinary(gzip.bytes, gzip.sha);
+    await utimes(join(root, ".db-blobs", gzip.ref), new Date(0), new Date(0));
+    const orphanBytes = gzipSync(Buffer.from("orphan")), orphanSha = createHash("sha256").update(orphanBytes).digest("hex");
+    const orphan = await artifacts.database.writeBinary(orphanBytes, orphanSha);
+    await utimes(join(root, ".db-blobs", orphan), new Date(0), new Date(0));
+    await withLogin(client, target, ["predictive_retention_owner"], async (owner, ownerTarget) => {
+      const normal = await createLocalPredictiveStore(owner, ownerTarget, artifacts);
+      await expect(owner.query("DELETE FROM predictive_blobs")).rejects.toMatchObject({ code: "42501" });
+      expect(await normal.sweepOrphanBlobs()).toEqual([orphan]);
+      expect(await artifacts.database.readBinary(gzip.ref, gzip.sha, gzip.bytes.length)).toEqual(gzip.bytes);
+      await expect(owner.query("SELECT predictive_blob_referenced($1)", [gzip.ref])).rejects.toThrow("predictive-blob-lock-required");
+      const broken = await createLocalPredictiveStore(owner, ownerTarget, { ...artifacts, database: { ...artifacts.database,
+        remove: async (ref, sha) => { if (ref.endsWith(".csv.gz")) throw new Error("interrupted gzip unlink"); await artifacts.database.remove(ref, sha); } } });
+      await expect(broken.retain({ id: "gzip-retention", reason: "provider-request", authority: "synthetic test", decidedAt: seed.capturedAt,
+        scope: { kind: "source", profileIds: [seed.profile.id], capturedFrom: null, capturedBefore: null }, auditLevel: "full" }))
+        .rejects.toThrow("interrupted gzip unlink");
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_blobs WHERE storage_ref=$1", [gzip.ref])).rows[0].n).toBe(0);
+      expect(await normal.resumeBlobRemovals()).toContain(gzip.ref);
+      await expect(artifacts.database.readBinary(gzip.ref, gzip.sha, gzip.bytes.length)).rejects.toMatchObject({ code: "ENOENT" });
+      expect(await normal.resumeBlobRemovals()).toEqual([]);
+      await expect(owner.query("SELECT predictive_ack_blob_removal($1)", [gzip.sha + ".gz"]))
+        .rejects.toThrow("predictive-blob-reference-refused");
+    });
+    expect(await artifacts.readBinary(archive, gzip.sha, gzip.bytes.length)).toEqual(gzip.bytes);
+  });
+});
+
+it("gzip staging migration upgrades fixed v12 without rewriting evidence or prior ledger history", async () => {
+  await withProof(async ({ client, store, target }) => {
+    await store.publishSourceStats(sourceClaimFixture());
+    const captures = (await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows;
+    const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    const files = await checkMigrationArtifacts(), contracts = await loadCatalogContracts(files);
+    const options = { ...target, files, verify: createCatalogVerifier(contracts) };
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [13], schemaVersion: 13 });
+    expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 12)).toEqual(ledger);
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 13 });
+  }, 12);
+});
 
 it("CSV source persistence stamps import time, is idempotent and preserves A/B cutoff replay", async () => {
   await withProof(async ({ client, store, artifacts }) => {
@@ -175,10 +281,10 @@ it("ordinary ingestion clock migration upgrades v10 without rewriting captures a
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11, 12],schemaVersion: 12 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11, 12, 13],schemaVersion: 13 });
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,10)).toEqual(ledger);
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 12 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 13 });
   },10);
 });
 
@@ -337,12 +443,12 @@ it("CSV source migration upgrades released v4 preserving creator corpus evidence
     expect(ledger[3].filename).toBe("0004_creator_corpus_projection.sql");
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11, 12], schemaVersion: 12 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11, 12, 13], schemaVersion: 13 });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(upgraded.slice(0, 4)).toEqual(ledger);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
     await store.publishSourceStats(sourceClaimFixture("after-corpus-upgrade"));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 12 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 13 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
   }, 4);
@@ -811,7 +917,7 @@ it("CSV binding migration upgrades v5 without changing released history and reru
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(12);
+    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(13);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
@@ -1067,7 +1173,7 @@ it("CSV unavailable retention re-applies pre-v7 legacy events with identical cou
     // Restore the same retained evidence and IDs into a fresh post-v7 database.
     // New timestamps are allowed; the deletion set and audit contract are not.
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(12);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(13);
       expect(await procedure(client)).not.toBe(oldProcedure);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
@@ -1543,13 +1649,13 @@ it("CSV SQL witness migration upgrades v7 preserving bindings and prior migratio
     const revisions = (await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11, 12], schemaVersion: 12 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11, 12, 13], schemaVersion: 13 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 7)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect((await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows).toEqual(revisions);
     const scoped = factRequest(request.profileId, a.event.recordedAt);
     expect(await sqlWitness(client, scoped)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(scoped)));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 12 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 13 });
     // The released-v4 upgrade test above seeds all five corpus tables and now
     // runs through 0008; this focused v7 test seeds source bindings as well.
   }, 7);
@@ -1958,11 +2064,11 @@ it("CSV source decision migration upgrades v8 preserving recorded bindings and w
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11, 12], schemaVersion: 12 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11, 12, 13], schemaVersion: 13 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 8)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect(await sqlWitness(client, req)).toEqual(witness);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 12 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 13 });
     const decision = await store.recordSourceDecision("after-decision-upgrade", decisionScope(request.profileId), null);
     expect(decision.record.plan.witness.heads).toEqual(witness.heads);
   }, 8);
@@ -2560,10 +2666,10 @@ it("CSV QB migration upgrades v9 preserving binding and decision history and is 
     const ledger=(await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files=await checkMigrationArtifacts(); const contracts=await loadCatalogContracts(files);
     const options={ ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11, 12],schemaVersion: 12 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11, 12, 13],schemaVersion: 13 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,9)).toEqual(ledger);
     expect(await store.replaySourceDecision({ ...decisionScope(request.profileId),cutoff: decision.record.recordedAt })).toMatchObject({ record: decision.record });
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 12 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 13 });
   },9);
 });
 

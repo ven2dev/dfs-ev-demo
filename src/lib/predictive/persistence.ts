@@ -216,7 +216,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const withBlobReferences = <T>(references: string[], work: () => Promise<T>) => withBlobLocks(references.map((reference) => reference.slice(0, 64)), async () => {
     try { return await work(); }
     finally {
-      for (const reference of new Set(references.filter((value) => /^[a-f0-9]{64}\.(json|csv)$/.test(value)))) {
+      for (const reference of new Set(references.filter((value) => /^[a-f0-9]{64}\.(json|csv|csv\.gz)$/.test(value)))) {
         if (!await blobReferenced(reference)) await artifacts.remove(reference, reference.slice(0, 64));
       }
     }

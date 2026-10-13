@@ -79,3 +79,47 @@ do not include #106's binary integration. Focus combined validation on denied
 rights before wire reads, damaged/truncated gzip, independent wire/decoded caps,
 full consumer reproduction and exact `.csv.gz` rollback/retention/resume/orphan
 cleanup before the final integrated gates.
+
+## #106 integration checkpoint: compressed staging
+
+#106 merged the fixed handoff commit `42de9fb` and preserved its binary artifact
+implementation. Its next prefix is **0001–0013**, with 0001–0012 unchanged:
+
+```text
+0013_predictive_compressed_blob_staging.sql
+sha256 b681598ddf0285905041b4120d2ee133306eda5c456377599130969284181813
+```
+
+0013 admits `application/gzip` only at the exact wire-hash `.csv.gz` address,
+extends the removal queue/reference guard and preserves the existing execute-only
+role/isolation/digest-lock contract. Receipt stamping covers every gzip parser,
+including synthetic unknown parsers. A new capture guard refuses published
+gzip, and the canonical link guard refuses gzip under every profile/parser.
+The existing CSV claim check also refuses raw claims on compressed captures.
+The complete prefix is represented in generated catalog, migration and readiness
+artifacts. It has run only in disposable scratch databases.
+
+This is a staging/storage checkpoint. It adds no codec proof table, runtime
+compressed publisher, binary evidence cache or training reader. Existing CSV
+predicates intentionally remain text-only until a later forward migration and
+reader verify a complete compressed source envelope. The `readBytes` rights gate
+must still be extended before any guarded batch opens gzip. Wire/storage quotas
+remain separate from the proposed decoded-work budgets; no capacity change or
+usable output is established by 0013.
+
+The four new mandatory database cases cover database receipt stamping,
+published/raw/canonical bypass refusal, unknown synthetic parsers, exact-address
+orphan and interrupted-retention recovery through non-superuser roles, and
+v12-to-v13 evidence/ledger preservation with no-op reruns. Runtime rollback
+cleanup recognizes the gzip suffix, but compressed publication rollback and
+restored-backup parity still need coverage when a runtime writer is introduced.
+No later migration number is reserved by this checkpoint. Settle the next number
+in this chat before either session allocates another migration.
+
+Combined local checkpoint checks pass: 730 Node tests, 75 Node database checks
+and all 146 PostgreSQL tests, including the mandatory 121 predictive cases.
+Typecheck, lint, catalog/migration/readiness artifacts and whitespace checks pass.
+The first full database run exposed a stale twelve-entry bootstrap ledger
+expectation; after adding the explicit thirteenth entry, the complete mandatory
+gate passed. The disposable service was removed. These results validate staging
+and the integrated existing readers, not a future compressed publication path.

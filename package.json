@@ -40,6 +40,8 @@
     "test:db:plans": "node --test tests/db/plans.integration.check.mjs",
     "creators": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/creator-corpus/cli.ts",
     "projection:demo": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/projection/demo.ts",
+    "predictive:compressed-inspect": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/compressedInspect.ts",
+    "predictive:qb-inventory": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/qbInventory.ts",
     "predictive:demo": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/demo.ts",
     "predictive:local": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/local.ts",
     "predictive:source": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/source.ts",
