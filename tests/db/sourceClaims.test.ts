@@ -102,6 +102,90 @@ const inspectedGzip = async (client: Client, artifacts: Artifacts, seed: ReturnT
   return { ...blob, proof };
 };
 
+it("guarded gzip claims preserve complete ordinals refusals and capture-specific identities", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const sample = sourceSamples().player[0];
+    const seed = sourceClaimFixture("claim-seed", "player", sourceCsv("player", [sample,
+      {...sample, season:"2025",game_id:"2025_06_CAR_PHI"}, {...sample,player_id:"unknown"}]));
+    await store.publishSourceStats(seed);
+    const a = await inspectedGzip(client,artifacts,seed,"claims-A");
+    await inspectedGzip(client,artifacts,seed,"claims-B");
+    let reads=0;
+    const tracked={...artifacts,database:{...artifacts.database,readBinary:async(ref:string,sha:string,size:number)=>{
+      reads++;return artifacts.database.readBinary(ref,sha,size);
+    }}};
+    await withLogin(client,target,["predictive_replay"],async(reader,readerTarget)=>{
+      const guarded=await createLocalPredictiveStore(reader,readerTarget,tracked);
+      const ids=["claims-B:capture","claims-A:capture"];
+      const result=await guarded.replayCompressedClaims(ids,{maxRows:6,maxDecodedBytes:a.proof.decodedBytes*2});
+      expect(result.claims.map(entry=>entry.captureId)).toEqual(ids);
+      expect(result.verification).toEqual({verifiedWireBytes:a.bytes.length,decodedBytes:a.proof.decodedBytes*2,decodedRows:6});
+      expect(reads).toBe(1);
+      for(const entry of result.claims){
+        expect(entry.proof).toEqual(a.proof);
+        expect(entry.rows.map(row=>[row.rowOrdinal,row.failureCode])).toEqual([[1,null],[2,"source-stats-scope-refused"],[3,"source-stats-player-refused"]]);
+        expect(entry.rows[0].projection).toMatchObject({season:2026,rawGameId:"2026_06_CAR_PHI",rawPlayerId:"00-0000001",values:{passingYards:80,attempts:10,completions:null},missing:{completions:"source-blank"}});
+        expect(entry.rows.slice(1).map(row=>row.projection)).toEqual([null,null]);
+        for(const row of entry.rows)expect(row.id).toBe("source-row:"+createHash("sha256").update(JSON.stringify([entry.captureId,row.rowOrdinal])).digest("hex"));
+      }
+      expect(result.claims[0].rows[0].id).not.toBe(result.claims[1].rows[0].id);
+      expect([result.publicationSupported,result.featuresPublished,result.labelsFinalized]).toEqual([false,false,false]);
+      await expect(guarded.replayCompressedClaims(ids,{maxRows:5})).rejects.toThrow("compressed-row-budget-exceeded");
+      expect((await guarded.replayCompressedClaims([ids[0]])).claims[0].rows).toEqual(result.claims[0].rows);
+    });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_stats_rows WHERE capture_id LIKE 'claims-%'")).rows[0].n).toBe(0);
+  });
+});
+
+it("guarded gzip claims refuse forged proof CRC damage revoked rights and erased captures", async () => {
+  await withProof(async({client,store,artifacts,target})=>{
+    const seed=sourceClaimFixture();await store.publishSourceStats(seed);
+    const valid=await inspectedGzip(client,artifacts,seed,"claims-valid");
+    await stageGzip(client,artifacts,seed,"claims-forged",seed.profile.id,1);
+    await recordGzipProof(client,"claims-forged:capture",{...valid.proof,selectedRecordsSha256:"0".repeat(64)});
+    await expect(store.replayCompressedClaims(["claims-valid:capture","claims-forged:capture"])).rejects.toThrow("compressed-inspection-integrity-failed");
+    const bad=Buffer.from(valid.bytes);bad[bad.length-8]^=1;
+    const blob=await stageGzip(client,artifacts,seed,"claims-crc",seed.profile.id,1,bad);
+    await recordGzipProof(client,"claims-crc:capture",{...valid.proof,wireSha256:blob.sha,wireBytes:blob.bytes.length});
+    await expect(store.replayCompressedClaims(["claims-crc:capture"])).rejects.toThrow("compressed-gzip-refused");
+    await client.query("INSERT INTO predictive_rights_decisions VALUES('claims-denied',$1,$2,'{}',date_trunc('milliseconds',clock_timestamp()),NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','fixture revocation')",[seed.profile.id,seed.rightsDecisions[0].id]);
+    let reads=0;
+    const tracked={...artifacts,database:{...artifacts.database,readBinary:async()=>{reads++;throw new Error("wire opened");}}};
+    const denied=await createLocalPredictiveStore(client,target,tracked);
+    await expect(denied.replayCompressedClaims(["claims-valid:capture"])).rejects.toThrow("compressed-inspection-rights-refused");
+    expect(reads).toBe(0);
+    await withLogin(client,target,["predictive_retention_owner"],async(owner,ownerTarget)=>{
+      const retention=await createLocalPredictiveStore(owner,ownerTarget,artifacts);
+      await retention.retain({id:"claims-delete",reason:"provider-request",authority:"synthetic test",decidedAt:seed.capturedAt,
+        scope:{kind:"source",profileIds:[seed.profile.id],capturedFrom:null,capturedBefore:null},auditLevel:"full"});
+    });
+    await expect(store.replayCompressedClaims(["claims-valid:capture"])).rejects.toThrow("compressed-inspection-missing");
+    await expect(artifacts.database.readBinary(valid.ref,valid.sha,valid.bytes.length)).rejects.toMatchObject({code:"ENOENT"});
+  });
+});
+
+it("guarded gzip claims hold rights guards and recheck scheduled expiry after complete reconstruction", async()=>{
+  await withProof(async({client,store,artifacts,target})=>{
+    const seed=sourceClaimFixture();await store.publishSourceStats(seed);await inspectedGzip(client,artifacts,seed,"claims-expiry");
+    await client.query("INSERT INTO predictive_rights_decisions VALUES('claims-expiring',$1,$2,'{}',date_trunc('milliseconds',clock_timestamp())+interval '2 seconds',NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','scheduled fixture revocation')",[seed.profile.id,seed.rightsDecisions[0].id]);
+    await withLogin(client,target,["predictive_ingest","predictive_harness"],async writer=>{
+      await writer.query("SET lock_timeout='200ms'");let reads=0;
+      const tracked={...artifacts,database:{...artifacts.database,readBinary:async(ref:string,sha:string,size:number)=>{
+        reads++;
+        await expect(writer.query("INSERT INTO predictive_rights_decisions VALUES('claims-race',$1,'claims-expiring','{}',date_trunc('milliseconds',clock_timestamp()),NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','concurrent revocation')",[seed.profile.id])).rejects.toMatchObject({code:"55P03"});
+        const bytes=await artifacts.database.readBinary(ref,sha,size);
+        await client.query("SELECT pg_sleep(GREATEST(0,EXTRACT(epoch FROM (effective_from-date_trunc('milliseconds',clock_timestamp()))))+0.03) FROM predictive_rights_decisions WHERE id='claims-expiring'");
+        return bytes;
+      }}};
+      const guarded=await createLocalPredictiveStore(client,target,tracked);
+      await expect(guarded.replayCompressedClaims(["claims-expiry:capture"])).rejects.toThrow("compressed-inspection-rights-refused");
+      expect(reads).toBe(1);
+      await writer.query("INSERT INTO predictive_rights_decisions VALUES('claims-restored',$1,'claims-expiring','{internal-research}',date_trunc('milliseconds',clock_timestamp()),NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','fixture restoration')",[seed.profile.id]);
+      expect((await store.replayCompressedClaims(["claims-expiry:capture"])).claims[0].rows[0].projection?.values.passingYards).toBe(80);
+    });
+  });
+});
+
 it("guarded gzip inspections reproduce exact envelopes with transaction-local wire and decoded accounting", async () => {
   await withProof(async ({ client, store, artifacts, target }) => {
     const seed = sourceClaimFixture(); await store.publishSourceStats(seed);

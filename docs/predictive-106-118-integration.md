@@ -331,3 +331,35 @@ readiness checks and all 16 catalog contracts in the complete DB gate. Frozen
 0001–0015 SQL/catalog and generated manifests match `4f1ad06`. No persistent or
 hosted database was migrated. Dataset/pin DDL remains unimplemented and reserved
 at 0016; this is not #118 completion or fitting authorization.
+
+## #106 guarded claim reconstruction continuation
+
+#106 integrated #118's assigned-shard checkpoint `84945bf`, retaining the
+isolated worker, `verifyDatasetShard`, frozen 0001–0015 and both handoff sections.
+`replayCompressedClaims` now reconstructs complete player/team raw claims through
+the same guarded inspection-envelope path. It compares the full regenerated
+codec proof, preserves every row ordinal/refusal, binds row IDs to each capture,
+and rechecks research rights before wire access and final delivery. No stored raw
+claim, normalized fact, feature or label is created. Roster files cannot become
+numeric claims through this API.
+
+Wire bytes remain deduplicated within the transaction. Claims must be regenerated
+for each capture identity, so decoded-work accounting charges each reconstruction
+even when two captures share one wire file. Temporary worker limits use the
+remaining decoded-byte/row allowance. Inspection-only replay retains its prior
+deduplication and return shape. Failed integrity, budgets, rights or retention
+checks deliver no partial claim batch.
+
+The new mandatory database cases cover complete ordinals and explicit refusals,
+capture-specific identities through a replay-only login, no raw-claim activation,
+wire/work accounting, budget refusal/recovery, forged decoded selection identity,
+CRC damage, pre-read revocation, retention erasure, concurrent rights writes and
+scheduled expiry after reconstruction. Further #106 DDL still needs coordination
+at 0017 or later; 0016 remains with #118. Real-source qualification and explicit
+2025 Week 18 participation/absence remain unresolved.
+
+Combined validation passes: 750 Node tests, nine container checks, 75 Node DB
+checks and 175 PostgreSQL tests (150 mandatory predictive cases), typecheck,
+full lint, catalog/migration/readiness and whitespace checks. The complete gate
+includes Relay's assigned-shard verification and the worker-backed inspection
+and claim readers. Disposable database cleanup completed.

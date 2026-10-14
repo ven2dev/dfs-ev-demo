@@ -715,3 +715,29 @@ alter the launched request. Pure tests reject increased, invalid and inherited
 limit keys before runtime access. These checks establish guarded diagnostic
 decoding only; publication qualification and usable real features/labels remain
 separate outstanding work.
+
+## #106 guarded raw-claim reconstruction review
+
+Three mandatory PostgreSQL cases extend the worker-backed guard to complete raw
+claims. The positive case specifies three source rows: one valid 80-yard claim,
+one older-season refusal and one invalid player refusal. Expected ordinals,
+failure codes, values and missingness are hand specified. Row IDs are independently
+SHA-256 hashed from capture/ordinal pairs; different captures sharing a file must
+have different IDs. A restricted replay login succeeds without publishing any
+raw-stat rows. The exact two-capture decoded allowance succeeds, one fewer row
+refuses and a fresh read recovers; one wire read is independently counted.
+
+The integrity case forges a shape-valid selected-record digest and damages CRC
+while preserving the new wire digest. Both must refuse the complete batch. Rights
+revocation must refuse with zero binary reads, then execute-only retention erases
+the captured envelope and its exact compressed bytes. The race case attempts a
+real direct rights write from another connection during the guarded file read;
+it must time out. A database-clock scheduled revocation then becomes effective
+before reconstruction completes, and delivery must refuse. Restoring rights
+from the other connection proves the failed reader released its guard and worker.
+These establish guarded raw reconstruction, not qualified source publication.
+
+The first complete gate caught microsecond timestamps in two newly added rights
+fixtures. Both were corrected with explicit database-clock millisecond truncation,
+preserving the schema's timestamp constraints and all race/expiry assertions.
+All three new cases then passed a focused rerun before repeating the full gate.

@@ -381,3 +381,30 @@ Integration validation passes all 746 Node tests, nine container checks, 75 Node
 database checks and 166 PostgreSQL tests (141 mandatory predictive cases), plus
 typecheck, affected-file lint and catalog/migration/readiness/whitespace checks.
 The disposable local database was removed after validation.
+
+## Guarded complete-claim reconstruction
+
+`replayCompressedClaims` uses the inspection guard and isolated worker to return
+complete player/team raw claim reconstructions for an explicitly listed capture
+batch. It validates the entire stored codec envelope before releasing any row.
+All source rows retain their original ordinals, including rows that refuse scope
+or player validation. IDs include the exact capture identity. Roster numeric
+claims refuse before wire access. Fresh research-rights checks, guard lifetime,
+failure rollback and verified worker cleanup match diagnostic inspection replay.
+
+The wire memo remains transaction-local and shared. Capture-specific claim work
+has its own memo identity and charges decoded bytes/rows for each reconstruction;
+two captures sharing one file therefore have one wire read but two decode charges.
+The remaining batch work budget is enforced inside each worker. This deliberately
+conservative accounting prevents claim rebinding from silently escaping decode
+limits. Inspection-only callers retain their original response and accounting.
+
+This does not publish gzip source-stat rows or authorize model inputs. Returned
+claims remain research reconstructions with publication/features/labels false;
+qualified publication, consumer reconstruction and usable real outputs remain
+outstanding. Schema 0015 remains unchanged and 0016 stays allocated to #118.
+
+Combined checkpoint validation passes 750 Node tests, nine worker checks, 75 Node
+DB checks and all 175 PostgreSQL tests (150 mandatory predictive cases), including
+Relay's assigned-shard verification. Typecheck, full lint, catalog/migration/
+readiness and whitespace checks pass; disposable database cleanup completed.

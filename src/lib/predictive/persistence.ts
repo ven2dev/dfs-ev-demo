@@ -8,6 +8,7 @@ import { trainingRunPreview, type TrainingKickoffProof } from "./trainingPreview
 import type { TrainingRunInventory } from "./trainingRuns.ts";
 import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
 import { runCompressedWorker } from "./compressedWorker.ts";
+import type { prepareCompressedSourceClaims } from "./compressedClaims.ts";
 import { assertTrainingShardUnexpired, normalizeTrainingShardRequest, trainingShardMembership, trainingShardProof, type TrainingShardRequest } from "./trainingShards.ts";
 import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
   type SourceClaimRow, type SourceStatsPublication, type SourceStatsRequest, type SourceStatsReplay, type SourceStatsCapture } from "./sourceClaims.ts";
@@ -457,7 +458,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
 
   // Local codec diagnostics only: this does not select source facts or consumers.
   // Stable metadata is guarded; clock-sensitive access is never memoized.
-  const replayCompressedInspections = (input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) => {
+  const replayCompressedEvidence = (mode: "inspect" | "claims", input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) => {
     if (!Array.isArray(input) || input.length < 1 || input.length > 64 || new Set(input).size !== input.length ||
         input.some(id => typeof id !== "string" || !id.trim() || id.length > 256 || /[\u0000-\u001f\u007f]/.test(id))) refuse("compressed-inspection-request-refused");
     const ids = [...input];
@@ -467,9 +468,10 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (!Number.isSafeInteger(maxDecodedBytes) || maxDecodedBytes < 1 || maxDecodedBytes > 64_000_000 ||
         !Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 160_000) refuse("compressed-batch-limits-refused");
     return transaction(async () => {
-      type Entry = { captureId: string; proof: Awaited<ReturnType<typeof inspectCompressedSource>>; reference: string; sha256: string; byteSize: number };
+      type Entry = { captureId: string; proof: Awaited<ReturnType<typeof inspectCompressedSource>>; reference: string; sha256: string; byteSize: number; rows?: SourceClaimRow[] };
       const load = async (): Promise<Entry[]> => (await client.query("SELECT public.predictive_read_compressed_inspections($1) AS entries", [ids])).rows[0].entries;
       const entries = await load();
+      if (mode === "claims" && entries.some(entry => !["player","team"].includes(entry.proof.feed))) refuse("compressed-claims-feed-refused");
       // A 30s execution deadline plus bounded runtime cleanup must fit within
       // this guarded transaction's idle timeout; no image is pulled here.
       await client.query("SET LOCAL idle_in_transaction_session_timeout = '45s'");
@@ -479,26 +481,36 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       for (const entry of entries) {
         const request: CompressedInspectionRequest = { feed: entry.proof.feed, season: entry.proof.season,
           wireSha256: entry.sha256, wireBytes: entry.byteSize };
-        const inspection = await memoEvidence("compressed-inspection", [entry.reference,entry.sha256,entry.byteSize,
-          request.feed,request.season,entry.proof.codecVersion], async () => {
+        const reconstructed = await memoEvidence("compressed-" + mode, [entry.reference,entry.sha256,entry.byteSize,
+          request.feed,request.season,entry.proof.codecVersion, mode === "claims" ? entry.captureId : null], async () => {
           const remainingBytes = maxDecodedBytes - decodedBytes, remainingRows = maxRows - decodedRows;
           if (remainingBytes < 1 || remainingRows < 1) refuse("compressed-batch-work-budget-exceeded");
           const bytes = await readWireBytes(entry.reference, entry.sha256, entry.byteSize);
-          const worker = await runCompressedWorker("inspect", bytes, request, { limits: {
+          const worker = await runCompressedWorker(mode, bytes, request, { captureId: entry.captureId, limits: {
             decodedBytes: Math.min(COMPRESSED_SOURCE_LIMITS.decodedBytes, remainingBytes),
             rows: Math.min(COMPRESSED_SOURCE_LIMITS.rows, remainingRows) } });
-          const proof = worker.result as Awaited<ReturnType<typeof inspectCompressedSource>>;
+          const prepared = mode === "claims" ? worker.result as Awaited<ReturnType<typeof prepareCompressedSourceClaims>> : null;
+          if (prepared && (!Array.isArray(prepared.rows) || typeof prepared.inspection !== "object")) refuse("compressed-worker-result-refused");
+          const proof = prepared ? prepared.inspection : worker.result as Awaited<ReturnType<typeof inspectCompressedSource>>;
           decodedBytes += proof.decodedBytes; decodedRows += proof.rows;
-          return { ...proof, limits: { ...COMPRESSED_SOURCE_LIMITS } };
+          return { proof: { ...proof, limits: { ...COMPRESSED_SOURCE_LIMITS } }, rows: prepared?.rows };
         });
-        if (canonical(inspection) !== canonical(entry.proof)) refuse("compressed-inspection-integrity-failed");
-        reports.set(entry.captureId, { ...entry, proof: inspection });
+        if (canonical(reconstructed.proof) !== canonical(entry.proof)) refuse("compressed-inspection-integrity-failed");
+        reports.set(entry.captureId, { ...entry, ...reconstructed });
       }
       await batchAccess();
-      return { snapshotAt: batchClock!, inspections: ids.map(id => reports.get(id)!),
+      return { snapshotAt: batchClock!, entries: ids.map(id => reports.get(id)!),
         verification: { verifiedWireBytes: verifiedBytes, decodedBytes, decodedRows }, publicationSupported: false };
     }, false, true);
   };
+  const replayCompressedInspections = (input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) =>
+    replayCompressedEvidence("inspect", input, options).then(({ entries, ...result }) => ({ ...result,
+      inspections: entries.map(({ captureId, proof, reference, sha256, byteSize }) => ({ captureId, proof, reference, sha256, byteSize })) }));
+  // Research reconstruction only. No raw-stat publication, normalization or
+  // model-input authorization follows from an inspection envelope.
+  const replayCompressedClaims = (input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) =>
+    replayCompressedEvidence("claims", input, options).then(({ entries, ...result }) => ({ ...result,
+      claims: entries.map(entry => ({ ...entry, rows: entry.rows! })), featuresPublished: false, labelsFinalized: false }));
 
   const readSourceNormalization = async (request: SourceStatsRequest, accessAt?: string, version: string = SOURCE_NORMALIZATION_VERSION) => memoEvidence("readSourceNormalization", [request, accessAt ?? null, version], async () => {
     const source = await readSourceStats(request, accessAt);
@@ -1392,7 +1404,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
-  return { publish, publishSourceStats, replaySourceStats, replayCompressedInspections, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
+  return { publish, publishSourceStats, replaySourceStats, replayCompressedInspections, replayCompressedClaims, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
     planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun, verifyDatasetShard,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

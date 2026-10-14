@@ -23,6 +23,9 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "guarded gzip claims preserve complete ordinals refusals and capture-specific identities",
+  "guarded gzip claims refuse forged proof CRC damage revoked rights and erased captures",
+  "guarded gzip claims hold rights guards and recheck scheduled expiry after complete reconstruction",
   "guarded gzip inspections reproduce exact envelopes with transaction-local wire and decoded accounting",
   "guarded gzip inspections refuse revoked rights before any private wire bytes open",
   "guarded gzip inspections refuse forged decoded identities and CRC errors after valid wire hashing",
