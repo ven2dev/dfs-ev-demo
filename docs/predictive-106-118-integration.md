@@ -2,14 +2,14 @@
 
 #118 integrated #106's pushed `4f1ad06` checkpoint on
 `feature/dfsEV-118-training-reads-retention`. The combined fixed prefix is now
-**0001–0015**, including #118's immutable run inventory and #106's guarded codec
-inspection. Qualified compressed publication and full compressed consumer
+**0001–0016**, including #118's immutable run inventory/dataset pins and #106's
+guarded codec inspection. Qualified compressed publication and full compressed consumer
 reconstruction remain unfinished.
 Neither session has published a usable real feature or label.
 
 ## Fixed integration prefix
 
-Use the ordered **0001–0015** prefix in [migration-manifest.json](../db/migration-manifest.json).
+Use the ordered **0001–0016** prefix in [migration-manifest.json](../db/migration-manifest.json).
 Released 0001–0011 and the integrated 0012–0015 remain byte-for-byte unchanged.
 For branch integration, keep #118's 0012 fixed:
 
@@ -24,9 +24,10 @@ procedure replacement. It has run only in disposable local databases; it is
 not merged to main or activated in a persistent/hosted database. Future changes
 to this shared prefix use forward migrations.
 
-**0016 is reserved for #118 dataset/pin DDL**, as authorized by the owner after
-#106 confirmed its complete prefix through 0015. #106 will use **0017 or later**
-for publication changes after coordination here; neither session should reserve
+**0016 belongs to #118 dataset/pin DDL**, as authorized by the owner after
+#106 confirmed its complete prefix through 0015. The owner then confirmed
+**0016 is #118's complete next range; 0017 only is reserved for #106's qualified
+compressed publication.** Neither session should reserve
 a further range silently. Integrate by merge after preserving local work; do not rebase or
 cherry-pick duplicate copies of the prefix. Keep #106's binary artifact
 implementation when resolving shared files. Regenerate migration/catalog/
@@ -45,6 +46,7 @@ databases.
 | `replaySourceConsumers(ids)` | New local evidence primitive: at most 64 references; returns snapshot time, ordered verified records/nulls and verification metrics. It does not seal training datasets or pins. Gzip must work through its full reconstruction path. |
 | Run preparation | `prepareFittingRun(request)` fixes the entire inventory and SQL-selected IDs; `readFittingRun(id)` reads its metadata with fresh rights. Neither opens files, seals a verified dataset or creates pins. |
 | Assigned shard verification | `verifyDatasetShard({ version, fittingRunId, inventorySha256, datasetId })` checks only the inventory's assigned membership, kickoff evidence and selected consumers under guard. Its metadata proof is ephemeral; it creates no manifest/pin and is not a SQL recording certificate. |
+| Dataset/pin API | `prepareDataset({ version, fittingRunId, inventorySha256, datasetId, pinId })`, `readDatasetManifest(id)`, `pinDataset(request)` and `releaseDatasetPin(id)` seal/read immutable metadata, create independent pins and append releases. Preparation/pinning verify exact assigned evidence plus closure files inside the recording transaction. No numerical pages or fitting readiness are returned. |
 | Retention APIs | `retain` and `retentionEvents` may return optional `trainingRetention: { removedCounts, removedIdsDigest }`; `reapply` compares it too. Legacy counts/digest remain separate. `resumeBlobRemovals` and `sweepOrphanBlobs` signatures are unchanged. Preserve execute-only APIs, exact addresses including `.csv.gz`, digest locks, queued acknowledgement, rollback cleanup and aged-temp recovery. |
 
 ## Rights, locks and budgets
@@ -288,3 +290,66 @@ readiness checks and all 16 catalog contracts in the complete DB gate. Frozen
 0001–0015 SQL/catalog and generated manifests match `4f1ad06`. No persistent or
 hosted database was migrated. Dataset/pin DDL remains unimplemented and reserved
 at 0016; this is not #118 completion or fitting authorization.
+
+## #118 dataset and durable-pin checkpoint
+
+```text
+0016_predictive_training_datasets.sql
+sha256 fd0e99ae3b3cc5f2dedb019d6d35fe3fe41d27b960179a91599496f8b0492883
+```
+
+0016 independently constructs each manifest from the owning SQL inventory. It
+fixes assigned global ordinals/states, consumer manifests, clocks, history/model/
+split/population identities, partition counts and the conservative replay graph.
+Closure includes label ancestors, binding/revision/decision history, native
+observations/captures, identity links, rights, ingestion runs and exact blob
+references. No caller-supplied rows or verification proof is accepted. The adapter
+verifies the fixed shard before SQL recording and every additional closure file
+before commit. Failure, current rights expiry or damage rolls back manifests,
+pins and identity reservations together. Every later manifest read reverifies.
+Protected uses follow the full lineage, including an ancestor label's provider
+when a correction changes provider scope. Current rights for those profiles are
+checked before their bytes and before delivery; deletion of that ancestor's
+provider removes the affected dataset and corrected descendants.
+
+Pins/release events use execute-only functions and database clocks. Additional
+pins reserve the same dataset once; last release restores the feature's original
+90-day expiry without a renewed lease. Active valid pins preserve feature
+eligibility in later inventories through the optional `pinEligibility` member;
+historical inventories without that member remain unchanged. Expired selections
+cannot be resurrected by preparation/re-pinning. Quotas are 32 active datasets,
+256 MiB charged closure per dataset, 1 GiB total and 1,024 lifetime pins per
+dataset. Full blobs plus canonical manifest bytes are charged, including shared
+bytes separately across datasets. These are enforced ceilings, not capacity proof.
+
+Preparation/pinning acquire the existing global publication/retention lock
+before the table guard. Read-only adapters take only the guard. No blob digest
+lock is acquired after table locks. The same `readBytes`/`readWireBytes` gates,
+wire quota and exact-address cleanup remain unchanged; 0016 does not activate
+compressed publication or claim decoded verification for future consumers.
+
+Three checksum-guarded, literal extension seams amend the exact reviewed 0010
+retention expiry predicate and 0014 inventory expiry/preparation predicates.
+Unexpected function bodies refuse migration. This avoids another complete
+retention-procedure copy, preserves unrelated code/grants/audit, and makes pin
+eligibility explicit during candidate selection. #115 must preserve/replace
+these seams in its ledger decomposition. Per-dataset authorized deletion hooks
+remove pin/release/consumer closure before a parent run is deleted. An expired
+unprotected shard can be removed while a different pinned shard remains; this
+does not make that incomplete run ready. Mandatory source deletion still erases
+the full affected run, including missing slots and narrow scopes. Dataset audit
+is supplemental; unaffected legacy/training audit results retain exact parity.
+
+This is metadata sealing and retention. `sealed` still carries `fittingReady:
+false` and unqualified population. Stable numerical paging, current/historical
+label APIs, complete-run readiness, audited invalidation, deadlines and capacity
+evidence remain #118 work. No migration after 0016 is reserved by #118. #106 owns
+0017 only for qualified compressed publication against this complete prefix;
+any further number requires coordination. Do not renumber/edit
+0001–0016 after accepting this handoff.
+
+Final checkpoint validation: 748 Node tests, 75 Node DB checks, 185 PostgreSQL
+tests (160 mandatory predictive cases), typecheck, affected-file lint and all 17
+catalog contracts pass. Frozen 0001–0015 and their contracts/ledger remain
+unchanged from `84945bf`. Only disposable databases ran 0016. The evidence
+checkpoint records the corrected host/database-clock test fixture and log paths.

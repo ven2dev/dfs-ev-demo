@@ -7,6 +7,7 @@ import { canonical, digest } from "../../src/lib/predictive/validation.ts";
 import { checkTrainingMetadataSelection } from "../../src/lib/predictive/trainingSql.ts";
 import { trainingRunPreview } from "../../src/lib/predictive/trainingPreview.ts";
 import { assertTrainingShardUnexpired, normalizeTrainingShardRequest } from "../../src/lib/predictive/trainingShards.ts";
+import { normalizeTrainingDatasetRequest } from "../../src/lib/predictive/trainingDatasets.ts";
 import { CUTOFF_A, gameId, passingYardsFixture, PLAYER, PROFILE, request, TARGET } from "./fixtures/passingYards.ts";
 
 const SNAPSHOT = "2026-10-20T00:00:00.000Z";
@@ -52,6 +53,21 @@ const label = (id = "label-A", recordedAt = "2026-10-15T00:00:00.000Z", value = 
     manifest: { version: "source-consumer-v1", use: "outcome-label", cutoff: recordedAt, profileIds: [PROFILE], sources: [], observations: [], decisions: [] }, inputDigest: "" }, recordedAt, predecessorId);
 
 describe("fixed shard request and expiry boundary", () => {
+  it("dataset preparation accepts only owning selection and pin identity, never caller-supplied verification or rows", () => {
+    const input = { version: "qb-training-read-v1" as const, fittingRunId: "run-1", inventorySha256: "a".repeat(64), datasetId: "shard-1", pinId: "pin-A" };
+    const normalized = normalizeTrainingDatasetRequest(input); input.pinId = "changed";
+    expect(normalized.pinId).toBe("pin-A");
+    expect(() => normalizeTrainingDatasetRequest({ ...normalized, byteProof: "trusted" } as never)).toThrow("schema-fields-refused");
+    expect(() => normalizeTrainingDatasetRequest({ ...normalized, pinId: "bad|pin" })).toThrow("training-pin-identity-refused");
+  });
+  it("only an independently authorized active pin can exempt an eligible feature at its original expiry boundary", () => {
+    const rows = [{ feature: selectTrainingRows(runRequest(), SNAPSHOT, [feature()])[0].feature }];
+    expect(() => assertTrainingShardUnexpired(rows, "2027-01-07T00:00:00.000Z", new Set(["unrelated-feature"]))).toThrow("training-shard-feature-expired");
+    expect(() => assertTrainingShardUnexpired(rows, "2027-01-07T00:00:00.000Z", new Set(["feature-A"]))).not.toThrow();
+    // The pure helper cannot authorize a pin; restricted SQL and the protected
+    // adapter supply that fact. Releasing it restores this unchanged deadline.
+    expect(() => assertTrainingShardUnexpired(rows, "2027-01-07T00:00:00.000Z")).toThrow("training-shard-feature-expired");
+  });
   it("requires the exact owning inventory and shard with no caller-supplied replacements", () => {
     const request = { version: "qb-training-read-v1" as const, fittingRunId: "run-1", inventorySha256: "a".repeat(64), datasetId: "shard-1" };
     const saved = normalizeTrainingShardRequest(request);

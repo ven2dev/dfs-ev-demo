@@ -8,6 +8,7 @@ import { trainingRunPreview, type TrainingKickoffProof } from "./trainingPreview
 import type { TrainingRunInventory } from "./trainingRuns.ts";
 import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
 import { assertTrainingShardUnexpired, normalizeTrainingShardRequest, trainingShardMembership, trainingShardProof, type TrainingShardRequest } from "./trainingShards.ts";
+import { normalizeTrainingDatasetRequest, type TrainingDatasetContext, type TrainingDatasetRequest, type TrainingDatasetManifest } from "./trainingDatasets.ts";
 import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
   type SourceClaimRow, type SourceStatsPublication, type SourceStatsRequest, type SourceStatsReplay, type SourceStatsCapture } from "./sourceClaims.ts";
 import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
@@ -176,7 +177,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return result;
   };
   const read = async (sql: string, values: unknown[]) => hydrate((await readQuery(sql, values)).rows.map((row) => row.envelope as Raw));
-  const transaction = async <T>(work: () => Promise<T>, readonly = false, guarded = false): Promise<T> => {
+  const transaction = async <T>(work: () => Promise<T>, readonly = false, guarded = false, guardedWriter = false): Promise<T> => {
     if (busy) refuse("predictive-session-busy"); busy = true;
     verifiedBytes = 0; verifiedJson.clear(); verifiedCsv.clear(); verifiedCsvFiles.clear(); verifiedDigests.clear();
     try {
@@ -188,6 +189,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         await client.query("SET LOCAL lock_timeout = '3s'");
         await client.query("SET LOCAL idle_in_transaction_session_timeout = '15s'");
         if (guarded) {
+          if (guardedWriter) await client.query("SELECT pg_advisory_xact_lock($1,1)", [LOCK_NAMESPACE]);
           batchClock = (await client.query("SELECT public.predictive_training_read_guard() AS clock")).rows[0].clock as string;
           batch = createEvidenceBatch((sql, values) => client.query(sql, values));
         } else if (!readonly) await client.query("SELECT pg_advisory_xact_lock($1,1)", [LOCK_NAMESPACE]);
@@ -957,6 +959,25 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     await batchAccess();
     return records;
   };
+
+  const trainingPinnedConsumers = async (ids: string[]) => {
+    // Frozen pre-0016 training checkpoints contain no source-dataset pins.
+    // Preserve their existing preview/verifier APIs during forward upgrades.
+    if (!(await readQuery("SELECT to_regprocedure('public.predictive_training_pinned_consumers(text[])') AS available")).rows[0].available) return new Set<string>();
+    return new Set<string>((await client.query("SELECT public.predictive_training_pinned_consumers($1) AS ids", [ids])).rows[0].ids);
+  };
+  const extendTrainingAccess = async (uses: TrainingRunInventory["protectedUses"]) => {
+    const original = batchAccess!;
+    batchAccess = async () => {
+      await original();
+      const allowed = (await client.query(`WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS t)
+        SELECT coalesce(bool_and(public.predictive_rights_allow(x.profile,c.t,c.t,'internal-research')
+          AND public.predictive_rights_allow(x.profile,c.t,c.t,x.use)),true) AS allowed
+        FROM jsonb_to_recordset($1::jsonb) x(profile text,use text) CROSS JOIN clock c`, [JSON.stringify(uses)])).rows[0].allowed;
+      if (allowed !== true) refuse("source-consumer-rights-refused");
+    };
+    await batchAccess();
+  };
   const verifyConsumerBatch = async (records: Map<string, SourceConsumerRecord | null>) => {
     const results = await Promise.allSettled([...records.values()].map(async (result) => result && verifySourceConsumer(result)));
     // Drain every branch before rollback/COMMIT; pending work cannot escape
@@ -1053,7 +1074,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       if ([...records.values()].some((record) => record === null)) refuse("training-selection-inventory-mismatch");
       const kickoffs = await context.verify();
       await verifyConsumerBatch(records);
-      const selected = selectTrainingRows(request, snapshotAt, [...records.values()].filter((record): record is SourceConsumerRecord => record !== null), new Set(), metadata);
+      const pinned = await trainingPinnedConsumers(ids);
+      const selected = selectTrainingRows(request, snapshotAt, [...records.values()].filter((record): record is SourceConsumerRecord => record !== null), pinned, metadata);
       const result = trainingRunPreview(request, snapshotAt, selected, metadata, kickoffs);
       await batchAccess!();
       return { ...result, verification: { ...batch!.metrics(), verifiedBytes } };
@@ -1076,31 +1098,87 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // Verify only an already-assigned shard. No latest-match SQL is run and no
   // durable dataset/pin is implied by this ephemeral metadata proof. Sealing
   // will reuse this guarded path in the same transaction as its SQL recorder.
+  const verifyAssignedShard = async (supplied: TrainingShardRequest, dataset?: TrainingDatasetContext) => {
+    const inventory = dataset?.inventory ?? (await client.query("SELECT public.predictive_training_run_read($1) AS result", [supplied.fittingRunId]))
+      .rows[0].result as TrainingRunInventory | null;
+    if (!inventory) refuse("training-run-not-found");
+    const rows = trainingShardMembership(inventory, supplied);
+    const featureIds = rows.flatMap((row) => row.selection.featureId ? [row.selection.featureId] : []);
+    const pinned = await trainingPinnedConsumers(featureIds);
+    const currentClock = async () => (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+    assertTrainingShardUnexpired(rows, await currentClock(), pinned);
+    const context = await trainingKickoffContext({ ...inventory.request, slots: rows.map((row) => row.slot) });
+    const ids = [...new Set(rows.flatMap((row) => [row.selection.featureId, row.selection.labelId].filter((id): id is string => id !== null)))];
+    const records = await authorizeConsumerBatch(ids, [...(dataset?.manifest.protectedUses ?? inventory.protectedUses),
+      ...context.kickoffProfiles.map((profile) => ({ profile, use: "model-input" as const }))]);
+    if ([...records.values()].some((record) => record === null)) refuse("training-shard-evidence-mismatch");
+    // Scheduled expiry must also stop a later file read, not just delivery.
+    const rightsAccess = batchAccess!;
+    batchAccess = async () => { await rightsAccess(); assertTrainingShardUnexpired(rows, await currentClock(), pinned); };
+    const kickoffs = await context.verify();
+    await verifyConsumerBatch(records);
+    const proof = trainingShardProof(inventory, supplied, await currentClock(),
+      [...records.values()].filter((record): record is SourceConsumerRecord => record !== null), kickoffs, pinned);
+    if (dataset) for (const blob of dataset.manifest.closure.blobs) {
+      if (blob.mediaType === "application/gzip") await readWireBytes(blob.storageRef, blob.sha256, Number(blob.byteSize));
+      else await readBytes(blob.storageRef, blob.sha256, Number(blob.byteSize));
+    }
+    await batchAccess!();
+    return { ...proof, verification: { ...batch!.metrics(), verifiedBytes } };
+  };
   const verifyDatasetShard = (input: TrainingShardRequest) => {
     const supplied = normalizeTrainingShardRequest(input);
-    return transaction(async () => {
-      const inventory = (await client.query("SELECT public.predictive_training_run_read($1) AS result", [supplied.fittingRunId]))
-        .rows[0].result as TrainingRunInventory | null;
-      if (!inventory) refuse("training-run-not-found");
-      const rows = trainingShardMembership(inventory, supplied);
-      const currentClock = async () => (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
-      assertTrainingShardUnexpired(rows, await currentClock());
-      const context = await trainingKickoffContext({ ...inventory.request, slots: rows.map((row) => row.slot) });
-      const ids = [...new Set(rows.flatMap((row) => [row.selection.featureId, row.selection.labelId].filter((id): id is string => id !== null)))];
-      const records = await authorizeConsumerBatch(ids, [...inventory.protectedUses,
-        ...context.kickoffProfiles.map((profile) => ({ profile, use: "model-input" as const }))]);
-      if ([...records.values()].some((record) => record === null)) refuse("training-shard-evidence-mismatch");
-      // Scheduled expiry must also stop a later file read, not just delivery.
-      const rightsAccess = batchAccess!;
-      batchAccess = async () => { await rightsAccess(); assertTrainingShardUnexpired(rows, await currentClock()); };
-      const kickoffs = await context.verify();
-      await verifyConsumerBatch(records);
-      const proof = trainingShardProof(inventory, supplied, await currentClock(),
-        [...records.values()].filter((record): record is SourceConsumerRecord => record !== null), kickoffs);
-      await batchAccess!();
-      return { ...proof, verification: { ...batch!.metrics(), verifiedBytes } };
-    }, false, true);
+    return transaction(() => verifyAssignedShard(supplied), false, true);
   };
+
+  const datasetContext = async (id: string): Promise<TrainingDatasetContext | null> =>
+    (await client.query("SELECT public.predictive_training_dataset_context($1) AS result", [id])).rows[0].result;
+  const prepareDataset = (input: TrainingDatasetRequest) => {
+    const supplied = normalizeTrainingDatasetRequest(input);
+    const { pinId: _pin, ...shard } = supplied; void _pin;
+    return transaction(async () => {
+      const existing = await datasetContext(supplied.datasetId);
+      if (existing && (existing.manifest.fittingRunId !== supplied.fittingRunId || existing.manifest.inventorySha256 !== supplied.inventorySha256)) {
+        refuse("training-dataset-inventory-mismatch");
+      }
+      await verifyAssignedShard(shard, existing ?? undefined);
+      const result = (await client.query("SELECT public.predictive_prepare_training_dataset($1) AS result", [supplied])).rows[0].result;
+      // SQL computes the closure; its hashes do not replace filesystem checks.
+      await extendTrainingAccess((result as TrainingDatasetManifest).protectedUses);
+      for (const blob of (result as TrainingDatasetManifest).closure.blobs) {
+        if (blob.mediaType === "application/gzip") await readWireBytes(blob.storageRef, blob.sha256, Number(blob.byteSize));
+        else await readBytes(blob.storageRef, blob.sha256, Number(blob.byteSize));
+      }
+      await batchAccess!();
+      return result as TrainingDatasetManifest & { pin: { id: string; datasetId: string; recordedAt: string; reused: boolean }; reused: boolean };
+    }, false, true, true);
+  };
+  const readDatasetManifest = (id: string) => transaction(async () => {
+    const context = await datasetContext(id);
+    if (!context) return null;
+    await verifyAssignedShard({ version: "qb-training-read-v1", fittingRunId: context.manifest.fittingRunId,
+      inventorySha256: context.manifest.inventorySha256, datasetId: id }, context);
+    await batchAccess!();
+    return context.manifest;
+  }, false, true);
+  const pinDataset = (input: TrainingDatasetRequest) => {
+    const supplied = normalizeTrainingDatasetRequest(input);
+    const { pinId: _pin, ...shard } = supplied; void _pin;
+    return transaction(async () => {
+      const context = await datasetContext(supplied.datasetId);
+      if (!context) refuse("training-dataset-not-found");
+      await verifyAssignedShard(shard, context);
+      const pin = (await client.query("SELECT public.predictive_pin_training_dataset($1,$2,$3,$4) AS result",
+        [supplied.datasetId, supplied.pinId, supplied.fittingRunId, supplied.inventorySha256])).rows[0].result as
+          { id: string; datasetId: string; recordedAt: string; reused: boolean };
+      const manifest = (await client.query("SELECT public.predictive_training_dataset_read($1) AS result", [supplied.datasetId])).rows[0].result as TrainingDatasetManifest;
+      await batchAccess!();
+      return { ...manifest, pin };
+    }, false, true, true);
+  };
+  const releaseDatasetPin = (id: string) => transaction(async () =>
+    (await client.query("SELECT public.predictive_release_training_dataset_pin($1) AS result", [id])).rows[0].result as
+      { pinId: string; releasedAt: string; reused: boolean });
 
   const publish = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
     if (typeof id !== "string" || !id.trim() || id.length > 256) refuse("invalid-run-id"); instant(now);
@@ -1389,5 +1467,6 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   };
   return { publish, publishSourceStats, replaySourceStats, replayCompressedInspections, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
     planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun, verifyDatasetShard,
+    prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };
