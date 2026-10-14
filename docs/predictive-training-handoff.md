@@ -420,7 +420,7 @@ ready. Its shared-context benchmark is not population qualification or a capacit
 claim. Remaining work includes end-to-end cancellation, representative indexed
 plans/memory benchmarks, atomic durable run/dataset manifests and pins, quotas,
 expiry/invalidation and retention/restore integration. The next implementation
-increment is database-enforced immutable run inventory and fixed consumer/missing
+increment at that checkpoint was database-enforced immutable run inventory and fixed consumer/missing
 selections, followed by guarded shard verification and durable pins.
 
 The run-preview increment adds `previewFittingRun(request)` on the local store.
@@ -463,9 +463,11 @@ claim. See the evidence checkpoint for measurements and remaining limits.
    retention integration. Benchmark and complete required gates/review once the
    increment is stable.
 
-Released migrations are **0001–0011**; **0012** is also fixed for #106/#118 branch
-integration. **0013 is available to #106**; #118 will hold further DDL allocation
-until #106 declares its next complete prefix. Coordinate landing order with
+Released migrations are **0001–0011**; the combined branch now includes fixed
+**0012–0014**: training guard, #106 gzip staging, and #118 run inventory.
+#106's complete pushed 0001–0013 checkpoint at `47b1c89` was merged in `da24ab9`;
+0001–0013 are unchanged by 0014. **0015 is next available to #106 after
+coordination here.** Coordinate landing order with
 #106/#115 before merging further DDL. A
 second merger integrates main without rebasing and may renumber only private,
 unapplied-outside-disposable-test migrations, with explicit confirmation and
@@ -489,3 +491,32 @@ checks cover intervening changes. No new tests are needed for this document alon
 No model fitting/selection, paid acquisition, public serving, hosted scheduler or
 Production migration is part of this contract. #118, #106 and #107 remain distinct
 prerequisites for validated #54 Part B; completion of one cannot waive another.
+
+The SQL run-inventory increment adds `prepareFittingRun(request)` and
+`readFittingRun(id)`. Preparation reserves the complete normalized request and
+all shard assignments at one database clock, independently validates kickoff,
+policy/version/clocks and run-wide splits, and fixes exact consumer/missing
+selections. Idempotent retries retain that snapshot. A later matching feature
+cannot silently enter the run. Fixed-holdout event reuse within a plan refuses;
+walk-forward reuse remains explicitly correlated. Execute-only recorder/replay
+roles cannot edit membership or append a late shard.
+
+Both APIs return metadata only: `inventory-sealed`, `fittingReady: false`,
+population unqualified. They do not open protected files, expose numerical
+feature/outcome bodies or create pins. A role-checked hook erases pending
+inventory in the existing retention transaction, preserves separate supplemental
+audit and retains digest-only identities to refuse erased run/plan reuse.
+Deletion conservatively applies to every named protected profile, including
+missing slots and narrow capture intervals. The retention API's optional
+`trainingRetention` field is part of restore/reapply matching.
+
+The next increment is guarded verification of each assigned shard using those
+fixed selections, immutable dataset manifests and atomic evidence pins. Then
+complete stable paging/current-label reads, release, quotas, expiry/invalidation,
+recovery, end-to-end deadlines and representative capacity evidence. The
+[integration handoff](predictive-106-118-integration.md) records the prefix,
+checksum and shared interfaces. No persistent or hosted database ran 0014.
+The combined inventory checkpoint passes 736 Node tests, 75 Node DB checks,
+158 PostgreSQL tests, typecheck and affected-file lint. Generated artifacts,
+frozen 0001–0013 SQL/catalog contracts, whitespace and local documentation
+links pass; the final full database gate includes the total-profile ceiling.

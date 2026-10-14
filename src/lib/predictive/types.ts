@@ -219,5 +219,6 @@ export type RetentionEvent = {
   id: string; reason: "expiry" | "rights-revoked" | "provider-request" | "owner-request"; authority: string; decidedAt: string;
   scope: RetentionScope; auditLevel: "full" | "digest-only";
 };
-export type RecordedRetentionEvent = RetentionEvent & { removedCounts: Record<string, number>; removedIdsDigest: string; executedAt: string };
-export type RetentionResult = { eventId: string; removedCounts: Record<string, number>; removedIdsDigest: string; removedBlobRefs: string[] };
+export type TrainingRetentionAudit = { removedCounts: Record<string, number>; removedIdsDigest: string };
+export type RecordedRetentionEvent = RetentionEvent & { removedCounts: Record<string, number>; removedIdsDigest: string; executedAt: string; trainingRetention?: TrainingRetentionAudit };
+export type RetentionResult = { eventId: string; removedCounts: Record<string, number>; removedIdsDigest: string; removedBlobRefs: string[]; trainingRetention?: TrainingRetentionAudit };

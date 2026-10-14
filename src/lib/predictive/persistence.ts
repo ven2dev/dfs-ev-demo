@@ -5,6 +5,7 @@ import { createEvidenceBatch } from "./batchEvidence.ts";
 import { normalizeFittingRunRequest, selectTrainingRows, TRAINING_BOUNDS, type FittingRunRequest } from "./training.ts";
 import { checkTrainingMetadataSelection, TRAINING_SELECTION_SQL, trainingSelectionParameters, type TrainingMetadataSelection } from "./trainingSql.ts";
 import { trainingRunPreview, type TrainingKickoffProof } from "./trainingPreview.ts";
+import type { TrainingRunInventory } from "./trainingRuns.ts";
 import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
   type SourceClaimRow, type SourceStatsPublication, type SourceStatsRequest, type SourceStatsReplay, type SourceStatsCapture } from "./sourceClaims.ts";
 import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
@@ -999,6 +1000,19 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }, false, true);
   };
 
+  // Metadata preparation is atomic and execute-only. SQL independently checks
+  // the entire inventory, kickoff/current rights and selected consumer links.
+  // No protected file is opened here: assigned shards must still reproduce and
+  // pin these exact selections before a fitting run can become usable.
+  const prepareFittingRun = (input: FittingRunRequest) => {
+    const request = structuredClone(input);
+    return transaction(async () => (await client.query("SELECT public.predictive_prepare_training_run($1) AS result", [request]))
+      .rows[0].result as TrainingRunInventory & { reused: boolean });
+  };
+  const readFittingRun = (id: string) => transaction(async () =>
+    (await client.query("SELECT public.predictive_training_run_read($1) AS result", [id])).rows[0].result as TrainingRunInventory | null,
+  false, true);
+
   const publish = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
     if (typeof id !== "string" || !id.trim() || id.length > 256) refuse("invalid-run-id"); instant(now);
     if (dataset.captures.some((capture) => !["published", "incomplete"].includes(capture.state))) refuse("invalid-enum");
@@ -1210,8 +1224,16 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const result = await transaction(async () => {
       if (!(await client.query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='predictive_retention_owner'")).rows.length) refuse("retention-owner-role-unavailable");
       await client.query("SET LOCAL ROLE predictive_retention_owner");
-      return (await client.query("SELECT public.predictive_retention_execute($1,$2,$3,$4,$5,$6) AS result",
+      const removed = (await client.query("SELECT public.predictive_retention_execute($1,$2,$3,$4,$5,$6) AS result",
         [event.id, event.reason, event.authority, event.decidedAt, JSON.stringify(event.scope), event.auditLevel])).rows[0].result as RetentionResult;
+      // Older prefixes have no training hook/audit API. Historical upgrade
+      // tests still use the original store, so discover this optional forward
+      // capability without changing legacy zero-row results.
+      if ((await client.query("SELECT to_regprocedure('public.predictive_training_retention_result(text)') AS available")).rows[0].available) {
+        const audit = (await client.query("SELECT public.predictive_training_retention_result($1) AS result", [event.id])).rows[0].result;
+        if (audit) removed.trainingRetention = audit;
+      }
+      return removed;
     });
     for (const reference of result.removedBlobRefs) await removeQueuedBlob(reference);
     return result;
@@ -1248,9 +1270,18 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     });
     return removed;
   };
-  const retentionEvents = async (): Promise<RecordedRetentionEvent[]> => (await client.query(`SELECT id,reason,authority,${timestamp("decided_at")} AS "decidedAt",
-    scope_descriptor AS scope,audit_level AS "auditLevel",removed_counts AS "removedCounts",removed_ids_digest AS "removedIdsDigest",
-    ${timestamp("executed_at")} AS "executedAt" FROM public.predictive_retention_history()`)).rows;
+  const retentionEvents = async (): Promise<RecordedRetentionEvent[]> => {
+    const events = (await client.query(`SELECT id,reason,authority,${timestamp("decided_at")} AS "decidedAt",
+      scope_descriptor AS scope,audit_level AS "auditLevel",removed_counts AS "removedCounts",removed_ids_digest AS "removedIdsDigest",
+      ${timestamp("executed_at")} AS "executedAt" FROM public.predictive_retention_history()`)).rows as RecordedRetentionEvent[];
+    if ((await client.query("SELECT to_regprocedure('public.predictive_training_retention_result(text)') AS available")).rows[0].available) {
+      for (const event of events) {
+        const audit = (await client.query("SELECT public.predictive_training_retention_result($1) AS result", [event.id])).rows[0].result;
+        if (audit) event.trainingRetention = audit;
+      }
+    }
+    return events;
+  };
   // A restored backup re-applies every retention event recorded since, oldest
   // first, by its scope descriptor, before any read. A present event is skipped;
   // matched is false when the backup lacked rows the original removal saw.
@@ -1262,11 +1293,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       }
       const result = await retain({ id: event.id, reason: event.reason, authority: event.authority, decidedAt: event.decidedAt, scope: event.scope, auditLevel: event.auditLevel });
       results.push({ eventId: event.id, status: "reapplied",
-        matched: result.removedIdsDigest === event.removedIdsDigest && canonical(result.removedCounts) === canonical(event.removedCounts) });
+        matched: result.removedIdsDigest === event.removedIdsDigest && canonical(result.removedCounts) === canonical(event.removedCounts) &&
+          canonical(result.trainingRetention ?? null) === canonical(event.trainingRetention ?? null) });
     }
     return results;
   };
   return { publish, publishSourceStats, replaySourceStats, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
-    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun,
+    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

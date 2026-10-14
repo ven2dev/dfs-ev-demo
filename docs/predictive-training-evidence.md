@@ -1,5 +1,63 @@
 # #118 guarded evidence checkpoint
 
+## Immutable run-inventory increment
+
+Migration 0014 adds database-enforced run preparation and guarded metadata
+replay. `prepareFittingRun(request)` independently validates the complete
+request in SQL, fixes every assigned shard's consumer IDs/missing states and
+reserves run/plan/fold identity at the database clock. `readFittingRun(id)`
+checks immutable body/slot/event/profile closure, cited consumers and fresh
+rights. Requests cannot extend the run after preparation. Same-request retries
+return the original inventory even after newer consumers are recorded.
+
+Run-wide target-event exclusion is enforced across players and shards. Exact
+references must match approved candidate/version/history, target and clocks.
+Fixed-holdout plans refuse cross-run event reuse; walk-forward plans expose
+reused event/player-target counts as correlated evidence. The recorder has only
+function execution and must also hold replay membership. Concurrent preparation
+uses publication/retention's advisory-lock order, then evidence/inventory guards.
+The extended read guard preserves its public signature without copying the
+old evidence lock list.
+
+These APIs return metadata, not byte-backed training data: `inventory-sealed`,
+`fittingReady: false`, population unqualified. Preparation opens no artifact
+file and creates no pins. It limits pending inventories to 32 and enforces
+1,024 slots/run, 256/shard, 32 shards, 16 protected profiles and an 8 MB body.
+Context outside the selected feed scope counts toward that profile ceiling,
+including when consumers are missing.
+These are initial ceilings rather than benchmarked capacity.
+
+An authorized-retention trigger erases the full pending inventory for named
+protected profiles, including missing slots and narrow capture windows. It
+also removes inventories citing expired source features. The hook runs in the
+existing retention transaction and leaves legacy removal counts/digest intact.
+Optional `trainingRetention` audit adds inventory counts/digest, participates
+in restored-backup matching, and exposes no raw run IDs in digest-only mode.
+Digest-only run/plan/fold identities remain to prevent erased-history reuse.
+Failure rolls back both ledgers and their audits together.
+
+Seven mandatory PostgreSQL cases cover restricted-role preparation/replay,
+exact/latest selections and immutable retries, SQL forgery and split leakage,
+concurrency, missing-slot mandatory deletion, rights/association refusal,
+failed deletion and restored audit parity, and v13 upgrade preservation. The
+next increment must verify fixed shard bytes, seal dataset manifests and pin
+the complete evidence closure. Paging, current-label API, release/quotas,
+durable expiry/invalidation, deadlines and real-source capacity remain open.
+Gzip staging from #106 is integrated; qualified gzip publication and guarded
+binary reconstruction remain unimplemented.
+
+Final inventory checkpoint: **736 Node tests**, **75 Node DB checks + 158
+PostgreSQL tests** (133 mandatory predictive cases), typecheck, affected-file
+ESLint, migration/catalog/readiness artifacts, frozen-prefix verification,
+whitespace and local documentation links pass. The final full DB run includes
+the tightened total-profile guard and all seven new inventory cases. Frozen
+0001–0013 SQL and catalog contracts match `da24ab9` byte-for-byte. Readiness
+remains minimum v2, maximum known v14. Logs are
+`/private/tmp/dfs118-inventory-node.log`,
+`/private/tmp/dfs118-inventory-db.log` and
+`/private/tmp/dfs118-inventory-profile-limit-db.log`. The migration ran only in
+disposable local databases. #118 is still incomplete and not training-ready.
+
 ## Run-selection preview increment
 
 `previewFittingRun(request)` now connects the structural request and SQL selector
@@ -143,7 +201,7 @@ Those costs show the remaining linear server work despite constant shared
 reconstruction. The separate EXPLAIN probe is outside the timed batch. These
 figures are a fixture observation, not a service-level or throughput guarantee.
 
-Final checkpoint gates: **700 Node tests**, **75 Node DB checks + 142 PostgreSQL
+Initial guarded checkpoint gates: **700 Node tests**, **75 Node DB checks + 142 PostgreSQL
 tests** (including 117 mandatory predictive cases), TypeScript, affected-file
 ESLint, whitespace and local documentation links pass. Catalog contracts and
 migration/readiness checks pass; readiness remains minimum v2, maximum v12.

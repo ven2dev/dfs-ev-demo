@@ -1,17 +1,17 @@
 # #106 / #118 integration prefix — 2026-10-13
 
-#118's pushed implementation checkpoint is `58eadecc6df817265322fa8b32d9d67b106b1ee8`
-on `feature/dfsEV-118-training-reads-retention`. #106 reports local commit
-`11a760f` on `feature/dfsEV-106-real-qb-slice`, not yet pushed, with exact binary
-wire storage but no SQL gzip publication or allocated migration. These are
-separate validation checkpoints; #106's gzip implementation is not verified by
-#118's current tests.
+#118 merged #106's pushed `47b1c89` checkpoint in `da24ab9` on
+`feature/dfsEV-118-training-reads-retention`. The combined prefix is now
+**0001–0014**, including #118's immutable run-inventory increment described below.
+#106's 0013 supplies gzip staging and receipt/cleanup protections; qualified
+compressed publication and guarded binary reconstruction remain unfinished.
+Neither session has published a usable real feature or label.
 
 ## Fixed integration prefix
 
-Use the ordered **0001–0012** prefix in [migration-manifest.json](../db/migration-manifest.json).
-Released 0001–0011 remain byte-for-byte unchanged. For branch integration, also
-keep #118's 0012 fixed:
+Use the ordered **0001–0014** prefix in [migration-manifest.json](../db/migration-manifest.json).
+Released 0001–0011 and the integrated 0012–0013 remain byte-for-byte unchanged.
+For branch integration, keep #118's 0012 fixed:
 
 ```text
 0012_predictive_training_read_guard.sql
@@ -24,23 +24,26 @@ procedure replacement. It has run only in disposable local databases; it is
 not merged to main or activated in a persistent/hosted database. Future changes
 to this shared prefix use forward migrations.
 
-**0013 is available to #106.** #118 will not allocate another migration until
-#106 declares its complete next prefix. Integrate the pushed #118 branch by
-merging after preserving #106's local work; do not rebase or cherry-pick duplicate
-copies of the prefix. Keep #106's binary artifact implementation when resolving
-shared files. Regenerate migration/catalog/readiness artifacts for the combined
-prefix, and validate the final integrated SHA before merging either PR.
+**0014 belongs to #118 run inventory.** The next number is **0015**, available to
+#106 after coordination here; neither session should reserve a further range
+silently. Integrate by merge after preserving local work; do not rebase or
+cherry-pick duplicate copies of the prefix. Keep #106's binary artifact
+implementation when resolving shared files. Regenerate migration/catalog/
+readiness artifacts for the combined prefix and validate the final integrated
+SHA before merging either PR. These additions have run only in disposable local
+databases.
 
-## Shared interfaces at 58eadec
+## Shared interfaces
 
 | Surface | #118 change / #106 integration requirement |
 | --- | --- |
-| `artifacts.ts` | Unchanged by #118. `read(reference, sha256, byteSize)` still returns a UTF-8 string; media types remain JSON/CSV. #106 owns the binary addition. Never route compressed bytes through this string reader. |
+| `artifacts.ts` | #106's binary addition is integrated: `readBinary`/`writeBinary` preserve exact gzip wire bytes. `read(reference, sha256, byteSize)` remains a UTF-8 JSON/CSV reader. Never route compressed bytes through it. |
 | `persistence.ts: readBytes` | New private wrapper caches by exact reference/hash/size within the guarded transaction, charges unique stored bytes and checks fresh access before opening a file. Add the binary wire-reader path here, preserving the gate; it is not an exported helper. |
 | CSV verification | Shared exact-file reads and parsing, then exact stored-row/projection comparison and full normalization/witness/decision/calculation reproduction. Wire hash/size must verify before decompression; decoded content cannot replace the wire identity. |
 | `batchEvidence.ts` | New transaction-local metadata-query and verification-promise reuse. Keep binary payloads outside the JSON metadata dispatcher. Decoder cache keys must distinguish wire reference, encoding, feed and parser version as applicable. |
 | `replaySourceConsumers(ids)` | New local evidence primitive: at most 64 references; returns snapshot time, ordered verified records/nulls and verification metrics. It does not seal training datasets or pins. Gzip must work through its full reconstruction path. |
-| Retention APIs | Signatures unchanged: `retain`, `resumeBlobRemovals`, `sweepOrphanBlobs`. Preserve execute-only role APIs, exact `storage_ref` ownership, digest locks, queued acknowledgement after unlink, rollback cleanup and aged-temp recovery. Extend every address validator to `.csv.gz`, not just the filesystem reader. |
+| Run preparation | `prepareFittingRun(request)` fixes the entire inventory and SQL-selected IDs; `readFittingRun(id)` reads its metadata with fresh rights. Neither opens files, seals a verified dataset or creates pins. |
+| Retention APIs | `retain` and `retentionEvents` may return optional `trainingRetention: { removedCounts, removedIdsDigest }`; `reapply` compares it too. Legacy counts/digest remain separate. `resumeBlobRemovals` and `sweepOrphanBlobs` signatures are unchanged. Preserve execute-only APIs, exact addresses including `.csv.gz`, digest locks, queued acknowledgement, rollback cleanup and aged-temp recovery. |
 
 ## Rights, locks and budgets
 
@@ -73,9 +76,10 @@ ingestion time. No frozen migration is edited to add that support.
 
 Existing v1 target-relative three-season schedule coverage, at most 16 numerical
 history slots, cutoff rules and absence policy remain binding. Neither checkpoint
-has published a usable real feature or label. #118 currently passes 700 Node
-tests, 75 Node DB checks and 142 PostgreSQL tests plus typecheck/lint; those counts
-do not include #106's binary integration. Focus combined validation on denied
+has published a usable real feature or label. The initial guarded checkpoint
+passed 700 Node tests, 75 Node DB checks and 142 PostgreSQL tests plus
+typecheck/lint; those historical counts precede #106's binary integration.
+Focus compressed-publication validation on denied
 rights before wire reads, damaged/truncated gzip, independent wire/decoded caps,
 full consumer reproduction and exact `.csv.gz` rollback/retention/resume/orphan
 cleanup before the final integrated gates.
@@ -113,8 +117,8 @@ orphan and interrupted-retention recovery through non-superuser roles, and
 v12-to-v13 evidence/ledger preservation with no-op reruns. Runtime rollback
 cleanup recognizes the gzip suffix, but compressed publication rollback and
 restored-backup parity still need coverage when a runtime writer is introduced.
-No later migration number is reserved by this checkpoint. Settle the next number
-in this chat before either session allocates another migration.
+That checkpoint reserved no later number. The subsequent #118 allocation below
+uses 0014 after the owner supplied #106's complete prefix.
 
 Combined local checkpoint checks pass: 730 Node tests, 75 Node database checks
 and all 146 PostgreSQL tests, including the mandatory 121 predictive cases.
@@ -123,3 +127,55 @@ The first full database run exposed a stale twelve-entry bootstrap ledger
 expectation; after adding the explicit thirteenth entry, the complete mandatory
 gate passed. The disposable service was removed. These results validate staging
 and the integrated existing readers, not a future compressed publication path.
+
+## #118 integration checkpoint: immutable run inventory
+
+```text
+0014_predictive_training_run_inventory.sql
+sha256 5a1d4d4d7c8d1f8dd0caa0faea942e26a127fcb024bcd6c627602afeaaca6239
+```
+
+0014 prepares complete run metadata in one execute-only SQL call. It reserves
+run/plan/fold identity, resolves cutoff-visible kickoff evidence and fixes exact
+feature/label IDs or missing states for every assigned shard. Repeating the same
+request returns the original snapshot; newer consumers do not replace its
+selections. SQL independently enforces the approved version/history matrix,
+clocks, target-event exclusion across partitions, duplicate targets across
+shards and immutable split/model policy. Fixed-holdout event reuse within a plan
+refuses; walk-forward reuse records correlated event/player-target counts.
+
+The public training guard keeps its signature and now also protects the new
+inventory/audit tables. Its previous evidence guard is private. Run preparation
+holds the existing global publication/retention advisory lock before the guard;
+replay takes the guard without digest locks. Both require READ COMMITTED.
+Preparation requires recorder and replay membership; inventory reads require
+replay membership. Neither role receives direct table access.
+
+A transaction-authorization hook composes pending-inventory deletion with the
+existing retention procedure; it does not introduce a seventh procedure copy.
+Named protected profiles conservatively erase the entire pending inventory,
+including missing selections, even for a narrow capture interval. Feature expiry
+also erases inventories citing expired source features. Removed request/slot/
+profile/event identifiers are not retained in digest-only audit. Digest-only run,
+plan and fold identities remain to refuse reuse of erased history. A supplemental
+`trainingRetention` audit preserves legacy counts/digest and is compared on
+restoration/reapplication. #115 must preserve this transactional hook/authorization
+boundary in any retention refactor.
+
+This is metadata preparation, not dataset sealing. `inventory-sealed` always
+carries `fittingReady: false` and unqualified population. No bytes are opened,
+numeric values delivered or pins created. Limits are 32 pending inventories,
+1,024 slots/run, 256/shard, 32 shards, 16 protected profiles and an 8 MB inventory
+body; these are enforced ceilings, not capacity measurements. Next #118 work
+must reproduce each assigned shard's fixed selections under guarded rights,
+seal immutable dataset manifests and atomically pin their evidence closure.
+Qualified gzip publication/binary verification remains #106 work and must
+retain the wire-versus-decoded budget distinction above.
+The profile ceiling counts context outside the selected feed scope and missing
+consumers; a 16-feed request with a seventeenth kickoff profile refuses.
+
+The combined inventory checkpoint passes 736 Node tests, 75 Node DB checks and
+158 PostgreSQL tests (133 mandatory predictive cases), typecheck, affected-file
+lint, generated artifacts, frozen-prefix and documentation/whitespace checks.
+Only disposable databases ran 0014. This checkpoint does not establish gzip
+publication, durable training retention or a usable real QB slice.
