@@ -135,9 +135,52 @@ it("qualified gzip publication seals complete multi-season claims through restri
       expect(result.claims[0].rows[0].projection).toMatchObject({season:2026,feed:"team",rawPlayerId:null,values:{passingYards:-2}});
       expect(result.rawClaimsPublished).toBe(true);expect(result.featuresPublished).toBe(false);expect(result.labelsFinalized).toBe(false);
       expect(result.verification).toEqual({verifiedWireBytes:fixture.source.length+team.source.length,decodedBytes:Buffer.byteLength(fixture.text)+Buffer.byteLength(team.text),decodedRows:2});
+      const cutoff=(await reader.query("SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') AS time")).rows[0].time;
+      const selected=await replay.replayCompressedSourceStats({profileId:fixture.input.profile.id,rawGameId:"2025_06_CAR_PHI",rawTeam:"PHI",rawPlayerId:"00-0000001",cutoff});
+      expect(selected).toMatchObject({status:"observed-source-claim",featuresPublished:false,labelsFinalized:false});
+      expect(selected.evidence.rows[0].projection?.values.passingYards).toBe(-2);
+      expect((await replay.replayCompressedSourceStats({profileId:team.input.profile.id,rawGameId:"2026_06_CAR_PHI",rawTeam:"PHI",rawPlayerId:null,cutoff})).status).toBe("observed-source-claim");
     });
     expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_stats_rows")).rows[0].n).toBe(0);
     expect((await client.query("SELECT count(*)::integer AS n FROM predictive_artifact_observations")).rows[0].n).toBe(0);
+  });
+});
+
+it("compressed selection verifies cutoff inventories missing rows conflicting captures and current rights",async()=>{
+  await withProof(async({client,store,artifacts,target})=>{
+    const fixture=compressedCase("selection");await store.publishCompressedSource(fixture.source,fixture.input);
+    const clock=async()=> (await client.query("SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') AS time")).rows[0].time as string;
+    const cutoff=await clock();
+    const request={profileId:fixture.input.profile.id,rawGameId:"2025_06_CAR_PHI",rawTeam:"PHI",rawPlayerId:"00-0000001",cutoff};
+    expect((await store.replayCompressedSourceStats({...request,cutoff:fixture.input.capturedAt})).reason).toBe("source-capture-missing");
+    expect((await store.replayCompressedSourceStats({...request,rawPlayerId:"00-0000002"})).reason).toBe("source-row-missing");
+    const next=structuredClone(fixture.input);
+    next.id="selection-conflict";next.captureId="selection-conflict:capture";next.artifact.id="selection-conflict:artifact";
+    const wire=gzipSync(sourceCsv("player",[{...sourceSamples().player[0],season:"2025",game_id:request.rawGameId,passing_yards:"99"}]));
+    next.artifact.sha256=createHash("sha256").update(wire).digest("hex");next.artifact.wireBytes=wire.length;
+    await store.publishCompressedSource(wire,next);
+    expect((await store.replayCompressedSourceStats(request)).evidence.rows[0].projection?.values.passingYards).toBe(-2);
+    expect((await store.replayCompressedSourceStats({...request,cutoff:await clock()})).reason).toBe("source-capture-ambiguous");
+    let reads=0;
+    const tracked={...artifacts,database:{...artifacts.database,readBinary:async(ref:string,sha:string,size:number)=>{reads++;return artifacts.database.readBinary(ref,sha,size);}}};
+    const reader=await createLocalPredictiveStore(client,target,tracked);
+    const rights=fixture.input.rightsDecisions[0];
+    await client.query("INSERT INTO predictive_rights_decisions VALUES('selection-revoked',$1,$2,'{}',date_trunc('milliseconds',clock_timestamp()),NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','fixture revocation')",[rights.profileId,rights.id]);
+    await expect(reader.replayCompressedSourceStats(request)).rejects.toThrow("compressed-selection-rights-refused");expect(reads).toBe(0);
+    await client.query("INSERT INTO predictive_rights_decisions VALUES('selection-restored',$1,'selection-revoked','{internal-research}',date_trunc('milliseconds',clock_timestamp()),NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','fixture restoration')",[rights.profileId]);
+    expect((await reader.replayCompressedSourceStats(request)).status).toBe("observed-source-claim");expect(reads).toBe(1);
+    const mutable={...request};const pending=reader.replayCompressedSourceStats(mutable);mutable.rawPlayerId="00-0000002";
+    expect((await pending).status).toBe("observed-source-claim");expect(reads).toBe(2);
+    await expect(reader.replayCompressedSourceStats({...request,rawGameId:"2026_06_CAR_PHI"})).rejects.toThrow("compressed-selection-profile-refused");
+    await client.query("INSERT INTO predictive_rights_decisions VALUES('selection-expiring',$1,'selection-restored','{}',date_trunc('milliseconds',clock_timestamp())+interval '2 seconds',NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','scheduled fixture revocation')",[rights.profileId]);
+    let delayedReads=0;
+    const delayed={...artifacts,database:{...artifacts.database,readBinary:async(ref:string,sha:string,size:number)=>{
+      delayedReads++;const bytes=await artifacts.database.readBinary(ref,sha,size);
+      await client.query("SELECT pg_sleep(GREATEST(0,EXTRACT(epoch FROM (effective_from-clock_timestamp())))+0.03) FROM predictive_rights_decisions WHERE id='selection-expiring'");
+      return bytes;
+    }}};
+    const expiring=await createLocalPredictiveStore(client,target,delayed);
+    await expect(expiring.replayCompressedSourceStats(request)).rejects.toThrow("compressed-inspection-rights-refused");expect(delayedReads).toBe(1);
   });
 });
 
@@ -205,11 +248,15 @@ it("qualified gzip replay independently detects resealed false claims and damage
     await client.query("ALTER TABLE predictive_compressed_publications DISABLE TRIGGER predictive_compressed_publications_immutable");
     try{await client.query("UPDATE predictive_compressed_publications SET claims=$2,claims_sha256=predictive_source_digest($2) WHERE capture_id=$1",[fixture.input.captureId,JSON.stringify(forged)]);}finally{await client.query("ALTER TABLE predictive_compressed_publications ENABLE TRIGGER predictive_compressed_publications_immutable");}
     await expect(store.replayPublishedCompressedClaims([fixture.input.captureId])).rejects.toThrow("compressed-publication-integrity-failed");
+    const cutoff=(await client.query("SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') AS time")).rows[0].time;
+    const request={profileId:fixture.input.profile.id,rawGameId:"2025_06_CAR_PHI",rawTeam:"PHI",rawPlayerId:"00-0000001",cutoff};
+    await expect(store.replayCompressedSourceStats(request)).rejects.toThrow("compressed-publication-integrity-failed");
     await client.query("ALTER TABLE predictive_compressed_publications DISABLE TRIGGER predictive_compressed_publications_immutable");
     try{await client.query("UPDATE predictive_compressed_publications SET claims=$2,claims_sha256=predictive_source_digest($2) WHERE capture_id=$1",[fixture.input.captureId,JSON.stringify(original)]);}finally{await client.query("ALTER TABLE predictive_compressed_publications ENABLE TRIGGER predictive_compressed_publications_immutable");}
     const ref=fixture.input.artifact.sha256+".csv.gz";
     await writeFile(join(root,".db-blobs",ref),Buffer.alloc(fixture.source.length));
     await expect(store.replayPublishedCompressedClaims([fixture.input.captureId])).rejects.toThrow("artifact-integrity-failed");
+    await expect(store.replayCompressedSourceStats(request)).rejects.toThrow("artifact-integrity-failed");
     await writeFile(join(root,".db-blobs",ref),fixture.source);
     expect((await store.replayPublishedCompressedClaims([fixture.input.captureId])).claims[0].rows).toEqual(original);
     expect(await artifacts.database.readBinary(ref,fixture.input.artifact.sha256,fixture.source.length)).toEqual(fixture.source);
@@ -231,6 +278,8 @@ it("qualified gzip retention erases sealed claims and bytes with reproducible su
     });
     expect((await client.query("SELECT count(*)::integer AS n FROM predictive_compressed_publications")).rows[0].n).toBe(0);
     await expect(store.replayPublishedCompressedClaims([fixture.input.captureId])).rejects.toThrow("compressed-inspection-missing");
+    const cutoff=(await client.query("SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') AS time")).rows[0].time;
+    expect((await store.replayCompressedSourceStats({profileId:fixture.input.profile.id,rawGameId:"2025_06_CAR_PHI",rawTeam:"PHI",rawPlayerId:"00-0000001",cutoff})).reason).toBe("retained-evidence-removed");
     await expect(artifacts.database.readBinary(fixture.input.artifact.sha256+".csv.gz",fixture.input.artifact.sha256,fixture.source.length)).rejects.toMatchObject({code:"ENOENT"});
     await expect(store.publishCompressedSource(fixture.source,fixture.input)).rejects.toThrow("compressed-publication-erased-source");
   });

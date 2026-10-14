@@ -804,3 +804,30 @@ clocks, duplicate inventories, future cutoffs and independent returned evidence.
 All 761 Node tests, typecheck and affected-file lint pass. No database code or
 migration changed in this checkpoint; the previous schema-17 database evidence
 does not establish the pending normalization/consumer integration.
+
+## #106 guarded compressed lookup review
+
+The reader's mandatory PostgreSQL case tests actual qualified publication and
+database-clock visibility: a later contradictory import leaves the earlier
+cutoff's signed value intact, but becomes ambiguous at the later cutoff. A
+missing player remains an unavailable row. Revocation blocks all binary reads;
+restoration performs fresh verification. A copied request survives mutation
+during its asynchronous read, and a mismatched season/profile refuses. Scheduled
+expiry during binary verification withholds the entire result.
+
+The existing restricted-role publication case now checks player and team lookup
+through a replay-only login. The forged-seal and damaged-wire case also calls
+the new selector, independently rejecting each corruption. The two restored
+deletion cases require `retained-evidence-removed` rather than silent absence.
+No private claim table privilege is granted, no canonical observation is added,
+and no migration is changed. Bounds refuse oversized inventories rather than
+returning a partial candidate. Rights are checked again after selection work.
+
+This remains synthetic raw-source verification; compressed normalization,
+consumer publication, dataset closure and real-source qualification are pending.
+
+Validation: 761 Node tests, 198 PostgreSQL tests (173 required predictive cases),
+75 Node DB checks, 11 isolated worker cases and 18 catalog contracts pass.
+Typecheck, full lint, migration-artifact verification and whitespace checks pass.
+The complete database gate was repeated after the final expiry/deletion changes;
+both runs passed and removed their disposable Compose service and scratch data.

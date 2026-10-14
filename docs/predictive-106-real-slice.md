@@ -30,8 +30,8 @@ Creator comparison horizon is not narrowed by this one-game engineering proof.
 Handoff agreement: [#106/#118 contract at b7db281](https://github.com/ven2dev/dfs-ev-demo/blob/b7db281e156ac4decfd181e4d158ce912bef57e0/docs/predictive-training-handoff.md).
 Relay owns training-read/dataset/pin runtime. This branch owns raw evidence,
 qualified bridges/membership/completion, source consumers and the real slice.
-No migration number is reserved here. Preserve frozen 0001–0011 and coordinate
-landing order with #118 before adding forward DDL.
+Current allocation: preserve frozen 0001–0017; 0018 only is reserved for #106's
+normalization/consumer increment. Coordinate any further DDL with #118 here.
 
 ## Executable inventory
 

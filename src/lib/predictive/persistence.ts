@@ -9,7 +9,8 @@ import type { TrainingRunInventory } from "./trainingRuns.ts";
 import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
 import { runCompressedWorker } from "./compressedWorker.ts";
 import type { prepareCompressedSourceClaims } from "./compressedClaims.ts";
-import { checkCompressedPublicationInput, prepareCompressedPublication, COMPRESSED_SOURCE_CLAIM_VERSION, type CompressedSourcePublication } from "./compressedPublication.ts";
+import { selectCompressedSourceClaim } from "./compressedSelection.ts";
+import { checkCompressedPublicationInput, compressedSourceAsset, prepareCompressedPublication, COMPRESSED_SOURCE_CLAIM_VERSION, COMPRESSED_SOURCE_PROFILE_VERSION, type CompressedSourcePublication } from "./compressedPublication.ts";
 import { assertTrainingShardUnexpired, normalizeTrainingShardRequest, trainingShardMembership, trainingShardProof, type TrainingShardRequest } from "./trainingShards.ts";
 import { normalizeTrainingDatasetRequest, type TrainingDatasetContext, type TrainingDatasetRequest, type TrainingDatasetManifest } from "./trainingDatasets.ts";
 import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
@@ -510,8 +511,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
 
   // Local codec diagnostics only: this does not select source facts or consumers.
   // Stable metadata is guarded; clock-sensitive access is never memoized.
-  const replayCompressedEvidence = (mode: "inspect" | "claims" | "publication", input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) => {
-    if (!Array.isArray(input) || input.length < 1 || input.length > 64 || new Set(input).size !== input.length ||
+  const replayCompressedEvidence = (mode: "inspect" | "claims" | "publication", input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}, selection?: SourceStatsRequest) => {
+    if (!Array.isArray(input) || input.length < (selection ? 0 : 1) || input.length > 64 || new Set(input).size !== input.length ||
         input.some(id => typeof id !== "string" || !id.trim() || id.length > 256 || /[\u0000-\u001f\u007f]/.test(id))) refuse("compressed-inspection-request-refused");
     const ids = [...input];
     if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["maxDecodedBytes","maxRows"].includes(key))) refuse("compressed-batch-limits-refused");
@@ -520,6 +521,48 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (!Number.isSafeInteger(maxDecodedBytes) || maxDecodedBytes < 1 || maxDecodedBytes > 64_000_000 ||
         !Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 160_000) refuse("compressed-batch-limits-refused");
     return transaction(async () => {
+      let captures: SourceStatsCapture[] = [];
+      if (selection) {
+        // Validate before SQL or file access; use the database clock for cutoff
+        // bounds. All eligible captures are checked before snapshot selection.
+        selectCompressedSourceClaim(selection, [], batchClock!);
+        const profile = (await profilesFor([selection.profileId]))[0];
+        const feed = selection.rawPlayerId === null ? "team" : "player";
+        const asset = compressedSourceAsset(feed,Number(selection.rawGameId.slice(0,4)) as 2025 | 2026);
+        if (!profile || profile.parserVersion !== COMPRESSED_SOURCE_PROFILE_VERSION || profile.provider !== "nflverse" ||
+            profile.allowlistVersion !== "predictive-raw-allowlist-v1" || profile.feed !== feed ||
+            profile.releaseTag !== asset.tag || profile.assetPattern !== asset.name) refuse("compressed-selection-profile-refused");
+        const access = async () => {
+          if (!(await client.query("SELECT public.predictive_rights_allow($1,clock_timestamp(),clock_timestamp(),'internal-research') AS allowed",
+            [selection.profileId])).rows[0].allowed) refuse("compressed-selection-rights-refused");
+        };
+        await access();
+        captures = (await client.query(`SELECT c.id,c.run_id AS "runId",c.artifact_id AS "artifactId",
+          ${timestamp("c.captured_at")} AS "capturedAt",${timestamp("c.available_at")} AS "availableAt",
+          ${timestamp("c.ingested_at")} AS "ingestedAt",c.parsed_rows AS "parsedRows",b.sha256,
+          b.storage_ref AS "storageRef",b.byte_size AS "byteSize"
+          FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id
+          JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256 JOIN public.predictive_ingestion_runs r ON r.id=c.run_id
+          WHERE a.profile_id=$1 AND a.scope_season=$2 AND a.scope_kind='season-file' AND a.scope_filter IS NULL
+            AND b.media_type='application/gzip' AND c.state='published' AND r.status='published'
+            AND c.available_at<=$3::timestamptz AND c.ingested_at<=$3::timestamptz
+          ORDER BY c.captured_at,c.ingested_at,c.id COLLATE "C" LIMIT 65`,
+          [selection.profileId,Number(selection.rawGameId.slice(0,4)),selection.cutoff])).rows as SourceStatsCapture[];
+        if (captures.length > 64) refuse("compressed-selection-bounds-refused");
+        ids.push(...captures.map(capture => capture.id));
+        if (!ids.length) {
+          await access();
+          const source = selectCompressedSourceClaim(selection, [], batchClock!);
+          const removed = (await client.query(`SELECT 1 FROM public.predictive_retention_events
+            WHERE scope_descriptor->>'kind'='source' AND scope_descriptor->'profileIds' ? $1
+              AND (scope_descriptor->>'capturedFrom' IS NULL OR (scope_descriptor->>'capturedFrom')::timestamptz <= $2::timestamptz)
+            LIMIT 1`, [selection.profileId,selection.cutoff])).rows.length > 0;
+          if (removed) source.reason = "retained-evidence-removed";
+          await access();
+          return { snapshotAt: batchClock!, entries: [] as Entry[], verification: { verifiedWireBytes: 0, decodedBytes: 0, decodedRows: 0 },
+            publicationSupported: false, source };
+        }
+      }
       type Entry = { captureId: string; proof: Awaited<ReturnType<typeof inspectCompressedSource>>; reference: string; sha256: string; byteSize: number; rows?: SourceClaimRow[];
         publication?: {requestHash:string;claimsSha256:string;recordedAt:string} };
       const load = async (): Promise<Entry[]> => (await client.query(mode === "publication" ? "SELECT public.predictive_read_compressed_publications($1) AS entries" :
@@ -555,7 +598,15 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         reports.set(entry.captureId, { ...entry, ...reconstructed });
       }
       await batchAccess();
-      return { snapshotAt: batchClock!, entries: ids.map(id => reports.get(id)!),
+      const selectedEntries = ids.map(id => reports.get(id)!);
+      const source = selection ? selectCompressedSourceClaim(selection, selectedEntries.map((entry, index) => ({
+        capture: captures[index], profileId: selection.profileId, season: entry.proof.season,
+        feed: entry.proof.feed as "player" | "team", rows: entry.rows!, publication: entry.publication!,
+      })), batchClock!) : undefined;
+      // Selection hashes and copies the complete verified inventory. Scheduled
+      // expiry must still be checked after that work, immediately before return.
+      if (selection) await batchAccess();
+      return { snapshotAt: batchClock!, entries: selectedEntries, ...(selection ? { source } : {}),
         verification: { verifiedWireBytes: verifiedBytes, decodedBytes, decodedRows }, publicationSupported: false };
     }, false, true);
   };
@@ -570,6 +621,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const replayPublishedCompressedClaims = (input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) =>
     replayCompressedEvidence("publication",input,options).then(({entries,...result})=>({...result,claims:entries.map(entry=>({...entry,rows:entry.rows!})),
       rawClaimsPublished:true,featuresPublished:false,labelsFinalized:false,populationCoverage:"unqualified" as const}));
+  const replayCompressedSourceStats = (request: SourceStatsRequest) =>
+    replayCompressedEvidence("publication", [], {}, structuredClone(request)).then(result => result.source!);
 
   const readSourceNormalization = async (request: SourceStatsRequest, accessAt?: string, version: string = SOURCE_NORMALIZATION_VERSION) => memoEvidence("readSourceNormalization", [request, accessAt ?? null, version], async () => {
     const source = await readSourceStats(request, accessAt);
@@ -1539,7 +1592,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
-  return { publish, publishSourceStats, publishCompressedSource, replaySourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
+  return { publish, publishSourceStats, publishCompressedSource, replaySourceStats, replayCompressedSourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
     planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun, verifyDatasetShard,
     prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };

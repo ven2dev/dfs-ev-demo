@@ -23,6 +23,7 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "compressed selection verifies cutoff inventories missing rows conflicting captures and current rights",
   "qualified gzip publication seals complete multi-season claims through restricted roles and exact replay",
   "qualified gzip publication preserves refusal ordinals and admits larger claims without widening legacy bounds",
   "qualified gzip publication refuses direct SQL missing seals and forged row coverage identities and seasons",

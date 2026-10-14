@@ -581,3 +581,29 @@ This is a pure selector, not a database reader or authorization gate. Its caller
 must supply a complete, byte-verified, rights-guarded publication inventory.
 Database selection, versioned normalization, consumer closure and retention
 integration remain pending under 0018. Existing v1 history policy is unchanged.
+# Guarded compressed source lookup
+
+`replayCompressedSourceStats(request)` now supplies the pure selector with a
+database-discovered inventory. It runs inside the existing schema-17 shared
+read guard and requires the exact compressed profile/feed/season asset. Every
+eligible published capture is independently checked through the execute-only
+publication reader and isolated byte decoder, including contradictory captures.
+The inventory is bounded at 64 captures, 20 MB of unique stored wire bytes,
+64 MB decoded output and 160,000 parsed rows; an over-budget inventory refuses
+rather than truncating. This first reader conservatively verifies all visible
+captures in the requested profile/season, including older snapshots.
+
+Current rights are checked before binary access and again after selection;
+historical capture rights and deletion scopes are checked by the existing SQL
+publication reader. Missing inventories affected by a recorded source deletion
+report `retained-evidence-removed`. A missing player row remains unavailable,
+not an inferred zero or participation decision. Requests are copied before the
+first await, and each call gets fresh byte verification and access checks.
+
+This adds no schema migration. 0018 remains reserved only for #106. Compressed
+normalization bindings, canonical consumer publication and dataset/pin closure
+integration remain pending. Existing text readers and v1 history remain intact.
+
+Checkpoint validation: 761 Node tests, 198 PostgreSQL tests, 75 DB checks,
+11 isolated worker checks, 18 catalog contracts, typecheck, full lint and
+migration-artifact verification pass. Only disposable local databases were used.
