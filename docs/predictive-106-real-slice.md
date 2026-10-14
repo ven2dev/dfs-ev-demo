@@ -268,3 +268,53 @@ rejected for this predictive use without separate permission.
 Validation for this documentation increment is link/contract consistency and
 whitespace checking. No SQL, generated migration artifact, runtime behavior or
 test changed, so a repeated full database gate adds no relevant evidence here.
+
+## Fresh acquisition and private archive restoration (2026-10-14)
+
+The existing credential-free bounded acquisition CLI reacquired the 2026
+prototype inputs, completing at `2026-10-14T21:44:01.284Z`. It made 21 HTTP
+requests, consumed 19,273,061 response bytes and finished in 5,713 ms. The six
+complete files contain 54,808 rows: player 5,506; team 158; schedule 7,548;
+identifiers 24,854; weekly roster 15,314; injuries 1,428. Depth charts remain
+header-only under the existing 20 MB aggregate budget. No acquisition or parser
+bound was raised. Measured process peak RSS was 401,195,008 bytes; this is the
+legacy acquisition/verifier process, not the isolated 256 MiB gzip worker.
+
+Journal SHA-256:
+`f319cca7093bc033661b8f723da41b40d0968fd1cac1b8288b46984fcb6323cc`
+(10,967 bytes). Verification checks every retained source/release digest and
+recomputes qualification. The 15 exact-address journal/metadata/source files
+were copied into a separately registered private root; restored verification
+and QB inventory are byte-for-byte equal to their originals. The resulting
+inventory digest is
+`cf0d5b49d99bcc52f9e5e9157c3b1d9cb875e309450f9fd5fdeb48e31f2fb6db`.
+
+The private durable archive is outside Git at
+`/Users/vernonneilly/Documents/VN2DEV/dfs-ev-private-evidence/106/reacquired-20261014`.
+Directories are owner-only and files are mode 0600. Its separate archive receipt
+records actual acquisition/archive times, the reviewed internal research use,
+mandatory-deletion precedence and maximum expiry `2027-01-12T21:44:01.284Z`.
+Offline expiry is **manual**, not an automatic cleanup job or a database pin.
+The durable root was independently reverified against the same journal. The
+original temporary verification root is `/private/tmp/dfs106-reacquire-s2NwxW`;
+the separate restoration root is `/private/tmp/dfs106-restored-6_0zof9d`.
+
+The proposed Hurts/DAL target remains raw schedule context. Current prototype
+raw passing pairs are 3/5/5 across 4/8/16 slots for the player, own team and
+opposing offenses. These are not usable feature counts. The scheduled Week 6
+games are still in the future at acquisition time and have no statistics in
+this capture; keep their expected slots and refresh after completion. The new
+archive does not recover the missing October 9 journal or its knowledge times.
+
+The legacy inventory's `prior-season-publication-contract-unsupported` reason
+describes that prototype's 2026-only CSV adapter. It does **not** revoke the
+schema-18 qualified 2025 gzip publication/consumer path. Prior-season numerical
+evidence must enter through that explicit versioned path, not by relabeling this
+legacy journal or declaring separate 2025 files verified by its inventory.
+
+Source restoration now passes; canonical identity, dated membership, independent
+schedule coverage, accepted completion, permitted official reconciliation and
+Week 18 participation remain unqualified. No database was accessed and no real
+feature or final label was published. Validation was actual acquisition, three
+independent archive-verification executions, exact restored inventory comparison
+and documentation consistency/whitespace checks; no database suite was repeated.
