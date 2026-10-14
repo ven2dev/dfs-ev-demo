@@ -759,3 +759,39 @@ CRC damage with a matching new wire digest refuses the whole result; the next
 valid preparation succeeds. Every output remains prepared-only with publication,
 features and labels false. These tests establish preparation, not database
 publication authorization, real-profile approval or model readiness.
+
+## #106 qualified compressed publication review (0017)
+
+Nine mandatory PostgreSQL cases exercise the actual atomic writer and guarded
+published reader. Restricted ingestion/harness and replay-only logins publish
+and reproduce signed 2025 player and 2026 team claims without private table
+access. Exact independent wire/decoded counts, chronology, row ordinals and
+values are asserted. An 8,193-row complete file keeps scope/player refusals at
+their original ordinals; legacy text publication and row insertion still refuse
+the larger count. Direct SQL probes reject missing seals, incomplete coverage,
+wrong row IDs/ordinals and projection years.
+
+CRC corruption returns no run. An injected binary-write failure occurs after a
+real managed file is created; rollback removes that file and SQL state. Revoked
+rights refuse before a binary write. A self-consistent resealed false numeric
+claim bypasses a privileged test-only immutability probe but still fails
+independent wire reconstruction; damaged wire similarly refuses, then restoration
+replays without a stale cached approval. Authorized deletion removes complete
+claims, codec metadata and wire, and its supplemental capture/row-ID audit agrees
+across two separately reconstructed databases. Reimport into the erased source
+scope refuses.
+
+A competing rights INSERT times out while the publication guard is held. A
+database-clock scheduled revocation becomes effective after the actual file
+write but before verification; the complete transaction and new file roll back.
+A separate probe delays actual SQL projection validation so rights expire inside
+the recorder: its final rights check refuses all SQL/file state, and the next
+clean publication succeeds. The v16 upgrade test compares old captures and the
+entire old ledger byte-for-byte and requires an idempotent rerun.
+
+The first focused run exposed a test setup attempting role creation from a
+restricted login; it now asserts existing harness membership instead. Draft SQL
+iterations used fresh disposable databases after the runner correctly refused
+an earlier uncommitted 0017 checksum. No applied ledger was rewritten and no
+hosted database was touched. These establish qualified synthetic raw publication,
+not real-data approval, canonical consumers or fitting readiness.

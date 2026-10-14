@@ -23,6 +23,15 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "qualified gzip publication seals complete multi-season claims through restricted roles and exact replay",
+  "qualified gzip publication preserves refusal ordinals and admits larger claims without widening legacy bounds",
+  "qualified gzip publication refuses direct SQL missing seals and forged row coverage identities and seasons",
+  "qualified gzip publication rolls back decoder and filesystem failures and refuses revoked rights before binary writes",
+  "qualified gzip replay independently detects resealed false claims and damaged wire and retains no stale approval",
+  "qualified gzip retention erases sealed claims and bytes with reproducible supplemental audit after restoration",
+  "qualified gzip publication holds the shared guard and refuses scheduled rights expiry before file verification",
+  "qualified gzip migration preserves frozen v16 evidence ledger and repeated upgrade behavior",
+  "qualified gzip SQL sealing rechecks rights after row validation and rolls back every publication record",
   "guarded gzip claims preserve complete ordinals refusals and capture-specific identities",
   "guarded gzip claims refuse forged proof CRC damage revoked rights and erased captures",
   "guarded gzip claims hold rights guards and recheck scheduled expiry after complete reconstruction",

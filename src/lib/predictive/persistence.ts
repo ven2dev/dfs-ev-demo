@@ -9,6 +9,7 @@ import type { TrainingRunInventory } from "./trainingRuns.ts";
 import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
 import { runCompressedWorker } from "./compressedWorker.ts";
 import type { prepareCompressedSourceClaims } from "./compressedClaims.ts";
+import { checkCompressedPublicationInput, prepareCompressedPublication, COMPRESSED_SOURCE_CLAIM_VERSION, type CompressedSourcePublication } from "./compressedPublication.ts";
 import { assertTrainingShardUnexpired, normalizeTrainingShardRequest, trainingShardMembership, trainingShardProof, type TrainingShardRequest } from "./trainingShards.ts";
 import { normalizeTrainingDatasetRequest, type TrainingDatasetContext, type TrainingDatasetRequest, type TrainingDatasetManifest } from "./trainingDatasets.ts";
 import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
@@ -243,11 +244,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   };
   const insertRun = async (id: string, sha256: string, now: string, status: RunResult["status"], failureCode: string | null,
     counts: { artifacts: number; captures: number; rows: number }, consumedBytes: number,
-    codeVersion = "predictive-local-store-v2", peakRssBytes: number | null = null) => {
+    codeVersion = "predictive-local-store-v2", peakRssBytes: number | null = null, budget: object = PERSISTENCE_BOUNDS) => {
     await client.query(`INSERT INTO public.predictive_ingestion_runs
       (id,request_sha256,code_version,started_at,finished_at,status,failure_code,budget,requests,consumed_bytes,artifact_count,capture_count,row_count,peak_rss_bytes)
       VALUES ($1,$2,$11,$3,$3,$4,$5,$6,0,$7,$8,$9,$10,$12)`,
-      [id, sha256, now, status, failureCode, PERSISTENCE_BOUNDS, consumedBytes, counts.artifacts, counts.captures, counts.rows, codeVersion, peakRssBytes]);
+      [id, sha256, now, status, failureCode, budget, consumedBytes, counts.artifacts, counts.captures, counts.rows, codeVersion, peakRssBytes]);
   };
   // Registrations are immutable: a repeated ID must carry identical content.
   const persistProfile = async (profile: Profile) => {
@@ -384,6 +385,55 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     });
   };
 
+  const publishCompressedSource = (source: Uint8Array, input: CompressedSourcePublication): Promise<RunResult> => {
+    if (!(source instanceof Uint8Array) || source.length < 1 || source.length > 8_000_000) refuse("compressed-publication-wire-refused");
+    const bytes = Buffer.from(source), pinned = structuredClone(input);
+    return withBlobReferences([pinned.artifact.sha256 + ".csv.gz"], () => transaction(async () => {
+      const now = (await client.query("SELECT public.predictive_compressed_write_guard() AS clock")).rows[0].clock as string;
+      await client.query("SET LOCAL idle_in_transaction_session_timeout = '45s'");
+      const checked = checkCompressedPublicationInput(pinned, now);
+      await persistRegistrations({ formatVersion: 2, profiles: [pinned.profile], rightsDecisions: pinned.rightsDecisions,
+        artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] });
+      const authoritative = (await client.query(RIGHTS_SQL, [[pinned.profile.id]])).rows.map(row => row.decision as RightsDecision);
+      checkCompressedPublicationInput({ ...pinned, rightsDecisions: authoritative }, now);
+      await client.query("SELECT public.predictive_compressed_source_access($1,$2)",[pinned.profile.id,pinned.capturedAt]);
+      const existing = await priorRun(pinned.id, checked.requestHash);
+      const prepared = await prepareCompressedPublication(bytes, pinned, now);
+      const currentAccess = async () => {
+        await client.query("SELECT public.predictive_compressed_source_access($1,$2)",[pinned.profile.id,pinned.capturedAt]);
+      };
+      await currentAccess();
+      const reference = await artifacts.writeBinary(bytes, pinned.artifact.sha256);
+      await currentAccess();
+      await artifacts.readBinary(reference, pinned.artifact.sha256, bytes.length);
+      if (!existing) {
+        await insertRun(pinned.id, checked.requestHash, now, "published", null, { artifacts: 1, captures: 1, rows: prepared.rows.length },
+          bytes.length, COMPRESSED_SOURCE_CLAIM_VERSION, prepared.worker.peakRssBytes, { ...COMPRESSED_SOURCE_LIMITS, workerMemoryBytes: prepared.worker.memoryLimitBytes });
+        await client.query("INSERT INTO public.predictive_blobs VALUES($1,$2,'application/gzip',$3) ON CONFLICT DO NOTHING", [pinned.artifact.sha256,bytes.length,reference]);
+        const blob = (await client.query("SELECT byte_size,media_type,storage_ref FROM public.predictive_blobs WHERE sha256=$1", [pinned.artifact.sha256])).rows[0];
+        if (blob.byte_size !== bytes.length || blob.media_type !== "application/gzip" || blob.storage_ref !== reference) refuse("blob-conflict");
+        const a = pinned.artifact;
+        const columns = [a.id,a.sha256,a.profileId,a.retrievalKind,a.origin,a.providerEtag,a.providerLastModified,a.releaseUpdatedAt,
+          a.scopeKind,a.scopeSeason,a.scopeWeek,a.scopeGameId,a.scopeFilter];
+        const prior = (await client.query(`SELECT id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,provider_last_modified,
+          ${timestamp("release_updated_at")} AS release_updated_at,scope_kind,scope_season,scope_week,scope_game_id,scope_filter
+          FROM public.predictive_artifacts WHERE id=$1`, [a.id])).rows[0];
+        if (prior && canonical(Object.values(prior)) !== canonical(columns)) refuse("artifact-id-conflict");
+        if (!prior) await client.query(`INSERT INTO public.predictive_artifacts(id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,
+          provider_last_modified,release_updated_at,scope_kind,scope_season,scope_week,scope_game_id,scope_filter)
+          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,columns);
+        await persistCapture({ id:pinned.captureId,artifactId:a.id,capturedAt:pinned.capturedAt,availableAt:pinned.capturedAt,ingestedAt:now,
+          publishedAt:null,publicationEvidence:null,state:"published",bodyComplete:true,headerVerified:true,parserSucceeded:true,parsedRows:prepared.rows.length },pinned.id);
+      }
+      const seal = (await client.query("SELECT public.predictive_record_compressed_publication($1,$2,$3) AS seal",
+        [pinned.captureId,prepared.inspection,JSON.stringify(prepared.rows)])).rows[0].seal;
+      if (seal.requestHash !== checked.requestHash || seal.claimsSha256 !== digest(canonical(prepared.rows))) refuse("compressed-publication-integrity-failed");
+      await recordRunRights(pinned.id);
+      await currentAccess();
+      return existing ?? { id:pinned.id,status:"published",failureCode:null,reused:false };
+    }));
+  };
+
   const readSourceStats = async (request: SourceStatsRequest, accessAt?: string): Promise<SourceStatsReplay> => {
     instant(request.cutoff);
     if (typeof request.profileId !== "string" || !request.profileId.trim() || request.profileId.length > 256 ||
@@ -460,7 +510,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
 
   // Local codec diagnostics only: this does not select source facts or consumers.
   // Stable metadata is guarded; clock-sensitive access is never memoized.
-  const replayCompressedEvidence = (mode: "inspect" | "claims", input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) => {
+  const replayCompressedEvidence = (mode: "inspect" | "claims" | "publication", input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) => {
     if (!Array.isArray(input) || input.length < 1 || input.length > 64 || new Set(input).size !== input.length ||
         input.some(id => typeof id !== "string" || !id.trim() || id.length > 256 || /[\u0000-\u001f\u007f]/.test(id))) refuse("compressed-inspection-request-refused");
     const ids = [...input];
@@ -470,10 +520,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (!Number.isSafeInteger(maxDecodedBytes) || maxDecodedBytes < 1 || maxDecodedBytes > 64_000_000 ||
         !Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 160_000) refuse("compressed-batch-limits-refused");
     return transaction(async () => {
-      type Entry = { captureId: string; proof: Awaited<ReturnType<typeof inspectCompressedSource>>; reference: string; sha256: string; byteSize: number; rows?: SourceClaimRow[] };
-      const load = async (): Promise<Entry[]> => (await client.query("SELECT public.predictive_read_compressed_inspections($1) AS entries", [ids])).rows[0].entries;
+      type Entry = { captureId: string; proof: Awaited<ReturnType<typeof inspectCompressedSource>>; reference: string; sha256: string; byteSize: number; rows?: SourceClaimRow[];
+        publication?: {requestHash:string;claimsSha256:string;recordedAt:string} };
+      const load = async (): Promise<Entry[]> => (await client.query(mode === "publication" ? "SELECT public.predictive_read_compressed_publications($1) AS entries" :
+        "SELECT public.predictive_read_compressed_inspections($1) AS entries", [ids])).rows[0].entries;
       const entries = await load();
-      if (mode === "claims" && entries.some(entry => !["player","team"].includes(entry.proof.feed))) refuse("compressed-claims-feed-refused");
+      if (mode !== "inspect" && entries.some(entry => !["player","team"].includes(entry.proof.feed))) refuse("compressed-claims-feed-refused");
       // A 30s execution deadline plus bounded runtime cleanup must fit within
       // this guarded transaction's idle timeout; no image is pulled here.
       await client.query("SET LOCAL idle_in_transaction_session_timeout = '45s'");
@@ -484,20 +536,22 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         const request: CompressedInspectionRequest = { feed: entry.proof.feed, season: entry.proof.season,
           wireSha256: entry.sha256, wireBytes: entry.byteSize };
         const reconstructed = await memoEvidence("compressed-" + mode, [entry.reference,entry.sha256,entry.byteSize,
-          request.feed,request.season,entry.proof.codecVersion, mode === "claims" ? entry.captureId : null], async () => {
+          request.feed,request.season,entry.proof.codecVersion, mode !== "inspect" ? entry.captureId : null], async () => {
           const remainingBytes = maxDecodedBytes - decodedBytes, remainingRows = maxRows - decodedRows;
           if (remainingBytes < 1 || remainingRows < 1) refuse("compressed-batch-work-budget-exceeded");
           const bytes = await readWireBytes(entry.reference, entry.sha256, entry.byteSize);
-          const worker = await runCompressedWorker(mode, bytes, request, { captureId: entry.captureId, limits: {
+          const worker = await runCompressedWorker(mode === "inspect" ? "inspect" : "claims", bytes, request, { captureId: entry.captureId, limits: {
             decodedBytes: Math.min(COMPRESSED_SOURCE_LIMITS.decodedBytes, remainingBytes),
             rows: Math.min(COMPRESSED_SOURCE_LIMITS.rows, remainingRows) } });
-          const prepared = mode === "claims" ? worker.result as Awaited<ReturnType<typeof prepareCompressedSourceClaims>> : null;
+          const prepared = mode !== "inspect" ? worker.result as Awaited<ReturnType<typeof prepareCompressedSourceClaims>> : null;
           if (prepared && (!Array.isArray(prepared.rows) || typeof prepared.inspection !== "object")) refuse("compressed-worker-result-refused");
           const proof = prepared ? prepared.inspection : worker.result as Awaited<ReturnType<typeof inspectCompressedSource>>;
           decodedBytes += proof.decodedBytes; decodedRows += proof.rows;
           return { proof: { ...proof, limits: { ...COMPRESSED_SOURCE_LIMITS } }, rows: prepared?.rows };
         });
         if (canonical(reconstructed.proof) !== canonical(entry.proof)) refuse("compressed-inspection-integrity-failed");
+        if (mode === "publication" && (!entry.publication || digest(canonical(reconstructed.rows)) !== entry.publication.claimsSha256))
+          refuse("compressed-publication-integrity-failed");
         reports.set(entry.captureId, { ...entry, ...reconstructed });
       }
       await batchAccess();
@@ -513,6 +567,9 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const replayCompressedClaims = (input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) =>
     replayCompressedEvidence("claims", input, options).then(({ entries, ...result }) => ({ ...result,
       claims: entries.map(entry => ({ ...entry, rows: entry.rows! })), featuresPublished: false, labelsFinalized: false }));
+  const replayPublishedCompressedClaims = (input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) =>
+    replayCompressedEvidence("publication",input,options).then(({entries,...result})=>({...result,claims:entries.map(entry=>({...entry,rows:entry.rows!})),
+      rawClaimsPublished:true,featuresPublished:false,labelsFinalized:false,populationCoverage:"unqualified" as const}));
 
   const readSourceNormalization = async (request: SourceStatsRequest, accessAt?: string, version: string = SOURCE_NORMALIZATION_VERSION) => memoEvidence("readSourceNormalization", [request, accessAt ?? null, version], async () => {
     const source = await readSourceStats(request, accessAt);
@@ -1482,7 +1539,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
-  return { publish, publishSourceStats, replaySourceStats, replayCompressedInspections, replayCompressedClaims, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
+  return { publish, publishSourceStats, publishCompressedSource, replaySourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
     planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun, verifyDatasetShard,
     prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };

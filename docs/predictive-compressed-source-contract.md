@@ -432,3 +432,39 @@ number or consumer activation is allocated by this checkpoint.
 Validation passes 755 Node tests, 11 real worker checks, typecheck, full lint and
 whitespace checks. This preparation-only increment makes no database-path change;
 the previous complete schema-15 database gate remains the last DB checkpoint.
+
+## Qualified raw publication activation
+
+0017 implements the publication contract against frozen 0001–0016. Complete
+player/team 2025/2026 inputs use the exact versioned gzip profile above and a
+private immutable whole-claim seal. Legacy text projection checks, 8,192-row
+tables and producer limits are preserved. The new ingestion-count exception is
+bounded to 80,000 and requires a complete qualified capture and seal at commit.
+Serialized sealed claims have a separate 64 MB ceiling; wire remains 8 MB/file,
+with the existing 20 MB unique-wire and 64 MB/160,000-row replay work limits.
+
+The atomic writer validates authoritative rights under publication/table locks,
+runs the isolated decoder, writes/rechecks managed binary bytes and records the
+complete codec proof, claims and rights audit with database clocks. Published
+gzip without the seal refuses at deferred commit. Retries and published replay
+verify actual wire and regenerated claims. Rights are checked after SQL row
+validation and at commit as well as before bytes. Executed source-deletion scopes
+prevent reimport and apply to diagnostic record/read authorization too.
+
+The seal and codec metadata follow authorized capture deletion. Supplemental
+digest-only row-count/identity audit is independently reproducible on a fresh
+restoration; existing removal queues and exact-address ownership handle bytes.
+There is no decoded cache or spool. The integration handoff contains role,
+guard-order, retry and lifecycle details.
+
+This activates raw claims only. Gzip cannot enter canonical observations or
+legacy normalization by parser-name fallback. Feature/label consumers and dataset
+closure must explicitly qualify the new seal in a later coordinated increment.
+The selected real proof still needs its licensed source registration, native
+evidence and missing 2025 Week 18 participation/absence evidence.
+
+The complete checkpoint passes 757 Node tests, 11 worker checks, 75 Node DB
+checks and 197 PostgreSQL tests (172 mandatory predictive cases), typecheck,
+full lint, all 18 catalog contracts and generated migration/readiness/whitespace
+checks. Frozen 0001–0016 files/contracts are unchanged. Only disposable databases
+ran 0017; the service was removed after the gate.

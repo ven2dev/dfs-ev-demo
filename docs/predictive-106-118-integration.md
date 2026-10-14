@@ -505,3 +505,62 @@ following the publication requirements above. It is not implemented or activated
 by this integration checkpoint. Canonical/consumer activation, usable real
 features/labels and source-evidence qualifications remain outstanding. Any
 migration after 0017 requires coordination in this chat.
+
+## #106 qualified raw compressed publication (0017)
+
+```text
+0017_predictive_compressed_publications.sql
+sha256 5c7dbaec1bc41924c9539a7e65034a6c50a27a0c1a7c95d922b361c372f53305
+```
+
+0017 adds execute-only qualified publication and replay against frozen
+0001–0016. `publishCompressedSource(bytes, input)` copies input before waiting,
+holds the existing digest lock before the global publication lock, and acquires
+the shared guard's table sequence in writer mode before registration or worker
+execution. It validates the authoritative rights chain before decoding, writes
+and rereads exact managed wire bytes, and commits ingestion run, artifact,
+published capture, codec envelope, complete claim seal and historical rights audit
+atomically. Receipt/seal clocks come from PostgreSQL. Retry rechecks rights,
+actual managed bytes and regenerated claims rather than trusting the old seal.
+
+Complete claims live in the private `predictive_compressed_publications` JSON
+seal, bounded to 80,000 records and 64 MB serialized claims. Every ordinal,
+capture-specific row ID, raw key, projection year/feed and explicit refusal is
+checked. The seal includes the versioned request identity and canonical complete-
+claim digest. This avoids widening legacy `predictive_source_stats_rows` or its
+2026 projection checks. Ingestion counts above 8,192 are allowed only for the new
+producer version with a deferred, complete qualified-capture/seal check.
+
+`replayPublishedCompressedClaims` verifies the stored seal and independently
+reconstructs full claims from exact wire bytes under the guard. Wire and decode
+budgets remain separate; each capture's reconstruction is charged. Current and
+historical research rights are checked before bytes and delivery. Scheduled
+rights expiry also refuses during SQL sealing and at deferred commit. Matching
+executed source-deletion scopes prohibit archive reimport; diagnostic envelope
+record/read wrappers use the same scope authorization, preserving v15's original
+checks behind private functions. A literal checked function-label adaptation
+keeps the renamed v15 recorder's parameter reference correct.
+
+Authorized capture deletion removes the seal and codec metadata through the
+existing hook; exact wire cleanup continues through the existing queue. A private
+supplemental audit binds the capture digest, removed row count and canonical
+row-ID digest, with an execute-only retention reader. No second retention
+procedure, decoded spool or automatic cascade is introduced. Existing legacy
+and dataset audit results retain their interfaces.
+
+Raw publication does **not** activate canonical observations, legacy source
+bindings, numerical consumers, features, labels or training. The blanket gzip
+canonical-binding guard remains. A later consumer/normalization increment must
+qualify its bridge and include the claim/codec seal in the protected dataset
+closure before any fitting path can cite compressed data. No migration after
+0017 is allocated here; coordinate the next number before that increment.
+Only synthetic data is published by this checkpoint's database tests; real
+source rights and participation/completion qualifications remain outstanding.
+
+Checkpoint validation passes **757 Node tests, 11 real worker checks, 75 Node DB
+checks, 197 PostgreSQL tests (172 mandatory predictive cases)**, typecheck, full
+lint, all 18 catalog contracts and migration/readiness/whitespace checks. The
+complete gate exercises both #118 dataset/pin retention and the new publication
+path. Every 0001–0016 migration/catalog contract remains byte-for-byte unchanged.
+Only disposable databases ran 0017, and the test service was removed afterward.
+The frozen integration prefix is **0001–0017**; no further #106 number is reserved.
