@@ -233,8 +233,8 @@ An evaluation plan fixes its aggregation/reuse policy before scores are inspecte
 
 ## Proposed versioned service surface
 
-The run/dataset/pin and page/label operations below are now exported by the local
-store. Complete-run readiness and audited invalidation remain outstanding.
+The run/dataset/pin, page/label and complete-run verification operations below
+are exported by the local store. Audited invalidation remains outstanding.
 Every request carries `version: "qb-training-read-v1"`.
 
 | Operation | Result / restriction |
@@ -246,6 +246,7 @@ Every request carries `version: "qb-training-read-v1"`.
 | `readLabelsAt(keys, labelsAsOf, limits)` | The same batch semantics for historical label heads, including exact version/correction metadata |
 | `pinDataset(datasetId, pinId, fittingRunRef)` | Audited idempotent additional pin on the existing immutable selection, matching its owning run/hash and subject to rights, quota and evidence availability |
 | `releaseDatasetPin(pinId)` | Append a database-clock release event; it cannot rewrite the pin, extend provider retention or restore erased evidence |
+| `readFittingRunReadiness({ version, fittingRunId, inventorySha256 })` | Verify every sealed dataset under one guard, list all unsealed assignments and reconcile the complete inventory; report verification, pin durability and usable pairs separately while retaining `fittingReady: false` |
 
 A dataset row carries its ordinal and requested key/cutoffs, selected feature
 and label references, separate feature/label states and reasons, participation/
@@ -569,8 +570,7 @@ head selection precedes compatibility filtering. Missing final labels do not
 become numeric zero, DNP or sportsbook settlement. See the evidence checkpoint
 for cursor-address semantics, refusal states and adversarial tests.
 
-Remaining #118 checkpoints: reconcile all assigned datasets and expose run
-readiness; audited invalidation; end-to-end deadlines/cancellation and interrupted
+Remaining #118 checkpoints: audited invalidation; end-to-end deadlines/cancellation and interrupted
 reads; representative indexed plans/memory/runtime/storage evidence; independent
 review and final integrated CI. Reverification of the full shard per page is a
 deliberate first implementation and still requires capacity assessment. #106/#107
@@ -581,3 +581,20 @@ tests (168 mandatory predictive cases), typecheck, affected-file lint and all 17
 catalog contracts. The 36 frozen/generated prefix files match `2f57d12` byte for
 byte; documentation links and whitespace checks pass. No persistent or hosted
 database was migrated. The evidence checkpoint records the final log paths.
+
+The complete-run checkpoint adds `readFittingRunReadiness` without DDL. It derives
+all assignments from the immutable inventory, authorizes every sealed closure
+before files, verifies exact shared bytes once under one guard and reconciles all
+requested slots. Missing datasets stay explicit; unusable components stay counted.
+Current pin durability is separate from complete verification and usable pairs.
+No numerical bodies, durable certificate or population qualification are returned.
+Access/expiry failures withhold the whole run and later publication never replaces
+its selected references. Frozen 0001–0016 and shared gzip/cleanup interfaces remain
+unchanged. Audited invalidation is the next checkpoint and needs a coordinated
+forward migration after #106's confirmed prefix; no new number is allocated here.
+
+Final complete-run checks pass 756 Node tests, 75 Node DB checks and 196 PostgreSQL
+tests (171 mandatory predictive cases), typecheck, affected-file lint and all 17
+catalog contracts. The 36 frozen/generated prefix files match `986bfed`; local
+documentation links and whitespace pass. The evidence checkpoint records final
+logs and the focused pure-fixture rerun. Only disposable databases were used.

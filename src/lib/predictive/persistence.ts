@@ -6,6 +6,8 @@ import { normalizeFittingRunRequest, selectTrainingRows, TRAINING_BOUNDS, type F
 import { checkTrainingMetadataSelection, TRAINING_SELECTION_SQL, trainingSelectionParameters, type TrainingMetadataSelection } from "./trainingSql.ts";
 import { trainingRunPreview, type TrainingKickoffProof } from "./trainingPreview.ts";
 import type { TrainingRunInventory } from "./trainingRuns.ts";
+import { normalizeTrainingRunReadRequest, trainingRunDatasetIds, trainingRunReadiness,
+  type TrainingRunReadRequest, type TrainingVerifiedDataset } from "./trainingReadiness.ts";
 import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
 import { assertTrainingShardUnexpired, normalizeTrainingShardRequest, trainingShardMembership, trainingShardProof, type TrainingShardRequest } from "./trainingShards.ts";
 import { normalizeTrainingDatasetRequest, type TrainingDatasetContext, type TrainingDatasetRequest, type TrainingDatasetManifest } from "./trainingDatasets.ts";
@@ -1101,7 +1103,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // Verify only an already-assigned shard. No latest-match SQL is run and no
   // durable dataset/pin is implied by this ephemeral metadata proof. Sealing
   // will reuse this guarded path in the same transaction as its SQL recorder.
-  const verifyAssignedShard = async (supplied: TrainingShardRequest, dataset?: TrainingDatasetContext) => {
+  const verifyAssignedShard = async (supplied: TrainingShardRequest, dataset?: TrainingDatasetContext,
+    runAccess?: { uses: TrainingRunInventory["protectedUses"]; rows: TrainingRunInventory["rows"]; pinned: ReadonlySet<string> }) => {
     const inventory = dataset?.inventory ?? (await client.query("SELECT public.predictive_training_run_read($1) AS result", [supplied.fittingRunId]))
       .rows[0].result as TrainingRunInventory | null;
     if (!inventory) refuse("training-run-not-found");
@@ -1109,15 +1112,16 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const featureIds = rows.flatMap((row) => row.selection.featureId ? [row.selection.featureId] : []);
     const pinned = await trainingPinnedConsumers(featureIds);
     const currentClock = async () => (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
-    assertTrainingShardUnexpired(rows, await currentClock(), pinned);
+    const accessRows = runAccess?.rows ?? rows, accessPins = runAccess?.pinned ?? pinned;
+    assertTrainingShardUnexpired(accessRows, await currentClock(), accessPins);
     const context = await trainingKickoffContext({ ...inventory.request, slots: rows.map((row) => row.slot) });
     const ids = [...new Set(rows.flatMap((row) => [row.selection.featureId, row.selection.labelId].filter((id): id is string => id !== null)))];
-    const records = await authorizeConsumerBatch(ids, [...(dataset?.manifest.protectedUses ?? inventory.protectedUses),
+    const records = await authorizeConsumerBatch(ids, [...(runAccess?.uses ?? []), ...(dataset?.manifest.protectedUses ?? inventory.protectedUses),
       ...context.kickoffProfiles.map((profile) => ({ profile, use: "model-input" as const }))]);
     if ([...records.values()].some((record) => record === null)) refuse("training-shard-evidence-mismatch");
     // Scheduled expiry must also stop a later file read, not just delivery.
     const rightsAccess = batchAccess!;
-    batchAccess = async () => { await rightsAccess(); assertTrainingShardUnexpired(rows, await currentClock(), pinned); };
+    batchAccess = async () => { await rightsAccess(); assertTrainingShardUnexpired(accessRows, await currentClock(), accessPins); };
     const kickoffs = await context.verify();
     await verifyConsumerBatch(records);
     const proof = trainingShardProof(inventory, supplied, await currentClock(),
@@ -1182,6 +1186,50 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const releaseDatasetPin = (id: string) => transaction(async () =>
     (await client.query("SELECT public.predictive_release_training_dataset_pin($1) AS result", [id])).rows[0].result as
       { pinId: string; releasedAt: string; reused: boolean });
+
+  const readFittingRunReadiness = async (input: TrainingRunReadRequest) => {
+    const supplied = normalizeTrainingRunReadRequest(input);
+    return transaction(async () => {
+      const inventory = (await client.query("SELECT public.predictive_training_run_read($1) AS result", [supplied.fittingRunId]))
+        .rows[0].result as TrainingRunInventory | null;
+      if (!inventory) refuse("training-run-not-found");
+      const ids = trainingRunDatasetIds(inventory, supplied), contexts = new Map<string, TrainingDatasetContext | null>();
+      // Authorize every sealed closure before the first protected file. No
+      // successful subset may stand in for this run's complete assignment.
+      for (const id of ids) {
+        const context = await datasetContext(id);
+        if (context && (canonical(context.inventory) !== canonical(inventory) || context.manifest.fittingRunId !== supplied.fittingRunId ||
+            context.manifest.inventorySha256 !== supplied.inventorySha256)) refuse("training-run-dataset-inventory-mismatch");
+        contexts.set(id, context);
+      }
+      const uses = [...inventory.protectedUses, ...[...contexts.values()].flatMap((context) => context?.manifest.protectedUses ?? [])];
+      const pinned = await trainingPinnedConsumers([...new Set(inventory.rows.flatMap((row) => row.selection.featureId ? [row.selection.featureId] : []))]);
+      const checked = new Map<string, TrainingVerifiedDataset | null>();
+      for (const [id, context] of contexts) {
+        if (!context) { checked.set(id, null); continue; }
+        const { proof } = await verifyAssignedShard({ ...supplied, datasetId: id }, context, { uses, rows: inventory.rows, pinned });
+        checked.set(id, { manifest: context.manifest, proof });
+      }
+      // Scheduled access/feature expiry can occur even while DML is guarded.
+      // Recheck the whole run at delivery, including unsealed assignments.
+      if (!batchAccess) {
+        await authorizeConsumerBatch([], uses);
+        const rightsAccess = batchAccess!;
+        batchAccess = async () => {
+          await rightsAccess();
+          const clock = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+          assertTrainingShardUnexpired(inventory.rows, clock, pinned);
+        };
+      }
+      await batchAccess!();
+      const checkedAt = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+      assertTrainingShardUnexpired(inventory.rows, checkedAt, pinned);
+      const result = { ...trainingRunReadiness(inventory, supplied, checked, checkedAt), verification: { ...batch!.metrics(), verifiedBytes } };
+      assertTrainingResponseBytes(result, TRAINING_BOUNDS.pageBytes);
+      await batchAccess!();
+      return result;
+    }, false, true);
+  };
 
   // This first numerical reader verifies the entire bounded shard and closure
   // on each call. A later capacity increment can reduce repeated work without
@@ -1525,6 +1573,6 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   };
   return { publish, publishSourceStats, replaySourceStats, replayCompressedInspections, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
     planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun, verifyDatasetShard,
-    prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin, readDatasetPage, readCurrentLabels, readLabelsAt,
+    prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin, readDatasetPage, readCurrentLabels, readLabelsAt, readFittingRunReadiness,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

@@ -1,5 +1,61 @@
 # #118 guarded evidence checkpoint
 
+## Complete fitting-run evidence checks
+
+`readFittingRunReadiness({ version: "qb-training-read-v1", fittingRunId,
+inventorySha256 })` derives every dataset assignment from the sealed inventory.
+The caller cannot request a successful subset. One guard covers SQL membership,
+all current protected uses, every sealed shard's byte reconstruction and final
+delivery. All manifests are authorized before the first protected file. Exact
+shared files are verified once within the transaction, then reverified on a later
+call; the 20 MB unique-wire and 8 MB response ceilings apply to the complete read.
+No numerical body is returned and no transaction remains open between requests.
+
+The report lists every assigned dataset and its sparse global ordinals, manifest
+hash, current pin state and independently reconciled counts. Unsealed datasets
+remain `missing` / `dataset-not-sealed`. `datasetsComplete`, `durablyPinned` and
+`usableEvidenceComplete` answer separate questions: all assignments verified,
+all verified manifests actively pinned, and every requested slot having both a
+usable feature and label. Missing/unavailable/expired components remain counted.
+Even a fully usable fixture run keeps `fittingReady: false` and population
+unqualified; #106/#107 still supply real/population qualification. Later matching
+consumers cannot alter the inventory or this report's stable digest. Pin releases
+change durability, while an access clock or verification metric does not change
+the digest.
+
+Damage, expired eligible evidence, revoked rights or removed inventories refuse
+the entire read. There is no partial successful report for an inaccessible shard.
+Every file and delivery recheck the complete run's current uses and eligibility,
+including previously checked and unsealed assignments; scheduled expiry is not
+stopped by DML locks. The report is ephemeral, not a durable verification grant or
+invalidation event. Audited invalidation still needs a coordinated forward
+migration; frozen 0001–0016 and all shared artifact interfaces remain unchanged.
+
+Three pure cases use explicit expected counts and ordinals to check complete
+assignment, missing states, durability versus usability, access-independent
+digests and malformed/mismatched manifests/proofs. Three mandatory PostgreSQL
+cases exercise the replay-only login, zero/partial/full shard preparation,
+shared-file deduplication, later publication, pin release, wrong addresses,
+damaged later shards, revocation/deletion and direct SQL writer exclusion.
+Scheduled-rights expiry is tested against its recorded database boundary before
+further bytes or delivery. The first focused run caught a test timestamp with
+microsecond precision; the fixture now uses the contract's millisecond precision.
+No production timestamp rule was changed.
+
+Final complete-run validation passes **756 Node tests**, **75 Node DB checks +
+196 PostgreSQL tests** (171 mandatory predictive cases), typecheck, affected-file
+ESLint and all **17 catalog contracts**. The final gate includes all three new
+database cases. The 36 frozen/generated prefix files match `986bfed` byte for
+byte; documentation links and whitespace pass. Logs are
+`/private/tmp/dfs118-run-readiness-final-node.log`,
+`/private/tmp/dfs118-run-readiness-final-db.log`,
+`/private/tmp/dfs118-run-readiness-final-types.log` and
+`/private/tmp/dfs118-run-readiness-final-lint.log`. The pure fixture's reuse count
+was aligned to its optional one-slot population after the full run; all 53 focused
+training cases pass again. Only disposable databases were used; no persistent or
+hosted database was migrated. #118 still needs audited invalidation,
+deadlines/cancellation, representative capacity and independent review.
+
 ## Numerical pages and label readers
 
 `readDatasetPage` accepts the owning run/inventory/dataset, sealed manifest hash,
@@ -40,7 +96,7 @@ the whole page/batch. Missing exact label references disclose
 `label-reference-missing-or-removed`; a relevant source-retention event makes
 unrecorded heads conservatively `retained-evidence-removed`. Those labels have
 no fallback outcome. Reads do not append a durable invalidation event yet; that
-belongs to the next run-readiness/invalidation checkpoint.
+belongs to the next audited-invalidation checkpoint.
 
 Eight mandatory PostgreSQL cases cover fixed sparse page membership, later
 publication, response/address bounds, corruption on retry, current rights and
@@ -54,8 +110,8 @@ return rejected promises on invalid input.
 
 This increment needs no SQL migration. Frozen 0001–0016, binary artifact reads,
 gzip inspection and cleanup interfaces remain unchanged. Full-shard work is
-repeated per page; representative capacity/deadlines, complete-run readiness,
-audited invalidation and independent review remain outstanding. Numeric access
+repeated per page; representative capacity/deadlines, audited invalidation and
+independent review remain outstanding. Numeric access
 does not make `fittingReady: false` or unqualified population disappear.
 
 Final reader validation passes **753 Node tests**, **75 Node DB checks +

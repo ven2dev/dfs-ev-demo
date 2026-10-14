@@ -2345,6 +2345,130 @@ const labelReadRequest = (seed: Awaited<ReturnType<typeof seedConsumers>>) => ({
   limits: { rows: 64, bytes: 8_000_000 },
 });
 
+const readinessRequest = (inventory: Awaited<ReturnType<Store["prepareFittingRun"]>>) => ({
+  version: "qb-training-read-v1" as const, fittingRunId: inventory.request.fittingRunId, inventorySha256: inventory.inventorySha256,
+});
+
+it("QB complete run checks enumerate every assigned dataset and reconcile sparse missing slots through replay roles", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    const seed = await seedConsumers(store);
+    const a = await store.recordSourcePassingYards("run-check-feature-A", seed.request, seed.profiles);
+    await store.recordSourcePassingYards("run-check-unavailable", { ...seed.request, playerId: "00-0000003" }, seed.profiles);
+    const input = await previewRequest(client, seed);
+    input.slots.push({ ...input.slots[0], playerId: "00-0000002", datasetId: "other-shard" },
+      { ...input.slots[0], playerId: "00-0000003" });
+    const inventory = await store.prepareFittingRun(input);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reads = new Map<string, number>();
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads.set(args[0], (reads.get(args[0]) ?? 0) + 1); return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed), req = readinessRequest(inventory);
+      const unsealed = await reader.readFittingRunReadiness(req);
+      expect(unsealed).toMatchObject({ status: "incomplete", requestedSlots: 3, verifiedSlots: 0, datasetsComplete: false });
+      expect(unsealed.datasets.map((dataset) => dataset.state)).toEqual(["missing", "missing"]); expect(reads.size).toBe(0);
+      const first = await store.prepareDataset(datasetRequest(inventory));
+      const incomplete = await reader.readFittingRunReadiness(req);
+      expect(incomplete).toMatchObject({ status: "incomplete", requestedSlots: 3, verifiedSlots: 2,
+        datasetsComplete: false, durablyPinned: false, usableEvidenceComplete: false, fittingReady: false, usablePairs: 0 });
+      expect(incomplete.datasets.map((dataset) => [dataset.datasetId, dataset.state, dataset.ordinals]))
+        .toEqual([["other-shard", "missing", [1]], ["preview-evaluation", "verified", [0,2]]]);
+      expect(incomplete.counts[1]).toEqual({ partition: "evaluation", slots: 3, targetEvents: 1, usableFeatures: 1,
+        missingFeatures: 1, unavailableFeatures: 1, expiredFeatures: 0, usableLabels: 0, missingLabels: 3 });
+      const second = await store.prepareDataset({ ...datasetRequest(inventory, "run-check-other-pin"), datasetId: "other-shard" });
+      reads.clear();
+      const complete = await reader.readFittingRunReadiness(req);
+      expect(complete).toMatchObject({ status: "verified", requestedSlots: 3, verifiedSlots: 3, datasetsComplete: true,
+        durablyPinned: true, usableEvidenceComplete: false, fittingReady: false, populationCoverage: "unqualified" });
+      expect([...reads.values()].every((count) => count === 1)).toBe(true); expect(reads.size).toBeGreaterThan(0);
+      expect(complete.datasets.map((dataset) => dataset.manifestSha256)).toEqual([second.manifestSha256, first.manifestSha256]);
+      await store.recordSourcePassingYards("run-check-feature-B", seed.request, seed.profiles);
+      expect((await reader.readFittingRunReadiness(req)).readinessSha256).toBe(complete.readinessSha256);
+      expect((await reader.readDatasetPage(pageRequest(first))).rows[0].feature.reference?.id).toBe(a.id);
+      await store.releaseDatasetPin("run-check-other-pin");
+      const released = await reader.readFittingRunReadiness(req);
+      expect(released.datasetsComplete).toBe(true); expect(released.durablyPinned).toBe(false);
+      expect(released.blockers).toContain("datasets-not-pinned");
+    });
+  });
+});
+
+it("QB complete run checks refuse invalid addresses damaged later shards revocation and deleted inventories without a subset result", async () => {
+  await withProof(async ({ client, store, root, artifacts, target }) => {
+    const seed = await seedConsumers(store), feature = await store.recordSourcePassingYards("run-damage-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed); input.slots[0].datasetId = "Z";
+    input.slots.push({ ...input.slots[0], datasetId: "A", playerId: "00-0000002" });
+    const inventory = await store.prepareFittingRun(input);
+    await store.prepareDataset({ ...datasetRequest(inventory), datasetId: "A" });
+    await store.prepareDataset({ ...datasetRequest(inventory, "run-damage-Z-pin"), datasetId: "Z" });
+    let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    const reader = await createLocalPredictiveStore(client, target, observed), req = readinessRequest(inventory);
+    await expect(reader.readFittingRunReadiness({ ...req, inventorySha256: "f".repeat(64) })).rejects.toThrow("training-shard-inventory-mismatch");
+    await expect(reader.readFittingRunReadiness({ ...req, datasetIds: ["A"] } as never)).rejects.toThrow("schema-fields-refused"); expect(reads).toBe(0);
+    const path = join(root, ".db-blobs", feature.bodySha256 + ".json"), bytes = await readFile(path);
+    try { await writeFile(path, "damaged-later-shard"); await expect(reader.readFittingRunReadiness(req)).rejects.toThrow("artifact-integrity-failed"); }
+    finally { await writeFile(path, bytes); }
+    expect((await reader.readFittingRunReadiness(req)).datasetsComplete).toBe(true);
+    const clock = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'run-check-revoke',profile_id,id,'{}',$2,NULL,$2,'synthetic','complete run access'
+      FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [seed.raw.profileId, clock]);
+    reads = 0; await expect(reader.readFittingRunReadiness(req)).rejects.toThrow("training-run-rights-refused"); expect(reads).toBe(0);
+    await store.retain({ id: "run-check-delete", reason: "provider-request", authority: "disposable complete-run proof", decidedAt: clock,
+      scope: { kind: "source", profileIds: [seed.raw.profileId], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" });
+    await expect(reader.readFittingRunReadiness(req)).rejects.toThrow("training-run-evidence-removed"); expect(reads).toBe(0);
+  });
+});
+
+it("QB complete run checks guard direct SQL writers through every shard and recheck scheduled rights before delivery", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    await store.recordSourcePassingYards("run-guard-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed);
+    input.slots.push({ ...input.slots[0], playerId: "00-0000002", datasetId: "other-shard" });
+    const inventory = await store.prepareFittingRun(input);
+    await store.prepareDataset(datasetRequest(inventory));
+    await store.prepareDataset({ ...datasetRequest(inventory, "run-guard-other-pin"), datasetId: "other-shard" });
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      let entered!: () => void, unblock!: () => void;
+      const opened = new Promise<void>((resolve) => { entered = resolve; }), gate = new Promise<void>((resolve) => { unblock = resolve; });
+      let reads = 0;
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads++; entered(); await gate; return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed), req = readinessRequest(inventory);
+      const running = reader.readFittingRunReadiness(req);
+      try {
+        await opened;
+        await withLogin(client, target, ["predictive_ingest", "predictive_harness"], async (writer) => {
+          await writer.query("SET lock_timeout='100ms'");
+          await expect(writer.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+            SELECT 'run-guard-revoke',profile_id,id,'{}',date_trunc('milliseconds',clock_timestamp()),NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','complete guard'
+            FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [seed.raw.profileId])).rejects.toMatchObject({ code: "55P03" });
+        });
+      } finally { unblock(); }
+      expect((await running).datasetsComplete).toBe(true);
+      // Schedule a decision before acquiring the guard: time can advance while
+      // direct DML is blocked. The next read must withhold at delivery.
+      await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+        SELECT 'run-scheduled-revoke',profile_id,id,'{}',date_trunc('milliseconds',clock_timestamp())+interval '2 seconds',NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','scheduled guard'
+        FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [seed.raw.profileId]);
+      reads = 0;
+      const delayed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads++;
+        await client.query(`SELECT pg_sleep(greatest(0,extract(epoch FROM (effective_from-clock_timestamp())))+0.01)
+          FROM predictive_rights_decisions WHERE id='run-scheduled-revoke'`);
+        return artifacts.database.read(...args);
+      } } };
+      const delayedReader = await createLocalPredictiveStore(login, loginTarget, delayed);
+      await expect(delayedReader.readFittingRunReadiness(req)).rejects.toThrow("source-consumer-rights-refused"); expect(reads).toBe(1);
+    });
+  });
+});
+
 it("QB numerical pages preserve fixed sparse membership missingness and separate outcomes across later publications", async () => {
   await withProof(async ({ client, store, target, artifacts }) => {
     const seed = await seedConsumers(store);

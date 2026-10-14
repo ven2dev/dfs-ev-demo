@@ -377,8 +377,8 @@ owner's separately confirmed allocation. No #118 migration after 0016 is reserve
 All calls use `version: "qb-training-read-v1"`; only passing-yards/source-final-
 label-v1 is supported. Numeric zero is distinct from missing/unqualified final
 labels, which return no outcome and no inferred absence/void/settlement. Pages
-and label batches remain `fittingReady: false`, population unqualified. Complete-
-run readiness, audited invalidation, deadlines and representative capacity are
+and label batches remain `fittingReady: false`, population unqualified. Audited
+invalidation, deadlines and representative capacity are
 still outstanding. These readers do not change `readBytes`, `readWireBytes`,
 gzip publication/inspection or exact-address retention/cleanup interfaces.
 
@@ -386,3 +386,26 @@ The reader checkpoint passes 753 Node tests, 75 Node DB checks, 193 PostgreSQL
 tests (168 mandatory predictive cases), typecheck, affected-file lint and all 17
 catalog contracts. Frozen/generated prefix files match `2f57d12`; no new migration
 or shared artifact interface is introduced. Only disposable databases were used.
+
+## #118 complete-run verification checkpoint
+
+`readFittingRunReadiness({ version: "qb-training-read-v1", fittingRunId,
+inventorySha256 })` checks the complete sealed assignment under one guard.
+Unsealed datasets remain explicit, every available shard/closure is reconstructed,
+shared bytes are verified once per call and all requested counts reconcile.
+Current access and eligibility apply to the whole run before files and delivery;
+an inaccessible shard refuses the entire result. The report distinguishes complete
+verification, active pin durability and usable feature/label pairs. It returns no
+numeric bodies and remains `fittingReady: false`, population unqualified.
+
+There is no migration or shared binary/gzip/cleanup/retention interface change.
+Frozen 0001–0016 remain unchanged; #106 retains its coordinated allocation.
+The next #118 checkpoint is durable, audited invalidation. It requires a confirmed
+next number after #106's complete frozen prefix; this checkpoint reserves none.
+Deadlines/cancellation, representative capacity and independent review are also
+outstanding. The evidence checkpoint records the adversarial tests and final gates.
+
+Final validation passes 756 Node tests, 75 Node DB checks and 196 PostgreSQL tests
+(171 mandatory predictive cases), typecheck, affected-file lint and all 17 catalog
+contracts. Frozen/generated prefix files match `986bfed`. No new migration or
+persistent/hosted database operation is included.
