@@ -862,3 +862,49 @@ cases), 75 DB checks, 11 isolated worker checks and 18 catalog contracts pass.
 Typecheck, full lint, migration-artifact verification and whitespace checks pass.
 The final complete database gate includes the corrected rights query and fixture
 clocks; its disposable service and scratch databases were removed afterward.
+
+## #106 compressed binding and consumer review (0018)
+
+Seven mandatory PostgreSQL cases cover restricted execute-only recording and
+exact replay/fact witnesses, corrected source values with preserved earlier
+cutoffs, independently rehashed forged candidates, blocked direct row insertion,
+scheduled expiry during deferred commit validation, clean retry after rollback,
+and complete materialized-row/seal deletion with audit parity across two fresh
+databases. A real 8,193-row file binds only the requested player while preserving
+all other ordinals in the immutable raw graph. Its test has a separate 60-second
+harness allowance; application statement and codec limits remain enforced.
+
+The combined consumer case checks the independently expected 80-yard label,
+feature/source references, current/historical consumer replay, guarded batch file
+reuse, numerical paging, complete-run verification, active dataset pins and
+mandatory deletion of the complete inventory/dataset/pin graph and source bytes.
+Binary reads are counted and must occur once per verification batch. The upgrade
+case preserves every v17 capture, seal and ledger entry and requires a no-op rerun.
+Canonical stats observations remain absent; source revisions and consumers cite
+their explicit qualified binding graph.
+
+Runtime checks exposed trigger-record field access and a profile/publication
+alias collision; both were corrected before validation. The larger-file case
+also exposed repeated whole-array integrity hashing at clock-only access gates.
+Integrity is now verified once per guarded metadata snapshot and again against
+decoded wire evidence; fresh access checks use the bounded codec envelope. Bulk
+materialization uses private transaction authorization and a complete deferred
+coverage hash, with durable projection validation preserved after authorization
+cleanup. Caller-supplied hashes or flags cannot grant that authorization.
+
+Draft checksum changes used fresh disposable databases, never ledger rewrites.
+These cases establish synthetic compressed persistence and complete consumer
+integration. They do not qualify real provider rights, bridges, membership,
+completion, population coverage or a fitting-ready dataset.
+
+The full gate additionally identified two obsolete upgrade arrays, two tests
+expecting deferred rejection instead of the new immediate materializer guard,
+and restricted CSV ingestion's need for the shared trigger to read private
+publication metadata. The trigger now uses a fixed-path definer; no private
+table SELECT privilege was granted to ingestion/replay roles. All five focused
+regressions and the complete repeated gate pass on the corrected SQL.
+
+Final validation: 783 Node tests, 219 PostgreSQL tests (194 mandatory predictive
+cases), 75 DB checks, 11 worker cases and 19 catalog contracts pass, as do
+typecheck, full lint, migration/readiness and whitespace checks. Frozen 0001–0017
+SQL/catalog files remain unchanged. Only local disposable databases were migrated.

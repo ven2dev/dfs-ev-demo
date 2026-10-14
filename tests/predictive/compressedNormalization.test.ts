@@ -4,6 +4,8 @@ import { COMPRESSED_SOURCE_PROFILE_VERSION } from "../../src/lib/predictive/comp
 import { canonical, digest } from "../../src/lib/predictive/validation.ts";
 import { compressedNormalizationFixture } from "./fixtures/compressedNormalization.ts";
 import { NORMALIZATION_ACCESS, NORMALIZATION_GAME, normalizationFixture, rewriteNormalizationRows } from "./fixtures/sourceNormalization.ts";
+import { planSourceBindingTransition, sourceStatsRawKey } from "../../src/lib/predictive/sourceLineage.ts";
+import { SOURCE_PROFILE_VERSION } from "../../src/lib/predictive/sourceAdapters.ts";
 
 it.each([2025,2026] as const)("plans compressed %s player claims with exact publication and native witnesses",async season=>{
   const {replay,context}=await compressedNormalizationFixture(season);
@@ -65,4 +67,15 @@ it("binds seals into freshness and refuses current rights while leaving genuine 
   expect(planSourceStatsNormalization(replay,context,NORMALIZATION_ACCESS,COMPRESSED_SOURCE_NORMALIZATION_VERSION).reason).toBe("rights-not-in-force");
   context.rightsDecisions.pop();replay.status="unavailable-source-claim";replay.reason="source-row-missing";replay.evidence.rows=[];replay.inputDigest=digest(canonical(replay.evidence));
   expect(planSourceStatsNormalization(replay,context,NORMALIZATION_ACCESS,COMPRESSED_SOURCE_NORMALIZATION_VERSION)).toMatchObject({reason:"source-row-missing",candidate:null});
+});
+
+it("accepts explicit multi-season compressed lineage while refusing a rehashed legacy parser downgrade",async()=>{
+  const {replay,context}=await compressedNormalizationFixture();
+  const plan=planSourceStatsNormalization(replay,context,NORMALIZATION_ACCESS,COMPRESSED_SOURCE_NORMALIZATION_VERSION);
+  const transition=planSourceBindingTransition(plan,[],NORMALIZATION_ACCESS);
+  expect(transition.action).toBe("append");expect(transition.candidate?.data).toMatchObject({season:2025,passingYards:-2});
+  expect(sourceStatsRawKey(plan.binding.sourceRequest)).toBe(digest(canonical(["2025_06_CAR_PHI","PHI","00-0000001"])));
+  const downgraded=structuredClone(plan);downgraded.binding.version=SOURCE_NORMALIZATION_VERSION;downgraded.binding.parserVersion=SOURCE_PROFILE_VERSION;
+  Reflect.deleteProperty(downgraded.binding,"sourcePublications");downgraded.planDigest=digest(canonical({reason:downgraded.reason,candidate:downgraded.candidate,binding:downgraded.binding}));
+  expect(()=>planSourceBindingTransition(downgraded,[],NORMALIZATION_ACCESS)).toThrow("source-lineage-plan-refused");
 });

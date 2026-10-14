@@ -6,6 +6,8 @@ import { normalizeFittingRunRequest, selectTrainingRows, TRAINING_BOUNDS, type F
 import { checkTrainingMetadataSelection, TRAINING_SELECTION_SQL, trainingSelectionParameters, type TrainingMetadataSelection } from "./trainingSql.ts";
 import { trainingRunPreview, type TrainingKickoffProof } from "./trainingPreview.ts";
 import type { TrainingRunInventory } from "./trainingRuns.ts";
+import { normalizeTrainingRunReadRequest, trainingRunDatasetIds, trainingRunReadiness,
+  type TrainingRunReadRequest, type TrainingVerifiedDataset } from "./trainingReadiness.ts";
 import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
 import { runCompressedWorker } from "./compressedWorker.ts";
 import type { prepareCompressedSourceClaims } from "./compressedClaims.ts";
@@ -13,6 +15,9 @@ import { selectCompressedSourceClaim } from "./compressedSelection.ts";
 import { checkCompressedPublicationInput, compressedSourceAsset, prepareCompressedPublication, COMPRESSED_SOURCE_CLAIM_VERSION, COMPRESSED_SOURCE_PROFILE_VERSION, type CompressedSourcePublication } from "./compressedPublication.ts";
 import { assertTrainingShardUnexpired, normalizeTrainingShardRequest, trainingShardMembership, trainingShardProof, type TrainingShardRequest } from "./trainingShards.ts";
 import { normalizeTrainingDatasetRequest, type TrainingDatasetContext, type TrainingDatasetRequest, type TrainingDatasetManifest } from "./trainingDatasets.ts";
+import { assertTrainingResponseBytes, checkTrainingLabelMetadata, normalizeTrainingHistoricalLabelRequest, normalizeTrainingLabelRequest,
+  normalizeTrainingPageRequest, trainingDatasetPage, trainingLabelRows, trainingPageMembers, TRAINING_LABEL_SELECTION_SQL,
+  type TrainingPageRequest, type TrainingLabelRequest, type TrainingHistoricalLabelRequest, type TrainingLabelMetadata } from "./trainingReads.ts";
 import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
   type SourceClaimRow, type SourceStatsPublication, type SourceStatsRequest, type SourceStatsReplay, type SourceStatsCapture } from "./sourceClaims.ts";
 import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
@@ -134,10 +139,22 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   let batch: ReturnType<typeof createEvidenceBatch> | null = null;
   let batchClock: string | null = null;
   let batchAccess: (() => Promise<void>) | null = null;
+  const compressedAccessChecks = new Map<string,()=>Promise<void>>();
+  const compressedNativeProfiles = new Set<string>();
+  let compressedAccessRoot: (()=>Promise<void>) | null = null;
+  const registerCompressedAccess = (key: string, check: ()=>Promise<void>) => {
+    compressedAccessChecks.set(key,check);
+    if (!compressedAccessRoot || batchAccess !== compressedAccessRoot) {
+      const previous = batchAccess;
+      compressedAccessRoot = async()=> { if(previous)await previous(); for(const check of compressedAccessChecks.values())await check(); };
+      batchAccess = compressedAccessRoot;
+    }
+  };
   const readQuery = (sql: string, values: unknown[] = []) => batch ? batch.query(sql, values) : client.query(sql, values);
   const memoEvidence = <T>(namespace: string, key: unknown, verify: () => Promise<T>): Promise<T> =>
     batch ? batch.memo(namespace, key, verify) : verify();
   let verifiedBytes = 0;
+  let compressedDecodedBytes = 0, compressedDecodedRows = 0;
   const verifiedDigests = new Set<string>();
   const verifiedCsvFiles = new Map<string, { feed: SourceStatsFeed; parsed: Awaited<ReturnType<typeof parseSourceCsv>> }>();
   const verifiedJson = new Map<string, { artifact: Artifact; revisions: Map<string, Revision> }>();
@@ -184,6 +201,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const transaction = async <T>(work: () => Promise<T>, readonly = false, guarded = false, guardedWriter = false): Promise<T> => {
     if (busy) refuse("predictive-session-busy"); busy = true;
     verifiedBytes = 0; verifiedJson.clear(); verifiedCsv.clear(); verifiedCsvFiles.clear(); verifiedDigests.clear();
+    compressedDecodedBytes=0;compressedDecodedRows=0;
+    compressedAccessChecks.clear(); compressedNativeProfiles.clear(); compressedAccessRoot=null;
     try {
       await assertTarget();
       await client.query(readonly ? "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY" : "BEGIN");
@@ -199,7 +218,19 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         } else if (!readonly) await client.query("SELECT pg_advisory_xact_lock($1,1)", [LOCK_NAMESPACE]);
         const result = await work(); await client.query("COMMIT"); return result;
       } catch (error) { await client.query("ROLLBACK"); throw error; }
-    } finally { batch = null; batchClock = null; batchAccess = null; verifiedJson.clear(); verifiedCsv.clear(); verifiedCsvFiles.clear(); verifiedDigests.clear(); verifiedBytes = 0; busy = false; }
+    } finally { batch = null; batchClock = null; batchAccess = null; compressedAccessChecks.clear(); compressedNativeProfiles.clear(); compressedAccessRoot=null;
+      verifiedJson.clear(); verifiedCsv.clear(); verifiedCsvFiles.clear(); verifiedDigests.clear(); verifiedBytes = 0; busy = false; }
+  };
+  // Profile declarations are immutable. This metadata-only routing probe keeps
+  // released CSV reads read-only, while compressed consumers use the shared
+  // guard before opening any source or native bytes. A concurrently registered
+  // profile cannot bypass the inner compressed guard requirement.
+  const sourceTransaction = async <T>(work: () => Promise<T>, profileIds: string[], writer = false): Promise<T> => {
+    if (busy) refuse("predictive-session-busy");
+    await assertTarget();
+    const compressed = (await client.query(`SELECT EXISTS(SELECT 1 FROM public.predictive_source_profiles
+      WHERE id=ANY($1::text[]) AND parser_version=$2) AS compressed`,[[...profileIds],COMPRESSED_SOURCE_PROFILE_VERSION])).rows[0].compressed as boolean;
+    return transaction(work, !writer && !compressed, compressed, writer && compressed);
   };
   // Acquired in ascending key order with a bounded wait; released in finally. A
   // lost connection drops the locks and fails every later query, so no unlink
@@ -560,7 +591,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
             LIMIT 1`, [selection.profileId,selection.cutoff])).rows.length > 0;
           if (removed) source.reason = "retained-evidence-removed";
           await access();
-          batchAccess = access;
+          registerCompressedAccess("empty:"+selection.profileId,access);
           return { snapshotAt: batchClock!, entries: [] as Entry[], verification: { verifiedWireBytes: 0, decodedBytes: 0, decodedRows: 0 },
             publicationSupported: false, source };
         }
@@ -569,12 +600,18 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         publication?: {requestHash:string;claimsSha256:string;recordedAt:string} };
       const load = async (): Promise<Entry[]> => (await client.query(mode === "publication" ? "SELECT public.predictive_read_compressed_publications($1) AS entries" :
         "SELECT public.predictive_read_compressed_inspections($1) AS entries", [ids])).rows[0].entries;
-      const entries = await load();
+      registerCompressedAccess(canonical([mode,ids]),async()=>{
+        await client.query("SELECT public.predictive_read_compressed_inspections($1)",[ids]);
+      });
+      await batchAccess!();
+      const entries = await memoEvidence("compressed-metadata",[mode,ids],load);
       if (mode !== "inspect" && entries.some(entry => !["player","team"].includes(entry.proof.feed))) refuse("compressed-claims-feed-refused");
       // A 30s execution deadline plus bounded runtime cleanup must fit within
       // this guarded transaction's idle timeout; no image is pulled here.
       await client.query("SET LOCAL idle_in_transaction_session_timeout = '45s'");
-      batchAccess = async () => { await load(); };
+      // Full immutable publication integrity is checked above and against the
+      // independently decoded bytes below. Clock-sensitive access gates need
+      // only the guarded codec/capture envelope, not repeated full-array hashes.
       let decodedBytes = 0, decodedRows = 0;
       const reports = new Map<string, Entry>();
       for (const entry of entries) {
@@ -582,7 +619,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
           wireSha256: entry.sha256, wireBytes: entry.byteSize };
         const reconstructed = await memoEvidence("compressed-" + mode, [entry.reference,entry.sha256,entry.byteSize,
           request.feed,request.season,entry.proof.codecVersion, mode !== "inspect" ? entry.captureId : null], async () => {
-          const remainingBytes = maxDecodedBytes - decodedBytes, remainingRows = maxRows - decodedRows;
+          const remainingBytes = Math.min(maxDecodedBytes-decodedBytes,64_000_000-compressedDecodedBytes);
+          const remainingRows = Math.min(maxRows-decodedRows,160_000-compressedDecodedRows);
           if (remainingBytes < 1 || remainingRows < 1) refuse("compressed-batch-work-budget-exceeded");
           const bytes = await readWireBytes(entry.reference, entry.sha256, entry.byteSize);
           const worker = await runCompressedWorker(mode === "inspect" ? "inspect" : "claims", bytes, request, { captureId: entry.captureId, limits: {
@@ -592,14 +630,21 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
           if (prepared && (!Array.isArray(prepared.rows) || typeof prepared.inspection !== "object")) refuse("compressed-worker-result-refused");
           const proof = prepared ? prepared.inspection : worker.result as Awaited<ReturnType<typeof inspectCompressedSource>>;
           decodedBytes += proof.decodedBytes; decodedRows += proof.rows;
+          compressedDecodedBytes+=proof.decodedBytes;compressedDecodedRows+=proof.rows;
           return { proof: { ...proof, limits: { ...COMPRESSED_SOURCE_LIMITS } }, rows: prepared?.rows };
         });
         if (canonical(reconstructed.proof) !== canonical(entry.proof)) refuse("compressed-inspection-integrity-failed");
         if (mode === "publication" && (!entry.publication || digest(canonical(reconstructed.rows)) !== entry.publication.claimsSha256))
           refuse("compressed-publication-integrity-failed");
+        if(mode==="publication") {
+          const stored=(await readQuery(`SELECT id,row_ordinal AS "rowOrdinal",raw_key_sha256 AS "rawKeySha256",
+            selected_sha256 AS "selectedSha256",projection,failure_code AS "failureCode" FROM public.predictive_source_stats_rows
+            WHERE capture_id=$1 ORDER BY row_ordinal LIMIT 80001`,[entry.captureId])).rows;
+          if(stored.length && canonical(stored)!==canonical(reconstructed.rows))refuse("stored-source-row-mismatch");
+        }
         reports.set(entry.captureId, { ...entry, ...reconstructed });
       }
-      await batchAccess();
+      await batchAccess!();
       const selectedEntries = ids.map(id => reports.get(id)!);
       const source = selection ? selectCompressedSourceClaim(selection, selectedEntries.map((entry, index) => ({
         capture: captures[index], profileId: selection.profileId, season: entry.proof.season,
@@ -607,7 +652,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       })), batchClock!) : undefined;
       // Selection hashes and copies the complete verified inventory. Scheduled
       // expiry must still be checked after that work, immediately before return.
-      if (selection) await batchAccess();
+      if (selection) await batchAccess!();
       return { snapshotAt: batchClock!, entries: selectedEntries, ...(selection ? { source } : {}),
         verification: { verifiedWireBytes: verifiedBytes, decodedBytes, decodedRows }, publicationSupported: false };
     };
@@ -629,18 +674,18 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
 
   const readSourceNormalization = async (request: SourceStatsRequest, accessAt?: string, version: string = SOURCE_NORMALIZATION_VERSION,
     providedSource?: SourceStatsReplay) => memoEvidence("readSourceNormalization", [request, accessAt ?? null, version, providedSource?.inputDigest ?? null], async () => {
+    if (version === COMPRESSED_SOURCE_NORMALIZATION_VERSION && !providedSource)
+      providedSource = (await replayCompressedEvidence("publication",[],{},request,true)).source!;
     const source = providedSource ?? await readSourceStats(request, accessAt);
     const clock = accessAt ?? (await readQuery(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string;
-    const nativeProfiles = new Set<string>();
+    const nativeProfiles = compressedNativeProfiles;
     if (providedSource) {
-      const sourceAccess = batchAccess;
-      if (!sourceAccess || !batchClock) refuse("compressed-replay-guard-required");
-      batchAccess = async () => {
-        await sourceAccess();
+      if (!batchAccess || !batchClock) refuse("compressed-replay-guard-required");
+      registerCompressedAccess("native-rights",async () => {
         if (nativeProfiles.size && (await client.query(`SELECT id FROM unnest($1::text[]) AS profiles(id)
           WHERE NOT public.predictive_rights_allow(id,clock_timestamp(),clock_timestamp(),'internal-research')`,[[...nativeProfiles]])).rows.length)
           refuse("source-normalization-rights-refused");
-      };
+      });
     }
     const context: Dataset = { formatVersion: 2, profiles: [], rightsDecisions: [], artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
     if (source.status !== "observed-source-claim") {
@@ -700,6 +745,26 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       if (batchAccess) await batchAccess();
       return plan;
     },false,true);
+  };
+  const recordCompressedSourceNormalization = (id: string, request: Omit<SourceStatsRequest,"cutoff">, expectedHeadId: string | null) => {
+    const pinned = structuredClone(request);
+    return transaction(async () => {
+      exact(pinned,["profileId","rawGameId","rawTeam","rawPlayerId"]);
+      batchClock = (await client.query("SELECT public.predictive_compressed_binding_guard() AS clock")).rows[0].clock as string;
+      const scoped = {...pinned,cutoff:batchClock!};
+      const old = (await client.query("SELECT plan,predecessor_id FROM public.predictive_source_bindings WHERE id=$1",[id])).rows[0];
+      if (old && (old.predecessor_id !== expectedHeadId || canonical(old.plan.binding.sourceRequest) !== canonical({...scoped,cutoff:old.plan.binding.cutoff})))
+        refuse("source-binding-id-conflict");
+      const plan = await readSourceNormalization(old?.plan.binding.sourceRequest ?? scoped, undefined, COMPRESSED_SOURCE_NORMALIZATION_VERSION);
+      if (old && sourceNormalizationBasis(plan) !== sourceNormalizationBasis(old.plan)) refuse("stored-source-binding-plan-mismatch");
+      const result = (await client.query("SELECT public.predictive_record_compressed_source_binding($1,$2,$3) AS result",
+        [id,expectedHeadId,old?.plan ?? plan])).rows[0].result;
+      const history = await bindingHistory(scoped,result.recordedAt);
+      const event = history.find(item=>item.id===id) ?? refuse("stored-source-binding-missing");
+      sourceBindingHeadsAt(history,result.recordedAt);
+      await batchAccess!();
+      return {event,reused:result.reused as boolean,observationsPublished:false as const,featuresPublished:false as const,labelsFinalized:false as const};
+    },false,true,true);
   };
 
   const bindingHistory = async (request: SourceStatsRequest, cutoff: string): Promise<SourceBindingEvent[]> => {
@@ -772,8 +837,9 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     sourceBindingHeadsAt(history, result.recordedAt);
     return { event, reused: result.reused as boolean, observationsPublished: false as const, featuresPublished: false as const, labelsFinalized: false as const };
   });
-  const replaySourceNormalization = (request: SourceStatsRequest): Promise<SourceNormalizationReplay> => transaction(async () => {
+  const replaySourceNormalization = (request: SourceStatsRequest): Promise<SourceNormalizationReplay> => sourceTransaction(async () => {
     sourceStatsRawKey(request); const clock = await databaseClock();
+    const profile = (await profilesFor([request.profileId]))[0], compressed=profile?.parserVersion===COMPRESSED_SOURCE_PROFILE_VERSION;
     if (instant(request.cutoff) > instant(clock)) refuse("source-binding-future-cutoff-refused");
     const history = await bindingHistory(request, request.cutoff);
     const result = (reason: string | null, head: SourceBindingEvent | null, currentPlan: SourceNormalizationPlan): SourceNormalizationReplay => ({
@@ -782,19 +848,21 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (!await currentBindingAccess(history, clock)) {
       // Do not hydrate revoked provider bytes or return historical payloads.
       const source = { status: "unavailable-source-claim" as const, reason: "rights-not-in-force",
-        evidence: { version: SOURCE_CLAIM_VERSION, request, captures: [], rows: [] }, inputDigest: "", featuresPublished: false as const,
+        evidence: { version: compressed ? COMPRESSED_SOURCE_CLAIM_VERSION : SOURCE_CLAIM_VERSION, request, captures: [], rows: [],...(compressed?{publications:[]}: {}) }, inputDigest: "", featuresPublished: false as const,
         labelsFinalized: false as const, populationCoverage: "unqualified" as const };
       source.inputDigest = digest(canonical(source.evidence));
-      return result("rights-not-in-force", null, planNormalization(source, { profiles: [], rightsDecisions: [], identityLinks: [], replay: replayObservations([], new Set()) }, clock));
+      return result("rights-not-in-force", null, planNormalization(source, { profiles: profile?[profile]:[], rightsDecisions: [], identityLinks: [], replay: replayObservations([], new Set()) }, clock,
+        compressed?COMPRESSED_SOURCE_NORMALIZATION_VERSION:SOURCE_NORMALIZATION_VERSION));
     }
     const heads = await verifyBindingHistory(history, request.cutoff);
-    const currentPlan = await readSourceNormalization(request, clock);
+    const currentPlan = await readSourceNormalization(request, clock,profile?.parserVersion===COMPRESSED_SOURCE_PROFILE_VERSION ? COMPRESSED_SOURCE_NORMALIZATION_VERSION : SOURCE_NORMALIZATION_VERSION);
     const head = heads[0];
     if (!head) return result("source-binding-missing", null, currentPlan);
     if (sourceNormalizationBasis(head.plan) !== sourceNormalizationBasis(currentPlan)) return result("source-binding-stale", null, currentPlan);
     if (!head.revision) return result(head.plan.reason ?? "source-binding-withheld", null, currentPlan);
+    if(batchAccess)await batchAccess();
     return result(null, head, currentPlan);
-  }, true);
+  }, [request.profileId]);
 
   // Research read adapter: enumerate complete recorded raw lineages inside the
   // explicit profiles, verify them, replan, and only then filter canonically.
@@ -806,7 +874,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const profiles = await profilesFor(request.profileIds);
     if (profiles.length !== request.profileIds.length) return sourceFactSnapshot(request, [], [], "source-profile-missing");
     if (profiles.some((profile) => profile.provider !== "nflverse" || !["player", "team"].includes(profile.feed) ||
-        profile.parserVersion !== SOURCE_PROFILE_VERSION || profile.allowlistVersion !== "predictive-raw-allowlist-v1"))
+        ![SOURCE_PROFILE_VERSION,COMPRESSED_SOURCE_PROFILE_VERSION].includes(profile.parserVersion) || profile.allowlistVersion !== "predictive-raw-allowlist-v1"))
       return sourceFactSnapshot(request, [], [], "source-profile-refused");
     const rights = (await readQuery(RIGHTS_SQL, [request.profileIds])).rows.map((row) => row.decision as RightsDecision);
     if (blockedProfiles(rights, request.profileIds, clock, "internal-research").size)
@@ -829,7 +897,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (!await currentBindingAccess(history, clock)) return sourceFactSnapshot(request, [], [], "rights-not-in-force");
     await verifyBindingHistory(history, request.cutoff);
     const plans: SourceNormalizationPlan[] = [];
-    for (const raw of requests) plans.push(await readSourceNormalization(raw, clock));
+    for (const raw of requests) plans.push(await readSourceNormalization(raw, clock,
+      profiles.find(profile=>profile.id===raw.profileId)?.parserVersion===COMPRESSED_SOURCE_PROFILE_VERSION ? COMPRESSED_SOURCE_NORMALIZATION_VERSION : SOURCE_NORMALIZATION_VERSION));
     return sourceFactHeadsAt(history, plans, request);
   });
   const checkedSourceFacts = async (input: SourceFactRequest) => memoEvidence("checkedSourceFacts", input, async () => {
@@ -841,7 +910,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (canonical(sqlWitness) !== canonical(sourceFactWitness(snapshot))) refuse("stored-source-witness-mismatch");
     return snapshot;
   });
-  const replaySourceStatsFacts = (input: SourceFactRequest) => transaction(() => checkedSourceFacts(input), true);
+  const replaySourceStatsFacts = (input: SourceFactRequest) => sourceTransaction(() => checkedSourceFacts(input),input.profileIds);
 
   const sourceDecisionProfiles = async (request: SourceDecisionRequest, nativeProfiles: string[]) => (await readQuery(`
     SELECT DISTINCT id COLLATE "C" AS id FROM (
@@ -876,7 +945,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (canonical(sqlPlan) !== canonical(plan)) refuse("stored-source-decision-plan-mismatch");
     return plan;
   });
-  const planSourceDecision = (request: SourceDecisionRequest) => transaction(() => readSourceDecisionPlan(request), true);
+  const planSourceDecision = (request: SourceDecisionRequest) => sourceTransaction(() => readSourceDecisionPlan(request),request.profileIds);
   const sourceDecisionHistory = async (request: SourceDecisionRequest): Promise<SourceDecisionRecord[]> => {
     const records = (await readQuery(`SELECT id,predecessor_id AS "predecessorId",${timestamp("recorded_at")} AS "recordedAt",plan
       FROM public.predictive_source_decisions WHERE kind=$1 AND entity_key=$2 AND scope_digest=$3 AND recorded_at <= $4::timestamptz
@@ -911,7 +980,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (canonical(links.bindings) !== canonical(expectedBindings) || canonical(links.inputs) !== canonical(sorted(record.plan.nativeInputs.map((row) => row.observationId))) ||
         canonical(links.rights) !== canonical(sorted(expectedRights))) refuse("stored-source-decision-associations-mismatch");
   });
-  const recordSourceDecision = (id: string, input: Omit<SourceDecisionRequest, "cutoff">, expectedHeadId: string | null) => transaction(async () => {
+  const recordSourceDecision = (id: string, input: Omit<SourceDecisionRequest, "cutoff">, expectedHeadId: string | null) => sourceTransaction(async () => {
     exact(input, ["kind", "profileIds", "entityKey"]);
     const request = sourceDecisionRequest({ ...input, cutoff: await databaseClock() });
     const old = (await client.query(`SELECT id,predecessor_id AS "predecessorId",${timestamp("recorded_at")} AS "recordedAt",plan
@@ -923,7 +992,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const { reused, ...record } = (await client.query("SELECT public.predictive_record_source_decision($1,$2,$3) AS result", [id, expectedHeadId, plan])).rows[0].result as SourceDecisionRecord & { reused: boolean };
     if (record.id !== id || record.predecessorId !== expectedHeadId || canonical(record.plan) !== canonical(plan)) refuse("stored-source-decision-record-mismatch");
     return { record, reused, featuresPublished: false as const, labelsFinalized: false as const };
-  });
+  },input.profileIds,true);
   const readSourceDecision = async (input: SourceDecisionRequest) => memoEvidence("readSourceDecision", input, async () => {
     const request = sourceDecisionRequest(input);
     const unavailable = (reason: string, currentPlan: SourceDecisionPlan | null = null) => ({
@@ -942,7 +1011,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       throw error;
     }
   });
-  const replaySourceDecision = (input: SourceDecisionRequest) => transaction(() => readSourceDecision(input), true);
+  const replaySourceDecision = (input: SourceDecisionRequest) => sourceTransaction(() => readSourceDecision(input),input.profileIds);
 
   // Discover native context from routing metadata. Use-specific rights for all
   // source history/context/native evidence are checked BEFORE file hydration.
@@ -1021,10 +1090,10 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const synthetic = (await profilesFor(accessed)).some((row) => row.purpose === "synthetic-test");
     return buildSourcePassingYards(replay,request,profiles,await sourceConsumerFacts(profiles,keys,request.cutoff),synthetic);
   });
-  const replaySourcePassingYards = (request: Request,profileIds: string[]) => transaction(() => readSourcePassingYards(request,profileIds),true);
+  const replaySourcePassingYards = (request: Request,profileIds: string[]) => sourceTransaction(() => readSourcePassingYards(request,profileIds),profileIds);
   const saveSourceConsumer = async (id: string,body: SourceConsumerBody,expectedHeadId: string | null): Promise<SourceConsumerRecord> => {
     const bytes = canonical(body); const sha256 = digest(bytes);
-    return withBlobPublication([sha256],() => transaction(async () => {
+    return withBlobPublication([sha256],() => sourceTransaction(async () => {
       await artifacts.write(bytes,sha256);
       await client.query(`INSERT INTO public.predictive_blobs(sha256,byte_size,media_type,storage_ref) VALUES($1,$2,'application/json',$3)
         ON CONFLICT(sha256) DO NOTHING`,[sha256,Buffer.byteLength(bytes),sha256 + ".json"]);
@@ -1032,7 +1101,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       if (record.id !== id || record.bodySha256 !== sha256 || canonical(record.body) !== canonical(body) ||
           record.executionDigest !== sourceConsumerExecutionDigest(sha256,record.rightsDecisions,record.recordedAt)) refuse("source-consumer-record-mismatch");
       return record;
-    }));
+    },body.manifest.profileIds,true));
   };
   const recordSourcePassingYards = async (id: string,request: Request,profileIds: string[]) =>
     saveSourceConsumer(id,await replaySourcePassingYards(request,profileIds),null);
@@ -1059,7 +1128,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return result;
   });
   const recordSourceFinalLabel = async (id: string,request: { playerId: string; gameId: string; profileIds: string[] },expectedHeadId: string | null) => {
-    const body = await transaction(async () => readSourceFinalLabel(request,await databaseClock()),true);
+    const body = await sourceTransaction(async () => readSourceFinalLabel(request,await databaseClock()),request.profileIds);
     return saveSourceConsumer(id,body,expectedHeadId);
   };
   const verifySourceConsumer = async (record: SourceConsumerRecord) => {
@@ -1072,13 +1141,21 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (canonical(body) !== canonical(record.body)) refuse("stored-source-consumer-mismatch");
     return record;
   };
-  const replaySourceConsumer = (id: string) => transaction(async () => {
+  const replaySourceConsumer = async (id: string) => {
+    if(busy)refuse("predictive-session-busy");await assertTarget();
+    const metadata=(await client.query("SELECT body->'manifest'->'profileIds' AS profiles FROM public.predictive_source_consumers WHERE id=$1",[id])).rows[0];
+    return sourceTransaction(async () => {
     // The SQL reader checks current use rights and sealed association closure
     // before the application opens either the run blob or source evidence.
     const record = (await client.query("SELECT public.predictive_source_consumer_check($1) AS result",[id])).rows[0].result as SourceConsumerRecord | null;
     if (!record) return null;
-    return verifySourceConsumer(record);
-  },true);
+    const result=await verifySourceConsumer(record);
+    if(batchAccess)await batchAccess();
+    const final=(await client.query("SELECT public.predictive_source_consumer_check($1) AS result",[id])).rows[0].result;
+    if(canonical(final)!==canonical(record))refuse("stored-source-consumer-mismatch");
+    return result;
+    },metadata?.profiles??[]);
+  };
 
   // All current use rights and association checks precede the first byte read,
   // including kickoff context not present in a selected consumer's profile set.
@@ -1251,7 +1328,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // Verify only an already-assigned shard. No latest-match SQL is run and no
   // durable dataset/pin is implied by this ephemeral metadata proof. Sealing
   // will reuse this guarded path in the same transaction as its SQL recorder.
-  const verifyAssignedShard = async (supplied: TrainingShardRequest, dataset?: TrainingDatasetContext) => {
+  const verifyAssignedShard = async (supplied: TrainingShardRequest, dataset?: TrainingDatasetContext,
+    runAccess?: { uses: TrainingRunInventory["protectedUses"]; rows: TrainingRunInventory["rows"]; pinned: ReadonlySet<string> }) => {
     const inventory = dataset?.inventory ?? (await client.query("SELECT public.predictive_training_run_read($1) AS result", [supplied.fittingRunId]))
       .rows[0].result as TrainingRunInventory | null;
     if (!inventory) refuse("training-run-not-found");
@@ -1259,15 +1337,16 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const featureIds = rows.flatMap((row) => row.selection.featureId ? [row.selection.featureId] : []);
     const pinned = await trainingPinnedConsumers(featureIds);
     const currentClock = async () => (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
-    assertTrainingShardUnexpired(rows, await currentClock(), pinned);
+    const accessRows = runAccess?.rows ?? rows, accessPins = runAccess?.pinned ?? pinned;
+    assertTrainingShardUnexpired(accessRows, await currentClock(), accessPins);
     const context = await trainingKickoffContext({ ...inventory.request, slots: rows.map((row) => row.slot) });
     const ids = [...new Set(rows.flatMap((row) => [row.selection.featureId, row.selection.labelId].filter((id): id is string => id !== null)))];
-    const records = await authorizeConsumerBatch(ids, [...(dataset?.manifest.protectedUses ?? inventory.protectedUses),
+    const records = await authorizeConsumerBatch(ids, [...(runAccess?.uses ?? []), ...(dataset?.manifest.protectedUses ?? inventory.protectedUses),
       ...context.kickoffProfiles.map((profile) => ({ profile, use: "model-input" as const }))]);
     if ([...records.values()].some((record) => record === null)) refuse("training-shard-evidence-mismatch");
     // Scheduled expiry must also stop a later file read, not just delivery.
     const rightsAccess = batchAccess!;
-    batchAccess = async () => { await rightsAccess(); assertTrainingShardUnexpired(rows, await currentClock(), pinned); };
+    batchAccess = async () => { await rightsAccess(); assertTrainingShardUnexpired(accessRows, await currentClock(), accessPins); };
     const kickoffs = await context.verify();
     await verifyConsumerBatch(records);
     const proof = trainingShardProof(inventory, supplied, await currentClock(),
@@ -1277,11 +1356,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       else await readBytes(blob.storageRef, blob.sha256, Number(blob.byteSize));
     }
     await batchAccess!();
-    return { ...proof, verification: { ...batch!.metrics(), verifiedBytes } };
+    return { proof: { ...proof, verification: { ...batch!.metrics(), verifiedBytes } }, records };
   };
   const verifyDatasetShard = (input: TrainingShardRequest) => {
     const supplied = normalizeTrainingShardRequest(input);
-    return transaction(() => verifyAssignedShard(supplied), false, true);
+    return transaction(async () => (await verifyAssignedShard(supplied)).proof, false, true);
   };
 
   const datasetContext = async (id: string): Promise<TrainingDatasetContext | null> =>
@@ -1332,6 +1411,105 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const releaseDatasetPin = (id: string) => transaction(async () =>
     (await client.query("SELECT public.predictive_release_training_dataset_pin($1) AS result", [id])).rows[0].result as
       { pinId: string; releasedAt: string; reused: boolean });
+
+  const readFittingRunReadiness = async (input: TrainingRunReadRequest) => {
+    const supplied = normalizeTrainingRunReadRequest(input);
+    return transaction(async () => {
+      const inventory = (await client.query("SELECT public.predictive_training_run_read($1) AS result", [supplied.fittingRunId]))
+        .rows[0].result as TrainingRunInventory | null;
+      if (!inventory) refuse("training-run-not-found");
+      const ids = trainingRunDatasetIds(inventory, supplied), contexts = new Map<string, TrainingDatasetContext | null>();
+      // Authorize every sealed closure before the first protected file. No
+      // successful subset may stand in for this run's complete assignment.
+      for (const id of ids) {
+        const context = await datasetContext(id);
+        if (context && (canonical(context.inventory) !== canonical(inventory) || context.manifest.fittingRunId !== supplied.fittingRunId ||
+            context.manifest.inventorySha256 !== supplied.inventorySha256)) refuse("training-run-dataset-inventory-mismatch");
+        contexts.set(id, context);
+      }
+      const uses = [...inventory.protectedUses, ...[...contexts.values()].flatMap((context) => context?.manifest.protectedUses ?? [])];
+      const pinned = await trainingPinnedConsumers([...new Set(inventory.rows.flatMap((row) => row.selection.featureId ? [row.selection.featureId] : []))]);
+      const checked = new Map<string, TrainingVerifiedDataset | null>();
+      for (const [id, context] of contexts) {
+        if (!context) { checked.set(id, null); continue; }
+        const { proof } = await verifyAssignedShard({ ...supplied, datasetId: id }, context, { uses, rows: inventory.rows, pinned });
+        checked.set(id, { manifest: context.manifest, proof });
+      }
+      // Scheduled access/feature expiry can occur even while DML is guarded.
+      // Recheck the whole run at delivery, including unsealed assignments.
+      if (!batchAccess) {
+        await authorizeConsumerBatch([], uses);
+        const rightsAccess = batchAccess!;
+        batchAccess = async () => {
+          await rightsAccess();
+          const clock = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+          assertTrainingShardUnexpired(inventory.rows, clock, pinned);
+        };
+      }
+      await batchAccess!();
+      const checkedAt = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+      assertTrainingShardUnexpired(inventory.rows, checkedAt, pinned);
+      const result = { ...trainingRunReadiness(inventory, supplied, checked, checkedAt), verification: { ...batch!.metrics(), verifiedBytes } };
+      assertTrainingResponseBytes(result, TRAINING_BOUNDS.pageBytes);
+      await batchAccess!();
+      return result;
+    }, false, true);
+  };
+
+  // This first numerical reader verifies the entire bounded shard and closure
+  // on each call. A later capacity increment can reduce repeated work without
+  // narrowing mandatory-deletion coverage or trusting an old byte certificate.
+  const readDatasetPage = async (input: TrainingPageRequest) => {
+    const supplied = normalizeTrainingPageRequest(input);
+    return transaction(async () => {
+      const context = await datasetContext(supplied.datasetId);
+      if (!context) refuse("training-dataset-not-found");
+      trainingPageMembers(supplied, context.manifest); // Reject wrong addresses before private files.
+      const { records } = await verifyAssignedShard({ version: supplied.version, fittingRunId: supplied.fittingRunId,
+        inventorySha256: supplied.inventorySha256, datasetId: supplied.datasetId }, context);
+      const accessAt = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+      const result = { ...trainingDatasetPage(supplied, context.manifest, records, accessAt),
+        verification: { ...batch!.metrics(), verifiedBytes } };
+      assertTrainingResponseBytes(result, supplied.limits.bytes);
+      await batchAccess!();
+      return result;
+    }, false, true);
+  };
+  const readTrainingLabels = async (request: TrainingLabelRequest, labelsAsOf: string) => {
+    const snapshotAt = batchClock!;
+    if (instant(labelsAsOf) > instant(snapshotAt)) refuse("training-future-cutoff");
+    const metadata = checkTrainingLabelMetadata((await client.query<TrainingLabelMetadata>(TRAINING_LABEL_SELECTION_SQL,
+      [JSON.stringify(request.keys), labelsAsOf, snapshotAt])).rows, request.keys.length);
+    const ids = [...new Set(metadata.flatMap((row) => row.id ? [row.id] : []))];
+    const records = await authorizeConsumerBatch(ids, request.selection.profileIds.map((profile) => ({ profile, use: "outcome-label" })));
+    const removed = (await client.query(`SELECT EXISTS(SELECT 1 FROM public.predictive_retention_events e
+      WHERE e.scope_descriptor->>'kind'='source' AND e.scope_descriptor->'profileIds' ?| $1::text[]
+      AND (e.scope_descriptor->>'capturedFrom' IS NULL OR (e.scope_descriptor->>'capturedFrom')::timestamptz <= $2::timestamptz)) AS removed`,
+    [request.selection.profileIds, labelsAsOf])).rows[0].removed as boolean;
+    // Reject wrong/future exact refs before opening their bytes. The same
+    // formatter runs after verification, so it never certifies a caller value.
+    trainingLabelRows(request, labelsAsOf, metadata, records, removed);
+    await verifyConsumerBatch(records);
+    const rows = trainingLabelRows(request, labelsAsOf, metadata, records, removed);
+    const body = { version: "qb-training-labels-v1" as const, selection: request.selection, labelsAsOf, snapshotAt, rows,
+      counts: { requested: rows.length, usable: rows.filter((row) => row.state === "usable").length,
+        missing: rows.filter((row) => row.state === "missing").length },
+      fittingReady: false as const, populationCoverage: "unqualified" as const };
+    const result = { ...body, responseSha256: digest(canonical(body)),
+      accessAt: (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string,
+      verification: { ...batch!.metrics(), verifiedBytes } };
+    assertTrainingResponseBytes(result, request.limits.bytes);
+    await batchAccess!();
+    return result;
+  };
+  const readCurrentLabels = async (input: TrainingLabelRequest) => {
+    const request = normalizeTrainingLabelRequest(input);
+    return transaction(() => readTrainingLabels(request, batchClock!), false, true);
+  };
+  const readLabelsAt = async (input: TrainingHistoricalLabelRequest) => {
+    const { labelsAsOf, ...request } = normalizeTrainingHistoricalLabelRequest(input);
+    return transaction(() => readTrainingLabels(request, labelsAsOf), false, true);
+  };
 
   const publish = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
     if (typeof id !== "string" || !id.trim() || id.length > 256) refuse("invalid-run-id"); instant(now);
@@ -1618,8 +1796,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
-  return { publish, publishSourceStats, publishCompressedSource, replaySourceStats, replayCompressedSourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, planCompressedSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
+  return { publish, publishSourceStats, publishCompressedSource, replaySourceStats, replayCompressedSourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, planCompressedSourceStatsNormalization, recordSourceNormalization, recordCompressedSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
     planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun, verifyDatasetShard,
-    prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin,
+    prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin, readDatasetPage, readCurrentLabels, readLabelsAt, readFittingRunReadiness,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

@@ -8,6 +8,12 @@ import { checkTrainingMetadataSelection } from "../../src/lib/predictive/trainin
 import { trainingRunPreview } from "../../src/lib/predictive/trainingPreview.ts";
 import { assertTrainingShardUnexpired, normalizeTrainingShardRequest } from "../../src/lib/predictive/trainingShards.ts";
 import { normalizeTrainingDatasetRequest } from "../../src/lib/predictive/trainingDatasets.ts";
+import type { TrainingDatasetManifest } from "../../src/lib/predictive/trainingDatasets.ts";
+import type { TrainingRunInventory } from "../../src/lib/predictive/trainingRuns.ts";
+import { normalizeTrainingRunReadRequest, trainingRunDatasetIds, trainingRunReadiness, trainingReadinessCounts,
+  type TrainingVerifiedDataset } from "../../src/lib/predictive/trainingReadiness.ts";
+import { assertTrainingResponseBytes, checkTrainingLabelMetadata, normalizeTrainingLabelRequest, normalizeTrainingPageRequest,
+  trainingDatasetPage, trainingLabelRows, trainingPageMembers, type TrainingLabelRequest } from "../../src/lib/predictive/trainingReads.ts";
 import { CUTOFF_A, gameId, passingYardsFixture, PLAYER, PROFILE, request, TARGET } from "./fixtures/passingYards.ts";
 
 const SNAPSHOT = "2026-10-20T00:00:00.000Z";
@@ -51,6 +57,157 @@ const label = (id = "label-A", recordedAt = "2026-10-15T00:00:00.000Z", value = 
     stat: "passing_yards", value, completionDecisionId: "completion-target", eligibleFinalAt: "2026-10-14T20:00:00.000Z",
     postWindowCaptureId: "post-window-capture", playerBridgeObservationId: "player-bridge",
     manifest: { version: "source-consumer-v1", use: "outcome-label", cutoff: recordedAt, profileIds: [PROFILE], sources: [], observations: [], decisions: [] }, inputDigest: "" }, recordedAt, predecessorId);
+
+describe("complete fitting-run evidence checks", () => {
+  const fixture = (slots = [slot({ datasetId: "A" }), slot({ playerId: "00-0000002", datasetId: "B" }),
+    slot({ playerId: "00-0000003", datasetId: "A" })]) => {
+    const request = normalizeFittingRunRequest(runRequest(slots), SNAPSHOT);
+    const records = [feature(), label()];
+    const rows = selectTrainingRows(request, SNAPSHOT, records).map((row) => {
+      const { record: _feature, ...featureState } = row.feature; void _feature;
+      const { record: _label, supersededNow, ...labelState } = row.label; void _label;
+      return { ...row, feature: featureState, label: { ...labelState, supersededAtSnapshot: supersededNow },
+        selection: { ordinal: row.ordinal, featureId: featureState.reference?.id ?? null, labelId: labelState.reference?.id ?? null,
+          labelSupersededAsOf: false, labelSupersededAtSnapshot: false },
+        kickoff: { observationId: row.slot.kickoffObservationId, dependencies: [], decisionId: null } };
+    });
+    const body: Omit<TrainingRunInventory, "inventorySha256"> = { version: "qb-training-run-inventory-v1", status: "inventory-sealed",
+      fittingReady: false, populationCoverage: "unqualified", snapshotAt: SNAPSHOT, request, requestSha256: digest(canonical(request)),
+      rows, counts: trainingReadinessCounts(rows), protectedUses: [], reuseDisclosure: { priorRuns: 0, targetEventsInRun: 1,
+        playerGameTargetsInRun: request.slots.length, reusedTargetEvents: 0, reusedPlayerGameTargets: 0, interpretation: "repeated-events-are-correlated" } };
+    const inventory: TrainingRunInventory = { ...body, inventorySha256: digest(canonical(body)) };
+    const read = { version: "qb-training-read-v1" as const, fittingRunId: request.fittingRunId, inventorySha256: inventory.inventorySha256 };
+    const verified = (datasetId: string): TrainingVerifiedDataset => {
+      const members = rows.filter((row) => row.slot.datasetId === datasetId), counts = trainingReadinessCounts(members);
+      return { manifest: { version: "qb-training-dataset-v1", status: "sealed", fittingReady: false, populationCoverage: "unqualified",
+        datasetId, fittingRunId: request.fittingRunId, inventorySha256: inventory.inventorySha256, inventorySnapshotAt: SNAPSHOT, recordedAt: SNAPSHOT,
+        requestSha256: "b".repeat(64), manifestSha256: "c".repeat(64), activePin: true, byteVerification: "required-on-every-access",
+        rows: members, counts, protectedUses: [], selection: request.selection, modelIdentity: request.modelIdentity, splitPolicy: request.splitPolicy,
+        population: request.population, fitCutoff: request.fitCutoff, evaluationPlanId: request.evaluationPlanId, foldId: request.foldId,
+        reuseDisclosure: inventory.reuseDisclosure, pinEligibility: null, consumerManifests: [], consumerIds: [],
+        closure: { references: [], blobs: [], protectedUses: [] } },
+      proof: { request: { ...read, datasetId }, rows: members, counts, verifiedAt: SNAPSHOT,
+        selectionSha256: digest(canonical({ inventorySha256: read.inventorySha256, datasetId, rows: members })) } };
+    };
+    return { inventory, read, verified };
+  };
+  it("enumerates every assigned shard and reconciles sparse slots without counting a subset as complete", () => {
+    const { inventory, read, verified } = fixture();
+    expect(trainingRunDatasetIds(inventory, read)).toEqual(["A", "B"]);
+    const report = trainingRunReadiness(inventory, read, new Map([["A", verified("A")], ["B", null]]), SNAPSHOT);
+    expect(report).toMatchObject({ status: "incomplete", datasetsComplete: false, durablyPinned: false,
+      requestedSlots: 3, verifiedSlots: 2, usablePairs: 1, usableEvidenceComplete: false, fittingReady: false });
+    expect(report.datasets.map((row) => row.ordinals)).toEqual([[0,2],[1]]);
+    expect(report.counts).toEqual([{ partition: "training", slots: 0, targetEvents: 0, usableFeatures: 0, missingFeatures: 0,
+      unavailableFeatures: 0, expiredFeatures: 0, usableLabels: 0, missingLabels: 0 },
+    { partition: "evaluation", slots: 3, targetEvents: 1, usableFeatures: 1, missingFeatures: 2,
+      unavailableFeatures: 0, expiredFeatures: 0, usableLabels: 1, missingLabels: 2 }]);
+    expect(() => trainingRunReadiness(inventory, read, new Map([["A", verified("A")]]), SNAPSHOT)).toThrow("training-run-dataset-inventory-mismatch");
+  });
+  it("separates complete verification pin durability and qualification and hashes access-independent results", () => {
+    const { inventory, read, verified } = fixture(), a = verified("A"), b = verified("B");
+    const checked = new Map([["A", a], ["B", b]]);
+    const first = trainingRunReadiness(inventory, read, checked, SNAPSHOT);
+    expect(first).toMatchObject({ status: "verified", datasetsComplete: true, durablyPinned: true, verifiedSlots: 3,
+      usableEvidenceComplete: false, fittingReady: false, blockers: ["features-not-usable", "labels-not-usable", "population-unqualified"] });
+    expect(trainingRunReadiness(inventory, read, checked, "2026-10-21T00:00:00.000Z").readinessSha256).toBe(first.readinessSha256);
+    b.manifest.activePin = false;
+    const released = trainingRunReadiness(inventory, read, checked, SNAPSHOT);
+    expect(released.datasetsComplete).toBe(true); expect(released.durablyPinned).toBe(false);
+    expect(released.blockers).toContain("datasets-not-pinned"); expect(released.readinessSha256).not.toBe(first.readinessSha256);
+    const usable = fixture([slot({ datasetId: "A" })]);
+    expect(trainingRunReadiness(usable.inventory, usable.read, new Map([["A", usable.verified("A")]]), SNAPSHOT))
+      .toMatchObject({ datasetsComplete: true, durablyPinned: true, usableEvidenceComplete: true, fittingReady: false,
+        blockers: ["population-unqualified"] });
+  });
+  it("refuses mismatched manifests proofs counts future checks and caller shard subsets", () => {
+    const { inventory, read, verified } = fixture(), a = verified("A"), b = verified("B");
+    const report = () => trainingRunReadiness(inventory, read, new Map([["A", a], ["B", b]]), SNAPSHOT);
+    a.manifest.rows = a.manifest.rows.slice(0,1);
+    expect(report).toThrow("training-run-dataset-inventory-mismatch");
+    a.manifest = verified("A").manifest; b.proof.selectionSha256 = "f".repeat(64);
+    expect(report).toThrow("training-run-dataset-inventory-mismatch");
+    b.proof = verified("B").proof; a.proof.counts[1].missingLabels = 999;
+    expect(report).toThrow("training-run-dataset-inventory-mismatch");
+    expect(() => normalizeTrainingRunReadRequest({ ...read, datasetIds: ["A"] } as never)).toThrow("schema-fields-refused");
+    expect(() => trainingRunDatasetIds(inventory, { ...read, inventorySha256: "f".repeat(64) })).toThrow("training-shard-inventory-mismatch");
+    expect(() => trainingRunReadiness(inventory, read, new Map([["A", verified("A")], ["B", verified("B")]]), "2026-10-19T00:00:00.000Z"))
+      .toThrow("training-shard-clock-refused");
+  });
+});
+
+describe("fixed numerical pages and label reads", () => {
+  const records = () => new Map([feature(), label()].map((row) => [row.id,row]));
+  const manifest = (): TrainingDatasetManifest => {
+    const req = runRequest([slot(), slot({ playerId: "00-0000002" }), slot({ playerId: "00-0000003" })]);
+    const rows = selectTrainingRows(req, SNAPSHOT, [...records().values()]).map((row,i) => {
+      const { record: _feature, ...featureState } = row.feature; void _feature;
+      const { record: _label, supersededNow, ...labelState } = row.label; void _label;
+      return { ...row, ordinal: i * 2, selection: { ordinal: i * 2, featureId: featureState.reference?.id ?? null,
+        labelId: labelState.reference?.id ?? null, labelSupersededAsOf: false, labelSupersededAtSnapshot: false },
+      feature: featureState, label: { ...labelState, supersededAtSnapshot: supersededNow },
+      kickoff: { observationId: row.slot.kickoffObservationId, dependencies: [], decisionId: null } };
+    });
+    return { version: "qb-training-dataset-v1", status: "sealed", fittingReady: false, populationCoverage: "unqualified",
+      datasetId: "evaluation-shard", fittingRunId: req.fittingRunId, inventorySha256: "a".repeat(64), inventorySnapshotAt: SNAPSHOT,
+      recordedAt: SNAPSHOT, requestSha256: "b".repeat(64), manifestSha256: "c".repeat(64), activePin: true,
+      byteVerification: "required-on-every-access", rows, counts: [], protectedUses: [], selection: req.selection,
+      modelIdentity: req.modelIdentity, splitPolicy: req.splitPolicy, population: req.population, fitCutoff: req.fitCutoff,
+      evaluationPlanId: req.evaluationPlanId, foldId: req.foldId, reuseDisclosure: { priorRuns: 0, targetEventsInRun: 1,
+        playerGameTargetsInRun: 3, reusedTargetEvents: 0, reusedPlayerGameTargets: 0, interpretation: "repeated-events-are-correlated" },
+      pinEligibility: null, consumerManifests: [], consumerIds: ["feature-A", "label-A"], closure: { references: [], blobs: [], protectedUses: [] } };
+  };
+  const pageRequest = () => ({ version: "qb-training-read-v1" as const, fittingRunId: "run-1", datasetId: "evaluation-shard",
+    inventorySha256: "a".repeat(64), manifestSha256: "c".repeat(64), cursor: null, limits: { rows: 2, bytes: 8_000_000 } });
+  const labelRequest = (): TrainingLabelRequest => ({ version: "qb-training-read-v1", selection: {
+    market: "player_pass_yds", stat: "passing_yards", labelVersion: "source-final-label-v1", profileIds: [PROFILE] },
+    keys: [{ playerId: PLAYER, gameId: TARGET, seasonType: "REG", labelRef: null }], limits: { rows: 64, bytes: 8_000_000 } });
+  it("pages sparse global ordinals without dropping missing slots and separates features from outcomes", () => {
+    const request = pageRequest(), saved = manifest();
+    const first = trainingDatasetPage(request, saved, records(), SNAPSHOT);
+    expect(first.rows.map((row) => row.ordinal)).toEqual([0,2]);
+    expect(first.rows[0].label.outcome?.value).toBe(200);
+    expect(first.rows[0].feature.bundle?.request.cutoff).toBe(CUTOFF_A);
+    expect(first.rows[0].feature).not.toHaveProperty("outcome");
+    expect(first.rows[1].feature.bundle).toBeNull(); expect(first.rows[1].label.outcome).toBeNull();
+    const second = trainingDatasetPage({ ...request, cursor: first.nextCursor }, saved, records(), SNAPSHOT);
+    expect(second.rows.map((row) => row.ordinal)).toEqual([4]); expect(second.nextCursor).toBeNull();
+    expect(trainingDatasetPage(request, saved, records(), "2026-10-21T00:00:00.000Z").pageSha256).toBe(first.pageSha256);
+  });
+  it("binds cursors to manifest and limits and refuses corruption and byte overflow", () => {
+    const saved = manifest(), request = pageRequest(), first = trainingPageMembers(request, saved);
+    expect(() => trainingPageMembers({ ...request, cursor: first.nextCursor, limits: { ...request.limits, rows: 1 } }, saved)).toThrow("training-page-cursor-refused");
+    expect(() => trainingPageMembers({ ...request, cursor: first.nextCursor, manifestSha256: "d".repeat(64) }, saved)).toThrow("training-page-manifest-mismatch");
+    const envelope = JSON.parse(Buffer.from(first.nextCursor!, "base64url").toString()); envelope.body.afterOrdinal = 0;
+    expect(() => trainingPageMembers({ ...request, cursor: Buffer.from(canonical(envelope)).toString("base64url") }, saved)).toThrow("training-page-cursor-refused");
+    expect(() => normalizeTrainingPageRequest({ ...request, limits: { ...request.limits, rows: 65 } })).toThrow("training-page-bounds-refused");
+    expect(() => assertTrainingResponseBytes({ value: "too-large" }, 1)).toThrow("training-page-byte-bounds-refused");
+  });
+  it("preserves numeric zero from a final label and keeps a missing outcome nonnumeric", () => {
+    const req = labelRequest(), zero = label("zero-label", "2026-10-15T00:00:00.000Z", 0);
+    const selected = [{ ordinal: 0, id: zero.id, supersededAsOf: false, supersededAtSnapshot: true }];
+    const row = trainingLabelRows(req, SNAPSHOT, selected, new Map([[zero.id,zero]]), false)[0];
+    expect(row.outcome?.value).toBe(0); expect(row.participation).toBe("market-compatible-observed");
+    const missing = trainingLabelRows(req, SNAPSHOT, [{ ...selected[0], id: null }], new Map(), false)[0];
+    expect(missing).toMatchObject({ reason: "label-not-recorded", outcome: null, participation: "not-established", finalization: "not-recorded" });
+  });
+  it("refuses future or wrong exact label references and exposes no incompatible head value", () => {
+    const req = labelRequest(), a = label();
+    const selected = [{ ordinal: 0, id: a.id, supersededAsOf: false, supersededAtSnapshot: false }];
+    expect(() => trainingLabelRows(req, "2026-10-14T00:00:00.000Z", selected, new Map([[a.id,a]]), false)).toThrow("training-label-reference-mismatch");
+    req.selection.profileIds = ["other-profile"];
+    expect(trainingLabelRows(req, SNAPSHOT, selected, new Map([[a.id,a]]), false)[0]).toMatchObject({ reason: "label-profile-or-version-mismatch", reference: null, outcome: null });
+    req.keys[0].labelRef = a.id;
+    expect(() => trainingLabelRows(req, SNAPSHOT, selected, new Map([[a.id,a]]), false)).toThrow("training-label-reference-mismatch");
+  });
+  it("refuses duplicate targets unknown versions and ambiguous metadata before payload reads", () => {
+    const req = labelRequest();
+    expect(() => normalizeTrainingLabelRequest({ ...req, keys: [...req.keys,...req.keys] })).toThrow("training-duplicate-target");
+    expect(() => normalizeTrainingLabelRequest({ ...req, selection: { ...req.selection, labelVersion: "future-v2" } } as never)).toThrow("training-version-refused");
+    expect(() => checkTrainingLabelMetadata([{ ordinal: 0, id: null, supersededAsOf: false, supersededAtSnapshot: false },
+      { ordinal: 0, id: "rival", supersededAsOf: false, supersededAtSnapshot: false }], 1)).toThrow("training-label-lineage-ambiguous");
+  });
+});
 
 describe("fixed shard request and expiry boundary", () => {
   it("dataset preparation accepts only owning selection and pin identity, never caller-supplied verification or rows", () => {

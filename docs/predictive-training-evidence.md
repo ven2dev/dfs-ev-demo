@@ -1,5 +1,129 @@
 # #118 guarded evidence checkpoint
 
+## Complete fitting-run evidence checks
+
+`readFittingRunReadiness({ version: "qb-training-read-v1", fittingRunId,
+inventorySha256 })` derives every dataset assignment from the sealed inventory.
+The caller cannot request a successful subset. One guard covers SQL membership,
+all current protected uses, every sealed shard's byte reconstruction and final
+delivery. All manifests are authorized before the first protected file. Exact
+shared files are verified once within the transaction, then reverified on a later
+call; the 20 MB unique-wire and 8 MB response ceilings apply to the complete read.
+No numerical body is returned and no transaction remains open between requests.
+
+The report lists every assigned dataset and its sparse global ordinals, manifest
+hash, current pin state and independently reconciled counts. Unsealed datasets
+remain `missing` / `dataset-not-sealed`. `datasetsComplete`, `durablyPinned` and
+`usableEvidenceComplete` answer separate questions: all assignments verified,
+all verified manifests actively pinned, and every requested slot having both a
+usable feature and label. Missing/unavailable/expired components remain counted.
+Even a fully usable fixture run keeps `fittingReady: false` and population
+unqualified; #106/#107 still supply real/population qualification. Later matching
+consumers cannot alter the inventory or this report's stable digest. Pin releases
+change durability, while an access clock or verification metric does not change
+the digest.
+
+Damage, expired eligible evidence, revoked rights or removed inventories refuse
+the entire read. There is no partial successful report for an inaccessible shard.
+Every file and delivery recheck the complete run's current uses and eligibility,
+including previously checked and unsealed assignments; scheduled expiry is not
+stopped by DML locks. The report is ephemeral, not a durable verification grant or
+invalidation event. Audited invalidation still needs a coordinated forward
+migration; frozen 0001–0016 and all shared artifact interfaces remain unchanged.
+
+Three pure cases use explicit expected counts and ordinals to check complete
+assignment, missing states, durability versus usability, access-independent
+digests and malformed/mismatched manifests/proofs. Three mandatory PostgreSQL
+cases exercise the replay-only login, zero/partial/full shard preparation,
+shared-file deduplication, later publication, pin release, wrong addresses,
+damaged later shards, revocation/deletion and direct SQL writer exclusion.
+Scheduled-rights expiry is tested against its recorded database boundary before
+further bytes or delivery. The first focused run caught a test timestamp with
+microsecond precision; the fixture now uses the contract's millisecond precision.
+No production timestamp rule was changed.
+
+Final complete-run validation passes **756 Node tests**, **75 Node DB checks +
+196 PostgreSQL tests** (171 mandatory predictive cases), typecheck, affected-file
+ESLint and all **17 catalog contracts**. The final gate includes all three new
+database cases. The 36 frozen/generated prefix files match `986bfed` byte for
+byte; documentation links and whitespace pass. Logs are
+`/private/tmp/dfs118-run-readiness-final-node.log`,
+`/private/tmp/dfs118-run-readiness-final-db.log`,
+`/private/tmp/dfs118-run-readiness-final-types.log` and
+`/private/tmp/dfs118-run-readiness-final-lint.log`. The pure fixture's reuse count
+was aligned to its optional one-slot population after the full run; all 53 focused
+training cases pass again. Only disposable databases were used; no persistent or
+hosted database was migrated. #118 still needs audited invalidation,
+deadlines/cancellation, representative capacity and independent review.
+
+## Numerical pages and label readers
+
+`readDatasetPage` accepts the owning run/inventory/dataset, sealed manifest hash,
+cursor and `{ rows, bytes }` limits. It validates the address before protected
+files, then reconstructs the entire fixed shard and conservative closure under
+the existing SQL guard. Returned rows preserve sparse global ordinals and all
+missing/unavailable slots. Usable feature bundles and selected label outcomes
+are separate members; unusable components have no numeric payload. The page
+digest fixes rows, cursor, counts and manifest identity, excluding the access
+clock and verification metrics. Later matching records cannot replace the
+inventory's selected IDs or change its supersession-at-snapshot metadata.
+
+The canonical base64url cursor binds dataset, manifest, last global ordinal,
+version and limits, with a corruption checksum. It is an address, not an access
+capability or cryptographic authorization: a permitted caller can seek to any
+valid ordinal of the same manifest, while every request rechecks current access
+and bytes. No transaction or process-wide verification cache survives a page.
+Each response contains at most 64 rows and is measured against its complete
+canonical-byte budget (maximum 8 MB, including metadata). Overflow refuses the
+whole response; it never truncates the requested population or advances a
+cursor. Existing 20 MB unique-wire verification limits still apply separately.
+
+`readCurrentLabels` takes one guarded database-clock cutoff for its entire
+bounded batch. `readLabelsAt` uses an explicit non-future millisecond cutoff.
+Both accept exact market/stat/version/profile scope and canonical player/game
+keys, with optional exact label references. Global lineage heads are selected
+before profile/version matching, so a changed-profile successor cannot revive
+an old outcome. Exact wrong/future references refuse. Numeric zero with verified
+positive participation remains zero; missing/unqualified final labels retain a
+null outcome, `not-established` participation and `not-recorded` finalization.
+These readers do not infer DNP, absence, void or sportsbook settlement from a
+missing final label. Current/head supersession and historical supersession are
+separate; an earlier cutoff never includes a later outcome value.
+
+Requested scope and each selected consumer's use rights precede files, including
+missing-label batches. Damage, revocation or deleted dataset closure withholds
+the whole page/batch. Missing exact label references disclose
+`label-reference-missing-or-removed`; a relevant source-retention event makes
+unrecorded heads conservatively `retained-evidence-removed`. Those labels have
+no fallback outcome. Reads do not append a durable invalidation event yet; that
+belongs to the next audited-invalidation checkpoint.
+
+Eight mandatory PostgreSQL cases cover fixed sparse page membership, later
+publication, response/address bounds, corruption on retry, current rights and
+deletion, inclusive historical heads, exact/future references, observed numeric
+zero, provider-scope changes, frozen historical dataset labels and concurrent
+direct SQL revocation/deletion. Five pure cases cover independent pagination
+expectations, cursor binding, response bytes, zero/missing values and malformed
+requests/ambiguous metadata. The first focused run caught synchronous limit
+errors in the new asynchronous readers; all three entry points now consistently
+return rejected promises on invalid input.
+
+This increment needs no SQL migration. Frozen 0001–0016, binary artifact reads,
+gzip inspection and cleanup interfaces remain unchanged. Full-shard work is
+repeated per page; representative capacity/deadlines, audited invalidation and
+independent review remain outstanding. Numeric access
+does not make `fittingReady: false` or unqualified population disappear.
+
+Final reader validation passes **753 Node tests**, **75 Node DB checks +
+193 PostgreSQL tests** (168 mandatory predictive cases), typecheck, affected-file
+ESLint and all **17 catalog contracts**. The 36 frozen/generated prefix files
+match `2f57d12` byte for byte. Documentation links and whitespace checks pass.
+Logs are `/private/tmp/dfs118-readers-final-node.log`,
+`/private/tmp/dfs118-readers-final-db.log`,
+`/private/tmp/dfs118-readers-types.log` and
+`/private/tmp/dfs118-readers-final-lint.log`. Only disposable databases were used;
+no persistent or hosted database was migrated.
+
 ## Dataset/pin increment
 
 Migration 0016 adds immutable assigned manifests, independent append-only pins,

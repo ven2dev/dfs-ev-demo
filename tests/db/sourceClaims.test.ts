@@ -12,7 +12,7 @@ import { ensureHarnessSession, ensurePredictiveRoles } from "../../scripts/predi
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { createLocalPredictiveStore, retentionIdsDigest } from "../../src/lib/predictive/persistence.ts";
 import { inspectCompressedSource } from "../../src/lib/predictive/compressedSource.ts";
-import { prepareCompressedPublication } from "../../src/lib/predictive/compressedPublication.ts";
+import { prepareCompressedPublication, COMPRESSED_SOURCE_PROFILE_VERSION, compressedSourceAsset } from "../../src/lib/predictive/compressedPublication.ts";
 import { compressedPublicationFixture } from "../predictive/fixtures/compressedPublication.ts";
 import { compressedNormalizationFixture } from "../predictive/fixtures/compressedNormalization.ts";
 import type { Dataset, RecordedRetentionEvent } from "../../src/lib/predictive/types.ts";
@@ -113,6 +113,109 @@ const compressedCase = (id: string, season: 2025 | 2026 = 2025, feed: "player" |
   fixture.input.rightsDecisions=fixture.input.rightsDecisions.map(row=>({...row,id:"rights:"+profileId,profileId}));
   return fixture;
 };
+
+it("compressed bindings persist sealed multi-season rows through execute-only recording and replay exact facts",async()=>{
+  await withProof(async({client,store,artifacts,target})=>{
+    const fixture=await compressedNormalizationFixture();await store.publishCompressedSource(fixture.source,fixture.input);
+    await store.publish("compressed-binding-context",fixture.context,"2026-10-11T00:00:00.000Z");
+    const {cutoff:_cutoff,...request}=fixture.request;void _cutoff;
+    await withLogin(client,target,["predictive_recorder","predictive_replay","predictive_harness"],async(writer,writerTarget)=>{
+      const recording=await createLocalPredictiveStore(writer,writerTarget,artifacts);
+      const first=await recording.recordCompressedSourceNormalization("compressed-bound-A",request,null);
+      expect(first.event.revision?.data).toMatchObject({rawGameId:"2025_06_CAR_PHI",season:2025,playerId:"00-0000001",passingYards:-2,attempts:10,carries:null});
+      expect(first.event.plan.binding.version).toBe(COMPRESSED_SOURCE_NORMALIZATION_VERSION);
+      expect((await recording.recordCompressedSourceNormalization("compressed-bound-A",request,null)).reused).toBe(true);
+      await expect(writer.query("SELECT * FROM predictive_compressed_row_authorizations")).rejects.toMatchObject({code:"42501"});
+      await expect(writer.query("INSERT INTO predictive_source_bindings SELECT * FROM predictive_source_bindings WHERE id='compressed-bound-A'")).rejects.toMatchObject({code:"42501"});
+      const replay=await recording.replaySourceNormalization({...request,cutoff:first.event.recordedAt});
+      expect(replay.head?.id).toBe("compressed-bound-A");expect(replay.head?.revision?.data.passingYards).toBe(-2);
+      const facts=await recording.replaySourceStatsFacts({profileIds:[request.profileId],entityKeys:["player-game-stats:"+NORMALIZATION_GAME+":00-0000001"],cutoff:first.event.recordedAt});
+      expect(facts.heads).toHaveLength(1);expect(facts.heads[0].head.id).toBe(first.event.id);
+    });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_compressed_row_authorizations")).rows[0].n).toBe(0);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_stats_rows")).rows[0].n).toBe(1);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_observations WHERE kind IN ('player-game-stats','team-game-stats')")).rows[0].n).toBe(0);
+  });
+});
+
+it("compressed bindings materialize all 8193 sealed rows while binding only requested player claims",async()=>{
+  await withProof(async({client,store})=>{
+    const fixture=await compressedNormalizationFixture();
+    const row={...sourceSamples().player[0],season:"2025",game_id:fixture.request.rawGameId,passing_yards:"-2"};
+    const wire=gzipSync(sourceCsv("player",[row,...Array.from({length:8192},()=>({...row,player_id:"00-0000002"}))]));
+    fixture.input.artifact.sha256=createHash("sha256").update(wire).digest("hex");fixture.input.artifact.wireBytes=wire.length;
+    await store.publishCompressedSource(wire,fixture.input);await store.publish("large-compressed-context",fixture.context,"2026-10-11T00:00:00.000Z");
+    const {cutoff:_cutoff,...request}=fixture.request;void _cutoff;
+    const recorded=await store.recordCompressedSourceNormalization("large-compressed-binding",request,null);
+    expect(recorded.event.revision?.data.passingYards).toBe(-2);expect(recorded.event.plan.binding.sourceRows).toHaveLength(1);
+    expect((await client.query("SELECT count(*)::integer AS n,max(row_ordinal)::integer AS ordinal FROM predictive_source_stats_rows")).rows[0]).toEqual({n:8193,ordinal:8193});
+    expect((await store.replaySourceNormalization({...request,cutoff:recorded.event.recordedAt})).head?.id).toBe(recorded.event.id);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_compressed_row_authorizations")).rows[0].n).toBe(0);
+  });
+},60_000);
+
+it("compressed binding corrections preserve earlier cutoffs and independently reject rehashed values and direct row insertion",async()=>{
+  await withProof(async({client,store})=>{
+    const fixture=await compressedNormalizationFixture();await store.publishCompressedSource(fixture.source,fixture.input);
+    await store.publish("compressed-correction-context",fixture.context,"2026-10-11T00:00:00.000Z");
+    const {cutoff:_cutoff,...request}=fixture.request;void _cutoff;
+    const preview=await store.planCompressedSourceStatsNormalization({...request,cutoff:await captureTime(client,fixture.input.captureId)});
+    await expect(client.query(`INSERT INTO predictive_source_stats_rows VALUES($1,$2,1,$3,$4,$5,NULL)`,
+      [preview.binding.sourceRows[0]?.id??"source-row:"+digest("fake"),fixture.input.captureId,digest("fake"),digest("fake"),fixture.replay.evidence.rows[0].projection])).rejects.toThrow("compressed-row-materializer-required");
+    const a=await store.recordCompressedSourceNormalization("compressed-correction-A",request,null);
+    const forged=structuredClone(a.event.plan);forged.candidate!.data.passingYards=999;
+    forged.dataDigest=digest(canonical(forged.candidate));forged.planDigest=digest(canonical({reason:forged.reason,candidate:forged.candidate,binding:forged.binding}));
+    await expect(client.query("SELECT predictive_record_compressed_source_binding('compressed-forged','compressed-correction-A',$1)",[JSON.stringify(forged)])).rejects.toThrow("predictive-source-plan-witness-invalid");
+    const input=structuredClone(fixture.input);input.id="compressed-correction-B";input.captureId=input.id+":capture";input.artifact.id=input.id+":artifact";
+    input.capturedAt=(await client.query("SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') AS time")).rows[0].time;
+    const bytes=gzipSync(sourceCsv("player",[{...sourceSamples().player[0],season:"2025",game_id:request.rawGameId,passing_yards:"99"}]));
+    input.artifact.sha256=createHash("sha256").update(bytes).digest("hex");input.artifact.wireBytes=bytes.length;
+    await store.publishCompressedSource(bytes,input);
+    const b=await store.recordCompressedSourceNormalization("compressed-correction-B",request,a.event.id);
+    expect(b.event.revision?.predecessorId).toBe(a.event.revision?.id);expect(b.event.revision?.data.passingYards).toBe(99);
+    expect((await store.replaySourceNormalization({...request,cutoff:a.event.recordedAt})).head?.revision?.data.passingYards).toBe(-2);
+    expect((await store.replaySourceNormalization({...request,cutoff:b.event.recordedAt})).head?.revision?.data.passingYards).toBe(99);
+  });
+});
+
+it("compressed binding commit rechecks rights after deferred materialization and rolls back with clean recovery",async()=>{
+  await withProof(async({client,store})=>{
+    const fixture=await compressedNormalizationFixture();await store.publishCompressedSource(fixture.source,fixture.input);
+    await store.publish("compressed-commit-context",fixture.context,"2026-10-11T00:00:00.000Z");
+    const definition=(await client.query("SELECT pg_get_functiondef('predictive_compressed_row_authorization_finish()'::regprocedure) AS ddl")).rows[0].ddl as string;
+    const injected=definition.replace("BEGIN",`BEGIN
+      INSERT INTO public.predictive_rights_decisions VALUES('compressed-commit-expiring','${fixture.input.profile.id}','${fixture.input.rightsDecisions[0].id}',
+        '{}',date_trunc('milliseconds',clock_timestamp())+interval '0.1 seconds',NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','deferred fixture expiry');
+      PERFORM pg_sleep(0.2);`);
+    const {cutoff:_cutoff,...request}=fixture.request;void _cutoff;
+    await client.query(injected);
+    try{await expect(store.recordCompressedSourceNormalization("compressed-commit-refused",request,null)).rejects.toThrow("compressed-binding-rights-expired");}
+    finally{await client.query(definition);}
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_bindings")).rows[0].n).toBe(0);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_stats_rows")).rows[0].n).toBe(0);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_compressed_row_authorizations")).rows[0].n).toBe(0);
+    expect((await store.recordCompressedSourceNormalization("compressed-commit-restored",request,null)).event.revision?.data.passingYards).toBe(-2);
+  });
+});
+
+it("compressed binding source deletion removes complete raw lineages materialized rows and seals with audit parity",async()=>{
+  let expected:unknown;
+  for(let pass=0;pass<2;pass++)await withProof(async({client,store,artifacts,target})=>{
+    const fixture=await compressedNormalizationFixture();await store.publishCompressedSource(fixture.source,fixture.input);
+    await store.publish("compressed-delete-context",fixture.context,"2026-10-11T00:00:00.000Z");
+    const {cutoff:_cutoff,...request}=fixture.request;void _cutoff;
+    await store.recordCompressedSourceNormalization("compressed-delete-binding",request,null);
+    await withLogin(client,target,["predictive_retention_owner"],async(owner,ownerTarget)=>{
+      const retention=await createLocalPredictiveStore(owner,ownerTarget,artifacts);
+      const removed=await retention.retain({id:"compressed-binding-delete",reason:"provider-request",authority:"synthetic proof",decidedAt:fixture.input.capturedAt,
+        scope:{kind:"source",profileIds:[request.profileId],capturedFrom:null,capturedBefore:null},auditLevel:"full"});
+      if(pass===0)expected=removed;else expect(removed).toEqual(expected);
+    });
+    for(const table of ["predictive_source_bindings","predictive_source_stats_revisions","predictive_source_stats_rows","predictive_compressed_publications"])
+      expect((await client.query(`SELECT count(*)::integer AS n FROM ${table}`)).rows[0].n).toBe(0);
+    await expect(artifacts.database.readBinary(fixture.input.artifact.sha256+".csv.gz",fixture.input.artifact.sha256,fixture.source.length)).rejects.toMatchObject({code:"ENOENT"});
+  });
+});
 
 it("compressed normalization preview binds qualified seals and native identities through restricted replay without recording",async()=>{
   await withProof(async({client,store,artifacts,target})=>{
@@ -269,7 +372,7 @@ it("qualified gzip publication preserves refusal ordinals and admits larger clai
     expect(result.claims[0].rows).toHaveLength(8193);
     expect(result.claims[0].rows.slice(0,3).map(row=>[row.rowOrdinal,row.failureCode])).toEqual([[1,null],[2,"source-stats-scope-refused"],[3,"source-stats-player-refused"]]);
     expect(result.claims[0].rows[8192].rowOrdinal).toBe(8193);
-    await probe(client,async()=>{await expect(client.query("INSERT INTO predictive_source_stats_rows VALUES($1,$2,8193,$3,$3,NULL,'source-stats-scope-refused')",["source-row:"+"1".repeat(64),fixture.input.captureId,"0".repeat(64)])).rejects.toMatchObject({code:"23514"});});
+    await probe(client,async()=>{await expect(client.query("INSERT INTO predictive_source_stats_rows VALUES($1,$2,8193,$3,$3,NULL,'source-stats-scope-refused')",["source-row:"+"1".repeat(64),fixture.input.captureId,"0".repeat(64)])).rejects.toThrow("compressed-row-materializer-required");});
     const legacy=sourceClaimFixture("legacy-many","player",sourceCsv("player",Array.from({length:8193},()=>sourceSamples().player[0])));
     await expect(store.publishSourceStats(legacy)).rejects.toThrow("source-row-budget-exceeded");
   });
@@ -420,10 +523,10 @@ it("qualified gzip migration preserves frozen v16 evidence ledger and repeated u
     const captures=(await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows;
     const files=await checkMigrationArtifacts(),contracts=await loadCatalogContracts(files);
     const options={...target,files,verify:createCatalogVerifier(contracts)};
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:17,executed:[17]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 18,executed:[17,18]});
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,16)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:17,executed:[]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 18,executed:[]});
   },16);
 });
 
@@ -656,10 +759,10 @@ it("compressed inspection migration preserves fixed v14 evidence and ledger on u
     const captures = (await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows;
     const files=await checkMigrationArtifacts(), contracts=await loadCatalogContracts(files);
     const options={...target,files,verify:createCatalogVerifier(contracts)};
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:17,executed:[15,16, 17]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 18,executed:[15,16,17,18]});
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,14)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:17,executed:[]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 18,executed:[]});
   },14);
 });
 
@@ -676,10 +779,9 @@ it("gzip staging stamps database receipt time and refuses published captures and
         .rejects.toThrow("predictive-compressed-publication-not-qualified");
     });
     await probe(client, async () => {
-      await client.query(`INSERT INTO predictive_source_stats_rows SELECT (jsonb_populate_record(NULL::predictive_source_stats_rows,
+      await expect(client.query(`INSERT INTO predictive_source_stats_rows SELECT (jsonb_populate_record(NULL::predictive_source_stats_rows,
         to_jsonb(r)||jsonb_build_object('id',$1::text,'capture_id','gzip:capture'))).* FROM predictive_source_stats_rows r LIMIT 1`,
-      ["source-row:" + digest(canonical(["gzip:capture", 1]))]);
-      await expect(client.query("SET CONSTRAINTS ALL IMMEDIATE")).rejects.toThrow("predictive-source-claim-envelope-invalid");
+      ["source-row:" + digest(canonical(["gzip:capture", 1]))])).rejects.toThrow("compressed-row-materializer-required");
     });
     expect(await store.replaySourceStats(replayRequest(at))).toMatchObject({ status: "observed-source-claim" });
     expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_stats_rows WHERE capture_id='gzip:capture'")).rows[0].n).toBe(0);
@@ -745,10 +847,10 @@ it("gzip staging migration upgrades fixed v12 without rewriting evidence or prio
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(), contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [13, 14, 15, 16, 17], schemaVersion: 17 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [13, 14, 15, 16, 17, 18], schemaVersion: 18 });
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 12)).toEqual(ledger);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 17 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 18 });
   }, 12);
 });
 
@@ -858,10 +960,10 @@ it("ordinary ingestion clock migration upgrades v10 without rewriting captures a
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11, 12, 13, 14, 15, 16, 17],schemaVersion: 17 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11, 12, 13, 14, 15, 16, 17, 18],schemaVersion: 18 });
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,10)).toEqual(ledger);
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 17 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 18 });
   },10);
 });
 
@@ -1020,12 +1122,12 @@ it("CSV source migration upgrades released v4 preserving creator corpus evidence
     expect(ledger[3].filename).toBe("0004_creator_corpus_projection.sql");
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], schemaVersion: 17 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], schemaVersion: 18 });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(upgraded.slice(0, 4)).toEqual(ledger);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
     await store.publishSourceStats(sourceClaimFixture("after-corpus-upgrade"));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 17 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 18 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
   }, 4);
@@ -1498,7 +1600,7 @@ it("CSV binding migration upgrades v5 without changing released history and reru
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(17);
+    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(18);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
@@ -1754,7 +1856,7 @@ it("CSV unavailable retention re-applies pre-v7 legacy events with identical cou
     // Restore the same retained evidence and IDs into a fresh post-v7 database.
     // New timestamps are allowed; the deletion set and audit contract are not.
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(17);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(18);
       expect(await procedure(client)).not.toBe(oldProcedure);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
@@ -2230,13 +2332,13 @@ it("CSV SQL witness migration upgrades v7 preserving bindings and prior migratio
     const revisions = (await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17], schemaVersion: 17 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], schemaVersion: 18 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 7)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect((await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows).toEqual(revisions);
     const scoped = factRequest(request.profileId, a.event.recordedAt);
     expect(await sqlWitness(client, scoped)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(scoped)));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 17 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 18 });
     // The released-v4 upgrade test above seeds all five corpus tables and now
     // runs through 0008; this focused v7 test seeds source bindings as well.
   }, 7);
@@ -2645,11 +2747,11 @@ it("CSV source decision migration upgrades v8 preserving recorded bindings and w
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11, 12, 13, 14, 15, 16, 17], schemaVersion: 17 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18], schemaVersion: 18 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 8)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect(await sqlWitness(client, req)).toEqual(witness);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 17 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 18 });
     const decision = await store.recordSourceDecision("after-decision-upgrade", decisionScope(request.profileId), null);
     expect(decision.record.plan.witness.heads).toEqual(witness.heads);
   }, 8);
@@ -2686,7 +2788,7 @@ it("CSV source reconciliation evaluates every bound provider and deterministic a
   });
 });
 
-const seedConsumers = async (store: Store, captureAt = "2026-10-11T12:00:00.000Z", pregameSchedule = false) => {
+const seedConsumers = async (store: Store, captureAt = "2026-10-11T12:00:00.000Z", pregameSchedule = false, compressed = false) => {
   const fixture = await normalizationFixture();
   fixture.input.capturedAt = captureAt;
   fixture.input.rightsDecisions[0].allowedUses = ["internal-research","model-input","outcome-label"];
@@ -2705,10 +2807,17 @@ const seedConsumers = async (store: Store, captureAt = "2026-10-11T12:00:00.000Z
   const native = createReplay(fixture.context,"2026-10-12T12:00:00.000Z","2026-10-12T12:00:00.000Z","internal-research");
   fixture.context.decisions=[recordCompletion("source-prior-completed",prior.gameId,native.completion(prior.gameId).inputs,
     "2026-10-08T12:00:00.000Z","synthetic-proof")];
-  await store.publishSourceStats(fixture.input);
+  if(compressed) {
+    const {bytes,...artifact}=fixture.input.artifact;const wire=gzipSync(bytes),asset=compressedSourceAsset("player",2026);
+    fixture.input.profile={...fixture.input.profile,parserVersion:COMPRESSED_SOURCE_PROFILE_VERSION,assetPattern:asset.name};
+    fixture.context.profiles[0]=fixture.input.profile;
+    await store.publishCompressedSource(wire,{...fixture.input,profile:fixture.input.profile,
+      artifact:{...artifact,origin:asset.url,sha256:createHash("sha256").update(wire).digest("hex"),wireBytes:wire.length}});
+  } else await store.publishSourceStats(fixture.input);
   expect(await store.publish("consumer-context",fixture.context,"2026-10-12T12:00:00.000Z")).toMatchObject({ status: "published" });
   const raw = { profileId: fixture.input.profile.id,rawGameId: sourceGameId,rawTeam: "PHI",rawPlayerId: "00-0000001" };
-  const binding = await store.recordSourceNormalization("consumer-binding",raw,null);
+  const binding = compressed ? await store.recordCompressedSourceNormalization("consumer-binding",raw,null)
+    : await store.recordSourceNormalization("consumer-binding",raw,null);
   const rec = await store.recordSourceDecision("consumer-reconciliation",decisionScope(raw.profileId),null);
   const part = await store.recordSourceDecision("consumer-participation",decisionScope(raw.profileId,"participation"),null);
   const request = { playerId: "00-0000001",gameId: target.gameId,cutoff: part.record.recordedAt,computedAt: part.record.recordedAt,
@@ -2742,6 +2851,403 @@ const withDatasetProof = withProof;
 const datasetRequest = (inventory: Awaited<ReturnType<Store["prepareFittingRun"]>>, pinId = "dataset-pin-A") => ({
   version: "qb-training-read-v1" as const, fittingRunId: inventory.request.fittingRunId,
   inventorySha256: inventory.inventorySha256, datasetId: inventory.rows[0].slot.datasetId, pinId,
+});
+const pageRequest = (manifest: Awaited<ReturnType<Store["prepareDataset"]>>, rows = 2) => ({
+  version: "qb-training-read-v1" as const, fittingRunId: manifest.fittingRunId, inventorySha256: manifest.inventorySha256,
+  datasetId: manifest.datasetId, manifestSha256: manifest.manifestSha256, cursor: null, limits: { rows, bytes: 8_000_000 },
+});
+const labelReadRequest = (seed: Awaited<ReturnType<typeof seedConsumers>>) => ({
+  version: "qb-training-read-v1" as const,
+  selection: { market: "player_pass_yds" as const, stat: "passing_yards" as const, labelVersion: "source-final-label-v1" as const, profileIds: seed.profiles },
+  keys: [{ playerId: seed.request.playerId, gameId: seed.labelRequest.gameId, seasonType: "REG" as const, labelRef: null as string | null }],
+  limits: { rows: 64, bytes: 8_000_000 },
+});
+
+const readinessRequest = (inventory: Awaited<ReturnType<Store["prepareFittingRun"]>>) => ({
+  version: "qb-training-read-v1" as const, fittingRunId: inventory.request.fittingRunId, inventorySha256: inventory.inventorySha256,
+});
+
+it("compressed consumers verify numerical features labels dataset pins and mandatory source deletion in the shared graph",async()=>{
+  await withProof(async({client,store,artifacts,target})=>{
+    const seed=await seedConsumers(store,undefined,false,true);
+    const feature=await store.recordSourcePassingYards("compressed-feature",seed.request,seed.profiles);
+    expect(feature.body.manifest.sources[0]).toMatchObject({selected:{bindingId:seed.binding.event.id,revisionId:seed.binding.event.revision!.id}});
+    expect(await store.replaySourceConsumer(feature.id)).toEqual(feature);
+    const label=await store.recordSourceFinalLabel("compressed-label",seed.labelRequest,null);
+    expect(label.body).toMatchObject({kind:"label",value:80,postWindowCaptureId:seed.fixture.input.captureId});
+    expect(await store.replaySourceConsumer(label.id)).toEqual(label);
+    const input=await previewRequest(client,seed),inventory=await store.prepareFittingRun(input);
+    const dataset=await store.prepareDataset(datasetRequest(inventory,"compressed-pin"));
+    expect(dataset.activePin).toBe(true);
+    expect(dataset.closure.references).toContainEqual({kind:"compressed-publication",id:seed.fixture.input.captureId});
+    expect(dataset.closure.references).toContainEqual({kind:"compressed-inspection",id:seed.fixture.input.captureId});
+    const wire=dataset.closure.blobs.find(blob=>blob.mediaType==="application/gzip")!;expect(wire).toBeDefined();
+    let binaryReads=0;
+    await withLogin(client,target,["predictive_replay"],async(reader,readerTarget)=>{
+      const tracked={...artifacts,database:{...artifacts.database,readBinary:async(...args:Parameters<typeof artifacts.database.readBinary>)=>{binaryReads++;return artifacts.database.readBinary(...args);}}};
+      const replay=await createLocalPredictiveStore(reader,readerTarget,tracked);
+      expect((await replay.replaySourceConsumers([feature.id,feature.id,label.id])).records).toEqual([feature,feature,label]);expect(binaryReads).toBe(1);
+      binaryReads=0;
+      const page=await replay.readDatasetPage(pageRequest(dataset));expect(page.rows[0].feature.reference?.id).toBe(feature.id);expect(binaryReads).toBe(1);
+      binaryReads=0;const ready=await replay.readFittingRunReadiness(readinessRequest(inventory));expect(ready.datasetsComplete).toBe(true);expect(ready.fittingReady).toBe(false);expect(binaryReads).toBe(1);
+    });
+    await withLogin(client,target,["predictive_retention_owner"],async(owner,ownerTarget)=>{
+      const retention=await createLocalPredictiveStore(owner,ownerTarget,artifacts);
+      await retention.retain({id:"compressed-dataset-delete",reason:"provider-request",authority:"synthetic fixture",decidedAt:seed.fixture.input.capturedAt,
+        scope:{kind:"source",profileIds:seed.profiles,capturedFrom:null,capturedBefore:null},auditLevel:"full"});
+    });
+    for(const table of ["predictive_source_bindings","predictive_source_stats_revisions","predictive_source_consumers","predictive_training_datasets","predictive_training_dataset_pins","predictive_training_runs","predictive_compressed_publications"])
+      expect((await client.query(`SELECT count(*)::integer AS n FROM ${table}`)).rows[0].n).toBe(0);
+    await expect(artifacts.database.readBinary(wire.storageRef,wire.sha256,wire.byteSize)).rejects.toMatchObject({code:"ENOENT"});
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_dataset_retention_audits")).rows[0].n).toBe(1);
+  });
+});
+
+it("compressed binding migration preserves the sealed v17 prefix and upgrades without changing prior rows or ledger",async()=>{
+  await withProof(async({client,target,store})=>{
+    const fixture=await compressedNormalizationFixture();await store.publishCompressedSource(fixture.source,fixture.input);
+    await store.publish("compressed-upgrade-context",fixture.context,"2026-10-11T00:00:00.000Z");
+    const captures=(await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows;
+    const seals=(await client.query("SELECT * FROM predictive_compressed_publications ORDER BY capture_id")).rows;
+    const ledger=(await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    const files=await checkMigrationArtifacts(),contracts=await loadCatalogContracts(files),options={...target,files,verify:createCatalogVerifier(contracts)};
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:18,executed:[18]});
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,17)).toEqual(ledger);
+    expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
+    expect((await client.query("SELECT * FROM predictive_compressed_publications ORDER BY capture_id")).rows).toEqual(seals);
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:18,executed:[]});
+    const {cutoff:_cutoff,...request}=fixture.request;void _cutoff;
+    expect((await store.recordCompressedSourceNormalization("compressed-upgraded",request,null)).event.revision?.data.passingYards).toBe(-2);
+  },17);
+});
+
+it("QB complete run checks enumerate every assigned dataset and reconcile sparse missing slots through replay roles", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    const seed = await seedConsumers(store);
+    const a = await store.recordSourcePassingYards("run-check-feature-A", seed.request, seed.profiles);
+    await store.recordSourcePassingYards("run-check-unavailable", { ...seed.request, playerId: "00-0000003" }, seed.profiles);
+    const input = await previewRequest(client, seed);
+    input.slots.push({ ...input.slots[0], playerId: "00-0000002", datasetId: "other-shard" },
+      { ...input.slots[0], playerId: "00-0000003" });
+    const inventory = await store.prepareFittingRun(input);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reads = new Map<string, number>();
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads.set(args[0], (reads.get(args[0]) ?? 0) + 1); return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed), req = readinessRequest(inventory);
+      const unsealed = await reader.readFittingRunReadiness(req);
+      expect(unsealed).toMatchObject({ status: "incomplete", requestedSlots: 3, verifiedSlots: 0, datasetsComplete: false });
+      expect(unsealed.datasets.map((dataset) => dataset.state)).toEqual(["missing", "missing"]); expect(reads.size).toBe(0);
+      const first = await store.prepareDataset(datasetRequest(inventory));
+      const incomplete = await reader.readFittingRunReadiness(req);
+      expect(incomplete).toMatchObject({ status: "incomplete", requestedSlots: 3, verifiedSlots: 2,
+        datasetsComplete: false, durablyPinned: false, usableEvidenceComplete: false, fittingReady: false, usablePairs: 0 });
+      expect(incomplete.datasets.map((dataset) => [dataset.datasetId, dataset.state, dataset.ordinals]))
+        .toEqual([["other-shard", "missing", [1]], ["preview-evaluation", "verified", [0,2]]]);
+      expect(incomplete.counts[1]).toEqual({ partition: "evaluation", slots: 3, targetEvents: 1, usableFeatures: 1,
+        missingFeatures: 1, unavailableFeatures: 1, expiredFeatures: 0, usableLabels: 0, missingLabels: 3 });
+      const second = await store.prepareDataset({ ...datasetRequest(inventory, "run-check-other-pin"), datasetId: "other-shard" });
+      reads.clear();
+      const complete = await reader.readFittingRunReadiness(req);
+      expect(complete).toMatchObject({ status: "verified", requestedSlots: 3, verifiedSlots: 3, datasetsComplete: true,
+        durablyPinned: true, usableEvidenceComplete: false, fittingReady: false, populationCoverage: "unqualified" });
+      expect([...reads.values()].every((count) => count === 1)).toBe(true); expect(reads.size).toBeGreaterThan(0);
+      expect(complete.datasets.map((dataset) => dataset.manifestSha256)).toEqual([second.manifestSha256, first.manifestSha256]);
+      await store.recordSourcePassingYards("run-check-feature-B", seed.request, seed.profiles);
+      expect((await reader.readFittingRunReadiness(req)).readinessSha256).toBe(complete.readinessSha256);
+      expect((await reader.readDatasetPage(pageRequest(first))).rows[0].feature.reference?.id).toBe(a.id);
+      await store.releaseDatasetPin("run-check-other-pin");
+      const released = await reader.readFittingRunReadiness(req);
+      expect(released.datasetsComplete).toBe(true); expect(released.durablyPinned).toBe(false);
+      expect(released.blockers).toContain("datasets-not-pinned");
+    });
+  });
+});
+
+it("QB complete run checks refuse invalid addresses damaged later shards revocation and deleted inventories without a subset result", async () => {
+  await withProof(async ({ client, store, root, artifacts, target }) => {
+    const seed = await seedConsumers(store), feature = await store.recordSourcePassingYards("run-damage-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed); input.slots[0].datasetId = "Z";
+    input.slots.push({ ...input.slots[0], datasetId: "A", playerId: "00-0000002" });
+    const inventory = await store.prepareFittingRun(input);
+    await store.prepareDataset({ ...datasetRequest(inventory), datasetId: "A" });
+    await store.prepareDataset({ ...datasetRequest(inventory, "run-damage-Z-pin"), datasetId: "Z" });
+    let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    const reader = await createLocalPredictiveStore(client, target, observed), req = readinessRequest(inventory);
+    await expect(reader.readFittingRunReadiness({ ...req, inventorySha256: "f".repeat(64) })).rejects.toThrow("training-shard-inventory-mismatch");
+    await expect(reader.readFittingRunReadiness({ ...req, datasetIds: ["A"] } as never)).rejects.toThrow("schema-fields-refused"); expect(reads).toBe(0);
+    const path = join(root, ".db-blobs", feature.bodySha256 + ".json"), bytes = await readFile(path);
+    try { await writeFile(path, "damaged-later-shard"); await expect(reader.readFittingRunReadiness(req)).rejects.toThrow("artifact-integrity-failed"); }
+    finally { await writeFile(path, bytes); }
+    expect((await reader.readFittingRunReadiness(req)).datasetsComplete).toBe(true);
+    const clock = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'run-check-revoke',profile_id,id,'{}',$2,NULL,$2,'synthetic','complete run access'
+      FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [seed.raw.profileId, clock]);
+    reads = 0; await expect(reader.readFittingRunReadiness(req)).rejects.toThrow("training-run-rights-refused"); expect(reads).toBe(0);
+    await store.retain({ id: "run-check-delete", reason: "provider-request", authority: "disposable complete-run proof", decidedAt: clock,
+      scope: { kind: "source", profileIds: [seed.raw.profileId], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" });
+    await expect(reader.readFittingRunReadiness(req)).rejects.toThrow("training-run-evidence-removed"); expect(reads).toBe(0);
+  });
+});
+
+it("QB complete run checks guard direct SQL writers through every shard and recheck scheduled rights before delivery", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    await store.recordSourcePassingYards("run-guard-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed);
+    input.slots.push({ ...input.slots[0], playerId: "00-0000002", datasetId: "other-shard" });
+    const inventory = await store.prepareFittingRun(input);
+    await store.prepareDataset(datasetRequest(inventory));
+    await store.prepareDataset({ ...datasetRequest(inventory, "run-guard-other-pin"), datasetId: "other-shard" });
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      let entered!: () => void, unblock!: () => void;
+      const opened = new Promise<void>((resolve) => { entered = resolve; }), gate = new Promise<void>((resolve) => { unblock = resolve; });
+      let reads = 0;
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads++; entered(); await gate; return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed), req = readinessRequest(inventory);
+      const running = reader.readFittingRunReadiness(req);
+      try {
+        await opened;
+        await withLogin(client, target, ["predictive_ingest", "predictive_harness"], async (writer) => {
+          await writer.query("SET lock_timeout='100ms'");
+          await expect(writer.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+            SELECT 'run-guard-revoke',profile_id,id,'{}',date_trunc('milliseconds',clock_timestamp()),NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','complete guard'
+            FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [seed.raw.profileId])).rejects.toMatchObject({ code: "55P03" });
+        });
+      } finally { unblock(); }
+      expect((await running).datasetsComplete).toBe(true);
+      // Schedule a decision before acquiring the guard: time can advance while
+      // direct DML is blocked. The next read must withhold at delivery.
+      await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+        SELECT 'run-scheduled-revoke',profile_id,id,'{}',date_trunc('milliseconds',clock_timestamp())+interval '2 seconds',NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','scheduled guard'
+        FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [seed.raw.profileId]);
+      reads = 0;
+      const delayed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads++;
+        await client.query(`SELECT pg_sleep(greatest(0,extract(epoch FROM (effective_from-clock_timestamp())))+0.01)
+          FROM predictive_rights_decisions WHERE id='run-scheduled-revoke'`);
+        return artifacts.database.read(...args);
+      } } };
+      const delayedReader = await createLocalPredictiveStore(login, loginTarget, delayed);
+      await expect(delayedReader.readFittingRunReadiness(req)).rejects.toThrow("source-consumer-rights-refused"); expect(reads).toBe(1);
+    });
+  });
+});
+
+it("QB numerical pages preserve fixed sparse membership missingness and separate outcomes across later publications", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    const seed = await seedConsumers(store);
+    const a = await store.recordSourcePassingYards("page-feature-A", seed.request, seed.profiles);
+    await store.recordSourcePassingYards("page-unavailable", { ...seed.request, playerId: "00-0000003" }, seed.profiles);
+    const input = await previewRequest(client, seed);
+    input.slots.push({ ...input.slots[0], playerId: "00-0000002", datasetId: "other-shard" },
+      { ...input.slots[0], playerId: "00-0000003" }, { ...input.slots[0], playerId: "00-0000004" });
+    const inventory = await store.prepareFittingRun(input), saved = await store.prepareDataset(datasetRequest(inventory));
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, artifacts), req = pageRequest(saved);
+      const first = await reader.readDatasetPage(req);
+      expect(first.rows.map((row) => row.ordinal)).toEqual([0,2]);
+      expect(first.rows.map((row) => row.feature.state)).toEqual(["usable", "unavailable"]);
+      expect(first.rows[0].feature.bundle?.player[0]).toMatchObject({ passingYardsSum: 80, attemptsSum: 10 });
+      expect(first.rows[0].feature.reference?.id).toBe(a.id); expect(first.rows[0].label.outcome).toBeNull();
+      expect(first.rows[0].feature).not.toHaveProperty("outcome"); expect(first.rows[1].feature.bundle).toBeNull();
+      expect(first).toMatchObject({ fittingReady: false, populationCoverage: "unqualified" });
+      await store.recordSourcePassingYards("page-feature-B", seed.request, seed.profiles);
+      const repeat = await reader.readDatasetPage(req);
+      expect(repeat.pageSha256).toBe(first.pageSha256); expect(repeat.nextCursor).toBe(first.nextCursor);
+      const second = await reader.readDatasetPage({ ...req, cursor: first.nextCursor });
+      expect(second.rows.map((row) => row.ordinal)).toEqual([3]);
+      expect(second.rows[0]).toMatchObject({ feature: { state: "missing", bundle: null }, label: { outcome: null } });
+      expect(second.nextCursor).toBeNull();
+    });
+  });
+});
+
+it("QB numerical page addresses reject changed limits manifests corrupted cursors and whole-response overflow", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store); await store.recordSourcePassingYards("page-bounds-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed); input.slots.push({ ...input.slots[0], playerId: "00-0000002" });
+    const inventory = await store.prepareFittingRun(input), saved = await store.prepareDataset(datasetRequest(inventory)), req = pageRequest(saved, 1);
+    const first = await store.readDatasetPage(req); let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    const reader = await createLocalPredictiveStore(client, target, observed);
+    await expect(reader.readDatasetPage({ ...req, manifestSha256: "f".repeat(64) })).rejects.toThrow("training-page-manifest-mismatch");
+    await expect(reader.readDatasetPage({ ...req, cursor: first.nextCursor, limits: { ...req.limits, rows: 2 } })).rejects.toThrow("training-page-cursor-refused");
+    await expect(reader.readDatasetPage({ ...req, cursor: "bm90LWpzb24" })).rejects.toThrow("training-page-cursor-refused");
+    expect(reads).toBe(0);
+    await expect(reader.readDatasetPage({ ...req, limits: { rows: 1, bytes: 1 } })).rejects.toThrow("training-page-byte-bounds-refused");
+    expect((await reader.readDatasetPage(req)).pageSha256).toBe(first.pageSha256);
+  });
+});
+
+it("QB numerical page retries reverify damage and refuse revoked or deleted datasets before delivery", async () => {
+  await withProof(async ({ client, store, root, artifacts, target }) => {
+    const seed = await seedConsumers(store); const feature = await store.recordSourcePassingYards("page-access-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory)), req = pageRequest(saved);
+    const first = await store.readDatasetPage(req), path = join(root, ".db-blobs", feature.bodySha256 + ".json"), bytes = await readFile(path);
+    try { await writeFile(path, "page-file-damaged"); await expect(store.readDatasetPage(req)).rejects.toThrow("artifact-integrity-failed"); }
+    finally { await writeFile(path, bytes); }
+    expect((await store.readDatasetPage(req)).pageSha256).toBe(first.pageSha256);
+    const clock = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'page-revoke',profile_id,id,'{}',$2,NULL,$2,'synthetic','page current access' FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [BRIDGE_PROFILE, clock]);
+    let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    const reader = await createLocalPredictiveStore(client, target, observed);
+    await expect(reader.readDatasetPage(req)).rejects.toThrow("training-dataset-rights-refused"); expect(reads).toBe(0);
+    await store.retain({ id: "page-delete", reason: "provider-request", authority: "disposable page proof", decidedAt: clock,
+      scope: { kind: "source", profileIds: [BRIDGE_PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" });
+    await expect(reader.readDatasetPage(req)).rejects.toThrow("training-dataset-evidence-removed"); expect(reads).toBe(0);
+  });
+});
+
+it("QB current and historical label reads select inclusive heads and preserve exact versions without future outcomes", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    const seed = await seedConsumers(store); const a = await store.recordSourceFinalLabel("reader-label-A", seed.labelRequest, null);
+    const req = labelReadRequest(seed);
+    const before = new Date(Date.parse(a.recordedAt) - 1).toISOString();
+    expect((await store.readLabelsAt({ ...req, labelsAsOf: before })).rows[0]).toMatchObject({ reason: "label-not-recorded", outcome: null });
+    const changed = sourceClaimFixture("reader-label-change", "player", sourceCsv("player", [{ ...sourceSamples().player[0], passing_yards: "95" }]));
+    changed.capturedAt = await witnessClock(client); changed.rightsDecisions = seed.fixture.input.rightsDecisions;
+    await store.publishSourceStats(changed); await store.recordSourceNormalization("reader-label-binding-B", seed.raw, seed.binding.event.id);
+    await store.recordSourceDecision("reader-label-reconciliation-B", decisionScope(seed.raw.profileId), seed.rec.record.id);
+    await store.recordSourceDecision("reader-label-participation-B", decisionScope(seed.raw.profileId, "participation"), seed.part.record.id);
+    const b = await store.recordSourceFinalLabel("reader-label-B", seed.labelRequest, a.id);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      const historical = await reader.readLabelsAt({ ...req, labelsAsOf: a.recordedAt });
+      expect(historical.rows[0]).toMatchObject({ state: "usable", reference: { id: a.id }, outcome: { value: 80 }, supersededAsOf: false, supersededAtSnapshot: true });
+      expect(JSON.stringify(historical)).not.toContain('"value":95');
+      const current = await reader.readCurrentLabels(req);
+      expect(current.rows[0]).toMatchObject({ reference: { id: b.id }, outcome: { value: 95 }, supersededAsOf: false });
+      expect((await reader.readLabelsAt({ ...req, labelsAsOf: b.recordedAt })).rows[0].reference?.id).toBe(b.id);
+      const exact = { ...req, keys: [{ ...req.keys[0], labelRef: a.id }] };
+      expect((await reader.readCurrentLabels(exact)).rows[0]).toMatchObject({ reference: { id: a.id }, outcome: { value: 80 }, supersededAsOf: true, supersededAtSnapshot: true });
+      await expect(reader.readLabelsAt({ ...req, labelsAsOf: "2100-01-01T00:00:00.000Z" })).rejects.toThrow("training-future-cutoff");
+      await expect(reader.readLabelsAt({ ...req, keys: [{ ...req.keys[0], labelRef: b.id }], labelsAsOf: a.recordedAt })).rejects.toThrow("training-label-reference-mismatch");
+      await expect(reader.readCurrentLabels({ ...req, keys: [{ ...req.keys[0], playerId: "00-0000002", labelRef: a.id }] })).rejects.toThrow("training-label-reference-mismatch");
+      // Zero yards with ten attempts is observed numeric zero, rather than
+      // unresolved participation or an absence converted into a statistic.
+      const zero = sourceClaimFixture("reader-observed-zero", "player", sourceCsv("player", [{ ...sourceSamples().player[0], passing_yards: "0" }]));
+      zero.capturedAt = await witnessClock(client); zero.rightsDecisions = seed.fixture.input.rightsDecisions;
+      await store.publishSourceStats(zero); await store.recordSourceNormalization("reader-zero-binding", seed.raw, "reader-label-binding-B");
+      await store.recordSourceDecision("reader-zero-reconciliation", decisionScope(seed.raw.profileId), "reader-label-reconciliation-B");
+      await store.recordSourceDecision("reader-zero-participation", decisionScope(seed.raw.profileId, "participation"), "reader-label-participation-B");
+      const c = await store.recordSourceFinalLabel("reader-zero-label", seed.labelRequest, b.id);
+      expect((await reader.readCurrentLabels(req)).rows[0]).toMatchObject({ reference: { id: c.id }, outcome: { value: 0 }, participation: "market-compatible-observed" });
+      expect((await reader.readLabelsAt({ ...req, labelsAsOf: b.recordedAt })).rows[0]).toMatchObject({ reference: { id: b.id }, outcome: { value: 95 } });
+    });
+  });
+});
+
+it("QB label reads preserve missing targets and withhold damaged revoked or removed evidence", async () => {
+  await withProof(async ({ client, store, artifacts, target, root }) => {
+    const seed = await seedConsumers(store), a = await store.recordSourceFinalLabel("reader-access-label", seed.labelRequest, null);
+    const req = labelReadRequest(seed); req.keys.push({ ...req.keys[0], playerId: "00-0000002" });
+    const first = await store.readCurrentLabels(req);
+    expect(first.counts).toEqual({ requested: 2, usable: 1, missing: 1 });
+    expect(first.rows[1]).toMatchObject({ outcome: null, participation: "not-established", finalization: "not-recorded" });
+    await expect(store.readCurrentLabels({ ...req, limits: { rows: 1, bytes: 8_000_000 } })).rejects.toThrow("training-label-bounds-refused");
+    await expect(store.readCurrentLabels({ ...req, limits: { rows: 2, bytes: 1 } })).rejects.toThrow("training-page-byte-bounds-refused");
+    const path = join(root, ".db-blobs", a.bodySha256 + ".json"), bytes = await readFile(path);
+    try { await writeFile(path, "label-file-damaged"); await expect(store.readCurrentLabels(req)).rejects.toThrow("artifact-integrity-failed"); }
+    finally { await writeFile(path, bytes); }
+    await store.retain({ id: "reader-label-delete", reason: "provider-request", authority: "disposable label proof", decidedAt: await witnessClock(client),
+      scope: { kind: "source", profileIds: [seed.raw.profileId], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" });
+    expect((await store.readCurrentLabels(req)).rows.map((row) => row.reason)).toEqual(["retained-evidence-removed", "retained-evidence-removed"]);
+    expect((await store.readCurrentLabels({ ...req, keys: [{ ...req.keys[0], labelRef: a.id }] })).rows[0]).toMatchObject({ reason: "label-reference-missing-or-removed", outcome: null });
+    const clock = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'reader-label-revoke',profile_id,id,'{}',$2,NULL,$2,'synthetic','label missing-slot access' FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [seed.raw.profileId, clock]);
+    let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    const reader = await createLocalPredictiveStore(client, target, observed);
+    await expect(reader.readCurrentLabels(req)).rejects.toThrow("source-consumer-rights-refused"); expect(reads).toBe(0);
+  });
+});
+
+it("QB label readers do not revive an ancestor when the current head changes provider scope", async () => {
+  await withProof(async ({ client, store }) => {
+    const seed = await seedConsumers(store), a = await store.recordSourceFinalLabel("reader-scope-A", seed.labelRequest, null);
+    const second = structuredClone(seed.fixture.input);
+    second.id = "reader-scope-provider"; second.captureId = "reader-scope-capture"; second.artifact.id = "reader-scope-artifact";
+    second.profile.id = "csv-reader-second-player"; second.artifact.profileId = second.profile.id;
+    second.rightsDecisions = [{ ...second.rightsDecisions[0], id: "rights:reader-second", profileId: second.profile.id }];
+    await store.publishSourceStats(second);
+    await client.query("INSERT INTO predictive_profile_identity_links VALUES('reader-scope-link',$1,$2,'gsis','2026-01-01T00:00:00Z')", [second.profile.id, BRIDGE_PROFILE]);
+    const raw = { ...seed.raw, profileId: second.profile.id };
+    await store.recordSourceNormalization("reader-scope-binding", raw, null);
+    await store.recordSourceDecision("reader-scope-reconciliation", decisionScope(raw.profileId), null);
+    await store.recordSourceDecision("reader-scope-participation", decisionScope(raw.profileId, "participation"), null);
+    const b = await store.recordSourceFinalLabel("reader-scope-B", { ...seed.labelRequest, profileIds: [second.profile.id] }, a.id);
+    const req = labelReadRequest(seed);
+    expect((await store.readCurrentLabels(req)).rows[0]).toMatchObject({ reason: "label-profile-or-version-mismatch", reference: null, outcome: null });
+    expect((await store.readLabelsAt({ ...req, labelsAsOf: a.recordedAt })).rows[0]).toMatchObject({ reference: { id: a.id }, outcome: { value: 80 } });
+    expect((await store.readCurrentLabels({ ...req, selection: { ...req.selection, profileIds: [second.profile.id] } })).rows[0].reference?.id).toBe(b.id);
+    await expect(store.readCurrentLabels({ ...req, keys: [{ ...req.keys[0], labelRef: b.id }] })).rejects.toThrow("training-label-reference-mismatch");
+  });
+});
+
+it("QB numerical pages keep the inventory historical label after later correction without exposing a future value", async () => {
+  await withProof(async ({ store }) => {
+    const seed = await seedConsumers(store, "2026-10-11T12:00:00.000Z", true);
+    const a = await store.recordSourceFinalLabel("page-label-A", seed.labelRequest, null);
+    const slot: TrainingSlot = { datasetId: "page-label-shard", partition: "training", playerId: seed.request.playerId,
+      gameId: seed.labelRequest.gameId, season: 2026, seasonType: "REG", kickoff: "2026-10-04T17:00:00.000Z",
+      kickoffObservationId: "game-schedule", featureCutoff: "2026-10-04T12:00:00.000Z", labelsAsOf: a.recordedAt, featureRef: null, labelRef: null };
+    const inventory = await store.prepareFittingRun(metadataRun([slot], seed.profiles, a.recordedAt));
+    const saved = await store.prepareDataset(datasetRequest(inventory)), req = pageRequest(saved), first = await store.readDatasetPage(req);
+    await store.recordSourceFinalLabel("page-label-B", seed.labelRequest, a.id);
+    const later = await store.readDatasetPage(req);
+    expect(later.pageSha256).toBe(first.pageSha256);
+    expect(later.rows[0]).toMatchObject({ feature: { state: "missing", bundle: null }, label: {
+      reference: { id: a.id }, outcome: { value: 80 }, supersededAsOf: false, supersededAtSnapshot: false } });
+    expect(later.rows[0].feature).not.toHaveProperty("outcome");
+  });
+});
+
+it("QB numerical and label readers guard direct SQL revocation and deletion throughout file verification", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    await store.recordSourcePassingYards("page-guard-feature", seed.request, seed.profiles);
+    await store.recordSourceFinalLabel("page-guard-label", seed.labelRequest, null);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory));
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      for (const kind of ["page", "labels"] as const) {
+        let entered!: () => void, unblock!: () => void;
+        const opened = new Promise<void>((resolve) => { entered = resolve; }), gate = new Promise<void>((resolve) => { unblock = resolve; });
+        const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+          entered(); await gate; return artifacts.database.read(...args);
+        } } };
+        const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+        const running = (kind === "page" ? reader.readDatasetPage(pageRequest(saved)) : reader.readCurrentLabels(labelReadRequest(seed)))
+          .then((value) => ({ value }), (error: unknown) => ({ error }));
+        await opened;
+        try {
+          await client.query("SET lock_timeout='100ms'");
+          await expect(client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+            SELECT 'reader-concurrent-revoke',profile_id,id,'{}',date_trunc('milliseconds',clock_timestamp()),NULL,
+              date_trunc('milliseconds',clock_timestamp()),'synthetic','reader lock probe' FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [BRIDGE_PROFILE])).rejects.toMatchObject({ code: "55P03" });
+          await expect(store.retain({ id: "reader-concurrent-delete", reason: "provider-request", authority: "disposable guard proof",
+            decidedAt: seed.request.cutoff, scope: { kind: "source", profileIds: [BRIDGE_PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel: "full" })).rejects.toMatchObject({ code: "55P03" });
+        } finally { await client.query("RESET lock_timeout"); unblock(); }
+        const settled = await running; expect("error" in settled ? settled.error : null).toBeNull();
+      }
+    });
+  });
 });
 const advanceDatasetClock = async (client: Client, time: string) => {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(time)) throw new Error("test-clock-refused");
@@ -3135,13 +3641,13 @@ it("QB dataset migration preserves v15 inventories consumers and legacy retentio
     const events = await store.retentionEvents(); const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [16, 17], schemaVersion: 17 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [16, 17, 18], schemaVersion: 18 });
     expect(await store.readFittingRun(inventory.request.fittingRunId)).toEqual(original);
     expect((await store.replaySourceConsumer(feature.id))?.bodySha256).toBe(feature.bodySha256);
     expect(await store.retentionEvents()).toEqual(events);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 15)).toEqual(ledger);
     expect((await store.prepareDataset(datasetRequest(inventory))).activePin).toBe(true);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 17 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 18 });
   }, 15);
 });
 
@@ -3571,7 +4077,7 @@ it("QB inventory migration upgrades v13 without rewriting evidence and preserves
     const evidence = (await client.query("SELECT id,body_sha256,recorded_at FROM predictive_source_consumers ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 17, executed: [14, 15, 16, 17] });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 18, executed: [14, 15, 16, 17, 18] });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 13)).toEqual(ledger);
     expect((await client.query("SELECT id,body_sha256,recorded_at FROM predictive_source_consumers ORDER BY id")).rows).toEqual(evidence);
     expect(await store.replaySourceConsumer(feature.id)).toEqual(prior);
@@ -3582,7 +4088,7 @@ it("QB inventory migration upgrades v13 without rewriting evidence and preserves
     });
     const request = await previewRequest(client, seed);
     expect(await store.prepareFittingRun(request)).toMatchObject({ fittingReady: false, rows: [{ selection: { featureId: feature.id } }] });
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 17 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 18 });
   }, 13);
 });
 
@@ -4095,10 +4601,10 @@ it("CSV QB migration upgrades v9 preserving binding and decision history and is 
     const ledger=(await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files=await checkMigrationArtifacts(); const contracts=await loadCatalogContracts(files);
     const options={ ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11, 12, 13, 14, 15, 16, 17],schemaVersion: 17 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11, 12, 13, 14, 15, 16, 17, 18],schemaVersion: 18 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,9)).toEqual(ledger);
     expect(await store.replaySourceDecision({ ...decisionScope(request.profileId),cutoff: decision.record.recordedAt })).toMatchObject({ record: decision.record });
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 17 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 18 });
   },9);
 });
 

@@ -482,6 +482,7 @@ catalog contracts pass. Frozen 0001–0015 and their contracts/ledger remain
 unchanged from `84945bf`. Only disposable databases ran 0016. The evidence
 checkpoint records the corrected host/database-clock test fixture and log paths.
 
+
 ## #106 accepted frozen schema-16 base (2026-10-14)
 
 The owner relayed #118's confirmation: 0016 is its complete next migration
@@ -638,3 +639,115 @@ No compressed parser fallback or changes to the v1 history policy are introduced
 Validation: 774 Node tests, 201 PostgreSQL tests, 75 DB checks, 11 worker checks,
 18 catalog contracts, typecheck, full lint and migration-artifact verification
 pass. Only disposable local PostgreSQL was used; frozen 0001–0017 are unchanged.
+
+## #118 numerical-reader interface checkpoint
+
+The next increment adds no migration and preserves complete prefix 0001–0016.
+0017 remains reserved only for #106; later normalization/consumer DDL needs the
+owner's separately confirmed allocation. No #118 migration after 0016 is reserved.
+
+- `readDatasetPage({ version, fittingRunId, inventorySha256, datasetId,
+  manifestSha256, cursor, limits: { rows, bytes } })` verifies the same assigned
+  shard/closure and returns fixed numeric feature/outcome components, sparse
+  ordinals and a deterministic next cursor. It cannot select newer records.
+- `readCurrentLabels({ version, selection: { market, stat, labelVersion,
+  profileIds }, keys: [{ playerId, gameId, seasonType, labelRef }], limits })`
+  selects global heads at one guarded database clock, then verifies their scope,
+  current rights and exact bytes. `labelRef: null` selects the head; a string
+  requests that exact version without substituting another label.
+- `readLabelsAt({ ...currentRequest, labelsAsOf })` selects historical heads at
+  the explicit eligible cutoff and returns present-snapshot supersession only
+  as metadata, never a future outcome. Limits are at most 64 rows/8 MB returned
+  canonical bytes; oversized batches/responses refuse in full.
+
+All calls use `version: "qb-training-read-v1"`; only passing-yards/source-final-
+label-v1 is supported. Numeric zero is distinct from missing/unqualified final
+labels, which return no outcome and no inferred absence/void/settlement. Pages
+and label batches remain `fittingReady: false`, population unqualified. Audited
+invalidation, deadlines and representative capacity are
+still outstanding. These readers do not change `readBytes`, `readWireBytes`,
+gzip publication/inspection or exact-address retention/cleanup interfaces.
+
+The reader checkpoint passes 753 Node tests, 75 Node DB checks, 193 PostgreSQL
+tests (168 mandatory predictive cases), typecheck, affected-file lint and all 17
+catalog contracts. Frozen/generated prefix files match `2f57d12`; no new migration
+or shared artifact interface is introduced. Only disposable databases were used.
+
+## #118 complete-run verification checkpoint
+
+`readFittingRunReadiness({ version: "qb-training-read-v1", fittingRunId,
+inventorySha256 })` checks the complete sealed assignment under one guard.
+Unsealed datasets remain explicit, every available shard/closure is reconstructed,
+shared bytes are verified once per call and all requested counts reconcile.
+Current access and eligibility apply to the whole run before files and delivery;
+an inaccessible shard refuses the entire result. The report distinguishes complete
+verification, active pin durability and usable feature/label pairs. It returns no
+numeric bodies and remains `fittingReady: false`, population unqualified.
+
+There is no migration or shared binary/gzip/cleanup/retention interface change.
+Frozen 0001–0016 remain unchanged; #106 retains its coordinated allocation.
+The next #118 checkpoint is durable, audited invalidation. It requires a confirmed
+next number after #106's complete frozen prefix; this checkpoint reserves none.
+Deadlines/cancellation, representative capacity and independent review are also
+outstanding. The evidence checkpoint records the adversarial tests and final gates.
+
+Final validation passes 756 Node tests, 75 Node DB checks and 196 PostgreSQL tests
+(171 mandatory predictive cases), typecheck, affected-file lint and all 17 catalog
+contracts. Frozen/generated prefix files match `986bfed`. No new migration or
+persistent/hosted database operation is included.
+
+
+## Current allocation after reader integration
+
+Relay checkpoints `986bfed` and `86c141d` are integrated for #106. Frozen
+0001–0017 remain unchanged. #106 owns 0018 only; #118 owns 0019 only for audited
+invalidation, to finalize against the validated 0018 prefix once published.
+
+## 0018 compressed bindings and consumer integration
+
+Migration `0018_predictive_compressed_bindings.sql` implements the explicit v3
+SQL plan and execute-only compressed binding recorder. `recordCompressedSourceNormalization`
+uses the global writer lock followed by the shared evidence guard, independently
+reconstructs the complete plan in SQL, and retains the released binding/revision
+IDs, predecessor rules and association graph. The legacy recorder rejects v3;
+legacy CSV qualification and read-only repeatable-read paths remain unchanged.
+
+The private materializer copies the complete sealed claim array into existing
+`predictive_source_stats_rows`, preserving all ordinals and refusals. Private
+transaction authorization blocks direct gzip row insertion. Deferred completion
+compares the entire materialized array with the publication seal and clears the
+authorization; a later deferred binding trigger rechecks source/native research
+rights after this work. Unrelated rows are materialized but receive no canonical
+binding or statistical observation. Text bounds remain 8 MB/8,192 records;
+compressed rows use only the existing qualified 8 MB/80,000-record namespace.
+
+V3 SQL planning uses indexed immutable rows after full materialization; before
+that boundary it reads the immutable publication array. Filesystem authenticity
+still comes from independently decoding exact gzip bytes. Publication metadata
+and decoded proofs are memoized only inside one guarded transaction; current
+rights/deletion gates remain fresh and do not repeat full-array hashing at each
+clock check. Source/native bytes share the 20 MB unique-wire budget, and actual
+gzip work shares 64 MB decoded output and 160,000 rows across the transaction.
+
+The existing source witness, reconciliation, participation, feature and label
+paths recognize v3 explicitly. Source profile routing selects a shared guard for
+gzip while retaining legacy CSV isolation. Feature mathematics, label policy and
+v1 multi-season history are unchanged. Dataset closure now explicitly includes
+compressed publication and codec-inspection references, in addition to existing
+row/capture/blob/native/rights references. Existing deletion procedures remove
+complete binding lineages, consumers, inventories, datasets and pins; pins never
+override mandatory deletion. The binary artifact and cleanup interfaces are unchanged.
+
+#118 owns 0019 only for audited invalidation. No #106 migration after 0018 is
+reserved. Relay checkpoints `986bfed` and `86c141d` are included in this combined
+checkpoint. Real source/identity/membership/completion qualification remains
+required; synthetic consumer success does not establish training readiness.
+
+Frozen migration prefix: **0001–0018**. 0018 SHA-256:
+`58f0d5ae8cf11700d64370bf4dfdde8844dd2be6380935e103c84457a538de1e`.
+Frozen 0001–0017 SQL and catalog artifacts are byte-for-byte unchanged.
+Validation passes: 783 Node tests, 219 PostgreSQL tests (194 mandatory predictive
+cases), 75 DB checks, 11 isolated worker checks, 19 catalog contracts, typecheck,
+full lint, migration/readiness checks and whitespace checks. Only disposable
+local databases were migrated; the final gate removed its service and scratch data.
+#118 can finalize 0019 against this prefix; #106 reserves no further DDL.

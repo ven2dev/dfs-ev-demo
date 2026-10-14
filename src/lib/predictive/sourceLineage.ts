@@ -1,6 +1,7 @@
 import type { SourceStatsRequest } from "./sourceClaims.ts";
 import { SOURCE_PROFILE_VERSION } from "./sourceAdapters.ts";
-import { SOURCE_NORMALIZATION_V1, SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
+import { SOURCE_NORMALIZATION_V1, SOURCE_NORMALIZATION_VERSION, COMPRESSED_SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
+import { COMPRESSED_SOURCE_PROFILE_VERSION } from "./compressedPublication.ts";
 import { SOURCE_STATS_VERSION } from "./sourceStats.ts";
 import type { Revision } from "./types.ts";
 import { canonical, compareText, digest, entityKey, exact, instant, playerIdentity, refuse, TEAM_IDS, validateRevision } from "./validation.ts";
@@ -23,7 +24,7 @@ const identity = (value: unknown) => {
 export const sourceStatsRawKey = (request: SourceStatsRequest) => {
   exact(request, ["profileId", "rawGameId", "rawTeam", "rawPlayerId", "cutoff"]);
   identity(request.profileId); instant(request.cutoff);
-  if (typeof request.rawGameId !== "string" || !/^2026_\d{2}_[A-Z]{2,3}_[A-Z]{2,3}$/.test(request.rawGameId) ||
+  if (typeof request.rawGameId !== "string" || !/^(2025|2026)_\d{2}_[A-Z]{2,3}_[A-Z]{2,3}$/.test(request.rawGameId) ||
       !TEAM_IDS.includes("nfl:team:" + request.rawTeam)) refuse("source-lineage-identity-refused");
   const [, week, away, home] = request.rawGameId.split("_");
   if (Number(week) < 1 || Number(week) > 22 || away === home || ![away, home].includes(request.rawTeam) ||
@@ -38,11 +39,18 @@ const verifyPlan = (plan: SourceNormalizationPlan, recordedAt: string) => {
   const binding = plan.binding; const request = binding.sourceRequest;
   const rawKey = sourceStatsRawKey(request);
   const now = instant(recordedAt); const cutoff = instant(binding.cutoff);
-  if (![SOURCE_NORMALIZATION_V1, SOURCE_NORMALIZATION_VERSION].includes(binding.version) || binding.parserVersion !== SOURCE_PROFILE_VERSION || binding.projectionVersion !== SOURCE_STATS_VERSION ||
+  const compressed = binding.version === COMPRESSED_SOURCE_NORMALIZATION_VERSION;
+  if (![SOURCE_NORMALIZATION_V1, SOURCE_NORMALIZATION_VERSION, COMPRESSED_SOURCE_NORMALIZATION_VERSION].includes(binding.version) ||
+      binding.parserVersion !== (compressed ? COMPRESSED_SOURCE_PROFILE_VERSION : SOURCE_PROFILE_VERSION) ||
+      (!compressed && !request.rawGameId.startsWith("2026_")) || binding.projectionVersion !== SOURCE_STATS_VERSION ||
       request.profileId !== binding.sourceProfileId || request.cutoff !== binding.cutoff ||
       cutoff > now || (binding.rawSourceKey !== null && binding.rawSourceKey !== rawKey) ||
       plan.observationsPublished !== false || plan.featuresPublished !== false || plan.labelsFinalized !== false || plan.populationCoverage !== "unqualified" ||
       plan.planDigest !== digest(canonical({ reason: plan.reason, candidate: plan.candidate, binding }))) refuse("source-lineage-plan-refused");
+  if (compressed && (!Array.isArray(binding.sourcePublications) || binding.sourcePublications.length !== binding.sourceCaptures.length ||
+      binding.sourcePublications.some((seal,index) => seal.captureId !== binding.sourceCaptures[index].id ||
+        instant(seal.recordedAt) > cutoff || instant(seal.recordedAt) < instant(binding.sourceCaptures[index].ingestedAt) ||
+        !/^[a-f0-9]{64}$/.test(seal.claimsSha256) || !/^[a-f0-9]{64}$/.test(seal.requestHash)))) refuse("source-lineage-plan-refused");
   for (const capture of binding.sourceCaptures) {
     if (instant(capture.capturedAt) > instant(capture.availableAt) || instant(capture.availableAt) > instant(capture.ingestedAt) ||
         instant(capture.ingestedAt) > cutoff) refuse("source-lineage-plan-time-refused");
