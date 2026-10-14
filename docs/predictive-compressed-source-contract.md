@@ -305,3 +305,54 @@ PostgreSQL tests pass, including all 141 mandatory predictive cases. Typecheck,
 lint, generated artifacts and whitespace checks pass. The test service was
 removed. These checks validate codec diagnostics and the combined existing
 readers/inventories, not compressed publication or usable real feature/labels.
+
+## Isolated codec worker checkpoint
+
+`runCompressedWorker` is a separate, opt-in local worker for inspection or complete
+claim preparation. It requires a local Unix Docker endpoint and the pinned Node
+image `node@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1`.
+It never pulls an image implicitly. Prepare that exact image with `docker pull`
+and run `npm run test:predictive:worker` for the mandatory eight-case worker suite;
+the suite fails rather than skips when the required runtime is unavailable.
+
+The container has a kernel-enforced 256 MiB memory allowance with swap disabled,
+one CPU, 32 processes maximum, no network, no capabilities, no new privileges,
+an unprivileged UID and a read-only root/code mount. Docker daemon logging is
+disabled so private claim payloads are not copied into a configured log sink.
+Only trusted library code, the entrypoint and csv-parse are mounted; no private
+artifact directory, application environment file or Docker socket is mounted.
+The child checks the actual cgroup memory/swap limits before consuming wire bytes.
+The additional 192 MiB V8 heap limit does not substitute for the kernel limit.
+
+Wire input is copied and hash-checked before asynchronous startup. The request
+and capture identity are detached. The parent allows one job at a time with no
+unbounded waiting queue, bounds input and output (64 MB), and limits execution
+to at most 30 seconds plus bounded cleanup. It creates a stopped container before
+starting/attaching and sending private bytes. Cancellation, timeout and parser
+failure return no partial result. Explicit removal and a separate absence check
+precede permit release; ambiguous cleanup keeps the permit held and refuses
+further work in that parent. This bounds worker concurrency, not total host or
+parent application RSS; parent IPC allocations have their separate output bound.
+
+Eight container tests cover codec/claim parity, immutable input, CRC failure,
+concurrency refusal, cancellation/deadline cleanup, native memory exhaustion and
+recovery with no remaining task-owned container. The same sandbox killed a
+512 MiB native Buffer allocation (exit 137), proving memory enforcement beyond
+V8 heap accounting; Docker independently reported `OOMKilled: true`. An 80,000-
+record claims job also refused resource/output exhaustion, then the same parent
+successfully ran a normal job. The full retained 2025 player file reproduced the independent
+aggregate digest for all 19,422 prepared claims within this sandbox. Worker peak
+RSS was 143,142,912 bytes (about 137 MiB). No new source acquisition occurred.
+
+This checkpoint adds no migration or database-path change. The existing 0015
+guarded reader still uses its local in-process inspector; worker integration,
+qualified compressed publication, full consumer reconstruction and restored-
+backup checks remain next. 0016 stays with #118; coordinate any #106 DDL at 0017
+or later. The isolated worker is not a claim that the entire application now has
+a hard memory cap or that a usable feature/label has been published.
+
+Worker checkpoint checks: all 746 Node tests, all eight Docker worker tests,
+typecheck, lint and whitespace checks pass. The worker tests inspect the actual
+container memory/swap, network, read-only, logging and UID configuration and
+leave no task-owned container. No DB schema or existing reader changed, so the
+previous schema-15 database gate remains the last DB validation checkpoint.

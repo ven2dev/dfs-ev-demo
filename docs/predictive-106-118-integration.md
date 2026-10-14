@@ -254,3 +254,24 @@ migration/readiness/whitespace checks. The bootstrap inventory was extended for
 the new table. An existing host/database-clock routing fixture was repaired with
 explicit database-clock ordering and passed six isolated repetitions plus the
 complete gate. The disposable test service was removed; no hosted DB ran 0015.
+
+## #106 isolated worker continuation
+
+#106 now has an opt-in, local Docker codec worker with a pinned Node image,
+kernel-enforced 256 MiB memory allowance, no swap/network, read-only code and no
+daemon logging of private payloads. The child verifies its cgroup limits. Input
+and request are detached; one active job is admitted per controller, with bounded
+execution/output and verified removal before reuse. The existing SQL prefix is
+still **0001–0015**. **0016 stays with #118**; this continuation allocates no DDL.
+
+746 Node tests and eight container tests pass, plus typecheck/lint/whitespace.
+Native allocation stress was OOM-killed, an 80,000-row resource/output refusal
+recovered, and the real 19,422-row file reproduced its independent claim digest
+inside the worker (143,142,912-byte peak RSS). Full configuration, cleanup and
+validation boundaries are in the [compressed-source contract](predictive-compressed-source-contract.md).
+
+This worker is not yet connected to 0015's guarded reader or a compressed source
+writer. Next: integrate it while preserving current-rights gates, downscaled
+decoded-work budgets, guard lifetimes and failure cleanup; then qualify full
+compressed publication and consumer reconstruction. Coordinate any #106 DDL
+at 0017 or later after #118 supplies its fixed dataset/pin prefix.
