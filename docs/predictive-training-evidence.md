@@ -1,5 +1,66 @@
 # #118 guarded evidence checkpoint
 
+## Assigned-shard verification increment
+
+`verifyDatasetShard({ version: "qb-training-read-v1", fittingRunId,
+inventorySha256, datasetId })` verifies the exact shard already assigned in a
+database-created inventory. It validates the saved body/request hash and slot
+ordinals, then reconstructs the assigned kickoff and fixed consumer evidence.
+It never reruns latest-match selection. The result preserves global ordinals,
+missing/unavailable/expired/usable states, original history/version identity and
+label supersession at the inventory snapshot. Later labels do not replace the
+selected historical label or disclose future values.
+
+Every protected inventory use and selected kickoff/consumer profile passes fresh
+rights before files open, before each unique file and at delivery. Unpinned
+features becoming 90 days old after inventory preparation refuse at the exact
+boundary. Already-expired slots remain explicit. Table guards block direct SQL
+rights writes and mandatory retention during verification; scheduled rights
+expiry still stops subsequent access/delivery. Each retry verifies the files
+again; a previous successful proof cannot authorize damaged bytes.
+
+The proof contains metadata, per-partition counts, a stable selection hash and a
+clock-bound proof hash. It is `verified-only`, `fittingReady: false`, population
+unqualified. It creates no dataset or pin and returns no numerical bodies.
+Future sealing must perform verification in the recording transaction rather
+than accept this proof from a caller. Shared `readWireBytes`, compressed inspection
+and cleanup interfaces from integrated #106 `4f1ad06` remain unchanged. No DDL
+is added; frozen 0001–0015 remain fixed, with 0016 reserved for dataset/pin DDL.
+
+Six mandatory PostgreSQL cases use restricted logins, actual files and concurrent
+SQL to test fixed A despite newer B, explicit missing shards, identity refusal
+before files, damaged context/consumer retry, historical labels, input detachment,
+direct-writer/deletion exclusion and scheduled expiry during paused file I/O.
+Four pure cases check exact request fields and the hand-computed 90-day boundary
+across October/November/December into January. These tests assert independent
+expected IDs/states/counts and mutate real files/rights, not only output hashes.
+
+Durable manifests, atomic evidence pins, stable paging/current-label reads,
+release/quotas, expiry/invalidation, recovery, deadlines and representative
+capacity evidence remain open. Qualified compressed publication and full
+compressed-consumer reconstruction remain #106 work. #106, #107 and #118 still
+gate validated #54 Part B.
+
+Final shard checkpoint passes **746 Node tests**, **75 Node DB checks + 172
+PostgreSQL tests** (147 mandatory predictive cases), typecheck, affected-file
+ESLint, migration/readiness checks and the full gate's 16 catalog contracts.
+The initial focused run caught an expected-count assertion that omitted the
+empty evaluation partition; the full gate includes the corrected assertion.
+Typecheck also prompted narrowing the expiry helper's input type instead of
+casting partial fixtures to complete SQL inventories. Frozen 0001–0015 SQL,
+catalog contracts and generated manifests are unchanged from `4f1ad06`.
+Logs are `/private/tmp/dfs118-shards-node.log` and
+`/private/tmp/dfs118-shards-db.log`. No persistent/hosted database was migrated.
+
+The 0016 retention design must exclude actively pinned source features during
+expiry selection. A foreign key that merely aborts the entire sweep is
+insufficient. Mandatory deletion must remove dataset/pin closure before parent
+run inventory, preserve unaffected legacy counts/digests and compare the
+supplemental training audit on restore/reapply. The existing 0014 authorization
+hook operates after 0010 has selected expiry candidates; that hook alone cannot
+implement expiry protection. Keep this distinction explicit in the forward
+migration and coordinate any procedure decomposition with #115.
+
 ## Immutable run-inventory increment
 
 Migration 0014 adds database-enforced run preparation and guarded metadata

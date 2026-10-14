@@ -2327,6 +2327,205 @@ const previewRequest = async (client: Client, seed: Awaited<ReturnType<typeof se
   return metadataRun([slot], seed.profiles, seed.request.cutoff);
 };
 
+it("QB assigned shard verifies fixed consumers and missing slots without reselecting or creating durable pins", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    const a = await store.recordSourcePassingYards("shard-feature-A", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed);
+    // Keep a different shard ahead of the requested one in global ordinal order.
+    input.slots[0].datasetId = "first-shard";
+    input.slots.push({ ...input.slots[0], datasetId: "missing-shard", playerId: "00-0000002" });
+    const inventory = await store.prepareFittingRun(input);
+    await store.recordSourcePassingYards("shard-feature-B", seed.request, seed.profiles);
+    const calls: string[] = [];
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      calls.push(args[0]); return artifacts.database.read(...args);
+    } } };
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const first = await reader.verifyDatasetShard({ version: "qb-training-read-v1", fittingRunId: input.fittingRunId,
+        inventorySha256: inventory.inventorySha256, datasetId: "first-shard" });
+      expect(first).toMatchObject({ status: "verified-only", fittingReady: false, populationCoverage: "unqualified",
+        rows: [{ ordinal: 0, selection: { featureId: a.id }, feature: { state: "usable", reference: { id: a.id } }, label: { state: "missing" } }],
+        counts: [{ partition: "training", slots: 0 }, { partition: "evaluation", slots: 1, targetEvents: 1, usableFeatures: 1, missingLabels: 1 }] });
+      expect(calls).toHaveLength(3); expect(new Set(calls).size).toBe(3);
+      const { proofSha256, verification: _metrics, ...proof } = first; void _metrics;
+      expect(proofSha256).toBe(digest(canonical(proof)));
+      expect(JSON.stringify(first)).not.toContain('"passingYardsSum":');
+      expect(JSON.stringify(first)).not.toContain('"value":');
+      const retry = await reader.verifyDatasetShard(first.request);
+      expect(retry.rows).toEqual(first.rows); expect(retry.selectionSha256).toBe(first.selectionSha256);
+      expect(calls).toHaveLength(6); // no cross-request "already verified" cache
+      calls.length = 0;
+      const missing = await reader.verifyDatasetShard({ ...first.request, datasetId: "missing-shard" });
+      expect(missing.rows.map((row) => [row.ordinal, row.selection.featureId, row.feature.state, row.label.state])).toEqual([
+        [1, null, "missing", "missing"],
+      ]);
+      expect(calls).toHaveLength(1); // context proof still required without consumers
+      const { reused: _reused, ...saved } = inventory; void _reused;
+      expect(await reader.readFittingRun(input.fittingRunId)).toEqual(saved);
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_runs")).rows[0].n).toBe(1);
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_feature_run_pins")).rows[0].n).toBe(0);
+    });
+  });
+});
+
+it("QB assigned shard refuses wrong identity and damaged or revoked missing-slot context before returning a proof", async () => {
+  await withProof(async ({ client, store, artifacts, target, root }) => {
+    const seed = await seedConsumers(store); const input = await previewRequest(client, seed);
+    const inventory = await store.prepareFittingRun(input);
+    const request = { version: "qb-training-read-v1" as const, fittingRunId: input.fittingRunId,
+      inventorySha256: inventory.inventorySha256, datasetId: input.slots[0].datasetId };
+    let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      await expect(reader.verifyDatasetShard({ ...request, inventorySha256: "0".repeat(64) })).rejects.toThrow("training-shard-inventory-mismatch");
+      await expect(reader.verifyDatasetShard({ ...request, datasetId: "unassigned" })).rejects.toThrow("training-shard-not-assigned");
+      await expect(reader.verifyDatasetShard({ ...request, fittingRunId: "unknown" })).rejects.toThrow("training-run-not-found");
+      expect(reads).toBe(0);
+      const dep = inventory.rows[0].kickoff.dependencies[0];
+      const path = join(root, ".db-blobs", dep.artifactSha256 + ".json");
+      const bytes = await readFile(path);
+      try {
+        await writeFile(path, "damaged");
+        await expect(reader.verifyDatasetShard(request)).rejects.toThrow("artifact-integrity-failed");
+      } finally { await writeFile(path, bytes); }
+      expect((await reader.verifyDatasetShard(request)).rows[0].feature.state).toBe("missing");
+      reads = 0;
+      const clock = await witnessClock(client);
+      await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+        SELECT 'shard-context-revoke',profile_id,id,ARRAY['internal-research'],$2,NULL,$2,'synthetic','shard context gate'
+        FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [BRIDGE_PROFILE, clock]);
+      await expect(reader.verifyDatasetShard(request)).rejects.toThrow("training-run-rights-refused");
+      expect(reads).toBe(0);
+    });
+  });
+});
+
+it("QB assigned shard rechecks damaged selected bytes on retry and preserves the original inventory", async () => {
+  await withProof(async ({ client, store, root }) => {
+    const seed = await seedConsumers(store);
+    const feature = await store.recordSourcePassingYards("shard-damage-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed); const inventory = await store.prepareFittingRun(input);
+    const request = { version: "qb-training-read-v1" as const, fittingRunId: input.fittingRunId,
+      inventorySha256: inventory.inventorySha256, datasetId: input.slots[0].datasetId };
+    const proof = await store.verifyDatasetShard(request);
+    const path = join(root, ".db-blobs", feature.bodySha256 + ".json"); const bytes = await readFile(path);
+    try {
+      await writeFile(path, "changed-after-successful-verification");
+      await expect(store.verifyDatasetShard(request)).rejects.toThrow("artifact-integrity-failed");
+    } finally { await writeFile(path, bytes); }
+    expect((await store.verifyDatasetShard(request)).selectionSha256).toBe(proof.selectionSha256);
+    const { reused: _reused, ...saved } = inventory; void _reused;
+    expect(await store.readFittingRun(input.fittingRunId)).toEqual(saved);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_feature_run_pins")).rows[0].n).toBe(0);
+  });
+});
+
+it("QB assigned shard preserves historical label identity and inventory supersession after later corrections", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store, "2026-10-11T12:00:00.000Z", true);
+    const a = await store.recordSourceFinalLabel("shard-label-A", seed.labelRequest, null);
+    const b = await store.recordSourceFinalLabel("shard-label-B", seed.labelRequest, a.id);
+    const slot: TrainingSlot = { datasetId: "label-shard", partition: "training", playerId: seed.request.playerId,
+      gameId: seed.labelRequest.gameId, season: 2026, seasonType: "REG", kickoff: "2026-10-04T17:00:00.000Z",
+      kickoffObservationId: "game-schedule", featureCutoff: "2026-10-04T12:00:00.000Z", labelsAsOf: a.recordedAt,
+      featureRef: null, labelRef: null };
+    const input = metadataRun([slot], seed.profiles, b.recordedAt);
+    const inventory = await store.prepareFittingRun(input);
+    const c = await store.recordSourceFinalLabel("shard-label-C", seed.labelRequest, b.id);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      const result = await reader.verifyDatasetShard({ version: "qb-training-read-v1", fittingRunId: input.fittingRunId,
+        inventorySha256: inventory.inventorySha256, datasetId: slot.datasetId });
+      expect(result.rows[0].label).toMatchObject({ state: "usable", reference: { id: a.id }, supersededAsOf: false, supersededAtSnapshot: true });
+      expect(result.rows[0].selection.labelId).toBe(a.id);
+      expect(result.counts).toMatchObject([
+        { partition: "training", slots: 1, missingFeatures: 1, usableLabels: 1 },
+        { partition: "evaluation", slots: 0, missingFeatures: 0, usableLabels: 0 },
+      ]);
+      expect(JSON.stringify(result)).not.toContain(b.bodySha256);
+      expect(JSON.stringify(result)).not.toContain(c.bodySha256);
+      expect(JSON.stringify(result)).not.toContain('"value":');
+    });
+  });
+});
+
+it("QB assigned shard guard excludes direct SQL rights changes and mandatory deletion while bytes are verified", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    await store.recordSourcePassingYards("shard-concurrent-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed); const inventory = await store.prepareFittingRun(input);
+    const supplied = { version: "qb-training-read-v1" as const, fittingRunId: input.fittingRunId,
+      inventorySha256: inventory.inventorySha256, datasetId: input.slots[0].datasetId };
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      let entered!: () => void, unblock!: () => void;
+      const opened = new Promise<void>((resolve) => { entered = resolve; });
+      const gate = new Promise<void>((resolve) => { unblock = resolve; });
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        entered(); await gate; return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const running = reader.verifyDatasetShard(supplied).then((value) => ({ value }), (error: unknown) => ({ error }));
+      await opened;
+      supplied.datasetId = "mutated-after-start";
+      try {
+        await client.query("SET lock_timeout='100ms'");
+        await expect(client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+          SELECT 'shard-concurrent-revoke',profile_id,id,'{}',date_trunc('milliseconds',clock_timestamp()),NULL,
+            date_trunc('milliseconds',clock_timestamp()),'synthetic','shard guard probe'
+          FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [BRIDGE_PROFILE])).rejects.toMatchObject({ code: "55P03" });
+        await expect(store.retain({ id: "shard-concurrent-delete", reason: "provider-request", authority: "disposable shard proof",
+          decidedAt: await witnessClock(client), scope: { kind: "source", profileIds: seed.profiles, capturedFrom: null, capturedBefore: null },
+          auditLevel: "digest-only" })).rejects.toMatchObject({ code: "55P03" });
+      } finally { await client.query("RESET lock_timeout"); unblock(); }
+      const settled = await running;
+      expect("error" in settled ? settled.error : null).toBeNull();
+      if (!("value" in settled)) throw new Error("shard verification failed");
+      expect(settled.value.request.datasetId).toBe(input.slots[0].datasetId);
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_retention_events")).rows[0].n).toBe(0);
+      await store.retain({ id: "shard-after-read-delete", reason: "provider-request", authority: "disposable shard proof",
+        decidedAt: await witnessClock(client), scope: { kind: "source", profileIds: seed.profiles, capturedFrom: null, capturedBefore: null },
+        auditLevel: "digest-only" });
+      await expect(reader.verifyDatasetShard({ ...supplied, datasetId: input.slots[0].datasetId })).rejects.toThrow("training-run-evidence-removed");
+    });
+  });
+});
+
+it("QB assigned shard scheduled rights expiry withholds the complete proof before further bytes", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    await store.recordSourcePassingYards("shard-scheduled-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed); const inventory = await store.prepareFittingRun(input);
+    await client.query(`INSERT INTO public.predictive_rights_decisions
+      (id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'shard-scheduled-revoke',profile_id,id,'{}',date_trunc('milliseconds',now())+interval '2 seconds',NULL,
+        date_trunc('milliseconds',now()),'synthetic','scheduled shard access test'
+      FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [BRIDGE_PROFILE]);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      let entered!: () => void, unblock!: () => void, reads = 0;
+      const opened = new Promise<void>((resolve) => { entered = resolve; });
+      const gate = new Promise<void>((resolve) => { unblock = resolve; });
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        reads++; entered(); await gate; return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const running = reader.verifyDatasetShard({ version: "qb-training-read-v1", fittingRunId: input.fittingRunId,
+        inventorySha256: inventory.inventorySha256, datasetId: input.slots[0].datasetId }).then(() => null, (error: unknown) => error);
+      await opened;
+      try {
+        await client.query(`SELECT pg_sleep(greatest(0,extract(epoch FROM (effective_from-clock_timestamp())))+0.01)
+          FROM predictive_rights_decisions WHERE id='shard-scheduled-revoke'`);
+      } finally { unblock(); }
+      expect(await running).toMatchObject({ message: "source-consumer-rights-refused" });
+      expect(reads).toBe(1);
+    });
+  });
+});
+
 it("QB run inventory atomically fixes complete shards and retries original selections through execute-only roles", async () => {
   await withProof(async ({ client, store, artifacts, target }) => {
     const seed = await seedConsumers(store);
