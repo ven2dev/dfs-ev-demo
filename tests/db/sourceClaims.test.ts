@@ -2868,6 +2868,125 @@ const readinessRequest = (inventory: Awaited<ReturnType<Store["prepareFittingRun
   version: "qb-training-read-v1" as const, fittingRunId: inventory.request.fittingRunId, inventorySha256: inventory.inventorySha256,
 });
 
+it("QB operation cancellation releases a blocked SQL session without recording a partial run and retries immutably", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store), input = await previewRequest(client, seed);
+    const controller = new AbortController();
+    await client.query("SELECT pg_advisory_lock(520052,1)");
+    try {
+      await withLogin(client, target, ["predictive_recorder", "predictive_replay"], async (login, loginTarget) => {
+        const pid = (await login.query("SELECT pg_backend_pid() AS pid")).rows[0].pid;
+        const recorder = await createLocalPredictiveStore(login, loginTarget, artifacts);
+        const running = recorder.prepareFittingRun(input, { signal: controller.signal, deadlineMs: 2000 });
+        const settled = running.then(() => "delivered", (error: Error) => error.message);
+        await expect.poll(async () => (await client.query("SELECT wait_event FROM pg_stat_activity WHERE pid=$1", [pid])).rows[0]?.wait_event,
+          { timeout: 1000, interval: 10 }).toBe("advisory");
+        controller.abort(new Error("private caller detail"));
+        expect(await settled).toBe("training-cancelled");
+        await expect(recorder.readFittingRun(input.fittingRunId)).rejects.toThrow("predictive-session-retired");
+        await expect.poll(async () => (await client.query("SELECT count(*)::integer AS n FROM pg_stat_activity WHERE pid=$1", [pid])).rows[0].n).toBe(0);
+        expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_runs")).rows[0].n).toBe(0);
+        expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_invalidation_addresses")).rows[0].n).toBe(0);
+      });
+    } finally { await client.query("SELECT pg_advisory_unlock(520052,1)"); }
+    const saved = await store.prepareFittingRun(input);
+    expect((await store.prepareFittingRun(input)).inventorySha256).toBe(saved.inventorySha256);
+    expect((await store.readFittingRun(input.fittingRunId))?.inventorySha256).toBe(saved.inventorySha256);
+  });
+});
+
+it("QB operation deadlines stop SQL before its statement timeout and release guards for a fresh reader", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store), input = await previewRequest(client, seed);
+    await client.query("SELECT pg_advisory_lock(520052,1)");
+    try {
+      await withLogin(client, target, ["predictive_recorder", "predictive_replay"], async (login, loginTarget) => {
+        const pid = (await login.query("SELECT pg_backend_pid() AS pid")).rows[0].pid;
+        const recorder = await createLocalPredictiveStore(login, loginTarget, artifacts), started = performance.now();
+        await expect(recorder.prepareFittingRun(input, { deadlineMs: 200 })).rejects.toThrow("training-deadline-exceeded");
+        expect(performance.now() - started).toBeLessThan(2000); // Existing lock timeout is 3 seconds.
+        await expect.poll(async () => (await client.query("SELECT count(*)::integer AS n FROM pg_stat_activity WHERE pid=$1", [pid])).rows[0].n).toBe(0);
+        expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_runs")).rows[0].n).toBe(0);
+      });
+    } finally { await client.query("SELECT pg_advisory_unlock(520052,1)"); }
+    const saved = await store.prepareFittingRun(input);
+    expect(saved.rows).toHaveLength(1);
+  });
+});
+
+it("QB operation cancellation drains file verification without a partial dataset pin or invalidation and can recover", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    await store.recordSourcePassingYards("cancel-file-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), request = datasetRequest(inventory);
+    await withLogin(client, target, ["predictive_recorder", "predictive_replay"], async (login, loginTarget) => {
+      let entered!: () => void, reads = 0;
+      const opened = new Promise<void>((resolve) => { entered = resolve; });
+      const observed = { ...artifacts, database: { ...artifacts.database,
+        read: async (...args: Parameters<typeof artifacts.database.read>) => {
+          reads++; entered();
+          const signal = args[3]?.signal;
+          if (!signal) throw new Error("missing-operation-signal");
+          await new Promise<never>((_, reject) => {
+            const stop = () => reject(signal.reason);
+            if (signal.aborted) stop(); else signal.addEventListener("abort", stop, { once: true });
+          });
+          return "unreachable";
+        } } };
+      const recorder = await createLocalPredictiveStore(login, loginTarget, observed), controller = new AbortController();
+      const running = recorder.prepareDataset(request, { signal: controller.signal });
+      const settled = running.then(() => "delivered", (error: Error) => error.message);
+      await opened; controller.abort();
+      expect(await settled).toBe("training-cancelled");
+      expect(reads).toBe(1);
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_datasets")).rows[0].n).toBe(0);
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_dataset_pins")).rows[0].n).toBe(0);
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_invalidations")).rows[0].n).toBe(0);
+    });
+    const saved = await store.prepareDataset(request);
+    expect((await store.prepareDataset(request)).manifestSha256).toBe(saved.manifestSha256);
+    const controller = new AbortController(); controller.abort();
+    await expect(store.readDatasetPage(pageRequest(saved), { signal: controller.signal })).rejects.toThrow("training-cancelled");
+    expect((await store.readDatasetPage(pageRequest(saved))).manifestSha256).toBe(saved.manifestSha256);
+  });
+});
+
+it("QB operation interruption rolls back a dataset already inserted before its pin and permits exact recovery", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    await store.recordSourcePassingYards("cancel-write-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), request = datasetRequest(inventory);
+    await client.query(`CREATE FUNCTION public.test_training_cancel_pin() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN
+        IF NOT EXISTS(SELECT 1 FROM public.predictive_training_datasets WHERE id=NEW.dataset_id) THEN
+          RAISE EXCEPTION 'late-write-not-reached';
+        END IF;
+        PERFORM pg_advisory_xact_lock(520060,1); RETURN NEW;
+      END $$`);
+    await client.query(`CREATE TRIGGER test_training_cancel_pin BEFORE INSERT ON predictive_training_dataset_pins
+      FOR EACH ROW EXECUTE FUNCTION public.test_training_cancel_pin()`);
+    await client.query("SELECT pg_advisory_lock(520060,1)");
+    try {
+      await withLogin(client, target, ["predictive_recorder", "predictive_replay"], async (login, loginTarget) => {
+        const pid = (await login.query("SELECT pg_backend_pid() AS pid")).rows[0].pid;
+        const recorder = await createLocalPredictiveStore(login, loginTarget, artifacts), controller = new AbortController();
+        const running = recorder.prepareDataset(request, { signal: controller.signal });
+        const settled = running.then(() => "delivered", (error: Error) => error.message);
+        await expect.poll(async () => (await client.query("SELECT wait_event FROM pg_stat_activity WHERE pid=$1", [pid])).rows[0]?.wait_event,
+          { timeout: 2000, interval: 10 }).toBe("advisory");
+        controller.abort(); expect(await settled).toBe("training-cancelled");
+        await expect.poll(async () => (await client.query("SELECT count(*)::integer AS n FROM pg_stat_activity WHERE pid=$1", [pid])).rows[0].n).toBe(0);
+        expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_datasets")).rows[0].n).toBe(0);
+        expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_dataset_pins")).rows[0].n).toBe(0);
+        expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_invalidations")).rows[0].n).toBe(0);
+        expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_invalidation_addresses WHERE kind='dataset'")).rows[0].n).toBe(0);
+      });
+    } finally { await client.query("SELECT pg_advisory_unlock(520060,1)"); }
+    const saved = await store.prepareDataset(request);
+    expect((await store.prepareDataset(request)).manifestSha256).toBe(saved.manifestSha256);
+  });
+});
+
 const auditHistoryRequest = (target: TrainingInvalidationTarget, limit = 64) => ({
   version: "qb-training-invalidation-v1" as const, target, afterOrdinal: null, throughOrdinal: null, limit,
 });
@@ -4764,7 +4883,7 @@ it("QB guarded evidence batches reproduce restricted replay and share files at 1
       expect(measurements.map((row) => row.queries)).toEqual([measurements[0].queries, measurements[0].queries, measurements[0].queries]);
       process.stdout.write("guarded evidence shared-context benchmark " + JSON.stringify(measurements) + "\n");
       expect((await reader.replaySourceConsumers([saved.id, "not-recorded", saved.id])).records).toEqual([expected, null, expected]);
-      expect(() => reader.replaySourceConsumers(Array(65).fill(saved.id))).toThrow("training-consumer-bounds-refused");
+      await expect(reader.replaySourceConsumers(Array(65).fill(saved.id))).rejects.toThrow("training-consumer-bounds-refused");
       const label = await store.recordSourceFinalLabel("guarded-label", seed.labelRequest, null);
       expect((await reader.replaySourceConsumers([saved.id, label.id])).records).toEqual([expected, label]);
     });

@@ -674,3 +674,50 @@ limits are recorded in [predictive-training-evidence.md](predictive-training-evi
 #118 still needs deadlines/cancellation, representative
 capacity and independent review. #54 Part B remains blocked by its separate
 real-source and population qualification gates.
+
+
+## Training execution deadlines and interrupted recovery
+
+This increment follows frozen integration `2aee941`. It adds no migration and
+preserves the complete 0001–0019 SQL/catalog prefix. Training store APIs accept
+an optional second argument `{ signal?: AbortSignal, deadlineMs?: number }`.
+These execution controls are excluded from immutable requests, membership and
+digests; callers can only shorten the operation ceiling.
+
+Preparation, preview, shard verification, manifest verification and pinning have
+one 30-second budget. Numerical pages, standalone label batches, metadata and
+audit reads, pin release and consumer batches have one 10-second budget. Complete
+run readiness has a 30-second budget. The budget includes all phases and any
+eligible refusal audit, rather than restarting for each SQL statement, file or
+codec invocation. Existing 10-second SQL and 3-second lock waits remain stricter
+where applicable. Timers and monotonic checks refuse late synchronous work
+before another query, protected file, commit or delivery.
+
+Interruption propagates a sanitized signal through text/binary file verification
+and passes the remaining deadline to the isolated codec worker. A bounded,
+same-login control connection verifies the registered local target and cancels
+only the original backend PID plus exact backend-start timestamp, database and
+session user. That avoids both cross-user cancellation and PID-reuse ambiguity.
+The dedicated evidence session is then retired; later use refuses with
+`predictive-session-retired`. A pre-aborted request opens no operation and leaves
+the session usable. Control connection and statement timeouts are two seconds.
+
+Work and cleanup are drained, with no abandoned promise or background SQL. The
+execution deadline does not promise that native filesystem calls or codec/session
+cleanup finish at that exact instant: file cancellation is checked between local
+syscalls, and existing bounded worker cleanup still applies. If cancellation
+transport fails, the evidence connection is still retired and the original SQL
+statement/lock timeouts remain the fallback. These limits require capacity and
+operational review; they are not measured real-source throughput.
+
+Reconnect after an interrupted operation, then retry the same immutable IDs and
+hashes. Late interruption before commit rolls back dataset, pin and digest-address
+publication together. A disconnect at the commit boundary can have an unknown
+commit result; exact idempotent retry resolves that state instead of assuming
+failure means nothing committed. Cancellation/deadline refusals remain runtime
+states outside 0019's evidence-invalidation vocabulary. They grant no access,
+return no partial usable payload and do not create false invalidation receipts.
+
+The evidence checkpoint records validation. Representative capacity evidence and
+independent review remain before #118 completion. #106/#107 qualification and
+#54 Part B gates remain unchanged.

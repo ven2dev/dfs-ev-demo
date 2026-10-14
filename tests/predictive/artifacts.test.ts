@@ -28,6 +28,16 @@ it("stores exact private bytes at immutable digest addresses and supports concur
   expect((await stat(join(directory, refs[0]))).mode & 0o077).toBe(0);
   expect(await (await openArtifactStore(directory)).read(refs[0], sha, 3)).toBe(bytes);
 });
+it("refuses cancelled text and binary reads before opening bytes and preserves subsequent access", async () => {
+  const store = await openArtifactStore(await root()), bytes = "[]", sha = digest(bytes);
+  const textRef = await store.database.write(bytes, sha), binaryRef = await store.database.writeBinary(Buffer.from(bytes), sha);
+  const controller = new AbortController(); controller.abort(new Error("training-cancelled"));
+  const absent = "a".repeat(64);
+  await expect(store.database.read(absent + ".json", absent, 2, { signal: controller.signal })).rejects.toThrow("training-cancelled");
+  await expect(store.database.readBinary(absent + ".csv.gz", absent, 2, { signal: controller.signal })).rejects.toThrow("training-cancelled");
+  expect(await store.database.read(textRef, sha, 2)).toBe(bytes);
+  expect(await store.database.readBinary(binaryRef, sha, 2)).toEqual(Buffer.from(bytes));
+});
 it("refuses checkout roots, symlink roots and insecure directories", async () => {
   const directory = await root(); const alias = join(directory, "alias"); await symlink(directory, alias);
   await expect(openArtifactStore(alias)).rejects.toThrow("artifact-root-refused");

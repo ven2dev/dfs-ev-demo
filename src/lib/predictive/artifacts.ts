@@ -5,10 +5,11 @@ import { join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { digest, refuse } from "./validation.ts";
 
+export type ArtifactReadOptions = { signal?: AbortSignal };
 export type ArtifactMediaType = "application/json" | "text/csv";
 export type ArtifactStore = {
   write: (bytes: string, sha256: string, mediaType?: ArtifactMediaType) => Promise<string>;
-  read: (reference: string, sha256: string, byteSize: number) => Promise<string>;
+  read: (reference: string, sha256: string, byteSize: number, options?: ArtifactReadOptions) => Promise<string>;
   // Retention only: removes one content-addressed file. The caller first proves
   // the database no longer references it.
   remove: (reference: string, sha256: string) => Promise<void>;
@@ -16,7 +17,7 @@ export type ArtifactStore = {
 export type BinaryArtifactStore = ArtifactStore & {
   // Exact wire bytes. Storage does not assert gzip validity or source rights.
   writeBinary: (bytes: Uint8Array, sha256: string) => Promise<string>;
-  readBinary: (reference: string, sha256: string, byteSize: number) => Promise<Buffer>;
+  readBinary: (reference: string, sha256: string, byteSize: number, options?: ArtifactReadOptions) => Promise<Buffer>;
 };
 export type BlobCandidate = { reference: string; sha256: string; kind: "final" | "temporary" };
 export type DatabaseBlobStore = BinaryArtifactStore & {
@@ -33,19 +34,26 @@ const checkedReference = (reference: string, sha256: string, kind: "text" | "bin
   if (kind === "text" ? !text : kind === "binary" ? !binary : !text && !binary) refuse("artifact-reference-refused");
 };
 const wireDigest = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
-const privateBytes = async (path: string, limit: number): Promise<Buffer> => {
+const privateBytes = async (path: string, limit: number, signal?: AbortSignal): Promise<Buffer> => {
+  signal?.throwIfAborted();
   const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
+    signal?.throwIfAborted();
     const info = await handle.stat();
+    signal?.throwIfAborted();
     if (!info.isFile() || info.nlink !== 1 || (info.mode & 0o077) !== 0 || info.size > limit) refuse("artifact-file-refused");
     // Read at most the checked size plus one sentinel byte, even if the file grows.
     const bytes = Buffer.alloc(info.size + 1); let length = 0;
     while (length < bytes.length) {
+      signal?.throwIfAborted();
       const part = await handle.read(bytes, length, bytes.length - length, length);
+      signal?.throwIfAborted();
       if (part.bytesRead === 0) break;
       length += part.bytesRead;
     }
+    signal?.throwIfAborted();
     const after = await handle.stat();
+    signal?.throwIfAborted();
     if (length !== info.size || after.size !== info.size || after.mtimeMs !== info.mtimeMs || after.nlink !== 1 || (after.mode & 0o077) !== 0) refuse("artifact-file-refused");
     return bytes.subarray(0, length);
   } finally { await handle.close(); }
@@ -100,20 +108,26 @@ export const openArtifactStore = async (directory: string, maxFileBytes = 1_000_
         current.dev !== databaseInfo.dev || current.ino !== databaseInfo.ino) refuse("artifact-root-refused");
   };
   const contentStore = (directory: string): BinaryArtifactStore => {
-    const readExact = async (reference: string, sha256: string, byteSize: number, kind: "text" | "binary"): Promise<Buffer> => {
+    const readExact = async (reference: string, sha256: string, byteSize: number, kind: "text" | "binary", options: ArtifactReadOptions = {}): Promise<Buffer> => {
+      if (!options || typeof options !== "object" || Array.isArray(options) ||
+          Object.keys(options).some((key) => key !== "signal") ||
+          options.signal !== undefined && !(options.signal instanceof AbortSignal)) refuse("artifact-read-options-refused");
+      options.signal?.throwIfAborted();
       checkedReference(reference, sha256, kind);
       if (!Number.isSafeInteger(byteSize) || byteSize < 0 || byteSize > maxFileBytes) refuse("artifact-reference-refused");
       await checkDirectory(directory);
-      const bytes = await privateBytes(join(directory, reference), maxFileBytes);
+      options.signal?.throwIfAborted();
+      const bytes = await privateBytes(join(directory, reference), maxFileBytes, options.signal);
+      options.signal?.throwIfAborted();
       if (bytes.length !== byteSize || wireDigest(bytes) !== sha256) refuse("artifact-integrity-failed");
       return bytes;
     };
-    const read: ArtifactStore["read"] = async (reference, sha256, byteSize) => {
-      const bytes = await readExact(reference, sha256, byteSize, "text"); const text = bytes.toString("utf8");
+    const read: ArtifactStore["read"] = async (reference, sha256, byteSize, options) => {
+      const bytes = await readExact(reference, sha256, byteSize, "text", options); const text = bytes.toString("utf8");
       if (Buffer.byteLength(text) !== bytes.length || digest(text) !== sha256) refuse("artifact-integrity-failed");
       return text;
     };
-    const readBinary: BinaryArtifactStore["readBinary"] = (reference, sha256, byteSize) => readExact(reference, sha256, byteSize, "binary");
+    const readBinary: BinaryArtifactStore["readBinary"] = (reference, sha256, byteSize, options) => readExact(reference, sha256, byteSize, "binary", options);
     const syncDirectory = async () => {
       const handle = await open(directory, constants.O_RDONLY | constants.O_NOFOLLOW);
       try { await handle.sync(); } finally { await handle.close(); }

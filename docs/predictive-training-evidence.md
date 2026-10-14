@@ -1,5 +1,42 @@
 # #118 guarded evidence checkpoint
 
+## Deadline and cancellation increment
+
+This increment follows pushed frozen integration `2aee941`, changes no SQL or
+catalog contract, and adds no migration reservation. All training entry points
+now accept optional downward execution deadlines and cancellation outside their
+immutable request/digest identity. One monotonic budget covers SQL, files,
+reconstruction, refusal auditing and delivery. The codec receives the parent
+signal and remaining time. Original rights, expiry, byte and decoded-work gates
+remain required.
+
+Five focused controller cases verify cumulative time, late synchronous delivery,
+in-flight interruption, drained work, sanitized caller reasons and teardown. The
+artifact regression proves cancelled text/binary reads refuse before opening a
+missing file and later uncancelled reads recover. Four mandatory PostgreSQL
+cases use non-superuser recorder/replay logins: blocked SQL cancellation,
+deadline before lock timeout, file interruption without a pin/audit, and a late
+write interrupted after dataset insertion but before pin insertion. They verify
+backend removal, rollback of dataset/pin/digest address, no runtime invalidation
+receipt and exact retry through a fresh connection. Disconnect-only cancellation
+failed the initial backend-removal checks; same-login exact-backend cancellation
+fixed those cases. The separate regression attempt that collided with primary
+bootstrap's migration lock executed no cases and was rerun sequentially.
+
+Checks pass **792 Node tests**, the **13 focused artifact/controller cases**
+(including one additional artifact test added after that suite), **81 affected
+PostgreSQL cases** in 333 seconds, **6 report-contract cases**, typecheck and full
+lint, plus targeted lint for the subsequently added artifact test. The PostgreSQL
+filter intentionally leaves 95 unrelated cases unexecuted; this is the affected
+reader regression, not a new full-gate claim. Logs use
+`/private/tmp/dfs118-deadlines-{node,focused-node,db,report,types,lint}.log`.
+All 39 SQL/catalog artifacts through frozen 0019 match `2aee941` exactly.
+The prior full integration gate remains recorded below and is not repeated for
+this reader increment. Runtime interruption waits for cleanup; native file syscalls are
+cooperative and a commit-boundary disconnect can be ambiguous. Reconnect and
+idempotently retry original IDs/hashes. Capacity evidence and independent review
+remain; #118 is incomplete and #54 Part B remains blocked.
+
 ## Frozen combined schema19 integration
 
 #106 published frozen prefix18 at `dae2940`; Relay integrates it by merge with

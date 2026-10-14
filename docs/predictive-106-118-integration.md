@@ -844,3 +844,33 @@ byte for byte. No migration after 0019 is reserved by this checkpoint. All datab
 are disposable/local. #118 still needs deadlines/cancellation, representative
 capacity evidence and independent review; both issues remain incomplete and
 #54 Part B stays blocked by real-source and population qualification.
+
+
+## #118 execution-control increment after the frozen prefix
+
+Frozen 0001–0019 integration is pushed at `2aee941`; #106's 0001–0018 artifacts
+remain byte-for-byte unchanged. The next #118 increment adds optional execution
+controls to the training APIs, with no DDL or new migration reservation. Text and
+binary artifact reads now accept an optional fourth `{ signal }` argument; their
+existing three-argument behavior and exact-address integrity checks are retained.
+Guarded compressed reads receive the parent signal and remaining operation time,
+while current rights, wire quotas and decoded-work ceilings remain in force.
+
+Training methods use one cumulative 10/30-second execution budget. Interrupted
+sessions are cancelled through a bounded same-login connection that checks the
+original PID/start time, database and user, then retired. Reconnect and retry
+immutable IDs after interruption; a commit-boundary disconnect can have unknown
+commit outcome. Native local file reads are cooperatively cancelled between
+syscalls, and codec/session cleanup is drained before settlement. No claims of
+hard OS preemption, real-source capacity or training readiness are made.
+
+The increment passes 81 affected PostgreSQL cases, 792 Node tests plus the
+focused artifact/controller regression, report-contract checks, typecheck and
+lint. It preserves all 39 frozen SQL/catalog artifacts. The 229-case full database
+gate belongs to `2aee941`; it is not claimed to have been repeated for this reader
+increment.
+
+See [the execution contract](predictive-training-handoff.md#training-execution-deadlines-and-interrupted-recovery)
+and [the evidence checkpoint](predictive-training-evidence.md).
+Next gates are representative capacity and independent review. No migration
+after 0019 is reserved.
