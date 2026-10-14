@@ -7,6 +7,8 @@ import { runCompressedWorker,codecSandboxArgs,CODEC_WORKER_IMAGE,CODEC_WORKER_ME
 import { inspectCompressedSource } from "../../src/lib/predictive/compressedSource.ts";
 import { sourceCsv } from "./fixtures/source.ts";
 import { SOURCE_HEADERS } from "../../src/lib/predictive/sourceHeaders.ts";
+import { prepareCompressedPublication } from "../../src/lib/predictive/compressedPublication.ts";
+import { compressedPublicationFixture } from "./fixtures/compressedPublication.ts";
 const wire=()=>gzipSync(sourceCsv("player"));
 const request=bytes=>({feed:"player",season:2026,wireSha256:createHash("sha256").update(bytes).digest("hex"),wireBytes:bytes.length});
 
@@ -19,6 +21,29 @@ test("isolated worker prepares complete claims without publication activation",a
   const bytes=wire(),proof=await runCompressedWorker("claims",bytes,request(bytes),{captureId:"worker-capture"});
   assert.equal(proof.result.rows.length,1);assert.equal(proof.result.rows[0].projection.values.passingYards,80);
   assert.equal(proof.result.publicationSupported,false);
+});
+test("publication preparation binds the detached versioned source contract to complete worker claims",async()=>{
+  for(const [season,feed] of [[2025,"player"],[2026,"team"]]){
+    const {source,input,text,checkedAt}=compressedPublicationFixture(season,feed);
+    const originalSha=input.artifact.sha256,pending=prepareCompressedPublication(source,input,checkedAt);
+    source.fill(0);input.profile.assetPattern="changed";input.artifact.origin="changed";
+    const result=await pending;
+    assert.equal(result.input.artifact.sha256,originalSha);
+    assert.equal(result.inspection.decodedSha256,createHash("sha256").update(text).digest("hex"));
+    assert.equal(result.rows.length,1);assert.equal(result.rows[0].rowOrdinal,1);
+    assert.equal(result.rows[0].projection.values.passingYards,-2);assert.equal(result.rows[0].projection.season,season);
+    assert.equal(result.rows[0].projection.rawPlayerId,feed==="team"?null:"00-0000001");
+    assert.equal(result.worker.memoryLimitBytes,CODEC_WORKER_MEMORY);
+    assert.equal(result.state,"prepared-only");assert.equal(result.publicationSupported,false);
+    assert.equal(result.featuresPublished,false);assert.equal(result.labelsFinalized,false);
+  }
+});
+test("publication preparation refuses complete-body corruption and recovers without partial activation",async()=>{
+  const {source,input,checkedAt}=compressedPublicationFixture();
+  source[source.length-8]^=1;input.artifact.sha256=createHash("sha256").update(source).digest("hex");
+  await assert.rejects(prepareCompressedPublication(source,input,checkedAt),/compressed-gzip-refused/);
+  const good=compressedPublicationFixture();
+  assert.equal((await prepareCompressedPublication(good.source,good.input,good.checkedAt)).rows.length,1);
 });
 test("isolated worker pins caller buffers and scope before asynchronous startup",async()=>{
   const bytes=wire(),scope=request(bytes),limits={rows:1},pending=runCompressedWorker("inspect",bytes,scope,{limits});

@@ -408,3 +408,27 @@ Combined checkpoint validation passes 750 Node tests, nine worker checks, 75 Nod
 DB checks and all 175 PostgreSQL tests (150 mandatory predictive cases), including
 Relay's assigned-shard verification. Typecheck, full lint, catalog/migration/
 readiness and whitespace checks pass; disposable database cleanup completed.
+
+## Versioned publication preparation
+
+The next increment adds `prepareCompressedPublication` and its narrow binary
+metadata interface. Complete 2025/2026 player/team assets bind the exact provider,
+release tag, `.csv.gz` name/URL, header, evidence kind and unfiltered season scope
+to the new `nflverse-gzip-csv-source-qualification-v1` profile. The old plaintext
+profile remains unchanged. Historical and preparation-clock research rights
+must permit the operation; future capture/release/registration knowledge refuses.
+The worker verifies actual wire identity, complete CRC/CSV and claim ordinals,
+and returns a detached candidate with a stable versioned request hash.
+
+The result is explicitly `prepared-only`; no file, profile, capture, claim or
+codec envelope is persisted. Supplied rights/clock fields do not establish
+authoritative database permission. A future atomic writer must recheck the
+registered chain and current rights under publication locks, use the database
+ingestion clock and seal the complete claim aggregate. The SQL activation plan
+and migration dependency are recorded in the integration handoff: proposed
+0017 only for raw publication, after Relay freezes its 0016 prefix. No later
+number or consumer activation is allocated by this checkpoint.
+
+Validation passes 755 Node tests, 11 real worker checks, typecheck, full lint and
+whitespace checks. This preparation-only increment makes no database-path change;
+the previous complete schema-15 database gate remains the last DB checkpoint.

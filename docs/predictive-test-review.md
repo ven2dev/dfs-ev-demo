@@ -741,3 +741,21 @@ The first complete gate caught microsecond timestamps in two newly added rights
 fixtures. Both were corrected with explicit database-clock millisecond truncation,
 preserving the schema's timestamp constraints and all race/expiry assertions.
 All three new cases then passed a focused rerun before repeating the full gate.
+
+## #106 publication preparation review
+
+Five Node cases cover the four exact player/team and 2025/2026 combinations,
+detached input, unchanged legacy qualification, incompatible parser/provider/
+asset/header/evidence declarations, partial/filtered scope, rights at capture
+and preparation, future knowledge, malformed identity and wire bounds. Changed
+capture, wire and attribution alter the request identity; a later preparation
+clock alone does not. Wrong wire hash/size and denied rights refuse before a
+runtime can be launched.
+
+Two real container cases exercise the preparation API with signed 2025 player
+and 2026 team values, independent decoded SHA-256, exact ordinals and kernel
+memory metrics. Caller mutation cannot change the detached publication candidate.
+CRC damage with a matching new wire digest refuses the whole result; the next
+valid preparation succeeds. Every output remains prepared-only with publication,
+features and labels false. These tests establish preparation, not database
+publication authorization, real-profile approval or model readiness.

@@ -363,3 +363,57 @@ checks and 175 PostgreSQL tests (150 mandatory predictive cases), typecheck,
 full lint, catalog/migration/readiness and whitespace checks. The complete gate
 includes Relay's assigned-shard verification and the worker-backed inspection
 and claim readers. Disposable database cleanup completed.
+
+## #106 publication preparation and next migration dependency
+
+`prepareCompressedPublication` now prepares a detached candidate through the
+isolated worker. The new parser/profile contract is
+`nflverse-gzip-csv-source-qualification-v1`; its publication request identity uses
+`nflverse-gzip-csv-source-claims-v1`. Only complete player/team season assets for
+2025 or 2026 qualify for this preparation interface. Feed, exact asset URL/name,
+release tag, header digest, selected evidence kind, scope and wire identity must
+agree. Legacy CSV qualification remains 2026-only and unchanged.
+
+Historical and preparation-clock research rights must both allow the use.
+Future capture, release metadata or registration knowledge refuses. The complete
+worker output binds each ordinal and capture ID; no caller-supplied decoded proof
+or projected rows enter this API. The result remains `prepared-only` with all
+publication/features/labels flags false. Caller-provided rights and a preparation
+clock cannot authorize a database write; the writer must validate authoritative
+registrations and fresh rights under its publication locks.
+
+**Proposed next #106 allocation: 0017 only, for raw compressed publication.**
+This is pending Relay confirmation that its next complete range is 0016 and a
+frozen 0001–0016 checkpoint. It is not an applied migration or a reservation of
+later numbers. Keep coordination in this chat. No change to #118's DDL is made.
+
+The publication increment must:
+
+- Permit published gzip only for the exact new profile and a complete, immutable
+  codec/publication envelope. Existing incomplete diagnostics remain valid;
+  unknown/synthetic parser names still cannot bypass qualification or clocks.
+- Admit up to 80,000 raw-stat ordinals only for the qualified gzip profile;
+  preserve legacy 8,192-row and 2026 scope checks. Generalizing projection shape
+  must retain capture/profile-specific season enforcement and refused rows.
+- Insert wire artifact, published capture, complete raw claims, codec metadata,
+  publication seal and rights audit atomically, with database-clock ingestion.
+  Never promote an existing immutable incomplete capture by updating it.
+- Verify the stored complete raw claims against regenerated worker output on
+  replay, including the publication digest, and preserve separate wire/decode
+  accounting, fresh rights gates and exact-address rollback/retention handling.
+- Keep canonical observation bypasses prohibited. Raw publication does not
+  activate normalization, numerical consumers, training or a fitting-ready flag.
+- Pass direct-SQL forgery/profile/coverage probes, restricted-role publication,
+  blob/profile lock races, rights expiry/revocation, rollback, authorized deletion,
+  restored reapply and fixed-prefix upgrade/no-op tests before freezing 0017.
+
+Consumer/normalization activation remains a later separately coordinated
+increment. The missing real participation/absence and other source qualification
+requirements remain unchanged. Creator A–C scope changes do not alter #106's
+v1 multi-season history policy.
+
+Preparation validation passes 755 Node tests, all 11 real worker checks,
+typecheck, full lint and whitespace checks. No database path or schema changed;
+the last complete schema-15 database gate remains 75 Node DB checks and 175
+PostgreSQL tests. Relay's 0016 is currently an uncommitted dataset implementation,
+so SQL publication activation awaits its frozen checkpoint and range confirmation.
