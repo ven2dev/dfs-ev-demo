@@ -374,3 +374,33 @@ database was accessed; frozen 0001–0019 and Relay's SQL-capacity work remain
 unchanged. Canonical identity/membership, independent coverage, completion,
 official reconciliation and participation qualification still precede real
 feature/label publication.
+
+## Original context intake and next adapter (2026-10-14)
+
+The current archive was reverified before examining QB identity and membership.
+It contains one selected GSIS QB identifier row for the proposed player, five
+nonblank provider crosswalk namespaces and no reverse-ID conflict for those
+values within the captured identifiers file. The 2026 weekly roster contains
+six matching QB/PHI claims, Weeks 1–6. Exact source references, record ordinals,
+selected-row fingerprints and raw crosswalk/status values remain in private
+`context-intake.json`; semantic digest
+`2d69aee4f157bf2b6618dd553d293e747d5cdd3cb87d76abfd40048d33d9ced4`.
+This finding is scoped to the verified capture, not all provider history.
+No canonical bridge, former-team inventory or effective interval was published.
+
+The remaining context gap is an implementation boundary as well as a source
+qualification task. Current ordinary publication parses JSON revision envelopes;
+0013 deliberately blocks canonical observation links from the registered raw
+CSV/gzip path. Numerical schema-18 normalization does not supply a schedule,
+identifier or dated-membership adapter. See the [original-byte context adapter
+boundary](predictive-original-context-adapter.md) for the next narrow increment:
+source-backed schedule/identity claims first, followed by explicitly qualified
+weekly membership semantics. Generated native JSON under a provider CSV profile
+must not replace original-byte evidence.
+
+#118 owns 0020 for training-validation optimization. #106's context increment
+remains unnumbered; no migration after 0020 is allocated here. Pure parsing and
+source-contract work can proceed before DDL coordination. Validation for this
+intake is actual journal/source verification, exact selected-row and reverse-ID
+inspection, reviewed runtime-boundary checks and documentation whitespace checks.
+No database tests were repeated, and frozen 0001–0019 remain unchanged.

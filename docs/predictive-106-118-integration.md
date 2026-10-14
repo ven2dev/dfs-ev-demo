@@ -906,3 +906,14 @@ remain as documented in `predictive-106-real-slice.md`. Neither this merge nor
 the passing synthetic cases establishes real features, final labels, capacity
 or #54 Part B readiness. Relay continues capacity validation and independent
 review; #106 reserves no additional DDL.
+
+## Next allocation and original context work
+
+Coordination in this chat reserves **0020 for #118's training-validation
+optimization**. Frozen 0001–0019 remain unchanged. #106 has allocated no later
+migration. Its next source increment is the original-byte schedule/identifier
+context adapter described in `predictive-original-context-adapter.md`; pure
+parsing/source-contract work can proceed unnumbered. Coordinate the context
+recorder's DDL footprint after #118's 0020 checkpoint is frozen, preserving its
+guarded validation/reuse interface. The real weekly membership interpretation,
+independent coverage and official evidence gates remain separate prerequisites.
