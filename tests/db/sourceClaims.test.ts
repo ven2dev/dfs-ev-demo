@@ -524,10 +524,10 @@ it("qualified gzip migration preserves frozen v16 evidence ledger and repeated u
     const captures=(await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows;
     const files=await checkMigrationArtifacts(),contracts=await loadCatalogContracts(files);
     const options={...target,files,verify:createCatalogVerifier(contracts)};
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 19,executed:[17,18, 19]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 20,executed:[17,18, 19, 20]});
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,16)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 19,executed:[]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 20,executed:[]});
   },16);
 });
 
@@ -760,10 +760,10 @@ it("compressed inspection migration preserves fixed v14 evidence and ledger on u
     const captures = (await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows;
     const files=await checkMigrationArtifacts(), contracts=await loadCatalogContracts(files);
     const options={...target,files,verify:createCatalogVerifier(contracts)};
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 19,executed:[15,16,17,18, 19]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 20,executed:[15,16,17,18, 19, 20]});
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,14)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 19,executed:[]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion: 20,executed:[]});
   },14);
 });
 
@@ -848,10 +848,10 @@ it("gzip staging migration upgrades fixed v12 without rewriting evidence or prio
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(), contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [13, 14, 15, 16, 17, 18, 19], schemaVersion: 19 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [13, 14, 15, 16, 17, 18, 19, 20], schemaVersion: 20 });
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 12)).toEqual(ledger);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 19 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 20 });
   }, 12);
 });
 
@@ -961,10 +961,10 @@ it("ordinary ingestion clock migration upgrades v10 without rewriting captures a
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11, 12, 13, 14, 15, 16, 17, 18, 19],schemaVersion: 19 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20],schemaVersion: 20 });
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,10)).toEqual(ledger);
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 19 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 20 });
   },10);
 });
 
@@ -1123,12 +1123,12 @@ it("CSV source migration upgrades released v4 preserving creator corpus evidence
     expect(ledger[3].filename).toBe("0004_creator_corpus_projection.sql");
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], schemaVersion: 19 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], schemaVersion: 20 });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(upgraded.slice(0, 4)).toEqual(ledger);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
     await store.publishSourceStats(sourceClaimFixture("after-corpus-upgrade"));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 19 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 20 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
   }, 4);
@@ -1601,7 +1601,7 @@ it("CSV binding migration upgrades v5 without changing released history and reru
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(19);
+    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(20);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
@@ -1857,7 +1857,7 @@ it("CSV unavailable retention re-applies pre-v7 legacy events with identical cou
     // Restore the same retained evidence and IDs into a fresh post-v7 database.
     // New timestamps are allowed; the deletion set and audit contract are not.
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(19);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(20);
       expect(await procedure(client)).not.toBe(oldProcedure);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
@@ -2333,13 +2333,13 @@ it("CSV SQL witness migration upgrades v7 preserving bindings and prior migratio
     const revisions = (await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], schemaVersion: 19 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], schemaVersion: 20 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 7)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect((await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows).toEqual(revisions);
     const scoped = factRequest(request.profileId, a.event.recordedAt);
     expect(await sqlWitness(client, scoped)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(scoped)));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 19 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 20 });
     // The released-v4 upgrade test above seeds all five corpus tables and now
     // runs through 0008; this focused v7 test seeds source bindings as well.
   }, 7);
@@ -2748,11 +2748,11 @@ it("CSV source decision migration upgrades v8 preserving recorded bindings and w
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], schemaVersion: 19 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], schemaVersion: 20 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 8)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect(await sqlWitness(client, req)).toEqual(witness);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 19 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 20 });
     const decision = await store.recordSourceDecision("after-decision-upgrade", decisionScope(request.profileId), null);
     expect(decision.record.plan.witness.heads).toEqual(witness.heads);
   }, 8);
@@ -3065,7 +3065,7 @@ it("QB invalidation backfills exact digest addresses and enforces execute-only r
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(), contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    await expect(runScratchMigrations(client, { ...options, verify: async (connection: Client, version: number) => {
+    await expect(runScratchMigrations(client, { ...options, files: files.slice(0, 19), verify: async (connection: Client, version: number) => {
       await options.verify(connection, version);
       if (version === 19) throw new Error("injected-invalidation-final-verification");
     } })).rejects.toThrow("injected-invalidation-final-verification");
@@ -3073,9 +3073,9 @@ it("QB invalidation backfills exact digest addresses and enforces execute-only r
     expect((await client.query("SELECT to_regclass('public.predictive_training_invalidation_addresses') AS addresses,to_regclass('public.predictive_training_invalidations') AS events")).rows[0])
       .toEqual({ addresses: null, events: null });
     expect((await store.readDatasetPage(pageRequest(saved))).manifestSha256).toBe(saved.manifestSha256);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 19, executed: [19] });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 20, executed: [19, 20] });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,18)).toEqual(ledger);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 19, executed: [] });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 20, executed: [] });
     expect((await client.query("SELECT kind,count(*)::integer AS n FROM predictive_training_invalidation_addresses GROUP BY kind ORDER BY kind")).rows)
       .toEqual([{ kind: "dataset", n: 1 }, { kind: "run", n: 1 }]);
     const address = { kind: "dataset" as const, id: saved.datasetId, sha256: saved.manifestSha256 };
@@ -3421,11 +3421,11 @@ it("compressed binding migration preserves the sealed v17 prefix and upgrades wi
     const seals=(await client.query("SELECT * FROM predictive_compressed_publications ORDER BY capture_id")).rows;
     const ledger=(await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files=await checkMigrationArtifacts(),contracts=await loadCatalogContracts(files),options={...target,files,verify:createCatalogVerifier(contracts)};
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:19,executed:[18, 19]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:20,executed:[18, 19, 20]});
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,17)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
     expect((await client.query("SELECT * FROM predictive_compressed_publications ORDER BY capture_id")).rows).toEqual(seals);
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:19,executed:[]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:20,executed:[]});
     const {cutoff:_cutoff,...request}=fixture.request;void _cutoff;
     expect((await store.recordCompressedSourceNormalization("compressed-upgraded",request,null)).event.revision?.data.passingYards).toBe(-2);
   },17);
@@ -4205,13 +4205,19 @@ it("QB dataset migration preserves v15 inventories consumers and legacy retentio
     const events = await store.retentionEvents(); const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [16, 17, 18, 19], schemaVersion: 19 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [16, 17, 18, 19, 20], schemaVersion: 20 });
     expect(await store.readFittingRun(inventory.request.fittingRunId)).toEqual(original);
     expect((await store.replaySourceConsumer(feature.id))?.bodySha256).toBe(feature.bodySha256);
     expect(await store.retentionEvents()).toEqual(events);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 15)).toEqual(ledger);
     expect((await store.prepareDataset(datasetRequest(inventory))).activePin).toBe(true);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 19 });
+    // Guarded reads create a TEMP namespace. Administrative catalog collection
+    // retains its stricter no-temp contract, so use a fresh migrator session.
+    const migrator = new Client(target.expected);
+    try {
+      await migrator.connect();
+      expect(await runScratchMigrations(migrator, options)).toMatchObject({ executed: [], schemaVersion: 20 });
+    } finally { await migrator.end(); }
   }, 15);
 });
 
@@ -4641,7 +4647,7 @@ it("QB inventory migration upgrades v13 without rewriting evidence and preserves
     const evidence = (await client.query("SELECT id,body_sha256,recorded_at FROM predictive_source_consumers ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 19, executed: [14, 15, 16, 17, 18, 19] });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 20, executed: [14, 15, 16, 17, 18, 19, 20] });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 13)).toEqual(ledger);
     expect((await client.query("SELECT id,body_sha256,recorded_at FROM predictive_source_consumers ORDER BY id")).rows).toEqual(evidence);
     expect(await store.replaySourceConsumer(feature.id)).toEqual(prior);
@@ -4652,7 +4658,11 @@ it("QB inventory migration upgrades v13 without rewriting evidence and preserves
     });
     const request = await previewRequest(client, seed);
     expect(await store.prepareFittingRun(request)).toMatchObject({ fittingReady: false, rows: [{ selection: { featureId: feature.id } }] });
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 19 });
+    const migrator = new Client(target.expected);
+    try {
+      await migrator.connect();
+      expect(await runScratchMigrations(migrator, options)).toMatchObject({ executed: [], schemaVersion: 20 });
+    } finally { await migrator.end(); }
   }, 13);
 });
 
@@ -5165,10 +5175,10 @@ it("CSV QB migration upgrades v9 preserving binding and decision history and is 
     const ledger=(await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files=await checkMigrationArtifacts(); const contracts=await loadCatalogContracts(files);
     const options={ ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19],schemaVersion: 19 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],schemaVersion: 20 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,9)).toEqual(ledger);
     expect(await store.replaySourceDecision({ ...decisionScope(request.profileId),cutoff: decision.record.recordedAt })).toMatchObject({ record: decision.record });
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 19 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 20 });
   },9);
 });
 

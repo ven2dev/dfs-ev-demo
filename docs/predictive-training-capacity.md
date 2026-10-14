@@ -1,16 +1,82 @@
 # #118 local training capacity measurements
 
-This opt-in benchmark exercises the frozen 0001–0019 prefix and the guarded
+This opt-in benchmark exercises the ordered migration prefix and the guarded
 training APIs. It measures different player/event values rather than cloning
 one consumer body. It does not qualify real sources, historical availability,
 population coverage or #54 Part B. The prior shared-context measurement remains
 in [the evidence log](predictive-training-evidence.md).
 
-## Observed checkpoint — 2026-10-14
+## Prefix20 guarded-validation checkpoint — 2026-10-14
+
+The [final prefix20 measurements](evidence/predictive-training-capacity-prefix20-2026-10-14.json)
+retain the full migration checksums, tested source hashes, plans and nested SQL
+function timings. All measured operations complete under the unchanged SQL and
+10/30-second API budgets. Each case is one warm local sample, with the same
+16-QB/two-profile, CSV/gzip, one-history-slot inventory as the earlier bottleneck
+measurement. This establishes that the immediate 16-row refusal is resolved for
+this fixture; it does not establish a universal supported batch size.
+
+| Operation | Requested rows | Wall time | Client SQL statements | Protected files |
+| --- | ---: | ---: | ---: | ---: |
+| Prepare run | 1 | 0.46 s | 9 | 0 |
+| Prepare dataset and pin | 1 | 2.73 s | 774 | 5 |
+| Read page | 1 | 2.42 s | 766 | 5 |
+| Read final labels | 1 | 2.51 s | 671 | 5 |
+| Prepare run | 16 | 2.27 s | 9 | 0 |
+| Prepare dataset and pin | 16 | 6.78 s | 810 | 20 |
+| Read one-row page from 16-member dataset | 16 | 5.75 s | 802 | 20 |
+| Read 16-row page | 16 | 5.77 s | 802 | 20 |
+| Read 16 final labels | 16 | 7.70 s | 687 | 20 |
+
+Guarded SQL feature checks for 16 records take **1.332 s / 43,188 buffer hits**,
+compared with prefix19's 13.883 s / 1,006,951 hits. Guarded final-label checks take
+3.873 s / 167,891 hits. These are separate EXPLAIN probes, not API wall times.
+The unguarded 16-record diagnostic hits its 15-second SQL limit; the optimization
+requires the evidence guard and makes no unguarded capacity claim. Natural
+metadata selection remains small: 1.809 ms / 292 hits.
+
+The 16-member closure has 200 references and 20 blobs, charging 287,638 bytes.
+Its pages verify 198,654 unique wire bytes and decode 6,132 bytes / eight gzip
+rows, irrespective of whether one or 16 response rows are returned. The
+one-row page still verifies the whole assigned shard. Maximum sampled parent RSS
+among measured calls is 205.7 MB; process high water including setup is 243.8 MB;
+maximum isolated decoder RSS is 104.2 MB. These decimal-MB samples do not measure
+database/VM memory or establish a memory guarantee. Fixture setup takes 72.1 s,
+outside measured API calls; the complete matrix takes 132.0 s.
+
+Migration 0020 shares repeated reconstruction only in an owner-created private
+temporary table inside a guarded READ COMMITTED transaction. It requires all 36
+relevant evidence-table SHARE locks; write-capable locks disable reuse. Exact
+requests, cutoffs, versions and historical rights clocks remain separate keys.
+Access-clock reuse also requires the same global rights epoch; scheduled rights
+transitions miss the cache. Consumer hits reauthorize current reconstructed
+context, and the application still checks current rights before every unique
+file and delivery. No blob, byte-reading, retention or deadline interface changes.
+
+Successful checks and reconstructed plans, including legitimate unavailable
+plans, may be shared. Errors and absent consumer records are not cached. Hashes
+index full JSON keys, which must also compare equal. The private cache admits at
+most 4,096 entries and 64,000,000 serialized key/value bytes, then falls back to
+the released validators; this is not an RSS ceiling. Caller-owned shadow temp
+relations and direct helper/cache writes are refused. Commit/rollback disposes
+the cache. Frozen 0001–0019 SQL and catalog files remain unchanged.
+
+A committed guarded read leaves PostgreSQL's empty TEMP namespace in that
+session after dropping the memo table. Catalog/migration administration retains
+its strict refusal of TEMP namespaces and must use a fresh administrative
+connection, as the migration CLI already does. An initial rolled-back read may
+also roll back namespace creation; it is not a substitute for that separation.
+
+The next capacity cases are 64 independent rows, full 16-slot histories,
+opponent context and representative provider file sizes. Independent review of
+0020 and the existing reader/retention implementation remains outstanding.
+#118 is incomplete; real-source/population qualification still blocks #54 Part B.
+
+## Prefix19 bottleneck checkpoint — 2026-10-14
 
 The retained [raw measurements and plans](evidence/predictive-training-capacity-2026-10-14.json)
 cover widths **1 and 16 in a populated 16-QB/two-profile inventory**, with one
-gzip source. The 64-QB matrix is deferred because width 16 already exceeds the
+gzip source. At prefix19 the 64-QB matrix was deferred because width 16 exceeded the
 normal SQL/read deadlines before files open. The benchmark accepts all three
 widths; its configured 64-row default is not a claim that it completes successfully
 or that 64-row operations meet their deadlines.
@@ -50,15 +116,14 @@ label snapshot error; it was corrected and the 16-QB run rechecked. Neither fail
 setup is reader-capacity evidence. The opt-in test's total 900-second budget
 includes setup plus the full matrix; individual API/SQL budgets are unchanged.
 
-Operating guidance remains deliberately limited: the sampled one-row access in
+Prefix19 operating guidance was deliberately limited: the sampled one-row access in
 this 16-lineage inventory completed, and 16-row run/label batches did not. A
 one-row response does not establish capacity for a larger inventory, and there
-is no evidence here for a universal safe 16/64/256-row ceiling. The next increment
-must profile and share repeated SQL validation under the existing guard, retaining
-current use rights, original cutoff checks, complete raw lineages and per-record
-association/finality checks. Then rerun the affected widths before the 64-row,
-16-history-slot, opponent and realistic source-file cases. Any SQL contract/index
-change needs a coordinated forward migration; frozen 0001–0019 must remain intact.
+was no evidence for a universal safe 16/64/256-row ceiling. This checkpoint
+motivated 0020's guarded reuse of repeated SQL validation. The 64-row,
+16-history-slot, opponent and realistic source-file cases remain unmeasured.
+Any further SQL contract/index change needs a coordinated forward migration;
+frozen 0001–0019 remain intact.
 
 ## Reproduce
 

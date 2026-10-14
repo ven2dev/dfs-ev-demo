@@ -114,6 +114,7 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
       { version: 17, provenance: "executed", sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
       { version: 18, provenance: "executed", sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
       { version: 19, provenance: "executed", sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
+      { version: 20, provenance: "executed", sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
     ]);
     await client.query(`INSERT INTO live_prop_inputs_cache (sport_key, event_id, market_key, player_name)
       VALUES ('synthetic-bootstrap', 'synthetic-event', 'player_pass_yds', 'Synthetic Player')`);
@@ -121,7 +122,7 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
     const result = await bootstrapTestDatabase();
     expect(result.first.executed).toEqual([]);
     expect(result.repeat.executed).toEqual([]);
-    expect(result.repeat.schemaVersion).toBe(19);
+    expect(result.repeat.schemaVersion).toBe(20);
     expect((await client.query(historySql)).rows).toEqual(history);
     expect((await client.query("SELECT * FROM live_prop_inputs_cache")).rows).toEqual(rows);
   });

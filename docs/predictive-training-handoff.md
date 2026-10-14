@@ -732,12 +732,30 @@ gzip. Fixture values, prior-event labels, explicit missing target labels and
 immutable membership are independently checked. Decoder work/peak RSS and total
 client SQL counts are now visible outside evidence and response digests.
 
-Width 16 fails the normal SQL/read deadlines before protected bytes open, while
-the natural selection query takes only 1.486 ms. Repeated SQL consumer validation
-is the next engineering increment; increasing deadlines or reporting the 64-row
-safety ceiling as demonstrated capacity is not a solution. The 64-row matrix is
-deferred until smaller widths pass. Further capacity cases must include larger
-histories, opponent inputs and realistic source sizes. A required SQL change uses
-a coordinated forward migration, never an edit to frozen 0001–0019. No later
-number is allocated. #118 remains incomplete pending capacity work and independent
-review; #54 Part B remains blocked on its additional real/population evidence gates.
+At prefix19, width 16 failed the normal SQL/read deadlines before protected bytes
+opened, while selection took only 1.486 ms. Migration 0020 resolves this fixture's
+immediate bottleneck by sharing repeated SQL reconstruction under the existing
+guard. Its final 16-row run, dataset, page and label calls complete in 2.27,
+6.78, 5.77 and 7.70 seconds respectively, without raising deadlines. This is one
+warm local sample of a one-slot synthetic history, not a general capacity ceiling.
+
+The SQL memo is private, transaction-local and bounded by entry/serialized-byte
+limits. All relevant evidence locks are required, own-transaction writes disable
+reuse, and exact requests/cutoffs/versions stay distinct. Historical checks retain
+their exact clock; access checks include the global rights epoch. Scheduled use
+changes miss reuse, consumer hits reauthorize current context, and application
+rights gates before files/delivery are unchanged. Caller-created temp state cannot
+authorize a result. Commit/rollback drops the state; deletion cannot carry a cached
+success into another transaction. Released validators remain the fallback.
+
+A committed guarded read leaves an empty TEMP namespace even though its cache
+table is gone. Keep catalog/migration work on a fresh administrative connection;
+the existing catalog checker still refuses TEMP namespaces. Ordinary training
+connection reuse is supported. Interrupted sessions still require replacement.
+
+0020 changes SQL validation only. Feature/history policies, source byte verification,
+training requests, optional cancellation, wire/decoded limits and retention interfaces
+are unchanged. See [the measured results and safety boundary](predictive-training-capacity.md).
+The 64-row matrix, full histories, opponent inputs, realistic source sizes and
+independent review remain. Any further SQL change needs a coordinated forward
+migration. #118 remains incomplete; #54 Part B retains its real/population gates.

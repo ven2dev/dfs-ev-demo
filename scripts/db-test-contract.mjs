@@ -23,6 +23,7 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "training validation migration preserves evidence and refuses cache policy and temporal bypasses",
   "compressed bindings materialize all 8193 sealed rows while binding only requested player claims",
   "compressed consumers verify numerical features labels dataset pins and mandatory source deletion in the shared graph",
   "compressed binding migration preserves the sealed v17 prefix and upgrades without changing prior rows or ledger",

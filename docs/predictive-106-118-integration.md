@@ -881,3 +881,59 @@ See [the execution contract](predictive-training-handoff.md#training-execution-d
 and [the evidence checkpoint](predictive-training-evidence.md).
 Next gates are representative capacity and independent review. No migration
 after 0019 is reserved.
+
+## #118 guarded SQL validation increment (0020)
+
+0020 is frozen at this checkpoint for #118's training-validation optimization.
+The complete fixed prefix is **0001–0020**. The ordered
+file is `0020_predictive_training_validation_memo.sql`, with SHA-256
+`fed741f76177ec35e07ac1d1d09f39b33ceb26d406ac06b0e4ecd97e7816ada3`.
+All 39 frozen SQL/catalog artifacts through 0019 match `c744ffa` byte for byte;
+the earlier #106 prefix remains intact. No migration after 0020 is allocated.
+
+The optimization shares successful reconstruction inside a guarded transaction;
+it does not change feature or label definitions, source receipt clocks, v1
+multi-season history, byte verification, training requests, cancellation,
+wire/decoded quotas or retention interfaces. **No TypeScript byte-reading,
+verification or cleanup interface changes are required by #106.**
+
+The final ordered 1/16-width benchmark passes under the original API deadlines.
+At 16 rows, run preparation takes 2.27 s, dataset/pin preparation 6.78 s, a 16-row page
+5.77 s and labels 7.70 s. This uses one numerical history slot, two profiles and
+mixed CSV/gzip in a synthetic 16-QB inventory; it proves no real-source, full
+history, opponent or population capacity. Source hashes, migration hashes and
+raw measurements are retained in
+[the capacity artifact](evidence/predictive-training-capacity-prefix20-2026-10-14.json).
+
+Memoization requires all 36 kernel evidence tables to have SHARE locks; writes in
+the same transaction disable reuse. Exact requests, cutoffs and versions remain
+separate. Historical validation retains its exact rights clock; current reuse
+requires the same global rights epoch and fresh context authorization. Private
+temp state is disposed at transaction end. Callers cannot submit cache results
+or authorize a record by creating a shadow temp relation. Original validators
+remain the fallback, including outside the guarded training path.
+
+After a committed guarded read, the session's empty TEMP namespace persists.
+Catalog/migration operations must use a fresh administrative connection, as the
+CLI does; the collector's strict no-temp rule is unchanged. Training sessions
+may be reused normally, except after an interruption. Upgrade fixtures test
+the fresh-migrator boundary without changing the recorded evidence or ledger.
+
+For #106's forthcoming original-byte context recorder, any new table consulted
+by these kernels must enter the read guard and memo's protected dependency set
+through coordinated forward DDL. Reuse assumes that the access clock changes
+kernel results only through rights boundaries and cutoff eligibility. New
+clock-dependent policies must update that key or remain uncached. Frozen 0020
+must not be edited to accommodate later dependencies.
+
+The [evidence checkpoint](predictive-training-evidence.md) records migration
+rollback/parity, restricted-role, temporal and deletion checks. Representative
+64-row/full-history/opponent/file-size cases and independent review remain.
+#118 and #106 remain incomplete; #54 Part B retains all real/population gates.
+
+Validation covers all 234 PostgreSQL cases through one complete run and focused
+rechecks of four corrected fixtures, plus the strengthened safety case. It also
+passes 75 DB checks, 11 worker checks, 21 catalog contracts, 873 jsdom/793 Node
+tests, typecheck, full lint and final affected-file/report checks. The complete
+database command's aggregate report was not rerun after those fixture corrections;
+final PR CI remains required. Only owned disposable/local databases were migrated.
