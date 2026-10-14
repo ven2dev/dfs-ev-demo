@@ -233,7 +233,8 @@ An evaluation plan fixes its aggregation/reuse policy before scores are inspecte
 
 ## Proposed versioned service surface
 
-Names below specify behavior; they are documentation, not exported code yet.
+The run/dataset/pin and page/label operations below are now exported by the local
+store. Complete-run readiness and audited invalidation remain outstanding.
 Every request carries `version: "qb-training-read-v1"`.
 
 | Operation | Result / restriction |
@@ -556,3 +557,27 @@ The final dataset/pin checkpoint passes 748 Node tests, 75 DB checks and 185
 PostgreSQL tests (160 mandatory predictive cases), typecheck, affected-file lint
 and all 17 catalog contracts. Frozen 0001–0015 remain unchanged from `84945bf`.
 #118's complete next migration range is 0016; 0017 only is reserved for #106.
+
+The next reader increment implements `readDatasetPage`, `readCurrentLabels` and
+`readLabelsAt` without new DDL. Page requests include the owning run/inventory,
+dataset and manifest hashes, a nullable cursor and row/byte limits. They verify
+the full assigned shard and conservative closure on every call, preserve global
+ordinals, missing states and frozen labels, and return separate feature/outcome
+payloads only where usable. Current/historical label requests carry the exact
+market/stat/version/profile scope, target keys and optional exact references;
+head selection precedes compatibility filtering. Missing final labels do not
+become numeric zero, DNP or sportsbook settlement. See the evidence checkpoint
+for cursor-address semantics, refusal states and adversarial tests.
+
+Remaining #118 checkpoints: reconcile all assigned datasets and expose run
+readiness; audited invalidation; end-to-end deadlines/cancellation and interrupted
+reads; representative indexed plans/memory/runtime/storage evidence; independent
+review and final integrated CI. Reverification of the full shard per page is a
+deliberate first implementation and still requires capacity assessment. #106/#107
+remain separate gates for validated #54 Part B. Frozen 0001–0016 remain unchanged.
+
+Final reader validation passes 753 Node tests, 75 Node DB checks, 193 PostgreSQL
+tests (168 mandatory predictive cases), typecheck, affected-file lint and all 17
+catalog contracts. The 36 frozen/generated prefix files match `2f57d12` byte for
+byte; documentation links and whitespace checks pass. No persistent or hosted
+database was migrated. The evidence checkpoint records the final log paths.

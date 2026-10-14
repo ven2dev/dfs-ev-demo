@@ -2334,6 +2334,225 @@ const datasetRequest = (inventory: Awaited<ReturnType<Store["prepareFittingRun"]
   version: "qb-training-read-v1" as const, fittingRunId: inventory.request.fittingRunId,
   inventorySha256: inventory.inventorySha256, datasetId: inventory.rows[0].slot.datasetId, pinId,
 });
+const pageRequest = (manifest: Awaited<ReturnType<Store["prepareDataset"]>>, rows = 2) => ({
+  version: "qb-training-read-v1" as const, fittingRunId: manifest.fittingRunId, inventorySha256: manifest.inventorySha256,
+  datasetId: manifest.datasetId, manifestSha256: manifest.manifestSha256, cursor: null, limits: { rows, bytes: 8_000_000 },
+});
+const labelReadRequest = (seed: Awaited<ReturnType<typeof seedConsumers>>) => ({
+  version: "qb-training-read-v1" as const,
+  selection: { market: "player_pass_yds" as const, stat: "passing_yards" as const, labelVersion: "source-final-label-v1" as const, profileIds: seed.profiles },
+  keys: [{ playerId: seed.request.playerId, gameId: seed.labelRequest.gameId, seasonType: "REG" as const, labelRef: null as string | null }],
+  limits: { rows: 64, bytes: 8_000_000 },
+});
+
+it("QB numerical pages preserve fixed sparse membership missingness and separate outcomes across later publications", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    const seed = await seedConsumers(store);
+    const a = await store.recordSourcePassingYards("page-feature-A", seed.request, seed.profiles);
+    await store.recordSourcePassingYards("page-unavailable", { ...seed.request, playerId: "00-0000003" }, seed.profiles);
+    const input = await previewRequest(client, seed);
+    input.slots.push({ ...input.slots[0], playerId: "00-0000002", datasetId: "other-shard" },
+      { ...input.slots[0], playerId: "00-0000003" }, { ...input.slots[0], playerId: "00-0000004" });
+    const inventory = await store.prepareFittingRun(input), saved = await store.prepareDataset(datasetRequest(inventory));
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, artifacts), req = pageRequest(saved);
+      const first = await reader.readDatasetPage(req);
+      expect(first.rows.map((row) => row.ordinal)).toEqual([0,2]);
+      expect(first.rows.map((row) => row.feature.state)).toEqual(["usable", "unavailable"]);
+      expect(first.rows[0].feature.bundle?.player[0]).toMatchObject({ passingYardsSum: 80, attemptsSum: 10 });
+      expect(first.rows[0].feature.reference?.id).toBe(a.id); expect(first.rows[0].label.outcome).toBeNull();
+      expect(first.rows[0].feature).not.toHaveProperty("outcome"); expect(first.rows[1].feature.bundle).toBeNull();
+      expect(first).toMatchObject({ fittingReady: false, populationCoverage: "unqualified" });
+      await store.recordSourcePassingYards("page-feature-B", seed.request, seed.profiles);
+      const repeat = await reader.readDatasetPage(req);
+      expect(repeat.pageSha256).toBe(first.pageSha256); expect(repeat.nextCursor).toBe(first.nextCursor);
+      const second = await reader.readDatasetPage({ ...req, cursor: first.nextCursor });
+      expect(second.rows.map((row) => row.ordinal)).toEqual([3]);
+      expect(second.rows[0]).toMatchObject({ feature: { state: "missing", bundle: null }, label: { outcome: null } });
+      expect(second.nextCursor).toBeNull();
+    });
+  });
+});
+
+it("QB numerical page addresses reject changed limits manifests corrupted cursors and whole-response overflow", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store); await store.recordSourcePassingYards("page-bounds-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed); input.slots.push({ ...input.slots[0], playerId: "00-0000002" });
+    const inventory = await store.prepareFittingRun(input), saved = await store.prepareDataset(datasetRequest(inventory)), req = pageRequest(saved, 1);
+    const first = await store.readDatasetPage(req); let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    const reader = await createLocalPredictiveStore(client, target, observed);
+    await expect(reader.readDatasetPage({ ...req, manifestSha256: "f".repeat(64) })).rejects.toThrow("training-page-manifest-mismatch");
+    await expect(reader.readDatasetPage({ ...req, cursor: first.nextCursor, limits: { ...req.limits, rows: 2 } })).rejects.toThrow("training-page-cursor-refused");
+    await expect(reader.readDatasetPage({ ...req, cursor: "bm90LWpzb24" })).rejects.toThrow("training-page-cursor-refused");
+    expect(reads).toBe(0);
+    await expect(reader.readDatasetPage({ ...req, limits: { rows: 1, bytes: 1 } })).rejects.toThrow("training-page-byte-bounds-refused");
+    expect((await reader.readDatasetPage(req)).pageSha256).toBe(first.pageSha256);
+  });
+});
+
+it("QB numerical page retries reverify damage and refuse revoked or deleted datasets before delivery", async () => {
+  await withProof(async ({ client, store, root, artifacts, target }) => {
+    const seed = await seedConsumers(store); const feature = await store.recordSourcePassingYards("page-access-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory)), req = pageRequest(saved);
+    const first = await store.readDatasetPage(req), path = join(root, ".db-blobs", feature.bodySha256 + ".json"), bytes = await readFile(path);
+    try { await writeFile(path, "page-file-damaged"); await expect(store.readDatasetPage(req)).rejects.toThrow("artifact-integrity-failed"); }
+    finally { await writeFile(path, bytes); }
+    expect((await store.readDatasetPage(req)).pageSha256).toBe(first.pageSha256);
+    const clock = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'page-revoke',profile_id,id,'{}',$2,NULL,$2,'synthetic','page current access' FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [BRIDGE_PROFILE, clock]);
+    let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    const reader = await createLocalPredictiveStore(client, target, observed);
+    await expect(reader.readDatasetPage(req)).rejects.toThrow("training-dataset-rights-refused"); expect(reads).toBe(0);
+    await store.retain({ id: "page-delete", reason: "provider-request", authority: "disposable page proof", decidedAt: clock,
+      scope: { kind: "source", profileIds: [BRIDGE_PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" });
+    await expect(reader.readDatasetPage(req)).rejects.toThrow("training-dataset-evidence-removed"); expect(reads).toBe(0);
+  });
+});
+
+it("QB current and historical label reads select inclusive heads and preserve exact versions without future outcomes", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    const seed = await seedConsumers(store); const a = await store.recordSourceFinalLabel("reader-label-A", seed.labelRequest, null);
+    const req = labelReadRequest(seed);
+    const before = new Date(Date.parse(a.recordedAt) - 1).toISOString();
+    expect((await store.readLabelsAt({ ...req, labelsAsOf: before })).rows[0]).toMatchObject({ reason: "label-not-recorded", outcome: null });
+    const changed = sourceClaimFixture("reader-label-change", "player", sourceCsv("player", [{ ...sourceSamples().player[0], passing_yards: "95" }]));
+    changed.capturedAt = await witnessClock(client); changed.rightsDecisions = seed.fixture.input.rightsDecisions;
+    await store.publishSourceStats(changed); await store.recordSourceNormalization("reader-label-binding-B", seed.raw, seed.binding.event.id);
+    await store.recordSourceDecision("reader-label-reconciliation-B", decisionScope(seed.raw.profileId), seed.rec.record.id);
+    await store.recordSourceDecision("reader-label-participation-B", decisionScope(seed.raw.profileId, "participation"), seed.part.record.id);
+    const b = await store.recordSourceFinalLabel("reader-label-B", seed.labelRequest, a.id);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      const historical = await reader.readLabelsAt({ ...req, labelsAsOf: a.recordedAt });
+      expect(historical.rows[0]).toMatchObject({ state: "usable", reference: { id: a.id }, outcome: { value: 80 }, supersededAsOf: false, supersededAtSnapshot: true });
+      expect(JSON.stringify(historical)).not.toContain('"value":95');
+      const current = await reader.readCurrentLabels(req);
+      expect(current.rows[0]).toMatchObject({ reference: { id: b.id }, outcome: { value: 95 }, supersededAsOf: false });
+      expect((await reader.readLabelsAt({ ...req, labelsAsOf: b.recordedAt })).rows[0].reference?.id).toBe(b.id);
+      const exact = { ...req, keys: [{ ...req.keys[0], labelRef: a.id }] };
+      expect((await reader.readCurrentLabels(exact)).rows[0]).toMatchObject({ reference: { id: a.id }, outcome: { value: 80 }, supersededAsOf: true, supersededAtSnapshot: true });
+      await expect(reader.readLabelsAt({ ...req, labelsAsOf: "2100-01-01T00:00:00.000Z" })).rejects.toThrow("training-future-cutoff");
+      await expect(reader.readLabelsAt({ ...req, keys: [{ ...req.keys[0], labelRef: b.id }], labelsAsOf: a.recordedAt })).rejects.toThrow("training-label-reference-mismatch");
+      await expect(reader.readCurrentLabels({ ...req, keys: [{ ...req.keys[0], playerId: "00-0000002", labelRef: a.id }] })).rejects.toThrow("training-label-reference-mismatch");
+      // Zero yards with ten attempts is observed numeric zero, rather than
+      // unresolved participation or an absence converted into a statistic.
+      const zero = sourceClaimFixture("reader-observed-zero", "player", sourceCsv("player", [{ ...sourceSamples().player[0], passing_yards: "0" }]));
+      zero.capturedAt = await witnessClock(client); zero.rightsDecisions = seed.fixture.input.rightsDecisions;
+      await store.publishSourceStats(zero); await store.recordSourceNormalization("reader-zero-binding", seed.raw, "reader-label-binding-B");
+      await store.recordSourceDecision("reader-zero-reconciliation", decisionScope(seed.raw.profileId), "reader-label-reconciliation-B");
+      await store.recordSourceDecision("reader-zero-participation", decisionScope(seed.raw.profileId, "participation"), "reader-label-participation-B");
+      const c = await store.recordSourceFinalLabel("reader-zero-label", seed.labelRequest, b.id);
+      expect((await reader.readCurrentLabels(req)).rows[0]).toMatchObject({ reference: { id: c.id }, outcome: { value: 0 }, participation: "market-compatible-observed" });
+      expect((await reader.readLabelsAt({ ...req, labelsAsOf: b.recordedAt })).rows[0]).toMatchObject({ reference: { id: b.id }, outcome: { value: 95 } });
+    });
+  });
+});
+
+it("QB label reads preserve missing targets and withhold damaged revoked or removed evidence", async () => {
+  await withProof(async ({ client, store, artifacts, target, root }) => {
+    const seed = await seedConsumers(store), a = await store.recordSourceFinalLabel("reader-access-label", seed.labelRequest, null);
+    const req = labelReadRequest(seed); req.keys.push({ ...req.keys[0], playerId: "00-0000002" });
+    const first = await store.readCurrentLabels(req);
+    expect(first.counts).toEqual({ requested: 2, usable: 1, missing: 1 });
+    expect(first.rows[1]).toMatchObject({ outcome: null, participation: "not-established", finalization: "not-recorded" });
+    await expect(store.readCurrentLabels({ ...req, limits: { rows: 1, bytes: 8_000_000 } })).rejects.toThrow("training-label-bounds-refused");
+    await expect(store.readCurrentLabels({ ...req, limits: { rows: 2, bytes: 1 } })).rejects.toThrow("training-page-byte-bounds-refused");
+    const path = join(root, ".db-blobs", a.bodySha256 + ".json"), bytes = await readFile(path);
+    try { await writeFile(path, "label-file-damaged"); await expect(store.readCurrentLabels(req)).rejects.toThrow("artifact-integrity-failed"); }
+    finally { await writeFile(path, bytes); }
+    await store.retain({ id: "reader-label-delete", reason: "provider-request", authority: "disposable label proof", decidedAt: await witnessClock(client),
+      scope: { kind: "source", profileIds: [seed.raw.profileId], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" });
+    expect((await store.readCurrentLabels(req)).rows.map((row) => row.reason)).toEqual(["retained-evidence-removed", "retained-evidence-removed"]);
+    expect((await store.readCurrentLabels({ ...req, keys: [{ ...req.keys[0], labelRef: a.id }] })).rows[0]).toMatchObject({ reason: "label-reference-missing-or-removed", outcome: null });
+    const clock = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'reader-label-revoke',profile_id,id,'{}',$2,NULL,$2,'synthetic','label missing-slot access' FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [seed.raw.profileId, clock]);
+    let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    const reader = await createLocalPredictiveStore(client, target, observed);
+    await expect(reader.readCurrentLabels(req)).rejects.toThrow("source-consumer-rights-refused"); expect(reads).toBe(0);
+  });
+});
+
+it("QB label readers do not revive an ancestor when the current head changes provider scope", async () => {
+  await withProof(async ({ client, store }) => {
+    const seed = await seedConsumers(store), a = await store.recordSourceFinalLabel("reader-scope-A", seed.labelRequest, null);
+    const second = structuredClone(seed.fixture.input);
+    second.id = "reader-scope-provider"; second.captureId = "reader-scope-capture"; second.artifact.id = "reader-scope-artifact";
+    second.profile.id = "csv-reader-second-player"; second.artifact.profileId = second.profile.id;
+    second.rightsDecisions = [{ ...second.rightsDecisions[0], id: "rights:reader-second", profileId: second.profile.id }];
+    await store.publishSourceStats(second);
+    await client.query("INSERT INTO predictive_profile_identity_links VALUES('reader-scope-link',$1,$2,'gsis','2026-01-01T00:00:00Z')", [second.profile.id, BRIDGE_PROFILE]);
+    const raw = { ...seed.raw, profileId: second.profile.id };
+    await store.recordSourceNormalization("reader-scope-binding", raw, null);
+    await store.recordSourceDecision("reader-scope-reconciliation", decisionScope(raw.profileId), null);
+    await store.recordSourceDecision("reader-scope-participation", decisionScope(raw.profileId, "participation"), null);
+    const b = await store.recordSourceFinalLabel("reader-scope-B", { ...seed.labelRequest, profileIds: [second.profile.id] }, a.id);
+    const req = labelReadRequest(seed);
+    expect((await store.readCurrentLabels(req)).rows[0]).toMatchObject({ reason: "label-profile-or-version-mismatch", reference: null, outcome: null });
+    expect((await store.readLabelsAt({ ...req, labelsAsOf: a.recordedAt })).rows[0]).toMatchObject({ reference: { id: a.id }, outcome: { value: 80 } });
+    expect((await store.readCurrentLabels({ ...req, selection: { ...req.selection, profileIds: [second.profile.id] } })).rows[0].reference?.id).toBe(b.id);
+    await expect(store.readCurrentLabels({ ...req, keys: [{ ...req.keys[0], labelRef: b.id }] })).rejects.toThrow("training-label-reference-mismatch");
+  });
+});
+
+it("QB numerical pages keep the inventory historical label after later correction without exposing a future value", async () => {
+  await withProof(async ({ store }) => {
+    const seed = await seedConsumers(store, "2026-10-11T12:00:00.000Z", true);
+    const a = await store.recordSourceFinalLabel("page-label-A", seed.labelRequest, null);
+    const slot: TrainingSlot = { datasetId: "page-label-shard", partition: "training", playerId: seed.request.playerId,
+      gameId: seed.labelRequest.gameId, season: 2026, seasonType: "REG", kickoff: "2026-10-04T17:00:00.000Z",
+      kickoffObservationId: "game-schedule", featureCutoff: "2026-10-04T12:00:00.000Z", labelsAsOf: a.recordedAt, featureRef: null, labelRef: null };
+    const inventory = await store.prepareFittingRun(metadataRun([slot], seed.profiles, a.recordedAt));
+    const saved = await store.prepareDataset(datasetRequest(inventory)), req = pageRequest(saved), first = await store.readDatasetPage(req);
+    await store.recordSourceFinalLabel("page-label-B", seed.labelRequest, a.id);
+    const later = await store.readDatasetPage(req);
+    expect(later.pageSha256).toBe(first.pageSha256);
+    expect(later.rows[0]).toMatchObject({ feature: { state: "missing", bundle: null }, label: {
+      reference: { id: a.id }, outcome: { value: 80 }, supersededAsOf: false, supersededAtSnapshot: false } });
+    expect(later.rows[0].feature).not.toHaveProperty("outcome");
+  });
+});
+
+it("QB numerical and label readers guard direct SQL revocation and deletion throughout file verification", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store);
+    await store.recordSourcePassingYards("page-guard-feature", seed.request, seed.profiles);
+    await store.recordSourceFinalLabel("page-guard-label", seed.labelRequest, null);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory));
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      for (const kind of ["page", "labels"] as const) {
+        let entered!: () => void, unblock!: () => void;
+        const opened = new Promise<void>((resolve) => { entered = resolve; }), gate = new Promise<void>((resolve) => { unblock = resolve; });
+        const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+          entered(); await gate; return artifacts.database.read(...args);
+        } } };
+        const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+        const running = (kind === "page" ? reader.readDatasetPage(pageRequest(saved)) : reader.readCurrentLabels(labelReadRequest(seed)))
+          .then((value) => ({ value }), (error: unknown) => ({ error }));
+        await opened;
+        try {
+          await client.query("SET lock_timeout='100ms'");
+          await expect(client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+            SELECT 'reader-concurrent-revoke',profile_id,id,'{}',date_trunc('milliseconds',clock_timestamp()),NULL,
+              date_trunc('milliseconds',clock_timestamp()),'synthetic','reader lock probe' FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [BRIDGE_PROFILE])).rejects.toMatchObject({ code: "55P03" });
+          await expect(store.retain({ id: "reader-concurrent-delete", reason: "provider-request", authority: "disposable guard proof",
+            decidedAt: seed.request.cutoff, scope: { kind: "source", profileIds: [BRIDGE_PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel: "full" })).rejects.toMatchObject({ code: "55P03" });
+        } finally { await client.query("RESET lock_timeout"); unblock(); }
+        const settled = await running; expect("error" in settled ? settled.error : null).toBeNull();
+      }
+    });
+  });
+});
 const advanceDatasetClock = async (client: Client, time: string) => {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(time)) throw new Error("test-clock-refused");
   const replacement = "'" + time + "'::timestamptz";

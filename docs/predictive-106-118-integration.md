@@ -353,3 +353,36 @@ tests (160 mandatory predictive cases), typecheck, affected-file lint and all 17
 catalog contracts pass. Frozen 0001–0015 and their contracts/ledger remain
 unchanged from `84945bf`. Only disposable databases ran 0016. The evidence
 checkpoint records the corrected host/database-clock test fixture and log paths.
+
+## #118 numerical-reader interface checkpoint
+
+The next increment adds no migration and preserves complete prefix 0001–0016.
+0017 remains reserved only for #106; later normalization/consumer DDL needs the
+owner's separately confirmed allocation. No #118 migration after 0016 is reserved.
+
+- `readDatasetPage({ version, fittingRunId, inventorySha256, datasetId,
+  manifestSha256, cursor, limits: { rows, bytes } })` verifies the same assigned
+  shard/closure and returns fixed numeric feature/outcome components, sparse
+  ordinals and a deterministic next cursor. It cannot select newer records.
+- `readCurrentLabels({ version, selection: { market, stat, labelVersion,
+  profileIds }, keys: [{ playerId, gameId, seasonType, labelRef }], limits })`
+  selects global heads at one guarded database clock, then verifies their scope,
+  current rights and exact bytes. `labelRef: null` selects the head; a string
+  requests that exact version without substituting another label.
+- `readLabelsAt({ ...currentRequest, labelsAsOf })` selects historical heads at
+  the explicit eligible cutoff and returns present-snapshot supersession only
+  as metadata, never a future outcome. Limits are at most 64 rows/8 MB returned
+  canonical bytes; oversized batches/responses refuse in full.
+
+All calls use `version: "qb-training-read-v1"`; only passing-yards/source-final-
+label-v1 is supported. Numeric zero is distinct from missing/unqualified final
+labels, which return no outcome and no inferred absence/void/settlement. Pages
+and label batches remain `fittingReady: false`, population unqualified. Complete-
+run readiness, audited invalidation, deadlines and representative capacity are
+still outstanding. These readers do not change `readBytes`, `readWireBytes`,
+gzip publication/inspection or exact-address retention/cleanup interfaces.
+
+The reader checkpoint passes 753 Node tests, 75 Node DB checks, 193 PostgreSQL
+tests (168 mandatory predictive cases), typecheck, affected-file lint and all 17
+catalog contracts. Frozen/generated prefix files match `2f57d12`; no new migration
+or shared artifact interface is introduced. Only disposable databases were used.

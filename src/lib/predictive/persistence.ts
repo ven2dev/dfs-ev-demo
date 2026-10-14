@@ -9,6 +9,9 @@ import type { TrainingRunInventory } from "./trainingRuns.ts";
 import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
 import { assertTrainingShardUnexpired, normalizeTrainingShardRequest, trainingShardMembership, trainingShardProof, type TrainingShardRequest } from "./trainingShards.ts";
 import { normalizeTrainingDatasetRequest, type TrainingDatasetContext, type TrainingDatasetRequest, type TrainingDatasetManifest } from "./trainingDatasets.ts";
+import { assertTrainingResponseBytes, checkTrainingLabelMetadata, normalizeTrainingHistoricalLabelRequest, normalizeTrainingLabelRequest,
+  normalizeTrainingPageRequest, trainingDatasetPage, trainingLabelRows, trainingPageMembers, TRAINING_LABEL_SELECTION_SQL,
+  type TrainingPageRequest, type TrainingLabelRequest, type TrainingHistoricalLabelRequest, type TrainingLabelMetadata } from "./trainingReads.ts";
 import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
   type SourceClaimRow, type SourceStatsPublication, type SourceStatsRequest, type SourceStatsReplay, type SourceStatsCapture } from "./sourceClaims.ts";
 import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
@@ -1124,11 +1127,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       else await readBytes(blob.storageRef, blob.sha256, Number(blob.byteSize));
     }
     await batchAccess!();
-    return { ...proof, verification: { ...batch!.metrics(), verifiedBytes } };
+    return { proof: { ...proof, verification: { ...batch!.metrics(), verifiedBytes } }, records };
   };
   const verifyDatasetShard = (input: TrainingShardRequest) => {
     const supplied = normalizeTrainingShardRequest(input);
-    return transaction(() => verifyAssignedShard(supplied), false, true);
+    return transaction(async () => (await verifyAssignedShard(supplied)).proof, false, true);
   };
 
   const datasetContext = async (id: string): Promise<TrainingDatasetContext | null> =>
@@ -1179,6 +1182,61 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const releaseDatasetPin = (id: string) => transaction(async () =>
     (await client.query("SELECT public.predictive_release_training_dataset_pin($1) AS result", [id])).rows[0].result as
       { pinId: string; releasedAt: string; reused: boolean });
+
+  // This first numerical reader verifies the entire bounded shard and closure
+  // on each call. A later capacity increment can reduce repeated work without
+  // narrowing mandatory-deletion coverage or trusting an old byte certificate.
+  const readDatasetPage = async (input: TrainingPageRequest) => {
+    const supplied = normalizeTrainingPageRequest(input);
+    return transaction(async () => {
+      const context = await datasetContext(supplied.datasetId);
+      if (!context) refuse("training-dataset-not-found");
+      trainingPageMembers(supplied, context.manifest); // Reject wrong addresses before private files.
+      const { records } = await verifyAssignedShard({ version: supplied.version, fittingRunId: supplied.fittingRunId,
+        inventorySha256: supplied.inventorySha256, datasetId: supplied.datasetId }, context);
+      const accessAt = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+      const result = { ...trainingDatasetPage(supplied, context.manifest, records, accessAt),
+        verification: { ...batch!.metrics(), verifiedBytes } };
+      assertTrainingResponseBytes(result, supplied.limits.bytes);
+      await batchAccess!();
+      return result;
+    }, false, true);
+  };
+  const readTrainingLabels = async (request: TrainingLabelRequest, labelsAsOf: string) => {
+    const snapshotAt = batchClock!;
+    if (instant(labelsAsOf) > instant(snapshotAt)) refuse("training-future-cutoff");
+    const metadata = checkTrainingLabelMetadata((await client.query<TrainingLabelMetadata>(TRAINING_LABEL_SELECTION_SQL,
+      [JSON.stringify(request.keys), labelsAsOf, snapshotAt])).rows, request.keys.length);
+    const ids = [...new Set(metadata.flatMap((row) => row.id ? [row.id] : []))];
+    const records = await authorizeConsumerBatch(ids, request.selection.profileIds.map((profile) => ({ profile, use: "outcome-label" })));
+    const removed = (await client.query(`SELECT EXISTS(SELECT 1 FROM public.predictive_retention_events e
+      WHERE e.scope_descriptor->>'kind'='source' AND e.scope_descriptor->'profileIds' ?| $1::text[]
+      AND (e.scope_descriptor->>'capturedFrom' IS NULL OR (e.scope_descriptor->>'capturedFrom')::timestamptz <= $2::timestamptz)) AS removed`,
+    [request.selection.profileIds, labelsAsOf])).rows[0].removed as boolean;
+    // Reject wrong/future exact refs before opening their bytes. The same
+    // formatter runs after verification, so it never certifies a caller value.
+    trainingLabelRows(request, labelsAsOf, metadata, records, removed);
+    await verifyConsumerBatch(records);
+    const rows = trainingLabelRows(request, labelsAsOf, metadata, records, removed);
+    const body = { version: "qb-training-labels-v1" as const, selection: request.selection, labelsAsOf, snapshotAt, rows,
+      counts: { requested: rows.length, usable: rows.filter((row) => row.state === "usable").length,
+        missing: rows.filter((row) => row.state === "missing").length },
+      fittingReady: false as const, populationCoverage: "unqualified" as const };
+    const result = { ...body, responseSha256: digest(canonical(body)),
+      accessAt: (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string,
+      verification: { ...batch!.metrics(), verifiedBytes } };
+    assertTrainingResponseBytes(result, request.limits.bytes);
+    await batchAccess!();
+    return result;
+  };
+  const readCurrentLabels = async (input: TrainingLabelRequest) => {
+    const request = normalizeTrainingLabelRequest(input);
+    return transaction(() => readTrainingLabels(request, batchClock!), false, true);
+  };
+  const readLabelsAt = async (input: TrainingHistoricalLabelRequest) => {
+    const { labelsAsOf, ...request } = normalizeTrainingHistoricalLabelRequest(input);
+    return transaction(() => readTrainingLabels(request, labelsAsOf), false, true);
+  };
 
   const publish = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
     if (typeof id !== "string" || !id.trim() || id.length > 256) refuse("invalid-run-id"); instant(now);
@@ -1467,6 +1525,6 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   };
   return { publish, publishSourceStats, replaySourceStats, replayCompressedInspections, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
     planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun, verifyDatasetShard,
-    prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin,
+    prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin, readDatasetPage, readCurrentLabels, readLabelsAt,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };
