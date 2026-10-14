@@ -318,3 +318,59 @@ Week 18 participation remain unqualified. No database was accessed and no real
 feature or final label was published. Validation was actual acquisition, three
 independent archive-verification executions, exact restored inventory comparison
 and documentation consistency/whitespace checks; no database suite was repeated.
+
+## Prior-season raw numerical history checkpoint (2026-10-14)
+
+Acquired the missing complete [2025 team statistics gzip](https://github.com/nflverse/nflverse-data/releases/download/stats_team/stats_team_week_2025.csv.gz)
+and its release metadata through a bounded, unauthenticated discovery probe.
+Three HTTP requests consumed 901,360 bytes in 727 ms. The source was received at
+`2026-10-14T22:32:55.241Z`; GitHub's release size and digest agree with its exact
+76,602 wire bytes. SHA-256:
+`5348409f099b285877641446e869dcda3179464584dd71f73becc087219b0383`.
+Its complete decoded file is 229,660 bytes and 570 records; all 570 rows project
+under the explicit 2025 compressed team contract with no refusal.
+
+Reverified this file and the retained 2025 player file through the isolated
+256 MiB workers, including complete wire hashes, release metadata, gzip/CRC,
+headers, scope and ordinal-preserving claims. The player file retains 19,422
+ordinals, with 19,400 typed projections and 22 explicit refusals. These are raw
+claims, not canonical bindings. No filtered QB file substitutes for either
+complete provider snapshot.
+
+Combining their raw claims with the independently reverified current prototype
+inventory improves the bounded history discovery:
+
+| History | Raw passing pairs / expected slots at 4 | At 8 | At 16 |
+| --- | ---: | ---: | ---: |
+| Hurts | 3 / 4 | 6 / 8 | 14 / 16 |
+| Own team | 3 / 4 | 7 / 8 | 15 / 16 |
+| Opposing offenses | 3 / 4 | 7 / 8 | 15 / 16 |
+
+The expected slots are unchanged. Player gaps are future `2026_06_CAR_PHI` and
+unresolved `2025_18_WAS_PHI`; no zero, DNP or older replacement is inferred.
+All 20 selected prior-season own-team/opposing-offense passing pairs agree with
+sums over the complete player file's typed claims. This establishes **same-provider
+consistency only**, not independent official reconciliation, complete population,
+participation or accepted completion. The three-season schedule coverage rule
+remains binding even though this target's last 16 raw slots span 2025–2026.
+
+The original 2025 player/roster discovery files, metadata and provenance report,
+and the new team files/report are now preserved outside Git at
+`/Users/vernonneilly/Documents/VN2DEV/dfs-ev-private-evidence/106/prior-season-2025`.
+Original capture times are preserved; archive times are separate. Private
+receipts give manual maximum expiry dates no later than 90 days after the
+earliest corresponding source capture, subordinate to mandatory deletion.
+The archived `reproduce.mts` reconstructs this discovery from complete files;
+the roster remains a retained discovery source, not a qualified membership
+adapter. Neither the private archive nor the probe is a database retention pin.
+
+Reconstruction from original temporary files and the durable archive gives
+identical semantic evidence, digest
+`1dbc63c0e6a0e35ad4aa014e2ad91f7c41295146dd2bf5318d41dce6f2e18e1d`.
+Per-run RSS measurements are retained separately and excluded from that
+identity. Validation uses real acquisition, full isolated-worker verification,
+exact restored semantic comparison and documentation/whitespace checks. No
+database was accessed; frozen 0001–0019 and Relay's SQL-capacity work remain
+unchanged. Canonical identity/membership, independent coverage, completion,
+official reconciliation and participation qualification still precede real
+feature/label publication.
