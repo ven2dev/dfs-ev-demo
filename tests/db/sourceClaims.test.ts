@@ -14,6 +14,7 @@ import { createLocalPredictiveStore, retentionIdsDigest } from "../../src/lib/pr
 import { inspectCompressedSource } from "../../src/lib/predictive/compressedSource.ts";
 import { prepareCompressedPublication } from "../../src/lib/predictive/compressedPublication.ts";
 import { compressedPublicationFixture } from "../predictive/fixtures/compressedPublication.ts";
+import { compressedNormalizationFixture } from "../predictive/fixtures/compressedNormalization.ts";
 import type { Dataset, RecordedRetentionEvent } from "../../src/lib/predictive/types.ts";
 import { canonical, digest, entityKey } from "../../src/lib/predictive/validation.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
@@ -21,6 +22,7 @@ import { reconcileFact } from "../../src/lib/predictive/policies.ts";
 import { ROUTING_FIELDS } from "../../src/lib/predictive/types.ts";
 import { sourceNormalizationBasis } from "../../src/lib/predictive/persistence.ts";
 import { SOURCE_NORMALIZATION_V1 } from "../../src/lib/predictive/sourceNormalization.ts";
+import { COMPRESSED_SOURCE_NORMALIZATION_VERSION } from "../../src/lib/predictive/sourceNormalization.ts";
 import { selectSourceFact, SOURCE_FACT_BOUNDS } from "../../src/lib/predictive/sourceFacts.ts";
 import { checkSourceWitness, sourceFactWitness, sourcePostWindowCapture, sourceReconciliationEvidence, sourceUsageEvidence } from "../../src/lib/predictive/sourceWitness.ts";
 import { sourceDecisionBasis, type SourceDecisionPlan, type SourceDecisionRequest } from "../../src/lib/predictive/sourceDecisions.ts";
@@ -111,6 +113,78 @@ const compressedCase = (id: string, season: 2025 | 2026 = 2025, feed: "player" |
   fixture.input.rightsDecisions=fixture.input.rightsDecisions.map(row=>({...row,id:"rights:"+profileId,profileId}));
   return fixture;
 };
+
+it("compressed normalization preview binds qualified seals and native identities through restricted replay without recording",async()=>{
+  await withProof(async({client,store,artifacts,target})=>{
+    const fixture=await compressedNormalizationFixture();
+    await store.publishCompressedSource(fixture.source,fixture.input);
+    await store.publish("compressed-native-context",fixture.context,"2026-10-11T00:00:00.000Z");
+    const cutoff=(await client.query("SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') AS time")).rows[0].time;
+    const request={...fixture.request,cutoff};
+    await withLogin(client,target,["predictive_replay"],async(reader,readerTarget)=>{
+      const replay=await createLocalPredictiveStore(reader,readerTarget,artifacts);
+      const plan=await replay.planCompressedSourceStatsNormalization(request);
+      expect(plan).toMatchObject({status:"planned-source-normalization",binding:{version:COMPRESSED_SOURCE_NORMALIZATION_VERSION},observationsPublished:false,featuresPublished:false,labelsFinalized:false});
+      expect(plan.candidate?.data).toMatchObject({gameId:NORMALIZATION_GAME,rawGameId:"2025_06_CAR_PHI",season:2025,playerId:"00-0000001",teamId:"nfl:team:PHI",passingYards:-2,attempts:10,carries:null});
+      expect(plan.binding.dependencies.map(row=>row.observationId).sort()).toEqual(["game-map","game-schedule","opponent-map","player-map","team-map"]);
+      expect(plan.binding.sourcePublications).toEqual((await replay.replayCompressedSourceStats(request)).evidence.publications);
+      expect(plan.binding.identityLinks.map(row=>row.id)).toEqual(["raw-stats-gsis-link"]);
+      await expect(reader.query("SELECT predictive_record_source_binding('compressed-not-ready',NULL,$1)",[JSON.stringify(plan)])).rejects.toMatchObject({code:"42501"});
+      await expect(client.query("SELECT predictive_record_source_binding('compressed-not-ready',NULL,$1)",[JSON.stringify(plan)])).rejects.toMatchObject({code:"23514"});
+    });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_bindings")).rows[0].n).toBe(0);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_stats_revisions")).rows[0].n).toBe(0);
+  });
+});
+
+it("compressed normalization preview preserves unavailable source and cutoff native evidence without inferred participation",async()=>{
+  await withProof(async({client,store})=>{
+    const fixture=await compressedNormalizationFixture(2026,"team");
+    await store.publishCompressedSource(fixture.source,fixture.input);
+    const cutoff=(await client.query("SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') AS time")).rows[0].time;
+    const request={...fixture.request,cutoff};
+    const missing=await store.planCompressedSourceStatsNormalization(request);
+    expect(missing).toMatchObject({reason:"game-bridge-missing",candidate:null});
+    expect(missing.binding.sourcePublications).toHaveLength(1);
+    // Synthetic captures retain caller receipt times. Give this late context
+    // an actual later receipt rather than the fixture's historical default.
+    const receipt=(await client.query("SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') AS time")).rows[0].time;
+    for(const capture of fixture.context.captures)capture.ingestedAt=receipt;
+    await store.publish("compressed-team-context",fixture.context,receipt);
+    expect(await store.planCompressedSourceStatsNormalization(request)).toEqual(missing);
+    const later=(await client.query("SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') AS time")).rows[0].time;
+    const observed=await store.planCompressedSourceStatsNormalization({...request,cutoff:later});
+    expect(observed.candidate?.kind).toBe("team-game-stats");expect(observed.binding.identityLinks).toEqual([]);
+    expect((await store.planCompressedSourceStatsNormalization({...request,rawTeam:"CAR",cutoff:later})).reason).toBe("source-row-missing");
+    const before=await store.planCompressedSourceStatsNormalization({...request,cutoff:fixture.input.capturedAt});
+    expect(before).toMatchObject({reason:"source-capture-missing",candidate:null});expect(before.binding.sourcePublications).toEqual([]);
+  });
+});
+
+it("compressed normalization preview rejects native byte corruption and scheduled native rights expiry with fresh recovery",async()=>{
+  await withProof(async({client,store,artifacts,target,root})=>{
+    const fixture=await compressedNormalizationFixture();await store.publishCompressedSource(fixture.source,fixture.input);
+    await store.publish("compressed-context-expiry",fixture.context,"2026-10-11T00:00:00.000Z");
+    const cutoff=(await client.query("SELECT to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') AS time")).rows[0].time;
+    const request={...fixture.request,cutoff},artifact=fixture.context.artifacts[0];
+    const ref=(await client.query("SELECT storage_ref FROM predictive_blobs WHERE sha256=$1",[artifact.sha256])).rows[0].storage_ref;
+    await writeFile(join(root,".db-blobs",ref),Buffer.alloc(Buffer.byteLength(artifact.bytes)));
+    await expect(store.planCompressedSourceStatsNormalization(request)).rejects.toThrow("artifact-integrity-failed");
+    await writeFile(join(root,".db-blobs",ref),artifact.bytes);
+    expect((await store.planCompressedSourceStatsNormalization(request)).status).toBe("planned-source-normalization");
+    const rights=fixture.context.rightsDecisions.find(row=>row.profileId===BRIDGE_PROFILE)!;
+    await client.query("INSERT INTO predictive_rights_decisions VALUES('compressed-native-expiring',$1,$2,'{}',date_trunc('milliseconds',clock_timestamp())+interval '2 seconds',NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','scheduled native revocation')",[rights.profileId,rights.id]);
+    let reads=0;
+    const tracked={...artifacts,database:{...artifacts.database,read:async(reference:string,sha:string,size:number)=>{
+      reads++;const bytes=await artifacts.database.read(reference,sha,size);
+      await client.query("SELECT pg_sleep(GREATEST(0,EXTRACT(epoch FROM (effective_from-clock_timestamp())))+0.03) FROM predictive_rights_decisions WHERE id='compressed-native-expiring'");return bytes;
+    }}};
+    const replay=await createLocalPredictiveStore(client,target,tracked);
+    await expect(replay.planCompressedSourceStatsNormalization(request)).rejects.toThrow("source-normalization-rights-refused");expect(reads).toBe(1);
+    await client.query("INSERT INTO predictive_rights_decisions VALUES('compressed-native-restored',$1,'compressed-native-expiring','{internal-research}',date_trunc('milliseconds',clock_timestamp()),NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','fixture restoration')",[rights.profileId]);
+    expect((await replay.planCompressedSourceStatsNormalization(request)).status).toBe("planned-source-normalization");expect(reads).toBe(2);
+  });
+});
 
 it("qualified gzip publication seals complete multi-season claims through restricted roles and exact replay",async()=>{
   await withProof(async({client,artifacts,target})=>{

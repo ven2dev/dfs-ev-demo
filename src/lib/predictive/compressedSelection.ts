@@ -10,11 +10,14 @@ export type VerifiedCompressedSnapshot = {
   rows: SourceClaimRow[];
   publication: { requestHash: string; claimsSha256: string; recordedAt: string };
 };
+export type CompressedSourceStatsReplay = Omit<SourceStatsReplay, "evidence"> & {
+  evidence: SourceStatsReplay["evidence"] & { publications: Array<VerifiedCompressedSnapshot["publication"] & { captureId: string }> };
+};
 
 // Pure selection over already byte-verified publications. Authorization and
 // completeness of the supplied snapshot inventory remain the caller's job.
 // No normalization or consumer publication follows from this result.
-export const selectCompressedSourceClaim = (request: SourceStatsRequest, inventory: VerifiedCompressedSnapshot[], checkedAt: string): SourceStatsReplay => {
+export const selectCompressedSourceClaim = (request: SourceStatsRequest, inventory: VerifiedCompressedSnapshot[], checkedAt: string): CompressedSourceStatsReplay => {
   const pinned = structuredClone(request), now = instant(checkedAt), cutoff = instant(pinned.cutoff);
   if (!Array.isArray(inventory) || inventory.length > 64 || inventory.reduce((count, entry) => count + entry.rows.length, 0) > 160_000)
     refuse("compressed-selection-bounds-refused");
@@ -39,8 +42,9 @@ export const selectCompressedSourceClaim = (request: SourceStatsRequest, invento
   const newest = Math.max(...visible.map(entry => instant(entry.capture.capturedAt)));
   const selected = visible.filter(entry => instant(entry.capture.capturedAt) === newest)
     .sort((a, b) => instant(a.capture.ingestedAt) - instant(b.capture.ingestedAt) || (a.capture.id < b.capture.id ? -1 : 1));
-  const result = (reason: string | null, captures: SourceStatsCapture[], rows: SourceClaimRow[]): SourceStatsReplay => {
-    const evidence = structuredClone({ version: COMPRESSED_SOURCE_CLAIM_VERSION, request: pinned, captures, rows });
+  const result = (reason: string | null, captures: SourceStatsCapture[], rows: SourceClaimRow[]): CompressedSourceStatsReplay => {
+    const publications = captures.map(capture => ({ captureId: capture.id, ...eligible.find(entry => entry.capture.id === capture.id)!.publication }));
+    const evidence = structuredClone({ version: COMPRESSED_SOURCE_CLAIM_VERSION, request: pinned, captures, rows, publications });
     return { status: reason ? "unavailable-source-claim" : "observed-source-claim", reason, evidence, inputDigest: digest(canonical(evidence)),
       featuresPublished: false, labelsFinalized: false, populationCoverage: "unqualified" };
   };

@@ -2,11 +2,15 @@ import { createReplay, replayObservations, type BridgeResolution, type Replay } 
 import { SOURCE_CLAIM_VERSION, type SourceStatsReplay } from "./sourceClaims.ts";
 import { SOURCE_PROFILE_VERSION } from "./sourceAdapters.ts";
 import { SOURCE_STATS_VERSION } from "./sourceStats.ts";
+import { COMPRESSED_SOURCE_CLAIM_VERSION, COMPRESSED_SOURCE_PROFILE_VERSION, compressedSourceAsset } from "./compressedPublication.ts";
+import type { CompressedSourceStatsReplay } from "./compressedSelection.ts";
+import { SOURCE_HEADERS } from "./sourceHeaders.ts";
 import type { Dataset, IdentityLink, Observation, PlayerGameStats, TeamGameStats } from "./types.ts";
 import { allows, canonical, compareText, digest, instant, refuse, rightsInForce, validateRevision } from "./validation.ts";
 
 export const SOURCE_NORMALIZATION_V1 = "nflverse-stats-normalization-plan-v1";
 export const SOURCE_NORMALIZATION_VERSION = "nflverse-stats-normalization-plan-v2";
+export const COMPRESSED_SOURCE_NORMALIZATION_VERSION = "nflverse-stats-normalization-plan-v3";
 
 // Evidence determines freshness; renewed equivalent rights and query clocks
 // are access checks, not statistical corrections. Historical v1/v2 witnesses
@@ -30,11 +34,34 @@ type Context = Pick<Dataset, "profiles" | "rightsDecisions" | "identityLinks"> &
 // its binding before storing a research revision. No IDs/windows are minted.
 export const planSourceStatsFromReplay = (source: SourceStatsReplay, context: Context, accessAt: string,
   version: string = SOURCE_NORMALIZATION_VERSION) => {
-  if (![SOURCE_NORMALIZATION_V1, SOURCE_NORMALIZATION_VERSION].includes(version)) refuse("source-normalization-version-refused");
+  if (![SOURCE_NORMALIZATION_V1, SOURCE_NORMALIZATION_VERSION, COMPRESSED_SOURCE_NORMALIZATION_VERSION].includes(version)) refuse("source-normalization-version-refused");
+  const compressed = version === COMPRESSED_SOURCE_NORMALIZATION_VERSION;
+  const parserVersion = compressed ? COMPRESSED_SOURCE_PROFILE_VERSION : SOURCE_PROFILE_VERSION;
   const { request, captures, rows } = source.evidence;
   const cutoff = instant(request.cutoff); const now = instant(accessAt);
-  if (cutoff > now || source.evidence.version !== SOURCE_CLAIM_VERSION || source.inputDigest !== digest(canonical(source.evidence)))
+  if (cutoff > now || source.evidence.version !== (compressed ? COMPRESSED_SOURCE_CLAIM_VERSION : SOURCE_CLAIM_VERSION) || source.inputDigest !== digest(canonical(source.evidence)))
     refuse("source-normalization-evidence-refused");
+  const publications = compressed ? (source as CompressedSourceStatsReplay).evidence.publications : undefined;
+  if (compressed) {
+    const season = Number(request.rawGameId.slice(0,4)), feed = request.rawPlayerId === null ? "team" : "player";
+    if (!/^(2025|2026)_\d{2}_[A-Z]{2,3}_[A-Z]{2,3}$/.test(request.rawGameId)) refuse("source-normalization-evidence-refused");
+    const asset = compressedSourceAsset(feed, season as 2025 | 2026);
+    const profile = context.profiles.find(item => item.id === request.profileId);
+    if (!profile || profile.provider !== "nflverse" || profile.feed !== feed || profile.parserVersion !== parserVersion ||
+        profile.releaseTag !== asset.tag || profile.assetPattern !== asset.name || profile.allowlistVersion !== "predictive-raw-allowlist-v1" ||
+        profile.headerProfileSha256 !== digest(canonical(SOURCE_HEADERS[feed])) ||
+        !profile.evidenceKinds.includes(feed === "player" ? "player-game-stats" : "team-game-stats")) refuse("source-normalization-profile-refused");
+    if (!Array.isArray(publications) || publications.length !== captures.length || new Set(captures.map(capture => capture.id)).size !== captures.length ||
+        publications.some((seal, index) => !seal || typeof seal !== "object" || seal.captureId !== captures[index].id || !/^[a-f0-9]{64}$/.test(seal.requestHash) ||
+          Object.keys(seal).sort().join(",") !== "captureId,claimsSha256,recordedAt,requestHash" ||
+          !/^[a-f0-9]{64}$/.test(seal.claimsSha256) || instant(seal.recordedAt) < instant(captures[index].ingestedAt) ||
+          instant(seal.recordedAt) > cutoff || instant(captures[index].capturedAt) > instant(captures[index].availableAt) ||
+          instant(captures[index].availableAt) > instant(captures[index].ingestedAt) ||
+          !Number.isSafeInteger(captures[index].parsedRows) || captures[index].parsedRows < 1 || captures[index].parsedRows > 80_000 ||
+          !Number.isSafeInteger(captures[index].byteSize) || captures[index].byteSize < 1 || captures[index].byteSize > 8_000_000 ||
+          captures[index].storageRef !== captures[index].sha256 + ".csv.gz"))
+      refuse("source-normalization-publication-refused");
+  }
   const dependencies = new Map<string, Binding>();
   let links: IdentityLink[] = [];
   let rightsDecisionIds: string[] = [];
@@ -51,7 +78,7 @@ export const planSourceStatsFromReplay = (source: SourceStatsReplay, context: Co
     }
   };
   const result = (reason: string | null, candidate: Candidate | null = null) => {
-    if (version === SOURCE_NORMALIZATION_VERSION && reason !== "rights-not-in-force") {
+    if (version !== SOURCE_NORMALIZATION_V1 && reason !== "rights-not-in-force") {
       rightsDecisionIds = [...new Set([request.profileId, ...[...dependencies.values()].map((row) => row.profileId)])].map((id) => {
         const decision = rightsInForce(context.rightsDecisions, id, now, now);
         if (!allows(decision, "internal-research")) refuse("source-normalization-rights-refused");
@@ -62,7 +89,7 @@ export const planSourceStatsFromReplay = (source: SourceStatsReplay, context: Co
       sourceProfileId: request.profileId, rawSourceKey: rows[0]?.rawKeySha256 ?? null,
       sourceCaptures: captures, sourceRows: rows.map(({ id, rowOrdinal, selectedSha256 }) => ({ id, rowOrdinal, selectedSha256 }))
         .sort((a, b) => a.rowOrdinal - b.rowOrdinal),
-      parserVersion: SOURCE_PROFILE_VERSION, projectionVersion: SOURCE_STATS_VERSION,
+      parserVersion, projectionVersion: SOURCE_STATS_VERSION, ...(compressed ? { sourcePublications: structuredClone(publications!) } : {}),
       dependencies: [...dependencies.values()].sort((a, b) => compareText(a.role, b.role) || compareText(a.observationId, b.observationId)),
       identityLinks: links, decisions, rightsDecisionIds };
     const dataDigest = candidate ? digest(canonical(candidate)) : null;
@@ -72,6 +99,7 @@ export const planSourceStatsFromReplay = (source: SourceStatsReplay, context: Co
   };
   if (source.status !== "observed-source-claim") return result(source.reason ?? "source-claim-unavailable");
   const capture = captures[0]; const stats = rows[0]?.projection;
+  if (compressed && stats && stats.season !== Number(request.rawGameId.slice(0,4))) refuse("source-normalization-evidence-refused");
   if (source.reason !== null || captures.length !== 1 || !stats || !rows.length ||
       instant(capture.capturedAt) > instant(capture.availableAt) || instant(capture.availableAt) > instant(capture.ingestedAt) ||
       instant(capture.ingestedAt) > cutoff || rows.some((row) => row.failureCode !== null ||
@@ -82,7 +110,7 @@ export const planSourceStatsFromReplay = (source: SourceStatsReplay, context: Co
   const expectedKey = digest(canonical([stats.rawGameId, stats.rawTeam, ...(stats.feed === "player" ? [stats.rawPlayerId] : [])]));
   if (rows.some((row) => row.rawKeySha256 !== expectedKey)) refuse("source-normalization-evidence-refused");
   const profile = context.profiles.find((item) => item.id === request.profileId);
-  if (!profile || profile.provider !== "nflverse" || profile.feed !== stats.feed || profile.parserVersion !== SOURCE_PROFILE_VERSION)
+  if (!profile || profile.provider !== "nflverse" || profile.feed !== stats.feed || profile.parserVersion !== parserVersion)
     refuse("source-normalization-profile-refused");
   if (!allows(rightsInForce(context.rightsDecisions, profile.id, now, now), "internal-research")) return result("rights-not-in-force");
   const replay = context.replay;

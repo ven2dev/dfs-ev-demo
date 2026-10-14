@@ -831,3 +831,34 @@ Validation: 761 Node tests, 198 PostgreSQL tests (173 required predictive cases)
 Typecheck, full lint, migration-artifact verification and whitespace checks pass.
 The complete database gate was repeated after the final expiry/deletion changes;
 both runs passed and removed their disposable Compose service and scratch data.
+
+## #106 compressed normalization preview review
+
+Thirteen new Node cases exercise 2025/2026 player payloads, team payloads,
+version/parser compatibility, publication seals in evidence/freshness, capture
+and publication visibility, modified season/format, missing native bridges and
+identity links, schedule disagreement and current rights. Expected signed
+yardage, attempts, canonical IDs and missing values are stated independently.
+Released text witnesses retain v1/v2 behavior and contain no compressed seal field.
+
+Three mandatory PostgreSQL cases use actual qualified gzip publication, native
+JSON files, a restricted replay login and the shared batch guard. They require
+exact native dependencies and profile links, preserve earlier unavailable plans
+after later context receipt, and refuse forged/damaged native bytes or scheduled
+native rights expiry. Restored rights/files require fresh verification. Both
+replay-only and owner-session attempts to record v3 refuse; binding and research
+revision tables remain empty. Source-missing and row-missing previews stay
+unavailable with no invented participation.
+
+The initial database checks found an incorrect table name in the new rights
+query; it now checks the tracked profile ID array directly. The late-context
+fixture also needed actual receipt and publication clocks because synthetic
+captures intentionally retain caller timestamps. No migration or ledger was
+rewritten. These tests establish guarded planning, not persisted compressed
+bindings, real-source qualification or consumer/training readiness.
+
+Final validation: 774 Node tests, 201 PostgreSQL tests (176 mandatory predictive
+cases), 75 DB checks, 11 isolated worker checks and 18 catalog contracts pass.
+Typecheck, full lint, migration-artifact verification and whitespace checks pass.
+The final complete database gate includes the corrected rights query and fixture
+clocks; its disposable service and scratch databases were removed afterward.

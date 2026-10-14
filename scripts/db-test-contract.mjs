@@ -23,6 +23,9 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "compressed normalization preview binds qualified seals and native identities through restricted replay without recording",
+  "compressed normalization preview preserves unavailable source and cutoff native evidence without inferred participation",
+  "compressed normalization preview rejects native byte corruption and scheduled native rights expiry with fresh recovery",
   "compressed selection verifies cutoff inventories missing rows conflicting captures and current rights",
   "qualified gzip publication seals complete multi-season claims through restricted roles and exact replay",
   "qualified gzip publication preserves refusal ordinals and admits larger claims without widening legacy bounds",

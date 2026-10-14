@@ -18,7 +18,7 @@ import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_V
 import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
 import type { SourceStatsFeed } from "./sourceStats.ts";
 import { SOURCE_LINEAGE_VERSION, sourceBindingHeadsAt, sourceStatsRawKey, type SourceBindingEvent } from "./sourceLineage.ts";
-import { planSourceStatsFromReplay as planNormalization, sourceNormalizationBasis, SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
+import { planSourceStatsFromReplay as planNormalization, sourceNormalizationBasis, SOURCE_NORMALIZATION_VERSION, COMPRESSED_SOURCE_NORMALIZATION_VERSION, type SourceNormalizationPlan } from "./sourceNormalization.ts";
 import { SOURCE_FACT_BOUNDS, sourceFactHeadsAt, sourceFactRequest, sourceFactSnapshot, type SourceFactRequest } from "./sourceFacts.ts";
 import { sourceFactWitness } from "./sourceWitness.ts";
 import { sourceDecisionBasis, sourceDecisionPlan, sourceDecisionRequest, type SourceDecisionPlan, type SourceDecisionRecord, type SourceDecisionRequest } from "./sourceDecisions.ts";
@@ -511,7 +511,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
 
   // Local codec diagnostics only: this does not select source facts or consumers.
   // Stable metadata is guarded; clock-sensitive access is never memoized.
-  const replayCompressedEvidence = (mode: "inspect" | "claims" | "publication", input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}, selection?: SourceStatsRequest) => {
+  const replayCompressedEvidence = (mode: "inspect" | "claims" | "publication", input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}, selection?: SourceStatsRequest, withinGuard = false) => {
     if (!Array.isArray(input) || input.length < (selection ? 0 : 1) || input.length > 64 || new Set(input).size !== input.length ||
         input.some(id => typeof id !== "string" || !id.trim() || id.length > 256 || /[\u0000-\u001f\u007f]/.test(id))) refuse("compressed-inspection-request-refused");
     const ids = [...input];
@@ -520,7 +520,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const maxRows = options.maxRows === undefined ? 160_000 : options.maxRows;
     if (!Number.isSafeInteger(maxDecodedBytes) || maxDecodedBytes < 1 || maxDecodedBytes > 64_000_000 ||
         !Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 160_000) refuse("compressed-batch-limits-refused");
-    return transaction(async () => {
+    const work = async () => {
+      if (!batch || !batchClock) refuse("compressed-replay-guard-required");
       let captures: SourceStatsCapture[] = [];
       if (selection) {
         // Validate before SQL or file access; use the database clock for cutoff
@@ -559,6 +560,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
             LIMIT 1`, [selection.profileId,selection.cutoff])).rows.length > 0;
           if (removed) source.reason = "retained-evidence-removed";
           await access();
+          batchAccess = access;
           return { snapshotAt: batchClock!, entries: [] as Entry[], verification: { verifiedWireBytes: 0, decodedBytes: 0, decodedRows: 0 },
             publicationSupported: false, source };
         }
@@ -608,7 +610,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       if (selection) await batchAccess();
       return { snapshotAt: batchClock!, entries: selectedEntries, ...(selection ? { source } : {}),
         verification: { verifiedWireBytes: verifiedBytes, decodedBytes, decodedRows }, publicationSupported: false };
-    }, false, true);
+    };
+    return withinGuard ? work() : transaction(work, false, true);
   };
   const replayCompressedInspections = (input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) =>
     replayCompressedEvidence("inspect", input, options).then(({ entries, ...result }) => ({ ...result,
@@ -624,9 +627,21 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const replayCompressedSourceStats = (request: SourceStatsRequest) =>
     replayCompressedEvidence("publication", [], {}, structuredClone(request)).then(result => result.source!);
 
-  const readSourceNormalization = async (request: SourceStatsRequest, accessAt?: string, version: string = SOURCE_NORMALIZATION_VERSION) => memoEvidence("readSourceNormalization", [request, accessAt ?? null, version], async () => {
-    const source = await readSourceStats(request, accessAt);
+  const readSourceNormalization = async (request: SourceStatsRequest, accessAt?: string, version: string = SOURCE_NORMALIZATION_VERSION,
+    providedSource?: SourceStatsReplay) => memoEvidence("readSourceNormalization", [request, accessAt ?? null, version, providedSource?.inputDigest ?? null], async () => {
+    const source = providedSource ?? await readSourceStats(request, accessAt);
     const clock = accessAt ?? (await readQuery(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string;
+    const nativeProfiles = new Set<string>();
+    if (providedSource) {
+      const sourceAccess = batchAccess;
+      if (!sourceAccess || !batchClock) refuse("compressed-replay-guard-required");
+      batchAccess = async () => {
+        await sourceAccess();
+        if (nativeProfiles.size && (await client.query(`SELECT id FROM unnest($1::text[]) AS profiles(id)
+          WHERE NOT public.predictive_rights_allow(id,clock_timestamp(),clock_timestamp(),'internal-research')`,[[...nativeProfiles]])).rows.length)
+          refuse("source-normalization-rights-refused");
+      };
+    }
     const context: Dataset = { formatVersion: 2, profiles: [], rightsDecisions: [], artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
     if (source.status !== "observed-source-claim") {
       context.profiles = await profilesFor([request.profileId]);
@@ -638,7 +653,9 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       const raw = (await readQuery(sql, values)).rows.map((row) => row.envelope as Raw);
       const ids = [...new Set(raw.map((row) => row.artifact.profileId))];
       const rights = (await readQuery(RIGHTS_SQL, [ids])).rows.map((row) => row.decision as RightsDecision);
-      const blocked = blockedProfiles(rights, ids, clock, "internal-research");
+      const rightsClock = providedSource ? (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string : clock;
+      const blocked = blockedProfiles(rights, ids, rightsClock, "internal-research");
+      if (providedSource) for (const id of ids) if (!blocked.has(id)) nativeProfiles.add(id);
       // Permission is checked before opening context bytes, including when the
       // resulting plan is unavailable. Historical hydration uses its audit
       // clock only after the separate current-access gate has passed.
@@ -675,6 +692,15 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return planNormalization(source, { ...context, replay }, clock, version);
   });
   const planSourceStatsNormalization = (request: SourceStatsRequest) => transaction(() => readSourceNormalization(request), true);
+  const planCompressedSourceStatsNormalization = (request: SourceStatsRequest) => {
+    const pinned = structuredClone(request);
+    return transaction(async () => {
+      const source = (await replayCompressedEvidence("publication",[],{},pinned,true)).source!;
+      const plan = await readSourceNormalization(pinned,batchClock!,COMPRESSED_SOURCE_NORMALIZATION_VERSION,source);
+      if (batchAccess) await batchAccess();
+      return plan;
+    },false,true);
+  };
 
   const bindingHistory = async (request: SourceStatsRequest, cutoff: string): Promise<SourceBindingEvent[]> => {
     const key = sourceStatsRawKey(request);
@@ -1592,7 +1618,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
-  return { publish, publishSourceStats, publishCompressedSource, replaySourceStats, replayCompressedSourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
+  return { publish, publishSourceStats, publishCompressedSource, replaySourceStats, replayCompressedSourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, planCompressedSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
     planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun, verifyDatasetShard,
     prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };

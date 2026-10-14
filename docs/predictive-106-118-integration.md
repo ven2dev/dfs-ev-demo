@@ -607,3 +607,34 @@ integration remain pending. Existing text readers and v1 history remain intact.
 Checkpoint validation: 761 Node tests, 198 PostgreSQL tests, 75 DB checks,
 11 isolated worker checks, 18 catalog contracts, typecheck, full lint and
 migration-artifact verification pass. Only disposable local databases were used.
+
+## Compressed normalization preview
+
+`planCompressedSourceStatsNormalization(request)` now verifies the qualified
+compressed inventory and native JSON context in one schema-17 guarded batch.
+Its explicit plan version is `nflverse-stats-normalization-plan-v3`; released
+text v1/v2 plans keep their original shape and parser policy. Compressed raw
+replay evidence now includes `publications` (capture ID, request hash, complete
+claim-array hash and database recording time), all covered by its input digest.
+V3 binds that seal metadata as `binding.sourcePublications` alongside exact
+wire/capture identities, source ordinals and selected hashes, native bridges,
+schedule, identity links, decisions and research-rights decisions.
+
+The planner supports the qualified 2025/2026 raw assets and reuses the existing
+identity and payload rules. It preserves missing/refused/ambiguous source states,
+requires native game/team/opponent/player/schedule evidence, checks bridge windows
+at kickoff, and infers no participation, completion or blank numeric values.
+Source and native bytes share the existing unique stored-byte budget. Native
+research rights are checked before file access and after planning, with scheduled
+expiry withholding the result. The pure planner is not a source authenticator;
+only the guarded preview supplies its independently verified publication input.
+
+This checkpoint adds no DDL. The existing recorder rejects v3; it creates no
+source binding, research stats revision, consumer, feature, label, dataset or pin.
+0018 only remains reserved for #106's independent SQL v3 validation and recorder,
+compressed row references, consumer evidence closure and deletion/pin integration.
+No compressed parser fallback or changes to the v1 history policy are introduced.
+
+Validation: 774 Node tests, 201 PostgreSQL tests, 75 DB checks, 11 worker checks,
+18 catalog contracts, typecheck, full lint and migration-artifact verification
+pass. Only disposable local PostgreSQL was used; frozen 0001–0017 are unchanged.
