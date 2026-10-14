@@ -2392,5 +2392,11 @@
     "sourceProfiles": 2,
     "width64": "not-yet-measured",
     "samplesPerCase": 1
+  },
+  "postMeasurementFormatting": {
+    "tests/db/trainingCapacityFixtures.ts": {
+      "checkpointSha256": "8e110a4437b8b747b1ad64565799bc30079597b4162d561e877d615d9280d6da",
+      "change": "Removed one trailing blank line; executable fixture body unchanged."
+    }
   }
 }

@@ -176,4 +176,3 @@ export const runRequest = (seed: Awaited<ReturnType<typeof seedCapacity>>, count
     splitPolicy: { version: "target-event-disjoint-v1", evaluationMode: "walk-forward", aggregationPolicyId: "unique-events-v1", aggregationPolicySha256: "c".repeat(64) },
     population: { status: "unqualified", enumerationOrigin: "synthetic-capacity-slots", enumerationSha256: digest(canonical(slots)) }, slots };
 };
-

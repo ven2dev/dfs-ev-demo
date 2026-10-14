@@ -71,8 +71,10 @@ final PR CI still must run that gate. Additional logs are
 
 Frozen prefix at this checkpoint: **0001–0020**. 0020 SHA-256 is
 `fed741f76177ec35e07ac1d1d09f39b33ceb26d406ac06b0e4ecd97e7816ada3`.
-No later migration is allocated. The 39 earlier SQL/catalog files and retained
-capacity source hashes match exactly. Final affected-file typecheck/lint and all
+No later migration is allocated. The 39 earlier SQL/catalog files match exactly.
+Retained hashes identify the tested source bytes; the evidence separately records
+one subsequent trailing-blank-line removal in the extracted fixture. Its executable
+body is unchanged. Final affected-file typecheck/lint and all
 six report-contract checks pass; no full implementation gate was repeated for
 documentation or fixture-only changes.
 
