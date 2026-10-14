@@ -21,9 +21,14 @@ test("isolated worker prepares complete claims without publication activation",a
   assert.equal(proof.result.publicationSupported,false);
 });
 test("isolated worker pins caller buffers and scope before asynchronous startup",async()=>{
-  const bytes=wire(),scope=request(bytes),pending=runCompressedWorker("inspect",bytes,scope);
-  bytes.fill(0);scope.season=2025;
-  const proof=await pending;assert.equal(proof.result.season,2026);assert.equal(proof.result.rows,1);
+  const bytes=wire(),scope=request(bytes),limits={rows:1},pending=runCompressedWorker("inspect",bytes,scope,{limits});
+  bytes.fill(0);scope.season=2025;limits.rows=0;
+  const proof=await pending;assert.equal(proof.result.season,2026);assert.equal(proof.result.rows,1);assert.equal(proof.result.limits.rows,1);
+});
+test("isolated worker enforces downward decoded budgets and recovers after refusal",async()=>{
+  const bytes=wire(),decodedBytes=Buffer.byteLength(sourceCsv("player"));
+  await assert.rejects(runCompressedWorker("inspect",bytes,request(bytes),{limits:{decodedBytes:decodedBytes-1}}),/compressed-decoded-budget-exceeded/);
+  assert.equal((await runCompressedWorker("inspect",bytes,request(bytes),{limits:{decodedBytes}})).result.decodedBytes,decodedBytes);
 });
 test("isolated worker refuses valid-wire CRC damage and recovers for the next job",async()=>{
   const bad=wire();bad[bad.length-8]^=1;

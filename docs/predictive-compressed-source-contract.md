@@ -356,3 +356,28 @@ typecheck, lint and whitespace checks pass. The worker tests inspect the actual
 container memory/swap, network, read-only, logging and UID configuration and
 leave no task-owned container. No DB schema or existing reader changed, so the
 previous schema-15 database gate remains the last DB validation checkpoint.
+
+## Guarded inspection worker integration
+
+The subsequent checkpoint connects `replayCompressedInspections` to the kernel-
+bounded worker. Rights are rechecked before opening each unique wire file and
+before final delivery, with existing database table guards held across decoding
+and verified container cleanup. The compressed reader alone uses a 45-second
+idle transaction timeout, covering the worker's 30-second maximum execution and
+bounded cleanup. Decoder byte/row ceilings are reduced to the remaining batch
+allowance and copied before asynchronous startup. Resource refusal returns no
+inspection; the transaction rolls back. Persisted envelope checks and separate
+wire/decoded accounting remain unchanged.
+
+The local/CI database harness prepares the exact pinned image and runs all nine
+container checks before its existing mandatory database gate. New coverage proves
+inclusive reduced decode limits, refusal just below the required size and caller
+limit mutation isolation. Runtime reads never download an image. This remains
+codec diagnostic replay, with no qualified compressed publication, numerical
+consumer reconstruction or usable feature/label activation. Schema 0015 is
+unchanged; 0016 remains allocated to #118.
+
+Integration validation passes all 746 Node tests, nine container checks, 75 Node
+database checks and 166 PostgreSQL tests (141 mandatory predictive cases), plus
+typecheck, affected-file lint and catalog/migration/readiness/whitespace checks.
+The disposable local database was removed after validation.

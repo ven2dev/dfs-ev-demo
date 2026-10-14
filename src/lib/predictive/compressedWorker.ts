@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { join } from "node:path";
-import type { CompressedInspectionRequest, inspectCompressedSource } from "./compressedSource.ts";
+import { COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest, type inspectCompressedSource } from "./compressedSource.ts";
 import type { prepareCompressedSourceClaims } from "./compressedClaims.ts";
 import { exact, refuse } from "./validation.ts";
 
@@ -23,15 +23,21 @@ const command = (args: string[], timeout=5000) => new Promise<string>((resolve,r
 });
 
 type WorkerResult = Awaited<ReturnType<typeof inspectCompressedSource>> | Awaited<ReturnType<typeof prepareCompressedSourceClaims>>;
+type DecoderLimits = NonNullable<Parameters<typeof inspectCompressedSource>[2]>["limits"];
 export async function runCompressedWorker(mode: "inspect"|"claims", source: Uint8Array, request: CompressedInspectionRequest,
-  options: { captureId?:string; signal?:AbortSignal; deadlineMs?:number } = {}): Promise<{ result:WorkerResult; memoryLimitBytes:number; peakRssBytes:number }> {
+  options: { captureId?:string; signal?:AbortSignal; deadlineMs?:number; limits?:DecoderLimits } = {}): Promise<{ result:WorkerResult; memoryLimitBytes:number; peakRssBytes:number }> {
   if(active)refuse("compressed-worker-busy");
   exact(request,["feed","season","wireSha256","wireBytes"]);
   if(!["inspect","claims"].includes(mode)||!["player","team","roster"].includes(request.feed)||![2025,2026].includes(request.season))refuse("compressed-worker-input-refused");
   if(!(source instanceof Uint8Array)||source.length<1||source.length>8_000_000||request.wireBytes!==source.length)refuse("compressed-worker-input-refused");
   const bytes=Buffer.from(source), scoped={...request};
   if(createHash("sha256").update(bytes).digest("hex")!==scoped.wireSha256)refuse("compressed-wire-integrity-failed");
-  if(!options||typeof options!=="object"||Array.isArray(options)||Object.keys(options).some(key=>!["captureId","signal","deadlineMs"].includes(key)))refuse("compressed-worker-input-refused");
+  if(!options||typeof options!=="object"||Array.isArray(options)||Object.keys(options).some(key=>!["captureId","signal","deadlineMs","limits"].includes(key)))refuse("compressed-worker-input-refused");
+  if(options.limits!==undefined && (!options.limits||typeof options.limits!=="object"||Array.isArray(options.limits)))refuse("compressed-limits-refused");
+  const limits={...options.limits};
+  for(const [key,value] of Object.entries(limits)) {
+    if(!Object.hasOwn(COMPRESSED_SOURCE_LIMITS,key)||!Number.isSafeInteger(value)||value<1||value>COMPRESSED_SOURCE_LIMITS[key as keyof typeof COMPRESSED_SOURCE_LIMITS])refuse("compressed-limits-refused");
+  }
   const deadline=options.deadlineMs===undefined?30_000:options.deadlineMs, signal=options.signal, captureId=options.captureId??null;
   if(signal!==undefined&&!(signal instanceof AbortSignal))refuse("compressed-worker-input-refused");
   if(!Number.isSafeInteger(deadline)||deadline<1||deadline>30_000)refuse("compressed-worker-input-refused");
@@ -76,7 +82,7 @@ export async function runCompressedWorker(mode: "inspect"|"claims", source: Uint
           resolve({result:response.result,memoryLimitBytes:response.memoryLimitBytes,peakRssBytes:response.peakRssBytes});
         } catch {reject(new Error(code===137?"compressed-worker-memory-exceeded":"compressed-worker-failed"));}
       });
-      child.stdin.end(Buffer.concat([Buffer.from(JSON.stringify({mode,captureId:mode==="inspect"?null:captureId,request:scoped})+"\n"),bytes]));
+      child.stdin.end(Buffer.concat([Buffer.from(JSON.stringify({mode,captureId:mode==="inspect"?null:captureId,request:scoped,limits})+"\n"),bytes]));
       if(signal?.aborted)cancel();
     });
   } finally {

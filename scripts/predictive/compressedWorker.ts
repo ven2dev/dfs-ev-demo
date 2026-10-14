@@ -16,10 +16,10 @@ try {
   const input = Buffer.concat(chunks), newline = input.indexOf(10);
   if (newline < 1 || newline > 4095) refuse("compressed-worker-input-refused");
   const job = JSON.parse(input.subarray(0, newline).toString("utf8"));
-  exact(job, ["mode","captureId","request"]);
+  exact(job, ["mode","captureId","request","limits"]);
   if (!["inspect","claims"].includes(job.mode) || (job.mode === "inspect" && job.captureId !== null)) refuse("compressed-worker-input-refused");
   const wire = input.subarray(newline+1), request = job.request as CompressedInspectionRequest;
-  const result = job.mode === "inspect" ? await inspectCompressedSource(wire,request) : await prepareCompressedSourceClaims(job.captureId,wire,request);
+  const result = job.mode === "inspect" ? await inspectCompressedSource(wire,request,{limits:job.limits}) : await prepareCompressedSourceClaims(job.captureId,wire,request,{limits:job.limits});
   process.stdout.write(JSON.stringify({ ok: true,result,memoryLimitBytes: 268_435_456,peakRssBytes: process.resourceUsage().maxRSS*1024 }));
 } catch (error) {
   process.stdout.write(JSON.stringify({ ok:false,error:error instanceof PredictiveError ? error.code : "compressed-worker-failed" }));

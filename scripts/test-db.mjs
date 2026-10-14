@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CODEC_WORKER_IMAGE } from "../src/lib/predictive/compressedWorker.ts";
 import { NODE_REQUIRED_CASES, validateCorpusDbReport, validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport, validatePredictiveDbReport } from "./db-test-contract.mjs";
 import {
   assertNoApplicationCredentials,
@@ -79,7 +80,11 @@ async function main() {
   const [mode, ...filters] = process.argv.slice(2);
   if (mode === "down") return run("docker", [...composeArgs, "down", "--volumes", "--remove-orphans"]);
   assertNoApplicationCredentials(process.env);
-  if (mode === "run") return runSuite(process.env, filters);
+  if (mode === "run") {
+    parseTestDatabaseUrl(process.env.TEST_DATABASE_URL);
+    const prepared = await prepareWorker();
+    return prepared || interrupted ? prepared || 1 : runSuite(process.env, filters);
+  }
   if (mode !== "local" && mode !== "repeat") throw new Error("Expected DB test mode: run, local, repeat, or down.");
   const repetitions = mode === "repeat" ? Number(filters.shift() ?? 20) : 1;
   if (!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 100 || (mode === "repeat" && filters.length)) {
@@ -95,7 +100,9 @@ async function main() {
   try {
     const started = await run("docker", [...composeArgs, "up", "-d", "--wait", "--wait-timeout", "60"]);
     if (started === 0 && !interrupted) {
-      for (let index = 0; index < repetitions && !interrupted; index++) {
+      const prepared = await prepareWorker();
+      result = prepared || (interrupted ? 1 : 0);
+      for (let index = 0; index < repetitions && !interrupted && prepared === 0; index++) {
         if (mode === "repeat") console.log(`DB suite repetition ${index + 1}/${repetitions}`);
         result = await runSuite({ ...process.env, TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL }, filters);
         if (result !== 0) break;
@@ -106,6 +113,12 @@ async function main() {
     if (cleaned !== 0) result = 1;
   }
   return result;
+}
+
+async function prepareWorker() {
+  const pulled = await run("docker", ["pull", CODEC_WORKER_IMAGE]);
+  if (pulled !== 0 || interrupted) return pulled || 1;
+  return run(process.execPath, ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--test", "tests/predictive/compressedWorker.integration.mjs"]);
 }
 
 try {

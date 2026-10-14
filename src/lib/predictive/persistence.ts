@@ -7,6 +7,7 @@ import { checkTrainingMetadataSelection, TRAINING_SELECTION_SQL, trainingSelecti
 import { trainingRunPreview, type TrainingKickoffProof } from "./trainingPreview.ts";
 import type { TrainingRunInventory } from "./trainingRuns.ts";
 import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
+import { runCompressedWorker } from "./compressedWorker.ts";
 import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
   type SourceClaimRow, type SourceStatsPublication, type SourceStatsRequest, type SourceStatsReplay, type SourceStatsCapture } from "./sourceClaims.ts";
 import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
@@ -468,6 +469,9 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       type Entry = { captureId: string; proof: Awaited<ReturnType<typeof inspectCompressedSource>>; reference: string; sha256: string; byteSize: number };
       const load = async (): Promise<Entry[]> => (await client.query("SELECT public.predictive_read_compressed_inspections($1) AS entries", [ids])).rows[0].entries;
       const entries = await load();
+      // A 30s execution deadline plus bounded runtime cleanup must fit within
+      // this guarded transaction's idle timeout; no image is pulled here.
+      await client.query("SET LOCAL idle_in_transaction_session_timeout = '45s'");
       batchAccess = async () => { await load(); };
       let decodedBytes = 0, decodedRows = 0;
       const reports = new Map<string, Entry>();
@@ -479,9 +483,10 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
           const remainingBytes = maxDecodedBytes - decodedBytes, remainingRows = maxRows - decodedRows;
           if (remainingBytes < 1 || remainingRows < 1) refuse("compressed-batch-work-budget-exceeded");
           const bytes = await readWireBytes(entry.reference, entry.sha256, entry.byteSize);
-          const proof = await inspectCompressedSource(bytes, request, { limits: {
+          const worker = await runCompressedWorker("inspect", bytes, request, { limits: {
             decodedBytes: Math.min(COMPRESSED_SOURCE_LIMITS.decodedBytes, remainingBytes),
             rows: Math.min(COMPRESSED_SOURCE_LIMITS.rows, remainingRows) } });
+          const proof = worker.result as Awaited<ReturnType<typeof inspectCompressedSource>>;
           decodedBytes += proof.decodedBytes; decodedRows += proof.rows;
           return { ...proof, limits: { ...COMPRESSED_SOURCE_LIMITS } };
         });

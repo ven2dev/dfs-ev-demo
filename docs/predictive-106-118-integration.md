@@ -275,3 +275,26 @@ writer. Next: integrate it while preserving current-rights gates, downscaled
 decoded-work budgets, guard lifetimes and failure cleanup; then qualify full
 compressed publication and consumer reconstruction. Coordinate any #106 DDL
 at 0017 or later after #118 supplies its fixed dataset/pin prefix.
+
+## #106 guarded worker integration
+
+`replayCompressedInspections` now performs complete-file inspection through the
+isolated worker. Its existing guarded transaction still rechecks rights before
+opening each unique wire artifact and again before delivery; table guards span
+worker execution and cleanup. The compressed path has a 45-second transaction
+idle timeout to accommodate the 30-second worker deadline and bounded cleanup.
+Wire accounting stays separate from decoded bytes and rows, with each worker
+receiving only the remaining downward-bounded batch allowance. Persisted envelope
+comparison remains exact after normalizing these temporary work limits.
+
+The database test harness pulls the exact pinned image and requires all nine
+container checks before its database suites. Runtime readers never pull images;
+missing runtimes/images refuse the read. This integrates diagnostic replay only:
+qualified compressed publication, consumer reconstruction and usable real
+features/labels remain outstanding. No migration changed; 0016 remains reserved
+for #118 and further #106 DDL still requires coordination here.
+
+Validation passes: 746 Node tests, nine Docker worker checks, 75 Node database
+checks and 166 PostgreSQL tests, including all 141 mandatory predictive cases.
+Typecheck, affected-file lint, catalog/migration/readiness and whitespace checks
+pass. The disposable database service was removed after the gate.

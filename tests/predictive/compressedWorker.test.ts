@@ -20,6 +20,9 @@ it("rejects invalid capture IDs, deadlines and options before launching",async()
   await expect(runCompressedWorker("claims",wire,request(wire),{captureId:"\ninvalid"})).rejects.toThrow("source-publication-id-refused");
   for(const deadlineMs of [0,30001,1.5])await expect(runCompressedWorker("inspect",wire,request(wire),{deadlineMs})).rejects.toThrow("compressed-worker-input-refused");
   await expect(runCompressedWorker("inspect",wire,request(wire),{extra:true} as never)).rejects.toThrow("compressed-worker-input-refused");
+  for(const limits of [{rows:80001},{decodedBytes:20000001},{rows:0},{rows:1.5},{unknown:1},{constructor:1},null]) {
+    await expect(runCompressedWorker("inspect",wire,request(wire),{limits} as never)).rejects.toThrow("compressed-limits-refused");
+  }
 });
 it("rejects pre-cancelled input and unsupported scope without runtime access",async()=>{
   const wire=bytes(),controller=new AbortController();controller.abort();

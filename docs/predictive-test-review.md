@@ -696,3 +696,22 @@ than a nonexistent `probe`; the new hook validates event existence before those
 probes. The role-denial probes still use the invalid event and must refuse
 execution before authorization. Neither correction changes production SQL or
 weakens the asserted immutable/FK boundaries.
+
+## #106 guarded worker integration review
+
+The schema-15 inspection cases now exercise the actual isolated worker rather
+than an in-process decoder. Their existing independent envelopes, exact wire
+counts, downward batch limits, forged decoded digest, CRC damage, restricted
+roles, concurrent rights mutation and scheduled expiry assertions are preserved.
+The final rights check occurs after worker cleanup, while the database guard is
+still held. No source-consumer reader inherits compressed activation from this
+diagnostic path.
+
+The mandatory container preflight checks exact codec output and real cgroup
+configuration, native allocation OOM, resource refusal and cleanup/reuse. Its
+new reduced-budget case uses independently measured source byte length: the
+exact allowance succeeds and one byte less refuses. Caller limit mutation cannot
+alter the launched request. Pure tests reject increased, invalid and inherited
+limit keys before runtime access. These checks establish guarded diagnostic
+decoding only; publication qualification and usable real features/labels remain
+separate outstanding work.
