@@ -1,5 +1,56 @@
 # #118 guarded evidence checkpoint
 
+## Provisional audited invalidation (reserved 0019)
+
+The owner allocated 0018 to #106 normalization/consumer/retention and 0019 to
+#118 audited invalidation. The SQL draft remains outside the ordered migration
+chain in `db/migration-drafts/`; tests apply it transactionally without recording
+0019 in `db_migrations`. Relay's frozen/generated prefix remains 0001–0016.
+#106's latest checked remote is `9d8fde7`, ending at 0017. Final ordered migration,
+schema/contracts/readiness generation and combined integration validation wait
+for its frozen prefix18. This checkpoint does not activate a persistent database.
+
+The local store wraps seven immutable run/dataset operations. Eligible evidence
+refusals roll back before a separate guarded audit attempt and remain withheld
+regardless of audit success, absent installation or failure. The error exposes
+the canonical failure and sanitized audit status; private exception text is never
+persisted. Current rights still precede bytes. SQL certifies only conditions it
+can observe; file damage/inaccessibility is a reader diagnostic. Retention hooks
+append removal/expiry receipts atomically using existing authorization, without
+copying the shared retention procedure or changing prior counts/digests.
+
+Four pure cases cover payload/privacy restrictions, failure classification,
+stable event identity and bounded continuation. Nine mandatory PostgreSQL cases
+cover backfilled and newly sealed digest addresses, exact hash refusal, database
+clocks, execute-only non-superuser access, no access grant from a diagnostic,
+automatic damage/missing-file refusal after rollback, retry deduplication,
+successful repair without changing the manifest, request/overflow errors not
+audited, failed preparation without a partial manifest/pin, failed audit still
+withheld, current rights before zero file reads, fixed-upper-ordinal pagination,
+late deletion rollback, retention-only removal with surviving digest history,
+concurrent retry deduplication, quota bypass for mandatory deletion, expiry at
+the exact 90-day boundary and explicit `not-installed` behavior on prefix16.
+
+Recovery copies all original synthetic predictive rows, timestamp precision,
+identity-sequence progress and exact managed blob bytes to a separate registered
+disposable database. Test-only replica mode is confined to a verified disposable
+superuser transaction and restored before readers; production interfaces gain
+no override. Original inventory/manifest hashes replay before deletion. Reapplying
+the actual retention event matches legacy and supplemental counts/digests and
+stable audit event hashes, permitting fresh audit recording clocks. Recreating
+fixtures would not establish this: manifest hashes include their original clocks.
+
+The focused nine-case PostgreSQL run passes. Final provisional gates pass **760
+Node tests**, **75 Node DB checks + 205 PostgreSQL tests** (180 mandatory predictive
+cases), all **17 catalog contracts**, typecheck and affected-file lint. The full
+database gate took 331 seconds for its PostgreSQL portion. The 36 frozen/generated
+prefix files match `86c141d` byte for byte; all 12 local documentation links and
+whitespace checks pass. Logs use
+`/private/tmp/dfs118-invalidation-final-{node,db,types,lint}.log`.
+No usable real feature or label is established. Remaining #118 work is final
+prefix integration, deadlines/cancellation, representative capacity and independent
+review. #54 Part B retains its real-source and population qualification blockers.
+
 ## Complete fitting-run evidence checks
 
 `readFittingRunReadiness({ version: "qb-training-read-v1", fittingRunId,

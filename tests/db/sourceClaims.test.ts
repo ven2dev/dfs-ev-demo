@@ -1,11 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
 import { gzipSync } from "node:zlib";
-import { mkdtemp, readFile, realpath, rm, utimes, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rename, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Client } from "pg";
 import { expect, it } from "vitest";
-import { checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
+import { assertTransactionalSql, checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
 import { createCatalogVerifier, loadCatalogContracts } from "../../scripts/db-migrations/contracts.mjs";
 import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
 import { ensureHarnessSession, ensurePredictiveRoles } from "../../scripts/predictive/harness.ts";
@@ -24,6 +24,7 @@ import { checkSourceWitness, sourceFactWitness, sourcePostWindowCapture, sourceR
 import { sourceDecisionBasis, type SourceDecisionPlan, type SourceDecisionRequest } from "../../src/lib/predictive/sourceDecisions.ts";
 import { sourceConsumerInputDigest, type SourceConsumerBody } from "../../src/lib/predictive/sourceConsumers.ts";
 import { fittingRunRequestDigest, normalizeFittingRunRequest, TRAINING_HISTORY_POLICY, TRAINING_HISTORY_SHA256, type FittingRunRequest, type TrainingSlot } from "../../src/lib/predictive/training.ts";
+import { TRAINING_INVALIDATION_FAILURES, trainingInvalidationReceiptDigest, TrainingReadWithheldError, type TrainingInvalidationTarget } from "../../src/lib/predictive/trainingInvalidation.ts";
 import { checkTrainingMetadataSelection, TRAINING_SELECTION_SQL, trainingSelectionParameters, type TrainingMetadataSelection } from "../../src/lib/predictive/trainingSql.ts";
 import { recordCompletion } from "../../src/lib/predictive/completion.ts";
 import { prepareSourceClaims, projectSourceClaim } from "../../src/lib/predictive/sourceClaims.ts";
@@ -2347,6 +2348,395 @@ const labelReadRequest = (seed: Awaited<ReturnType<typeof seedConsumers>>) => ({
 
 const readinessRequest = (inventory: Awaited<ReturnType<Store["prepareFittingRun"]>>) => ({
   version: "qb-training-read-v1" as const, fittingRunId: inventory.request.fittingRunId, inventorySha256: inventory.inventorySha256,
+});
+
+// Provisional harness-only application of the reserved 0019 draft. It is not
+// entered into db_migrations or the ordered manifest before frozen 0018 exists.
+const installInvalidationDraft = async (client: Client) => {
+  const sql = await readFile(new URL("../../db/migration-drafts/0019_predictive_training_invalidations.sql", import.meta.url), "utf8");
+  assertTransactionalSql(sql);
+  await client.query("BEGIN");
+  try { await client.query(sql); await client.query("COMMIT"); }
+  catch (error) { await client.query("ROLLBACK"); throw error; }
+};
+const auditHistoryRequest = (target: TrainingInvalidationTarget, limit = 64) => ({
+  version: "qb-training-invalidation-v1" as const, target, afterOrdinal: null, throughOrdinal: null, limit,
+});
+const auditRequest = (target: TrainingInvalidationTarget, failureCode: keyof typeof TRAINING_INVALIDATION_FAILURES = "artifact-integrity-failed") => ({
+  version: "qb-training-invalidation-v1" as const, target, operation: "dataset-page" as const, failureCode,
+});
+
+// Exact synthetic backup, not recreated fixtures: manifest identities include
+// the original database clocks. Replica mode is confined to a registered,
+// disposable superuser target, and reset atomically before returning to readers.
+const assertDisposableRestore = async (client: Client, target: Target) => {
+  target.assertTarget(target.expected);
+  const state = (await client.query("SELECT current_database() AS database,rolsuper FROM pg_roles WHERE rolname=session_user")).rows[0];
+  if (!/^dfs_ev_test_[a-f0-9]{20}$/.test(state.database) || state.database !== (target.expected as { database: string }).database || !state.rolsuper) {
+    throw new Error("disposable-backup-target-refused");
+  }
+};
+const backupRelations = async (client: Client) => (await client.query(`SELECT c.relname AS name,array_agg(a.attname::text ORDER BY a.attnum) AS columns
+  FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_attribute a ON a.attrelid=c.oid
+  WHERE n.nspname='public' AND c.relkind='r' AND c.relname LIKE 'predictive\\_%' ESCAPE '\\'
+    AND a.attnum>0 AND NOT a.attisdropped AND a.attgenerated=''
+  -- Raw-row CHECKs consult the canonical team dimension during restore.
+  GROUP BY c.relname ORDER BY (c.relname='predictive_teams') DESC,c.relname COLLATE "C"`)).rows as { name: string; columns: string[] }[];
+const backupIdentifier = (name: string) => {
+  if (!/^[a-z][a-z0-9_]*$/.test(name)) throw new Error("disposable-backup-identifier-refused");
+  return '"' + name + '"';
+};
+const snapshotSyntheticBackup = async (client: Client, target: Target, root: string) => {
+  await assertDisposableRestore(client, target);
+  const tables = [];
+  for (const relation of await backupRelations(client)) {
+    const rows = (await client.query(`SELECT to_jsonb(t)::text AS body FROM public.${backupIdentifier(relation.name)} t ORDER BY to_jsonb(t)::text COLLATE "C"`)).rows;
+    tables.push({ ...relation, rows: '[' + rows.map((row) => row.body).join(',') + ']' });
+  }
+  const sequences = [];
+  const names = (await client.query("SELECT relname AS name FROM pg_class WHERE relnamespace='public'::regnamespace AND relkind='S' AND relname LIKE 'predictive\\_%' ESCAPE '\\'")).rows;
+  for (const { name } of names) {
+    sequences.push({ name: name as string, ...(await client.query(`SELECT last_value::text,is_called FROM public.${backupIdentifier(name)}`)).rows[0] });
+  }
+  const blobs = [];
+  for (const row of (await client.query("SELECT storage_ref FROM predictive_blobs ORDER BY storage_ref")).rows) {
+    if (!/^[a-f0-9]{64}\.(?:json|csv|csv\.gz)$/.test(row.storage_ref)) throw new Error("disposable-backup-blob-refused");
+    blobs.push({ reference: row.storage_ref as string, bytes: await readFile(join(root, ".db-blobs", row.storage_ref)) });
+  }
+  return { tables, sequences, blobs };
+};
+const restoreSyntheticBackup = async (client: Client, target: Target, artifacts: Artifacts, backup: Awaited<ReturnType<typeof snapshotSyntheticBackup>>) => {
+  await assertDisposableRestore(client, target);
+  expect(await backupRelations(client)).toEqual(backup.tables.map(({ name, columns }) => ({ name, columns })));
+  await client.query("BEGIN");
+  try {
+    await client.query("SET LOCAL session_replication_role='replica'");
+    for (const table of backup.tables) await client.query(`DELETE FROM public.${backupIdentifier(table.name)}`);
+    for (const table of backup.tables) {
+      const columns = table.columns.map(backupIdentifier).join(',');
+      await client.query(`INSERT INTO public.${backupIdentifier(table.name)}(${columns}) OVERRIDING SYSTEM VALUE
+        SELECT ${columns} FROM jsonb_populate_recordset(NULL::public.${backupIdentifier(table.name)},$1::jsonb)`, [table.rows]);
+    }
+    await client.query("SET LOCAL session_replication_role='origin'");
+    await client.query("COMMIT");
+  } catch (error) { await client.query("ROLLBACK"); throw error; }
+  for (const seq of backup.sequences) await client.query("SELECT setval($1::regclass,$2::bigint,$3::boolean)", ["public." + seq.name, seq.last_value, seq.is_called]);
+  expect((await client.query("SHOW session_replication_role")).rows[0].session_replication_role).toBe("origin");
+  for (const blob of backup.blobs) {
+    const sha = blob.reference.slice(0,64);
+    const ref = blob.reference.endsWith(".gz") ? await artifacts.database.writeBinary(blob.bytes, sha)
+      : await artifacts.database.write(blob.bytes.toString("utf8"), sha, blob.reference.endsWith(".csv") ? "text/csv" : "application/json");
+    expect(ref).toBe(blob.reference);
+  }
+};
+
+it("QB invalidation draft backfills exact digest addresses and enforces execute-only roles clocks and diagnostic boundaries", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store); await store.recordSourcePassingYards("audit-role-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory));
+    const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    await installInvalidationDraft(client);
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(ledger);
+    expect((await client.query("SELECT kind,count(*)::integer AS n FROM predictive_training_invalidation_addresses GROUP BY kind ORDER BY kind")).rows)
+      .toEqual([{ kind: "dataset", n: 1 }, { kind: "run", n: 1 }]);
+    const address = { kind: "dataset" as const, id: saved.datasetId, sha256: saved.manifestSha256 };
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, artifacts), before = await witnessClock(client);
+      const receipt = await reader.recordTrainingInvalidation(auditRequest(address, "training-dataset-rights-refused")), after = await witnessClock(client);
+      expect(receipt).toMatchObject({ reason: "rights-unavailable", origin: "reader-reported", reused: false });
+      expect(Date.parse(receipt.recordedAt)).toBeGreaterThanOrEqual(Date.parse(before)); expect(Date.parse(receipt.recordedAt)).toBeLessThanOrEqual(Date.parse(after));
+      expect(receipt.address).toMatchObject({ identitySha256: digest(canonical(saved.datasetId)), inventorySha256: inventory.inventorySha256, manifestSha256: saved.manifestSha256 });
+      // A submitted diagnostic is never an authorization or an instruction to
+      // erase data. Successful access still reconstructs the original bytes.
+      expect((await reader.readDatasetPage(pageRequest(saved))).rows[0].feature.state).toBe("usable");
+      expect((await reader.readDatasetManifest(saved.datasetId))?.manifestSha256).toBe(saved.manifestSha256);
+      await expect(login.query("SELECT * FROM predictive_training_invalidations")).rejects.toMatchObject({ code: "42501" });
+      await expect(login.query("INSERT INTO predictive_training_invalidations DEFAULT VALUES")).rejects.toMatchObject({ code: "42501" });
+      await expect(login.query("SELECT public.predictive_training_invalidation_append($1,'retention','retention-evidence-removed','evidence-removed','authorized-retention',$2)",
+        [receipt.addressSha256, "f".repeat(64)])).rejects.toMatchObject({ code: "42501" });
+      await expect(login.query("SELECT public.predictive_record_training_invalidation($1)", [{ ...auditRequest(address), recordedAt: "2000-01-01T00:00:00.000Z" }]))
+        .rejects.toThrow("training-invalidation-request-refused");
+      await expect(reader.recordTrainingInvalidation(auditRequest({ ...address, sha256: "f".repeat(64) }))).rejects.toThrow("training-invalidation-target-mismatch");
+      await expect(reader.recordTrainingInvalidation(auditRequest({ ...address, id: "never-registered" }))).rejects.toThrow("training-invalidation-target-unknown");
+      const sql = (await client.query("SELECT code,public.predictive_training_invalidation_reason(code) AS reason FROM unnest($1::text[]) code", [Object.keys(TRAINING_INVALIDATION_FAILURES)])).rows;
+      expect(Object.fromEntries(sql.map((row) => [row.code,row.reason]))).toEqual(TRAINING_INVALIDATION_FAILURES);
+      for (const statement of ["UPDATE predictive_training_invalidations SET recorded_at=recorded_at", "DELETE FROM predictive_training_invalidations", "TRUNCATE predictive_training_invalidations"]) {
+        await probe(client, async () => { await expect(client.query(statement)).rejects.toThrow("predictive-append-only"); });
+      }
+    });
+    await withLogin(client, target, [], async (login) => {
+      await expect(login.query("SELECT public.predictive_record_training_invalidation($1)", [auditRequest(address)])).rejects.toMatchObject({ code: "42501" });
+    });
+  });
+});
+
+it("QB invalidation draft audits failed reads after rollback deduplicates retries and preserves repaired manifests without recording request errors", async () => {
+  await withProof(async ({ client, store, root, target, artifacts }) => {
+    await installInvalidationDraft(client);
+    const seed = await seedConsumers(store), feature = await store.recordSourcePassingYards("audit-damage-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory));
+    const address = { kind: "dataset" as const, id: saved.datasetId, sha256: saved.manifestSha256 };
+    const path = join(root, ".db-blobs", feature.bodySha256 + ".json"), bytes = await readFile(path);
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, artifacts), req = pageRequest(saved);
+      let first!: TrainingReadWithheldError;
+      try {
+        await writeFile(path, "damaged-private-bytes");
+        const error = await reader.readDatasetPage(req).then(() => null, (error: unknown) => error);
+        expect(error).toBeInstanceOf(TrainingReadWithheldError); first = error as TrainingReadWithheldError;
+        expect(first.invalidation).toMatchObject({ status: "recorded", receipt: { failureCode: "artifact-integrity-failed", origin: "reader-reported", reused: false } });
+        const retry = await reader.readDatasetPage(req).then(() => null, (error: unknown) => error) as TrainingReadWithheldError;
+        expect(retry.invalidation).toMatchObject({ status: "recorded", receipt: { reused: true } });
+        expect((await reader.readTrainingInvalidations(auditHistoryRequest(address))).entries).toHaveLength(1);
+        expect((await login.query("SELECT 1 AS session_restored")).rows[0].session_restored).toBe(1);
+      } finally { await writeFile(path, bytes); }
+      const repaired = await reader.readDatasetPage(req);
+      expect(repaired.rows[0].feature.reference?.id).toBe(feature.id); expect(repaired.manifestSha256).toBe(saved.manifestSha256);
+      await expect(reader.readDatasetPage({ ...req, manifestSha256: "f".repeat(64) })).rejects.toThrow("training-page-manifest-mismatch");
+      await expect(reader.readDatasetPage({ ...req, limits: { rows: 2, bytes: 1 } })).rejects.toThrow("training-page-byte-bounds-refused");
+      expect((await reader.readTrainingInvalidations(auditHistoryRequest(address))).entries).toHaveLength(1);
+      await rename(path, path + ".held");
+      try {
+        const missing = await reader.readDatasetPage(req).then(() => null, (error: unknown) => error) as TrainingReadWithheldError;
+        expect(missing).toMatchObject({ message: "artifact-unreadable", invalidation: { status: "recorded", receipt: { reason: "evidence-inaccessible" } } });
+      } finally { await rename(path + ".held", path); }
+      const history = await reader.readTrainingInvalidations(auditHistoryRequest(address));
+      expect(history.entries.map((entry) => entry.reason)).toEqual(["evidence-integrity-failed", "evidence-inaccessible"]);
+      const serialized = JSON.stringify(history);
+      for (const secret of [saved.datasetId, inventory.request.fittingRunId, seed.raw.profileId, seed.request.playerId, root, "damaged-private-bytes"]) expect(serialized).not.toContain(secret);
+    });
+  });
+});
+
+it("QB invalidation draft audits refused preparation without partial pins and keeps audit failures explicitly withheld", async () => {
+  await withProof(async ({ client, store, root }) => {
+    await installInvalidationDraft(client);
+    const seed = await seedConsumers(store), feature = await store.recordSourcePassingYards("audit-prepare-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), req = datasetRequest(inventory);
+    const address = { kind: "run" as const, id: inventory.request.fittingRunId, sha256: inventory.inventorySha256 };
+    const path = join(root, ".db-blobs", feature.bodySha256 + ".json"), bytes = await readFile(path);
+    try {
+      await writeFile(path, "refused-before-sealing");
+      const failed = await store.prepareDataset(req).then(() => null, (error: unknown) => error) as TrainingReadWithheldError;
+      expect(failed.invalidation).toMatchObject({ status: "recorded", receipt: { operation: "dataset-prepare" } });
+      for (const table of ["predictive_training_datasets", "predictive_training_dataset_pins", "predictive_training_dataset_identities"]) {
+        expect((await client.query(`SELECT count(*)::integer AS n FROM ${table}`)).rows[0].n).toBe(0);
+      }
+      expect((await store.readTrainingInvalidations(auditHistoryRequest(address))).entries).toHaveLength(1);
+      await client.query(`CREATE FUNCTION public.audit_insert_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected-audit-insert-failure'; END $$;
+        CREATE TRIGGER audit_insert_fail BEFORE INSERT ON public.predictive_training_invalidations FOR EACH ROW EXECUTE FUNCTION public.audit_insert_fail()`);
+      const refused = await store.readFittingRunReadiness(readinessRequest(inventory));
+      // No dataset exists, so this is an explicit incomplete metadata report;
+      // it does not read damaged consumer bytes or invent an invalidation.
+      expect(refused).toMatchObject({ status: "incomplete", verifiedSlots: 0 });
+      const shard = await store.verifyDatasetShard({ version: "qb-training-read-v1", fittingRunId: inventory.request.fittingRunId,
+        inventorySha256: inventory.inventorySha256, datasetId: req.datasetId }).then(() => null, (error: unknown) => error) as TrainingReadWithheldError;
+      expect(shard).toMatchObject({ message: "artifact-integrity-failed", invalidation: { status: "failed", code: "training-invalidation-audit-failed" } });
+      expect((await store.readTrainingInvalidations(auditHistoryRequest(address))).entries).toHaveLength(1);
+      await client.query("DROP TRIGGER audit_insert_fail ON predictive_training_invalidations; DROP FUNCTION public.audit_insert_fail()");
+    } finally { await writeFile(path, bytes); }
+    expect((await store.prepareDataset(req)).activePin).toBe(true);
+    expect((await store.readFittingRun(inventory.request.fittingRunId))?.inventorySha256).toBe(inventory.inventorySha256);
+  });
+});
+
+it("QB invalidation draft confirms current rights refuses bytes and bounds snapshot history across later reports", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    await installInvalidationDraft(client);
+    const seed = await seedConsumers(store); await store.recordSourcePassingYards("audit-rights-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory));
+    const address = { kind: "dataset" as const, id: saved.datasetId, sha256: saved.manifestSha256 };
+    await store.recordTrainingInvalidation(auditRequest(address));
+    await store.recordTrainingInvalidation({ ...auditRequest(address), operation: "dataset-manifest" });
+    const first = await store.readTrainingInvalidations(auditHistoryRequest(address, 1));
+    expect(first.entries).toHaveLength(1); expect(first.nextAfterOrdinal).not.toBeNull();
+    await store.recordTrainingInvalidation(auditRequest(address, "artifact-unreadable"));
+    const next = await store.readTrainingInvalidations({ ...auditHistoryRequest(address, 1), afterOrdinal: first.nextAfterOrdinal, throughOrdinal: first.throughOrdinal });
+    expect(next.entries).toHaveLength(1); expect(next.nextAfterOrdinal).toBeNull(); expect(next.entries[0].operation).toBe("dataset-manifest");
+    expect((await store.readTrainingInvalidations(auditHistoryRequest(address))).entries).toHaveLength(3);
+    await expect(store.readTrainingInvalidations({ ...auditHistoryRequest(address), throughOrdinal: first.throughOrdinal + 999 })).rejects.toThrow("training-invalidation-history-request-refused");
+    const clock = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'audit-current-revoke',profile_id,id,'{}',$2,NULL,$2,'synthetic','invalidation proof' FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [seed.raw.profileId, clock]);
+    let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => { reads++; return artifacts.database.read(...args); } } };
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const denied = await reader.readDatasetPage(pageRequest(saved)).then(() => null, (error: unknown) => error) as TrainingReadWithheldError;
+      expect(denied).toMatchObject({ message: "training-dataset-rights-refused", invalidation: { status: "recorded", receipt: { reason: "rights-unavailable", origin: "database-confirmed" } } });
+      expect(reads).toBe(0); expect((await reader.readTrainingInvalidations(auditHistoryRequest(address))).entries).toHaveLength(4);
+    });
+  });
+});
+
+it("QB invalidation draft rolls back late deletion audits and keeps digest-only refusal history after retention-only removal", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    await installInvalidationDraft(client);
+    const seed = await seedConsumers(store); await store.recordSourcePassingYards("audit-delete-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory));
+    const dataset = { kind: "dataset" as const, id: saved.datasetId, sha256: saved.manifestSha256 };
+    const run = { kind: "run" as const, id: inventory.request.fittingRunId, sha256: inventory.inventorySha256 };
+    await client.query(`CREATE FUNCTION public.audit_delete_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+      IF (SELECT count(*) FROM public.predictive_training_invalidations WHERE body->>'origin'='authorized-retention')<3
+        THEN RAISE EXCEPTION 'invalidation-audit-not-created'; END IF;
+      RAISE EXCEPTION 'injected-late-audit-delete-failure'; END $$;
+      CREATE TRIGGER audit_delete_fail AFTER DELETE ON public.predictive_training_runs FOR EACH ROW EXECUTE FUNCTION public.audit_delete_fail()`);
+    const event = { id: "audited-delete", reason: "provider-request" as const, authority: "disposable invalidation proof",
+      decidedAt: await witnessClock(client), scope: { kind: "source" as const, profileIds: [BRIDGE_PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" as const };
+    await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+      const owner = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      await expect(owner.retain(event)).rejects.toThrow("injected-late-audit-delete-failure");
+      expect((await store.readTrainingInvalidations(auditHistoryRequest(dataset))).entries).toHaveLength(0);
+      expect((await store.readTrainingInvalidations(auditHistoryRequest(run))).entries).toHaveLength(0);
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_retention_events")).rows[0].n).toBe(0);
+      expect((await store.readDatasetManifest(saved.datasetId))?.activePin).toBe(true);
+      await client.query("DROP TRIGGER audit_delete_fail ON predictive_training_runs; DROP FUNCTION public.audit_delete_fail()");
+      const removed = await owner.retain(event);
+      expect(removed.trainingRetention?.removedCounts).toMatchObject({ runs: 1, datasets: 1, datasetPins: 1 });
+      await expect(login.query("SELECT * FROM predictive_training_invalidations")).rejects.toMatchObject({ code: "42501" });
+    });
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      const datasetHistory = await reader.readTrainingInvalidations(auditHistoryRequest(dataset));
+      const runHistory = await reader.readTrainingInvalidations(auditHistoryRequest(run));
+      expect(datasetHistory.entries).toHaveLength(1); expect(runHistory.entries).toHaveLength(2);
+      for (const entry of [...datasetHistory.entries, ...runHistory.entries]) {
+        expect(entry).toMatchObject({ operation: "retention", reason: "evidence-removed", origin: "authorized-retention" });
+        expect(trainingInvalidationReceiptDigest(entry)).toBe(entry.eventSha256);
+      }
+      expect(datasetHistory.entries[0].causeSha256).toBe(runHistory.entries.find((entry) => entry.causeSha256 === datasetHistory.entries[0].causeSha256)?.causeSha256);
+      for (const read of [() => reader.readDatasetManifest(dataset.id), () => reader.readFittingRun(run.id)]) {
+        const error = await read().then(() => null, (error: unknown) => error) as TrainingReadWithheldError;
+        expect(error).toBeInstanceOf(TrainingReadWithheldError);
+        expect(error.invalidation).toMatchObject({ status: "recorded", receipt: { reason: "evidence-removed", origin: "database-confirmed" } });
+      }
+      const history = await reader.readTrainingInvalidations(auditHistoryRequest(dataset));
+      expect(history.entries).toHaveLength(2);
+      for (const secret of [dataset.id, run.id, seed.request.playerId, BRIDGE_PROFILE, event.id, event.authority]) expect(JSON.stringify(history)).not.toContain(secret);
+    });
+  });
+});
+
+it("QB invalidation draft restores exact backup clocks and reproduces retention audit identities and original count digests", async () => {
+  let backup!: Awaited<ReturnType<typeof snapshotSyntheticBackup>>, events: RecordedRetentionEvent[] = [];
+  let original!: { dataset: ReturnType<typeof auditHistoryRequest>; run: ReturnType<typeof auditHistoryRequest>; hashes: string[]; datasetSha: string; inventorySha: string };
+  await withProof(async ({ client, store, target, root, artifacts }) => {
+    await installInvalidationDraft(client);
+    const seed = await seedConsumers(store); await store.recordSourcePassingYards("audit-backup-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory));
+    const dataset = auditHistoryRequest({ kind: "dataset", id: saved.datasetId, sha256: saved.manifestSha256 });
+    const run = auditHistoryRequest({ kind: "run", id: inventory.request.fittingRunId, sha256: inventory.inventorySha256 });
+    // Preserve a diagnostic ordinal as well as the immutable original clocks.
+    await store.recordTrainingInvalidation(auditRequest(dataset.target));
+    backup = await snapshotSyntheticBackup(client, target, root);
+    await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+      const owner = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      await owner.retain({ id: "audited-backup-delete", reason: "provider-request", authority: "exact synthetic recovery",
+        decidedAt: await witnessClock(client), scope: { kind: "source", profileIds: [BRIDGE_PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" });
+      events = await owner.retentionEvents();
+    });
+    const hashes = [...(await store.readTrainingInvalidations(dataset)).entries, ...(await store.readTrainingInvalidations(run)).entries].map(trainingInvalidationReceiptDigest).sort();
+    original = { dataset, run, hashes, datasetSha: saved.manifestSha256, inventorySha: inventory.inventorySha256 };
+  });
+  await withProof(async ({ client, store, target, artifacts }) => {
+    await installInvalidationDraft(client); await restoreSyntheticBackup(client, target, artifacts, backup);
+    expect((await store.readDatasetManifest(original.dataset.target.id))?.manifestSha256).toBe(original.datasetSha);
+    expect((await store.readFittingRun(original.run.target.id))?.inventorySha256).toBe(original.inventorySha);
+    await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+      const owner = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      expect(await owner.reapply(events)).toEqual([{ eventId: events[0].id, status: "reapplied", matched: true }]);
+      expect(await owner.reapply(events)).toEqual([{ eventId: events[0].id, status: "present", matched: true }]);
+      const replayed = (await owner.retentionEvents())[0];
+      expect(replayed.removedCounts).toEqual(events[0].removedCounts); expect(replayed.removedIdsDigest).toBe(events[0].removedIdsDigest);
+      expect(replayed.trainingRetention).toEqual(events[0].trainingRetention);
+    });
+    const histories = [...(await store.readTrainingInvalidations(original.dataset)).entries, ...(await store.readTrainingInvalidations(original.run)).entries];
+    expect(histories.map(trainingInvalidationReceiptDigest).sort()).toEqual(original.hashes);
+    expect(new Set(histories.map((entry) => entry.ordinal)).size).toBe(histories.length);
+    await expect(store.readDatasetManifest(original.dataset.target.id)).rejects.toThrow("training-dataset-evidence-removed");
+  });
+});
+
+it("QB invalidation draft deduplicates concurrent retries and diagnostic quotas never block authorized deletion", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    await installInvalidationDraft(client);
+    const seed = await seedConsumers(store); await store.recordSourcePassingYards("audit-quota-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory));
+    const dataset = { kind: "dataset" as const, id: saved.datasetId, sha256: saved.manifestSha256 };
+    await withLogin(client, target, ["predictive_replay"], async (one, oneTarget) => {
+      await withLogin(client, target, ["predictive_replay"], async (two, twoTarget) => {
+        const a = await createLocalPredictiveStore(one, oneTarget, artifacts), b = await createLocalPredictiveStore(two, twoTarget, artifacts);
+        const receipts = await Promise.all([a.recordTrainingInvalidation(auditRequest(dataset)), b.recordTrainingInvalidation(auditRequest(dataset))]);
+        expect(receipts[0].eventSha256).toBe(receipts[1].eventSha256); expect(receipts[0].ordinal).toBe(receipts[1].ordinal);
+        expect(receipts.map((receipt) => receipt.reused).sort()).toEqual([false,true]);
+        // Test-only quota fixture through the private helper; replay logins have
+        // no grant to forge causes or insert rows. Different causes model prior
+        // diagnostic epochs without fabricating 255 source-rights decisions.
+        await client.query(`SELECT public.predictive_training_invalidation_append($1,'dataset-page','artifact-integrity-failed',
+          'evidence-integrity-failed','reader-reported',public.predictive_source_digest(to_jsonb(i))) FROM generate_series(1,255) i`, [receipts[0].addressSha256]);
+        expect((await a.recordTrainingInvalidation(auditRequest(dataset))).reused).toBe(true);
+        await expect(b.recordTrainingInvalidation(auditRequest(dataset, "artifact-unreadable"))).rejects.toThrow("training-invalidation-quota-refused");
+      });
+    });
+    await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+      const owner = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      await owner.retain({ id: "audit-at-quota-delete", reason: "provider-request", authority: "mandatory deletion at quota",
+        decidedAt: await witnessClock(client), scope: { kind: "source", profileIds: [BRIDGE_PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" });
+    });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_datasets")).rows[0].n).toBe(0);
+    const entries = (await client.query("SELECT body FROM predictive_training_invalidations WHERE address_sha256=(SELECT address_sha256 FROM predictive_training_invalidation_addresses WHERE kind='dataset')")).rows;
+    expect(entries).toHaveLength(257); expect(entries.filter((entry) => entry.body.origin === "authorized-retention")).toHaveLength(1);
+    const denied = await store.readDatasetManifest(saved.datasetId).then(() => null, (error: unknown) => error) as TrainingReadWithheldError;
+    expect(denied).toMatchObject({ message: "training-dataset-evidence-removed", invalidation: { status: "failed", code: "training-invalidation-quota-refused" } });
+  });
+});
+
+it("QB invalidation draft records expiry refusal and authorized removal without rewriting sealed membership", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    await installInvalidationDraft(client);
+    const seed = await seedConsumers(store), feature = await store.recordSourcePassingYards("audit-expiry-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory));
+    const dataset = { kind: "dataset" as const, id: saved.datasetId, sha256: saved.manifestSha256 };
+    const expiry = new Date(Date.parse(feature.recordedAt) + 90 * 86_400_000).toISOString();
+    // Same disposable-only future-clock technique as the 0016 expiry proof.
+    // Advance confirmation/receipt clocks too; no caller gets an override.
+    await advanceDatasetClock(client, expiry);
+    for (const signature of ["public.predictive_record_training_invalidation(jsonb)", "public.predictive_training_invalidation_append(text,text,text,text,text,text)"]) {
+      const definition = (await client.query("SELECT pg_get_functiondef($1::regprocedure) AS sql", [signature])).rows[0].sql as string;
+      await client.query(definition.replaceAll("clock_timestamp()", "'" + expiry + "'::timestamptz"));
+    }
+    expect((await store.readDatasetManifest(saved.datasetId))?.activePin).toBe(true);
+    await store.releaseDatasetPin(datasetRequest(inventory).pinId);
+    const expired = await store.readDatasetManifest(saved.datasetId).then(() => null, (error: unknown) => error) as TrainingReadWithheldError;
+    expect(expired).toMatchObject({ message: "training-dataset-feature-expired", invalidation: { status: "recorded", receipt:
+      { reason: "evidence-expired", origin: "database-confirmed", recordedAt: expiry } } });
+    expect((await client.query("SELECT body_sha256 FROM predictive_training_datasets WHERE id=$1", [saved.datasetId])).rows[0].body_sha256).toBe(saved.manifestSha256);
+    await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+      const owner = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      await owner.retain({ id: "audited-expiry-delete", reason: "expiry", authority: "disposable exact-boundary proof", decidedAt: feature.recordedAt,
+        scope: { kind: "feature-run-expiry", asOf: expiry }, auditLevel: "digest-only" });
+    });
+    const entries = (await store.readTrainingInvalidations(auditHistoryRequest(dataset))).entries;
+    expect(entries).toHaveLength(2); expect(entries[1]).toMatchObject({ operation: "retention", failureCode: "retention-evidence-expired",
+      reason: "evidence-expired", origin: "authorized-retention" });
+    expect(entries[1].address.manifestSha256).toBe(saved.manifestSha256);
+  });
+});
+
+it("QB invalidation readers explicitly withhold unaudited evidence on an older installed prefix", async () => {
+  await withProof(async ({ client, store, root }) => {
+    const seed = await seedConsumers(store), feature = await store.recordSourcePassingYards("unaudited-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)), saved = await store.prepareDataset(datasetRequest(inventory));
+    const path = join(root, ".db-blobs", feature.bodySha256 + ".json"), bytes = await readFile(path);
+    try {
+      await writeFile(path, "damaged-on-prefix16");
+      const denied = await store.readDatasetPage(pageRequest(saved)).then(() => null, (error: unknown) => error) as TrainingReadWithheldError;
+      expect(denied).toMatchObject({ message: "artifact-integrity-failed", invalidation: { status: "not-installed" } });
+    } finally { await writeFile(path, bytes); }
+    expect((await store.readDatasetPage(pageRequest(saved))).manifestSha256).toBe(saved.manifestSha256);
+    await expect(store.readTrainingInvalidations(auditHistoryRequest({ kind: "dataset", id: saved.datasetId, sha256: saved.manifestSha256 })))
+      .rejects.toThrow("training-invalidation-not-installed");
+  });
 });
 
 it("QB complete run checks enumerate every assigned dataset and reconcile sparse missing slots through replay roles", async () => {

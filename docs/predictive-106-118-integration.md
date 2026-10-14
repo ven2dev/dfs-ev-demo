@@ -26,8 +26,11 @@ to this shared prefix use forward migrations.
 
 **0016 belongs to #118 dataset/pin DDL**, as authorized by the owner after
 #106 confirmed its complete prefix through 0015. The owner then confirmed
-**0016 is #118's complete next range; 0017 only is reserved for #106's qualified
-compressed publication.** Neither session should reserve
+**0016 is #118's complete integrated range; #106 owns 0017 qualified compressed
+publication and the owner subsequently allocated 0018 to #106 normalization,
+consumer evidence and retention integration, followed by 0019 to #118 audited
+invalidation.** Relay prepares 0019 outside the ordered chain until #106 publishes
+its frozen 0001–0018 checkpoint. Neither session should reserve
 a further range silently. Integrate by merge after preserving local work; do not rebase or
 cherry-pick duplicate copies of the prefix. Keep #106's binary artifact
 implementation when resolving shared files. Regenerate migration/catalog/
@@ -404,6 +407,51 @@ The next #118 checkpoint is durable, audited invalidation. It requires a confirm
 next number after #106's complete frozen prefix; this checkpoint reserves none.
 Deadlines/cancellation, representative capacity and independent review are also
 outstanding. The evidence checkpoint records the adversarial tests and final gates.
+
+## #118 provisional invalidation interface checkpoint
+
+The owner confirmed the 0018/#106 then 0019/#118 allocation. On the latest remote
+check #106 still ends at `9d8fde7`/0017. Relay's ordered migrations, schema,
+manifest, catalog contracts and readiness artifacts stay at 0001–0016. Reserved
+0019 lives in `db/migration-drafts/`, not the ordered migration directory. It is
+not finalized or ledger-applied. #106 can merge Relay's reader/API checkpoint
+without a migration-number collision; neither session should promote the draft
+before verifying it against the complete frozen prefix18.
+
+No shared artifact read/binary/hash, receipt-ingestion clock, quota or exact-address
+cleanup interface changes in this increment. Current rights and guards remain
+mandatory before source bytes; audit reads contain no source bytes. New public
+store methods are `recordTrainingInvalidation` and `readTrainingInvalidations`,
+using `qb-training-invalidation-v1` (separate from read-v1). Seven immutable
+run/dataset read or preparation/pin methods now throw `TrainingReadWithheldError`
+for eligible evidence refusals, with a canonical original error and explicit
+audit success/not-installed/failure. Older prefixes still withhold output and
+report `not-installed`; other error classes retain their existing behavior.
+
+The SQL design adds digest-only immutable addresses and append-only receipts,
+database clocks, indexed bounded snapshot history and first-occurrence
+deduplication. Authorized dataset/run deletion hooks record invalidation in the
+same transaction, including a removed shard's impact on its parent inventory.
+They use the existing authorization, preserve legacy retention counts/digests
+and avoid another full procedure copy. The diagnostic ceiling cannot block
+mandatory deletion. Historical receipts are diagnostics, not repair certificates,
+access grants or permanent dataset state; readers continue verifying evidence.
+
+Nine focused PostgreSQL cases pass, including restricted non-superuser reads and
+retention, damaged/missing files, audit failure, quota/concurrent retries, exact
+expiry, late deletion rollback and actual restoration of original synthetic
+database clocks/blobs followed by retention reapplication. Final provisional
+gates are in [predictive-training-evidence.md](predictive-training-evidence.md).
+Finalization still requires the published prefix18, catalog/readiness/bootstrap
+regeneration and integrated checks. Deadlines/cancellation, representative capacity
+and independent review remain #118 work. Both issues remain incomplete and
+#54 Part B is blocked; no persistent/hosted database was migrated.
+
+Final provisional validation passes 760 Node tests, 75 Node DB checks and 205
+PostgreSQL tests (180 mandatory predictive cases), all 17 existing prefix catalog
+contracts, typecheck and affected-file lint. The 36 frozen/generated prefix files
+match `86c141d`; local documentation links and whitespace pass. These gates cover
+the prefix16-plus-draft harness, not a completed prefix19 integration.
 
 Final validation passes 756 Node tests, 75 Node DB checks and 196 PostgreSQL tests
 (171 mandatory predictive cases), typecheck, affected-file lint and all 17 catalog

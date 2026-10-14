@@ -8,6 +8,11 @@ import { trainingRunPreview, type TrainingKickoffProof } from "./trainingPreview
 import type { TrainingRunInventory } from "./trainingRuns.ts";
 import { normalizeTrainingRunReadRequest, trainingRunDatasetIds, trainingRunReadiness,
   type TrainingRunReadRequest, type TrainingVerifiedDataset } from "./trainingReadiness.ts";
+import { normalizeTrainingInvalidationHistoryRequest, normalizeTrainingInvalidationRequest, trainingInvalidationFailure,
+  trainingInvalidationReceiptDigest, TrainingReadWithheldError, TRAINING_INVALIDATION_VERSION,
+  type TrainingInvalidationAudit, type TrainingInvalidationHistory, type TrainingInvalidationHistoryRequest,
+  type TrainingInvalidationOperation, type TrainingInvalidationReceipt, type TrainingInvalidationRequest,
+  type TrainingInvalidationTarget } from "./trainingInvalidation.ts";
 import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
 import { assertTrainingShardUnexpired, normalizeTrainingShardRequest, trainingShardMembership, trainingShardProof, type TrainingShardRequest } from "./trainingShards.ts";
 import { normalizeTrainingDatasetRequest, type TrainingDatasetContext, type TrainingDatasetRequest, type TrainingDatasetManifest } from "./trainingDatasets.ts";
@@ -1571,8 +1576,79 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
+  const recordTrainingInvalidation = async (input: TrainingInvalidationRequest) => {
+    const supplied = normalizeTrainingInvalidationRequest(input);
+    return transaction(async () => {
+      if (!(await client.query("SELECT to_regprocedure('public.predictive_record_training_invalidation(jsonb)') AS available")).rows[0].available) {
+        refuse("training-invalidation-not-installed");
+      }
+      const receipt = (await client.query("SELECT public.predictive_record_training_invalidation($1) AS result", [supplied]))
+        .rows[0].result as TrainingInvalidationReceipt & { reused: boolean };
+      if (trainingInvalidationReceiptDigest(receipt) !== receipt.eventSha256) refuse("training-invalidation-receipt-integrity-refused");
+      return receipt;
+    }, false, true);
+  };
+  const readTrainingInvalidations = async (input: TrainingInvalidationHistoryRequest) => {
+    const supplied = normalizeTrainingInvalidationHistoryRequest(input);
+    return transaction(async () => {
+      if (!(await client.query("SELECT to_regprocedure('public.predictive_training_invalidation_history(jsonb)') AS available")).rows[0].available) {
+        refuse("training-invalidation-not-installed");
+      }
+      const result = (await client.query("SELECT public.predictive_training_invalidation_history($1) AS result", [supplied]))
+        .rows[0].result as TrainingInvalidationHistory;
+      if (result.entries.some((entry) => trainingInvalidationReceiptDigest(entry) !== entry.eventSha256)) refuse("training-invalidation-receipt-integrity-refused");
+      assertTrainingResponseBytes(result, TRAINING_BOUNDS.pageBytes);
+      return result;
+    }, true);
+  };
+  const withTrainingInvalidation = async <T>(target: TrainingInvalidationTarget, operation: TrainingInvalidationOperation, work: () => Promise<T>): Promise<T> => {
+    try { return await work(); }
+    catch (error) {
+      const failureCode = trainingInvalidationFailure(error);
+      if (!failureCode) throw error;
+      // The failed evidence transaction has rolled back and released its guard.
+      // A separate, fresh transaction durably records the refusal. Neither a
+      // failed audit nor an older installation can turn a withheld read usable.
+      let audit: TrainingInvalidationAudit;
+      try {
+        const receipt = await recordTrainingInvalidation({ version: TRAINING_INVALIDATION_VERSION, target, operation, failureCode });
+        audit = { status: "recorded", receipt };
+      } catch (auditError) {
+        const code = auditError instanceof Error ? auditError.message : "";
+        audit = code === "training-invalidation-not-installed" ? { status: "not-installed" } : { status: "failed", code:
+          ["training-invalidation-target-unknown", "training-invalidation-target-mismatch", "training-invalidation-quota-refused",
+            "training-invalidation-receipt-integrity-refused", "training-invalidation-not-authorized", "predictive-session-busy"].includes(code)
+            ? code : "training-invalidation-audit-failed" };
+      }
+      throw new TrainingReadWithheldError(failureCode, error, audit);
+    }
+  };
   return { publish, publishSourceStats, replaySourceStats, replayCompressedInspections, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
-    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun, verifyDatasetShard,
-    prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin, readDatasetPage, readCurrentLabels, readLabelsAt, readFittingRunReadiness,
+    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun,
+    readFittingRun: async (id: string) => withTrainingInvalidation({ kind: "run", id, sha256: null }, "run-metadata", () => readFittingRun(id)),
+    verifyDatasetShard: async (input: TrainingShardRequest) => {
+      const supplied = normalizeTrainingShardRequest(input);
+      return withTrainingInvalidation({ kind: "run", id: supplied.fittingRunId, sha256: supplied.inventorySha256 }, "shard-verify", () => verifyDatasetShard(supplied));
+    },
+    prepareDataset: async (input: TrainingDatasetRequest) => {
+      const supplied = normalizeTrainingDatasetRequest(input);
+      return withTrainingInvalidation({ kind: "run", id: supplied.fittingRunId, sha256: supplied.inventorySha256 }, "dataset-prepare", () => prepareDataset(supplied));
+    },
+    readDatasetManifest: async (id: string) => withTrainingInvalidation({ kind: "dataset", id, sha256: null }, "dataset-manifest", () => readDatasetManifest(id)),
+    pinDataset: async (input: TrainingDatasetRequest) => {
+      const supplied = normalizeTrainingDatasetRequest(input);
+      return withTrainingInvalidation({ kind: "dataset", id: supplied.datasetId, sha256: null }, "dataset-pin", () => pinDataset(supplied));
+    },
+    releaseDatasetPin,
+    readDatasetPage: async (input: TrainingPageRequest) => {
+      const supplied = normalizeTrainingPageRequest(input);
+      return withTrainingInvalidation({ kind: "dataset", id: supplied.datasetId, sha256: supplied.manifestSha256 }, "dataset-page", () => readDatasetPage(supplied));
+    },
+    readCurrentLabels, readLabelsAt,
+    readFittingRunReadiness: async (input: TrainingRunReadRequest) => {
+      const supplied = normalizeTrainingRunReadRequest(input);
+      return withTrainingInvalidation({ kind: "run", id: supplied.fittingRunId, sha256: supplied.inventorySha256 }, "run-readiness", () => readFittingRunReadiness(supplied));
+    },
+    recordTrainingInvalidation, readTrainingInvalidations,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };
