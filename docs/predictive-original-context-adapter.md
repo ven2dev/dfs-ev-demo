@@ -81,3 +81,50 @@ row ordinals/fingerprints, reverse-crosswalk findings and weekly team/status
 claims. It records no canonical bridge or membership effective intervals.
 This is the concrete source intake for the parser increment, not an eligible
 context batch. Full raw values remain outside Git.
+
+## Pure context preparation checkpoint
+
+`sourceContextClaims.ts` implements `nflverse-original-context-claims-v1` for
+original plain schedule and identifier CSVs. The request pins capture identity,
+feed, wire size/hash and an explicit three-season schedule range. Exact headers
+and selected-column allowlists use the existing source parser. Limits are
+8,000,000 bytes per file, 80,000 records and the existing 65,536-byte CSV record
+limit. The legacy numerical CSV publisher's 8,192-row bound is unchanged.
+
+Every parsed row retains its physical ordinal, capture-specific row ID, raw-key
+digest, selected-column fingerprint and either a raw projection or explicit
+refusal. Out-of-range schedule rows remain in the complete claim array; no
+filtered provider file is created. Schedule keys, teams and local kickoff times
+are checked, including REG/POST round classification and ambiguous DST refusal.
+Identity uses GSIS plus namespaced raw crosswalk IDs. Differing duplicate raw
+keys and reverse crosswalk ambiguity withhold all involved rows. Calendar years
+outside the represented season and following year are refused. Refused rows
+still participate in reverse ambiguity, so an invalid position/missing GSIS
+cannot make a shared provider ID appear unique. Excluded fields affect wire
+identity but do not enter selected-row fingerprints or raw projections.
+
+This is preparation, not authorization: it does not establish provider origin,
+rights, capture completeness or canonical truth from a caller-supplied hash.
+The future publication boundary must verify the registered profile, original
+acquisition metadata and complete file, then independently validate/bind these
+claims. No ordinary publisher, SQL guard, canonical recorder, profile or training
+reader is altered here. Roster feeds and supplied membership bounds are refused.
+
+Twelve focused cases pass, covering hand-specified target kickoff/teams, complete
+ordinals/refusals, POST, DST, exact duplicate preservation, differing duplicate
+withholding, reverse ambiguity even with invalid position/GSIS, namespace
+separation, unselected data, false wire identity/header and mutable request
+isolation. All twelve also pass in the final 587-case predictive suite. Typecheck
+and affected-file lint pass. No database gate was run for this pure increment.
+
+Real proof reverified the retained acquisition journal before reading the exact
+original files. All 7,548 schedule rows were retained: 842 raw projections and
+6,706 explicit refusals (5,617 out of range, 879 invalid schedule keys/grain,
+210 unavailable kickoffs). All 24,854 identifier rows were retained: 18,774
+projections, 6,078 invalid/missing GSIS refusals and two reverse-ID conflicts.
+The proposed target game and QB each have one projected row. Preparation took
+654/743 ms respectively in the final run; this is not a guarded database benchmark.
+Private proof retains the source/header/claim-array hashes and exact selected
+row provenance. No canonical context, membership interval or feature/label was
+published. Next: the independent context recorder/association contract after
+Relay freezes 0020 and migration allocation is coordinated here.

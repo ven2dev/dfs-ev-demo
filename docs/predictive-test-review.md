@@ -1,5 +1,27 @@
 # Delivery 2 test reasoning review
 
+## #106 pure original-context preparation QC (2026-10-14)
+
+Twelve new context-parser cases use independently specified kickoff/teams,
+ordinal/refusal arrays and raw crosswalk values. They cover POST chronology,
+DST ambiguity, impossible season/calendar joins, wire/header authenticity,
+duplicate-key corrections in either order, exact duplicate preservation and
+reverse crosswalk conflicts, including a refused position or missing GSIS on
+the other row. Namespace separation and excluded-column mutation distinguish
+raw-byte identity from selected evidence. Caller mutation after invocation
+cannot change the pinned three-season scope. Unsupported roster/effective-bound
+inputs are refused; no membership or canonical publication is exercised.
+
+Actual proof first reverified the retained source journal and then parsed both
+complete original snapshots: 7,548 schedule and 24,854 identifier rows. Every
+ordinal remains represented, with explicit out-of-scope/invalid/conflicting
+rows. The proposed QB and target each have one projected row; two reverse-ID
+conflicts elsewhere are withheld. The final 587 predictive cases, typecheck,
+affected-file lint and whitespace checks pass. No database gate is needed:
+this increment adds no SQL, persistence call, profile registration or reader
+change. It qualifies raw preparation behavior, not canonical context, complete
+schedule coverage, permitted official evidence or real feature/label readiness.
+
 Review date: 2026-10-09. Scope: the 12 new predictive PostgreSQL cases, five
 artifact/archive cases, the mandatory-report case, and existing migration/
 readiness tests adjusted for v3. The governing behavior is documented in the

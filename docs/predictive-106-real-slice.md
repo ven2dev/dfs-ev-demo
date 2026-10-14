@@ -404,3 +404,21 @@ source-contract work can proceed before DDL coordination. Validation for this
 intake is actual journal/source verification, exact selected-row and reverse-ID
 inspection, reviewed runtime-boundary checks and documentation whitespace checks.
 No database tests were repeated, and frozen 0001–0019 remain unchanged.
+
+## P-C-P pure context parser checkpoint
+
+The [original-byte adapter](predictive-original-context-adapter.md#pure-context-preparation-checkpoint)
+now has an implemented schedule/identifier claims parser and real-file proof.
+It preserves all 32,402 original rows as projections or explicit refusals,
+pins source hashes and ordinals, and withholds duplicate/reverse ambiguity.
+The retained target game and QB each project uniquely. This adds no canonical
+publication, invented membership bounds or independent coverage claim.
+
+Twelve focused tests, the final 587-case predictive run, typecheck and
+affected-file lint pass. Actual parsing was exercised against both complete
+verified snapshots, not a QB-filtered fixture. Private proof is preserved in
+the durable acquisition root. No migration, database test or training reader
+changed; #118's 0020 validation remains independent. The context recorder is
+the next engineering increment, with DDL allocation pending its shared-prefix
+handoff. Real completion, permitted official reconciliation and participation
+qualification remain required even after context publication is implemented.
