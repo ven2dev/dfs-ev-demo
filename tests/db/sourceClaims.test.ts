@@ -62,7 +62,7 @@ const probe = async (client: Client, work: () => Promise<void>) => {
 const withLogin = async (client: Client, target: Target, roles: string[], work: (connection: Client, loginTarget: Target) => Promise<void>) => {
   const login = "dfs52_csv_" + randomBytes(8).toString("hex");
   await client.query(`CREATE ROLE ${login} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD 'disposable-csv-test'`);
-  await client.query(`GRANT ${roles.join(",")} TO ${login}`);
+  if (roles.length) await client.query(`GRANT ${roles.join(",")} TO ${login}`);
   const expected = { ...target.expected, user: login, password: "disposable-csv-test" }; const connection = new Client(expected);
   try {
     await connection.connect();
@@ -331,10 +331,10 @@ it("compressed inspection migration preserves fixed v14 evidence and ledger on u
     const captures = (await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows;
     const files=await checkMigrationArtifacts(), contracts=await loadCatalogContracts(files);
     const options={...target,files,verify:createCatalogVerifier(contracts)};
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:15,executed:[15]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:16,executed:[15,16]});
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,14)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
-    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:15,executed:[]});
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:16,executed:[]});
   },14);
 });
 
@@ -420,10 +420,10 @@ it("gzip staging migration upgrades fixed v12 without rewriting evidence or prio
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(), contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [13, 14, 15], schemaVersion: 15 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [13, 14, 15, 16], schemaVersion: 16 });
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 12)).toEqual(ledger);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 15 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 16 });
   }, 12);
 });
 
@@ -533,10 +533,10 @@ it("ordinary ingestion clock migration upgrades v10 without rewriting captures a
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11, 12, 13, 14, 15],schemaVersion: 15 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11, 12, 13, 14, 15, 16],schemaVersion: 16 });
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,10)).toEqual(ledger);
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 15 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 16 });
   },10);
 });
 
@@ -695,12 +695,12 @@ it("CSV source migration upgrades released v4 preserving creator corpus evidence
     expect(ledger[3].filename).toBe("0004_creator_corpus_projection.sql");
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], schemaVersion: 15 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16], schemaVersion: 16 });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(upgraded.slice(0, 4)).toEqual(ledger);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
     await store.publishSourceStats(sourceClaimFixture("after-corpus-upgrade"));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 15 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 16 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
   }, 4);
@@ -1034,8 +1034,10 @@ it("CSV binding hydration refuses altered associations and source bytes and curr
     await writeFile(join(root, ".db-blobs", input.artifact.sha256 + ".csv"), input.artifact.bytes.replace('"80"', '"81"'), { mode: 0o600 });
     await expect(store.replaySourceNormalization({ ...request, cutoff: a.event.recordedAt })).rejects.toThrow("artifact-integrity-failed");
     await writeFile(join(root, ".db-blobs", input.artifact.sha256 + ".csv"), input.artifact.bytes, { mode: 0o600 });
-    await client.query("SELECT pg_sleep(0.005)");
-    const revokedAt = new Date().toISOString();
+    // Current access uses the database clock. A host timestamp can still be
+    // ahead of that clock after a sleep, leaving this revocation in the future.
+    const revokedAt = await witnessClock(client);
+    expect(Date.parse(revokedAt)).toBeGreaterThan(Date.parse(a.event.recordedAt));
     await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
       VALUES ('binding-revoked',$1,$2,'{}',$3,NULL,$3,'synthetic','fixture revocation')`, [BRIDGE_PROFILE, "rights-" + BRIDGE_PROFILE, revokedAt]);
     expect(await store.replaySourceNormalization({ ...request, cutoff: a.event.recordedAt })).toMatchObject({ reason: "rights-not-in-force", head: null });
@@ -1171,7 +1173,7 @@ it("CSV binding migration upgrades v5 without changing released history and reru
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(15);
+    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(16);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
@@ -1427,7 +1429,7 @@ it("CSV unavailable retention re-applies pre-v7 legacy events with identical cou
     // Restore the same retained evidence and IDs into a fresh post-v7 database.
     // New timestamps are allowed; the deletion set and audit contract are not.
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(15);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(16);
       expect(await procedure(client)).not.toBe(oldProcedure);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
@@ -1903,13 +1905,13 @@ it("CSV SQL witness migration upgrades v7 preserving bindings and prior migratio
     const revisions = (await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11, 12, 13, 14, 15], schemaVersion: 15 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11, 12, 13, 14, 15, 16], schemaVersion: 16 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 7)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect((await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows).toEqual(revisions);
     const scoped = factRequest(request.profileId, a.event.recordedAt);
     expect(await sqlWitness(client, scoped)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(scoped)));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 15 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 16 });
     // The released-v4 upgrade test above seeds all five corpus tables and now
     // runs through 0008; this focused v7 test seeds source bindings as well.
   }, 7);
@@ -2318,11 +2320,11 @@ it("CSV source decision migration upgrades v8 preserving recorded bindings and w
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11, 12, 13, 14, 15], schemaVersion: 15 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11, 12, 13, 14, 15, 16], schemaVersion: 16 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 8)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect(await sqlWitness(client, req)).toEqual(witness);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 15 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 16 });
     const decision = await store.recordSourceDecision("after-decision-upgrade", decisionScope(request.profileId), null);
     expect(decision.record.plan.witness.heads).toEqual(witness.heads);
   }, 8);
@@ -2410,6 +2412,413 @@ const previewRequest = async (client: Client, seed: Awaited<ReturnType<typeof se
     featureRef: null, labelRef: null };
   return metadataRun([slot], seed.profiles, seed.request.cutoff);
 };
+
+const withDatasetProof = withProof;
+const datasetRequest = (inventory: Awaited<ReturnType<Store["prepareFittingRun"]>>, pinId = "dataset-pin-A") => ({
+  version: "qb-training-read-v1" as const, fittingRunId: inventory.request.fittingRunId,
+  inventorySha256: inventory.inventorySha256, datasetId: inventory.rows[0].slot.datasetId, pinId,
+});
+const advanceDatasetClock = async (client: Client, time: string) => {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(time)) throw new Error("test-clock-refused");
+  const replacement = "'" + time + "'::timestamptz";
+  for (const signature of ["public.predictive_training_dataset_read(text)", "public.predictive_pin_training_dataset(text,text,text,text)",
+    "public.predictive_training_retention_hook()", "public.predictive_training_dataset_expiry_hook()", "public.predictive_prepare_training_run(jsonb)",
+    "public.predictive_retention_execute(text,text,text,timestamptz,jsonb,text)"]) {
+    const sql = (await client.query("SELECT pg_get_functiondef($1::regprocedure) AS sql", [signature])).rows[0].sql as string;
+    await client.query(sql.replaceAll("pg_catalog.clock_timestamp()", replacement).replaceAll("clock_timestamp()", replacement)
+      .replaceAll("pg_catalog.now()", replacement));
+  }
+};
+
+it("QB dataset sealing fixes assigned membership and closure with atomic audited pins through restricted roles", async () => {
+  await withDatasetProof(async ({ client, store, target, artifacts }) => {
+    const seed = await seedConsumers(store);
+    const a = await store.recordSourcePassingYards("dataset-feature-A", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed); input.slots.push({ ...input.slots[0], playerId: "00-0000002" });
+    const inventory = await store.prepareFittingRun(input);
+    await store.recordSourcePassingYards("dataset-feature-B", seed.request, seed.profiles);
+    await withLogin(client, target, ["predictive_recorder", "predictive_replay"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      const req = datasetRequest(inventory); const saved = await reader.prepareDataset(req);
+      expect(saved).toMatchObject({ status: "sealed", fittingReady: false, populationCoverage: "unqualified", activePin: true,
+        rows: [{ ordinal: 0, selection: { featureId: a.id }, feature: { state: "usable" } }, { ordinal: 1, feature: { state: "missing" } }],
+        pin: { id: req.pinId, reused: false }, byteVerification: "required-on-every-access" });
+      expect(saved.closure.references).toEqual(expect.arrayContaining([
+        { kind: "source-consumer", id: a.id }, { kind: "source-binding", id: seed.binding.event.id },
+        { kind: "source-decision", id: seed.part.record.id }, { kind: "observation", id: "source-target" },
+      ]));
+      expect(saved.closure.blobs.map((b) => b.sha256)).toContain(a.bodySha256);
+      expect(saved.closure.references).not.toContainEqual({ kind: "source-consumer", id: "dataset-feature-B" });
+      expect(JSON.stringify(saved)).not.toContain('"passingYardsSum":');
+      const retry = await reader.prepareDataset(req);
+      expect(retry.manifestSha256).toBe(saved.manifestSha256); expect(retry.recordedAt).toBe(saved.recordedAt);
+      expect(retry.pin).toMatchObject({ reused: true, recordedAt: saved.pin.recordedAt });
+      const extra = await reader.pinDataset({ ...req, pinId: "dataset-pin-B" });
+      expect(extra.manifestSha256).toBe(saved.manifestSha256); expect(extra.pin.reused).toBe(false);
+      expect((await reader.readDatasetManifest(req.datasetId))?.manifestSha256).toBe(saved.manifestSha256);
+      for (const table of ["predictive_training_datasets", "predictive_training_dataset_consumers", "predictive_training_dataset_pins", "predictive_training_dataset_releases"]) {
+        await expect(login.query(`SELECT * FROM ${table}`)).rejects.toMatchObject({ code: "42501" });
+        await expect(login.query(`DELETE FROM ${table}`)).rejects.toMatchObject({ code: "42501" });
+      }
+      await expect(reader.prepareDataset({ ...req, inventorySha256: "0".repeat(64) })).rejects.toThrow("training-dataset-inventory-mismatch");
+      await expect(login.query("SELECT predictive_prepare_training_dataset($1)", [{ ...req, rows: saved.rows }])).rejects.toThrow("training-dataset-request-refused");
+      const charge = (await client.query("SELECT charged_bytes FROM predictive_training_datasets WHERE id=$1", [req.datasetId])).rows[0].charged_bytes;
+      const { manifestSha256: _sha, activePin: _active, pin: _pin, reused: _reuse, ...body } = saved; void _sha; void _active; void _pin; void _reuse;
+      expect(Number(charge)).toBe(saved.closure.blobs.reduce((sum, b) => sum + Number(b.byteSize), 0) + Buffer.byteLength(canonical(body)));
+    });
+  });
+});
+
+it("QB dataset preparation rolls back all manifest and pin state when closure bytes are damaged", async () => {
+  await withDatasetProof(async ({ client, store, root }) => {
+    const seed = await seedConsumers(store); const feature = await store.recordSourcePassingYards("dataset-rollback-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)); const req = datasetRequest(inventory);
+    const path = join(root, ".db-blobs", feature.bodySha256 + ".json"); const bytes = await readFile(path);
+    try { await writeFile(path, "damaged"); await expect(store.prepareDataset(req)).rejects.toThrow("artifact-integrity-failed"); }
+    finally { await writeFile(path, bytes); }
+    for (const table of ["predictive_training_dataset_identities", "predictive_training_datasets", "predictive_training_dataset_consumers", "predictive_training_pin_identities", "predictive_training_dataset_pins"]) {
+      expect((await client.query(`SELECT count(*)::integer AS n FROM ${table}`)).rows[0].n).toBe(0);
+    }
+    expect((await store.prepareDataset(req)).pin.reused).toBe(false);
+    try { await writeFile(path, "damaged-after-seal"); await expect(store.readDatasetManifest(req.datasetId)).rejects.toThrow("artifact-integrity-failed"); }
+    finally { await writeFile(path, bytes); }
+  });
+});
+
+it("QB dataset independent releases are idempotent and never renew the original feature expiry", async () => {
+  await withDatasetProof(async ({ client, store }) => {
+    const seed = await seedConsumers(store); await store.recordSourcePassingYards("dataset-release-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)); const req = datasetRequest(inventory);
+    const original = await store.prepareDataset(req); await store.pinDataset({ ...req, pinId: "second-pin" });
+    const released = await store.releaseDatasetPin(req.pinId);
+    expect(released).toMatchObject({ pinId: req.pinId, reused: false });
+    expect(await store.releaseDatasetPin(req.pinId)).toEqual({ ...released, reused: true });
+    expect((await store.readDatasetManifest(req.datasetId))?.activePin).toBe(true);
+    await expect(store.pinDataset(req)).rejects.toThrow("training-pin-released");
+    await store.releaseDatasetPin("second-pin");
+    expect((await store.readDatasetManifest(req.datasetId))?.activePin).toBe(false);
+    const newPin = await store.pinDataset({ ...req, pinId: "third-pin" });
+    expect(newPin.manifestSha256).toBe(original.manifestSha256);
+    expect(newPin.rows[0].feature.reference?.recordedAt).toBe(original.rows[0].feature.reference?.recordedAt);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_dataset_releases")).rows[0].n).toBe(2);
+  });
+});
+
+it("QB pinned datasets never block mandatory deletion and reproduce supplemental audit on restored history", async () => {
+  let events: RecordedRetentionEvent[] = [], originalDigest = "";
+  const proof = async (restore: boolean) => withDatasetProof(async ({ client, store, target, artifacts }) => {
+    const seed = await seedConsumers(store); await store.recordSourcePassingYards("dataset-delete-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)); const req = datasetRequest(inventory);
+    await store.prepareDataset(req); await store.pinDataset({ ...req, pinId: "dataset-delete-pin-B" });
+    await store.releaseDatasetPin(req.pinId);
+    if (restore) {
+      expect((await store.reapply(events))[0].matched).toBe(true);
+    } else {
+      await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+        const retention = await createLocalPredictiveStore(login, loginTarget, artifacts);
+        const result = await retention.retain({ id: "dataset-delete", reason: "provider-request", authority: "disposable dataset proof",
+          decidedAt: await witnessClock(client), scope: { kind: "source", profileIds: [BRIDGE_PROFILE], capturedFrom: "2026-01-01T00:00:00.000Z",
+            capturedBefore: "2026-01-02T00:00:00.000Z" }, auditLevel: "digest-only" });
+        expect(result.trainingRetention?.removedCounts).toMatchObject({ runs: 1, datasets: 1, datasetPins: 2, datasetReleases: 1 });
+        events = await retention.retentionEvents(); originalDigest = result.trainingRetention!.removedIdsDigest;
+      });
+    }
+    for (const table of ["predictive_training_runs", "predictive_training_datasets", "predictive_training_dataset_consumers", "predictive_training_dataset_pins", "predictive_training_dataset_releases"]) {
+      expect((await client.query(`SELECT count(*)::integer AS n FROM ${table}`)).rows[0].n).toBe(0);
+    }
+    const audit = (await client.query("SELECT * FROM predictive_training_dataset_retention_audits")).rows[0];
+    expect(audit.removed_ids).toBeNull();
+    expect(JSON.stringify(audit)).not.toContain(req.datasetId);
+    expect((await store.retentionEvents())[0].trainingRetention?.removedIdsDigest).toBe(originalDigest);
+    await expect(store.readDatasetManifest(req.datasetId)).rejects.toThrow("training-dataset-evidence-removed");
+    await expect(store.prepareDataset(req)).rejects.toThrow("training-dataset-evidence-removed");
+  });
+  await proof(false); await proof(true);
+});
+
+it("QB dataset active pins survive the exact expiry sweep and the last release restores eligibility", async () => {
+  await withDatasetProof(async ({ client, store }) => {
+    const seed = await seedConsumers(store); const feature = await store.recordSourcePassingYards("dataset-expiry-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)); const req = datasetRequest(inventory);
+    await store.prepareDataset(req); await store.pinDataset({ ...req, pinId: "expiry-pin-B" });
+    // Test-only future DB clock: preserve all evidence and recording clocks.
+    // Recompile only access/expiry procedures in this disposable database.
+    // Production callers receive no clock override, and no rows are backdated.
+    const expiry = new Date(Date.parse(feature.recordedAt) + 90 * 86_400_000).toISOString();
+    await advanceDatasetClock(client, expiry);
+    const scope = { kind: "feature-run-expiry" as const, asOf: expiry };
+    const sweep = (id: string) => store.retain({ id, reason: "expiry", authority: "disposable exact-boundary proof",
+      decidedAt: feature.recordedAt, scope, auditLevel: "digest-only" });
+    expect((await sweep("pinned-expiry-A")).removedCounts.sourceConsumers ?? 0).toBe(0);
+    expect((await store.readDatasetManifest(req.datasetId))?.activePin).toBe(true);
+    await store.releaseDatasetPin(req.pinId);
+    expect((await sweep("pinned-expiry-B")).removedCounts.sourceConsumers ?? 0).toBe(0);
+    expect((await store.readDatasetManifest(req.datasetId))?.activePin).toBe(true);
+    const later = structuredClone(inventory.request); later.fittingRunId = "pinned-later-run"; later.foldId = "pinned-later-fold";
+    const newer = (await client.query("SELECT predictive_prepare_training_run($1) AS result", [later])).rows[0].result;
+    expect(newer.rows[0].feature).toMatchObject({ state: "usable", reference: { id: feature.id, recordedAt: feature.recordedAt } });
+    expect(newer.pinEligibility).toEqual({ version: "source-feature-pin-eligibility-v1", featureIds: [feature.id] });
+    await store.releaseDatasetPin("expiry-pin-B");
+    await expect(store.readDatasetManifest(req.datasetId)).rejects.toThrow("training-dataset-feature-expired");
+    await expect(store.pinDataset({ ...req, pinId: "too-late-pin" })).rejects.toThrow("training-dataset-feature-expired");
+    const final = await sweep("released-expiry");
+    expect(final.removedCounts.sourceConsumers).toBe(1);
+    expect(final.trainingRetention?.removedCounts).toMatchObject({ runs: 2, datasets: 1, datasetPins: 2, datasetReleases: 2 });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_source_consumers WHERE id=$1", [feature.id])).rows[0].n).toBe(0);
+    await expect(store.readDatasetManifest(req.datasetId)).rejects.toThrow("training-dataset-evidence-removed");
+  });
+});
+
+it("QB dataset current rights refuse reads before bytes and release remains available after revocation", async () => {
+  await withDatasetProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store); await store.recordSourcePassingYards("dataset-rights-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)); const req = datasetRequest(inventory);
+    await store.prepareDataset(req);
+    const clock = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'dataset-revoke',profile_id,id,'{}',$2,NULL,$2,'synthetic','dataset current gate' FROM predictive_rights_decisions
+      WHERE profile_id=$1 AND predecessor_id IS NULL`, [BRIDGE_PROFILE, clock]);
+    let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    await withLogin(client, target, ["predictive_replay", "predictive_recorder"], async (login, loginTarget) => {
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      await expect(reader.readDatasetManifest(req.datasetId)).rejects.toThrow("training-dataset-rights-refused");
+      await expect(reader.pinDataset({ ...req, pinId: "revoked-new-pin" })).rejects.toThrow("training-dataset-rights-refused");
+      expect(reads).toBe(0);
+      expect(await reader.releaseDatasetPin(req.pinId)).toMatchObject({ pinId: req.pinId, reused: false });
+    });
+  });
+});
+
+it("QB dataset quota refuses the complete publication and multiple pins charge one reservation", async () => {
+  await withDatasetProof(async ({ client, store, target }) => {
+    const seed = await seedConsumers(store); const input = await previewRequest(client, seed);
+    input.slots = Array.from({ length: 32 }, (_, i) => ({ ...input.slots[0], datasetId: "quota-shard-" + i, playerId: "00-" + String(i + 10).padStart(7, "0") }));
+    const inventory = await store.prepareFittingRun(input);
+    await withLogin(client, target, ["predictive_replay", "predictive_recorder"], async (login) => {
+      // Exercise the SQL membership/quota API directly; it never certifies bytes.
+      for (const row of inventory.rows) await login.query("SELECT predictive_prepare_training_dataset($1)", [{
+        ...datasetRequest(inventory, "quota-pin-" + row.ordinal), datasetId: row.slot.datasetId,
+      }]);
+      const second = structuredClone(input); second.fittingRunId = "quota-run-B"; second.foldId = "quota-fold-B";
+      second.slots = [{ ...input.slots[0], datasetId: "overflow-shard", playerId: "00-0000999" }];
+      const next = await store.prepareFittingRun(second);
+      const before = (await client.query("SELECT count(*)::integer AS n FROM predictive_training_dataset_identities")).rows[0].n;
+      await expect(store.prepareDataset(datasetRequest(next, "overflow-pin"))).rejects.toThrow("training-retention-quota-refused");
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_dataset_identities")).rows[0].n).toBe(before);
+      await login.query("SELECT predictive_pin_training_dataset($1,$2,$3,$4)", [inventory.rows[0].slot.datasetId, "extra-quota-pin", input.fittingRunId, inventory.inventorySha256]);
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_datasets WHERE predictive_training_dataset_active(id)")).rows[0].n).toBe(32);
+      await login.query("SELECT predictive_release_training_dataset_pin($1)", ["quota-pin-1"]);
+      expect((await store.prepareDataset(datasetRequest(next, "overflow-pin"))).reused).toBe(false);
+    });
+  });
+});
+
+it("QB dataset late closure failure and failed mandatory deletion roll back manifest pins and audits together", async () => {
+  await withDatasetProof(async ({ client, store, artifacts, target, root }) => {
+    const seed = await seedConsumers(store, "2026-10-11T12:00:00.000Z", true);
+    const a = await store.recordSourceFinalLabel("dataset-label-A", seed.labelRequest, null);
+    const b = await store.recordSourceFinalLabel("dataset-label-B", seed.labelRequest, a.id);
+    const slot: TrainingSlot = { datasetId: "dataset-label-shard", partition: "training", playerId: seed.request.playerId,
+      gameId: seed.labelRequest.gameId, season: 2026, seasonType: "REG", kickoff: "2026-10-04T17:00:00.000Z",
+      kickoffObservationId: "game-schedule", featureCutoff: "2026-10-04T12:00:00.000Z", labelsAsOf: b.recordedAt, featureRef: null, labelRef: null };
+    const inventory = await store.prepareFittingRun(metadataRun([slot], seed.profiles, b.recordedAt)); const req = datasetRequest(inventory);
+    const path = join(root, ".db-blobs", a.bodySha256 + ".json"); const bytes = await readFile(path); let manifestsDuringFailure = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      if (args[0] === a.bodySha256 + ".json") manifestsDuringFailure = (await client.query("SELECT count(*)::integer AS n FROM predictive_training_datasets")).rows[0].n;
+      return artifacts.database.read(...args);
+    } } };
+    const reader = await createLocalPredictiveStore(client, target, observed);
+    try { await writeFile(path, "damaged-ancestor-body"); await expect(reader.prepareDataset(req)).rejects.toThrow("artifact-integrity-failed"); }
+    finally { await writeFile(path, bytes); }
+    expect(manifestsDuringFailure).toBe(1); // SQL published inside the uncommitted transaction
+    for (const table of ["predictive_training_datasets", "predictive_training_dataset_consumers", "predictive_training_dataset_pins", "predictive_training_pin_identities", "predictive_training_dataset_identities"]) {
+      expect((await client.query(`SELECT count(*)::integer AS n FROM ${table}`)).rows[0].n).toBe(0);
+    }
+    const saved = await reader.prepareDataset(req);
+    expect(saved.closure.references).toContainEqual({ kind: "source-consumer", id: a.id });
+    expect(saved.closure.references).toContainEqual({ kind: "source-consumer", id: b.id });
+    await client.query(`CREATE FUNCTION public.dataset_delete_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected-late-delete-failure'; END $$;
+      CREATE TRIGGER dataset_delete_fail BEFORE DELETE ON public.predictive_captures FOR EACH ROW EXECUTE FUNCTION public.dataset_delete_fail()`);
+    const event = { id: "dataset-failed-delete", reason: "provider-request" as const, authority: "disposable rollback proof", decidedAt: await witnessClock(client),
+      scope: { kind: "source" as const, profileIds: [BRIDGE_PROFILE], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" as const };
+    await expect(store.retain(event)).rejects.toThrow("injected-late-delete-failure");
+    expect((await reader.readDatasetManifest(req.datasetId))?.manifestSha256).toBe(saved.manifestSha256);
+    for (const table of ["predictive_retention_events", "predictive_training_retention_audits", "predictive_training_dataset_retention_audits"]) {
+      expect((await client.query(`SELECT count(*)::integer AS n FROM ${table}`)).rows[0].n).toBe(0);
+    }
+    await client.query("DROP TRIGGER dataset_delete_fail ON public.predictive_captures; DROP FUNCTION public.dataset_delete_fail()");
+    expect((await store.retain(event)).trainingRetention?.removedCounts).toMatchObject({ datasets: 1, datasetPins: 1 });
+  });
+});
+
+it("QB expiry removes an unpinned shard while preserving another pinned shard of the same inventory", async () => {
+  await withDatasetProof(async ({ client, store }) => {
+    const seed = await seedConsumers(store);
+    const extra = schedule(78, "2026-10-19T17:00:00.000Z", "nfl:team:PHI", "nfl:team:CAR");
+    const context: Dataset = { ...seed.fixture.context, artifacts: [], captures: [], rightsDecisions: [], decisions: [], labels: [] };
+    addCapture(context, "second-shard-context", [revision("second-shard-schedule", "schedule", extra),
+      revision("second-shard-membership", "membership", membership(extra))], "2026-10-07T12:00:00.000Z", BRIDGE_PROFILE);
+    expect(await store.publish("second-shard-context", context, "2026-10-12T12:00:00.000Z")).toMatchObject({ status: "published" });
+    const a = await store.recordSourcePassingYards("pin-preserved-feature", seed.request, seed.profiles);
+    const b = await store.recordSourcePassingYards("unpinned-expired-feature", { ...seed.request, gameId: extra.gameId }, seed.profiles);
+    const input = await previewRequest(client, seed); input.slots[0].datasetId = "pinned-shard";
+    input.slots.push({ ...input.slots[0], datasetId: "released-shard", gameId: extra.gameId, kickoff: extra.kickoff, kickoffObservationId: "second-shard-schedule" });
+    const inventory = await store.prepareFittingRun(input);
+    await store.prepareDataset(datasetRequest(inventory, "preserved-pin"));
+    await store.prepareDataset({ ...datasetRequest(inventory, "released-pin"), datasetId: "released-shard" });
+    await store.releaseDatasetPin("released-pin");
+    const expiry = new Date(Math.max(Date.parse(a.recordedAt), Date.parse(b.recordedAt)) + 90 * 86_400_000).toISOString();
+    await advanceDatasetClock(client, expiry);
+    const result = await store.retain({ id: "split-expiry", reason: "expiry", authority: "disposable shard proof", decidedAt: b.recordedAt,
+      scope: { kind: "feature-run-expiry", asOf: expiry }, auditLevel: "digest-only" });
+    expect(result.removedCounts.sourceConsumers).toBe(1);
+    expect(result.trainingRetention?.removedCounts).toMatchObject({ datasets: 1, datasetPins: 1, datasetReleases: 1 });
+    expect((await client.query("SELECT id FROM predictive_source_consumers ORDER BY id")).rows.map((r) => r.id)).toEqual([a.id]);
+    expect((await store.readDatasetManifest("pinned-shard"))?.activePin).toBe(true);
+    await expect(store.readDatasetManifest("released-shard")).rejects.toThrow("training-dataset-evidence-removed");
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_runs")).rows[0].n).toBe(1);
+  });
+});
+
+it("QB dataset publication guards concurrent SQL writers and duplicate preparations without a partial pin", async () => {
+  await withDatasetProof(async ({ client, store, target, artifacts }) => {
+    const seed = await seedConsumers(store); await store.recordSourcePassingYards("dataset-concurrent-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed)); const req = datasetRequest(inventory);
+    await withLogin(client, target, ["predictive_replay", "predictive_recorder"], async (login, loginTarget) => {
+      let entered!: () => void, unblock!: () => void;
+      const opened = new Promise<void>((resolve) => { entered = resolve; });
+      const gate = new Promise<void>((resolve) => { unblock = resolve; });
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        entered(); await gate; return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(login, loginTarget, observed);
+      const original = structuredClone(req);
+      const running = reader.prepareDataset(req).then((value) => ({ value }), (error: unknown) => ({ error }));
+      await opened; req.pinId = "mutated-pin";
+      try {
+        await client.query("SET lock_timeout='100ms'");
+        await expect(client.query("SELECT predictive_prepare_training_dataset($1)", [original])).rejects.toMatchObject({ code: "55P03" });
+        await expect(client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+          SELECT 'dataset-concurrent-revoke',profile_id,id,'{}',date_trunc('milliseconds',clock_timestamp()),NULL,
+            date_trunc('milliseconds',clock_timestamp()),'synthetic','dataset writer probe' FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [BRIDGE_PROFILE])).rejects.toMatchObject({ code: "55P03" });
+      } finally { await client.query("RESET lock_timeout"); unblock(); }
+      const settled = await running;
+      expect("error" in settled ? settled.error : null).toBeNull();
+      if (!("value" in settled)) throw new Error("dataset publication failed");
+      expect(settled.value.pin.id).toBe(original.pinId);
+      const duplicate = (await client.query("SELECT predictive_prepare_training_dataset($1) AS result", [original])).rows[0].result;
+      expect(duplicate.manifestSha256).toBe(settled.value.manifestSha256); expect(duplicate.reused).toBe(true);
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_dataset_pins")).rows[0].n).toBe(1);
+    });
+  });
+});
+
+it("QB dataset scheduled rights expiry after SQL sealing rolls back the complete manifest and pin", async () => {
+  await withDatasetProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store, "2026-10-11T12:00:00.000Z", true);
+    const a = await store.recordSourceFinalLabel("expiry-ancestor-label-A", seed.labelRequest, null);
+    const b = await store.recordSourceFinalLabel("expiry-selected-label-B", seed.labelRequest, a.id);
+    const slot: TrainingSlot = { datasetId: "scheduled-expiry-shard", partition: "training", playerId: seed.request.playerId,
+      gameId: seed.labelRequest.gameId, season: 2026, seasonType: "REG", kickoff: "2026-10-04T17:00:00.000Z",
+      kickoffObservationId: "game-schedule", featureCutoff: "2026-10-04T12:00:00.000Z", labelsAsOf: b.recordedAt, featureRef: null, labelRef: null };
+    const inventory = await store.prepareFittingRun(metadataRun([slot], seed.profiles, b.recordedAt)); const req = datasetRequest(inventory);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'dataset-scheduled-revoke',profile_id,id,'{}',date_trunc('milliseconds',now())+interval '5 seconds',NULL,
+        date_trunc('milliseconds',now()),'synthetic','scheduled dataset proof' FROM predictive_rights_decisions WHERE profile_id=$1 AND predecessor_id IS NULL`, [BRIDGE_PROFILE]);
+    const expiryAt = (await client.query(`SELECT to_char(effective_from AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS time
+      FROM predictive_rights_decisions WHERE id='dataset-scheduled-revoke'`)).rows[0].time as string;
+    await withLogin(client, target, [], async (clock) => {
+      let entered!: () => void, unblock!: () => void, afterInsert = 0;
+      const opened = new Promise<void>((resolve) => { entered = resolve; }); const gate = new Promise<void>((resolve) => { unblock = resolve; });
+      const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+        if (args[0] === a.bodySha256 + ".json") {
+          afterInsert = (await client.query("SELECT count(*)::integer AS n FROM predictive_training_datasets")).rows[0].n;
+          entered(); await gate;
+        }
+        return artifacts.database.read(...args);
+      } } };
+      const reader = await createLocalPredictiveStore(client, target, observed);
+      const running = reader.prepareDataset(req).then(() => null, (error: unknown) => error);
+      await Promise.race([opened, running.then((error) => { throw error ?? new Error("scheduled test never reached its closure gate"); })]);
+      try {
+        // No protected table access for the clock connection. Use the same DB
+        // clock that recorded the decision, with no host-clock sleep estimate.
+        await clock.query("SELECT pg_sleep(greatest(0,extract(epoch FROM ($1::timestamptz-clock_timestamp())))+0.01)", [expiryAt]);
+      } finally { unblock(); }
+      expect(await running).toMatchObject({ message: "source-consumer-rights-refused" });
+      expect(afterInsert).toBe(1);
+      for (const table of ["predictive_training_datasets", "predictive_training_dataset_identities", "predictive_training_dataset_pins", "predictive_training_pin_identities"]) {
+        expect((await client.query(`SELECT count(*)::integer AS n FROM ${table}`)).rows[0].n).toBe(0);
+      }
+    });
+  });
+});
+
+it("QB dataset lineage rights cover an ancestor provider and mandatory deletion erases its corrected descendants", async () => {
+  await withDatasetProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store, "2026-10-11T12:00:00.000Z", true);
+    const a = await store.recordSourceFinalLabel("lineage-label-A", seed.labelRequest, null);
+    const second = structuredClone(seed.fixture.input);
+    second.id = "lineage-second-provider"; second.captureId = "lineage-second-capture"; second.artifact.id = "lineage-second-artifact";
+    second.profile.id = "csv-second-player"; second.artifact.profileId = second.profile.id;
+    second.rightsDecisions = [{ ...second.rightsDecisions[0], id: "rights:lineage-second", profileId: second.profile.id }];
+    await store.publishSourceStats(second);
+    await client.query("INSERT INTO predictive_profile_identity_links VALUES('lineage-second-link',$1,$2,'gsis','2026-01-01T00:00:00Z')", [second.profile.id, BRIDGE_PROFILE]);
+    const raw = { ...seed.raw, profileId: second.profile.id };
+    await store.recordSourceNormalization("lineage-second-binding", raw, null);
+    await store.recordSourceDecision("lineage-second-reconciliation", decisionScope(raw.profileId), null);
+    await store.recordSourceDecision("lineage-second-participation", decisionScope(raw.profileId, "participation"), null);
+    const b = await store.recordSourceFinalLabel("lineage-label-B", { ...seed.labelRequest, profileIds: [second.profile.id] }, a.id);
+    const slot: TrainingSlot = { datasetId: "lineage-shard", partition: "training", playerId: seed.request.playerId,
+      gameId: seed.labelRequest.gameId, season: 2026, seasonType: "REG", kickoff: "2026-10-04T17:00:00.000Z",
+      kickoffObservationId: "game-schedule", featureCutoff: "2026-10-04T12:00:00.000Z", labelsAsOf: b.recordedAt, featureRef: null, labelRef: null };
+    const inventory = await store.prepareFittingRun(metadataRun([slot], [second.profile.id], b.recordedAt)); const req = datasetRequest(inventory);
+    expect(inventory.protectedUses.map((p) => p.profile)).not.toContain(seed.raw.profileId);
+    const manifest = await store.prepareDataset(req);
+    expect(manifest.protectedUses).toContainEqual({ profile: seed.raw.profileId, use: "outcome-label" });
+    const clock = await witnessClock(client);
+    await client.query(`INSERT INTO predictive_rights_decisions(id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,decided_at,evidence_kind,evidence_reference)
+      SELECT 'lineage-revoke',profile_id,id,'{}',$2,NULL,$2,'synthetic','ancestor provider revoked' FROM predictive_rights_decisions
+      WHERE profile_id=$1 AND predecessor_id IS NULL`, [seed.raw.profileId, clock]);
+    let reads = 0;
+    const observed = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    const reader = await createLocalPredictiveStore(client, target, observed);
+    await expect(reader.readDatasetManifest(req.datasetId)).rejects.toThrow("training-dataset-rights-refused");
+    expect(reads).toBe(0);
+    const result = await store.retain({ id: "lineage-delete", reason: "provider-request", authority: "disposable lineage proof", decidedAt: clock,
+      scope: { kind: "source", profileIds: [seed.raw.profileId], capturedFrom: null, capturedBefore: null }, auditLevel: "digest-only" });
+    expect(result.removedCounts.sourceConsumers).toBe(2);
+    expect(result.trainingRetention?.removedCounts).toMatchObject({ runs: 1, datasets: 1, datasetPins: 1 });
+    await expect(reader.readDatasetManifest(req.datasetId)).rejects.toThrow("training-dataset-evidence-removed");
+  });
+});
+
+it("QB dataset migration preserves v15 inventories consumers and legacy retention audit with no-op reruns", async () => {
+  await withProof(async ({ client, store, target }) => {
+    const seed = await seedConsumers(store); const feature = await store.recordSourcePassingYards("dataset-upgrade-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed));
+    const { reused: _reused, ...original } = inventory; void _reused;
+    expect(original).not.toHaveProperty("pinEligibility");
+    await store.publishSourceStats(sourceClaimFixture("dataset-unrelated-team", "team"));
+    await store.retain({ id: "before-datasets-zero", reason: "provider-request", authority: "disposable upgrade audit", decidedAt: await witnessClock(client),
+      scope: { kind: "source", profileIds: ["csv-synthetic-team"], capturedFrom: "2026-01-01T00:00:00.000Z", capturedBefore: "2026-01-02T00:00:00.000Z" }, auditLevel: "digest-only" });
+    const events = await store.retentionEvents(); const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
+    const options = { ...target, files, verify: createCatalogVerifier(contracts) };
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [16], schemaVersion: 16 });
+    expect(await store.readFittingRun(inventory.request.fittingRunId)).toEqual(original);
+    expect((await store.replaySourceConsumer(feature.id))?.bodySha256).toBe(feature.bodySha256);
+    expect(await store.retentionEvents()).toEqual(events);
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 15)).toEqual(ledger);
+    expect((await store.prepareDataset(datasetRequest(inventory))).activePin).toBe(true);
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 16 });
+  }, 15);
+});
 
 it("QB assigned shard verifies fixed consumers and missing slots without reselecting or creating durable pins", async () => {
   await withProof(async ({ client, store, artifacts, target }) => {
@@ -2837,7 +3246,7 @@ it("QB inventory migration upgrades v13 without rewriting evidence and preserves
     const evidence = (await client.query("SELECT id,body_sha256,recorded_at FROM predictive_source_consumers ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 15, executed: [14, 15] });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 16, executed: [14, 15, 16] });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 13)).toEqual(ledger);
     expect((await client.query("SELECT id,body_sha256,recorded_at FROM predictive_source_consumers ORDER BY id")).rows).toEqual(evidence);
     expect(await store.replaySourceConsumer(feature.id)).toEqual(prior);
@@ -2848,7 +3257,7 @@ it("QB inventory migration upgrades v13 without rewriting evidence and preserves
     });
     const request = await previewRequest(client, seed);
     expect(await store.prepareFittingRun(request)).toMatchObject({ fittingReady: false, rows: [{ selection: { featureId: feature.id } }] });
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 15 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 16 });
   }, 13);
 });
 
@@ -3361,10 +3770,10 @@ it("CSV QB migration upgrades v9 preserving binding and decision history and is 
     const ledger=(await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files=await checkMigrationArtifacts(); const contracts=await loadCatalogContracts(files);
     const options={ ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11, 12, 13, 14, 15],schemaVersion: 15 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11, 12, 13, 14, 15, 16],schemaVersion: 16 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,9)).toEqual(ledger);
     expect(await store.replaySourceDecision({ ...decisionScope(request.profileId),cutoff: decision.record.recordedAt })).toMatchObject({ record: decision.record });
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 15 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 16 });
   },9);
 });
 

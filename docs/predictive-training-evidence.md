@@ -1,5 +1,77 @@
 # #118 guarded evidence checkpoint
 
+## Dataset/pin increment
+
+Migration 0016 adds immutable assigned manifests, independent append-only pins,
+database-clock releases and conservative evidence closure. `prepareDataset`
+verifies the saved shard then asks SQL to compute the manifest, associations and
+quota charge. It verifies every closure file before committing. `pinDataset`
+requires an existing manifest and repeats protected verification; it cannot
+create an unassigned dataset. `readDatasetManifest` verifies files on every call.
+Direct SQL can establish/check metadata, but never certify private filesystem
+bytes; manifests require verification on every access and remain `fittingReady:
+false`, population unqualified. SQL accepts no supplied rows or byte certificate.
+
+The closure includes selected consumers and label ancestors, complete conservative
+binding/decision history, native context, captures, raw rows/revisions, identity
+links, rights, ingestion runs and exact blob addresses. It is bounded at the
+original inventory snapshot. Protected uses also include ancestor providers when
+label corrections change scope. Fresh rights checks precede closure reads and
+delivery, and mandatory deletion of an ancestor provider erases the affected
+dataset and corrected descendants. Each dataset charges complete distinct blob bytes
+plus canonical manifest bytes. Shared blobs are charged to each dataset; multiple
+pins on one dataset are charged once. Quotas are 32 active datasets, 256 MiB per
+dataset and 1 GiB total, with 1,024 lifetime pins per dataset. Initial safety
+ceilings are not benchmarked capacity.
+
+Active pins preserve eligible source features beyond day 90 under current rights.
+Later inventories explicitly record which features were pinned at their clock.
+Releasing the last independent pin restores expiry at the original recording
+time; preparation/re-pinning cannot resurrect an already-expired feature. Rights
+revocation still refuses before protected bytes, and release remains available
+after revocation. Mandatory deletion erases dataset/pin closure even for narrow
+source scopes. Unprotected expired shards can be removed without blocking an
+unrelated active shard of the same inventory.
+
+The forward migration installs literal, checksum-guarded extension seams into
+the known retention/prepare functions, without copying the multi-ledger
+procedure. Any unexpected prefix refuses. Authorized per-dataset hooks compose
+with existing inventory deletion and add deterministic supplemental audits;
+restore/reapply includes them. Legacy events unaffected by datasets retain their
+exact old result. This deliberate seam requires #115 coordination before future
+retention decomposition. Existing 0001–0015 SQL/contracts remain unchanged.
+
+Thirteen mandatory database cases cover restricted roles, exact A despite newer B,
+missing slots, immutable retries, closure charging, independent release, corrupt
+files before/after sealing, failure after the SQL insert, rights expiry during
+that late read, concurrent SQL writers/preparations, the exact 90-day boundary,
+pin eligibility in later inventories, expiry of an unpinned sibling, quota
+rollback, deletion rollback, restored supplemental audit, ancestor-provider
+rights/deletion and v15 upgrade/no-op preservation. The future-clock test recompiles access/expiry functions only in a
+disposable superuser database; it never backdates evidence and installs no
+production clock override. Two pure tests cover exact pin requests and the
+independently authorized pin exception to unchanged expiry.
+
+The first complete database run passed all thirteen new cases and 184 of 185
+PostgreSQL tests. An existing revocation fixture used a host timestamp after a
+sleep; Docker's clock can trail that clock by 1–2 ms, leaving the revocation
+temporarily in the future. The fixture now takes its timestamp from the database
+and asserts it is later than the historical binding. Its focused regression
+passes; no production clock or rights rule was relaxed.
+
+Final checkpoint validation passes **748 Node tests**, **75 Node DB checks +
+185 PostgreSQL tests** (160 mandatory predictive cases), typecheck, affected-file
+ESLint, migration/readiness checks and all **17 catalog contracts**. Frozen
+0001–0015 SQL/contracts, the ledger contract and the existing manifest prefix
+match `84945bf`; schema changes are appended. Documentation links and whitespace
+checks pass. Logs are `/private/tmp/dfs118-datasets-final-node.log` and
+`/private/tmp/dfs118-datasets-final-db.log`. No persistent or hosted database was
+migrated. The complete next prefix is 0001–0016; 0017 only is reserved for #106.
+
+Stable numerical paging, complete-run readiness, label APIs, audited
+invalidation, end-to-end deadlines and representative capacity remain open.
+This increment does not complete #118 or qualify #106/#107 evidence for #54.
+
 ## Assigned-shard verification increment
 
 `verifyDatasetShard({ version: "qb-training-read-v1", fittingRunId,

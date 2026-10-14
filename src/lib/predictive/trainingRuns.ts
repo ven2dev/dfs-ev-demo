@@ -19,6 +19,10 @@ export type TrainingRunInventory = {
   counts: { partition: "training" | "evaluation"; slots: number; targetEvents: number; usableFeatures: number; usableLabels: number;
     missingFeatures: number; unavailableFeatures: number; expiredFeatures: number; missingLabels: number }[];
   protectedUses: { profile: string; use: "model-input" | "outcome-label" }[];
+  // Forward 0016 records eligibility at the inventory clock. Old v14/v15
+  // inventories have no pins and omit this member; later release cannot change
+  // the historical state, although current unpinned access can still refuse.
+  pinEligibility?: { version: "source-feature-pin-eligibility-v1"; featureIds: string[] };
   reuseDisclosure: { priorRuns: number; targetEventsInRun: number; playerGameTargetsInRun: number;
     reusedTargetEvents: number; reusedPlayerGameTargets: number; interpretation: "repeated-events-are-correlated" };
 };

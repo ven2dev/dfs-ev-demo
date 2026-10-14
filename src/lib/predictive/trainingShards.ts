@@ -31,17 +31,26 @@ export const trainingShardMembership = (inventory: TrainingRunInventory, input: 
     refuse("training-shard-inventory-mismatch");
   }
   const rows = inventory.rows.filter((row) => row.slot.datasetId === request.datasetId);
+  if (inventory.pinEligibility) {
+    exact(inventory.pinEligibility, ["version", "featureIds"]);
+    const ids = inventory.pinEligibility.featureIds;
+    if (inventory.pinEligibility.version !== "source-feature-pin-eligibility-v1" || !Array.isArray(ids) ||
+        new Set(ids).size !== ids.length || ids.some((id) => !inventory.rows.some((row) => row.selection.featureId === id))) {
+      refuse("training-shard-pin-policy-refused");
+    }
+  }
   if (!rows.length) refuse("training-shard-not-assigned");
   if (rows.length > TRAINING_BOUNDS.slotsPerDataset) refuse("training-dataset-bounds-refused");
   return rows;
 };
 
-export const assertTrainingShardUnexpired = (rows: readonly Pick<TrainingRunInventory["rows"][number], "feature">[], accessAt: string) => {
+export const assertTrainingShardUnexpired = (rows: readonly Pick<TrainingRunInventory["rows"][number], "feature">[], accessAt: string,
+  pinnedFeatureIds: ReadonlySet<string> = new Set()) => {
   const clock = instant(accessAt);
   // An already-expired slot remains an explicit expired state. A selection
   // that loses eligibility after inventory preparation must not be resealed as
   // usable, unavailable or freshly expired under the original inventory hash.
-  for (const row of rows) if (row.feature.reference && row.feature.state !== "expired" &&
+  for (const row of rows) if (row.feature.reference && !pinnedFeatureIds.has(row.feature.reference.id) && row.feature.state !== "expired" &&
       clock >= instant(row.feature.reference.recordedAt) + 90 * 86_400_000) refuse("training-shard-feature-expired");
 };
 
@@ -49,14 +58,15 @@ export const assertTrainingShardUnexpired = (rows: readonly Pick<TrainingRunInve
 // SQL. The store invokes it only after actual byte reconstruction under guard.
 // Future dataset sealing must perform that verification in its own transaction.
 export const trainingShardProof = (inventory: TrainingRunInventory, input: TrainingShardRequest, verifiedAt: string,
-  records: SourceConsumerRecord[], kickoffs: TrainingKickoffProof[]) => {
+  records: SourceConsumerRecord[], kickoffs: TrainingKickoffProof[], pinnedFeatureIds: ReadonlySet<string> = new Set()) => {
   const rows = trainingShardMembership(inventory, input);
   if (instant(verifiedAt) < instant(inventory.snapshotAt)) refuse("training-shard-clock-refused");
-  assertTrainingShardUnexpired(rows, verifiedAt);
+  assertTrainingShardUnexpired(rows, verifiedAt, pinnedFeatureIds);
   const ids = new Set(rows.flatMap((row) => [row.selection.featureId, row.selection.labelId].filter((id): id is string => id !== null)));
   if (records.length !== ids.size || new Set(records.map((record) => record.id)).size !== ids.size ||
       records.some((record) => !ids.has(record.id)) || kickoffs.length !== rows.length) refuse("training-shard-evidence-mismatch");
-  const selected = selectTrainingRows({ ...inventory.request, slots: rows.map((row) => row.slot) }, inventory.snapshotAt, records, new Set(),
+  const selected = selectTrainingRows({ ...inventory.request, slots: rows.map((row) => row.slot) }, inventory.snapshotAt, records,
+    new Set(inventory.pinEligibility?.featureIds ?? []),
     rows.map((row, ordinal) => ({ ...row.selection, ordinal })));
   rows.forEach((row, i) => {
     const checked = selected[i], proof = kickoffs[i];

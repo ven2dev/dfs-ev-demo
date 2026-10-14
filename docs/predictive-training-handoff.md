@@ -464,11 +464,13 @@ claim. See the evidence checkpoint for measurements and remaining limits.
    increment is stable.
 
 Released migrations are **0001–0011**; the combined branch now includes fixed
-**0012–0015**: training guard, #106 gzip staging, #118 run inventory and #106
-compressed inspection envelopes/guarded diagnostic binary verification.
+**0012–0016**: training guard, #106 gzip staging, #118 run inventory, #106
+compressed inspection envelopes/guarded diagnostic binary verification and
+#118 dataset manifests/pins.
 #106's complete pushed 0001–0013 checkpoint at `47b1c89` was merged in `da24ab9`;
 0001–0014 are unchanged by #106's integrated `4f1ad06` checkpoint. **0016 is
-reserved for #118 dataset/pin DDL; #106 will coordinate 0017 or later.** Coordinate landing order with
+implemented and is #118's complete next range; 0017 only is reserved for #106
+qualified compressed publication.** Coordinate landing order with
 #106/#115 before merging further DDL. A
 second merger integrates main without rebasing and may renumber only private,
 unapplied-outside-disposable-test migrations, with explicit confirmation and
@@ -535,3 +537,22 @@ The combined shard checkpoint passes 746 Node tests, 75 DB checks and 172
 PostgreSQL tests, typecheck, affected-file lint and generated-artifact/frozen-prefix
 checks. See the evidence checkpoint for adversarial cases and the expiry-selection
 constraint that 0016 must address; an FK-only pin cannot protect retention.
+
+The 0016 dataset/pin increment implements `prepareDataset`, `readDatasetManifest`,
+`pinDataset` and `releaseDatasetPin`. SQL fixes manifests/closure from assigned
+inventory; the adapter verifies bytes inside the recording transaction and on
+every read. Protected uses cover ancestor providers even when a label correction
+changes scope; their current rights and mandatory deletion apply to the full
+dataset lineage. Independent pins and atomic storage quotas protect valid features
+past their original expiry. Release never renews it. Mandatory deletion and
+unprotected expiry remove the appropriate dataset closure with supplemental
+restore/reapply audit. See the integration/evidence checkpoints for the exact
+prefix and checksum-guarded retention seams that #115 must preserve or replace.
+These are metadata APIs, with `fittingReady: false`, population unqualified.
+Paging/label reads, complete-run readiness, invalidation, deadlines and capacity
+remain outstanding; no model fitting is authorized by a sealed manifest alone.
+
+The final dataset/pin checkpoint passes 748 Node tests, 75 DB checks and 185
+PostgreSQL tests (160 mandatory predictive cases), typecheck, affected-file lint
+and all 17 catalog contracts. Frozen 0001–0015 remain unchanged from `84945bf`.
+#118's complete next migration range is 0016; 0017 only is reserved for #106.
