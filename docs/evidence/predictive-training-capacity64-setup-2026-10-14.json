@@ -1,0 +1,35 @@
+{
+  "version": "synthetic-training-capacity-setup-diagnostic-v1",
+  "baseRevision": "9cf2a8f5a3793976ee427ad809baa657c65a4f9f",
+  "attemptedScope": {
+    "players": 64,
+    "sourceProfiles": 8,
+    "compressedGroups": 4,
+    "historySlots": 1,
+    "candidate": "stats-v1:player_pass_yds"
+  },
+  "status": "operator-stopped-during-setup",
+  "reason": "Slow checked consumer publication; no training API measurement reached. Owned disposable service stopped to revise setup.",
+  "lastObservedSetupProgress": {
+    "sourceDecisions": 128,
+    "sourceConsumers": 15,
+    "observedAt": "2026-10-14T23:35:49Z",
+    "finalCountsKnown": false
+  },
+  "readerMeasurements": [],
+  "benchmarkDurationMs": 477720,
+  "durationIncludes": "setup and intentional shutdown; not a reader runtime",
+  "log": {
+    "localPath": "/private/tmp/dfs118-prefix20-capacity64.log",
+    "sha256": "fcb983388bac078f3a49bf2701a8d1d5dfde92436798244388e828bda64aedfa",
+    "shutdownErrorsExpected": true
+  },
+  "measuredApiCeilingsChanged": false,
+  "frozenPrefixChanged": false,
+  "originalSourceSha256": {
+    "tests/db/trainingCapacity.bench.ts": "ab0529378c758485b0cd12448e6841b1d7c4a555635ef965fb7b670984845b0b",
+    "tests/db/trainingCapacityFixtures.ts": "8e110a4437b8b747b1ad64565799bc30079597b4162d561e877d615d9280d6da",
+    "src/lib/predictive/persistence.ts": "9c3f762a686d440aa35d8e60064929a78048fbf516a83ee7cdbfe64c875aeb7e",
+    "db/migrations/0020_predictive_training_validation_memo.sql": "fed741f76177ec35e07ac1d1d09f39b33ceb26d406ac06b0e4ecd97e7816ada3"
+  }
+}

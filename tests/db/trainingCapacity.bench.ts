@@ -92,7 +92,7 @@ it("measures independent QB training records with default budgets and exact evid
       await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
       await ensureHarnessSession(client);
       const artifacts = await openArtifactStore(root, 8_000_000), store = await createLocalPredictiveStore(client, target, artifacts);
-      const seedStarted = performance.now(), seed = await seedCapacity(store, client, artifacts, max);
+      const seedStarted = performance.now(), seed = await seedCapacity(store, client, artifacts, max, { guardedRecording: true });
       process.stdout.write("capacity seed " + JSON.stringify({ rows: max, wallMs: Math.round(performance.now() - seedStarted) }) + "\n");
       await client.query("SET track_functions='pl'");
       await client.query("ANALYZE");

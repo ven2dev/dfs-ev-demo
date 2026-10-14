@@ -6,6 +6,73 @@ one consumer body. It does not qualify real sources, historical availability,
 population coverage or #54 Part B. The prior shared-context measurement remains
 in [the evidence log](predictive-training-evidence.md).
 
+## Prefix20 wider-inventory checkpoint — 2026-10-14
+
+The [64-QB matrix](evidence/predictive-training-capacity64-prefix20-2026-10-14.json)
+exercises widths 1/16/64 against the same eight-profile source inventory, with
+four CSV and four gzip groups. It retains exact source/migration hashes, natural
+plans, nested function timings and completed/refused calls. **No measured page
+or final-label call completes in this inventory.** The benchmark test passes
+because it records expected bounded refusals; that is not a capacity pass.
+
+| Operation | Selected rows | Result | Wall time | Client SQL statements | Files opened |
+| --- | ---: | --- | ---: | ---: | ---: |
+| Prepare run | 1 | Completed | 1.53 s | 9 | 0 |
+| Prepare dataset and pin | 1 | Completed | 10.88 s | 3,645 | 17 |
+| Read page | 1 | Operation deadline | 10.02 s | 3,464 | 17 |
+| Read final labels | 1 | Operation deadline | 10.02 s | 2,817 | 17 |
+| Prepare run | 16 | Completed | 5.86 s | 9 | 0 |
+| Prepare dataset and pin | 16 | Completed | 23.41 s | 3,681 | 32 |
+| Read one-row page from 16-member dataset | 16 | Operation deadline | 10.01 s | 969 | 28 |
+| Read 16-row page | 16 | Operation deadline | 10.01 s | 970 | 28 |
+| Read 16 final labels | 16 | Operation deadline | 10.02 s | 9 | 0 |
+| Prepare run | 64 | SQL statement timeout | 10.01 s | 9 | 0 |
+| Read 64 final labels | 64 | Operation deadline | 10.01 s | 9 | 0 |
+
+The 64-member dataset/pages are not attempted after run preparation refuses.
+Metadata selection naturally uses the training lookup indexes and takes only
+0.203/1.205/3.100 ms for widths 1/16/64. Guarded SQL feature checks take
+1.162 s / 83,169 hits at width1 and 4.805 s / 263,999 hits at width16.
+Guarded label checks take 1.733 s / 127,404 hits at width1 and
+**14.808 s / 971,516 hits at width16**. Both guarded width64 probes exceed
+their separate 15-second diagnostic ceiling. This isolates remaining SQL
+reconstruction cost; it does not support raising production deadlines.
+
+The successful one-member preparation verifies only 140,143 wire bytes yet
+issues 3,645 client statements. Its SQL feature-check probe is much shorter
+than total byte-backed preparation/page work. Application metadata and fresh
+clock/access calls are therefore another investigation target; exact attribution
+needs a query breakdown before changing policy or caches. Final-label width16
+refuses before files, so optimizing file reads alone cannot resolve that case.
+No cutoff-equivalence reuse or partial source-lineage verification is proposed.
+
+The one-member closure has 381 references / 17 blobs and charges 180,510 bytes;
+the 16-member closure has 476 references / 32 blobs and charges 416,475 bytes.
+The latter preparation verifies 299,437 wire bytes. These are small synthetic
+files, not realistic provider releases. Maximum sampled parent RSS is 254.6 MB,
+including earlier calls/fixture allocations; database/VM memory is unmeasured.
+No successful numerical response exists from which to claim decoded throughput.
+
+Checked setup takes 422.2 s; the complete matrix takes 622.4 s. An
+[earlier setup attempt](evidence/predictive-training-capacity64-setup-2026-10-14.json)
+was intentionally stopped after 477.7 s without reaching reader measurements.
+The fixture now stages synthetic blob metadata before invoking unchanged SQL
+recorders under the complete guard. This enables 0020 reuse during validation;
+recorder writes still disable reuse afterward. The source snapshot and numerical
+assertions remain independently byte-backed. Staged setup artifacts belong only
+to the owned scratch database/private directory, both removed on completion.
+The default unguarded seed path used by the prefix19 upgrade safety case is
+unchanged. Reader/SQL deadlines and frozen migrations are unchanged.
+
+Operating guidance remains limited to the earlier 16-QB/two-profile, one-slot
+sample below. Even a one-row response in the wider inventory is unsupported by
+this evidence. #118 remains incomplete. Next: separate SQL label reconstruction
+from repeated application metadata/access calls, optimize with exact identities
+and fresh rights gates, then repeat this matrix. Full histories, opponent inputs,
+provider file sizes and independent review remain. No migration after 0020 is
+allocated; coordinate any forward DDL with #106. The
+[review handoff](predictive-training-review.md) records the outstanding gates.
+
 ## Prefix20 guarded-validation checkpoint — 2026-10-14
 
 The [final prefix20 measurements](evidence/predictive-training-capacity-prefix20-2026-10-14.json)
@@ -67,8 +134,9 @@ its strict refusal of TEMP namespaces and must use a fresh administrative
 connection, as the migration CLI already does. An initial rolled-back read may
 also roll back namespace creation; it is not a substitute for that separation.
 
-The next capacity cases are 64 independent rows, full 16-slot histories,
-opponent context and representative provider file sizes. Independent review of
+The wider 64-QB inventory above now identifies another capacity limit. Full
+16-slot histories, opponent context and representative provider file sizes remain.
+Independent review of
 0020 and the existing reader/retention implementation remains outstanding.
 #118 is incomplete; real-source/population qualification still blocks #54 Part B.
 
@@ -157,7 +225,11 @@ no opponent candidate, full 16-slot history or large provider release files.
 
 Fixture setup uses production publication/normalization, an independently
 byte-verified full source snapshot, the pure feature/label builders and checked
-SQL decision/consumer recorders. The synthetic inputs remain unchanged during
+SQL decision/consumer recorders. The prefix20 benchmark stages synthetic blob
+metadata before guarded consumer recording so its own blob INSERT does not
+disable transaction-local validation reuse. Each recorder still validates the
+complete proposed body before publication; no direct consumer/decision insertion
+or seal bypass is used. The synthetic inputs remain unchanged during
 setup. SQL checks the plans, current clocks, rights, evidence and associations;
 no consumer rows or seals are inserted by bypassing recorders. Feature and label
 computations use a shared snapshot cutoff, while recording times come from the

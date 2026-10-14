@@ -927,8 +927,9 @@ clock-dependent policies must update that key or remain uncached. Frozen 0020
 must not be edited to accommodate later dependencies.
 
 The [evidence checkpoint](predictive-training-evidence.md) records migration
-rollback/parity, restricted-role, temporal and deletion checks. Representative
-64-row/full-history/opponent/file-size cases and independent review remain.
+rollback/parity, restricted-role, temporal and deletion checks. The wider
+64-QB checkpoint below identifies another capacity limit. Full-history,
+opponent/file-size cases and independent review remain.
 #118 and #106 remain incomplete; #54 Part B retains all real/population gates.
 
 Validation covers all 234 PostgreSQL cases through one complete run and focused
@@ -937,3 +938,23 @@ passes 75 DB checks, 11 worker checks, 21 catalog contracts, 873 jsdom/793 Node
 tests, typecheck, full lint and final affected-file/report checks. The complete
 database command's aggregate report was not rerun after those fixture corrections;
 final PR CI remains required. Only owned disposable/local databases were migrated.
+
+## #118 wider capacity checkpoint (no new migration)
+
+The [64-QB/eight-profile matrix](predictive-training-capacity.md) is now measured
+at the same frozen prefix20. Width1/16 dataset preparation completes, but every
+measured numerical page/current-label call exceeds its 10-second deadline.
+Width64 run preparation also reaches the SQL limit. The prior successful
+16-QB/two-profile sample therefore does not qualify larger source inventories.
+The raw measurements separate SQL validation cost from byte-backed application
+work; further optimization must preserve exact clocks, all visible lineages
+and fresh use-specific rights gates.
+
+Only disposable benchmark setup changes: it stages synthetic blob metadata
+before guarded checked recording. Production byte-reading, verification,
+deadline, retention and fresh-administrative-connection contracts stay unchanged.
+All 40 frozen SQL/catalog artifacts still match `9cf2a8f`; **no migration after
+0020 is allocated**. #106 may continue its recorder footprint/design work and
+source qualification; coordinate the next number before either branch adds DDL.
+The [independent review map](predictive-training-review.md) is prepared, with
+review and final aggregate CI still outstanding. #54 Part B remains blocked.

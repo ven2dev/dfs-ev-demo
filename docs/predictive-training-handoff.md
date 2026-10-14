@@ -756,6 +756,32 @@ connection reuse is supported. Interrupted sessions still require replacement.
 0020 changes SQL validation only. Feature/history policies, source byte verification,
 training requests, optional cancellation, wire/decoded limits and retention interfaces
 are unchanged. See [the measured results and safety boundary](predictive-training-capacity.md).
-The 64-row matrix, full histories, opponent inputs, realistic source sizes and
-independent review remain. Any further SQL change needs a coordinated forward
-migration. #118 remains incomplete; #54 Part B retains its real/population gates.
+The wider capacity checkpoint below supersedes the unmeasured 64-row item.
+Full histories, opponent inputs, realistic source sizes and independent review
+remain. Any further SQL change needs a coordinated forward migration. #118
+remains incomplete; #54 Part B retains its real/population gates.
+
+### Wider inventory result
+
+The [64-QB/eight-profile matrix](predictive-training-capacity.md) completes with
+explicit deadline refusals. Width1 and width16 dataset/pin preparation succeeds,
+but no measured page or current-label call succeeds in that source inventory.
+Width64 run preparation reaches its 10-second SQL limit, so its dataset/pages
+are not attempted. Guarded width16 label validation alone takes 14.808 s;
+one-member byte-backed preparation performs 3,645 client statements. Tiny
+response pages and larger deadlines are not a demonstrated solution.
+
+The next capacity iteration should isolate repeated SQL label validation and
+application metadata/current-access round trips, preserving full lineages,
+exact cutoff/version identities and fresh rights before bytes/delivery. Repeat
+the same matrix after a concrete optimization; then assess full numerical
+histories, opponent context and provider file sizes. No forward migration number
+is allocated. Coordinate DDL with #106 before adding any ordered file.
+
+Only benchmark setup changes here: blob metadata is staged in the disposable
+scratch database before unchanged checked SQL recording under the read guard.
+The default prefix19 upgrade-safety seed path stays unchanged, and measured
+read APIs are untouched. Setup took 422.2 s and is excluded from API times.
+All owned scratch databases/artifacts and the disposable service are removed.
+The [review handoff](predictive-training-review.md) prepares independent review;
+approval and a green final aggregate database gate remain outstanding.

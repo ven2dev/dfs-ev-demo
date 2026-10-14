@@ -33,14 +33,25 @@ type Example = { playerId: string; prior: Schedule; target: Schedule; targetObse
 // Fixture preparation uses the same checked SQL recorders, plus one independently
 // byte-verified full snapshot. It avoids reopening/decoding the entire population
 // hundreds of times merely to seed a read benchmark. Measured APIs are untouched.
-const recordCapacityBody = async (client: Client, artifacts: PrivateArtifactStore, id: string, body: SourceConsumerBody) => {
+const recordCapacityBody = async (client: Client, artifacts: PrivateArtifactStore, id: string, body: SourceConsumerBody,
+  guardedRecording: boolean) => {
   const bytes = canonical(body), sha = digest(bytes), key = Buffer.from(sha, "hex").readInt32BE(0);
   await client.query("SELECT pg_advisory_lock(520054,$1)", [key]);
   try {
     await artifacts.database.write(bytes, sha);
+    const registerBlob = () => client.query("INSERT INTO predictive_blobs VALUES ($1,$2,'application/json',$3) ON CONFLICT DO NOTHING",
+      [sha, Buffer.byteLength(bytes), sha + ".json"]);
+    // Benchmark-only staging in the owned scratch database. A blob write inside
+    // the recorder transaction correctly disables 0020 reuse. Commit metadata
+    // first, then let the released recorder validate under the complete guard.
+    // Setup failure still removes this entire scratch DB and artifact directory.
+    if (guardedRecording) await registerBlob();
     await client.query("BEGIN");
     try {
-      await client.query("INSERT INTO predictive_blobs VALUES ($1,$2,'application/json',$3) ON CONFLICT DO NOTHING", [sha, Buffer.byteLength(bytes), sha + ".json"]);
+      if (guardedRecording) {
+        await client.query("SELECT predictive_training_read_guard()");
+        expect((await client.query("SELECT predictive_training_memo_ready() AS ready")).rows[0].ready).toBe(true);
+      } else await registerBlob();
       await client.query("SELECT predictive_record_source_consumer($1,NULL,$2)", [id, body]);
       await client.query("COMMIT");
     } catch (error) {
@@ -50,7 +61,8 @@ const recordCapacityBody = async (client: Client, artifacts: PrivateArtifactStor
     }
   } finally { await client.query("SELECT pg_advisory_unlock(520054,$1)", [key]); }
 };
-export const seedCapacity = async (store: Store, client: Client, artifacts: PrivateArtifactStore, size: number) => {
+export const seedCapacity = async (store: Store, client: Client, artifacts: PrivateArtifactStore, size: number,
+  { guardedRecording = false }: { guardedRecording?: boolean } = {}) => {
   const context: Dataset = { formatVersion: 2, profiles: [profile(NATIVE)], rightsDecisions: [rights(NATIVE)],
     artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
   const examples: Example[] = [];
@@ -127,7 +139,14 @@ export const seedCapacity = async (store: Store, client: Client, artifacts: Priv
     const entityKey = "player-game-stats:" + example.prior.gameId + ":" + example.playerId;
     const record = async (kind: "reconciliation" | "participation") => {
       const plan = sourceDecisionPlan(snapshot, { kind, profileIds: profiles, entityKey, cutoff: snapshot.request.cutoff }, [], "synthetic-proof");
-      return (await client.query("SELECT predictive_record_source_decision($1,NULL,$2) AS record", ["capacity-" + kind + "-" + example.playerId, plan])).rows[0].record as SourceDecisionRecord;
+      if (guardedRecording) await client.query("BEGIN");
+      try {
+        if (guardedRecording) await client.query("SELECT predictive_training_read_guard()");
+        const result = (await client.query("SELECT predictive_record_source_decision($1,NULL,$2) AS record",
+          ["capacity-" + kind + "-" + example.playerId, plan])).rows[0].record as SourceDecisionRecord;
+        if (guardedRecording) await client.query("COMMIT");
+        return result;
+      } catch (error) { if (guardedRecording) await client.query("ROLLBACK"); throw error; }
     };
     decisions.set(entityKey, { rec: await record("reconciliation"), part: await record("participation") });
   }
@@ -140,14 +159,14 @@ export const seedCapacity = async (store: Store, client: Client, artifacts: Priv
       snapshot.heads.filter((head) => head.entityKey === key), [], null),
     reconciliation: decisions.get(key)!.rec, participation: decisions.get(key)!.part, reconciliationReason: null, participationReason: null }]));
   process.stdout.write("capacity decisions " + size * 2 + "\n");
-  for (const example of examples) {
+  for (const [index, example] of examples.entries()) {
     // Replay records cited decisions; each independent consumer starts fresh.
     const native = createReplay(context, cutoff, cutoff, "model-input");
     const body = buildSourcePassingYards(native, { playerId: example.playerId, gameId: example.target.gameId,
       cutoff, computedAt: cutoff, candidate: "stats-v1:player_pass_yds" }, profiles, facts);
     expect(body.bundle.status).toBe("ready-inputs");
     expect(body.bundle.player[0]).toMatchObject({ passingYardsSum: example.passingYards, attemptsSum: example.attempts });
-    await recordCapacityBody(client, artifacts, example.featureId, body);
+    await recordCapacityBody(client, artifacts, example.featureId, body, guardedRecording);
     const fact = facts.get("player-game-stats:" + example.prior.gameId + ":" + example.playerId)!;
     const witness = sourceFactWitness(fact.snapshot, ["player-game-stats:" + example.prior.gameId + ":" + example.playerId]);
     expect([fact.reconciliation, fact.participation].map((record) => ({ kind: record!.plan.kind, entityKey: record!.plan.entityKey,
@@ -159,7 +178,10 @@ export const seedCapacity = async (store: Store, client: Client, artifacts: Priv
     label.manifest.observations = native.completion(example.prior.gameId).inputs.map((row) => row.revision.id).sort();
     label.inputDigest = sourceConsumerInputDigest(label);
     expect(label.value).toBe(example.passingYards);
-    await recordCapacityBody(client, artifacts, example.labelId, label);
+    await recordCapacityBody(client, artifacts, example.labelId, label, guardedRecording);
+    if ((index + 1) % 16 === 0 || index + 1 === size) {
+      process.stdout.write("capacity consumers " + (index + 1) * 2 + "\n");
+    }
   }
   return { examples, profiles, cutoff };
 };

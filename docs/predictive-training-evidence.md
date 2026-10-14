@@ -1,5 +1,48 @@
 # #118 guarded evidence checkpoint
 
+## Prefix20 broader capacity and review preparation
+
+The [retained 64-QB matrix](evidence/predictive-training-capacity64-prefix20-2026-10-14.json)
+tests widths 1/16/64 in an eight-profile, four-CSV/four-gzip inventory through
+fresh restricted logins. Migrations 0001–0020, production code and deadlines
+remain unchanged. Setup alone uses the existing complete guard and commits
+synthetic blob metadata before the SQL consumer recorder. All decision/consumer
+validation and independent source-byte/numerical assertions remain; the default
+prefix19 safety-test seed path stays unguarded. Setup is disposable and is not
+a product publication path or an atomic-publication claim.
+
+The matrix finishes in 622.4 s, including 422.2 s of setup. It records four
+completed preparations and seven bounded refusals. One-/16-member dataset
+preparation takes 10.88/23.41 s. All measured pages and final-label calls exceed
+their 10-second deadline; 64-row run preparation hits its 10-second SQL limit.
+No 64-member dataset/page is attempted after that refusal. The test passes by
+retaining these expected failures, not by demonstrating wider read capacity.
+Natural metadata selection remains about 0.2–3.1 ms; guarded width16 label
+validation takes 14.808 s / 971,516 hits. The one-member preparation also issues
+3,645 client statements for 140 KB of unique wire bytes. Both SQL reconstruction
+and application metadata/access work need investigation. See the
+[capacity report](predictive-training-capacity.md) for exact scope and limits.
+
+An [earlier setup diagnostic](evidence/predictive-training-capacity64-setup-2026-10-14.json)
+records an intentionally stopped attempt with no reader calls. The service stop
+caused its connection errors; those are not spontaneous database defects or
+reader-capacity results. The revised setup reaches all 128 decisions/128 consumers
+without bypassing recorders. Logs are
+`/private/tmp/dfs118-prefix20-capacity64{,-guarded-setup}.log`.
+
+Affected fixture typecheck and ESLint pass; document links, retained JSON/plan
+consistency, whitespace and all 40 frozen SQL/catalog hashes are checked. The
+matrix validates the ordered catalog while installing its scratch database.
+No full correctness gate is repeated for fixture/documentation changes. The
+earlier final aggregate CI requirement remains pending. A pg concurrent-query
+deprecation warning is retained; compatibility with a future pg@9 release is
+not established by this run.
+
+The [independent review map](predictive-training-review.md) identifies complete
+scope, review bases, policy boundaries and remaining approvals. It is not an
+independent review. No later migration is allocated. #118 remains incomplete;
+#54 Part B remains blocked by reader capacity and #106/#107 qualification.
+
 ## 0020 guarded SQL validation and 16-row capacity
 
 The owner reserved 0020 for #118. This increment follows `c744ffa` and preserves
