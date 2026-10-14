@@ -464,10 +464,11 @@ claim. See the evidence checkpoint for measurements and remaining limits.
    increment is stable.
 
 Released migrations are **0001–0011**; the combined branch now includes fixed
-**0012–0014**: training guard, #106 gzip staging, and #118 run inventory.
+**0012–0015**: training guard, #106 gzip staging, #118 run inventory and #106
+compressed inspection envelopes/guarded diagnostic binary verification.
 #106's complete pushed 0001–0013 checkpoint at `47b1c89` was merged in `da24ab9`;
-0001–0013 are unchanged by 0014. **0015 is next available to #106 after
-coordination here.** Coordinate landing order with
+0001–0014 are unchanged by #106's integrated `4f1ad06` checkpoint. **0016 is
+reserved for #118 dataset/pin DDL; #106 will coordinate 0017 or later.** Coordinate landing order with
 #106/#115 before merging further DDL. A
 second merger integrates main without rebasing and may renumber only private,
 unapplied-outside-disposable-test migrations, with explicit confirmation and
@@ -520,3 +521,17 @@ The combined inventory checkpoint passes 736 Node tests, 75 Node DB checks,
 158 PostgreSQL tests, typecheck and affected-file lint. Generated artifacts,
 frozen 0001–0013 SQL/catalog contracts, whitespace and local documentation
 links pass; the final full database gate includes the total-profile ceiling.
+
+Assigned-shard verification now implements `verifyDatasetShard` using the SQL
+inventory's exact IDs and missing states. Under the read guard it checks actual
+kickoff/consumer bytes, fresh protected uses and unpinned 90-day eligibility,
+preserving historical supersession and global ordinals. Retries reverify files.
+The metadata proof is ephemeral: `verified-only`, `fittingReady: false`, population
+unqualified. It returns no numerical bodies and creates no dataset or pin. Future
+sealing must verify in its own recording transaction; caller-supplied proof hashes
+are not authorization. The next DDL increment remains 0016 for durable manifests,
+pins and their retention closure, without changing frozen 0001–0015.
+The combined shard checkpoint passes 746 Node tests, 75 DB checks and 172
+PostgreSQL tests, typecheck, affected-file lint and generated-artifact/frozen-prefix
+checks. See the evidence checkpoint for adversarial cases and the expiry-selection
+constraint that 0016 must address; an FK-only pin cannot protect retention.

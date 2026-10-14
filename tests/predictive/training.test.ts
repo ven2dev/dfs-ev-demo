@@ -6,6 +6,7 @@ import { fittingRunRequestDigest, normalizeFittingRunRequest, normalizeTrainingS
 import { canonical, digest } from "../../src/lib/predictive/validation.ts";
 import { checkTrainingMetadataSelection } from "../../src/lib/predictive/trainingSql.ts";
 import { trainingRunPreview } from "../../src/lib/predictive/trainingPreview.ts";
+import { assertTrainingShardUnexpired, normalizeTrainingShardRequest } from "../../src/lib/predictive/trainingShards.ts";
 import { CUTOFF_A, gameId, passingYardsFixture, PLAYER, PROFILE, request, TARGET } from "./fixtures/passingYards.ts";
 
 const SNAPSHOT = "2026-10-20T00:00:00.000Z";
@@ -49,6 +50,32 @@ const label = (id = "label-A", recordedAt = "2026-10-15T00:00:00.000Z", value = 
     stat: "passing_yards", value, completionDecisionId: "completion-target", eligibleFinalAt: "2026-10-14T20:00:00.000Z",
     postWindowCaptureId: "post-window-capture", playerBridgeObservationId: "player-bridge",
     manifest: { version: "source-consumer-v1", use: "outcome-label", cutoff: recordedAt, profileIds: [PROFILE], sources: [], observations: [], decisions: [] }, inputDigest: "" }, recordedAt, predecessorId);
+
+describe("fixed shard request and expiry boundary", () => {
+  it("requires the exact owning inventory and shard with no caller-supplied replacements", () => {
+    const request = { version: "qb-training-read-v1" as const, fittingRunId: "run-1", inventorySha256: "a".repeat(64), datasetId: "shard-1" };
+    const saved = normalizeTrainingShardRequest(request);
+    request.datasetId = "changed";
+    expect(saved.datasetId).toBe("shard-1");
+    expect(() => normalizeTrainingShardRequest({ ...saved, rows: [] } as never)).toThrow("schema-fields-refused");
+    expect(() => normalizeTrainingShardRequest({ ...saved, inventorySha256: "not-a-digest" })).toThrow("training-digest-refused");
+  });
+  it.each([true, false])("refuses a previously eligible feature exactly at day 90 (usable=%s)", (usable) => {
+    const row = selectTrainingRows(runRequest(), SNAPSHOT, [feature("feature-A", "2026-10-09T00:00:00.000Z", usable)])[0];
+    // The gate only consumes feature metadata; no SQL or artifact permission is
+    // inferred here. Dates are hand-computed across Oct/Nov/Dec into January.
+    const rows = [{ feature: row.feature }];
+    expect(() => assertTrainingShardUnexpired(rows, "2027-01-06T23:59:59.999Z")).not.toThrow();
+    expect(() => assertTrainingShardUnexpired(rows, "2027-01-07T00:00:00.000Z")).toThrow("training-shard-feature-expired");
+  });
+  it("keeps already-expired and missing slots explicit rather than resurrecting or dropping them", () => {
+    const request = runRequest([slot(), slot({ playerId: "00-0000002" })]);
+    const rows = selectTrainingRows(request, "2027-01-07T00:00:00.000Z", [feature()]);
+    expect(rows.map((row) => row.feature.state)).toEqual(["expired", "missing"]);
+    expect(() => assertTrainingShardUnexpired(rows, "2027-02-01T00:00:00.000Z")).not.toThrow();
+    expect(rows[0].feature.record).toBeNull();
+  });
+});
 
 describe("training request history and event separation", () => {
   it("names the existing target-relative three-season coverage and 4/8/16 slot contract", () => {

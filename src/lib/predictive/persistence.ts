@@ -8,6 +8,7 @@ import { trainingRunPreview, type TrainingKickoffProof } from "./trainingPreview
 import type { TrainingRunInventory } from "./trainingRuns.ts";
 import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
 import { runCompressedWorker } from "./compressedWorker.ts";
+import { assertTrainingShardUnexpired, normalizeTrainingShardRequest, trainingShardMembership, trainingShardProof, type TrainingShardRequest } from "./trainingShards.ts";
 import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
   type SourceClaimRow, type SourceStatsPublication, type SourceStatsRequest, type SourceStatsReplay, type SourceStatsCapture } from "./sourceClaims.ts";
 import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
@@ -931,7 +932,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
 
   // All current use rights and association checks precede the first byte read,
   // including kickoff context not present in a selected consumer's profile set.
-  const authorizeConsumerBatch = async (ids: string[], extraUses: { profile: string; use: "model-input" }[] = []) => {
+  const authorizeConsumerBatch = async (ids: string[], extraUses: { profile: string; use: "model-input" | "outcome-label" }[] = []) => {
     const check = () => client.query(`SELECT id,public.predictive_source_consumer_check(id) AS result
       FROM unnest($1::text[]) id ORDER BY id COLLATE "C"`, [ids]);
     const checked = (await check()).rows as { id: string; result: SourceConsumerRecord | null }[];
@@ -987,42 +988,34 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }, false, true);
   };
 
-  // A bounded rehearsal of complete run selection. It writes no run, manifest
-  // or pin, and its result cannot be supplied as trusted durable membership.
-  // The eventual recorder must independently enforce the request in SQL and
-  // persist selections from its own guarded snapshot, not trust this preview.
-  const previewFittingRun = (input: FittingRunRequest) => {
-    const supplied = structuredClone(input);
-    return transaction(async () => {
-      const snapshotAt = batchClock!, request = normalizeFittingRunRequest(supplied, snapshotAt);
-      const metadata = checkTrainingMetadataSelection((await client.query<TrainingMetadataSelection>(TRAINING_SELECTION_SQL,
-        [...trainingSelectionParameters(request, snapshotAt)])).rows, request.slots.length);
-      const groups = new Map<string, { ordinals: number[]; rows: Raw[]; decisions: Decision[] }>();
-      request.slots.forEach((slot, ordinal) => {
-        const group = groups.get(slot.featureCutoff) ?? { ordinals: [], rows: [], decisions: [] };
-        group.ordinals.push(ordinal); groups.set(slot.featureCutoff, group);
-      });
-      // Expand every visible source chain before resolving the requested head,
-      // including corrections routed to a different game and raw-ID collisions.
-      for (const [cutoff, group] of groups) {
-        const gameIds = [...new Set(group.ordinals.map((i) => request.slots[i].gameId))];
-        const raw = (await readQuery(normalizationScheduleReadSql, [cutoff, gameIds])).rows.map((row) => row.envelope as Raw);
-        const aliases = [...new Set(raw.flatMap((row) => row.revision.kind === "schedule" ? [row.revision.data.rawGameId] : []))];
-        group.rows = aliases.length ? (await readQuery(aliasReadSql, [cutoff, aliases])).rows.map((row) => row.envelope as Raw) : raw;
-        const keys = [...new Set([...gameIds.map((id) => "reconciliation:schedule:" + id), ...group.rows.flatMap((row) =>
-          row.revision.kind === "schedule" ? ["reconciliation:schedule:" + row.revision.data.gameId] : [])])];
-        group.decisions = (await readQuery(DECISION_SQL, [cutoff, keys])).rows.map((row) => row.decision as Decision);
-      }
-      const kickoffProfiles = [...new Set([...groups.values()].flatMap((group) => group.rows.map((row) => row.artifact.profileId)))];
-      const rights = (await readQuery(RIGHTS_SQL, [kickoffProfiles])).rows.map((row) => row.decision as RightsDecision);
-      // Check historical permission too, before any kickoff/consumer file opens.
-      for (const [cutoff, group] of groups) for (const profile of new Set(group.rows.map((row) => row.artifact.profileId))) {
-        const right = rightsInForce(rights, profile, instant(cutoff), instant(cutoff));
-        if (!allows(right, "internal-research") || !allows(right, "model-input")) refuse("training-kickoff-rights-refused");
-      }
-      const ids = [...new Set(metadata.flatMap((row) => [row.featureId, row.labelId].filter((id): id is string => id !== null)))];
-      const records = await authorizeConsumerBatch(ids, kickoffProfiles.map((profile) => ({ profile, use: "model-input" })));
-      if ([...records.values()].some((record) => record === null)) refuse("training-selection-inventory-mismatch");
+  // Discover kickoff metadata before authorization. Hydration is deferred until
+  // every selected consumer and context profile passes current rights; both
+  // preview and fixed-shard verification use this same schedule policy.
+  const trainingKickoffContext = async (request: FittingRunRequest) => {
+    const groups = new Map<string, { ordinals: number[]; rows: Raw[]; decisions: Decision[] }>();
+    request.slots.forEach((slot, ordinal) => {
+      const group = groups.get(slot.featureCutoff) ?? { ordinals: [], rows: [], decisions: [] };
+      group.ordinals.push(ordinal); groups.set(slot.featureCutoff, group);
+    });
+    // Expand every visible source chain before resolving the requested head,
+    // including corrections routed to a different game and raw-ID collisions.
+    for (const [cutoff, group] of groups) {
+      const gameIds = [...new Set(group.ordinals.map((i) => request.slots[i].gameId))];
+      const raw = (await readQuery(normalizationScheduleReadSql, [cutoff, gameIds])).rows.map((row) => row.envelope as Raw);
+      const aliases = [...new Set(raw.flatMap((row) => row.revision.kind === "schedule" ? [row.revision.data.rawGameId] : []))];
+      group.rows = aliases.length ? (await readQuery(aliasReadSql, [cutoff, aliases])).rows.map((row) => row.envelope as Raw) : raw;
+      const keys = [...new Set([...gameIds.map((id) => "reconciliation:schedule:" + id), ...group.rows.flatMap((row) =>
+        row.revision.kind === "schedule" ? ["reconciliation:schedule:" + row.revision.data.gameId] : [])])];
+      group.decisions = (await readQuery(DECISION_SQL, [cutoff, keys])).rows.map((row) => row.decision as Decision);
+    }
+    const kickoffProfiles = [...new Set([...groups.values()].flatMap((group) => group.rows.map((row) => row.artifact.profileId)))];
+    const rights = (await readQuery(RIGHTS_SQL, [kickoffProfiles])).rows.map((row) => row.decision as RightsDecision);
+    // Check historical permission too, before any kickoff/consumer file opens.
+    for (const [cutoff, group] of groups) for (const profile of new Set(group.rows.map((row) => row.artifact.profileId))) {
+      const right = rightsInForce(rights, profile, instant(cutoff), instant(cutoff));
+      if (!allows(right, "internal-research") || !allows(right, "model-input")) refuse("training-kickoff-rights-refused");
+    }
+    const verify = async () => {
       const kickoffs: TrainingKickoffProof[] = new Array(request.slots.length);
       for (const [, group] of groups) {
         const observations = await hydrate(group.rows);
@@ -1044,6 +1037,26 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
               .map((decision) => ({ id: decision.id, sha256: digest(canonical(decision)) })) };
         }
       }
+      return kickoffs;
+    };
+    return { kickoffProfiles, verify };
+  };
+
+  // A bounded rehearsal of complete run selection. It writes no run, manifest
+  // or pin, and its result cannot be supplied as trusted durable membership.
+  // The eventual recorder must independently enforce the request in SQL and
+  // persist selections from its own guarded snapshot, not trust this preview.
+  const previewFittingRun = (input: FittingRunRequest) => {
+    const supplied = structuredClone(input);
+    return transaction(async () => {
+      const snapshotAt = batchClock!, request = normalizeFittingRunRequest(supplied, snapshotAt);
+      const metadata = checkTrainingMetadataSelection((await client.query<TrainingMetadataSelection>(TRAINING_SELECTION_SQL,
+        [...trainingSelectionParameters(request, snapshotAt)])).rows, request.slots.length);
+      const context = await trainingKickoffContext(request);
+      const ids = [...new Set(metadata.flatMap((row) => [row.featureId, row.labelId].filter((id): id is string => id !== null)))];
+      const records = await authorizeConsumerBatch(ids, context.kickoffProfiles.map((profile) => ({ profile, use: "model-input" })));
+      if ([...records.values()].some((record) => record === null)) refuse("training-selection-inventory-mismatch");
+      const kickoffs = await context.verify();
       await verifyConsumerBatch(records);
       const selected = selectTrainingRows(request, snapshotAt, [...records.values()].filter((record): record is SourceConsumerRecord => record !== null), new Set(), metadata);
       const result = trainingRunPreview(request, snapshotAt, selected, metadata, kickoffs);
@@ -1064,6 +1077,35 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const readFittingRun = (id: string) => transaction(async () =>
     (await client.query("SELECT public.predictive_training_run_read($1) AS result", [id])).rows[0].result as TrainingRunInventory | null,
   false, true);
+
+  // Verify only an already-assigned shard. No latest-match SQL is run and no
+  // durable dataset/pin is implied by this ephemeral metadata proof. Sealing
+  // will reuse this guarded path in the same transaction as its SQL recorder.
+  const verifyDatasetShard = (input: TrainingShardRequest) => {
+    const supplied = normalizeTrainingShardRequest(input);
+    return transaction(async () => {
+      const inventory = (await client.query("SELECT public.predictive_training_run_read($1) AS result", [supplied.fittingRunId]))
+        .rows[0].result as TrainingRunInventory | null;
+      if (!inventory) refuse("training-run-not-found");
+      const rows = trainingShardMembership(inventory, supplied);
+      const currentClock = async () => (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+      assertTrainingShardUnexpired(rows, await currentClock());
+      const context = await trainingKickoffContext({ ...inventory.request, slots: rows.map((row) => row.slot) });
+      const ids = [...new Set(rows.flatMap((row) => [row.selection.featureId, row.selection.labelId].filter((id): id is string => id !== null)))];
+      const records = await authorizeConsumerBatch(ids, [...inventory.protectedUses,
+        ...context.kickoffProfiles.map((profile) => ({ profile, use: "model-input" as const }))]);
+      if ([...records.values()].some((record) => record === null)) refuse("training-shard-evidence-mismatch");
+      // Scheduled expiry must also stop a later file read, not just delivery.
+      const rightsAccess = batchAccess!;
+      batchAccess = async () => { await rightsAccess(); assertTrainingShardUnexpired(rows, await currentClock()); };
+      const kickoffs = await context.verify();
+      await verifyConsumerBatch(records);
+      const proof = trainingShardProof(inventory, supplied, await currentClock(),
+        [...records.values()].filter((record): record is SourceConsumerRecord => record !== null), kickoffs);
+      await batchAccess!();
+      return { ...proof, verification: { ...batch!.metrics(), verifiedBytes } };
+    }, false, true);
+  };
 
   const publish = async (id: string, dataset: Dataset, now: string): Promise<RunResult> => {
     if (typeof id !== "string" || !id.trim() || id.length > 256) refuse("invalid-run-id"); instant(now);
@@ -1351,6 +1393,6 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return results;
   };
   return { publish, publishSourceStats, replaySourceStats, replayCompressedInspections, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
-    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun,
+    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun, verifyDatasetShard,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

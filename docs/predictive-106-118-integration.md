@@ -1,16 +1,16 @@
 # #106 / #118 integration prefix — 2026-10-13
 
-#118 merged #106's pushed `47b1c89` checkpoint in `da24ab9` on
-`feature/dfsEV-118-training-reads-retention`. The combined prefix is now
-**0001–0014**, including #118's immutable run-inventory increment described below.
-#106's 0013 supplies gzip staging and receipt/cleanup protections; qualified
-compressed publication and guarded binary reconstruction remain unfinished.
+#118 integrated #106's pushed `4f1ad06` checkpoint on
+`feature/dfsEV-118-training-reads-retention`. The combined fixed prefix is now
+**0001–0015**, including #118's immutable run inventory and #106's guarded codec
+inspection. Qualified compressed publication and full compressed consumer
+reconstruction remain unfinished.
 Neither session has published a usable real feature or label.
 
 ## Fixed integration prefix
 
-Use the ordered **0001–0014** prefix in [migration-manifest.json](../db/migration-manifest.json).
-Released 0001–0011 and the integrated 0012–0013 remain byte-for-byte unchanged.
+Use the ordered **0001–0015** prefix in [migration-manifest.json](../db/migration-manifest.json).
+Released 0001–0011 and the integrated 0012–0015 remain byte-for-byte unchanged.
 For branch integration, keep #118's 0012 fixed:
 
 ```text
@@ -24,9 +24,10 @@ procedure replacement. It has run only in disposable local databases; it is
 not merged to main or activated in a persistent/hosted database. Future changes
 to this shared prefix use forward migrations.
 
-**0014 belongs to #118 run inventory.** The next number is **0015**, available to
-#106 after coordination here; neither session should reserve a further range
-silently. Integrate by merge after preserving local work; do not rebase or
+**0016 is reserved for #118 dataset/pin DDL**, as authorized by the owner after
+#106 confirmed its complete prefix through 0015. #106 will use **0017 or later**
+for publication changes after coordination here; neither session should reserve
+a further range silently. Integrate by merge after preserving local work; do not rebase or
 cherry-pick duplicate copies of the prefix. Keep #106's binary artifact
 implementation when resolving shared files. Regenerate migration/catalog/
 readiness artifacts for the combined prefix and validate the final integrated
@@ -38,11 +39,12 @@ databases.
 | Surface | #118 change / #106 integration requirement |
 | --- | --- |
 | `artifacts.ts` | #106's binary addition is integrated: `readBinary`/`writeBinary` preserve exact gzip wire bytes. `read(reference, sha256, byteSize)` remains a UTF-8 JSON/CSV reader. Never route compressed bytes through it. |
-| `persistence.ts: readBytes` | New private wrapper caches by exact reference/hash/size within the guarded transaction, charges unique stored bytes and checks fresh access before opening a file. Add the binary wire-reader path here, preserving the gate; it is not an exported helper. |
+| `persistence.ts: readBytes` / `readWireBytes` | Separate private text and binary wrappers cache by exact reference/hash/size within the guarded transaction, charge unique stored bytes and check fresh access before opening a file. Keep compressed bytes out of the text reader. |
 | CSV verification | Shared exact-file reads and parsing, then exact stored-row/projection comparison and full normalization/witness/decision/calculation reproduction. Wire hash/size must verify before decompression; decoded content cannot replace the wire identity. |
 | `batchEvidence.ts` | New transaction-local metadata-query and verification-promise reuse. Keep binary payloads outside the JSON metadata dispatcher. Decoder cache keys must distinguish wire reference, encoding, feed and parser version as applicable. |
 | `replaySourceConsumers(ids)` | New local evidence primitive: at most 64 references; returns snapshot time, ordered verified records/nulls and verification metrics. It does not seal training datasets or pins. Gzip must work through its full reconstruction path. |
 | Run preparation | `prepareFittingRun(request)` fixes the entire inventory and SQL-selected IDs; `readFittingRun(id)` reads its metadata with fresh rights. Neither opens files, seals a verified dataset or creates pins. |
+| Assigned shard verification | `verifyDatasetShard({ version, fittingRunId, inventorySha256, datasetId })` checks only the inventory's assigned membership, kickoff evidence and selected consumers under guard. Its metadata proof is ephemeral; it creates no manifest/pin and is not a SQL recording certificate. |
 | Retention APIs | `retain` and `retentionEvents` may return optional `trainingRetention: { removedCounts, removedIdsDigest }`; `reapply` compares it too. Legacy counts/digest remain separate. `resumeBlobRemovals` and `sweepOrphanBlobs` signatures are unchanged. Preserve execute-only APIs, exact addresses including `.csv.gz`, digest locks, queued acknowledgement, rollback cleanup and aged-temp recovery. |
 
 ## Rights, locks and budgets
@@ -246,7 +248,9 @@ writer, full consumer reconstruction, dataset sealing or fitting readiness. The
 proposed process RSS ceiling remains unenforced; this inspection API is confined
 to the local research proof. Production/consumer activation still needs that
 ceiling, qualified source/profile/claim checks and compressed restoration tests.
-No migration after 0015 is allocated here; coordinate the next number in this chat.
+At this historical checkpoint no later migration was allocated. The owner's
+subsequent allocation reserves 0016 for #118 and 0017 or later for #106, subject
+to coordination before further DDL.
 
 Combined checks pass: 742 Node tests, 75 Node DB checks and all 166 PostgreSQL
 tests (141 mandatory predictive cases), typecheck, lint and generated catalog/
@@ -298,3 +302,32 @@ Validation passes: 746 Node tests, nine Docker worker checks, 75 Node database
 checks and 166 PostgreSQL tests, including all 141 mandatory predictive cases.
 Typecheck, affected-file lint, catalog/migration/readiness and whitespace checks
 pass. The disposable database service was removed after the gate.
+## #118 assigned-shard verification continuation
+
+#118 fast-forwarded to #106's `4f1ad06`, preserving frozen 0001–0015 and both
+stores' APIs. `verifyDatasetShard` reads the saved inventory, validates its hash
+and exact shard assignment, and verifies only its fixed feature/label IDs.
+There is no latest-match reselection. Missing/unavailable/expired slots, original
+global ordinals, history/version identity and supersession at the inventory clock
+remain unchanged. Kickoff verification shares the preview's cutoff-visible
+schedule/alias/reconciliation implementation.
+
+All inventory protected uses and selected context/consumer profiles pass current
+rights before files open, before each unique file and at delivery. A selected
+feature that newly crosses its unpinned 90-day boundary refuses. Concurrent direct
+SQL rights changes and mandatory retention wait for the guard. Scheduled rights
+expiry can still refuse a paused read. Retries verify actual files again.
+
+The result is metadata only: `verified-only`, `fittingReady: false`, population
+unqualified, stable selection identity and a clock-bound proof hash. No durable
+manifest or pin is created; no numeric feature/outcome body is returned. Future
+sealing must invoke verification within its recording transaction and must never
+trust a caller-supplied proof. The shared wire/inspection APIs and exact-address
+cleanup interfaces are unchanged. This continuation allocates no migration.
+
+Validation passes 746 Node tests, 75 Node DB checks and 172 PostgreSQL tests
+(147 mandatory predictive cases), typecheck, affected-file lint, migration/
+readiness checks and all 16 catalog contracts in the complete DB gate. Frozen
+0001–0015 SQL/catalog and generated manifests match `4f1ad06`. No persistent or
+hosted database was migrated. Dataset/pin DDL remains unimplemented and reserved
+at 0016; this is not #118 completion or fitting authorization.
