@@ -11,6 +11,7 @@ import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
 import { ensureHarnessSession, ensurePredictiveRoles } from "../../scripts/predictive/harness.ts";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { createLocalPredictiveStore, retentionIdsDigest } from "../../src/lib/predictive/persistence.ts";
+import { inspectCompressedSource } from "../../src/lib/predictive/compressedSource.ts";
 import type { Dataset, RecordedRetentionEvent } from "../../src/lib/predictive/types.ts";
 import { canonical, digest, entityKey } from "../../src/lib/predictive/validation.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
@@ -71,8 +72,9 @@ const withLogin = async (client: Client, target: Target, roles: string[], work: 
 };
 
 // Test-only staging: no runtime compressed publisher exists at prefix 0013.
-const stageGzip = async (client: Client, artifacts: Artifacts, seed: ReturnType<typeof sourceClaimFixture>, id: string, profileId = seed.profile.id) => {
-  const bytes = gzipSync(Buffer.from(seed.artifact.bytes));
+const stageGzip = async (client: Client, artifacts: Artifacts, seed: ReturnType<typeof sourceClaimFixture>, id: string, profileId = seed.profile.id,
+  verifiedRows = 0, wireOverride?: Buffer) => {
+  const bytes = wireOverride ?? gzipSync(Buffer.from(seed.artifact.bytes));
   const sha = createHash("sha256").update(bytes).digest("hex");
   const ref = await artifacts.database.writeBinary(bytes, sha);
   await client.query("INSERT INTO predictive_blobs VALUES ($1,$2,'application/gzip',$3) ON CONFLICT DO NOTHING", [sha, bytes.length, ref]);
@@ -81,10 +83,176 @@ const stageGzip = async (client: Client, artifacts: Artifacts, seed: ReturnType<
     FROM predictive_artifacts a WHERE id=$4`, [id + ":artifact", profileId, sha, seed.artifact.id]);
   await client.query(`INSERT INTO predictive_captures SELECT (jsonb_populate_record(NULL::predictive_captures,
     to_jsonb(c)||jsonb_build_object('id',$1::text,'artifact_id',$2::text,'ingested_at',c.captured_at,
-      'state','incomplete','body_complete',false,'header_verified',false,'parser_succeeded',false,'parsed_rows',0))).*
-    FROM predictive_captures c WHERE id=$3`, [id + ":capture", id + ":artifact", seed.captureId]);
+      'state','incomplete','body_complete',$4::integer>0,'header_verified',$4::integer>0,'parser_succeeded',$4::integer>0,'parsed_rows',$4::integer))).*
+    FROM predictive_captures c WHERE id=$3`, [id + ":capture", id + ":artifact", seed.captureId, verifiedRows]);
   return { bytes, sha, ref };
 };
+
+const recordGzipProof = async (client: Client, captureId: string, proof: Awaited<ReturnType<typeof inspectCompressedSource>>) => {
+  const key = Buffer.from(proof.wireSha256, "hex").readInt32BE(0);
+  await client.query("SELECT pg_advisory_lock(520054,$1)", [key]);
+  try { return (await client.query("SELECT predictive_record_compressed_inspection($1,$2) AS proof", [captureId, proof])).rows[0].proof; }
+  finally { await client.query("SELECT pg_advisory_unlock(520054,$1)", [key]); }
+};
+const inspectedGzip = async (client: Client, artifacts: Artifacts, seed: ReturnType<typeof sourceClaimFixture>, id: string) => {
+  const bytes = gzipSync(Buffer.from(seed.artifact.bytes));
+  const proof = await inspectCompressedSource(bytes, { feed: "player", season: 2026, wireSha256: createHash("sha256").update(bytes).digest("hex"), wireBytes: bytes.length });
+  const blob = await stageGzip(client, artifacts, seed, id, seed.profile.id, proof.rows);
+  await recordGzipProof(client, id + ":capture", proof);
+  return { ...blob, proof };
+};
+
+it("guarded gzip inspections reproduce exact envelopes with transaction-local wire and decoded accounting", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = sourceClaimFixture(); await store.publishSourceStats(seed);
+    const first = await inspectedGzip(client, artifacts, seed, "inspection-A");
+    await inspectedGzip(client, artifacts, seed, "inspection-B");
+    const before = (await client.query("SELECT * FROM predictive_compressed_inspections ORDER BY capture_id")).rows;
+    await withLogin(client, target, ["predictive_ingest","predictive_harness"], async writer => {
+      expect(await recordGzipProof(writer, "inspection-A:capture", first.proof)).toEqual(first.proof);
+      await expect(recordGzipProof(writer, "inspection-A:capture", { ...first.proof, publicationSupported: true }))
+        .rejects.toThrow("compressed-inspection-envelope-refused");
+      await expect(recordGzipProof(writer, "inspection-A:capture", { ...first.proof, season: 2025 }))
+        .rejects.toThrow("compressed-inspection-capture-mismatch");
+      await expect(writer.query("INSERT INTO predictive_compressed_inspections VALUES('forged',$1,clock_timestamp())", [first.proof]))
+        .rejects.toMatchObject({code:"42501"});
+    });
+    expect((await client.query("SELECT * FROM predictive_compressed_inspections ORDER BY capture_id")).rows).toEqual(before);
+    let reads = 0;
+    const tracked = { ...artifacts, database: { ...artifacts.database, readBinary: async (ref: string, sha: string, size: number) => {
+      reads++; return artifacts.database.readBinary(ref, sha, size);
+    } } };
+    await withLogin(client, target, ["predictive_replay"], async (reader, readerTarget) => {
+      await expect(reader.query("SELECT * FROM predictive_compressed_inspections")).rejects.toMatchObject({ code: "42501" });
+      await expect(reader.query("SELECT predictive_read_compressed_inspections($1)", [["inspection-A:capture"]])).rejects.toThrow("compressed-inspection-guard-required");
+      const replay = await createLocalPredictiveStore(reader, readerTarget, tracked);
+      const result = await replay.replayCompressedInspections(["inspection-B:capture", "inspection-A:capture"]);
+      expect(result.inspections.map(entry => entry.captureId)).toEqual(["inspection-B:capture", "inspection-A:capture"]);
+      expect(result.inspections[0].proof).toEqual(first.proof);
+      expect(result.verification).toEqual({ verifiedWireBytes: first.bytes.length, decodedBytes: Buffer.byteLength(seed.artifact.bytes), decodedRows: 1 });
+      expect(result.publicationSupported).toBe(false); expect(reads).toBe(1);
+      await replay.replayCompressedInspections(["inspection-A:capture"]); expect(reads).toBe(2);
+    });
+  });
+});
+
+it("guarded gzip inspections refuse revoked rights before any private wire bytes open", async () => {
+  await withProof(async ({ client, store, artifacts, target, root }) => {
+    const seed = sourceClaimFixture(); await store.publishSourceStats(seed);
+    const gzip = await inspectedGzip(client, artifacts, seed, "denied");
+    await writeFile(join(root, ".db-blobs", gzip.ref), Buffer.alloc(gzip.bytes.length));
+    const t = new Date().toISOString();
+    await client.query("INSERT INTO predictive_rights_decisions VALUES('gzip-revoked',$1,$2,'{}',$3,NULL,$3,'synthetic','fixture revocation')",
+      [seed.profile.id, seed.rightsDecisions[0].id, t]);
+    let reads = 0;
+    const tracked = { ...artifacts, database: { ...artifacts.database, readBinary: async () => { reads++; throw new Error("wire opened"); } } };
+    await withLogin(client, target, ["predictive_replay"], async (reader, readerTarget) => {
+      const replay = await createLocalPredictiveStore(reader, readerTarget, tracked);
+      await expect(replay.replayCompressedInspections(["denied:capture"])).rejects.toThrow("compressed-inspection-rights-refused");
+    });
+    expect(reads).toBe(0);
+  });
+});
+
+it("guarded gzip inspections refuse forged decoded identities and CRC errors after valid wire hashing", async () => {
+  await withProof(async ({ client, store, artifacts }) => {
+    const seed = sourceClaimFixture(); await store.publishSourceStats(seed);
+    const valid = await inspectedGzip(client, artifacts, seed, "valid");
+    await stageGzip(client, artifacts, seed, "forged", seed.profile.id, 1);
+    await recordGzipProof(client, "forged:capture", { ...valid.proof, decodedSha256: "0".repeat(64) });
+    await expect(store.replayCompressedInspections(["forged:capture"])).rejects.toThrow("compressed-inspection-integrity-failed");
+    const bad = Buffer.from(valid.bytes); bad[bad.length - 8] ^= 1;
+    const blob = await stageGzip(client, artifacts, seed, "crc", seed.profile.id, 1, bad);
+    await recordGzipProof(client, "crc:capture", { ...valid.proof, wireSha256: blob.sha, wireBytes: blob.bytes.length });
+    await expect(store.replayCompressedInspections(["crc:capture"])).rejects.toThrow("compressed-gzip-refused");
+    expect((await store.replayCompressedInspections(["valid:capture"])).inspections[0].proof).toEqual(valid.proof);
+  });
+});
+
+it("compressed inspection envelopes are immutable and disappear with authorized capture retention", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = sourceClaimFixture(); await store.publishSourceStats(seed);
+    const gzip = await inspectedGzip(client, artifacts, seed, "delete-inspection");
+    await probe(client, async () => { await expect(client.query("UPDATE predictive_compressed_inspections SET recorded_at=clock_timestamp()"))
+      .rejects.toThrow("predictive-append-only"); });
+    await withLogin(client, target, ["predictive_retention_owner"], async (owner, ownerTarget) => {
+      const retention = await createLocalPredictiveStore(owner, ownerTarget, artifacts);
+      await retention.retain({ id: "inspection-delete", reason: "provider-request", authority: "synthetic test", decidedAt: seed.capturedAt,
+        scope: { kind: "source", profileIds: [seed.profile.id], capturedFrom: null, capturedBefore: null }, auditLevel: "full" });
+    });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_compressed_inspections")).rows[0].n).toBe(0);
+    await expect(artifacts.database.readBinary(gzip.ref, gzip.sha, gzip.bytes.length)).rejects.toMatchObject({ code: "ENOENT" });
+    await expect(store.replayCompressedInspections(["delete-inspection:capture"])).rejects.toThrow("compressed-inspection-missing");
+  });
+});
+
+it("guarded gzip inspections enforce decoded and row budgets independently of wire storage", async () => {
+  await withProof(async ({ client, store, artifacts }) => {
+    const seed = sourceClaimFixture(); await store.publishSourceStats(seed);
+    const a = await inspectedGzip(client, artifacts, seed, "budget-A");
+    const changed = { ...seed, artifact: { ...seed.artifact, bytes: sourceCsv("player", [{ ...sourceSamples().player[0], passing_yards: "95" }]) } };
+    const b = await inspectedGzip(client, artifacts, changed, "budget-B");
+    const ids = ["budget-A:capture","budget-B:capture"], decoded = a.proof.decodedBytes + b.proof.decodedBytes;
+    const result = await store.replayCompressedInspections(ids, { maxDecodedBytes: decoded, maxRows: 2 });
+    expect(result.verification).toEqual({ verifiedWireBytes: a.bytes.length+b.bytes.length, decodedBytes: decoded, decodedRows: 2 });
+    await expect(store.replayCompressedInspections(ids, { maxDecodedBytes: decoded-1 })).rejects.toThrow("compressed-decoded-budget-exceeded");
+    await expect(store.replayCompressedInspections(ids, { maxRows: 1 })).rejects.toThrow("compressed-batch-work-budget-exceeded");
+    expect(() => store.replayCompressedInspections(ids, { maxDecodedBytes: 64_000_001 })).toThrow("compressed-batch-limits-refused");
+    expect(() => store.replayCompressedInspections(ids, { maxRows: 160_001 })).toThrow("compressed-batch-limits-refused");
+  });
+});
+
+it("guarded gzip inspections block concurrent rights writes through wire verification", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = sourceClaimFixture(); await store.publishSourceStats(seed);
+    await inspectedGzip(client, artifacts, seed, "locked");
+    await withLogin(client, target, ["predictive_ingest","predictive_harness"], async (writer) => {
+      await writer.query("SET lock_timeout='200ms'");
+      let attempts = 0;
+      const tracked = { ...artifacts, database: { ...artifacts.database, readBinary: async (ref: string, sha: string, size: number) => {
+        attempts++;
+        await expect(writer.query("INSERT INTO predictive_rights_decisions VALUES('blocked-gzip',$1,$2,'{}',clock_timestamp(),NULL,clock_timestamp(),'synthetic','fixture revocation')",
+          [seed.profile.id,seed.rightsDecisions[0].id])).rejects.toMatchObject({ code: "55P03" });
+        return artifacts.database.readBinary(ref,sha,size);
+      } } };
+      const guarded = await createLocalPredictiveStore(client,target,tracked);
+      expect((await guarded.replayCompressedInspections(["locked:capture"])).inspections).toHaveLength(1);
+      expect(attempts).toBe(1);
+      expect((await client.query("SELECT count(*)::integer AS n FROM predictive_rights_decisions WHERE id='blocked-gzip'")).rows[0].n).toBe(0);
+    });
+  });
+});
+
+it("guarded gzip inspections recheck scheduled rights expiry before delivering decoded proof", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = sourceClaimFixture(); await store.publishSourceStats(seed);
+    await inspectedGzip(client, artifacts, seed, "expiring");
+    const now = new Date(), until = new Date(now.getTime()+250);
+    await client.query("INSERT INTO predictive_rights_decisions VALUES('expiring-gzip',$1,$2,'{}',$3,NULL,$4,'synthetic','scheduled fixture revocation')",
+      [seed.profile.id,seed.rightsDecisions[0].id,until.toISOString(),now.toISOString()]);
+    const tracked = { ...artifacts, database: { ...artifacts.database, readBinary: async (ref: string, sha: string, size: number) => {
+      const wire = await artifacts.database.readBinary(ref,sha,size);
+      await new Promise(resolve => setTimeout(resolve,Math.max(0,until.getTime()-Date.now()+30)));
+      return wire;
+    } } };
+    const guarded = await createLocalPredictiveStore(client,target,tracked);
+    await expect(guarded.replayCompressedInspections(["expiring:capture"])).rejects.toThrow("compressed-inspection-rights-refused");
+  });
+});
+
+it("compressed inspection migration preserves fixed v14 evidence and ledger on upgrade and no-op", async () => {
+  await withProof(async ({ client, store, target }) => {
+    await store.publishSourceStats(sourceClaimFixture());
+    const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
+    const captures = (await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows;
+    const files=await checkMigrationArtifacts(), contracts=await loadCatalogContracts(files);
+    const options={...target,files,verify:createCatalogVerifier(contracts)};
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:15,executed:[15]});
+    expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,14)).toEqual(ledger);
+    expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
+    expect(await runScratchMigrations(client,options)).toMatchObject({schemaVersion:15,executed:[]});
+  },14);
+});
 
 it("gzip staging stamps database receipt time and refuses published captures and raw claim bypasses", async () => {
   await withProof(async ({ client, store, artifacts }) => {
@@ -168,10 +336,10 @@ it("gzip staging migration upgrades fixed v12 without rewriting evidence or prio
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(), contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [13, 14], schemaVersion: 14 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [13, 14, 15], schemaVersion: 15 });
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 12)).toEqual(ledger);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 14 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 15 });
   }, 12);
 });
 
@@ -281,10 +449,10 @@ it("ordinary ingestion clock migration upgrades v10 without rewriting captures a
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11, 12, 13, 14],schemaVersion: 14 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [11, 12, 13, 14, 15],schemaVersion: 15 });
     expect((await client.query("SELECT * FROM predictive_captures ORDER BY id")).rows).toEqual(captures);
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,10)).toEqual(ledger);
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 14 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 15 });
   },10);
 });
 
@@ -443,12 +611,12 @@ it("CSV source migration upgrades released v4 preserving creator corpus evidence
     expect(ledger[3].filename).toBe("0004_creator_corpus_projection.sql");
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], schemaVersion: 14 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], schemaVersion: 15 });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(upgraded.slice(0, 4)).toEqual(ledger);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
     await store.publishSourceStats(sourceClaimFixture("after-corpus-upgrade"));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 14 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 15 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     for (const table of tables) expect((await client.query(`SELECT * FROM ${table}`)).rows).toEqual(before.get(table));
   }, 4);
@@ -671,7 +839,9 @@ it("CSV bindings preserve numeric corrections, unchanged recaptures and player A
     expect(c.event.revision).toEqual(b.event.revision);
     const correctPlayer = async (id: string, playerId: string, predecessor: string, time: string) => {
       await client.query("SELECT pg_sleep(0.005)");
-      time = new Date().toISOString();
+      const now = (await client.query("SELECT public.predictive_source_time(date_trunc('milliseconds',clock_timestamp())) AS time")).rows[0].time as string;
+      expect(Date.parse(now)).toBeGreaterThan(Date.parse(time));
+      time = now;
       const context = { formatVersion: 2 as const, profiles: [profile(BRIDGE_PROFILE)], rightsDecisions: [], artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
       addCapture(context, id, [revision(id, "player-bridge", { provider: "gsis", rawPlayerId: "00-0000001", playerId,
         effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-01-01T00:00:00.000Z" }, predecessor)], time, BRIDGE_PROFILE);
@@ -917,7 +1087,7 @@ it("CSV binding migration upgrades v5 without changing released history and reru
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(14);
+    expect(upgraded.slice(0, 5)).toEqual(ledger); expect(upgraded).toHaveLength(15);
     expect((await client.query("SELECT * FROM predictive_source_stats_rows ORDER BY id")).rows).toEqual(raw);
     await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
@@ -1173,7 +1343,7 @@ it("CSV unavailable retention re-applies pre-v7 legacy events with identical cou
     // Restore the same retained evidence and IDs into a fresh post-v7 database.
     // New timestamps are allowed; the deletion set and audit contract are not.
     await withProof(async ({ client, store, artifacts, target }) => {
-      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(14);
+      expect((await client.query("SELECT max(version) AS version FROM db_migrations")).rows[0].version).toBe(15);
       expect(await procedure(client)).not.toBe(oldProcedure);
       await seed(store);
       await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
@@ -1649,13 +1819,13 @@ it("CSV SQL witness migration upgrades v7 preserving bindings and prior migratio
     const revisions = (await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11, 12, 13, 14], schemaVersion: 14 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [8, 9, 10, 11, 12, 13, 14, 15], schemaVersion: 15 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 7)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect((await client.query("SELECT * FROM predictive_source_stats_revisions ORDER BY id")).rows).toEqual(revisions);
     const scoped = factRequest(request.profileId, a.event.recordedAt);
     expect(await sqlWitness(client, scoped)).toEqual(sourceFactWitness(await store.replaySourceStatsFacts(scoped)));
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 14 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 15 });
     // The released-v4 upgrade test above seeds all five corpus tables and now
     // runs through 0008; this focused v7 test seeds source bindings as well.
   }, 7);
@@ -2064,11 +2234,11 @@ it("CSV source decision migration upgrades v8 preserving recorded bindings and w
     const ledger = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11, 12, 13, 14], schemaVersion: 14 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [9, 10, 11, 12, 13, 14, 15], schemaVersion: 15 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 8)).toEqual(ledger);
     expect((await client.query("SELECT * FROM predictive_source_bindings ORDER BY id")).rows).toEqual(bindings);
     expect(await sqlWitness(client, req)).toEqual(witness);
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 14 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 15 });
     const decision = await store.recordSourceDecision("after-decision-upgrade", decisionScope(request.profileId), null);
     expect(decision.record.plan.witness.heads).toEqual(witness.heads);
   }, 8);
@@ -2384,7 +2554,7 @@ it("QB inventory migration upgrades v13 without rewriting evidence and preserves
     const evidence = (await client.query("SELECT id,body_sha256,recorded_at FROM predictive_source_consumers ORDER BY id")).rows;
     const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
     const options = { ...target, files, verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 14, executed: [14] });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 15, executed: [14, 15] });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0, 13)).toEqual(ledger);
     expect((await client.query("SELECT id,body_sha256,recorded_at FROM predictive_source_consumers ORDER BY id")).rows).toEqual(evidence);
     expect(await store.replaySourceConsumer(feature.id)).toEqual(prior);
@@ -2395,7 +2565,7 @@ it("QB inventory migration upgrades v13 without rewriting evidence and preserves
     });
     const request = await previewRequest(client, seed);
     expect(await store.prepareFittingRun(request)).toMatchObject({ fittingReady: false, rows: [{ selection: { featureId: feature.id } }] });
-    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 14 });
+    expect(await runScratchMigrations(client, options)).toMatchObject({ executed: [], schemaVersion: 15 });
   }, 13);
 });
 
@@ -2908,10 +3078,10 @@ it("CSV QB migration upgrades v9 preserving binding and decision history and is 
     const ledger=(await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     const files=await checkMigrationArtifacts(); const contracts=await loadCatalogContracts(files);
     const options={ ...target,files,verify: createCatalogVerifier(contracts) };
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11, 12, 13, 14],schemaVersion: 14 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [10, 11, 12, 13, 14, 15],schemaVersion: 15 });
     expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows.slice(0,9)).toEqual(ledger);
     expect(await store.replaySourceDecision({ ...decisionScope(request.profileId),cutoff: decision.record.recordedAt })).toMatchObject({ record: decision.record });
-    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 14 });
+    expect(await runScratchMigrations(client,options)).toMatchObject({ executed: [],schemaVersion: 15 });
   },9);
 });
 

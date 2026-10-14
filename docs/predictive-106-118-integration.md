@@ -197,3 +197,60 @@ The combined inventory checkpoint passes 736 Node tests, 75 Node DB checks and
 lint, generated artifacts, frozen-prefix and documentation/whitespace checks.
 Only disposable databases ran 0014. This checkpoint does not establish gzip
 publication, durable training retention or a usable real QB slice.
+
+## #106 codec-inspection envelope and guarded wire checkpoint
+
+#106 merged Relay's `493e9ad` fixed inventory checkpoint, preserving both handoff
+sections. Its next prefix is **0001–0015**; 0001–0014 stay byte-for-byte unchanged:
+
+```text
+0015_predictive_compressed_inspections.sql
+sha256 ab77314b75baddb7793c6c9a1dfe472c4cb9d74b203e8e8403f111158514e255
+```
+
+0015 stores one immutable inspection envelope per incomplete capture. An
+execute-only ingest API binds its wire identity/size, feed, declared season,
+header, complete parsing flags and record count to that capture, stamps database
+recording time and checks current/historical research rights. It requires the
+existing digest session lock. SQL validates metadata shape; it cannot prove
+gzip CRC or decoded hashes from private filesystem bytes. The reader must
+reproduce the complete envelope even if SQL accepted well-shaped forged metadata.
+
+The public training guard now wraps the unchanged private inventory guard and
+also locks the inspection table. `replayCompressedInspections(ids, options)` is a
+local, guarded codec-diagnostic API, not a source consumer or dataset reader. It
+uses a separate binary `readWireBytes` cache, checks current rights before each
+unique wire file and at delivery, and reproduces hashes/CSV ordinals/record counts.
+Transaction-local wire accounting retains the existing 20 MB ceiling. Decoded
+work is charged separately, at most 64 MB/160,000 records per diagnostic batch,
+with optional downward-only limits. Cache keys include exact wire identity,
+feed, season and codec version. Nothing is delivered when any selected envelope,
+file, quota or current-rights check fails.
+
+A role-checked BEFORE capture-deletion hook removes the envelope under the
+existing transaction authorization. It composes with 0014's pending-inventory
+hook without replacing a retention procedure or introducing CASCADE. Capture
+tombstones already audit the envelope's sole capture identity; no new independent
+retention identity is created. Private helper functions/tables remain unavailable
+to replay/ingest callers except through their granted execute-only interfaces.
+
+Eight mandatory PostgreSQL cases cover restricted recorder/reader privileges,
+exact replay and within-transaction reuse, rights before corrupt bytes, valid-wire
+CRC failure, forged decoded identity, independent decoded/row budgets, concurrent
+rights-write blocking, scheduled expiry at delivery, authorized deletion and
+fixed-v14 upgrade/no-op preservation. The existing inventory upgrade tests also
+run through 0015. This prefix has only run in disposable databases.
+
+0013 still rejects published gzip. This checkpoint adds no qualified raw claim
+writer, full consumer reconstruction, dataset sealing or fitting readiness. The
+proposed process RSS ceiling remains unenforced; this inspection API is confined
+to the local research proof. Production/consumer activation still needs that
+ceiling, qualified source/profile/claim checks and compressed restoration tests.
+No migration after 0015 is allocated here; coordinate the next number in this chat.
+
+Combined checks pass: 742 Node tests, 75 Node DB checks and all 166 PostgreSQL
+tests (141 mandatory predictive cases), typecheck, lint and generated catalog/
+migration/readiness/whitespace checks. The bootstrap inventory was extended for
+the new table. An existing host/database-clock routing fixture was repaired with
+explicit database-clock ordering and passed six isolated repetitions plus the
+complete gate. The disposable test service was removed; no hosted DB ran 0015.

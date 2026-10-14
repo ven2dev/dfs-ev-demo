@@ -259,3 +259,49 @@ tests pass, including the required-case report. Typecheck, lint, generated
 catalog/migration/readiness checks and whitespace checks pass. The disposable
 database service was removed. The pure preparation API is still outside runtime
 publication and guarded training reads.
+
+## Immutable inspection envelopes and guarded wire reads (0015)
+
+The [integration handoff](predictive-106-118-integration.md) fixes 0001–0015 and
+records the exact hash and deletion interfaces. 0015 adds a private, immutable
+inspection envelope tied to an existing incomplete capture. Its execute-only
+recorder checks the capture's complete parsing flags, count, wire identity/size,
+feed, scope/header and research rights under the existing digest lock. Recording
+time is database-stamped. It rejects unsupported shape, activation flags and
+capture mismatches. SQL metadata alone cannot validate private gzip bytes.
+
+The new local `replayCompressedInspections` path takes the extended training
+guard, verifies every selected envelope from exact binary wire bytes, and never
+calls the text reader for gzip. File and codec reuse is transaction-local. Fresh
+uncached rights checks run before each unique wire file and at delivery, so both
+concurrent rights writes and already-scheduled expiry are covered. Wire storage
+keeps its 20 MB bound; decoded work has a separate 64 MB/160,000-record ceiling
+with downward-only caller limits. A failed file/proof/rights/budget check returns
+no partial inspection batch. The returned metadata contains no numeric claims.
+
+The inspection deletion hook follows authorized capture deletion, composes with
+0014's inventory hook and leaves existing retention procedure bodies unchanged.
+The envelope's sole identity is the already-audited capture ID. Restricted role
+tests exercise recording, reading and cleanup; forged decoded hashes and valid-
+wire CRC damage refuse. Other cases check private-table denial, exact replay/
+wire and decoded accounting, quota boundaries, current rights before corrupt
+bytes, blocked concurrent rights writes, expiry at delivery and v14 upgrades.
+
+The full gate initially caught a missing table in bootstrap's explicit expected
+inventory, which was corrected. A later run caught an existing A→B→A fixture
+mixing host-clock synthetic capture times with database-clock binding times.
+That fixture now samples the database clock and explicitly asserts strict time
+ordering; all original historical-routing assertions remain. Six independent
+repetitions passed after this repair. No application replay logic was changed.
+
+This is local codec-diagnostic verification, not publication qualification.
+0013 still refuses published gzip; there is no compressed claim writer or
+consumer reconstruction yet. The proposed hard process memory ceiling and
+compressed restored-backup proof remain activation prerequisites. No hosted
+database or production path has been activated.
+
+Final local gate for 0015: all 742 Node tests, 75 database checks and 166
+PostgreSQL tests pass, including all 141 mandatory predictive cases. Typecheck,
+lint, generated artifacts and whitespace checks pass. The test service was
+removed. These checks validate codec diagnostics and the combined existing
+readers/inventories, not compressed publication or usable real feature/labels.

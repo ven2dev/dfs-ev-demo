@@ -23,6 +23,14 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "guarded gzip inspections reproduce exact envelopes with transaction-local wire and decoded accounting",
+  "guarded gzip inspections refuse revoked rights before any private wire bytes open",
+  "guarded gzip inspections refuse forged decoded identities and CRC errors after valid wire hashing",
+  "compressed inspection envelopes are immutable and disappear with authorized capture retention",
+  "guarded gzip inspections enforce decoded and row budgets independently of wire storage",
+  "guarded gzip inspections block concurrent rights writes through wire verification",
+  "guarded gzip inspections recheck scheduled rights expiry before delivering decoded proof",
+  "compressed inspection migration preserves fixed v14 evidence and ledger on upgrade and no-op",
   "gzip staging stamps database receipt time and refuses published captures and raw claim bypasses",
   "gzip synthetic unknown parsers cannot bypass receipt clocks or canonical binding guards",
   "gzip exact-address cleanup retains referenced bytes and resumes deletion through execute-only roles",

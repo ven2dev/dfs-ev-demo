@@ -6,6 +6,7 @@ import { normalizeFittingRunRequest, selectTrainingRows, TRAINING_BOUNDS, type F
 import { checkTrainingMetadataSelection, TRAINING_SELECTION_SQL, trainingSelectionParameters, type TrainingMetadataSelection } from "./trainingSql.ts";
 import { trainingRunPreview, type TrainingKickoffProof } from "./trainingPreview.ts";
 import type { TrainingRunInventory } from "./trainingRuns.ts";
+import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
 import { prepareSourceClaims, projectSourceClaim, sourceClaimKey, SOURCE_CLAIM_VERSION,
   type SourceClaimRow, type SourceStatsPublication, type SourceStatsRequest, type SourceStatsReplay, type SourceStatsCapture } from "./sourceClaims.ts";
 import { parseSourceCsv, SOURCE_PROFILE_VERSION, SOURCE_SAMPLE_SEASON } from "./sourceAdapters.ts";
@@ -139,6 +140,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     reserveVerifiedBytes(Number(size), sha256);
     if (batchAccess) await batchAccess();
     return artifacts.read(reference, sha256, Number(size));
+  });
+  const readWireBytes = (reference: string, sha256: string, size: number) => memoEvidence("wire-file", [reference, sha256, size], async () => {
+    reserveVerifiedBytes(size, sha256);
+    if (batchAccess) await batchAccess();
+    return artifacts.readBinary(reference, sha256, size);
   });
   const reserveVerifiedBytes = (bytes: number, sha256: string) => {
     if (verifiedDigests.has(sha256)) return;
@@ -446,6 +452,47 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     return result(matches[0].failureCode ? "source-row-refused" : null, [capture], matches);
   };
   const replaySourceStats = (request: SourceStatsRequest) => transaction(() => readSourceStats(request), true);
+
+  // Local codec diagnostics only: this does not select source facts or consumers.
+  // Stable metadata is guarded; clock-sensitive access is never memoized.
+  const replayCompressedInspections = (input: string[], options: { maxDecodedBytes?: number; maxRows?: number } = {}) => {
+    if (!Array.isArray(input) || input.length < 1 || input.length > 64 || new Set(input).size !== input.length ||
+        input.some(id => typeof id !== "string" || !id.trim() || id.length > 256 || /[\u0000-\u001f\u007f]/.test(id))) refuse("compressed-inspection-request-refused");
+    const ids = [...input];
+    if (!options || typeof options !== "object" || Array.isArray(options) || Object.keys(options).some(key => !["maxDecodedBytes","maxRows"].includes(key))) refuse("compressed-batch-limits-refused");
+    const maxDecodedBytes = options.maxDecodedBytes === undefined ? 64_000_000 : options.maxDecodedBytes;
+    const maxRows = options.maxRows === undefined ? 160_000 : options.maxRows;
+    if (!Number.isSafeInteger(maxDecodedBytes) || maxDecodedBytes < 1 || maxDecodedBytes > 64_000_000 ||
+        !Number.isSafeInteger(maxRows) || maxRows < 1 || maxRows > 160_000) refuse("compressed-batch-limits-refused");
+    return transaction(async () => {
+      type Entry = { captureId: string; proof: Awaited<ReturnType<typeof inspectCompressedSource>>; reference: string; sha256: string; byteSize: number };
+      const load = async (): Promise<Entry[]> => (await client.query("SELECT public.predictive_read_compressed_inspections($1) AS entries", [ids])).rows[0].entries;
+      const entries = await load();
+      batchAccess = async () => { await load(); };
+      let decodedBytes = 0, decodedRows = 0;
+      const reports = new Map<string, Entry>();
+      for (const entry of entries) {
+        const request: CompressedInspectionRequest = { feed: entry.proof.feed, season: entry.proof.season,
+          wireSha256: entry.sha256, wireBytes: entry.byteSize };
+        const inspection = await memoEvidence("compressed-inspection", [entry.reference,entry.sha256,entry.byteSize,
+          request.feed,request.season,entry.proof.codecVersion], async () => {
+          const remainingBytes = maxDecodedBytes - decodedBytes, remainingRows = maxRows - decodedRows;
+          if (remainingBytes < 1 || remainingRows < 1) refuse("compressed-batch-work-budget-exceeded");
+          const bytes = await readWireBytes(entry.reference, entry.sha256, entry.byteSize);
+          const proof = await inspectCompressedSource(bytes, request, { limits: {
+            decodedBytes: Math.min(COMPRESSED_SOURCE_LIMITS.decodedBytes, remainingBytes),
+            rows: Math.min(COMPRESSED_SOURCE_LIMITS.rows, remainingRows) } });
+          decodedBytes += proof.decodedBytes; decodedRows += proof.rows;
+          return { ...proof, limits: { ...COMPRESSED_SOURCE_LIMITS } };
+        });
+        if (canonical(inspection) !== canonical(entry.proof)) refuse("compressed-inspection-integrity-failed");
+        reports.set(entry.captureId, { ...entry, proof: inspection });
+      }
+      await batchAccess();
+      return { snapshotAt: batchClock!, inspections: ids.map(id => reports.get(id)!),
+        verification: { verifiedWireBytes: verifiedBytes, decodedBytes, decodedRows }, publicationSupported: false };
+    }, false, true);
+  };
 
   const readSourceNormalization = async (request: SourceStatsRequest, accessAt?: string, version: string = SOURCE_NORMALIZATION_VERSION) => memoEvidence("readSourceNormalization", [request, accessAt ?? null, version], async () => {
     const source = await readSourceStats(request, accessAt);
@@ -1298,7 +1345,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
-  return { publish, publishSourceStats, replaySourceStats, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
+  return { publish, publishSourceStats, replaySourceStats, replayCompressedInspections, planSourceStatsNormalization, recordSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
     planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun,
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };
