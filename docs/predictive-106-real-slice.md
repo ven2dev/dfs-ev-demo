@@ -30,8 +30,9 @@ Creator comparison horizon is not narrowed by this one-game engineering proof.
 Handoff agreement: [#106/#118 contract at b7db281](https://github.com/ven2dev/dfs-ev-demo/blob/b7db281e156ac4decfd181e4d158ce912bef57e0/docs/predictive-training-handoff.md).
 Relay owns training-read/dataset/pin runtime. This branch owns raw evidence,
 qualified bridges/membership/completion, source consumers and the real slice.
-Current allocation: preserve frozen 0001–0017; 0018 only is reserved for #106's
-normalization/consumer increment. Coordinate any further DDL with #118 here.
+Current allocation: preserve frozen 0001–0018 at `dae2940`; #118 owns 0019
+for audited invalidation. #106 reserves no further DDL. Coordinate any new
+migration with #118 here.
 
 ## Executable inventory
 
@@ -224,3 +225,46 @@ resolve the Week 18 absence through real participation evidence. Then publish
 and restore/replay the bounded real feature and final-label proof. Existing v1
 history, 4/8/16 slot preservation and missing-data rules remain binding. #106
 and #54 Part B remain incomplete; synthetic integration does not close them.
+
+## Real-evidence intake checkpoint (2026-10-14)
+
+The next increment is evidence qualification, not another schema expansion.
+The existing [source-use decision](predictive-data-sources.md)
+selects core nflverse statistics, schedules and roster observations for internal
+research/modeling. Record that reviewed decision, attribution and exact source
+versions in the appropriate profiles and use-specific rights records. A missing
+runtime rights record is an implementation gap; it is not evidence that the
+project has rejected this use. Public display, redistribution and optional
+PFR/FTN feeds retain their separate restrictions. Official reconciliation
+benchmark use remains conditional under the existing source decision.
+
+| Gate | Evidence currently available | Next concrete acceptance step |
+| --- | --- | --- |
+| Original acquisition and restoration | Complete 2025 player/roster gzip files and release metadata remain; original prototype journal is missing | Recover the journal from an archive or reacquire missing inputs with actual receipt times. Verify full hashes and restore the resulting private bundle; do not reuse invented old knowledge times. |
+| Internal source uses | Core nflverse internal research/modeling is selected in the source review | Carry the existing reviewed decision into feed-specific profiles and the research/model-input/outcome-label records required by each consumer. Do not extend it to other providers or public use. |
+| Identity and membership | GSIS/raw game keys identify the proposed slice; current or weekly roster status alone is insufficient | Verify provider-to-canonical game/team/player mappings and profile links; qualify dated membership intervals and former teams against the actual schedule. |
+| Schedule coverage | V1 requires target season and the previous two seasons | Acquire and independently verify 2024–2026 coverage for the target, own team, opposing offense and any former teams. Preserve all expected 4/8/16 slots. |
+| Completion and reconciliation | Official pages supply discovery leads; no accepted independent completion or reconciliation record is present | Qualify permitted benchmark use, event/player identity, version/correction timing and independent completion evidence before recording decisions. |
+| Week 18 participation | The player statistics file has no Hurts row for `2025_18_WAS_PHI` | Obtain accepted evidence of actual offensive participation or explicit DNP/absence; keep the slot unresolved until then. |
+| Bounded real consumer proof | Schema-18 synthetic consumer path passes | After the preceding gates pass, publish the real feature/label evidence, restore it and independently replay the same values, provenance and missing slots. |
+
+### Week 18 discovery result
+
+Reviewed on 2026-10-14, the Eagles' [January 4 inactives report](https://www.philadelphiaeagles.com/news/eagles-commanders-inactvies-week-18-nfl-nfc)
+says most starters were active despite being expected to rest. Hurts is not
+listed among the seven Eagles inactives. The team's [Week 18 box score](https://www.philadelphiaeagles.com/game-day/2025/reg-week18/commanders-at-eagles/)
+lists McKee as its passer. These observations explain why an active roster
+status can coexist with a missing passing row; they establish neither Hurts'
+offensive snap count nor an explicit DNP decision. No zero, absence, final label
+or canonical participation record is derived from them.
+
+This is a manual discovery note with URLs and review date, not a retained
+provider-byte capture or approved automated ingestion route. Page publication
+dates do not establish the project's original acquisition times. Gamebooks and
+other official benchmarks still require the permitted-use and correction checks
+in [the source review](predictive-data-sources.md). PFR snap counts remain
+rejected for this predictive use without separate permission.
+
+Validation for this documentation increment is link/contract consistency and
+whitespace checking. No SQL, generated migration artifact, runtime behavior or
+test changed, so a repeated full database gate adds no relevant evidence here.
