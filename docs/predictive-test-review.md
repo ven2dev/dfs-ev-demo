@@ -795,3 +795,12 @@ iterations used fresh disposable databases after the runner correctly refused
 an earlier uncommitted 0017 checksum. No applied ledger was rewritten and no
 hosted database was touched. These establish qualified synthetic raw publication,
 not real-data approval, canonical consumers or fitting readiness.
+# Compressed selection review
+
+The pure compressed selector has four regression cases covering late receipt
+and seal visibility, capture-time ordering, contradictory snapshots, missing
+player rows, refused numbers, tampered claim seals and ordinals, invalid receipt
+clocks, duplicate inventories, future cutoffs and independent returned evidence.
+All 761 Node tests, typecheck and affected-file lint pass. No database code or
+migration changed in this checkpoint; the previous schema-17 database evidence
+does not establish the pending normalization/consumer integration.

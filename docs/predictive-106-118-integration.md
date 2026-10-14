@@ -564,3 +564,20 @@ complete gate exercises both #118 dataset/pin retention and the new publication
 path. Every 0001–0016 migration/catalog contract remains byte-for-byte unchanged.
 Only disposable databases ran 0017, and the test service was removed afterward.
 The frozen integration prefix is **0001–0017**; no further #106 number is reserved.
+# Compressed selection checkpoint
+
+Migration allocation: 0018 only is reserved for #106; this selection checkpoint
+adds no DDL. Frozen 0001–0017 remain unchanged.
+
+`selectCompressedSourceClaim` selects already verified compressed publications
+by profile, season, player/team and game at a cutoff. Publication recording and
+ingestion must precede visibility; later imports cannot backdate an archive.
+The newest capture time wins, while equal-time different wire hashes remain
+ambiguous. Missing rows and refused projections remain explicit and cannot
+establish non-participation. Evidence is copied and digested with the compressed
+claim version. Inventory limits are 64 captures and 160,000 rows.
+
+This is a pure selector, not a database reader or authorization gate. Its caller
+must supply a complete, byte-verified, rights-guarded publication inventory.
+Database selection, versioned normalization, consumer closure and retention
+integration remain pending under 0018. Existing v1 history policy is unchanged.
