@@ -1,16 +1,17 @@
-# #106 / #118 integration prefix — 2026-10-13
+# #106 / #118 integration prefix — 2026-10-14
 
-#118 integrated #106's pushed `4f1ad06` checkpoint on
-`feature/dfsEV-118-training-reads-retention`. The combined fixed prefix is now
-**0001–0016**, including #118's immutable run inventory/dataset pins and #106's
-guarded codec inspection. Qualified compressed publication and full compressed consumer
-reconstruction remain unfinished.
+#118 integrates #106's frozen `dae2940` checkpoint with its `a6da525` audited
+invalidation implementation on `feature/dfsEV-118-training-reads-retention`.
+The combined frozen ordered prefix is **0001–0019**. #106's 0001–0018 SQL and catalog
+contracts remain byte-for-byte unchanged; 0019 is #118's only addition. Qualified
+compressed publication, binding/consumer reconstruction and dataset closure are
+fixture-backed. Combined final validation is recorded at the end of this document.
 Neither session has published a usable real feature or label.
 
 ## Fixed integration prefix
 
-Use the ordered **0001–0016** prefix in [migration-manifest.json](../db/migration-manifest.json).
-Released 0001–0011 and the integrated 0012–0015 remain byte-for-byte unchanged.
+Use the ordered **0001–0019** prefix in [migration-manifest.json](../db/migration-manifest.json).
+Released 0001–0011 and #106's frozen 0012–0018 remain byte-for-byte unchanged.
 For branch integration, keep #118's 0012 fixed:
 
 ```text
@@ -29,8 +30,8 @@ to this shared prefix use forward migrations.
 **0016 is #118's complete integrated range; #106 owns 0017 qualified compressed
 publication and the owner subsequently allocated 0018 to #106 normalization,
 consumer evidence and retention integration, followed by 0019 to #118 audited
-invalidation.** Relay prepares 0019 outside the ordered chain until #106 publishes
-its frozen 0001–0018 checkpoint. Neither session should reserve
+invalidation.** #106 published the frozen 0001–0018 checkpoint at `dae2940`;
+Relay now finalizes 0019 against that prefix. Neither session should reserve
 a further range silently. Integrate by merge after preserving local work; do not rebase or
 cherry-pick duplicate copies of the prefix. Keep #106's binary artifact
 implementation when resolving shared files. Regenerate migration/catalog/
@@ -264,6 +265,49 @@ the new table. An existing host/database-clock routing fixture was repaired with
 explicit database-clock ordering and passed six isolated repetitions plus the
 complete gate. The disposable test service was removed; no hosted DB ran 0015.
 
+## #106 isolated worker continuation
+
+#106 now has an opt-in, local Docker codec worker with a pinned Node image,
+kernel-enforced 256 MiB memory allowance, no swap/network, read-only code and no
+daemon logging of private payloads. The child verifies its cgroup limits. Input
+and request are detached; one active job is admitted per controller, with bounded
+execution/output and verified removal before reuse. The existing SQL prefix is
+still **0001–0015**. **0016 stays with #118**; this continuation allocates no DDL.
+
+746 Node tests and eight container tests pass, plus typecheck/lint/whitespace.
+Native allocation stress was OOM-killed, an 80,000-row resource/output refusal
+recovered, and the real 19,422-row file reproduced its independent claim digest
+inside the worker (143,142,912-byte peak RSS). Full configuration, cleanup and
+validation boundaries are in the [compressed-source contract](predictive-compressed-source-contract.md).
+
+This worker is not yet connected to 0015's guarded reader or a compressed source
+writer. Next: integrate it while preserving current-rights gates, downscaled
+decoded-work budgets, guard lifetimes and failure cleanup; then qualify full
+compressed publication and consumer reconstruction. Coordinate any #106 DDL
+at 0017 or later after #118 supplies its fixed dataset/pin prefix.
+
+## #106 guarded worker integration
+
+`replayCompressedInspections` now performs complete-file inspection through the
+isolated worker. Its existing guarded transaction still rechecks rights before
+opening each unique wire artifact and again before delivery; table guards span
+worker execution and cleanup. The compressed path has a 45-second transaction
+idle timeout to accommodate the 30-second worker deadline and bounded cleanup.
+Wire accounting stays separate from decoded bytes and rows, with each worker
+receiving only the remaining downward-bounded batch allowance. Persisted envelope
+comparison remains exact after normalizing these temporary work limits.
+
+The database test harness pulls the exact pinned image and requires all nine
+container checks before its database suites. Runtime readers never pull images;
+missing runtimes/images refuse the read. This integrates diagnostic replay only:
+qualified compressed publication, consumer reconstruction and usable real
+features/labels remain outstanding. No migration changed; 0016 remains reserved
+for #118 and further #106 DDL still requires coordination here.
+
+Validation passes: 746 Node tests, nine Docker worker checks, 75 Node database
+checks and 166 PostgreSQL tests, including all 141 mandatory predictive cases.
+Typecheck, affected-file lint, catalog/migration/readiness and whitespace checks
+pass. The disposable database service was removed after the gate.
 ## #118 assigned-shard verification continuation
 
 #118 fast-forwarded to #106's `4f1ad06`, preserving frozen 0001–0015 and both
@@ -294,6 +338,91 @@ readiness checks and all 16 catalog contracts in the complete DB gate. Frozen
 hosted database was migrated. Dataset/pin DDL remains unimplemented and reserved
 at 0016; this is not #118 completion or fitting authorization.
 
+## #106 guarded claim reconstruction continuation
+
+#106 integrated #118's assigned-shard checkpoint `84945bf`, retaining the
+isolated worker, `verifyDatasetShard`, frozen 0001–0015 and both handoff sections.
+`replayCompressedClaims` now reconstructs complete player/team raw claims through
+the same guarded inspection-envelope path. It compares the full regenerated
+codec proof, preserves every row ordinal/refusal, binds row IDs to each capture,
+and rechecks research rights before wire access and final delivery. No stored raw
+claim, normalized fact, feature or label is created. Roster files cannot become
+numeric claims through this API.
+
+Wire bytes remain deduplicated within the transaction. Claims must be regenerated
+for each capture identity, so decoded-work accounting charges each reconstruction
+even when two captures share one wire file. Temporary worker limits use the
+remaining decoded-byte/row allowance. Inspection-only replay retains its prior
+deduplication and return shape. Failed integrity, budgets, rights or retention
+checks deliver no partial claim batch.
+
+The new mandatory database cases cover complete ordinals and explicit refusals,
+capture-specific identities through a replay-only login, no raw-claim activation,
+wire/work accounting, budget refusal/recovery, forged decoded selection identity,
+CRC damage, pre-read revocation, retention erasure, concurrent rights writes and
+scheduled expiry after reconstruction. Further #106 DDL still needs coordination
+at 0017 or later; 0016 remains with #118. Real-source qualification and explicit
+2025 Week 18 participation/absence remain unresolved.
+
+Combined validation passes: 750 Node tests, nine container checks, 75 Node DB
+checks and 175 PostgreSQL tests (150 mandatory predictive cases), typecheck,
+full lint, catalog/migration/readiness and whitespace checks. The complete gate
+includes Relay's assigned-shard verification and the worker-backed inspection
+and claim readers. Disposable database cleanup completed.
+
+## #106 publication preparation and next migration dependency
+
+`prepareCompressedPublication` now prepares a detached candidate through the
+isolated worker. The new parser/profile contract is
+`nflverse-gzip-csv-source-qualification-v1`; its publication request identity uses
+`nflverse-gzip-csv-source-claims-v1`. Only complete player/team season assets for
+2025 or 2026 qualify for this preparation interface. Feed, exact asset URL/name,
+release tag, header digest, selected evidence kind, scope and wire identity must
+agree. Legacy CSV qualification remains 2026-only and unchanged.
+
+Historical and preparation-clock research rights must both allow the use.
+Future capture, release metadata or registration knowledge refuses. The complete
+worker output binds each ordinal and capture ID; no caller-supplied decoded proof
+or projected rows enter this API. The result remains `prepared-only` with all
+publication/features/labels flags false. Caller-provided rights and a preparation
+clock cannot authorize a database write; the writer must validate authoritative
+registrations and fresh rights under its publication locks.
+
+**Proposed next #106 allocation: 0017 only, for raw compressed publication.**
+This is pending Relay confirmation that its next complete range is 0016 and a
+frozen 0001–0016 checkpoint. It is not an applied migration or a reservation of
+later numbers. Keep coordination in this chat. No change to #118's DDL is made.
+
+The publication increment must:
+
+- Permit published gzip only for the exact new profile and a complete, immutable
+  codec/publication envelope. Existing incomplete diagnostics remain valid;
+  unknown/synthetic parser names still cannot bypass qualification or clocks.
+- Admit up to 80,000 raw-stat ordinals only for the qualified gzip profile;
+  preserve legacy 8,192-row and 2026 scope checks. Generalizing projection shape
+  must retain capture/profile-specific season enforcement and refused rows.
+- Insert wire artifact, published capture, complete raw claims, codec metadata,
+  publication seal and rights audit atomically, with database-clock ingestion.
+  Never promote an existing immutable incomplete capture by updating it.
+- Verify the stored complete raw claims against regenerated worker output on
+  replay, including the publication digest, and preserve separate wire/decode
+  accounting, fresh rights gates and exact-address rollback/retention handling.
+- Keep canonical observation bypasses prohibited. Raw publication does not
+  activate normalization, numerical consumers, training or a fitting-ready flag.
+- Pass direct-SQL forgery/profile/coverage probes, restricted-role publication,
+  blob/profile lock races, rights expiry/revocation, rollback, authorized deletion,
+  restored reapply and fixed-prefix upgrade/no-op tests before freezing 0017.
+
+Consumer/normalization activation remains a later separately coordinated
+increment. The missing real participation/absence and other source qualification
+requirements remain unchanged. Creator A–C scope changes do not alter #106's
+v1 multi-season history policy.
+
+Preparation validation passes 755 Node tests, all 11 real worker checks,
+typecheck, full lint and whitespace checks. No database path or schema changed;
+the last complete schema-15 database gate remains 75 Node DB checks and 175
+PostgreSQL tests. Relay's 0016 is currently an uncommitted dataset implementation,
+so SQL publication activation awaits its frozen checkpoint and range confirmation.
 ## #118 dataset and durable-pin checkpoint
 
 ```text
@@ -356,6 +485,164 @@ tests (160 mandatory predictive cases), typecheck, affected-file lint and all 17
 catalog contracts pass. Frozen 0001–0015 and their contracts/ledger remain
 unchanged from `84945bf`. Only disposable databases ran 0016. The evidence
 checkpoint records the corrected host/database-clock test fixture and log paths.
+
+
+## #106 accepted frozen schema-16 base (2026-10-14)
+
+The owner relayed #118's confirmation: 0016 is its complete next migration
+range, and **0017 only is reserved for #106**. Relay's frozen checkpoint
+`2f57d12` is integrated at `379a095`. Its 0016 SHA-256 matches the recorded
+`fd0e99ae3b3cc5f2dedb019d6d35fe3fe41d27b960179a91599496f8b0492883`.
+The shared prefix is now **0001–0016**; no migration in that prefix was edited.
+This supersedes the earlier pending-prefix statements above.
+
+The only merge conflict was the handoff document; both sessions' sections were
+retained. Assigned-shard/dataset/pin behavior and #106's binary, worker,
+inspection, complete-claim and publication-preparation interfaces are preserved.
+Combined validation passes 757 Node tests, all 11 real worker checks, 75 Node DB
+checks, 188 PostgreSQL tests (163 mandatory predictive cases), all 17 catalog
+contracts, typecheck, full lint and whitespace checks. The disposable database
+was removed after the gate. No hosted database was migrated.
+
+The allocation/base dependency is resolved. The next implementation remains
+0017's qualified raw compressed publication and independently verified replay,
+following the publication requirements above. It is not implemented or activated
+by this integration checkpoint. Canonical/consumer activation, usable real
+features/labels and source-evidence qualifications remain outstanding. Any
+migration after 0017 requires coordination in this chat.
+
+## #106 qualified raw compressed publication (0017)
+
+```text
+0017_predictive_compressed_publications.sql
+sha256 5c7dbaec1bc41924c9539a7e65034a6c50a27a0c1a7c95d922b361c372f53305
+```
+
+0017 adds execute-only qualified publication and replay against frozen
+0001–0016. `publishCompressedSource(bytes, input)` copies input before waiting,
+holds the existing digest lock before the global publication lock, and acquires
+the shared guard's table sequence in writer mode before registration or worker
+execution. It validates the authoritative rights chain before decoding, writes
+and rereads exact managed wire bytes, and commits ingestion run, artifact,
+published capture, codec envelope, complete claim seal and historical rights audit
+atomically. Receipt/seal clocks come from PostgreSQL. Retry rechecks rights,
+actual managed bytes and regenerated claims rather than trusting the old seal.
+
+Complete claims live in the private `predictive_compressed_publications` JSON
+seal, bounded to 80,000 records and 64 MB serialized claims. Every ordinal,
+capture-specific row ID, raw key, projection year/feed and explicit refusal is
+checked. The seal includes the versioned request identity and canonical complete-
+claim digest. This avoids widening legacy `predictive_source_stats_rows` or its
+2026 projection checks. Ingestion counts above 8,192 are allowed only for the new
+producer version with a deferred, complete qualified-capture/seal check.
+
+`replayPublishedCompressedClaims` verifies the stored seal and independently
+reconstructs full claims from exact wire bytes under the guard. Wire and decode
+budgets remain separate; each capture's reconstruction is charged. Current and
+historical research rights are checked before bytes and delivery. Scheduled
+rights expiry also refuses during SQL sealing and at deferred commit. Matching
+executed source-deletion scopes prohibit archive reimport; diagnostic envelope
+record/read wrappers use the same scope authorization, preserving v15's original
+checks behind private functions. A literal checked function-label adaptation
+keeps the renamed v15 recorder's parameter reference correct.
+
+Authorized capture deletion removes the seal and codec metadata through the
+existing hook; exact wire cleanup continues through the existing queue. A private
+supplemental audit binds the capture digest, removed row count and canonical
+row-ID digest, with an execute-only retention reader. No second retention
+procedure, decoded spool or automatic cascade is introduced. Existing legacy
+and dataset audit results retain their interfaces.
+
+Raw publication does **not** activate canonical observations, legacy source
+bindings, numerical consumers, features, labels or training. The blanket gzip
+canonical-binding guard remains. A later consumer/normalization increment must
+qualify its bridge and include the claim/codec seal in the protected dataset
+closure before any fitting path can cite compressed data. No migration after
+0017 is allocated here; coordinate the next number before that increment.
+Only synthetic data is published by this checkpoint's database tests; real
+source rights and participation/completion qualifications remain outstanding.
+
+Checkpoint validation passes **757 Node tests, 11 real worker checks, 75 Node DB
+checks, 197 PostgreSQL tests (172 mandatory predictive cases)**, typecheck, full
+lint, all 18 catalog contracts and migration/readiness/whitespace checks. The
+complete gate exercises both #118 dataset/pin retention and the new publication
+path. Every 0001–0016 migration/catalog contract remains byte-for-byte unchanged.
+Only disposable databases ran 0017, and the test service was removed afterward.
+The frozen integration prefix is **0001–0017**; no further #106 number is reserved.
+# Compressed selection checkpoint
+
+Migration allocation: 0018 only is reserved for #106; this selection checkpoint
+adds no DDL. Frozen 0001–0017 remain unchanged.
+
+`selectCompressedSourceClaim` selects already verified compressed publications
+by profile, season, player/team and game at a cutoff. Publication recording and
+ingestion must precede visibility; later imports cannot backdate an archive.
+The newest capture time wins, while equal-time different wire hashes remain
+ambiguous. Missing rows and refused projections remain explicit and cannot
+establish non-participation. Evidence is copied and digested with the compressed
+claim version. Inventory limits are 64 captures and 160,000 rows.
+
+This is a pure selector, not a database reader or authorization gate. Its caller
+must supply a complete, byte-verified, rights-guarded publication inventory.
+Database selection, versioned normalization, consumer closure and retention
+integration remain pending under 0018. Existing v1 history policy is unchanged.
+# Guarded compressed source lookup
+
+`replayCompressedSourceStats(request)` now supplies the pure selector with a
+database-discovered inventory. It runs inside the existing schema-17 shared
+read guard and requires the exact compressed profile/feed/season asset. Every
+eligible published capture is independently checked through the execute-only
+publication reader and isolated byte decoder, including contradictory captures.
+The inventory is bounded at 64 captures, 20 MB of unique stored wire bytes,
+64 MB decoded output and 160,000 parsed rows; an over-budget inventory refuses
+rather than truncating. This first reader conservatively verifies all visible
+captures in the requested profile/season, including older snapshots.
+
+Current rights are checked before binary access and again after selection;
+historical capture rights and deletion scopes are checked by the existing SQL
+publication reader. Missing inventories affected by a recorded source deletion
+report `retained-evidence-removed`. A missing player row remains unavailable,
+not an inferred zero or participation decision. Requests are copied before the
+first await, and each call gets fresh byte verification and access checks.
+
+This adds no schema migration. 0018 remains reserved only for #106. Compressed
+normalization bindings, canonical consumer publication and dataset/pin closure
+integration remain pending. Existing text readers and v1 history remain intact.
+
+Checkpoint validation: 761 Node tests, 198 PostgreSQL tests, 75 DB checks,
+11 isolated worker checks, 18 catalog contracts, typecheck, full lint and
+migration-artifact verification pass. Only disposable local databases were used.
+
+## Compressed normalization preview
+
+`planCompressedSourceStatsNormalization(request)` now verifies the qualified
+compressed inventory and native JSON context in one schema-17 guarded batch.
+Its explicit plan version is `nflverse-stats-normalization-plan-v3`; released
+text v1/v2 plans keep their original shape and parser policy. Compressed raw
+replay evidence now includes `publications` (capture ID, request hash, complete
+claim-array hash and database recording time), all covered by its input digest.
+V3 binds that seal metadata as `binding.sourcePublications` alongside exact
+wire/capture identities, source ordinals and selected hashes, native bridges,
+schedule, identity links, decisions and research-rights decisions.
+
+The planner supports the qualified 2025/2026 raw assets and reuses the existing
+identity and payload rules. It preserves missing/refused/ambiguous source states,
+requires native game/team/opponent/player/schedule evidence, checks bridge windows
+at kickoff, and infers no participation, completion or blank numeric values.
+Source and native bytes share the existing unique stored-byte budget. Native
+research rights are checked before file access and after planning, with scheduled
+expiry withholding the result. The pure planner is not a source authenticator;
+only the guarded preview supplies its independently verified publication input.
+
+This checkpoint adds no DDL. The existing recorder rejects v3; it creates no
+source binding, research stats revision, consumer, feature, label, dataset or pin.
+0018 only remains reserved for #106's independent SQL v3 validation and recorder,
+compressed row references, consumer evidence closure and deletion/pin integration.
+No compressed parser fallback or changes to the v1 history policy are introduced.
+
+Validation: 774 Node tests, 201 PostgreSQL tests, 75 DB checks, 11 worker checks,
+18 catalog contracts, typecheck, full lint and migration-artifact verification
+pass. Only disposable local PostgreSQL was used; frozen 0001–0017 are unchanged.
 
 ## #118 numerical-reader interface checkpoint
 
@@ -457,3 +744,103 @@ Final validation passes 756 Node tests, 75 Node DB checks and 196 PostgreSQL tes
 (171 mandatory predictive cases), typecheck, affected-file lint and all 17 catalog
 contracts. Frozen/generated prefix files match `986bfed`. No new migration or
 persistent/hosted database operation is included.
+
+
+## Current allocation after reader integration
+
+Relay checkpoints `986bfed` and `86c141d` are integrated for #106. Frozen
+0001–0017 remain unchanged. #106 owns 0018 only; #118 owns 0019 only for audited
+invalidation, to finalize against the validated 0018 prefix once published.
+
+## 0018 compressed bindings and consumer integration
+
+Migration `0018_predictive_compressed_bindings.sql` implements the explicit v3
+SQL plan and execute-only compressed binding recorder. `recordCompressedSourceNormalization`
+uses the global writer lock followed by the shared evidence guard, independently
+reconstructs the complete plan in SQL, and retains the released binding/revision
+IDs, predecessor rules and association graph. The legacy recorder rejects v3;
+legacy CSV qualification and read-only repeatable-read paths remain unchanged.
+
+The private materializer copies the complete sealed claim array into existing
+`predictive_source_stats_rows`, preserving all ordinals and refusals. Private
+transaction authorization blocks direct gzip row insertion. Deferred completion
+compares the entire materialized array with the publication seal and clears the
+authorization; a later deferred binding trigger rechecks source/native research
+rights after this work. Unrelated rows are materialized but receive no canonical
+binding or statistical observation. Text bounds remain 8 MB/8,192 records;
+compressed rows use only the existing qualified 8 MB/80,000-record namespace.
+
+V3 SQL planning uses indexed immutable rows after full materialization; before
+that boundary it reads the immutable publication array. Filesystem authenticity
+still comes from independently decoding exact gzip bytes. Publication metadata
+and decoded proofs are memoized only inside one guarded transaction; current
+rights/deletion gates remain fresh and do not repeat full-array hashing at each
+clock check. Source/native bytes share the 20 MB unique-wire budget, and actual
+gzip work shares 64 MB decoded output and 160,000 rows across the transaction.
+
+The existing source witness, reconciliation, participation, feature and label
+paths recognize v3 explicitly. Source profile routing selects a shared guard for
+gzip while retaining legacy CSV isolation. Feature mathematics, label policy and
+v1 multi-season history are unchanged. Dataset closure now explicitly includes
+compressed publication and codec-inspection references, in addition to existing
+row/capture/blob/native/rights references. Existing deletion procedures remove
+complete binding lineages, consumers, inventories, datasets and pins; pins never
+override mandatory deletion. The binary artifact and cleanup interfaces are unchanged.
+
+#118 owns 0019 only for audited invalidation. No #106 migration after 0018 is
+reserved. Relay checkpoints `986bfed` and `86c141d` are included in this combined
+checkpoint. Real source/identity/membership/completion qualification remains
+required; synthetic consumer success does not establish training readiness.
+
+Frozen migration prefix: **0001–0018**. 0018 SHA-256:
+`58f0d5ae8cf11700d64370bf4dfdde8844dd2be6380935e103c84457a538de1e`.
+Frozen 0001–0017 SQL and catalog artifacts are byte-for-byte unchanged.
+Validation passes: 783 Node tests, 219 PostgreSQL tests (194 mandatory predictive
+cases), 75 DB checks, 11 isolated worker checks, 19 catalog contracts, typecheck,
+full lint, migration/readiness checks and whitespace checks. Only disposable
+local databases were migrated; the final gate removed its service and scratch data.
+#118 can finalize 0019 against this prefix; #106 reserves no further DDL.
+
+## 0019 combined integration and frozen checkpoint
+
+Relay integrates `dae2940` by merge, preserving branch history and both sessions'
+readers and tests. Migration 0018 matches the supplied SHA-256
+`58f0d5ae8cf11700d64370bf4dfdde8844dd2be6380935e103c84457a538de1e`.
+The former `a6da525` draft moves into the ordered chain as
+`0019_predictive_training_invalidations.sql`. Its failure vocabulary additionally
+recognizes the compressed source rights and wire/publication/inspection integrity
+errors introduced by the integrated reader. Resource/runtime/cancellation errors
+remain outside the evidence-invalidation vocabulary.
+
+Tests now apply 0019 through the actual migration runner and ledger. A populated
+prefix18 upgrade backfills exact inventory/manifest addresses, preserves the
+previous ledger/evidence and verifies idempotent reruns. Injected failure after
+the final catalog verification rolls back all 0019 DDL, addresses and ledger rows;
+the original dataset still replays. Fresh installation and every prior upgrade
+fixture now target the complete prefix19. The older-installation refusal case
+retains prefix18, where audit status stays explicitly `not-installed`.
+
+A new compressed-consumer regression uses the replay-only and retention-only
+logins. Damaged wire bytes and a mismatched stored decoded proof append sanitized
+reader diagnostics after rollback. Restored bytes/proof replay the same manifest.
+Revoked rights refuse before any binary read and yield a database-confirmed
+receipt. Mandatory deletion removes compressed bytes and the existing closure,
+while its digest-only audit survives. Existing text and exact-backup recovery
+cases remain mandatory. No binary storage, quota, codec worker or retention
+procedure is replaced by 0019.
+
+The combined final gate passes: **787 Node tests**, **75 DB checks + 229
+PostgreSQL tests** (204 mandatory predictive cases), **11 codec-worker checks**,
+all **20 catalog contracts**, typecheck and full lint. Logs are
+`/private/tmp/dfs118-schema19-db-clean.log` and
+`/private/tmp/dfs118-schema19-{node,types,lint,contracts}.log`.
+The bootstrap inventory ordering was corrected; three later wall-time timeouts
+passed focused rechecks before the clean full gate. No timeout was relaxed.
+
+0019 is now frozen with SHA-256
+`4b4502b2b1431faa753ee067a90998f247955437c55edd0db8bc47bfa196e568`.
+All 37 frozen SQL/catalog artifacts in #106's 0001–0018 prefix match `dae2940`
+byte for byte. No migration after 0019 is reserved by this checkpoint. All databases used here
+are disposable/local. #118 still needs deadlines/cancellation, representative
+capacity evidence and independent review; both issues remain incomplete and
+#54 Part B stays blocked by real-source and population qualification.

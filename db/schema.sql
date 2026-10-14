@@ -5625,3 +5625,1334 @@ DO $grants$ BEGIN
       public.predictive_release_training_dataset_pin(text) TO predictive_recorder;
   END IF;
 END $grants$;
+
+-- Qualified raw gzip claims only. No canonical observations, bindings, features
+-- or labels are activated. Legacy CSV tables/limits remain unchanged.
+ALTER TABLE public.predictive_ingestion_runs DROP CONSTRAINT predictive_ingestion_runs_row_count_check;
+ALTER TABLE public.predictive_ingestion_runs ADD CONSTRAINT predictive_ingestion_runs_row_count_check
+  CHECK(row_count BETWEEN 0 AND 8192 OR (code_version='nflverse-gzip-csv-source-claims-v1' AND row_count BETWEEN 1 AND 80000));
+CREATE TABLE public.predictive_compressed_publications (
+  capture_id text PRIMARY KEY REFERENCES public.predictive_captures(id),
+  version text NOT NULL CHECK(version='nflverse-gzip-csv-source-claims-v1'),
+  request_hash text NOT NULL CHECK(request_hash~'^[a-f0-9]{64}$'),
+  claims_sha256 text NOT NULL CHECK(claims_sha256~'^[a-f0-9]{64}$'),
+  claims jsonb NOT NULL CHECK(jsonb_typeof(claims)='array' AND jsonb_array_length(claims) BETWEEN 1 AND 80000),
+  recorded_at timestamptz NOT NULL CHECK(isfinite(recorded_at) AND recorded_at=date_trunc('milliseconds',recorded_at))
+);
+CREATE TABLE public.predictive_compressed_retention_audits (
+  event_id text NOT NULL REFERENCES public.predictive_retention_events(id),
+  capture_digest text NOT NULL CHECK(capture_digest~'^[a-f0-9]{64}$'),
+  removed_rows integer NOT NULL CHECK(removed_rows BETWEEN 1 AND 80000),
+  removed_ids_digest text NOT NULL CHECK(removed_ids_digest~'^[a-f0-9]{64}$'),
+  recorded_at timestamptz NOT NULL CHECK(isfinite(recorded_at) AND recorded_at=date_trunc('milliseconds',recorded_at)),
+  PRIMARY KEY(event_id,capture_digest)
+);
+CREATE TRIGGER predictive_compressed_publications_immutable BEFORE UPDATE OR DELETE ON public.predictive_compressed_publications
+  FOR EACH ROW EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_compressed_publications_no_truncate BEFORE TRUNCATE ON public.predictive_compressed_publications
+  FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_append_only();
+CREATE TRIGGER predictive_compressed_retention_audits_immutable BEFORE UPDATE OR DELETE ON public.predictive_compressed_retention_audits
+  FOR EACH ROW EXECUTE FUNCTION public.predictive_retention_audit_immutable();
+CREATE TRIGGER predictive_compressed_retention_audits_no_truncate BEFORE TRUNCATE ON public.predictive_compressed_retention_audits
+  FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_retention_audit_immutable();
+
+CREATE FUNCTION public.predictive_compressed_profile_valid(artifact text) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+  SELECT coalesce((SELECT p.provider='nflverse' AND p.purpose IN ('source','synthetic-test')
+    AND p.feed IN ('player','team') AND p.parser_version='nflverse-gzip-csv-source-qualification-v1'
+    AND p.allowlist_version='predictive-raw-allowlist-v1' AND p.release_tag='stats_'||p.feed
+    AND a.scope_season IN (2025,2026) AND a.scope_kind='season-file' AND a.scope_filter IS NULL
+    AND a.scope_week IS NULL AND a.scope_game_id IS NULL AND a.retrieval_kind='full'
+    AND p.asset_pattern='stats_'||p.feed||'_week_'||a.scope_season||'.csv.gz'
+    AND a.origin='https://github.com/nflverse/nflverse-data/releases/download/'||p.release_tag||'/'||p.asset_pattern
+    AND p.header_profile_sha256=CASE p.feed WHEN 'player' THEN 'd3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e'
+      ELSE '9e7fda4bb987d8b3d7a8b218a830e1340af30ae832e5eabe7bdaa451dec82d7f' END
+    AND p.evidence_kinds=ARRAY[CASE p.feed WHEN 'player' THEN 'player-game-stats' ELSE 'team-game-stats' END]
+    AND b.media_type='application/gzip' AND b.byte_size BETWEEN 1 AND 8000000
+    FROM public.predictive_artifacts a JOIN public.predictive_source_profiles p ON p.id=a.profile_id
+      JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256 WHERE a.id=artifact),false);
+$$;
+
+CREATE OR REPLACE FUNCTION public.predictive_compressed_capture_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+  IF NEW.state<>'incomplete' AND EXISTS(SELECT 1 FROM public.predictive_artifacts a
+    JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256 WHERE a.id=NEW.artifact_id AND b.media_type='application/gzip')
+    AND public.predictive_compressed_profile_valid(NEW.artifact_id) IS NOT TRUE THEN
+    RAISE EXCEPTION 'predictive-compressed-publication-not-qualified' USING ERRCODE='23514'; END IF;
+  RETURN NEW;
+END
+$$;
+
+-- Reuse unchanged legacy numeric/missingness validation for the new year. The
+-- original raw key/year remain stored; only this boolean shape check is rebased.
+CREATE FUNCTION public.predictive_compressed_projection_valid(data jsonb,feed text,season integer) RETURNS boolean
+LANGUAGE plpgsql STABLE SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+  IF season NOT IN (2025,2026) OR data->>'feed' IS DISTINCT FROM feed
+      OR public.predictive_integer(data->'season',season,season) IS NOT TRUE
+      OR left(data->>'rawGameId',5) IS DISTINCT FROM season::text||'_' THEN RETURN false; END IF;
+  RETURN public.predictive_source_projection_valid(data||jsonb_build_object('season',2026,
+    'rawGameId','2026'||substr(data->>'rawGameId',5))) IS TRUE;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END
+$$;
+
+CREATE FUNCTION public.predictive_compressed_write_guard() RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+  IF NOT pg_has_role(session_user,'predictive_ingest','MEMBER') THEN RAISE EXCEPTION 'compressed-publication-not-authorized' USING ERRCODE='42501'; END IF;
+  IF current_setting('transaction_isolation')<>'read committed' OR current_setting('transaction_read_only')<>'off' THEN
+    RAISE EXCEPTION 'compressed-publication-transaction-refused' USING ERRCODE='25000'; END IF;
+  PERFORM pg_advisory_xact_lock(520052,1);
+  LOCK TABLE
+    public.predictive_artifact_observations,
+    public.predictive_artifacts,
+    public.predictive_blob_removals,
+    public.predictive_blobs,
+    public.predictive_captures,
+    public.predictive_decision_inputs,
+    public.predictive_decisions,
+    public.predictive_feature_run_dependencies,
+    public.predictive_feature_run_pins,
+    public.predictive_feature_run_unpins,
+    public.predictive_feature_runs,
+    public.predictive_games,
+    public.predictive_ingestion_runs,
+    public.predictive_observations,
+    public.predictive_outcome_labels,
+    public.predictive_profile_identity_links,
+    public.predictive_retention_authorizations,
+    public.predictive_retention_events,
+    public.predictive_retention_tombstones,
+    public.predictive_rights_decisions,
+    public.predictive_run_rights,
+    public.predictive_source_binding_captures,
+    public.predictive_source_binding_decisions,
+    public.predictive_source_binding_dependencies,
+    public.predictive_source_binding_links,
+    public.predictive_source_binding_rights,
+    public.predictive_source_binding_rows,
+    public.predictive_source_bindings,
+    public.predictive_source_consumer_bindings,
+    public.predictive_source_consumer_decisions,
+    public.predictive_source_consumer_observations,
+    public.predictive_source_consumer_rights,
+    public.predictive_source_consumer_source_decisions,
+    public.predictive_source_consumers,
+    public.predictive_source_decision_bindings,
+    public.predictive_source_decision_inputs,
+    public.predictive_source_decision_rights,
+    public.predictive_source_decisions,
+    public.predictive_source_profiles,
+    public.predictive_source_stats_revisions,
+    public.predictive_source_stats_rows,
+    public.predictive_teams
+    IN SHARE ROW EXCLUSIVE MODE;
+  LOCK TABLE public.predictive_training_run_identities,public.predictive_training_runs,public.predictive_training_run_events,
+    public.predictive_training_run_slots,public.predictive_training_run_profiles,public.predictive_training_retention_audits IN SHARE ROW EXCLUSIVE MODE;
+  LOCK TABLE public.predictive_compressed_inspections IN SHARE ROW EXCLUSIVE MODE;
+  LOCK TABLE public.predictive_training_dataset_identities,public.predictive_training_datasets,public.predictive_training_dataset_consumers,
+    public.predictive_training_pin_identities,public.predictive_training_dataset_pins,public.predictive_training_dataset_releases,
+    public.predictive_training_dataset_retention_audits IN SHARE ROW EXCLUSIVE MODE;
+  LOCK TABLE public.predictive_compressed_publications,public.predictive_compressed_retention_audits IN SHARE ROW EXCLUSIVE MODE;
+  RETURN public.predictive_source_time(date_trunc('milliseconds',clock_timestamp()));
+END
+$$;
+
+CREATE FUNCTION public.predictive_compressed_source_access(profile text,captured timestamptz) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+  IF NOT (pg_has_role(session_user,'predictive_ingest','MEMBER') OR pg_has_role(session_user,'predictive_replay','MEMBER')) THEN
+    RAISE EXCEPTION 'compressed-publication-not-authorized' USING ERRCODE='42501'; END IF;
+  IF NOT public.predictive_rights_allow(profile,clock_timestamp(),clock_timestamp(),'internal-research')
+      OR NOT public.predictive_rights_allow(profile,captured,captured,'internal-research') THEN
+    RAISE EXCEPTION 'compressed-publication-rights-refused' USING ERRCODE='23514'; END IF;
+  IF EXISTS(SELECT 1 FROM public.predictive_retention_events WHERE scope_descriptor->>'kind'='source'
+      AND scope_descriptor->'profileIds' ? profile
+      AND (scope_descriptor->>'capturedFrom' IS NULL OR captured>=(scope_descriptor->>'capturedFrom')::timestamptz)
+      AND (scope_descriptor->>'capturedBefore' IS NULL OR captured<(scope_descriptor->>'capturedBefore')::timestamptz)) THEN
+    RAISE EXCEPTION 'compressed-publication-erased-source' USING ERRCODE='23514'; END IF;
+END
+$$;
+
+CREATE FUNCTION public.predictive_record_compressed_publication(id text,proof jsonb,rows jsonb) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE c public.predictive_captures; a public.predictive_artifacts; p public.predictive_source_profiles; b public.predictive_blobs;
+  r public.predictive_ingestion_runs; item jsonb; ordinal integer; raw_key text; seal public.predictive_compressed_publications; hash text;
+BEGIN
+  IF NOT pg_has_role(session_user,'predictive_ingest','MEMBER') THEN RAISE EXCEPTION 'compressed-publication-not-authorized' USING ERRCODE='42501'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM pg_locks WHERE pid=pg_backend_pid() AND relation='public.predictive_compressed_publications'::regclass
+      AND mode='ShareRowExclusiveLock' AND granted) THEN RAISE EXCEPTION 'compressed-publication-guard-required' USING ERRCODE='55000'; END IF;
+  SELECT * INTO c FROM public.predictive_captures WHERE predictive_captures.id=predictive_record_compressed_publication.id;
+  SELECT * INTO a FROM public.predictive_artifacts WHERE predictive_artifacts.id=c.artifact_id;
+  SELECT * INTO p FROM public.predictive_source_profiles WHERE predictive_source_profiles.id=a.profile_id;
+  SELECT * INTO b FROM public.predictive_blobs WHERE sha256=a.blob_sha256;
+  SELECT * INTO r FROM public.predictive_ingestion_runs WHERE predictive_ingestion_runs.id=c.run_id;
+  IF public.predictive_compressed_profile_valid(a.id) IS NOT TRUE OR c.state IS DISTINCT FROM 'published' OR r.status IS DISTINCT FROM 'published'
+      OR r.code_version IS DISTINCT FROM 'nflverse-gzip-csv-source-claims-v1' OR r.row_count<>c.parsed_rows
+      OR NOT(c.body_complete AND c.header_verified AND c.parser_succeeded) OR c.available_at<>c.captured_at OR c.published_at IS NOT NULL
+      OR c.publication_evidence IS NOT NULL OR c.captured_at>clock_timestamp() OR c.ingested_at>clock_timestamp()
+      OR p.registered_at>clock_timestamp() OR (a.release_updated_at IS NOT NULL AND a.release_updated_at>c.captured_at)
+      OR public.predictive_compressed_proof_valid(proof) IS NOT TRUE
+      OR proof->>'wireSha256' IS DISTINCT FROM b.sha256 OR (proof->>'wireBytes')::integer<>b.byte_size
+      OR proof->>'feed' IS DISTINCT FROM p.feed OR (proof->>'season')::integer<>a.scope_season
+      OR proof->>'headerSha256' IS DISTINCT FROM p.header_profile_sha256 OR (proof->>'rows')::integer<>c.parsed_rows
+      OR jsonb_typeof(rows) IS DISTINCT FROM 'array' OR jsonb_array_length(rows)<>c.parsed_rows OR c.parsed_rows NOT BETWEEN 1 AND 80000
+      OR octet_length(rows::text)>64000000 THEN RAISE EXCEPTION 'compressed-publication-envelope-refused' USING ERRCODE='23514'; END IF;
+  PERFORM public.predictive_blob_reference_guard(b.storage_ref);
+  PERFORM public.predictive_compressed_source_access(p.id,c.captured_at);
+  IF NOT public.predictive_rights_allow(p.id,clock_timestamp(),clock_timestamp(),'internal-research')
+      OR NOT public.predictive_rights_allow(p.id,c.captured_at,c.captured_at,'internal-research') THEN
+    RAISE EXCEPTION 'compressed-publication-rights-refused' USING ERRCODE='23514'; END IF;
+  ordinal:=0;
+  FOR item IN SELECT value FROM jsonb_array_elements(rows) LOOP
+    ordinal:=ordinal+1;
+    IF public.predictive_source_exact(item,ARRAY['id','rowOrdinal','rawKeySha256','selectedSha256','projection','failureCode']) IS NOT TRUE
+        OR public.predictive_integer(item->'rowOrdinal',ordinal,ordinal) IS NOT TRUE
+        OR item->>'id' IS DISTINCT FROM 'source-row:'||public.predictive_source_digest(jsonb_build_array(c.id,ordinal))
+        OR jsonb_typeof(item->'rawKeySha256') IS DISTINCT FROM 'string' OR item->>'rawKeySha256'!~'^[a-f0-9]{64}$'
+        OR jsonb_typeof(item->'selectedSha256') IS DISTINCT FROM 'string' OR item->>'selectedSha256'!~'^[a-f0-9]{64}$'
+        OR (item->'projection'='null'::jsonb) IS DISTINCT FROM (item->'failureCode'<>'null'::jsonb) THEN
+      RAISE EXCEPTION 'compressed-publication-row-refused' USING ERRCODE='23514'; END IF;
+    IF item->'projection'='null'::jsonb THEN
+      IF item->>'failureCode' NOT IN ('source-stats-context-refused','source-stats-player-refused','source-number-refused',
+          'source-stats-denominator-refused','source-stats-scope-refused') THEN RAISE EXCEPTION 'compressed-publication-row-refused' USING ERRCODE='23514'; END IF;
+    ELSE
+      IF public.predictive_compressed_projection_valid(item->'projection',p.feed,a.scope_season) IS NOT TRUE THEN
+        RAISE EXCEPTION 'compressed-publication-row-refused' USING ERRCODE='23514'; END IF;
+      raw_key:=public.predictive_source_digest(CASE p.feed WHEN 'player' THEN jsonb_build_array(item->'projection'->>'rawGameId',item->'projection'->>'rawTeam',item->'projection'->>'rawPlayerId')
+        ELSE jsonb_build_array(item->'projection'->>'rawGameId',item->'projection'->>'rawTeam') END);
+      IF item->>'rawKeySha256'<>raw_key THEN RAISE EXCEPTION 'compressed-publication-row-refused' USING ERRCODE='23514'; END IF;
+    END IF;
+  END LOOP;
+  hash:=public.predictive_source_digest(rows);
+  SELECT * INTO seal FROM public.predictive_compressed_publications WHERE capture_id=c.id;
+  IF seal.capture_id IS NOT NULL THEN
+    IF seal.request_hash<>r.request_sha256 OR seal.claims_sha256<>hash OR seal.claims IS DISTINCT FROM rows
+        OR (SELECT i.proof FROM public.predictive_compressed_inspections i WHERE i.capture_id=c.id) IS DISTINCT FROM proof THEN
+      RAISE EXCEPTION 'compressed-publication-conflict' USING ERRCODE='23514'; END IF;
+  ELSE
+    INSERT INTO public.predictive_compressed_inspections VALUES(c.id,proof,date_trunc('milliseconds',clock_timestamp()));
+    INSERT INTO public.predictive_compressed_publications VALUES(c.id,'nflverse-gzip-csv-source-claims-v1',r.request_sha256,hash,rows,date_trunc('milliseconds',clock_timestamp())) RETURNING * INTO seal;
+  END IF;
+  IF NOT public.predictive_rights_allow(p.id,clock_timestamp(),clock_timestamp(),'internal-research') THEN
+    RAISE EXCEPTION 'compressed-publication-rights-refused' USING ERRCODE='23514'; END IF;
+  RETURN jsonb_build_object('requestHash',seal.request_hash,'claimsSha256',seal.claims_sha256,'recordedAt',public.predictive_source_time(seal.recorded_at));
+END
+$$;
+
+-- Diagnostics must not become an alternate route around an executed source
+-- erasure. Preserve the complete v15 checks before adding scope authorization.
+ALTER FUNCTION public.predictive_record_compressed_inspection(text,jsonb) RENAME TO predictive_record_compressed_inspection_v15;
+ALTER FUNCTION public.predictive_read_compressed_inspections(text[]) RENAME TO predictive_read_compressed_inspections_v15;
+DO $label$ DECLARE source text; old_label text:='predictive_record_compressed_inspection.id'; BEGIN
+  source:=pg_get_functiondef('public.predictive_record_compressed_inspection_v15(text,jsonb)'::regprocedure);
+  IF (length(source)-length(replace(source,old_label,'')))/length(old_label)<>1 THEN
+    RAISE EXCEPTION 'compressed-inspection-prefix-refused'; END IF;
+  EXECUTE replace(source,old_label,'predictive_record_compressed_inspection_v15.id');
+END $label$;
+REVOKE ALL ON FUNCTION public.predictive_record_compressed_inspection_v15(text,jsonb),public.predictive_read_compressed_inspections_v15(text[]) FROM PUBLIC;
+DO $$ BEGIN
+  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='predictive_ingest') THEN REVOKE ALL ON FUNCTION public.predictive_record_compressed_inspection_v15(text,jsonb) FROM predictive_ingest; END IF;
+  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='predictive_replay') THEN REVOKE ALL ON FUNCTION public.predictive_read_compressed_inspections_v15(text[]) FROM predictive_replay; END IF;
+END $$;
+CREATE FUNCTION public.predictive_record_compressed_inspection(id text,p jsonb) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE result jsonb; item record;
+BEGIN
+  result:=public.predictive_record_compressed_inspection_v15(id,p);
+  SELECT a.profile_id,c.captured_at INTO item FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id WHERE c.id=predictive_record_compressed_inspection.id;
+  PERFORM public.predictive_compressed_source_access(item.profile_id,item.captured_at);
+  RETURN result;
+END
+$$;
+CREATE FUNCTION public.predictive_read_compressed_inspections(ids text[]) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE result jsonb; item record;
+BEGIN
+  result:=public.predictive_read_compressed_inspections_v15(ids);
+  FOR item IN SELECT a.profile_id,c.captured_at FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id WHERE c.id=ANY(ids) LOOP
+    PERFORM public.predictive_compressed_source_access(item.profile_id,item.captured_at);
+  END LOOP;
+  RETURN result;
+END
+$$;
+
+CREATE FUNCTION public.predictive_compressed_publication_check() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+  IF NEW.state='published' AND EXISTS(SELECT 1 FROM public.predictive_artifacts a JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256
+      WHERE a.id=NEW.artifact_id AND b.media_type='application/gzip') AND NOT public.predictive_rights_allow(
+      (SELECT profile_id FROM public.predictive_artifacts WHERE id=NEW.artifact_id),clock_timestamp(),clock_timestamp(),'internal-research') THEN
+    RAISE EXCEPTION 'compressed-publication-rights-refused' USING ERRCODE='23514'; END IF;
+  IF NEW.state='published' AND EXISTS(SELECT 1 FROM public.predictive_artifacts a JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256
+      WHERE a.id=NEW.artifact_id AND b.media_type='application/gzip') AND NOT EXISTS(
+      SELECT 1 FROM public.predictive_compressed_publications p JOIN public.predictive_compressed_inspections i ON i.capture_id=p.capture_id
+      WHERE p.capture_id=NEW.id AND jsonb_array_length(p.claims)=NEW.parsed_rows) THEN
+    RAISE EXCEPTION 'compressed-publication-seal-required' USING ERRCODE='23514'; END IF;
+  RETURN NULL;
+END
+$$;
+CREATE CONSTRAINT TRIGGER predictive_compressed_publication_check AFTER INSERT ON public.predictive_captures
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_compressed_publication_check();
+
+CREATE FUNCTION public.predictive_compressed_run_check() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+  IF NEW.code_version='nflverse-gzip-csv-source-claims-v1' AND (NEW.status<>'published' OR NEW.artifact_count<>1 OR NEW.capture_count<>1
+      OR (SELECT count(*) FROM public.predictive_captures WHERE run_id=NEW.id)<>1 OR NOT EXISTS(
+        SELECT 1 FROM public.predictive_compressed_publications p JOIN public.predictive_captures c ON c.id=p.capture_id
+        WHERE c.run_id=NEW.id AND c.state='published' AND c.parsed_rows=NEW.row_count AND jsonb_array_length(p.claims)=NEW.row_count
+          AND p.request_hash=NEW.request_sha256 AND public.predictive_compressed_profile_valid(c.artifact_id))) THEN
+    RAISE EXCEPTION 'compressed-publication-run-refused' USING ERRCODE='23514'; END IF;
+  RETURN NULL;
+END
+$$;
+CREATE CONSTRAINT TRIGGER predictive_compressed_run_check AFTER INSERT ON public.predictive_ingestion_runs
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_compressed_run_check();
+
+ALTER FUNCTION public.predictive_training_read_guard() RENAME TO predictive_training_dataset_guard;
+REVOKE ALL ON FUNCTION public.predictive_training_dataset_guard() FROM PUBLIC;
+DO $$ BEGIN IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='predictive_replay') THEN
+  REVOKE ALL ON FUNCTION public.predictive_training_dataset_guard() FROM predictive_replay; END IF; END $$;
+CREATE FUNCTION public.predictive_training_read_guard() RETURNS text
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+  PERFORM public.predictive_training_dataset_guard();
+  LOCK TABLE public.predictive_compressed_publications,public.predictive_compressed_retention_audits IN SHARE MODE;
+  RETURN public.predictive_source_time(date_trunc('milliseconds',clock_timestamp()));
+END
+$$;
+
+CREATE FUNCTION public.predictive_read_compressed_publications(ids text[]) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE metadata jsonb; result jsonb; item jsonb; publication public.predictive_compressed_publications;
+BEGIN
+  metadata:=public.predictive_read_compressed_inspections(ids);
+  IF NOT EXISTS(SELECT 1 FROM pg_locks WHERE pid=pg_backend_pid() AND relation='public.predictive_compressed_publications'::regclass AND mode='ShareLock' AND granted) THEN
+    RAISE EXCEPTION 'compressed-publication-guard-required' USING ERRCODE='55000'; END IF;
+  result:='[]';
+  FOR item IN SELECT value FROM jsonb_array_elements(metadata) LOOP
+    SELECT p.* INTO publication FROM public.predictive_compressed_publications p JOIN public.predictive_captures c ON c.id=p.capture_id
+      JOIN public.predictive_ingestion_runs r ON r.id=c.run_id WHERE p.capture_id=item->>'captureId' AND c.state='published' AND r.status='published'
+      AND public.predictive_compressed_profile_valid(c.artifact_id) AND p.request_hash=r.request_sha256;
+    IF publication.capture_id IS NULL THEN RAISE EXCEPTION 'compressed-publication-missing' USING ERRCODE='23514'; END IF;
+    PERFORM public.predictive_compressed_source_access((SELECT a.profile_id FROM public.predictive_captures c
+      JOIN public.predictive_artifacts a ON a.id=c.artifact_id WHERE c.id=publication.capture_id),
+      (SELECT captured_at FROM public.predictive_captures WHERE id=publication.capture_id));
+    IF public.predictive_source_digest(publication.claims)<>publication.claims_sha256 THEN RAISE EXCEPTION 'compressed-publication-integrity-failed' USING ERRCODE='23514'; END IF;
+    result:=result||jsonb_build_array(item||jsonb_build_object('publication',jsonb_build_object('requestHash',publication.request_hash,
+      'claimsSha256',publication.claims_sha256,'recordedAt',public.predictive_source_time(publication.recorded_at))));
+  END LOOP;
+  RETURN result;
+END
+$$;
+
+CREATE OR REPLACE FUNCTION public.predictive_compressed_capture_delete() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE event_id text; publication public.predictive_compressed_publications; ids jsonb;
+BEGIN
+  IF EXISTS(SELECT 1 FROM public.predictive_compressed_inspections WHERE capture_id=OLD.id) THEN
+    SELECT retention_event_id INTO event_id FROM public.predictive_retention_authorizations WHERE txid=pg_current_xact_id();
+    IF NOT pg_has_role(session_user,'predictive_retention_owner','MEMBER') OR event_id IS NULL THEN
+      RAISE EXCEPTION 'compressed-inspection-deletion-not-authorized' USING ERRCODE='42501'; END IF;
+    SELECT * INTO publication FROM public.predictive_compressed_publications WHERE capture_id=OLD.id;
+    IF publication.capture_id IS NOT NULL THEN
+      SELECT jsonb_agg(value->>'id' ORDER BY value->>'id' COLLATE "C") INTO ids FROM jsonb_array_elements(publication.claims);
+      INSERT INTO public.predictive_compressed_retention_audits VALUES(event_id,public.predictive_source_digest(to_jsonb(OLD.id)),
+        jsonb_array_length(publication.claims),public.predictive_source_digest(ids),date_trunc('milliseconds',clock_timestamp()));
+      DELETE FROM public.predictive_compressed_publications WHERE capture_id=OLD.id;
+    END IF;
+    DELETE FROM public.predictive_compressed_inspections WHERE capture_id=OLD.id;
+  END IF;
+  RETURN OLD;
+END
+$$;
+CREATE FUNCTION public.predictive_compressed_retention_result(event text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE result jsonb;
+BEGIN
+  IF NOT pg_has_role(session_user,'predictive_retention_owner','MEMBER') THEN RAISE EXCEPTION 'compressed-retention-not-authorized' USING ERRCODE='42501'; END IF;
+  SELECT coalesce(jsonb_agg(jsonb_build_object('captureDigest',capture_digest,'removedRows',removed_rows,'removedIdsDigest',removed_ids_digest)
+    ORDER BY capture_digest COLLATE "C"),'[]') INTO result FROM public.predictive_compressed_retention_audits WHERE event_id=event;
+  RETURN result;
+END
+$$;
+
+REVOKE ALL ON TABLE public.predictive_compressed_publications,public.predictive_compressed_retention_audits FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.predictive_compressed_profile_valid(text),public.predictive_compressed_projection_valid(jsonb,text,integer),
+  public.predictive_compressed_write_guard(),public.predictive_record_compressed_publication(text,jsonb,jsonb),
+  public.predictive_compressed_source_access(text,timestamptz),
+  public.predictive_record_compressed_inspection(text,jsonb),public.predictive_read_compressed_inspections(text[]),
+  public.predictive_compressed_publication_check(),public.predictive_compressed_run_check(),public.predictive_training_read_guard(),public.predictive_read_compressed_publications(text[]),
+  public.predictive_compressed_retention_result(text) FROM PUBLIC;
+DO $$ BEGIN
+  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='predictive_ingest') THEN
+    GRANT EXECUTE ON FUNCTION public.predictive_compressed_write_guard(),public.predictive_record_compressed_publication(text,jsonb,jsonb),
+      public.predictive_compressed_source_access(text,timestamptz),public.predictive_record_compressed_inspection(text,jsonb) TO predictive_ingest; END IF;
+  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='predictive_replay') THEN
+    GRANT EXECUTE ON FUNCTION public.predictive_training_read_guard(),public.predictive_read_compressed_publications(text[]),
+      public.predictive_read_compressed_inspections(text[]) TO predictive_replay; END IF;
+  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='predictive_retention_owner') THEN
+    GRANT EXECUTE ON FUNCTION public.predictive_compressed_retention_result(text) TO predictive_retention_owner; END IF;
+END $$;
+
+-- Versioned compressed bindings share the released lineage, row-reference,
+-- consumer and retention graph. Legacy CSV qualification remains unchanged.
+CREATE TABLE public.predictive_compressed_row_authorizations (
+  transaction_id xid8 NOT NULL, capture_id text NOT NULL REFERENCES public.predictive_compressed_publications(capture_id),
+  PRIMARY KEY(transaction_id,capture_id)
+);
+REVOKE ALL ON public.predictive_compressed_row_authorizations FROM PUBLIC;
+
+ALTER TABLE public.predictive_source_stats_rows DROP CONSTRAINT predictive_source_stats_rows_row_ordinal_check;
+ALTER TABLE public.predictive_source_stats_rows ADD CONSTRAINT predictive_source_stats_rows_row_ordinal_check CHECK(row_ordinal BETWEEN 1 AND 80000);
+CREATE FUNCTION public.predictive_materialized_projection_valid(capture text,projection jsonb) RETURNS boolean
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE feed text; season integer;
+BEGIN
+  -- Only the private materializer can create this transaction authorization.
+  -- It copies the already validated sealed array; deferred coverage hashes the
+  -- COMPLETE typed result once per capture, rather than once per copied row.
+  IF EXISTS(SELECT 1 FROM public.predictive_compressed_row_authorizations
+      WHERE transaction_id=pg_current_xact_id_if_assigned() AND capture_id=capture) THEN RETURN true; END IF;
+  -- Existing compressed rows still satisfy a durable shape predicate after
+  -- transaction authorization is removed, including catalog/restore validation.
+  SELECT p.feed,a.scope_season INTO feed,season FROM public.predictive_captures c
+    JOIN public.predictive_artifacts a ON a.id=c.artifact_id JOIN public.predictive_source_profiles p ON p.id=a.profile_id
+    JOIN public.predictive_compressed_publications publication ON publication.capture_id=c.id
+    JOIN public.predictive_blobs blob ON blob.sha256=a.blob_sha256 WHERE c.id=capture AND blob.media_type='application/gzip';
+  IF FOUND THEN RETURN public.predictive_compressed_projection_valid(projection,feed,season) IS TRUE; END IF;
+  RETURN public.predictive_source_projection_valid(projection) IS TRUE;
+END $$;
+REVOKE ALL ON FUNCTION public.predictive_materialized_projection_valid(text,jsonb) FROM PUBLIC;
+DO $grants$ BEGIN IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='predictive_ingest') THEN
+  GRANT EXECUTE ON FUNCTION public.predictive_materialized_projection_valid(text,jsonb) TO predictive_ingest;
+END IF; END $grants$;
+
+ALTER TABLE public.predictive_source_stats_rows DROP CONSTRAINT predictive_source_stats_rows_projection_check;
+ALTER TABLE public.predictive_source_stats_rows ADD CONSTRAINT predictive_source_stats_rows_projection_check CHECK(projection IS NULL OR
+  public.predictive_materialized_projection_valid(capture_id,projection) IS TRUE);
+
+CREATE FUNCTION public.predictive_compressed_row_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+  IF EXISTS(SELECT 1 FROM public.predictive_compressed_row_authorizations WHERE transaction_id=pg_current_xact_id_if_assigned() AND capture_id=NEW.capture_id) THEN
+    RETURN NEW; END IF;
+  IF EXISTS(SELECT 1 FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id
+      JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256 WHERE c.id=NEW.capture_id AND b.media_type='application/gzip') THEN
+    RAISE EXCEPTION 'compressed-row-materializer-required' USING ERRCODE='42501'; END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER predictive_compressed_row_guard BEFORE INSERT ON public.predictive_source_stats_rows
+FOR EACH ROW EXECUTE FUNCTION public.predictive_compressed_row_guard();
+
+CREATE FUNCTION public.predictive_compressed_row_authorization_finish() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE actual jsonb; expected text;
+BEGIN
+  SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'rowOrdinal',row_ordinal,'rawKeySha256',raw_key_sha256,
+    'selectedSha256',selected_sha256,'projection',projection,'failureCode',failure_code) ORDER BY row_ordinal),'[]') INTO actual
+    FROM public.predictive_source_stats_rows WHERE capture_id=NEW.capture_id;
+  SELECT claims_sha256 INTO STRICT expected FROM public.predictive_compressed_publications WHERE capture_id=NEW.capture_id;
+  IF public.predictive_source_digest(actual) IS DISTINCT FROM expected THEN
+    RAISE EXCEPTION 'compressed-materialized-coverage-invalid' USING ERRCODE='23514'; END IF;
+  DELETE FROM public.predictive_compressed_row_authorizations WHERE transaction_id=NEW.transaction_id AND capture_id=NEW.capture_id;
+  RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER predictive_compressed_row_authorization_finish AFTER INSERT ON public.predictive_compressed_row_authorizations
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_compressed_row_authorization_finish();
+
+CREATE FUNCTION public.predictive_compressed_binding_guard() RETURNS text
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+  IF NOT pg_has_role(session_user,'predictive_recorder','MEMBER') THEN RAISE EXCEPTION 'compressed-binding-not-authorized' USING ERRCODE='42501'; END IF;
+  PERFORM pg_advisory_xact_lock(520052,1);
+  PERFORM public.predictive_training_read_guard();
+  LOCK TABLE public.predictive_source_stats_rows IN SHARE ROW EXCLUSIVE MODE;
+  RETURN public.predictive_source_time(date_trunc('milliseconds',clock_timestamp()));
+END $$;
+
+CREATE FUNCTION public.predictive_materialize_compressed_rows(capture text) RETURNS void
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE publication public.predictive_compressed_publications;
+BEGIN
+  SELECT * INTO STRICT publication FROM public.predictive_compressed_publications WHERE capture_id=capture;
+  IF public.predictive_source_digest(publication.claims) IS DISTINCT FROM publication.claims_sha256 THEN
+    RAISE EXCEPTION 'compressed-publication-integrity-failed' USING ERRCODE='23514'; END IF;
+  INSERT INTO public.predictive_compressed_row_authorizations VALUES(pg_current_xact_id(),capture) ON CONFLICT DO NOTHING;
+  INSERT INTO public.predictive_source_stats_rows(id,capture_id,row_ordinal,raw_key_sha256,selected_sha256,projection,failure_code)
+    SELECT x->>'id',capture,(x->>'rowOrdinal')::integer,x->>'rawKeySha256',x->>'selectedSha256',nullif(x->'projection','null'::jsonb),x->>'failureCode'
+    FROM jsonb_array_elements(publication.claims) x ON CONFLICT(id) DO NOTHING;
+END $$;
+
+ALTER FUNCTION public.predictive_source_request_key(jsonb) RENAME TO predictive_source_request_key_v6;
+CREATE FUNCTION public.predictive_source_request_key(req jsonb) RETURNS text
+LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  IF EXISTS(SELECT 1 FROM public.predictive_source_profiles WHERE id=req->>'profileId' AND parser_version='nflverse-gzip-csv-source-qualification-v1') THEN
+    IF req->>'rawGameId' !~ '^(2025|2026)_[0-9]{2}_[A-Z]{2,3}_[A-Z]{2,3}$' THEN
+      RAISE EXCEPTION 'predictive-source-request-invalid' USING ERRCODE='23514'; END IF;
+    PERFORM public.predictive_source_request_key_v6(jsonb_set(req,'{rawGameId}',to_jsonb('2026' || substr(req->>'rawGameId',5))));
+    RETURN public.predictive_source_digest(jsonb_build_array(req->>'rawGameId',req->>'rawTeam') ||
+      CASE WHEN req->'rawPlayerId'='null'::jsonb THEN '[]'::jsonb ELSE jsonb_build_array(req->>'rawPlayerId') END);
+  END IF;
+  RETURN public.predictive_source_request_key_v6(req);
+END $$;
+
+
+CREATE OR REPLACE FUNCTION public.predictive_source_claim_check() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE cap public.predictive_captures; art public.predictive_artifacts; profile public.predictive_source_profiles;
+  media text; n integer; maximum integer; minimum integer; expected_key text;
+BEGIN
+  IF TG_TABLE_NAME='predictive_source_stats_rows' THEN
+    IF EXISTS(SELECT 1 FROM public.predictive_compressed_publications WHERE capture_id=NEW.capture_id) THEN
+      RETURN NULL; -- complete sealed-array coverage is checked once at COMMIT
+    END IF;
+  END IF;
+  IF TG_TABLE_NAME = 'predictive_captures' THEN SELECT * INTO cap FROM public.predictive_captures WHERE id = NEW.id;
+  ELSE SELECT * INTO cap FROM public.predictive_captures WHERE id = NEW.capture_id; END IF;
+  SELECT * INTO art FROM public.predictive_artifacts WHERE id = cap.artifact_id;
+  SELECT * INTO profile FROM public.predictive_source_profiles WHERE id = art.profile_id;
+  SELECT media_type INTO media FROM public.predictive_blobs WHERE sha256 = art.blob_sha256;
+  IF media='application/gzip' THEN
+    -- BEFORE INSERT requires private materialization authorization. Its deferred
+    -- finish independently compares the full copied array with the immutable
+    -- publication seal; repeating numeric/header checks for every row adds no
+    -- evidence. The released capture publication trigger still checks the seal.
+    RETURN NULL;
+  END IF;
+  IF TG_TABLE_NAME='predictive_source_stats_rows' THEN
+    IF NEW.row_ordinal>8192 OR (NEW.projection IS NOT NULL AND public.predictive_source_projection_valid(NEW.projection) IS NOT TRUE) THEN
+      RAISE EXCEPTION 'predictive-source-claim-envelope-invalid' USING ERRCODE='23514'; END IF;
+  END IF;
+  -- Existing diagnostic CSVs and the released JSON proof retain their contracts.
+  IF TG_TABLE_NAME = 'predictive_captures' AND (media <> 'text/csv' OR profile.parser_version <> 'nflverse-csv-qualification-v1') THEN RETURN NULL; END IF;
+  IF media <> 'text/csv' OR profile.parser_version <> 'nflverse-csv-qualification-v1'
+      OR profile.allowlist_version <> 'predictive-raw-allowlist-v1' OR profile.feed NOT IN ('player','team')
+      OR profile.purpose NOT IN ('source','synthetic-test') OR profile.provider <> 'nflverse'
+      OR profile.release_tag IS DISTINCT FROM 'stats_' || profile.feed
+      OR profile.asset_pattern IS DISTINCT FROM 'stats_' || profile.feed || '_week_2026.csv'
+      OR profile.header_profile_sha256 IS NULL
+      OR NOT (CASE profile.feed WHEN 'player' THEN 'player-game-stats' ELSE 'team-game-stats' END = ANY(profile.evidence_kinds))
+      OR cap.state <> 'published' OR art.retrieval_kind <> 'full' OR art.scope_kind <> 'season-file'
+      OR art.scope_season <> 2026 OR art.scope_filter IS NOT NULL OR cap.published_at IS NOT NULL
+      OR cap.available_at <> cap.captured_at OR cap.ingested_at > clock_timestamp()
+      OR NOT public.predictive_rights_allow(profile.id, clock_timestamp(), clock_timestamp(), 'internal-research') THEN
+    RAISE EXCEPTION 'predictive-source-claim-envelope-invalid' USING ERRCODE = '23514';
+  END IF;
+  IF TG_TABLE_NAME = 'predictive_captures' THEN
+    SELECT count(*), min(row_ordinal), max(row_ordinal) INTO n, minimum, maximum
+      FROM public.predictive_source_stats_rows WHERE capture_id = cap.id;
+    IF n <> cap.parsed_rows OR n < 1 OR minimum <> 1 OR maximum <> n THEN
+      RAISE EXCEPTION 'predictive-source-claim-coverage-invalid' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  IF TG_TABLE_NAME = 'predictive_source_stats_rows' THEN
+    IF NEW.row_ordinal > cap.parsed_rows THEN RAISE EXCEPTION 'predictive-source-claim-coverage-invalid' USING ERRCODE = '23514'; END IF;
+    IF NEW.id <> 'source-row:' || encode(sha256(convert_to('[' || to_json(NEW.capture_id)::text || ',' || NEW.row_ordinal::text || ']', 'UTF8')), 'hex') THEN
+      RAISE EXCEPTION 'predictive-source-claim-id-invalid' USING ERRCODE = '23514';
+    END IF;
+    IF NEW.projection IS NOT NULL THEN
+      expected_key := '[' || to_json(NEW.projection->>'rawGameId')::text || ',' || to_json(NEW.projection->>'rawTeam')::text
+        || CASE profile.feed WHEN 'player' THEN ',' || to_json(NEW.projection->>'rawPlayerId')::text ELSE '' END || ']';
+      IF NEW.projection->>'feed' <> profile.feed OR NEW.raw_key_sha256 <> encode(sha256(convert_to(expected_key, 'UTF8')), 'hex') THEN
+        RAISE EXCEPTION 'predictive-source-claim-key-invalid' USING ERRCODE = '23514';
+      END IF;
+    END IF;
+  END IF;
+  RETURN NULL;
+END
+$$;
+
+CREATE FUNCTION public.predictive_source_plan_v3(req jsonb, rights_time timestamptz) RETURNS jsonb
+LANGUAGE plpgsql STABLE AS $$
+DECLARE p public.predictive_source_profiles; t timestamptz; raw_key text;
+  caps jsonb; cap jsonb; source_rows jsonb:='[]'; row_refs jsonb:='[]'; stats jsonb;
+  reason text; candidate jsonb; deps jsonb:='[]'; links jsonb:='[]'; decisions jsonb:='[]'; rights_ids jsonb;
+  ids text[]; rivals text[]; role_name text; fact text; game text; team text; opponent text; player text; chosen text;
+  schedule jsonb; parts text[]; decision_ids text[]; values_count integer; bad boolean; data jsonb; b jsonb;
+  d public.predictive_decisions; publications jsonb:='[]'; sealed public.predictive_compressed_publications; materialized integer;
+BEGIN
+  raw_key:=public.predictive_source_request_key(req); t:=(req->>'cutoff')::timestamptz;
+  SELECT * INTO p FROM public.predictive_source_profiles WHERE id=req->>'profileId';
+  IF rights_time IS NULL OR NOT isfinite(rights_time) OR t>rights_time OR p.id IS NULL OR p.provider<>'nflverse'
+      OR p.parser_version<>'nflverse-gzip-csv-source-qualification-v1' OR p.allowlist_version<>'predictive-raw-allowlist-v1'
+      OR p.release_tag IS DISTINCT FROM 'stats_' || p.feed
+      OR p.asset_pattern IS DISTINCT FROM 'stats_' || p.feed || '_week_' || left(req->>'rawGameId',4) || '.csv.gz'
+      OR p.header_profile_sha256 IS DISTINCT FROM (CASE p.feed WHEN 'player' THEN 'd3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e' ELSE '9e7fda4bb987d8b3d7a8b218a830e1340af30ae832e5eabe7bdaa451dec82d7f' END)
+      OR p.feed NOT IN ('player','team') OR (p.feed='player') IS DISTINCT FROM (req->'rawPlayerId'<>'null'::jsonb)
+      OR public.predictive_rights_allow(p.id,rights_time,rights_time,'internal-research') IS NOT TRUE THEN
+    RAISE EXCEPTION 'predictive-source-plan-rights-profile-invalid' USING ERRCODE='23514'; END IF;
+
+  WITH eligible AS (SELECT c.*,dense_rank() OVER (ORDER BY c.captured_at DESC) AS rank
+    FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id
+    JOIN public.predictive_blobs bl ON bl.sha256=a.blob_sha256 JOIN public.predictive_ingestion_runs r ON r.id=c.run_id
+    JOIN public.predictive_compressed_publications publication ON publication.capture_id=c.id
+    WHERE a.profile_id=p.id AND a.scope_kind='season-file' AND a.scope_season=left(req->>'rawGameId',4)::integer AND a.scope_filter IS NULL AND bl.media_type='application/gzip'
+      AND c.state='published' AND r.status='published' AND c.available_at<=t AND c.ingested_at<=t
+      AND publication.recorded_at<=t AND public.predictive_compressed_profile_valid(a.id))
+  SELECT coalesce(jsonb_agg(jsonb_build_object('id',c.id,'runId',c.run_id,'artifactId',c.artifact_id,
+    'capturedAt',public.predictive_source_time(c.captured_at),'availableAt',public.predictive_source_time(c.available_at),
+    'ingestedAt',public.predictive_source_time(c.ingested_at),'parsedRows',c.parsed_rows,'sha256',a.blob_sha256,
+    'storageRef',bl.storage_ref,'byteSize',bl.byte_size) ORDER BY c.ingested_at,c.id COLLATE "C"),'[]')
+    INTO caps FROM eligible c JOIN public.predictive_artifacts a ON a.id=c.artifact_id
+    JOIN public.predictive_blobs bl ON bl.sha256=a.blob_sha256 WHERE c.rank=1;
+  IF jsonb_array_length(caps)>256 THEN RAISE EXCEPTION 'predictive-source-plan-bounds-refused' USING ERRCODE='23514'; END IF;
+
+  <<normalization>> BEGIN
+    IF caps='[]'::jsonb THEN
+      reason:=CASE WHEN EXISTS (SELECT 1 FROM public.predictive_retention_events
+        WHERE scope_descriptor->>'kind'='source' AND scope_descriptor->'profileIds' ? p.id
+          AND (scope_descriptor->>'capturedFrom' IS NULL OR (scope_descriptor->>'capturedFrom')::timestamptz<=t))
+        THEN 'retained-evidence-removed' ELSE 'source-capture-missing' END;
+      EXIT normalization;
+    END IF;
+    IF (SELECT count(DISTINCT x->>'sha256') FROM jsonb_array_elements(caps) x)>1 THEN
+      reason:='source-capture-ambiguous'; EXIT normalization; END IF;
+    cap:=caps->0; caps:=jsonb_build_array(cap);
+    SELECT count(*) INTO materialized FROM public.predictive_source_stats_rows WHERE capture_id=cap->>'id';
+    IF materialized>0 THEN
+      IF materialized<>(cap->>'parsedRows')::integer THEN RAISE EXCEPTION 'compressed-materialized-coverage-invalid' USING ERRCODE='23514'; END IF;
+      -- These immutable tuples are populated only by the private materializer,
+      -- whose deferred finish verifies the COMPLETE sealed array before commit.
+      -- This metadata kernel never claims to authenticate filesystem bytes.
+      SELECT coalesce(jsonb_agg(jsonb_build_object('id',s.id,'rowOrdinal',s.row_ordinal,'rawKeySha256',s.raw_key_sha256,
+          'selectedSha256',s.selected_sha256,'projection',s.projection,'failureCode',s.failure_code) ORDER BY s.row_ordinal),'[]'),
+        coalesce(jsonb_agg(jsonb_build_object('id',s.id,'rowOrdinal',s.row_ordinal,'selectedSha256',s.selected_sha256) ORDER BY s.row_ordinal),'[]')
+        INTO source_rows,row_refs FROM public.predictive_source_stats_rows s WHERE s.capture_id=cap->>'id' AND s.raw_key_sha256=raw_key;
+    ELSE
+    SELECT * INTO STRICT sealed FROM public.predictive_compressed_publications WHERE capture_id=cap->>'id';
+    -- Publication payloads are immutable and validated when sealed. The recorder's
+    -- materializer verifies their complete hash once before copying any rows.
+    SELECT coalesce(jsonb_agg(x ORDER BY (x->>'rowOrdinal')::integer),'[]'),
+      coalesce(jsonb_agg(jsonb_build_object('id',x->'id','rowOrdinal',x->'rowOrdinal','selectedSha256',x->'selectedSha256') ORDER BY (x->>'rowOrdinal')::integer),'[]')
+      INTO source_rows,row_refs FROM jsonb_array_elements(sealed.claims) x WHERE x->>'rawKeySha256'=raw_key;
+    END IF;
+    IF source_rows='[]'::jsonb THEN reason:='source-row-missing'; EXIT normalization;
+    ELSIF (SELECT count(DISTINCT x->>'selectedSha256') FROM jsonb_array_elements(source_rows) x)>1 THEN
+      reason:='source-row-ambiguous'; EXIT normalization;
+    ELSIF source_rows->0->>'failureCode' IS NOT NULL THEN reason:='source-row-refused'; EXIT normalization; END IF;
+    stats:=source_rows->0->'projection';
+
+    FOREACH role_name IN ARRAY ARRAY['game-bridge','team-alias','opponent-alias'] LOOP
+      fact:=CASE role_name WHEN 'game-bridge' THEN 'game-bridge:nflverse:' || (stats->>'rawGameId')
+        WHEN 'team-alias' THEN 'team-alias:nflverse:' || (stats->>'rawTeam') ELSE 'team-alias:nflverse:' || (stats->>'rawOpponent') END;
+      SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE "C"),'{}') INTO ids FROM public.predictive_observations o
+        WHERE o.entity_key=fact AND public.predictive_source_is_head(o.id,t,rights_time);
+      deps:=deps || public.predictive_source_dependencies(ids,role_name,t);
+      SELECT count(DISTINCT CASE role_name WHEN 'game-bridge' THEN o.data->>'gameId' ELSE o.data->>'teamId' END),
+        min(CASE role_name WHEN 'game-bridge' THEN o.data->>'gameId' ELSE o.data->>'teamId' END)
+        INTO values_count,chosen FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind=CASE role_name WHEN 'game-bridge' THEN 'game-bridge' ELSE 'team-alias' END
+          AND (role_name='game-bridge' OR ((o.data->>'effectiveFromSeason')::integer <= (stats->>'season')::integer
+            AND (o.data->>'effectiveToSeason')::integer >= (stats->>'season')::integer));
+      IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='source-row-absent') OR values_count>1 THEN
+        reason:=role_name || '-conflict'; EXIT normalization;
+      ELSIF values_count=0 THEN reason:=role_name || '-missing'; EXIT normalization; END IF;
+      IF role_name='game-bridge' THEN
+        game:=chosen;
+        SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE "C"),'{}') INTO rivals FROM public.predictive_observations o
+          WHERE o.kind='game-bridge' AND o.data->>'provider'=p.provider AND o.game_id=game::uuid
+            AND o.data->>'rawGameId'<>stats->>'rawGameId' AND public.predictive_source_is_head(o.id,t,rights_time);
+        IF cardinality(rivals)>0 THEN deps:=deps || public.predictive_source_dependencies(rivals,role_name,t);
+          reason:='game-bridge-conflict'; EXIT normalization; END IF;
+      ELSIF role_name='team-alias' THEN team:=chosen; ELSE opponent:=chosen; END IF;
+    END LOOP;
+
+    SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE "C"),'{}') INTO ids FROM public.predictive_observations o
+      WHERE o.entity_key='schedule:' || game AND public.predictive_source_is_head(o.id,t,rights_time);
+    IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='source-row-absent') THEN
+      deps:=deps || public.predictive_source_dependencies(ids,'schedule',t); reason:='normalization-schedule-absent'; EXIT normalization; END IF;
+    SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE "C"),'{}') INTO ids FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='schedule';
+    SELECT EXISTS (SELECT 1 FROM public.predictive_observations s JOIN public.predictive_observations a
+      ON a.kind='schedule' AND a.raw_game_id=s.raw_game_id AND a.game_id<>s.game_id
+      WHERE s.id=ANY(ids) AND public.predictive_source_is_head(a.id,t,rights_time)) INTO bad;
+    IF bad THEN
+      SELECT array_agg(o.id ORDER BY o.id COLLATE "C") INTO rivals FROM public.predictive_observations o WHERE o.kind='schedule'
+        AND o.raw_game_id IN (SELECT s.raw_game_id FROM public.predictive_observations s WHERE s.id=ANY(ids))
+        AND public.predictive_source_is_head(o.id,t,rights_time);
+      deps:=deps || public.predictive_source_dependencies(rivals,'schedule',t); reason:='normalization-schedule-ambiguous'; EXIT normalization;
+    END IF;
+    deps:=deps || public.predictive_source_dependencies(ids,'schedule',t);
+    IF cardinality(ids)=0 THEN reason:='normalization-schedule-missing'; EXIT normalization;
+    ELSIF cardinality(ids)=1 THEN chosen:=ids[1];
+    ELSE
+      SELECT array_agg(x.id ORDER BY x.id COLLATE "C") INTO decision_ids FROM public.predictive_decisions x
+        JOIN public.predictive_ingestion_runs r ON r.id=x.run_id WHERE x.entity_key='reconciliation:schedule:' || game AND x.kind='reconciliation'
+        AND r.status='published' AND x.decided_at<=t
+        AND NOT EXISTS (SELECT 1 FROM public.predictive_decisions n WHERE n.predecessor_id=x.id AND n.decided_at<=t);
+      IF cardinality(decision_ids) IS DISTINCT FROM 1 THEN reason:='normalization-schedule-ambiguous'; EXIT normalization; END IF;
+      SELECT * INTO d FROM public.predictive_decisions WHERE id=decision_ids[1];
+      IF d.outcome->>'result' IS DISTINCT FROM 'selected' OR (d.outcome->>'selectedObservationId')<>ALL(ids)
+          OR (SELECT array_agg(i.observation_id ORDER BY i.observation_id COLLATE "C") FROM public.predictive_decision_inputs i WHERE i.decision_id=d.id) IS DISTINCT FROM ids THEN
+        reason:='normalization-schedule-ambiguous'; EXIT normalization; END IF;
+      chosen:=d.outcome->>'selectedObservationId';
+      decisions:=jsonb_build_array(jsonb_build_object('id',d.id,'kind',d.kind,'entityKey',d.entity_key,'policyId',d.policy_id,'mode',d.mode,
+        'decidedAt',public.predictive_source_time(d.decided_at),'predecessorId',d.predecessor_id,'outcome',d.outcome,'inputs',
+        (SELECT jsonb_agg(jsonb_build_object('observationId',i.observation_id,'role',i.role) ORDER BY i.observation_id COLLATE "C") FROM public.predictive_decision_inputs i WHERE i.decision_id=d.id)));
+    END IF;
+    SELECT o.data INTO schedule FROM public.predictive_observations o WHERE o.id=chosen;
+    parts:=string_to_array(stats->>'rawGameId','_');
+    IF schedule->'season' IS DISTINCT FROM stats->'season' OR schedule->'week' IS DISTINCT FROM stats->'week'
+        OR schedule->'seasonType' IS DISTINCT FROM stats->'seasonType' OR team=opponent
+        OR (schedule->>'homeTeamId') IS DISTINCT FROM (CASE WHEN (stats->>'rawTeam')=parts[4] THEN team ELSE opponent END)
+        OR (schedule->>'awayTeamId') IS DISTINCT FROM (CASE WHEN (stats->>'rawTeam')=parts[3] THEN team ELSE opponent END) THEN
+      reason:='source-schedule-context-conflict'; EXIT normalization; END IF;
+    data:=jsonb_build_object('gameId',game,'rawGameId',stats->'rawGameId','teamId',team,'rawTeam',stats->'rawTeam',
+      'season',stats->'season','seasonType',stats->'seasonType','missing',stats->'missing') || (stats->'values');
+    IF p.feed='player' THEN
+      SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE "C"),'{}') INTO ids FROM public.predictive_observations o
+        WHERE o.entity_key='player-bridge:gsis:' || (stats->>'rawPlayerId') AND public.predictive_source_is_head(o.id,t,rights_time);
+      deps:=deps || public.predictive_source_dependencies(ids,'player-bridge',t);
+      SELECT count(DISTINCT o.player_id),min(o.player_id) INTO values_count,player FROM public.predictive_observations o
+        WHERE o.id=ANY(ids) AND o.kind='player-bridge' AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz
+        AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz;
+      IF EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='source-row-absent') OR values_count>1 THEN
+        reason:='player-bridge-conflict'; EXIT normalization;
+      ELSIF values_count=0 THEN reason:='player-bridge-missing'; EXIT normalization; END IF;
+      SELECT coalesce(array_agg(o.id ORDER BY o.id COLLATE "C"),'{}') INTO rivals FROM public.predictive_observations o
+        WHERE o.kind='player-bridge' AND o.player_id=player AND o.data->>'provider'='gsis'
+        AND (o.data->>'rawPlayerId') IS DISTINCT FROM (stats->>'rawPlayerId')
+        AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz
+        AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz AND public.predictive_source_is_head(o.id,t,rights_time);
+      IF cardinality(rivals)>0 THEN deps:=deps || public.predictive_source_dependencies(rivals,'player-bridge',t);
+        reason:='player-bridge-conflict'; EXIT normalization; END IF;
+      SELECT coalesce(jsonb_agg(jsonb_build_object('id',k.id,'statsProfileId',k.stats_profile_id,'bridgeProfileId',k.bridge_profile_id,
+        'provider',k.provider,'decidedAt',public.predictive_source_time(k.decided_at)) ORDER BY k.id COLLATE "C"),'[]') INTO links
+        FROM public.predictive_profile_identity_links k WHERE k.stats_profile_id=p.id AND k.provider='gsis' AND k.decided_at<=t
+        AND EXISTS (SELECT 1 FROM public.predictive_observations o WHERE o.id=ANY(ids) AND o.kind='player-bridge'
+          AND o.profile_id=k.bridge_profile_id AND o.player_id=player AND (o.data->>'effectiveFrom')::timestamptz <= (schedule->>'kickoff')::timestamptz
+          AND (schedule->>'kickoff')::timestamptz < (o.data->>'effectiveTo')::timestamptz);
+      IF links='[]'::jsonb THEN reason:='player-bridge-link-missing'; EXIT normalization; END IF;
+      data:=data || jsonb_build_object('playerId',player,'rawPlayerId',stats->'rawPlayerId','playerIdProvider','gsis');
+    END IF;
+    candidate:=jsonb_build_object('kind',CASE p.feed WHEN 'player' THEN 'player-game-stats' ELSE 'team-game-stats' END,'data',data);
+  END normalization;
+
+  SELECT coalesce(jsonb_agg(x ORDER BY x->>'role' COLLATE "C",x->>'observationId' COLLATE "C"),'[]') INTO deps FROM jsonb_array_elements(deps) x;
+  SELECT jsonb_agg(to_jsonb(public.predictive_rights_in_force(id,rights_time,rights_time))
+    ORDER BY public.predictive_rights_in_force(id,rights_time,rights_time) COLLATE "C") INTO rights_ids FROM (
+    SELECT p.id UNION SELECT x->>'profileId' FROM jsonb_array_elements(deps) x) profiles(id);
+  IF EXISTS (SELECT 1 FROM jsonb_array_elements(deps) x WHERE public.predictive_rights_allow(x->>'profileId',rights_time,rights_time,'internal-research') IS NOT TRUE) THEN
+    RAISE EXCEPTION 'predictive-source-plan-rights-profile-invalid' USING ERRCODE='23514'; END IF;
+  SELECT coalesce(jsonb_agg(jsonb_build_object('captureId',sealed_publication.capture_id,'requestHash',sealed_publication.request_hash,'claimsSha256',sealed_publication.claims_sha256,
+    'recordedAt',public.predictive_source_time(sealed_publication.recorded_at)) ORDER BY n),'[]') INTO publications
+    FROM jsonb_array_elements(caps) WITH ORDINALITY x(c,n) JOIN public.predictive_compressed_publications sealed_publication ON sealed_publication.capture_id=c->>'id';
+  b:=jsonb_build_object('version','nflverse-stats-normalization-plan-v3' ,'cutoff',req->'cutoff','sourceRequest',req,
+    'sourceInputDigest',public.predictive_source_digest(jsonb_build_object('version','nflverse-gzip-csv-source-claims-v1','request',req,'captures',caps,'rows',source_rows,'publications',publications)),
+    'sourceProfileId',p.id,'rawSourceKey',CASE WHEN source_rows='[]'::jsonb THEN NULL ELSE raw_key END,
+    'sourceCaptures',caps,'sourceRows',row_refs,'sourcePublications',publications,'parserVersion','nflverse-gzip-csv-source-qualification-v1','projectionVersion','nflverse-raw-stats-v1',
+    'dependencies',deps,'identityLinks',links,'decisions',decisions,'rightsDecisionIds',rights_ids);
+  RETURN jsonb_build_object('status',CASE WHEN reason IS NULL THEN 'planned-source-normalization' ELSE 'unavailable-source-normalization' END,
+    'reason',reason,'candidate',candidate,'dataDigest',public.predictive_source_digest(candidate),'binding',b,
+    'planDigest',public.predictive_source_digest(jsonb_build_object('reason',reason,'candidate',candidate,'binding',b)),
+    'observationsPublished',false,'featuresPublished',false,'labelsFinalized',false,'populationCoverage','unqualified');
+END
+$$;
+
+
+ALTER FUNCTION public.predictive_source_plan_v2(jsonb,timestamptz) RENAME TO predictive_source_plan_v2_csv;
+CREATE FUNCTION public.predictive_source_plan_v2(req jsonb, rights_time timestamptz) RETURNS jsonb
+LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  IF EXISTS(SELECT 1 FROM public.predictive_source_profiles WHERE id=req->>'profileId' AND parser_version='nflverse-gzip-csv-source-qualification-v1') THEN
+    RETURN public.predictive_source_plan_v3(req,rights_time);
+  END IF;
+  RETURN public.predictive_source_plan_v2_csv(req,rights_time);
+END $$;
+ALTER FUNCTION public.predictive_source_plan_check(jsonb,timestamptz,boolean) RENAME TO predictive_source_plan_check_csv;
+CREATE FUNCTION public.predictive_source_plan_check(proposed jsonb, rights_time timestamptz, require_current boolean) RETURNS void
+LANGUAGE plpgsql STABLE AS $$
+DECLARE expected jsonb; current_plan jsonb; req jsonb:=proposed->'binding'->'sourceRequest';
+BEGIN
+  IF proposed->'binding'->>'version' IS DISTINCT FROM 'nflverse-stats-normalization-plan-v3' THEN
+    PERFORM public.predictive_source_plan_check_csv(proposed,rights_time,require_current); RETURN;
+  END IF;
+  IF require_current IS NULL THEN RAISE EXCEPTION 'predictive-source-plan-invalid' USING ERRCODE='23514'; END IF;
+  expected:=public.predictive_source_plan_v3(req,rights_time);
+  IF proposed IS DISTINCT FROM expected THEN RAISE EXCEPTION 'predictive-source-plan-witness-invalid' USING ERRCODE='23514'; END IF;
+  IF require_current THEN
+    current_plan:=public.predictive_source_plan_v3(jsonb_set(req,'{cutoff}',to_jsonb(public.predictive_source_time(rights_time))),rights_time);
+    IF public.predictive_source_plan_basis(proposed) IS DISTINCT FROM public.predictive_source_plan_basis(current_plan) THEN
+      RAISE EXCEPTION 'predictive-source-plan-stale' USING ERRCODE='23514'; END IF;
+  END IF;
+END $$;
+
+
+CREATE OR REPLACE FUNCTION public.predictive_record_source_binding(binding_id text, expected_head text, proposed jsonb) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE p text:=proposed->'binding'->>'sourceProfileId'; raw_key text; t timestamptz; old public.predictive_source_bindings;
+  head public.predictive_source_bindings; prior public.predictive_source_stats_revisions; revision text; kind text; data jsonb; fact text;
+BEGIN
+  IF NOT pg_catalog.pg_has_role(session_user,'predictive_recorder','MEMBER') THEN
+    RAISE EXCEPTION 'predictive-source-recorder-not-authorized' USING ERRCODE='42501'; END IF;
+  IF proposed->'binding'->>'version'='nflverse-stats-normalization-plan-v3' THEN
+    RAISE EXCEPTION 'compressed-binding-recorder-required' USING ERRCODE='23514'; END IF;
+  IF pg_catalog.current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'predictive-source-recorder-isolation-refused' USING ERRCODE='25001'; END IF;
+  PERFORM pg_catalog.pg_advisory_xact_lock(520052,1);
+  -- Freeze the publication evidence while independently checking the proposed
+  -- witness. Cooperating writers already use the global lock; SHARE also covers
+  -- direct SQL appenders. No filesystem write or digest lock is needed here.
+  LOCK TABLE public.predictive_source_profiles,public.predictive_rights_decisions,public.predictive_ingestion_runs,
+    public.predictive_artifacts,public.predictive_blobs,public.predictive_captures,public.predictive_source_stats_rows,
+    public.predictive_observations,public.predictive_artifact_observations,public.predictive_profile_identity_links,
+    public.predictive_decisions,public.predictive_decision_inputs IN SHARE MODE;
+  t:=date_trunc('milliseconds',pg_catalog.clock_timestamp());
+  IF EXISTS (SELECT 1 FROM public.predictive_source_profiles sp WHERE sp.purpose='synthetic-test' AND
+      (sp.id=p OR sp.id IN (SELECT x->>'profileId' FROM jsonb_array_elements(proposed->'binding'->'dependencies') x)))
+      AND NOT public.predictive_harness_session() THEN RAISE EXCEPTION 'predictive-synthetic-outside-harness' USING ERRCODE='23514'; END IF;
+  raw_key:=public.predictive_source_request_key(proposed->'binding'->'sourceRequest');
+  SELECT * INTO old FROM public.predictive_source_bindings WHERE id=binding_id;
+  IF old.id IS NOT NULL THEN
+    IF old.plan IS DISTINCT FROM proposed OR old.predecessor_id IS DISTINCT FROM expected_head THEN RAISE EXCEPTION 'predictive-source-binding-id-conflict' USING ERRCODE='23514'; END IF;
+    IF EXISTS (SELECT 1 FROM (SELECT old.profile_id AS id UNION SELECT x->>'profileId' FROM jsonb_array_elements(old.plan->'binding'->'dependencies') x) profiles
+        WHERE public.predictive_rights_allow(profiles.id,t,t,'internal-research') IS NOT TRUE) THEN
+      RAISE EXCEPTION 'predictive-source-plan-rights-profile-invalid' USING ERRCODE='23514'; END IF;
+    RETURN jsonb_build_object('id',old.id,'recordedAt',public.predictive_source_time(old.recorded_at),'reused',true);
+  END IF;
+  PERFORM public.predictive_source_plan_check(proposed,t,true);
+  SELECT * INTO head FROM public.predictive_source_bindings b WHERE b.profile_id=p AND b.raw_key_sha256=raw_key
+    AND NOT EXISTS (SELECT 1 FROM public.predictive_source_bindings n WHERE n.predecessor_id=b.id);
+  IF head.id IS DISTINCT FROM expected_head OR (head.id IS NOT NULL AND (head.recorded_at>t OR head.cutoff>(proposed->'binding'->>'cutoff')::timestamptz)) THEN
+    RAISE EXCEPTION 'predictive-source-binding-head-conflict' USING ERRCODE='23514'; END IF;
+  IF proposed->'candidate'<>'null'::jsonb THEN
+    kind:=proposed->'candidate'->>'kind'; data:=proposed->'candidate'->'data'; fact:=public.predictive_entity_key(kind,data);
+    SELECT r.* INTO prior FROM public.predictive_source_stats_revisions r WHERE r.profile_id=p AND r.source_record_id=raw_key AND r.entity_key=fact
+      AND NOT EXISTS (SELECT 1 FROM public.predictive_source_stats_revisions n WHERE n.predecessor_id=r.id);
+    IF prior.id IS NOT NULL AND prior.data=data AND prior.kind=kind THEN revision:=prior.id;
+    ELSE
+      revision:='normalized-stats:' || encode(sha256(convert_to(binding_id,'UTF8')),'hex');
+      INSERT INTO public.predictive_source_stats_revisions(id,kind,profile_id,source_record_id,data,entity_key,source_key,predecessor_id,correction_reason)
+        VALUES(revision,kind,p,raw_key,data,fact,fact || '|' || p || '|' || raw_key,prior.id,CASE WHEN prior.id IS NOT NULL THEN 'source-normalization-change' END);
+    END IF;
+  END IF;
+  INSERT INTO public.predictive_source_bindings(id,profile_id,raw_key_sha256,predecessor_id,recorded_at,cutoff,plan,revision_id)
+    VALUES(binding_id,p,raw_key,head.id,t,(proposed->'binding'->>'cutoff')::timestamptz,proposed,revision);
+  INSERT INTO public.predictive_source_binding_captures SELECT binding_id,x->>'id' FROM jsonb_array_elements(proposed->'binding'->'sourceCaptures') x;
+  INSERT INTO public.predictive_source_binding_rows SELECT binding_id,x->>'id' FROM jsonb_array_elements(proposed->'binding'->'sourceRows') x;
+  INSERT INTO public.predictive_source_binding_dependencies SELECT binding_id,x->>'observationId',x->>'role',x->>'captureId',x->>'artifactId'
+    FROM jsonb_array_elements(proposed->'binding'->'dependencies') x;
+  INSERT INTO public.predictive_source_binding_links SELECT binding_id,x->>'id' FROM jsonb_array_elements(proposed->'binding'->'identityLinks') x;
+  INSERT INTO public.predictive_source_binding_decisions SELECT binding_id,x->>'id' FROM jsonb_array_elements(proposed->'binding'->'decisions') x;
+  INSERT INTO public.predictive_source_binding_rights SELECT binding_id,jsonb_array_elements_text(proposed->'binding'->'rightsDecisionIds');
+  RETURN jsonb_build_object('id',binding_id,'recordedAt',public.predictive_source_time(t),'reused',false);
+END
+$$;
+
+CREATE FUNCTION public.predictive_record_compressed_source_binding(binding_id text, expected_head text, proposed jsonb) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE p text:=proposed->'binding'->>'sourceProfileId'; raw_key text; t timestamptz; old public.predictive_source_bindings;
+  head public.predictive_source_bindings; prior public.predictive_source_stats_revisions; revision text; kind text; data jsonb; fact text;
+BEGIN
+  IF NOT pg_catalog.pg_has_role(session_user,'predictive_recorder','MEMBER') THEN
+    RAISE EXCEPTION 'predictive-source-recorder-not-authorized' USING ERRCODE='42501'; END IF;
+  IF pg_catalog.current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'predictive-source-recorder-isolation-refused' USING ERRCODE='25001'; END IF;
+  PERFORM pg_catalog.pg_advisory_xact_lock(520052,1);
+  -- Freeze the publication evidence while independently checking the proposed
+  -- witness. Cooperating writers already use the global lock; SHARE also covers
+  -- direct SQL appenders. No filesystem write or digest lock is needed here.
+  LOCK TABLE public.predictive_source_profiles,public.predictive_rights_decisions,public.predictive_ingestion_runs,
+    public.predictive_artifacts,public.predictive_blobs,public.predictive_captures,public.predictive_source_stats_rows,
+    public.predictive_observations,public.predictive_artifact_observations,public.predictive_profile_identity_links,
+    public.predictive_decisions,public.predictive_decision_inputs IN SHARE MODE;
+  t:=date_trunc('milliseconds',pg_catalog.clock_timestamp());
+  IF EXISTS (SELECT 1 FROM public.predictive_source_profiles sp WHERE sp.purpose='synthetic-test' AND
+      (sp.id=p OR sp.id IN (SELECT x->>'profileId' FROM jsonb_array_elements(proposed->'binding'->'dependencies') x)))
+      AND NOT public.predictive_harness_session() THEN RAISE EXCEPTION 'predictive-synthetic-outside-harness' USING ERRCODE='23514'; END IF;
+  IF proposed->'binding'->>'version' IS DISTINCT FROM 'nflverse-stats-normalization-plan-v3' THEN
+    RAISE EXCEPTION 'compressed-binding-version-refused' USING ERRCODE='23514'; END IF;
+  PERFORM public.predictive_compressed_binding_guard();
+  raw_key:=public.predictive_source_request_key(proposed->'binding'->'sourceRequest');
+  SELECT * INTO old FROM public.predictive_source_bindings WHERE id=binding_id;
+  IF old.id IS NOT NULL THEN
+    IF old.plan IS DISTINCT FROM proposed OR old.predecessor_id IS DISTINCT FROM expected_head THEN RAISE EXCEPTION 'predictive-source-binding-id-conflict' USING ERRCODE='23514'; END IF;
+    IF EXISTS (SELECT 1 FROM (SELECT old.profile_id AS id UNION SELECT x->>'profileId' FROM jsonb_array_elements(old.plan->'binding'->'dependencies') x) profiles
+        WHERE public.predictive_rights_allow(profiles.id,t,t,'internal-research') IS NOT TRUE) THEN
+      RAISE EXCEPTION 'predictive-source-plan-rights-profile-invalid' USING ERRCODE='23514'; END IF;
+    RETURN jsonb_build_object('id',old.id,'recordedAt',public.predictive_source_time(old.recorded_at),'reused',true);
+  END IF;
+  PERFORM public.predictive_source_plan_check(proposed,t,true);
+  PERFORM public.predictive_materialize_compressed_rows(x->>'id') FROM jsonb_array_elements(proposed->'binding'->'sourceCaptures') x;
+  SELECT * INTO head FROM public.predictive_source_bindings b WHERE b.profile_id=p AND b.raw_key_sha256=raw_key
+    AND NOT EXISTS (SELECT 1 FROM public.predictive_source_bindings n WHERE n.predecessor_id=b.id);
+  IF head.id IS DISTINCT FROM expected_head OR (head.id IS NOT NULL AND (head.recorded_at>t OR head.cutoff>(proposed->'binding'->>'cutoff')::timestamptz)) THEN
+    RAISE EXCEPTION 'predictive-source-binding-head-conflict' USING ERRCODE='23514'; END IF;
+  IF proposed->'candidate'<>'null'::jsonb THEN
+    kind:=proposed->'candidate'->>'kind'; data:=proposed->'candidate'->'data'; fact:=public.predictive_entity_key(kind,data);
+    SELECT r.* INTO prior FROM public.predictive_source_stats_revisions r WHERE r.profile_id=p AND r.source_record_id=raw_key AND r.entity_key=fact
+      AND NOT EXISTS (SELECT 1 FROM public.predictive_source_stats_revisions n WHERE n.predecessor_id=r.id);
+    IF prior.id IS NOT NULL AND prior.data=data AND prior.kind=kind THEN revision:=prior.id;
+    ELSE
+      revision:='normalized-stats:' || encode(sha256(convert_to(binding_id,'UTF8')),'hex');
+      INSERT INTO public.predictive_source_stats_revisions(id,kind,profile_id,source_record_id,data,entity_key,source_key,predecessor_id,correction_reason)
+        VALUES(revision,kind,p,raw_key,data,fact,fact || '|' || p || '|' || raw_key,prior.id,CASE WHEN prior.id IS NOT NULL THEN 'source-normalization-change' END);
+    END IF;
+  END IF;
+  INSERT INTO public.predictive_source_bindings(id,profile_id,raw_key_sha256,predecessor_id,recorded_at,cutoff,plan,revision_id)
+    VALUES(binding_id,p,raw_key,head.id,t,(proposed->'binding'->>'cutoff')::timestamptz,proposed,revision);
+  INSERT INTO public.predictive_source_binding_captures SELECT binding_id,x->>'id' FROM jsonb_array_elements(proposed->'binding'->'sourceCaptures') x;
+  INSERT INTO public.predictive_source_binding_rows SELECT binding_id,x->>'id' FROM jsonb_array_elements(proposed->'binding'->'sourceRows') x;
+  INSERT INTO public.predictive_source_binding_dependencies SELECT binding_id,x->>'observationId',x->>'role',x->>'captureId',x->>'artifactId'
+    FROM jsonb_array_elements(proposed->'binding'->'dependencies') x;
+  INSERT INTO public.predictive_source_binding_links SELECT binding_id,x->>'id' FROM jsonb_array_elements(proposed->'binding'->'identityLinks') x;
+  INSERT INTO public.predictive_source_binding_decisions SELECT binding_id,x->>'id' FROM jsonb_array_elements(proposed->'binding'->'decisions') x;
+  INSERT INTO public.predictive_source_binding_rights SELECT binding_id,jsonb_array_elements_text(proposed->'binding'->'rightsDecisionIds');
+  RETURN jsonb_build_object('id',binding_id,'recordedAt',public.predictive_source_time(t),'reused',false);
+END
+$$;
+
+CREATE OR REPLACE FUNCTION public.predictive_source_witness_at(req jsonb, rights_time timestamptz) RETURNS jsonb
+LANGUAGE plpgsql STABLE SET search_path = pg_catalog, pg_temp AS $$
+DECLARE profiles text[]; entities text[]; t timestamptz; reason text;
+  heads jsonb := '[]'; withheld jsonb := '[]'; missing jsonb := '[]'; fields jsonb;
+  raw record; event record; head public.predictive_source_bindings; plan jsonb; fact text; lineage text;
+  destinations jsonb; routing text; failure text; n integer;
+BEGIN
+  IF public.predictive_source_exact(req,ARRAY['profileIds','entityKeys','cutoff']) IS NOT TRUE
+      OR jsonb_typeof(req->'profileIds') IS DISTINCT FROM 'array' OR jsonb_typeof(req->'entityKeys') IS DISTINCT FROM 'array'
+      OR jsonb_array_length(req->'profileIds') NOT BETWEEN 1 AND 16 OR jsonb_array_length(req->'entityKeys')>64
+      OR EXISTS (SELECT 1 FROM jsonb_array_elements((req->'profileIds') || (req->'entityKeys')) x WHERE jsonb_typeof(x)<>'string')
+      OR public.predictive_instant(req->>'cutoff') IS NOT TRUE OR rights_time IS NULL OR NOT isfinite(rights_time) THEN
+    RAISE EXCEPTION 'predictive-source-witness-request-refused' USING ERRCODE='23514'; END IF;
+  profiles:=ARRAY(SELECT x FROM jsonb_array_elements_text(req->'profileIds') x);
+  entities:=ARRAY(SELECT x FROM jsonb_array_elements_text(req->'entityKeys') x);
+  IF profiles IS DISTINCT FROM ARRAY(SELECT DISTINCT x COLLATE "C" FROM unnest(profiles) x ORDER BY 1)
+      OR entities IS DISTINCT FROM ARRAY(SELECT DISTINCT x COLLATE "C" FROM unnest(entities) x ORDER BY 1)
+      OR EXISTS (SELECT 1 FROM unnest(profiles) x WHERE length(x) NOT BETWEEN 1 AND 256 OR length(btrim(x))=0 OR x ~ '[[:cntrl:]|]')
+      OR EXISTS (SELECT 1 FROM unnest(entities) x WHERE x !~ '^(player-game-stats|team-game-stats):[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}:'
+        OR CASE split_part(x,':',1) WHEN 'player-game-stats' THEN split_part(x,':',3) !~ '^00-[0-9]{7}$' OR cardinality(string_to_array(x,':'))<>3
+          ELSE NOT EXISTS (SELECT 1 FROM public.predictive_teams tm WHERE tm.id=regexp_replace(x,'^[^:]+:[^:]+:','')) END) THEN
+    RAISE EXCEPTION 'predictive-source-witness-request-refused' USING ERRCODE='23514'; END IF;
+  t:=(req->>'cutoff')::timestamptz;
+  IF t>rights_time THEN RAISE EXCEPTION 'source-binding-future-cutoff-refused' USING ERRCODE='23514'; END IF;
+
+  <<evidence>> BEGIN
+    IF EXISTS (SELECT 1 FROM unnest(profiles) p WHERE NOT EXISTS (SELECT 1 FROM public.predictive_source_profiles s WHERE s.id=p)) THEN
+      reason:='source-profile-missing'; EXIT evidence; END IF;
+    IF EXISTS (SELECT 1 FROM public.predictive_source_profiles s WHERE s.id=ANY(profiles) AND
+      (s.provider<>'nflverse' OR s.feed NOT IN ('player','team') OR s.parser_version NOT IN ('nflverse-csv-qualification-v1','nflverse-gzip-csv-source-qualification-v1')
+        OR s.allowlist_version<>'predictive-raw-allowlist-v1')) THEN reason:='source-profile-refused'; EXIT evidence; END IF;
+    IF EXISTS (SELECT 1 FROM unnest(profiles) p WHERE public.predictive_rights_allow(p,rights_time,rights_time,'internal-research') IS NOT TRUE) THEN
+      reason:='rights-not-in-force'; EXIT evidence; END IF;
+
+    SELECT count(*) INTO n FROM public.predictive_source_bindings b WHERE b.profile_id=ANY(profiles) AND b.recorded_at<=t;
+    IF n>8192 OR EXISTS (SELECT 1 FROM public.predictive_source_bindings b WHERE b.profile_id=ANY(profiles) AND b.recorded_at<=t
+        GROUP BY b.profile_id,b.raw_key_sha256 HAVING count(*)>256)
+      OR (SELECT count(*) FROM (SELECT DISTINCT b.profile_id,b.raw_key_sha256 FROM public.predictive_source_bindings b
+        WHERE b.profile_id=ANY(profiles) AND b.recorded_at<=t) x)>256 THEN
+      RAISE EXCEPTION 'source-fact-bounds-refused' USING ERRCODE='23514'; END IF;
+    -- Check ALL historical context rights before examining plans. A revoked
+    -- ancestor cannot be read to argue that its chain is irrelevant to a filter.
+    IF EXISTS (SELECT 1 FROM public.predictive_source_bindings b CROSS JOIN LATERAL jsonb_array_elements(b.plan->'binding'->'dependencies') x
+        WHERE b.profile_id=ANY(profiles) AND b.recorded_at<=t
+          AND public.predictive_rights_allow(x->>'profileId',rights_time,rights_time,'internal-research') IS NOT TRUE) THEN
+      reason:='rights-not-in-force'; EXIT evidence; END IF;
+    FOR event IN SELECT b.* FROM public.predictive_source_bindings b WHERE b.profile_id=ANY(profiles) AND b.recorded_at<=t LOOP
+      PERFORM public.predictive_source_plan_check(event.plan,event.recorded_at,false);
+    END LOOP;
+
+    FOR raw IN SELECT b.profile_id,b.raw_key_sha256,(b.plan->'binding'->'sourceRequest')-'cutoff' AS request
+      FROM public.predictive_source_bindings b WHERE b.profile_id=ANY(profiles) AND b.recorded_at<=t
+      GROUP BY b.profile_id,b.raw_key_sha256,(b.plan->'binding'->'sourceRequest')-'cutoff'
+      ORDER BY b.profile_id COLLATE "C",b.raw_key_sha256 COLLATE "C",(b.plan->'binding'->'sourceRequest')-'cutoff' LOOP
+      IF raw.profile_id IS DISTINCT FROM raw.request->>'profileId'
+          OR raw.raw_key_sha256 IS DISTINCT FROM public.predictive_source_request_key(raw.request || jsonb_build_object('cutoff',req->'cutoff')) THEN
+        RAISE EXCEPTION 'stored-source-binding-mismatch' USING ERRCODE='23514'; END IF;
+      SELECT b.* INTO STRICT head FROM public.predictive_source_bindings b WHERE b.profile_id=raw.profile_id AND b.raw_key_sha256=raw.raw_key_sha256
+        AND b.recorded_at<=t AND NOT EXISTS (SELECT 1 FROM public.predictive_source_bindings next WHERE next.predecessor_id=b.id AND next.recorded_at<=t);
+      plan:=public.predictive_source_plan_v2(raw.request || jsonb_build_object('cutoff',req->'cutoff'),rights_time);
+      lineage:='source-stats:' || public.predictive_source_digest(jsonb_build_array(raw.profile_id,raw.raw_key_sha256));
+      failure:=CASE WHEN public.predictive_source_plan_basis(head.plan) IS DISTINCT FROM public.predictive_source_plan_basis(plan)
+        THEN 'source-binding-stale' WHEN head.revision_id IS NULL THEN coalesce(head.plan->>'reason','source-binding-withheld') END;
+      IF failure IS NOT NULL THEN
+        SELECT coalesce(jsonb_agg(to_jsonb(key) ORDER BY key COLLATE "C"),'[]') INTO destinations FROM (
+          SELECT r.entity_key AS key FROM public.predictive_source_bindings b JOIN public.predictive_source_stats_revisions r ON r.id=b.revision_id
+            WHERE b.profile_id=raw.profile_id AND b.raw_key_sha256=raw.raw_key_sha256 AND b.recorded_at<=t
+          UNION SELECT (plan->'candidate'->>'kind') || ':' || (plan->'candidate'->'data'->>'gameId') || ':' ||
+            coalesce(plan->'candidate'->'data'->>'playerId',plan->'candidate'->'data'->>'teamId') WHERE plan->'candidate'<>'null'::jsonb
+        ) keys WHERE cardinality(entities)=0 OR key=ANY(entities);
+        routing:=CASE WHEN plan->'candidate'='null'::jsonb THEN 'unresolved' ELSE 'known-destinations' END;
+        IF routing='unresolved' OR cardinality(entities)=0 OR jsonb_array_length(destinations)>0 THEN
+          withheld:=withheld || jsonb_build_array(jsonb_build_object('lineageKey',lineage,'profileId',raw.profile_id,'bindingId',head.id,
+            'reason',failure,'routing',routing,'entityKeys',destinations)); END IF;
+      ELSE
+        SELECT r.entity_key INTO STRICT fact FROM public.predictive_source_stats_revisions r WHERE r.id=head.revision_id;
+        IF cardinality(entities)=0 OR fact=ANY(entities) THEN
+          heads:=heads || jsonb_build_array(jsonb_build_object('profileId',raw.profile_id,'lineageKey',lineage,'entityKey',fact,
+            'bindingId',head.id,'revisionId',head.revision_id,'headToken',public.predictive_source_digest(jsonb_build_object(
+              'bindingId',head.id,'revisionId',head.revision_id,'planDigest',head.plan->>'planDigest')))); END IF;
+      END IF;
+    END LOOP;
+    SELECT coalesce(jsonb_agg(x ORDER BY x->>'lineageKey' COLLATE "C"),'[]') INTO heads FROM jsonb_array_elements(heads) x;
+    SELECT coalesce(jsonb_agg(x ORDER BY x->>'lineageKey' COLLATE "C"),'[]') INTO withheld FROM jsonb_array_elements(withheld) x;
+    SELECT coalesce(jsonb_agg(to_jsonb(key) ORDER BY key COLLATE "C"),'[]') INTO missing FROM unnest(entities) key
+      WHERE NOT EXISTS (SELECT 1 FROM jsonb_array_elements(heads) h WHERE h->>'entityKey'=key)
+        AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements(withheld) w WHERE w->>'routing'='unresolved' OR w->'entityKeys' ? key);
+  END evidence;
+  fields:=jsonb_build_object('version','source-consumer-witness-v1','profileIds',to_jsonb(profiles),'entityKeys',to_jsonb(entities),
+    'coverage','recorded-lineages-only','heads',heads,'withheld',withheld,'reason',reason,'missingEntityKeys',missing);
+  RETURN fields || jsonb_build_object('cutoff',req->'cutoff','evidenceDigest',public.predictive_source_digest(fields));
+END
+$$;
+
+CREATE OR REPLACE FUNCTION public.predictive_training_dataset_closure(run_name text,dataset text) RETURNS jsonb
+LANGUAGE sql STABLE SET search_path=pg_catalog,pg_temp AS $$
+  WITH RECURSIVE inventory AS (SELECT * FROM public.predictive_training_runs WHERE id=$1),
+  rows AS (SELECT s.selection FROM public.predictive_training_run_slots s WHERE s.run_id=$1 AND s.dataset_id=$2),
+  roots(kind,id) AS (
+    SELECT 'source-consumer',id FROM rows r CROSS JOIN LATERAL
+      (VALUES(r.selection->'selection'->>'featureId'),(r.selection->'selection'->>'labelId')) x(id) WHERE id IS NOT NULL
+    UNION SELECT 'observation',x->>'observationId' FROM rows r CROSS JOIN LATERAL jsonb_array_elements(r.selection->'kickoff'->'dependencies') x
+    UNION SELECT 'decision',selection->'kickoff'->>'decisionId' FROM rows WHERE selection->'kickoff'->>'decisionId' IS NOT NULL),
+  edges(parent_kind,parent_id,kind,id) AS (
+    SELECT 'source-consumer',id,'source-consumer',predecessor_id FROM public.predictive_source_consumers WHERE predecessor_id IS NOT NULL
+    UNION ALL SELECT 'source-consumer',consumer_id,'source-binding',binding_id FROM public.predictive_source_consumer_bindings
+    UNION ALL SELECT 'source-consumer',consumer_id,'source-decision',decision_id FROM public.predictive_source_consumer_source_decisions
+    UNION ALL SELECT 'source-consumer',consumer_id,'observation',observation_id FROM public.predictive_source_consumer_observations
+    UNION ALL SELECT 'source-consumer',consumer_id,'decision',decision_id FROM public.predictive_source_consumer_decisions
+    UNION ALL SELECT 'source-consumer',consumer_id,'rights',rights_decision_id FROM public.predictive_source_consumer_rights
+    UNION ALL SELECT 'source-consumer',id,'blob',body_sha256 FROM public.predictive_source_consumers
+    UNION ALL SELECT 'source-consumer',id,'capture',body->>'postWindowCaptureId' FROM public.predictive_source_consumers WHERE kind='label'
+    UNION ALL SELECT 'source-binding',id,'source-binding',predecessor_id FROM public.predictive_source_bindings WHERE predecessor_id IS NOT NULL
+    UNION ALL SELECT 'source-binding',id,'source-revision',revision_id FROM public.predictive_source_bindings WHERE revision_id IS NOT NULL
+    UNION ALL SELECT 'source-binding',binding_id,'capture',capture_id FROM public.predictive_source_binding_captures
+    UNION ALL SELECT 'source-binding',binding_id,'source-row',row_id FROM public.predictive_source_binding_rows
+    UNION ALL SELECT 'source-binding',binding_id,'observation',observation_id FROM public.predictive_source_binding_dependencies
+    UNION ALL SELECT 'source-binding',binding_id,'capture',capture_id FROM public.predictive_source_binding_dependencies
+    UNION ALL SELECT 'source-binding',binding_id,'artifact',artifact_id FROM public.predictive_source_binding_dependencies
+    UNION ALL SELECT 'source-binding',binding_id,'identity-link',link_id FROM public.predictive_source_binding_links
+    UNION ALL SELECT 'source-binding',binding_id,'decision',decision_id FROM public.predictive_source_binding_decisions
+    UNION ALL SELECT 'source-binding',binding_id,'rights',rights_decision_id FROM public.predictive_source_binding_rights
+    UNION ALL SELECT 'source-revision',id,'source-revision',predecessor_id FROM public.predictive_source_stats_revisions WHERE predecessor_id IS NOT NULL
+    UNION ALL SELECT 'source-row',id,'capture',capture_id FROM public.predictive_source_stats_rows
+    UNION ALL SELECT 'source-decision',id,'source-decision',predecessor_id FROM public.predictive_source_decisions WHERE predecessor_id IS NOT NULL
+    UNION ALL SELECT 'source-decision',decision_id,'source-binding',binding_id FROM public.predictive_source_decision_bindings
+    UNION ALL SELECT 'source-decision',decision_id,'observation',observation_id FROM public.predictive_source_decision_inputs
+    UNION ALL SELECT 'source-decision',decision_id,'rights',rights_decision_id FROM public.predictive_source_decision_rights
+    UNION ALL SELECT 'decision',id,'decision',predecessor_id FROM public.predictive_decisions WHERE predecessor_id IS NOT NULL
+    UNION ALL SELECT 'decision',decision_id,'observation',observation_id FROM public.predictive_decision_inputs
+    UNION ALL SELECT 'decision',id,'ingestion-run',run_id FROM public.predictive_decisions
+    UNION ALL SELECT 'observation',id,'observation',predecessor_id FROM public.predictive_observations WHERE predecessor_id IS NOT NULL
+    UNION ALL SELECT 'observation',l.observation_id,'artifact',l.artifact_id FROM public.predictive_artifact_observations l
+      WHERE EXISTS(SELECT 1 FROM public.predictive_captures c,inventory i WHERE c.artifact_id=l.artifact_id AND c.ingested_at<=i.snapshot_at)
+    UNION ALL SELECT 'artifact',id,'blob',blob_sha256 FROM public.predictive_artifacts
+    UNION ALL SELECT 'artifact',a.id,'capture',c.id FROM public.predictive_artifacts a JOIN public.predictive_captures c ON c.artifact_id=a.id
+      CROSS JOIN inventory i WHERE c.ingested_at<=i.snapshot_at
+    UNION ALL SELECT 'capture',capture_id,'compressed-publication',capture_id FROM public.predictive_compressed_publications
+    UNION ALL SELECT 'capture',capture_id,'compressed-inspection',capture_id FROM public.predictive_compressed_inspections
+    UNION ALL SELECT 'capture',id,'artifact',artifact_id FROM public.predictive_captures
+    UNION ALL SELECT 'capture',id,'ingestion-run',run_id FROM public.predictive_captures
+    UNION ALL SELECT 'ingestion-run',run_id,'rights',rights_decision_id FROM public.predictive_run_rights
+    UNION ALL SELECT 'rights',id,'rights',predecessor_id FROM public.predictive_rights_decisions WHERE predecessor_id IS NOT NULL),
+  closure(kind,id) AS (SELECT * FROM roots UNION SELECT e.kind,e.id FROM closure c JOIN edges e ON e.parent_kind=c.kind AND e.parent_id=c.id),
+  protected(kind,id,use_kind) AS (
+    SELECT r.kind,r.id,CASE WHEN r.kind='source-consumer' AND EXISTS(SELECT 1 FROM public.predictive_source_consumers c WHERE c.id=r.id AND c.kind='label')
+      THEN 'outcome-label' ELSE 'model-input' END FROM roots r
+    UNION SELECT e.kind,e.id,c.use_kind FROM protected c JOIN edges e ON e.parent_kind=c.kind AND e.parent_id=c.id),
+  profile_refs(kind,id,profile) AS (
+    SELECT 'artifact',id,profile_id FROM public.predictive_artifacts
+    UNION ALL SELECT 'observation',id,profile_id FROM public.predictive_observations
+    UNION ALL SELECT 'source-binding',id,profile_id FROM public.predictive_source_bindings
+    UNION ALL SELECT 'rights',id,profile_id FROM public.predictive_rights_decisions
+    UNION ALL SELECT 'identity-link',id,stats_profile_id FROM public.predictive_profile_identity_links
+    UNION ALL SELECT 'identity-link',id,bridge_profile_id FROM public.predictive_profile_identity_links),
+  bounded AS (SELECT * FROM closure ORDER BY kind COLLATE "C",id COLLATE "C" LIMIT 65537)
+  SELECT jsonb_build_object('references',coalesce((SELECT jsonb_agg(jsonb_build_object('kind',kind,'id',id) ORDER BY kind COLLATE "C",id COLLATE "C") FROM bounded),'[]'),
+    'protectedUses',coalesce((SELECT jsonb_agg(jsonb_build_object('profile',profile,'use',use_kind) ORDER BY profile COLLATE "C",use_kind COLLATE "C")
+      FROM (SELECT DISTINCT p.profile,c.use_kind FROM protected c JOIN profile_refs p USING(kind,id)) uses),'[]'),
+    'blobs',coalesce((SELECT jsonb_agg(jsonb_build_object('sha256',b.sha256,'storageRef',b.storage_ref,'byteSize',b.byte_size,'mediaType',b.media_type)
+      ORDER BY b.storage_ref COLLATE "C") FROM bounded c JOIN public.predictive_blobs b ON c.kind='blob' AND c.id=b.sha256),'[]'))
+$$;
+
+
+REVOKE ALL ON FUNCTION public.predictive_compressed_row_guard(),public.predictive_compressed_row_authorization_finish(),
+  public.predictive_materialize_compressed_rows(text),public.predictive_compressed_binding_guard(),public.predictive_source_request_key_v6(jsonb),
+  public.predictive_source_request_key(jsonb),public.predictive_source_plan_v3(jsonb,timestamptz),public.predictive_source_plan_v2_csv(jsonb,timestamptz),
+  public.predictive_source_plan_v2(jsonb,timestamptz),public.predictive_source_plan_check_csv(jsonb,timestamptz,boolean),
+  public.predictive_source_plan_check(jsonb,timestamptz,boolean),public.predictive_record_compressed_source_binding(text,text,jsonb) FROM PUBLIC;
+DO $grants$ BEGIN
+  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='predictive_recorder') THEN
+    GRANT EXECUTE ON FUNCTION public.predictive_compressed_binding_guard(),public.predictive_record_compressed_source_binding(text,text,jsonb) TO predictive_recorder;
+  END IF;
+END $grants$;
+
+
+-- Scheduled expiry can occur during deferred coverage hashing at COMMIT.
+-- Recheck the complete binding's research rights after that work as well.
+CREATE FUNCTION public.predictive_compressed_binding_finish() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+  IF NEW.plan->'binding'->>'version'='nflverse-stats-normalization-plan-v3' THEN
+    IF EXISTS(SELECT 1 FROM (SELECT NEW.profile_id AS id UNION SELECT x->>'profileId'
+        FROM jsonb_array_elements(NEW.plan->'binding'->'dependencies') x) profiles
+        WHERE public.predictive_rights_allow(id,clock_timestamp(),clock_timestamp(),'internal-research') IS NOT TRUE) THEN
+      RAISE EXCEPTION 'compressed-binding-rights-expired' USING ERRCODE='23514'; END IF;
+  END IF;
+  RETURN NULL;
+END $$;
+REVOKE ALL ON FUNCTION public.predictive_compressed_binding_finish() FROM PUBLIC;
+CREATE CONSTRAINT TRIGGER predictive_compressed_binding_finish AFTER INSERT ON public.predictive_source_bindings
+DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_compressed_binding_finish();
+
+-- #118 audited invalidation, following #106's frozen 0001-0018 at dae2940.
+-- Digest-only refusal history does not certify bytes or authorize fitting.
+CREATE TABLE public.predictive_training_invalidation_addresses (
+  address_sha256 text PRIMARY KEY CHECK(address_sha256~'^[a-f0-9]{64}$'),
+  kind text NOT NULL CHECK(kind IN ('run','dataset')),
+  identity_sha256 text NOT NULL CHECK(identity_sha256~'^[a-f0-9]{64}$'),
+  body jsonb NOT NULL CHECK(public.predictive_source_exact(body,ARRAY['version','kind','identitySha256','runIdentitySha256','datasetIdentitySha256','inventorySha256','manifestSha256'])),
+  registered_at timestamptz NOT NULL CHECK(isfinite(registered_at) AND registered_at=date_trunc('milliseconds',registered_at)),
+  UNIQUE(kind,identity_sha256),
+  CHECK((body->>'version'='qb-training-invalidation-address-v1' AND body->>'kind'=kind
+    AND body->>'identitySha256'=identity_sha256 AND body->>'runIdentitySha256'~'^[a-f0-9]{64}$'
+    AND body->>'inventorySha256'~'^[a-f0-9]{64}$' AND public.predictive_source_digest(body)=address_sha256
+    AND ((kind='run' AND body->>'runIdentitySha256'=identity_sha256 AND body->'datasetIdentitySha256'='null'::jsonb AND body->'manifestSha256'='null'::jsonb)
+      OR (kind='dataset' AND body->>'datasetIdentitySha256'=identity_sha256 AND body->>'manifestSha256'~'^[a-f0-9]{64}$'))) IS TRUE)
+);
+CREATE TABLE public.predictive_training_invalidations (
+  ordinal bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY CHECK(ordinal BETWEEN 1 AND 9007199254740991),
+  event_sha256 text NOT NULL UNIQUE CHECK(event_sha256~'^[a-f0-9]{64}$'),
+  address_sha256 text NOT NULL REFERENCES public.predictive_training_invalidation_addresses(address_sha256),
+  body jsonb NOT NULL CHECK(public.predictive_source_exact(body,ARRAY['version','addressSha256','reason','operation','failureCode','origin','causeSha256'])),
+  recorded_at timestamptz NOT NULL CHECK(isfinite(recorded_at) AND recorded_at=date_trunc('milliseconds',recorded_at)),
+  CHECK((body->>'version'='qb-training-invalidation-v1' AND body->>'addressSha256'=address_sha256
+    AND body->>'reason' IN ('rights-unavailable','evidence-removed','evidence-expired','evidence-integrity-failed','evidence-inaccessible')
+    AND body->>'operation' IN ('run-metadata','run-readiness','shard-verify','dataset-prepare','dataset-manifest','dataset-page','dataset-pin','retention')
+    AND body->>'origin' IN ('reader-reported','database-confirmed','authorized-retention')
+    AND body->>'causeSha256'~'^[a-f0-9]{64}$' AND public.predictive_source_digest(body)=event_sha256) IS TRUE)
+);
+CREATE INDEX predictive_training_invalidations_address_ordinal ON public.predictive_training_invalidations(address_sha256,ordinal);
+
+-- Minimal addresses survive deletion; no live-evidence FK can obstruct it.
+-- Registration is atomic with the original run/manifest, not caller asserted.
+CREATE FUNCTION public.predictive_training_invalidation_register(scope text,entity text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE r public.predictive_training_runs; d public.predictive_training_datasets; address_body jsonb; previous jsonb;
+BEGIN
+  IF scope='run' THEN
+    SELECT * INTO STRICT r FROM public.predictive_training_runs WHERE id=entity;
+  ELSIF scope='dataset' THEN
+    SELECT * INTO STRICT d FROM public.predictive_training_datasets WHERE id=entity;
+    SELECT * INTO STRICT r FROM public.predictive_training_runs WHERE id=d.run_id;
+  ELSE RAISE EXCEPTION 'training-invalidation-target-refused' USING ERRCODE='23514'; END IF;
+  IF public.predictive_source_digest(r.body)<>r.body_sha256 OR (scope='dataset' AND public.predictive_source_digest(d.body)<>d.body_sha256) THEN
+    RAISE EXCEPTION 'training-invalidation-registration-integrity-refused' USING ERRCODE='23514'; END IF;
+  address_body:=jsonb_build_object('version','qb-training-invalidation-address-v1','kind',scope,
+    'identitySha256',public.predictive_source_digest(to_jsonb(entity)),
+    'runIdentitySha256',public.predictive_source_digest(to_jsonb(r.id)),
+    'datasetIdentitySha256',CASE WHEN scope='dataset' THEN public.predictive_source_digest(to_jsonb(d.id)) END,
+    'inventorySha256',r.body_sha256,'manifestSha256',CASE WHEN scope='dataset' THEN d.body_sha256 END);
+  SELECT a.body INTO previous FROM public.predictive_training_invalidation_addresses a
+    WHERE a.kind=scope AND a.identity_sha256=address_body->>'identitySha256';
+  IF previous IS NOT NULL AND previous IS DISTINCT FROM address_body THEN
+    RAISE EXCEPTION 'training-invalidation-address-conflict' USING ERRCODE='23514'; END IF;
+  INSERT INTO public.predictive_training_invalidation_addresses VALUES(public.predictive_source_digest(address_body),scope,address_body->>'identitySha256',address_body,date_trunc('milliseconds',clock_timestamp()))
+    ON CONFLICT(kind,identity_sha256) DO NOTHING;
+END
+$$;
+CREATE FUNCTION public.predictive_training_invalidation_register_trigger() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+BEGIN
+  IF TG_TABLE_NAME='predictive_training_runs' THEN PERFORM public.predictive_training_invalidation_register('run',NEW.id);
+  ELSIF TG_TABLE_NAME='predictive_training_datasets' THEN PERFORM public.predictive_training_invalidation_register('dataset',NEW.id);
+  ELSE RAISE EXCEPTION 'training-invalidation-target-refused' USING ERRCODE='23514'; END IF;
+  RETURN NEW;
+END
+$$;
+DO $backfill$ DECLARE item record; BEGIN
+  FOR item IN SELECT id FROM public.predictive_training_runs ORDER BY id COLLATE "C" LOOP
+    PERFORM public.predictive_training_invalidation_register('run',item.id);
+  END LOOP;
+  FOR item IN SELECT id FROM public.predictive_training_datasets ORDER BY id COLLATE "C" LOOP
+    PERFORM public.predictive_training_invalidation_register('dataset',item.id);
+  END LOOP;
+END $backfill$;
+CREATE TRIGGER predictive_training_invalidation_register AFTER INSERT ON public.predictive_training_runs
+  FOR EACH ROW EXECUTE FUNCTION public.predictive_training_invalidation_register_trigger();
+CREATE TRIGGER predictive_training_invalidation_register AFTER INSERT ON public.predictive_training_datasets
+  FOR EACH ROW EXECUTE FUNCTION public.predictive_training_invalidation_register_trigger();
+
+CREATE FUNCTION public.predictive_training_invalidation_target(target jsonb) RETURNS public.predictive_training_invalidation_addresses
+LANGUAGE plpgsql STABLE SET search_path=pg_catalog,pg_temp AS $$
+DECLARE a public.predictive_training_invalidation_addresses;
+BEGIN
+  IF public.predictive_source_exact(target,ARRAY['kind','id','sha256']) IS NOT TRUE
+      OR target->>'kind' IS NULL OR target->>'kind' NOT IN ('run','dataset')
+      OR public.predictive_training_identity(target->'id') IS NOT TRUE
+      OR (target->'sha256'<>'null'::jsonb AND (jsonb_typeof(target->'sha256') IS DISTINCT FROM 'string' OR target->>'sha256'!~'^[a-f0-9]{64}$')) THEN
+    RAISE EXCEPTION 'training-invalidation-target-refused' USING ERRCODE='23514'; END IF;
+  SELECT * INTO a FROM public.predictive_training_invalidation_addresses x WHERE x.kind=target->>'kind'
+    AND x.identity_sha256=public.predictive_source_digest(target->'id');
+  IF a.address_sha256 IS NULL THEN RAISE EXCEPTION 'training-invalidation-target-unknown' USING ERRCODE='23514'; END IF;
+  IF target->'sha256'<>'null'::jsonb AND target->>'sha256' IS DISTINCT FROM
+      (CASE a.kind WHEN 'run' THEN a.body->>'inventorySha256' ELSE a.body->>'manifestSha256' END) THEN
+    RAISE EXCEPTION 'training-invalidation-target-mismatch' USING ERRCODE='23514'; END IF;
+  RETURN a;
+END
+$$;
+CREATE FUNCTION public.predictive_training_invalidation_reason(code text) RETURNS text
+LANGUAGE sql IMMUTABLE SET search_path=pg_catalog,pg_temp AS $$
+  SELECT CASE
+    WHEN code IN ('training-run-rights-refused','training-dataset-rights-refused','training-kickoff-rights-refused','source-consumer-rights-refused','predictive-source-plan-rights-profile-invalid','source-normalization-rights-refused','compressed-selection-rights-refused') THEN 'rights-unavailable'
+    WHEN code IN ('training-run-evidence-removed','training-dataset-evidence-removed') THEN 'evidence-removed'
+    WHEN code IN ('training-shard-feature-expired','training-dataset-feature-expired') THEN 'evidence-expired'
+    WHEN code IN ('artifact-integrity-failed','stored-observation-mismatch','stored-source-row-mismatch','stored-source-consumer-mismatch','training-shard-evidence-mismatch','training-shard-kickoff-mismatch','training-inventory-integrity-refused','training-dataset-integrity-refused','compressed-inspection-integrity-failed','compressed-publication-integrity-failed','compressed-wire-integrity-failed') THEN 'evidence-integrity-failed'
+    WHEN code IN ('artifact-file-refused','artifact-root-refused','artifact-reference-refused','artifact-unreadable') THEN 'evidence-inaccessible'
+  END
+$$;
+CREATE FUNCTION public.predictive_training_invalidation_receipt(event public.predictive_training_invalidations) RETURNS jsonb
+LANGUAGE sql STABLE SET search_path=pg_catalog,pg_temp AS $$
+  SELECT event.body || jsonb_build_object('ordinal',event.ordinal,'eventSha256',event.event_sha256,
+    'recordedAt',public.predictive_source_time(event.recorded_at),'address',a.body)
+  FROM public.predictive_training_invalidation_addresses a WHERE a.address_sha256=event.address_sha256
+$$;
+ALTER TABLE public.predictive_training_invalidations ADD CONSTRAINT predictive_training_invalidation_failure_contract CHECK((
+  (body->>'operation'='retention' AND body->>'origin'='authorized-retention' AND
+    ((body->>'failureCode'='retention-evidence-removed' AND body->>'reason'='evidence-removed')
+      OR (body->>'failureCode'='retention-evidence-expired' AND body->>'reason'='evidence-expired')))
+  OR (body->>'operation'<>'retention' AND body->>'origin' IN ('reader-reported','database-confirmed')
+    AND body->>'reason'=public.predictive_training_invalidation_reason(body->>'failureCode'))
+) IS TRUE);
+CREATE FUNCTION public.predictive_training_invalidation_append(address text,operation text,code text,reason text,origin text,cause text) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE body jsonb; hash text; event public.predictive_training_invalidations; reused boolean:=false;
+BEGIN
+  -- Private helper: only the checked recorder and authorized deletion hooks
+  -- call it. Serializing one address makes the quota and dedup atomic.
+  PERFORM pg_advisory_xact_lock(520056,hashtext(address));
+  body:=jsonb_build_object('version','qb-training-invalidation-v1','addressSha256',address,'operation',operation,
+    'failureCode',code,'reason',reason,'origin',origin,'causeSha256',cause);
+  hash:=public.predictive_source_digest(body);
+  SELECT * INTO event FROM public.predictive_training_invalidations WHERE event_sha256=hash;
+  IF event.event_sha256 IS NOT NULL THEN reused:=true;
+  ELSE
+    IF origin<>'authorized-retention' AND (SELECT count(*) FROM public.predictive_training_invalidations WHERE address_sha256=address)>=256 THEN
+      RAISE EXCEPTION 'training-invalidation-quota-refused' USING ERRCODE='23514'; END IF;
+    INSERT INTO public.predictive_training_invalidations(event_sha256,address_sha256,body,recorded_at)
+      VALUES(hash,address,body,date_trunc('milliseconds',clock_timestamp())) RETURNING * INTO event;
+  END IF;
+  RETURN public.predictive_training_invalidation_receipt(event) || jsonb_build_object('reused',reused);
+END
+$$;
+
+CREATE FUNCTION public.predictive_record_training_invalidation(req jsonb) RETURNS jsonb
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE a public.predictive_training_invalidation_addresses; reason text; code text; uses jsonb:='[]'; origin text:='reader-reported';
+  r public.predictive_training_runs; d public.predictive_training_datasets; body jsonb; cause jsonb; t timestamptz;
+BEGIN
+  IF NOT pg_has_role(session_user,'predictive_replay','MEMBER') THEN RAISE EXCEPTION 'training-invalidation-not-authorized' USING ERRCODE='42501'; END IF;
+  IF public.predictive_source_exact(req,ARRAY['version','target','operation','failureCode']) IS NOT TRUE
+      OR req->>'version' IS DISTINCT FROM 'qb-training-invalidation-v1'
+      OR req->>'operation' IS NULL OR req->>'operation' NOT IN ('run-metadata','run-readiness','shard-verify','dataset-prepare','dataset-manifest','dataset-page','dataset-pin') THEN
+    RAISE EXCEPTION 'training-invalidation-request-refused' USING ERRCODE='23514'; END IF;
+  code:=req->>'failureCode'; reason:=public.predictive_training_invalidation_reason(code);
+  IF reason IS NULL THEN RAISE EXCEPTION 'training-invalidation-request-refused' USING ERRCODE='23514'; END IF;
+  PERFORM public.predictive_training_read_guard();
+  a:=public.predictive_training_invalidation_target(req->'target'); t:=clock_timestamp();
+  IF a.kind='run' THEN
+    SELECT * INTO r FROM public.predictive_training_runs WHERE id=req->'target'->>'id'; body:=r.body;
+  ELSE
+    SELECT * INTO d FROM public.predictive_training_datasets WHERE id=req->'target'->>'id'; body:=d.body;
+  END IF;
+  IF jsonb_typeof(body->'protectedUses')='array' THEN uses:=body->'protectedUses'; END IF;
+  -- A submitted file failure is a diagnostic assertion by the owner reader;
+  -- SQL cannot verify private filesystem bytes. Confirm only what SQL sees.
+  IF reason='evidence-removed' AND body IS NULL THEN origin:='database-confirmed'; END IF;
+  IF reason='evidence-integrity-failed' AND body IS NOT NULL AND public.predictive_source_digest(body) IS DISTINCT FROM
+      (CASE a.kind WHEN 'run' THEN a.body->>'inventorySha256' ELSE a.body->>'manifestSha256' END) THEN origin:='database-confirmed'; END IF;
+  IF reason='rights-unavailable' AND EXISTS(SELECT 1 FROM jsonb_array_elements(uses) u WHERE
+      NOT public.predictive_rights_allow(u->>'profile',t,t,'internal-research') OR NOT public.predictive_rights_allow(u->>'profile',t,t,u->>'use')) THEN
+    origin:='database-confirmed'; END IF;
+  IF reason='evidence-expired' AND ((a.kind='dataset' AND EXISTS(SELECT 1 FROM public.predictive_training_dataset_consumers x
+      JOIN public.predictive_source_consumers c ON c.id=x.consumer_id WHERE x.dataset_id=d.id AND c.kind='feature'
+        AND c.recorded_at+interval '90 days'<=t AND NOT public.predictive_training_dataset_active(d.id)))
+      OR (a.kind='run' AND EXISTS(SELECT 1 FROM public.predictive_training_run_slots s JOIN public.predictive_source_consumers c
+        ON c.id=s.selection->'selection'->>'featureId' WHERE s.run_id=r.id AND s.selection->'feature'->>'state'<>'expired'
+          AND c.recorded_at+interval '90 days'<=t AND NOT public.predictive_training_consumer_pinned(c.id,t)))) THEN
+    origin:='database-confirmed'; END IF;
+  SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.id COLLATE "C"),'[]') INTO cause FROM (
+    SELECT rd.id,rd.allowed_uses,public.predictive_source_time(rd.effective_from) AS effective_from,
+      public.predictive_source_time(rd.effective_to) AS effective_to,public.predictive_source_time(rd.decided_at) AS decided_at
+    FROM public.predictive_rights_decisions rd WHERE rd.profile_id IN (SELECT u->>'profile' FROM jsonb_array_elements(uses) u)) x;
+  RETURN public.predictive_training_invalidation_append(a.address_sha256,req->>'operation',code,reason,origin,
+    public.predictive_source_digest(jsonb_build_object('rights',cause,'bodyPresent',body IS NOT NULL,
+      'observedBodySha256',CASE WHEN body IS NOT NULL THEN public.predictive_source_digest(body) END)));
+END
+$$;
+
+CREATE FUNCTION public.predictive_training_invalidation_history(req jsonb) RETURNS jsonb
+LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE a public.predictive_training_invalidation_addresses; after_id bigint; through_id bigint; maximum bigint; cap integer; entries jsonb; next_id bigint;
+BEGIN
+  IF NOT pg_has_role(session_user,'predictive_replay','MEMBER') THEN RAISE EXCEPTION 'training-invalidation-not-authorized' USING ERRCODE='42501'; END IF;
+  IF public.predictive_source_exact(req,ARRAY['version','target','afterOrdinal','throughOrdinal','limit']) IS NOT TRUE
+      OR req->>'version' IS DISTINCT FROM 'qb-training-invalidation-v1' OR public.predictive_integer(req->'limit',1,64) IS NOT TRUE
+      OR (req->'afterOrdinal'<>'null'::jsonb AND public.predictive_integer(req->'afterOrdinal',0,9007199254740991) IS NOT TRUE)
+      OR (req->'throughOrdinal'<>'null'::jsonb AND public.predictive_integer(req->'throughOrdinal',0,9007199254740991) IS NOT TRUE)
+      OR (req->'afterOrdinal'<>'null'::jsonb AND req->'throughOrdinal'='null'::jsonb) THEN
+    RAISE EXCEPTION 'training-invalidation-history-request-refused' USING ERRCODE='23514'; END IF;
+  a:=public.predictive_training_invalidation_target(req->'target'); cap:=(req->>'limit')::integer;
+  SELECT coalesce(max(ordinal),0) INTO maximum FROM public.predictive_training_invalidations WHERE address_sha256=a.address_sha256;
+  after_id:=coalesce((req->>'afterOrdinal')::bigint,0); through_id:=coalesce((req->>'throughOrdinal')::bigint,maximum);
+  IF after_id>through_id OR through_id>maximum OR (after_id>0 AND NOT EXISTS(SELECT 1 FROM public.predictive_training_invalidations
+      WHERE address_sha256=a.address_sha256 AND ordinal=after_id)) THEN
+    RAISE EXCEPTION 'training-invalidation-history-request-refused' USING ERRCODE='23514'; END IF;
+  SELECT coalesce(jsonb_agg(public.predictive_training_invalidation_receipt(e) ORDER BY e.ordinal),'[]'),max(e.ordinal) INTO entries,next_id
+    FROM (SELECT * FROM public.predictive_training_invalidations WHERE address_sha256=a.address_sha256 AND ordinal>after_id AND ordinal<=through_id
+      ORDER BY ordinal LIMIT cap) e;
+  IF NOT EXISTS(SELECT 1 FROM public.predictive_training_invalidations WHERE address_sha256=a.address_sha256 AND ordinal>coalesce(next_id,through_id) AND ordinal<=through_id) THEN next_id:=NULL; END IF;
+  RETURN jsonb_build_object('version','qb-training-invalidation-v1','addressSha256',a.address_sha256,'throughOrdinal',through_id,'entries',entries,'nextAfterOrdinal',next_id);
+END
+$$;
+
+-- Independent deletion hook: no retention-procedure copy or changed legacy
+-- count/digest. Audit commits/rolls back with the authorized removal itself.
+CREATE FUNCTION public.predictive_training_invalidation_delete() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE event public.predictive_retention_events; address text; parent text; removal_kind text; reason text; code text; cause text;
+BEGIN
+  IF NOT pg_has_role(session_user,'predictive_retention_owner','MEMBER') THEN RAISE EXCEPTION 'training-retention-not-authorized' USING ERRCODE='42501'; END IF;
+  SELECT e.* INTO STRICT event FROM public.predictive_retention_authorizations x JOIN public.predictive_retention_events e ON e.id=x.retention_event_id
+    WHERE x.txid=pg_current_xact_id();
+  removal_kind:=CASE TG_TABLE_NAME WHEN 'predictive_training_runs' THEN 'run' WHEN 'predictive_training_datasets' THEN 'dataset' END;
+  IF removal_kind IS NULL THEN RAISE EXCEPTION 'training-invalidation-target-refused' USING ERRCODE='23514'; END IF;
+  SELECT address_sha256 INTO STRICT address FROM public.predictive_training_invalidation_addresses a WHERE a.kind=removal_kind AND a.identity_sha256=public.predictive_source_digest(to_jsonb(OLD.id));
+  reason:=CASE event.scope_descriptor->>'kind' WHEN 'feature-run-expiry' THEN 'evidence-expired' ELSE 'evidence-removed' END;
+  code:=CASE reason WHEN 'evidence-expired' THEN 'retention-evidence-expired' ELSE 'retention-evidence-removed' END;
+  cause:=public.predictive_source_digest(jsonb_build_object('eventSha256',public.predictive_source_digest(to_jsonb(event.id)),
+    'scopeSha256',public.predictive_source_digest(event.scope_descriptor),'removedAddressSha256',address));
+  PERFORM public.predictive_training_invalidation_append(address,'retention',code,reason,'authorized-retention',cause);
+  IF removal_kind='dataset' THEN
+    SELECT a.address_sha256 INTO STRICT parent FROM public.predictive_training_invalidation_addresses a
+      WHERE a.kind='run' AND a.identity_sha256=public.predictive_source_digest(to_jsonb(OLD.run_id));
+    PERFORM public.predictive_training_invalidation_append(parent,'retention',code,reason,'authorized-retention',cause);
+  END IF;
+  RETURN OLD;
+END
+$$;
+CREATE TRIGGER predictive_training_invalidation_delete BEFORE DELETE ON public.predictive_training_runs
+  FOR EACH ROW EXECUTE FUNCTION public.predictive_training_invalidation_delete();
+CREATE TRIGGER predictive_training_invalidation_delete BEFORE DELETE ON public.predictive_training_datasets
+  FOR EACH ROW EXECUTE FUNCTION public.predictive_training_invalidation_delete();
+
+DO $immutable$ DECLARE rel text; BEGIN
+  FOREACH rel IN ARRAY ARRAY['predictive_training_invalidation_addresses','predictive_training_invalidations'] LOOP
+    EXECUTE format('CREATE TRIGGER %I BEFORE UPDATE OR DELETE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.predictive_retention_audit_immutable()',rel || '_immutable',rel);
+    EXECUTE format('CREATE TRIGGER %I BEFORE TRUNCATE ON public.%I FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_retention_audit_immutable()',rel || '_no_truncate',rel);
+    EXECUTE format('REVOKE ALL ON public.%I FROM PUBLIC',rel);
+  END LOOP;
+END $immutable$;
+REVOKE ALL ON SEQUENCE public.predictive_training_invalidations_ordinal_seq FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.predictive_training_invalidation_register(text,text),public.predictive_training_invalidation_register_trigger(),
+  public.predictive_training_invalidation_target(jsonb),public.predictive_training_invalidation_reason(text),
+  public.predictive_training_invalidation_receipt(public.predictive_training_invalidations),
+  public.predictive_training_invalidation_append(text,text,text,text,text,text),public.predictive_training_invalidation_delete(),
+  public.predictive_record_training_invalidation(jsonb),public.predictive_training_invalidation_history(jsonb) FROM PUBLIC;
+DO $grants$ BEGIN
+  IF EXISTS(SELECT 1 FROM pg_roles WHERE rolname='predictive_replay') THEN
+    GRANT EXECUTE ON FUNCTION public.predictive_record_training_invalidation(jsonb),public.predictive_training_invalidation_history(jsonb) TO predictive_replay;
+  END IF;
+END $grants$;

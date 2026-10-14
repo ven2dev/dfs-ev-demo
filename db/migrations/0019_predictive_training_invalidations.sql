@@ -1,5 +1,4 @@
--- DRAFT 0019, reserved for #118. Finalize against #106's frozen 0001-0018.
--- Kept outside the ordered migration chain until that prefix is published.
+-- #118 audited invalidation, following #106's frozen 0001-0018 at dae2940.
 -- Digest-only refusal history does not certify bytes or authorize fitting.
 CREATE TABLE public.predictive_training_invalidation_addresses (
   address_sha256 text PRIMARY KEY CHECK(address_sha256~'^[a-f0-9]{64}$'),
@@ -98,10 +97,10 @@ $$;
 CREATE FUNCTION public.predictive_training_invalidation_reason(code text) RETURNS text
 LANGUAGE sql IMMUTABLE SET search_path=pg_catalog,pg_temp AS $$
   SELECT CASE
-    WHEN code IN ('training-run-rights-refused','training-dataset-rights-refused','training-kickoff-rights-refused','source-consumer-rights-refused','predictive-source-plan-rights-profile-invalid') THEN 'rights-unavailable'
+    WHEN code IN ('training-run-rights-refused','training-dataset-rights-refused','training-kickoff-rights-refused','source-consumer-rights-refused','predictive-source-plan-rights-profile-invalid','source-normalization-rights-refused','compressed-selection-rights-refused') THEN 'rights-unavailable'
     WHEN code IN ('training-run-evidence-removed','training-dataset-evidence-removed') THEN 'evidence-removed'
     WHEN code IN ('training-shard-feature-expired','training-dataset-feature-expired') THEN 'evidence-expired'
-    WHEN code IN ('artifact-integrity-failed','stored-observation-mismatch','stored-source-row-mismatch','stored-source-consumer-mismatch','training-shard-evidence-mismatch','training-shard-kickoff-mismatch','training-inventory-integrity-refused','training-dataset-integrity-refused') THEN 'evidence-integrity-failed'
+    WHEN code IN ('artifact-integrity-failed','stored-observation-mismatch','stored-source-row-mismatch','stored-source-consumer-mismatch','training-shard-evidence-mismatch','training-shard-kickoff-mismatch','training-inventory-integrity-refused','training-dataset-integrity-refused','compressed-inspection-integrity-failed','compressed-publication-integrity-failed','compressed-wire-integrity-failed') THEN 'evidence-integrity-failed'
     WHEN code IN ('artifact-file-refused','artifact-root-refused','artifact-reference-refused','artifact-unreadable') THEN 'evidence-inaccessible'
   END
 $$;

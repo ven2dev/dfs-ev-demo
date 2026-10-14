@@ -234,8 +234,9 @@ An evaluation plan fixes its aggregation/reuse policy before scores are inspecte
 ## Proposed versioned service surface
 
 The run/dataset/pin, page/label and complete-run verification operations below
-are exported by the local store. Audited invalidation is implemented provisionally
-against the reserved 0019 draft; ordered-prefix integration remains outstanding.
+are exported by the local store. Audited invalidation now uses ordered 0019
+following #106's frozen `dae2940` prefix18; final integration checks are recorded
+in the integration/evidence checkpoints.
 Read requests carry `version: "qb-training-read-v1"`; invalidation requests use
 the separate `qb-training-invalidation-v1` contract described below.
 
@@ -475,8 +476,8 @@ compressed inspection envelopes/guarded diagnostic binary verification and
 0001–0014 are unchanged by #106's integrated `4f1ad06` checkpoint. **0016 is
 implemented; #106 owns 0017 qualified compressed publication and the subsequently
 allocated 0018 normalization/consumer/retention integration. #118 owns 0019
-audited invalidation.** Prepare 0019 outside the ordered chain until #106 publishes
-its frozen 0001–0018 checkpoint, then integrate and validate that complete prefix.
+audited invalidation.** #106 published frozen 0001–0018 at `dae2940`; Relay
+integrates it by merge and finalizes ordered 0019. No later number is reserved.
 Coordinate landing order with
 #106/#115 before merging further DDL. A
 second merger integrates main without rebasing and may renumber only private,
@@ -604,15 +605,19 @@ catalog contracts. The 36 frozen/generated prefix files match `986bfed`; local
 documentation links and whitespace pass. The evidence checkpoint records final
 logs and the focused pure-fixture rerun. Only disposable databases were used.
 
-## Reserved 0019: provisional audited invalidation
+## Frozen 0019: audited invalidation
 
-The owner allocated 0018 to #106's normalization/consumer/retention integration
-and 0019 to #118's audited invalidation. Relay's ordered/generated prefix remains
-0001–0016. The draft is
-[`db/migration-drafts/0019_predictive_training_invalidations.sql`](../db/migration-drafts/0019_predictive_training_invalidations.sql),
-applied only by the disposable test harness without a migration-ledger entry.
-Final ordered application, catalog/readiness generation and integration review
-wait for #106's frozen 0001–0018 checkpoint. This is not a released/frozen 0019.
+At `a6da525`, the owner-allocated 0019 draft was tested outside Relay's ordered
+0001–0016 chain, pending #106's prefix18. #106 has now published `dae2940` and
+the SQL moves to
+[`db/migrations/0019_predictive_training_invalidations.sql`](../db/migrations/0019_predictive_training_invalidations.sql).
+The APIs and semantics below are retained, with compressed-source evidence
+failure codes added. The frozen ordered prefix is 0001–0019; 0001–0018 SQL and
+catalog contracts match `dae2940` byte for byte. 0019 SHA-256 is
+`4b4502b2b1431faa753ee067a90998f247955437c55edd0db8bc47bfa196e568`.
+The combined gate passes 787 Node tests, 75 DB checks, 229 PostgreSQL tests,
+11 worker checks, 20 catalog contracts, typecheck and lint. Full evidence is
+recorded in the integration/evidence checkpoints. No later number is reserved.
 
 `recordTrainingInvalidation({ version: "qb-training-invalidation-v1", target:
 { kind: "run" | "dataset", id, sha256 }, operation, failureCode })` accepts only
@@ -664,8 +669,8 @@ deleted identifiers or bytes. Exact synthetic backup restoration reproduces
 the registered manifest clocks and stable audit identities; recreating fixtures
 with newer clocks is not an equivalent recovery proof.
 
-All nine focused PostgreSQL cases pass. Final provisional gates and remaining
+All ten invalidation cases pass in the full gate. Final integrated gates and remaining
 limits are recorded in [predictive-training-evidence.md](predictive-training-evidence.md).
-#118 still needs final prefix integration, deadlines/cancellation, representative
+#118 still needs deadlines/cancellation, representative
 capacity and independent review. #54 Part B remains blocked by its separate
 real-source and population qualification gates.

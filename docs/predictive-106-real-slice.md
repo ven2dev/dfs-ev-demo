@@ -30,8 +30,8 @@ Creator comparison horizon is not narrowed by this one-game engineering proof.
 Handoff agreement: [#106/#118 contract at b7db281](https://github.com/ven2dev/dfs-ev-demo/blob/b7db281e156ac4decfd181e4d158ce912bef57e0/docs/predictive-training-handoff.md).
 Relay owns training-read/dataset/pin runtime. This branch owns raw evidence,
 qualified bridges/membership/completion, source consumers and the real slice.
-No migration number is reserved here. Preserve frozen 0001–0011 and coordinate
-landing order with #118 before adding forward DDL.
+Current allocation: preserve frozen 0001–0017; 0018 only is reserved for #106's
+normalization/consumer increment. Coordinate any further DDL with #118 here.
 
 ## Executable inventory
 
@@ -191,3 +191,36 @@ and independently cap decoded work. Follow with compressed publication rollback,
 restored retention, rights/deletion races and full consumer reconstruction tests.
 The missing 2025 Week 18 participation/absence evidence and other real-source
 qualification requirements above remain prerequisites for the selected real proof.
+
+## Schema-18 engineering checkpoint and real-proof remainder
+
+The compressed route now includes atomic raw publication, guarded cutoff lookup,
+explicit v3 normalization plans and execute-only binding/revision recording,
+source decisions, numerical features and final labels, dataset/pin closure and
+mandatory deletion. Combined #118 paging, label and complete-run readers are
+integrated. Seven new PostgreSQL cases validate the whole synthetic path,
+including 8,193 complete rows, independently expected values, earlier cutoffs,
+forged plans, restricted roles, commit-time expiry and deletion with active pins.
+The frozen prefix is 0001–0018; #118 owns 0019 for audited invalidation.
+
+On 2026-10-14 the retained real 2025 player wire file was independently decoded
+again in the isolated 256 MiB worker. All 19,422 ordinals were preserved: 19,400
+typed projections and 22 explicit refusals. Peak RSS was 119,013,376 bytes.
+Sixteen raw Hurts REG claims are present; `2025_18_WAS_PHI` remains absent. The
+private report is `/private/tmp/dfs106-real-codec-schema18.json`. This diagnostic
+grants no rights, publishes no claim/feature/label and proves no participation.
+
+The original prototype journal referenced above is no longer present at its
+temporary location, so its older inventory could not be reverified. Complete
+2025 player/roster wire files remain; temporary storage is not a durable archive.
+Historical journal proof must be recovered, or acquisition repeated with actual
+new receipt times. No previous capture or database knowledge time may be invented.
+
+The real-proof remainder is explicit: establish permitted research/model/label
+uses; qualify canonical game/player/team mappings and profile links; obtain
+independent 2024–2026 schedule coverage, dated membership/former-team coverage,
+accepted independent completion evidence and official-stat reconciliation; and
+resolve the Week 18 absence through real participation evidence. Then publish
+and restore/replay the bounded real feature and final-label proof. Existing v1
+history, 4/8/16 slot preservation and missing-data rules remain binding. #106
+and #54 Part B remain incomplete; synthetic integration does not close them.

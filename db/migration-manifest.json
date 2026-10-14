@@ -81,6 +81,21 @@
       "version": 16,
       "filename": "0016_predictive_training_datasets.sql",
       "sha256": "fd0e99ae3b3cc5f2dedb019d6d35fe3fe41d27b960179a91599496f8b0492883"
+    },
+    {
+      "version": 17,
+      "filename": "0017_predictive_compressed_publications.sql",
+      "sha256": "5c7dbaec1bc41924c9539a7e65034a6c50a27a0c1a7c95d922b361c372f53305"
+    },
+    {
+      "version": 18,
+      "filename": "0018_predictive_compressed_bindings.sql",
+      "sha256": "58f0d5ae8cf11700d64370bf4dfdde8844dd2be6380935e103c84457a538de1e"
+    },
+    {
+      "version": 19,
+      "filename": "0019_predictive_training_invalidations.sql",
+      "sha256": "4b4502b2b1431faa753ee067a90998f247955437c55edd0db8bc47bfa196e568"
     }
   ]
 }

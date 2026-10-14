@@ -696,3 +696,215 @@ than a nonexistent `probe`; the new hook validates event existence before those
 probes. The role-denial probes still use the invalid event and must refuse
 execution before authorization. Neither correction changes production SQL or
 weakens the asserted immutable/FK boundaries.
+
+## #106 guarded worker integration review
+
+The schema-15 inspection cases now exercise the actual isolated worker rather
+than an in-process decoder. Their existing independent envelopes, exact wire
+counts, downward batch limits, forged decoded digest, CRC damage, restricted
+roles, concurrent rights mutation and scheduled expiry assertions are preserved.
+The final rights check occurs after worker cleanup, while the database guard is
+still held. No source-consumer reader inherits compressed activation from this
+diagnostic path.
+
+The mandatory container preflight checks exact codec output and real cgroup
+configuration, native allocation OOM, resource refusal and cleanup/reuse. Its
+new reduced-budget case uses independently measured source byte length: the
+exact allowance succeeds and one byte less refuses. Caller limit mutation cannot
+alter the launched request. Pure tests reject increased, invalid and inherited
+limit keys before runtime access. These checks establish guarded diagnostic
+decoding only; publication qualification and usable real features/labels remain
+separate outstanding work.
+
+## #106 guarded raw-claim reconstruction review
+
+Three mandatory PostgreSQL cases extend the worker-backed guard to complete raw
+claims. The positive case specifies three source rows: one valid 80-yard claim,
+one older-season refusal and one invalid player refusal. Expected ordinals,
+failure codes, values and missingness are hand specified. Row IDs are independently
+SHA-256 hashed from capture/ordinal pairs; different captures sharing a file must
+have different IDs. A restricted replay login succeeds without publishing any
+raw-stat rows. The exact two-capture decoded allowance succeeds, one fewer row
+refuses and a fresh read recovers; one wire read is independently counted.
+
+The integrity case forges a shape-valid selected-record digest and damages CRC
+while preserving the new wire digest. Both must refuse the complete batch. Rights
+revocation must refuse with zero binary reads, then execute-only retention erases
+the captured envelope and its exact compressed bytes. The race case attempts a
+real direct rights write from another connection during the guarded file read;
+it must time out. A database-clock scheduled revocation then becomes effective
+before reconstruction completes, and delivery must refuse. Restoring rights
+from the other connection proves the failed reader released its guard and worker.
+These establish guarded raw reconstruction, not qualified source publication.
+
+The first complete gate caught microsecond timestamps in two newly added rights
+fixtures. Both were corrected with explicit database-clock millisecond truncation,
+preserving the schema's timestamp constraints and all race/expiry assertions.
+All three new cases then passed a focused rerun before repeating the full gate.
+
+## #106 publication preparation review
+
+Five Node cases cover the four exact player/team and 2025/2026 combinations,
+detached input, unchanged legacy qualification, incompatible parser/provider/
+asset/header/evidence declarations, partial/filtered scope, rights at capture
+and preparation, future knowledge, malformed identity and wire bounds. Changed
+capture, wire and attribution alter the request identity; a later preparation
+clock alone does not. Wrong wire hash/size and denied rights refuse before a
+runtime can be launched.
+
+Two real container cases exercise the preparation API with signed 2025 player
+and 2026 team values, independent decoded SHA-256, exact ordinals and kernel
+memory metrics. Caller mutation cannot change the detached publication candidate.
+CRC damage with a matching new wire digest refuses the whole result; the next
+valid preparation succeeds. Every output remains prepared-only with publication,
+features and labels false. These tests establish preparation, not database
+publication authorization, real-profile approval or model readiness.
+
+## #106 qualified compressed publication review (0017)
+
+Nine mandatory PostgreSQL cases exercise the actual atomic writer and guarded
+published reader. Restricted ingestion/harness and replay-only logins publish
+and reproduce signed 2025 player and 2026 team claims without private table
+access. Exact independent wire/decoded counts, chronology, row ordinals and
+values are asserted. An 8,193-row complete file keeps scope/player refusals at
+their original ordinals; legacy text publication and row insertion still refuse
+the larger count. Direct SQL probes reject missing seals, incomplete coverage,
+wrong row IDs/ordinals and projection years.
+
+CRC corruption returns no run. An injected binary-write failure occurs after a
+real managed file is created; rollback removes that file and SQL state. Revoked
+rights refuse before a binary write. A self-consistent resealed false numeric
+claim bypasses a privileged test-only immutability probe but still fails
+independent wire reconstruction; damaged wire similarly refuses, then restoration
+replays without a stale cached approval. Authorized deletion removes complete
+claims, codec metadata and wire, and its supplemental capture/row-ID audit agrees
+across two separately reconstructed databases. Reimport into the erased source
+scope refuses.
+
+A competing rights INSERT times out while the publication guard is held. A
+database-clock scheduled revocation becomes effective after the actual file
+write but before verification; the complete transaction and new file roll back.
+A separate probe delays actual SQL projection validation so rights expire inside
+the recorder: its final rights check refuses all SQL/file state, and the next
+clean publication succeeds. The v16 upgrade test compares old captures and the
+entire old ledger byte-for-byte and requires an idempotent rerun.
+
+The first focused run exposed a test setup attempting role creation from a
+restricted login; it now asserts existing harness membership instead. Draft SQL
+iterations used fresh disposable databases after the runner correctly refused
+an earlier uncommitted 0017 checksum. No applied ledger was rewritten and no
+hosted database was touched. These establish qualified synthetic raw publication,
+not real-data approval, canonical consumers or fitting readiness.
+# Compressed selection review
+
+The pure compressed selector has four regression cases covering late receipt
+and seal visibility, capture-time ordering, contradictory snapshots, missing
+player rows, refused numbers, tampered claim seals and ordinals, invalid receipt
+clocks, duplicate inventories, future cutoffs and independent returned evidence.
+All 761 Node tests, typecheck and affected-file lint pass. No database code or
+migration changed in this checkpoint; the previous schema-17 database evidence
+does not establish the pending normalization/consumer integration.
+
+## #106 guarded compressed lookup review
+
+The reader's mandatory PostgreSQL case tests actual qualified publication and
+database-clock visibility: a later contradictory import leaves the earlier
+cutoff's signed value intact, but becomes ambiguous at the later cutoff. A
+missing player remains an unavailable row. Revocation blocks all binary reads;
+restoration performs fresh verification. A copied request survives mutation
+during its asynchronous read, and a mismatched season/profile refuses. Scheduled
+expiry during binary verification withholds the entire result.
+
+The existing restricted-role publication case now checks player and team lookup
+through a replay-only login. The forged-seal and damaged-wire case also calls
+the new selector, independently rejecting each corruption. The two restored
+deletion cases require `retained-evidence-removed` rather than silent absence.
+No private claim table privilege is granted, no canonical observation is added,
+and no migration is changed. Bounds refuse oversized inventories rather than
+returning a partial candidate. Rights are checked again after selection work.
+
+This remains synthetic raw-source verification; compressed normalization,
+consumer publication, dataset closure and real-source qualification are pending.
+
+Validation: 761 Node tests, 198 PostgreSQL tests (173 required predictive cases),
+75 Node DB checks, 11 isolated worker cases and 18 catalog contracts pass.
+Typecheck, full lint, migration-artifact verification and whitespace checks pass.
+The complete database gate was repeated after the final expiry/deletion changes;
+both runs passed and removed their disposable Compose service and scratch data.
+
+## #106 compressed normalization preview review
+
+Thirteen new Node cases exercise 2025/2026 player payloads, team payloads,
+version/parser compatibility, publication seals in evidence/freshness, capture
+and publication visibility, modified season/format, missing native bridges and
+identity links, schedule disagreement and current rights. Expected signed
+yardage, attempts, canonical IDs and missing values are stated independently.
+Released text witnesses retain v1/v2 behavior and contain no compressed seal field.
+
+Three mandatory PostgreSQL cases use actual qualified gzip publication, native
+JSON files, a restricted replay login and the shared batch guard. They require
+exact native dependencies and profile links, preserve earlier unavailable plans
+after later context receipt, and refuse forged/damaged native bytes or scheduled
+native rights expiry. Restored rights/files require fresh verification. Both
+replay-only and owner-session attempts to record v3 refuse; binding and research
+revision tables remain empty. Source-missing and row-missing previews stay
+unavailable with no invented participation.
+
+The initial database checks found an incorrect table name in the new rights
+query; it now checks the tracked profile ID array directly. The late-context
+fixture also needed actual receipt and publication clocks because synthetic
+captures intentionally retain caller timestamps. No migration or ledger was
+rewritten. These tests establish guarded planning, not persisted compressed
+bindings, real-source qualification or consumer/training readiness.
+
+Final validation: 774 Node tests, 201 PostgreSQL tests (176 mandatory predictive
+cases), 75 DB checks, 11 isolated worker checks and 18 catalog contracts pass.
+Typecheck, full lint, migration-artifact verification and whitespace checks pass.
+The final complete database gate includes the corrected rights query and fixture
+clocks; its disposable service and scratch databases were removed afterward.
+
+## #106 compressed binding and consumer review (0018)
+
+Seven mandatory PostgreSQL cases cover restricted execute-only recording and
+exact replay/fact witnesses, corrected source values with preserved earlier
+cutoffs, independently rehashed forged candidates, blocked direct row insertion,
+scheduled expiry during deferred commit validation, clean retry after rollback,
+and complete materialized-row/seal deletion with audit parity across two fresh
+databases. A real 8,193-row file binds only the requested player while preserving
+all other ordinals in the immutable raw graph. Its test has a separate 60-second
+harness allowance; application statement and codec limits remain enforced.
+
+The combined consumer case checks the independently expected 80-yard label,
+feature/source references, current/historical consumer replay, guarded batch file
+reuse, numerical paging, complete-run verification, active dataset pins and
+mandatory deletion of the complete inventory/dataset/pin graph and source bytes.
+Binary reads are counted and must occur once per verification batch. The upgrade
+case preserves every v17 capture, seal and ledger entry and requires a no-op rerun.
+Canonical stats observations remain absent; source revisions and consumers cite
+their explicit qualified binding graph.
+
+Runtime checks exposed trigger-record field access and a profile/publication
+alias collision; both were corrected before validation. The larger-file case
+also exposed repeated whole-array integrity hashing at clock-only access gates.
+Integrity is now verified once per guarded metadata snapshot and again against
+decoded wire evidence; fresh access checks use the bounded codec envelope. Bulk
+materialization uses private transaction authorization and a complete deferred
+coverage hash, with durable projection validation preserved after authorization
+cleanup. Caller-supplied hashes or flags cannot grant that authorization.
+
+Draft checksum changes used fresh disposable databases, never ledger rewrites.
+These cases establish synthetic compressed persistence and complete consumer
+integration. They do not qualify real provider rights, bridges, membership,
+completion, population coverage or a fitting-ready dataset.
+
+The full gate additionally identified two obsolete upgrade arrays, two tests
+expecting deferred rejection instead of the new immediate materializer guard,
+and restricted CSV ingestion's need for the shared trigger to read private
+publication metadata. The trigger now uses a fixed-path definer; no private
+table SELECT privilege was granted to ingestion/replay roles. All five focused
+regressions and the complete repeated gate pass on the corrected SQL.
+
+Final validation: 783 Node tests, 219 PostgreSQL tests (194 mandatory predictive
+cases), 75 DB checks, 11 worker cases and 19 catalog contracts pass, as do
+typecheck, full lint, migration/readiness and whitespace checks. Frozen 0001–0017
+SQL/catalog files remain unchanged. Only local disposable databases were migrated.

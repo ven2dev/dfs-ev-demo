@@ -1,12 +1,49 @@
 # #118 guarded evidence checkpoint
 
+## Frozen combined schema19 integration
+
+#106 published frozen prefix18 at `dae2940`; Relay integrates it by merge with
+`a6da525`. The supplied 0018 hash matches, and all earlier frozen SQL/catalog
+artifacts are unchanged. The 0019 migration enters the actual ordered migration
+chain, with generated schema/manifest, 20 catalog contracts and readiness maximum
+19 (minimum stays v2). No persistent or hosted database is migrated.
+
+The failure allowlist additionally covers compressed rights and exact wire,
+publication and inspection integrity failures. Existing runtime, capacity and
+cancellation refusals remain excluded. Backfill now uses a populated prefix18
+and the real migration runner/ledger. Injected final-verification failure must
+roll back its DDL, registry and ledger without changing the original manifest;
+successful upgrade/rerun and fresh bootstrap enforce the complete catalog.
+Ten invalidation cases are mandatory, including the original nine and a new
+compressed-consumer case. The latter damages wire bytes and the decoded proof
+separately, verifies audited rollback and repaired replay, then proves current
+revocation before zero binary reads and surviving digest-only deletion history
+under the restricted role logins. Backup recovery still preserves original
+database clocks, identities and exact bytes rather than recreating newer fixtures.
+
+The 12-case focused integration run passes (invalidation and existing compressed
+consumers/upgrade). Final checks pass **787 Node tests**, **75 DB checks + 229
+PostgreSQL tests** (204 mandatory predictive cases), **11 codec-worker checks**,
+all **20 catalog contracts**, typecheck and full lint. The final full PostgreSQL
+run took 624 seconds. Bootstrap's expected inventory ordering was corrected;
+three wall-time timeout cases passed focused rechecks and the final full gate,
+with no relaxed timeout. Logs use
+`/private/tmp/dfs118-schema19-db-clean.log` and
+`/private/tmp/dfs118-schema19-{focused-db,node,types,lint,contracts}.log`.
+All 37 prefix18 SQL/catalog artifacts match `dae2940` byte for byte. Frozen 0019
+SHA-256 is `4b4502b2b1431faa753ee067a90998f247955437c55edd0db8bc47bfa196e568`.
+No later migration number is reserved.
+#118 remains incomplete: deadlines/cancellation, representative capacity and
+independent review remain. #54 Part B retains its real/population qualification gates.
+
 ## Provisional audited invalidation (reserved 0019)
 
-The owner allocated 0018 to #106 normalization/consumer/retention and 0019 to
-#118 audited invalidation. The SQL draft remains outside the ordered migration
+At historical checkpoint `a6da525`, the owner allocated 0018 to #106
+normalization/consumer/retention and 0019 to #118 audited invalidation.
+The SQL draft remained outside the ordered migration
 chain in `db/migration-drafts/`; tests apply it transactionally without recording
 0019 in `db_migrations`. Relay's frozen/generated prefix remains 0001–0016.
-#106's latest checked remote is `9d8fde7`, ending at 0017. Final ordered migration,
+#106's then-latest checked remote was `9d8fde7`, ending at 0017. Final ordered migration,
 schema/contracts/readiness generation and combined integration validation wait
 for its frozen prefix18. This checkpoint does not activate a persistent database.
 

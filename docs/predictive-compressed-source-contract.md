@@ -305,3 +305,166 @@ PostgreSQL tests pass, including all 141 mandatory predictive cases. Typecheck,
 lint, generated artifacts and whitespace checks pass. The test service was
 removed. These checks validate codec diagnostics and the combined existing
 readers/inventories, not compressed publication or usable real feature/labels.
+
+## Isolated codec worker checkpoint
+
+`runCompressedWorker` is a separate, opt-in local worker for inspection or complete
+claim preparation. It requires a local Unix Docker endpoint and the pinned Node
+image `node@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1`.
+It never pulls an image implicitly. Prepare that exact image with `docker pull`
+and run `npm run test:predictive:worker` for the mandatory eight-case worker suite;
+the suite fails rather than skips when the required runtime is unavailable.
+
+The container has a kernel-enforced 256 MiB memory allowance with swap disabled,
+one CPU, 32 processes maximum, no network, no capabilities, no new privileges,
+an unprivileged UID and a read-only root/code mount. Docker daemon logging is
+disabled so private claim payloads are not copied into a configured log sink.
+Only trusted library code, the entrypoint and csv-parse are mounted; no private
+artifact directory, application environment file or Docker socket is mounted.
+The child checks the actual cgroup memory/swap limits before consuming wire bytes.
+The additional 192 MiB V8 heap limit does not substitute for the kernel limit.
+
+Wire input is copied and hash-checked before asynchronous startup. The request
+and capture identity are detached. The parent allows one job at a time with no
+unbounded waiting queue, bounds input and output (64 MB), and limits execution
+to at most 30 seconds plus bounded cleanup. It creates a stopped container before
+starting/attaching and sending private bytes. Cancellation, timeout and parser
+failure return no partial result. Explicit removal and a separate absence check
+precede permit release; ambiguous cleanup keeps the permit held and refuses
+further work in that parent. This bounds worker concurrency, not total host or
+parent application RSS; parent IPC allocations have their separate output bound.
+
+Eight container tests cover codec/claim parity, immutable input, CRC failure,
+concurrency refusal, cancellation/deadline cleanup, native memory exhaustion and
+recovery with no remaining task-owned container. The same sandbox killed a
+512 MiB native Buffer allocation (exit 137), proving memory enforcement beyond
+V8 heap accounting; Docker independently reported `OOMKilled: true`. An 80,000-
+record claims job also refused resource/output exhaustion, then the same parent
+successfully ran a normal job. The full retained 2025 player file reproduced the independent
+aggregate digest for all 19,422 prepared claims within this sandbox. Worker peak
+RSS was 143,142,912 bytes (about 137 MiB). No new source acquisition occurred.
+
+This checkpoint adds no migration or database-path change. The existing 0015
+guarded reader still uses its local in-process inspector; worker integration,
+qualified compressed publication, full consumer reconstruction and restored-
+backup checks remain next. 0016 stays with #118; coordinate any #106 DDL at 0017
+or later. The isolated worker is not a claim that the entire application now has
+a hard memory cap or that a usable feature/label has been published.
+
+Worker checkpoint checks: all 746 Node tests, all eight Docker worker tests,
+typecheck, lint and whitespace checks pass. The worker tests inspect the actual
+container memory/swap, network, read-only, logging and UID configuration and
+leave no task-owned container. No DB schema or existing reader changed, so the
+previous schema-15 database gate remains the last DB validation checkpoint.
+
+## Guarded inspection worker integration
+
+The subsequent checkpoint connects `replayCompressedInspections` to the kernel-
+bounded worker. Rights are rechecked before opening each unique wire file and
+before final delivery, with existing database table guards held across decoding
+and verified container cleanup. The compressed reader alone uses a 45-second
+idle transaction timeout, covering the worker's 30-second maximum execution and
+bounded cleanup. Decoder byte/row ceilings are reduced to the remaining batch
+allowance and copied before asynchronous startup. Resource refusal returns no
+inspection; the transaction rolls back. Persisted envelope checks and separate
+wire/decoded accounting remain unchanged.
+
+The local/CI database harness prepares the exact pinned image and runs all nine
+container checks before its existing mandatory database gate. New coverage proves
+inclusive reduced decode limits, refusal just below the required size and caller
+limit mutation isolation. Runtime reads never download an image. This remains
+codec diagnostic replay, with no qualified compressed publication, numerical
+consumer reconstruction or usable feature/label activation. Schema 0015 is
+unchanged; 0016 remains allocated to #118.
+
+Integration validation passes all 746 Node tests, nine container checks, 75 Node
+database checks and 166 PostgreSQL tests (141 mandatory predictive cases), plus
+typecheck, affected-file lint and catalog/migration/readiness/whitespace checks.
+The disposable local database was removed after validation.
+
+## Guarded complete-claim reconstruction
+
+`replayCompressedClaims` uses the inspection guard and isolated worker to return
+complete player/team raw claim reconstructions for an explicitly listed capture
+batch. It validates the entire stored codec envelope before releasing any row.
+All source rows retain their original ordinals, including rows that refuse scope
+or player validation. IDs include the exact capture identity. Roster numeric
+claims refuse before wire access. Fresh research-rights checks, guard lifetime,
+failure rollback and verified worker cleanup match diagnostic inspection replay.
+
+The wire memo remains transaction-local and shared. Capture-specific claim work
+has its own memo identity and charges decoded bytes/rows for each reconstruction;
+two captures sharing one file therefore have one wire read but two decode charges.
+The remaining batch work budget is enforced inside each worker. This deliberately
+conservative accounting prevents claim rebinding from silently escaping decode
+limits. Inspection-only callers retain their original response and accounting.
+
+This does not publish gzip source-stat rows or authorize model inputs. Returned
+claims remain research reconstructions with publication/features/labels false;
+qualified publication, consumer reconstruction and usable real outputs remain
+outstanding. Schema 0015 remains unchanged and 0016 stays allocated to #118.
+
+Combined checkpoint validation passes 750 Node tests, nine worker checks, 75 Node
+DB checks and all 175 PostgreSQL tests (150 mandatory predictive cases), including
+Relay's assigned-shard verification. Typecheck, full lint, catalog/migration/
+readiness and whitespace checks pass; disposable database cleanup completed.
+
+## Versioned publication preparation
+
+The next increment adds `prepareCompressedPublication` and its narrow binary
+metadata interface. Complete 2025/2026 player/team assets bind the exact provider,
+release tag, `.csv.gz` name/URL, header, evidence kind and unfiltered season scope
+to the new `nflverse-gzip-csv-source-qualification-v1` profile. The old plaintext
+profile remains unchanged. Historical and preparation-clock research rights
+must permit the operation; future capture/release/registration knowledge refuses.
+The worker verifies actual wire identity, complete CRC/CSV and claim ordinals,
+and returns a detached candidate with a stable versioned request hash.
+
+The result is explicitly `prepared-only`; no file, profile, capture, claim or
+codec envelope is persisted. Supplied rights/clock fields do not establish
+authoritative database permission. A future atomic writer must recheck the
+registered chain and current rights under publication locks, use the database
+ingestion clock and seal the complete claim aggregate. The SQL activation plan
+and migration dependency are recorded in the integration handoff: proposed
+0017 only for raw publication, after Relay freezes its 0016 prefix. No later
+number or consumer activation is allocated by this checkpoint.
+
+Validation passes 755 Node tests, 11 real worker checks, typecheck, full lint and
+whitespace checks. This preparation-only increment makes no database-path change;
+the previous complete schema-15 database gate remains the last DB checkpoint.
+
+## Qualified raw publication activation
+
+0017 implements the publication contract against frozen 0001–0016. Complete
+player/team 2025/2026 inputs use the exact versioned gzip profile above and a
+private immutable whole-claim seal. Legacy text projection checks, 8,192-row
+tables and producer limits are preserved. The new ingestion-count exception is
+bounded to 80,000 and requires a complete qualified capture and seal at commit.
+Serialized sealed claims have a separate 64 MB ceiling; wire remains 8 MB/file,
+with the existing 20 MB unique-wire and 64 MB/160,000-row replay work limits.
+
+The atomic writer validates authoritative rights under publication/table locks,
+runs the isolated decoder, writes/rechecks managed binary bytes and records the
+complete codec proof, claims and rights audit with database clocks. Published
+gzip without the seal refuses at deferred commit. Retries and published replay
+verify actual wire and regenerated claims. Rights are checked after SQL row
+validation and at commit as well as before bytes. Executed source-deletion scopes
+prevent reimport and apply to diagnostic record/read authorization too.
+
+The seal and codec metadata follow authorized capture deletion. Supplemental
+digest-only row-count/identity audit is independently reproducible on a fresh
+restoration; existing removal queues and exact-address ownership handle bytes.
+There is no decoded cache or spool. The integration handoff contains role,
+guard-order, retry and lifecycle details.
+
+This activates raw claims only. Gzip cannot enter canonical observations or
+legacy normalization by parser-name fallback. Feature/label consumers and dataset
+closure must explicitly qualify the new seal in a later coordinated increment.
+The selected real proof still needs its licensed source registration, native
+evidence and missing 2025 Week 18 participation/absence evidence.
+
+The complete checkpoint passes 757 Node tests, 11 worker checks, 75 Node DB
+checks and 197 PostgreSQL tests (172 mandatory predictive cases), typecheck,
+full lint, all 18 catalog contracts and generated migration/readiness/whitespace
+checks. Frozen 0001–0016 files/contracts are unchanged. Only disposable databases
+ran 0017; the service was removed after the gate.
