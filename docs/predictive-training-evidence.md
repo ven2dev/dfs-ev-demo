@@ -1,5 +1,50 @@
 # #118 guarded evidence checkpoint
 
+## Diverse capacity diagnostic increment
+
+The opt-in benchmark and additive decoded-work/worker-RSS counters follow
+`c1edc8e`. They allocate no DDL and preserve all 39 frozen SQL/catalog artifacts
+through 0019. The [capacity report](predictive-training-capacity.md) links retained
+raw JSON, source-file hashes and natural EXPLAIN plans. Current tested scope is
+one and 16 selected rows in a complete 16-QB/two-profile source inventory, with
+different identities, two prior/target games, two source captures and mixed
+CSV/gzip. An isolated one-QB smoke also passes. Fixture values, fixed membership
+and missing future outcomes are checked through restricted recorder/replay logins.
+
+One-row dataset preparation/pinning took 8.36 s; its page took 5.39 s and its
+standalone label read 5.03 s. Width 16 failed run preparation's 10-second SQL
+limit and standalone labels' 10-second cumulative deadline before any file
+opened. Natural metadata selection took 1.486 ms, compared with 13.883 s and
+1,006,951 buffer hits for 16 SQL consumer checks. Smaller pages cannot hide the
+raw-lineage/closure cost. The 64-QB matrix is deferred until this bottleneck is
+addressed; the safety ceilings are not benchmarked supported operating limits.
+No protected partial result is accepted as a successful capacity case.
+
+The corrected 16-QB benchmark passes in 124.8 s including 67.8 s of fixture setup.
+Two larger setup attempts produced no accepted capacity result: an initial
+per-record setup timed out at 600 s, and an intermediate shared-snapshot fixture
+passed a multi-key snapshot to the single-target label builder. The latter is a
+benchmark setup error, corrected before the retained 16-QB measurements. The
+opt-in total test budget includes checked setup and matrix work; production
+operation and statement ceilings remain unchanged.
+
+Seven affected PostgreSQL cases pass in 73.3 s (169 unrelated cases skipped):
+compressed consumers/pins/deletion, complete-run checks, numerical pages,
+historical labels, assigned-shard verification, run preview and shared guarded
+batches. The gzip regression proves actual decoded bytes/rows, a bounded worker
+peak, one wire read per call, counter reset on retry and unchanged page digest.
+Typecheck, affected-file lint, whitespace, local links and frozen artifact
+comparison pass. Logs are `/private/tmp/dfs118-capacity-{smoke,16,db,types,lint}.log`;
+failed setup evidence uses `dfs118-capacity-setup-timeout.log` and
+`dfs118-capacity-full.log`. The frozen integration gate below remains the full-gate
+evidence; it was not repeated for telemetry and benchmark scaffolding.
+
+Next: profile/share repeated SQL validation without reducing rights, cutoff,
+raw-lineage, association or finality checks; remeasure affected widths, then
+larger history/opponent/source-file cases. Coordinate any required forward DDL
+before allocating a number. Independent review remains outstanding. #118 is
+incomplete, and #54 Part B retains its real/population qualification gates.
+
 ## Deadline and cancellation increment
 
 This increment follows pushed frozen integration `2aee941`, changes no SQL or

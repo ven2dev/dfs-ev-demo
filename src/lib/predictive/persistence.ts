@@ -197,6 +197,10 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     batch ? batch.memo(namespace, key, verify) : verify();
   let verifiedBytes = 0;
   let compressedDecodedBytes = 0, compressedDecodedRows = 0;
+  let compressedPeakWorkerRssBytes = 0;
+  // Operational measurements are outside immutable evidence and its digests.
+  const trainingVerification = () => ({ ...batch!.metrics(), verifiedBytes,
+    decodedBytes: compressedDecodedBytes, decodedRows: compressedDecodedRows, peakWorkerRssBytes: compressedPeakWorkerRssBytes });
   const verifiedDigests = new Set<string>();
   const verifiedCsvFiles = new Map<string, { feed: SourceStatsFeed; parsed: Awaited<ReturnType<typeof parseSourceCsv>> }>();
   const verifiedJson = new Map<string, { artifact: Artifact; revisions: Map<string, Revision> }>();
@@ -244,7 +248,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (sessionRetired) refuse("predictive-session-retired");
     if (busy) refuse("predictive-session-busy"); busy = true;
     verifiedBytes = 0; verifiedJson.clear(); verifiedCsv.clear(); verifiedCsvFiles.clear(); verifiedDigests.clear();
-    compressedDecodedBytes=0;compressedDecodedRows=0;
+    compressedDecodedBytes=0;compressedDecodedRows=0;compressedPeakWorkerRssBytes=0;
     compressedAccessChecks.clear(); compressedNativeProfiles.clear(); compressedAccessRoot=null;
     try {
       await assertTarget();
@@ -683,6 +687,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
           const proof = prepared ? prepared.inspection : worker.result as Awaited<ReturnType<typeof inspectCompressedSource>>;
           decodedBytes += proof.decodedBytes; decodedRows += proof.rows;
           compressedDecodedBytes+=proof.decodedBytes;compressedDecodedRows+=proof.rows;
+          compressedPeakWorkerRssBytes=Math.max(compressedPeakWorkerRssBytes,worker.peakRssBytes);
           return { proof: { ...proof, limits: { ...COMPRESSED_SOURCE_LIMITS } }, rows: prepared?.rows };
         });
         if (canonical(reconstructed.proof) !== canonical(entry.proof)) refuse("compressed-inspection-integrity-failed");
@@ -1282,7 +1287,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       // Recheck at delivery time without the query cache before returning bytes.
       await batchAccess!();
       return { snapshotAt: batchClock!, records: requested.map((id) => records.get(id)!),
-        verification: { ...batch!.metrics(), verifiedBytes }, populationCoverage: "unqualified" as const };
+        verification: trainingVerification(), populationCoverage: "unqualified" as const };
     }, false, true);
   };
 
@@ -1360,7 +1365,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       const selected = selectTrainingRows(request, snapshotAt, [...records.values()].filter((record): record is SourceConsumerRecord => record !== null), pinned, metadata);
       const result = trainingRunPreview(request, snapshotAt, selected, metadata, kickoffs);
       await batchAccess!();
-      return { ...result, verification: { ...batch!.metrics(), verifiedBytes } };
+      return { ...result, verification: trainingVerification() };
     }, false, true);
   };
 
@@ -1408,7 +1413,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       else await readBytes(blob.storageRef, blob.sha256, Number(blob.byteSize));
     }
     await batchAccess!();
-    return { proof: { ...proof, verification: { ...batch!.metrics(), verifiedBytes } }, records };
+    return { proof: { ...proof, verification: trainingVerification() }, records };
   };
   const verifyDatasetShard = (input: TrainingShardRequest) => {
     const supplied = normalizeTrainingShardRequest(input);
@@ -1501,7 +1506,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       await batchAccess!();
       const checkedAt = (await query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
       assertTrainingShardUnexpired(inventory.rows, checkedAt, pinned);
-      const result = { ...trainingRunReadiness(inventory, supplied, checked, checkedAt), verification: { ...batch!.metrics(), verifiedBytes } };
+      const result = { ...trainingRunReadiness(inventory, supplied, checked, checkedAt), verification: trainingVerification() };
       assertTrainingResponseBytes(result, TRAINING_BOUNDS.pageBytes);
       await batchAccess!();
       return result;
@@ -1521,7 +1526,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         inventorySha256: supplied.inventorySha256, datasetId: supplied.datasetId }, context);
       const accessAt = (await query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
       const result = { ...trainingDatasetPage(supplied, context.manifest, records, accessAt),
-        verification: { ...batch!.metrics(), verifiedBytes } };
+        verification: trainingVerification() };
       assertTrainingResponseBytes(result, supplied.limits.bytes);
       await batchAccess!();
       return result;
@@ -1549,7 +1554,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       fittingReady: false as const, populationCoverage: "unqualified" as const };
     const result = { ...body, responseSha256: digest(canonical(body)),
       accessAt: (await query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string,
-      verification: { ...batch!.metrics(), verifiedBytes } };
+      verification: trainingVerification() };
     assertTrainingResponseBytes(result, request.limits.bytes);
     await batchAccess!();
     return result;

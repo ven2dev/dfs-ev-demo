@@ -74,7 +74,14 @@ hash/size and stored-byte quotas from decoded-output bytes, CSV parsing work,
 rows/record sizes and cancellation/time limits. Stop bounded decompression before
 unbounded allocation; measure the selected multi-season slice before changing
 limits. Do not charge compressed size as decoded work or decoded size as storage.
-The current `verifiedBytes` metric has no separate gzip decoded-work metric yet.
+Training verification now also reports actual transaction-local `decodedBytes`,
+`decodedRows` and `peakWorkerRssBytes`. These operational counters remain outside
+immutable evidence/page/readiness digests. `verifiedBytes` continues to charge
+unique stored wire bytes. See [capacity measurements](predictive-training-capacity.md)
+for the current limit: a 16-QB/two-profile case hit SQL/read deadlines before any
+bytes opened. The counters and benchmark add no DDL; 0001–0019 remains frozen,
+with no later number allocated. #106 should retain explicit interruption recovery
+and independently review deadline behavior before adopting the readers.
 
 SQL gzip publication must update blob/removal address constraints and the
 role-checked reference guard, CSV media predicates and receipt-clock handling.

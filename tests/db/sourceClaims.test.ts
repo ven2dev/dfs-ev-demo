@@ -3393,6 +3393,12 @@ it("compressed consumers verify numerical features labels dataset pins and manda
       expect((await replay.replaySourceConsumers([feature.id,feature.id,label.id])).records).toEqual([feature,feature,label]);expect(binaryReads).toBe(1);
       binaryReads=0;
       const page=await replay.readDatasetPage(pageRequest(dataset));expect(page.rows[0].feature.reference?.id).toBe(feature.id);expect(binaryReads).toBe(1);
+      expect(page.verification).toMatchObject({ decodedBytes: Buffer.byteLength(seed.fixture.input.artifact.bytes), decodedRows: 1 });
+      expect(page.verification.peakWorkerRssBytes).toBeGreaterThan(0);
+      expect(page.verification.peakWorkerRssBytes).toBeLessThanOrEqual(268_435_456);
+      const repeated=await replay.readDatasetPage(pageRequest(dataset));
+      expect(repeated.pageSha256).toBe(page.pageSha256);expect(binaryReads).toBe(2);
+      expect(repeated.verification).toMatchObject({ decodedBytes: page.verification.decodedBytes, decodedRows: 1 });
       binaryReads=0;const ready=await replay.readFittingRunReadiness(readinessRequest(inventory));expect(ready.datasetsComplete).toBe(true);expect(ready.fittingReady).toBe(false);expect(binaryReads).toBe(1);
     });
     await withLogin(client,target,["predictive_retention_owner"],async(owner,ownerTarget)=>{

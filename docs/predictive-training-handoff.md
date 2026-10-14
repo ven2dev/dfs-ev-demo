@@ -721,3 +721,23 @@ return no partial usable payload and do not create false invalidation receipts.
 The evidence checkpoint records validation. Representative capacity evidence and
 independent review remain before #118 completion. #106/#107 qualification and
 #54 Part B gates remain unchanged.
+
+## Capacity checkpoint and next increment
+
+The opt-in `npm run bench:predictive:training` records distinct player/game/source
+workloads through non-superuser training APIs. See the [measured scope, raw plans
+and operating guidance](predictive-training-capacity.md). Current evidence is
+1/16 selected rows in a 16-QB, two-profile source inventory, with plain CSV and
+gzip. Fixture values, prior-event labels, explicit missing target labels and
+immutable membership are independently checked. Decoder work/peak RSS and total
+client SQL counts are now visible outside evidence and response digests.
+
+Width 16 fails the normal SQL/read deadlines before protected bytes open, while
+the natural selection query takes only 1.486 ms. Repeated SQL consumer validation
+is the next engineering increment; increasing deadlines or reporting the 64-row
+safety ceiling as demonstrated capacity is not a solution. The 64-row matrix is
+deferred until smaller widths pass. Further capacity cases must include larger
+histories, opponent inputs and realistic source sizes. A required SQL change uses
+a coordinated forward migration, never an edit to frozen 0001–0019. No later
+number is allocated. #118 remains incomplete pending capacity work and independent
+review; #54 Part B remains blocked on its additional real/population evidence gates.
