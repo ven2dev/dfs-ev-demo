@@ -234,8 +234,11 @@ An evaluation plan fixes its aggregation/reuse policy before scores are inspecte
 ## Proposed versioned service surface
 
 The run/dataset/pin, page/label and complete-run verification operations below
-are exported by the local store. Audited invalidation remains outstanding.
-Every request carries `version: "qb-training-read-v1"`.
+are exported by the local store. Audited invalidation now uses ordered 0019
+following #106's frozen `dae2940` prefix18; final integration checks are recorded
+in the integration/evidence checkpoints.
+Read requests carry `version: "qb-training-read-v1"`; invalidation requests use
+the separate `qb-training-invalidation-v1` contract described below.
 
 | Operation | Result / restriction |
 | --- | --- |
@@ -471,8 +474,11 @@ compressed inspection envelopes/guarded diagnostic binary verification and
 #118 dataset manifests/pins.
 #106's complete pushed 0001–0013 checkpoint at `47b1c89` was merged in `da24ab9`;
 0001–0014 are unchanged by #106's integrated `4f1ad06` checkpoint. **0016 is
-implemented and is #118's complete next range; 0017 only is reserved for #106
-qualified compressed publication.** Coordinate landing order with
+implemented; #106 owns 0017 qualified compressed publication and the subsequently
+allocated 0018 normalization/consumer/retention integration. #118 owns 0019
+audited invalidation.** #106 published frozen 0001–0018 at `dae2940`; Relay
+integrates it by merge and finalizes ordered 0019. No later number is reserved.
+Coordinate landing order with
 #106/#115 before merging further DDL. A
 second merger integrates main without rebasing and may renumber only private,
 unapplied-outside-disposable-test migrations, with explicit confirmation and
@@ -598,3 +604,120 @@ tests (171 mandatory predictive cases), typecheck, affected-file lint and all 17
 catalog contracts. The 36 frozen/generated prefix files match `986bfed`; local
 documentation links and whitespace pass. The evidence checkpoint records final
 logs and the focused pure-fixture rerun. Only disposable databases were used.
+
+## Frozen 0019: audited invalidation
+
+At `a6da525`, the owner-allocated 0019 draft was tested outside Relay's ordered
+0001–0016 chain, pending #106's prefix18. #106 has now published `dae2940` and
+the SQL moves to
+[`db/migrations/0019_predictive_training_invalidations.sql`](../db/migrations/0019_predictive_training_invalidations.sql).
+The APIs and semantics below are retained, with compressed-source evidence
+failure codes added. The frozen ordered prefix is 0001–0019; 0001–0018 SQL and
+catalog contracts match `dae2940` byte for byte. 0019 SHA-256 is
+`4b4502b2b1431faa753ee067a90998f247955437c55edd0db8bc47bfa196e568`.
+The combined gate passes 787 Node tests, 75 DB checks, 229 PostgreSQL tests,
+11 worker checks, 20 catalog contracts, typecheck and lint. Full evidence is
+recorded in the integration/evidence checkpoints. No later number is reserved.
+
+`recordTrainingInvalidation({ version: "qb-training-invalidation-v1", target:
+{ kind: "run" | "dataset", id, sha256 }, operation, failureCode })` accepts only
+registered immutable run/inventory or dataset/manifest addresses and a narrow
+failure/operation vocabulary. A null hash resolves the original registered
+address; a supplied hash must match it exactly, including after deletion. An
+immutable digest-only address is registered atomically with sealing or backfilled
+from a digest-verified existing record. Caller clocks, origins, arbitrary causes,
+messages, file paths and source payloads are refused. The replay role has only
+execute access to the public audit APIs; private append helpers and tables are
+not writable by it.
+
+Eligible refusals from run metadata/readiness, shard verification, dataset
+preparation/manifest/page/pin operations roll back their evidence transaction
+before attempting a separate guarded audit transaction. They throw
+`TrainingReadWithheldError`, retaining the canonical failure code and original
+cause plus an explicit audit outcome: `recorded`, `not-installed`, or `failed`
+with a sanitized code. A failed audit, quota or absent migration never produces
+usable output. Request mistakes, capacity limits, cancellation, timeouts,
+transport and programming errors are outside the allowlist. Standalone label
+readers have no immutable dataset/run address and retain their existing contract.
+
+Receipts distinguish `reader-reported` filesystem/verification diagnostics from
+conditions SQL can confirm (`database-confirmed`) and authorized removal
+(`authorized-retention`). A file failure is not database-certified byte damage.
+Each address/operation/failure/origin/cause records its first occurrence; retries
+return that receipt and database clock. The cause hashes the current rights
+epoch and observed metadata presence/digest, not the private path or damaged
+bytes. This is bounded refusal history, not a complete timeline of repeated file
+incidents. It cannot grant access, certify repair, rewrite membership or
+permanently deny a repaired dataset: every subsequent read verifies anew.
+
+`readTrainingInvalidations({ version, target, afterOrdinal, throughOrdinal,
+limit })` returns at most 64 receipts in indexed ordinal order. The first page
+fixes `throughOrdinal`; continuations must keep it, so later events cannot enter
+an existing traversal. Receipt bodies contain hashes, enumerated states and
+database clocks only. Stable event digests exclude recording clock/ordinal;
+original receipts remain append-only. Audit lookup remains authorized through
+the replay role after rights revocation and evidence removal, without opening
+source bytes or returning protected identities.
+
+Independent BEFORE DELETE hooks append removal/expiry receipts atomically with
+the existing retention authorization. Dataset deletion also records its impact
+on the parent run. They neither copy the retention procedure nor change legacy
+counts/digests. The 256-event diagnostic ceiling per address never obstructs
+authorized mandatory deletion; its receipts bypass that quota. Digest-only
+addresses/history have no FK to live protected evidence, so pins cannot preserve
+deleted identifiers or bytes. Exact synthetic backup restoration reproduces
+the registered manifest clocks and stable audit identities; recreating fixtures
+with newer clocks is not an equivalent recovery proof.
+
+All ten invalidation cases pass in the full gate. Final integrated gates and remaining
+limits are recorded in [predictive-training-evidence.md](predictive-training-evidence.md).
+#118 still needs deadlines/cancellation, representative
+capacity and independent review. #54 Part B remains blocked by its separate
+real-source and population qualification gates.
+
+
+## Training execution deadlines and interrupted recovery
+
+This increment follows frozen integration `2aee941`. It adds no migration and
+preserves the complete 0001–0019 SQL/catalog prefix. Training store APIs accept
+an optional second argument `{ signal?: AbortSignal, deadlineMs?: number }`.
+These execution controls are excluded from immutable requests, membership and
+digests; callers can only shorten the operation ceiling.
+
+Preparation, preview, shard verification, manifest verification and pinning have
+one 30-second budget. Numerical pages, standalone label batches, metadata and
+audit reads, pin release and consumer batches have one 10-second budget. Complete
+run readiness has a 30-second budget. The budget includes all phases and any
+eligible refusal audit, rather than restarting for each SQL statement, file or
+codec invocation. Existing 10-second SQL and 3-second lock waits remain stricter
+where applicable. Timers and monotonic checks refuse late synchronous work
+before another query, protected file, commit or delivery.
+
+Interruption propagates a sanitized signal through text/binary file verification
+and passes the remaining deadline to the isolated codec worker. A bounded,
+same-login control connection verifies the registered local target and cancels
+only the original backend PID plus exact backend-start timestamp, database and
+session user. That avoids both cross-user cancellation and PID-reuse ambiguity.
+The dedicated evidence session is then retired; later use refuses with
+`predictive-session-retired`. A pre-aborted request opens no operation and leaves
+the session usable. Control connection and statement timeouts are two seconds.
+
+Work and cleanup are drained, with no abandoned promise or background SQL. The
+execution deadline does not promise that native filesystem calls or codec/session
+cleanup finish at that exact instant: file cancellation is checked between local
+syscalls, and existing bounded worker cleanup still applies. If cancellation
+transport fails, the evidence connection is still retired and the original SQL
+statement/lock timeouts remain the fallback. These limits require capacity and
+operational review; they are not measured real-source throughput.
+
+Reconnect after an interrupted operation, then retry the same immutable IDs and
+hashes. Late interruption before commit rolls back dataset, pin and digest-address
+publication together. A disconnect at the commit boundary can have an unknown
+commit result; exact idempotent retry resolves that state instead of assuming
+failure means nothing committed. Cancellation/deadline refusals remain runtime
+states outside 0019's evidence-invalidation vocabulary. They grant no access,
+return no partial usable payload and do not create false invalidation receipts.
+
+The evidence checkpoint records validation. Representative capacity evidence and
+independent review remain before #118 completion. #106/#107 qualification and
+#54 Part B gates remain unchanged.

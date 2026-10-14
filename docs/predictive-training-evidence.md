@@ -1,5 +1,130 @@
 # #118 guarded evidence checkpoint
 
+## Deadline and cancellation increment
+
+This increment follows pushed frozen integration `2aee941`, changes no SQL or
+catalog contract, and adds no migration reservation. All training entry points
+now accept optional downward execution deadlines and cancellation outside their
+immutable request/digest identity. One monotonic budget covers SQL, files,
+reconstruction, refusal auditing and delivery. The codec receives the parent
+signal and remaining time. Original rights, expiry, byte and decoded-work gates
+remain required.
+
+Five focused controller cases verify cumulative time, late synchronous delivery,
+in-flight interruption, drained work, sanitized caller reasons and teardown. The
+artifact regression proves cancelled text/binary reads refuse before opening a
+missing file and later uncancelled reads recover. Four mandatory PostgreSQL
+cases use non-superuser recorder/replay logins: blocked SQL cancellation,
+deadline before lock timeout, file interruption without a pin/audit, and a late
+write interrupted after dataset insertion but before pin insertion. They verify
+backend removal, rollback of dataset/pin/digest address, no runtime invalidation
+receipt and exact retry through a fresh connection. Disconnect-only cancellation
+failed the initial backend-removal checks; same-login exact-backend cancellation
+fixed those cases. The separate regression attempt that collided with primary
+bootstrap's migration lock executed no cases and was rerun sequentially.
+
+Checks pass **792 Node tests**, the **13 focused artifact/controller cases**
+(including one additional artifact test added after that suite), **81 affected
+PostgreSQL cases** in 333 seconds, **6 report-contract cases**, typecheck and full
+lint, plus targeted lint for the subsequently added artifact test. The PostgreSQL
+filter intentionally leaves 95 unrelated cases unexecuted; this is the affected
+reader regression, not a new full-gate claim. Logs use
+`/private/tmp/dfs118-deadlines-{node,focused-node,db,report,types,lint}.log`.
+All 39 SQL/catalog artifacts through frozen 0019 match `2aee941` exactly.
+The prior full integration gate remains recorded below and is not repeated for
+this reader increment. Runtime interruption waits for cleanup; native file syscalls are
+cooperative and a commit-boundary disconnect can be ambiguous. Reconnect and
+idempotently retry original IDs/hashes. Capacity evidence and independent review
+remain; #118 is incomplete and #54 Part B remains blocked.
+
+## Frozen combined schema19 integration
+
+#106 published frozen prefix18 at `dae2940`; Relay integrates it by merge with
+`a6da525`. The supplied 0018 hash matches, and all earlier frozen SQL/catalog
+artifacts are unchanged. The 0019 migration enters the actual ordered migration
+chain, with generated schema/manifest, 20 catalog contracts and readiness maximum
+19 (minimum stays v2). No persistent or hosted database is migrated.
+
+The failure allowlist additionally covers compressed rights and exact wire,
+publication and inspection integrity failures. Existing runtime, capacity and
+cancellation refusals remain excluded. Backfill now uses a populated prefix18
+and the real migration runner/ledger. Injected final-verification failure must
+roll back its DDL, registry and ledger without changing the original manifest;
+successful upgrade/rerun and fresh bootstrap enforce the complete catalog.
+Ten invalidation cases are mandatory, including the original nine and a new
+compressed-consumer case. The latter damages wire bytes and the decoded proof
+separately, verifies audited rollback and repaired replay, then proves current
+revocation before zero binary reads and surviving digest-only deletion history
+under the restricted role logins. Backup recovery still preserves original
+database clocks, identities and exact bytes rather than recreating newer fixtures.
+
+The 12-case focused integration run passes (invalidation and existing compressed
+consumers/upgrade). Final checks pass **787 Node tests**, **75 DB checks + 229
+PostgreSQL tests** (204 mandatory predictive cases), **11 codec-worker checks**,
+all **20 catalog contracts**, typecheck and full lint. The final full PostgreSQL
+run took 624 seconds. Bootstrap's expected inventory ordering was corrected;
+three wall-time timeout cases passed focused rechecks and the final full gate,
+with no relaxed timeout. Logs use
+`/private/tmp/dfs118-schema19-db-clean.log` and
+`/private/tmp/dfs118-schema19-{focused-db,node,types,lint,contracts}.log`.
+All 37 prefix18 SQL/catalog artifacts match `dae2940` byte for byte. Frozen 0019
+SHA-256 is `4b4502b2b1431faa753ee067a90998f247955437c55edd0db8bc47bfa196e568`.
+No later migration number is reserved.
+#118 remains incomplete: deadlines/cancellation, representative capacity and
+independent review remain. #54 Part B retains its real/population qualification gates.
+
+## Provisional audited invalidation (reserved 0019)
+
+At historical checkpoint `a6da525`, the owner allocated 0018 to #106
+normalization/consumer/retention and 0019 to #118 audited invalidation.
+The SQL draft remained outside the ordered migration
+chain in `db/migration-drafts/`; tests apply it transactionally without recording
+0019 in `db_migrations`. Relay's frozen/generated prefix remains 0001–0016.
+#106's then-latest checked remote was `9d8fde7`, ending at 0017. Final ordered migration,
+schema/contracts/readiness generation and combined integration validation wait
+for its frozen prefix18. This checkpoint does not activate a persistent database.
+
+The local store wraps seven immutable run/dataset operations. Eligible evidence
+refusals roll back before a separate guarded audit attempt and remain withheld
+regardless of audit success, absent installation or failure. The error exposes
+the canonical failure and sanitized audit status; private exception text is never
+persisted. Current rights still precede bytes. SQL certifies only conditions it
+can observe; file damage/inaccessibility is a reader diagnostic. Retention hooks
+append removal/expiry receipts atomically using existing authorization, without
+copying the shared retention procedure or changing prior counts/digests.
+
+Four pure cases cover payload/privacy restrictions, failure classification,
+stable event identity and bounded continuation. Nine mandatory PostgreSQL cases
+cover backfilled and newly sealed digest addresses, exact hash refusal, database
+clocks, execute-only non-superuser access, no access grant from a diagnostic,
+automatic damage/missing-file refusal after rollback, retry deduplication,
+successful repair without changing the manifest, request/overflow errors not
+audited, failed preparation without a partial manifest/pin, failed audit still
+withheld, current rights before zero file reads, fixed-upper-ordinal pagination,
+late deletion rollback, retention-only removal with surviving digest history,
+concurrent retry deduplication, quota bypass for mandatory deletion, expiry at
+the exact 90-day boundary and explicit `not-installed` behavior on prefix16.
+
+Recovery copies all original synthetic predictive rows, timestamp precision,
+identity-sequence progress and exact managed blob bytes to a separate registered
+disposable database. Test-only replica mode is confined to a verified disposable
+superuser transaction and restored before readers; production interfaces gain
+no override. Original inventory/manifest hashes replay before deletion. Reapplying
+the actual retention event matches legacy and supplemental counts/digests and
+stable audit event hashes, permitting fresh audit recording clocks. Recreating
+fixtures would not establish this: manifest hashes include their original clocks.
+
+The focused nine-case PostgreSQL run passes. Final provisional gates pass **760
+Node tests**, **75 Node DB checks + 205 PostgreSQL tests** (180 mandatory predictive
+cases), all **17 catalog contracts**, typecheck and affected-file lint. The full
+database gate took 331 seconds for its PostgreSQL portion. The 36 frozen/generated
+prefix files match `86c141d` byte for byte; all 12 local documentation links and
+whitespace checks pass. Logs use
+`/private/tmp/dfs118-invalidation-final-{node,db,types,lint}.log`.
+No usable real feature or label is established. Remaining #118 work is final
+prefix integration, deadlines/cancellation, representative capacity and independent
+review. #54 Part B retains its real-source and population qualification blockers.
+
 ## Complete fitting-run evidence checks
 
 `readFittingRunReadiness({ version: "qb-training-read-v1", fittingRunId,

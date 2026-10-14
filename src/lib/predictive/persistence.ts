@@ -1,13 +1,19 @@
-import type { Client } from "pg";
+import { Client, type QueryResultRow } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
 import type { ArtifactMediaType, PrivateArtifactStore } from "./artifacts.ts";
 import { createEvidenceBatch } from "./batchEvidence.ts";
+import { createTrainingOperation, TRAINING_TIME_BOUNDS, type TrainingOperationOptions } from "./trainingOperation.ts";
 import { normalizeFittingRunRequest, selectTrainingRows, TRAINING_BOUNDS, type FittingRunRequest } from "./training.ts";
 import { checkTrainingMetadataSelection, TRAINING_SELECTION_SQL, trainingSelectionParameters, type TrainingMetadataSelection } from "./trainingSql.ts";
 import { trainingRunPreview, type TrainingKickoffProof } from "./trainingPreview.ts";
 import type { TrainingRunInventory } from "./trainingRuns.ts";
 import { normalizeTrainingRunReadRequest, trainingRunDatasetIds, trainingRunReadiness,
   type TrainingRunReadRequest, type TrainingVerifiedDataset } from "./trainingReadiness.ts";
+import { normalizeTrainingInvalidationHistoryRequest, normalizeTrainingInvalidationRequest, trainingInvalidationFailure,
+  trainingInvalidationReceiptDigest, TrainingReadWithheldError, TRAINING_INVALIDATION_VERSION,
+  type TrainingInvalidationAudit, type TrainingInvalidationHistory, type TrainingInvalidationHistoryRequest,
+  type TrainingInvalidationOperation, type TrainingInvalidationReceipt, type TrainingInvalidationRequest,
+  type TrainingInvalidationTarget } from "./trainingInvalidation.ts";
 import { inspectCompressedSource, COMPRESSED_SOURCE_LIMITS, type CompressedInspectionRequest } from "./compressedSource.ts";
 import { runCompressedWorker } from "./compressedWorker.ts";
 import type { prepareCompressedSourceClaims } from "./compressedClaims.ts";
@@ -133,9 +139,45 @@ export const retentionIdsDigest = (removed: { kind: string; id: string }[]) =>
 // this local proof. The caller owns one session; operations are sequential.
 export const createLocalPredictiveStore = async (client: Client, target: Target, privateArtifacts: PrivateArtifactStore) => {
   const artifacts = privateArtifacts.database;
-  const assertTarget = async () => { target.assertTarget(target.expected); await checkConnectedTarget(client, target.expected); };
+  let sessionRetired = false;
+  let trainingOperation: ReturnType<typeof createTrainingOperation> | null = null;
+  const query = <R extends QueryResultRow = QueryResultRow>(sql: string, values: unknown[] = []) => {
+    if (sessionRetired) return Promise.reject(new Error("predictive-session-retired"));
+    return trainingOperation ? trainingOperation.wait(() => client.query<R>(sql, values)) : client.query<R>(sql, values);
+  };
+  const assertTarget = async () => {
+    const check = async () => { target.assertTarget(target.expected); await checkConnectedTarget(client, target.expected); };
+    if (trainingOperation) await trainingOperation.wait(check); else await check();
+  };
   await assertTarget();
+  const backend = (await client.query("SELECT pid,backend_start::text AS started FROM pg_stat_activity WHERE pid=pg_backend_pid()"))
+    .rows[0] as { pid: number; started: string };
   let busy = false;
+  const withTrainingDeadline = async <T>(options: TrainingOperationOptions, ceilingMs: number, work: () => Promise<T>): Promise<T> => {
+    if (sessionRetired) refuse("predictive-session-retired");
+    if (busy || trainingOperation) refuse("predictive-session-busy");
+    const operation = createTrainingOperation(options, ceilingMs, async () => {
+      sessionRetired = true;
+      // Disconnect alone may leave PostgreSQL waiting on a lock until its SQL
+      // timeout. Cancel our exact backend first through the same login; never
+      // grant cross-user cancellation or rely on pg client internals.
+      const cancellation = new Client({ ...target.expected, connectionTimeoutMillis: 2000,
+        statement_timeout: 2000, query_timeout: 2000 });
+      try {
+        await cancellation.connect();
+        target.assertTarget(target.expected);
+        await checkConnectedTarget(cancellation, target.expected);
+        await cancellation.query(`SELECT pg_cancel_backend(pid) FROM pg_stat_activity
+          WHERE pid=$1 AND backend_start=$2::timestamptz AND datname=current_database() AND usename=session_user`,
+          [backend.pid, backend.started]);
+      } finally {
+        try { await cancellation.end(); } finally { await client.end(); }
+      }
+    });
+    trainingOperation = operation;
+    try { return await operation.wait(work); }
+    finally { await operation.dispose(); trainingOperation = null; }
+  };
   let batch: ReturnType<typeof createEvidenceBatch> | null = null;
   let batchClock: string | null = null;
   let batchAccess: (() => Promise<void>) | null = null;
@@ -150,7 +192,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       batchAccess = compressedAccessRoot;
     }
   };
-  const readQuery = (sql: string, values: unknown[] = []) => batch ? batch.query(sql, values) : client.query(sql, values);
+  const readQuery = (sql: string, values: unknown[] = []) => batch ? batch.query(sql, values) : query(sql, values);
   const memoEvidence = <T>(namespace: string, key: unknown, verify: () => Promise<T>): Promise<T> =>
     batch ? batch.memo(namespace, key, verify) : verify();
   let verifiedBytes = 0;
@@ -162,12 +204,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const readBytes = (reference: string, sha256: string, size: number) => memoEvidence("file", [reference, sha256, size], async () => {
     reserveVerifiedBytes(Number(size), sha256);
     if (batchAccess) await batchAccess();
-    return artifacts.read(reference, sha256, Number(size));
+    return artifacts.read(reference, sha256, Number(size), { signal: trainingOperation?.signal });
   });
   const readWireBytes = (reference: string, sha256: string, size: number) => memoEvidence("wire-file", [reference, sha256, size], async () => {
     reserveVerifiedBytes(size, sha256);
     if (batchAccess) await batchAccess();
-    return artifacts.readBinary(reference, sha256, size);
+    return artifacts.readBinary(reference, sha256, size, { signal: trainingOperation?.signal });
   });
   const reserveVerifiedBytes = (bytes: number, sha256: string) => {
     if (verifiedDigests.has(sha256)) return;
@@ -199,25 +241,34 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   };
   const read = async (sql: string, values: unknown[]) => hydrate((await readQuery(sql, values)).rows.map((row) => row.envelope as Raw));
   const transaction = async <T>(work: () => Promise<T>, readonly = false, guarded = false, guardedWriter = false): Promise<T> => {
+    if (sessionRetired) refuse("predictive-session-retired");
     if (busy) refuse("predictive-session-busy"); busy = true;
     verifiedBytes = 0; verifiedJson.clear(); verifiedCsv.clear(); verifiedCsvFiles.clear(); verifiedDigests.clear();
     compressedDecodedBytes=0;compressedDecodedRows=0;
     compressedAccessChecks.clear(); compressedNativeProfiles.clear(); compressedAccessRoot=null;
     try {
       await assertTarget();
-      await client.query(readonly ? "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY" : "BEGIN");
+      await query(readonly ? "BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY" : "BEGIN");
       try {
-        await client.query("SET LOCAL search_path = public");
-        await client.query("SET LOCAL statement_timeout = '10s'");
-        await client.query("SET LOCAL lock_timeout = '3s'");
-        await client.query("SET LOCAL idle_in_transaction_session_timeout = '15s'");
+        await query("SET LOCAL search_path = public");
+        await query("SET LOCAL statement_timeout = '10s'");
+        await query("SET LOCAL lock_timeout = '3s'");
+        await query("SET LOCAL idle_in_transaction_session_timeout = '15s'");
         if (guarded) {
-          if (guardedWriter) await client.query("SELECT pg_advisory_xact_lock($1,1)", [LOCK_NAMESPACE]);
-          batchClock = (await client.query("SELECT public.predictive_training_read_guard() AS clock")).rows[0].clock as string;
-          batch = createEvidenceBatch((sql, values) => client.query(sql, values));
-        } else if (!readonly) await client.query("SELECT pg_advisory_xact_lock($1,1)", [LOCK_NAMESPACE]);
-        const result = await work(); await client.query("COMMIT"); return result;
-      } catch (error) { await client.query("ROLLBACK"); throw error; }
+          if (guardedWriter) await query("SELECT pg_advisory_xact_lock($1,1)", [LOCK_NAMESPACE]);
+          batchClock = (await query("SELECT public.predictive_training_read_guard() AS clock")).rows[0].clock as string;
+          batch = createEvidenceBatch((sql, values) => query(sql, values));
+        } else if (!readonly) await query("SELECT pg_advisory_xact_lock($1,1)", [LOCK_NAMESPACE]);
+        const result = await work(); await query("COMMIT"); return result;
+      } catch (error) {
+        // Interruption closes this connection; PostgreSQL then rolls back and
+        // releases its guards. Otherwise drain a real rollback before reuse.
+        if (!sessionRetired) {
+          try { await client.query("ROLLBACK"); }
+          catch (rollbackError) { if (!sessionRetired) throw rollbackError; }
+        }
+        throw error;
+      }
     } finally { batch = null; batchClock = null; batchAccess = null; compressedAccessChecks.clear(); compressedNativeProfiles.clear(); compressedAccessRoot=null;
       verifiedJson.clear(); verifiedCsv.clear(); verifiedCsvFiles.clear(); verifiedDigests.clear(); verifiedBytes = 0; busy = false; }
   };
@@ -228,7 +279,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const sourceTransaction = async <T>(work: () => Promise<T>, profileIds: string[], writer = false): Promise<T> => {
     if (busy) refuse("predictive-session-busy");
     await assertTarget();
-    const compressed = (await client.query(`SELECT EXISTS(SELECT 1 FROM public.predictive_source_profiles
+    const compressed = (await query(`SELECT EXISTS(SELECT 1 FROM public.predictive_source_profiles
       WHERE id=ANY($1::text[]) AND parser_version=$2) AS compressed`,[[...profileIds],COMPRESSED_SOURCE_PROFILE_VERSION])).rows[0].compressed as boolean;
     return transaction(work, !writer && !compressed, compressed, writer && compressed);
   };
@@ -240,21 +291,21 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const held: number[] = [];
     try {
       for (const key of keys) {
-        await client.query("BEGIN");
+        await query("BEGIN");
         try {
-          await client.query("SET LOCAL lock_timeout = '5s'");
-          await client.query("SELECT pg_advisory_lock($1,$2)", [BLOB_LOCK_NAMESPACE, key]);
+          await query("SET LOCAL lock_timeout = '5s'");
+          await query("SELECT pg_advisory_lock($1,$2)", [BLOB_LOCK_NAMESPACE, key]);
           held.push(key);
-          await client.query("COMMIT");
-        } catch (error) { await client.query("ROLLBACK"); throw error; }
+          await query("COMMIT");
+        } catch (error) { await query("ROLLBACK"); throw error; }
       }
       return await work();
     } finally {
-      for (const key of held.reverse()) await client.query("SELECT pg_advisory_unlock($1,$2)", [BLOB_LOCK_NAMESPACE, key]);
+      for (const key of held.reverse()) await query("SELECT pg_advisory_unlock($1,$2)", [BLOB_LOCK_NAMESPACE, key]);
     }
   };
   const blobReferenced = async (reference: string): Promise<boolean> =>
-    (await client.query("SELECT public.predictive_blob_referenced($1) AS referenced", [reference])).rows[0].referenced;
+    (await query("SELECT public.predictive_blob_referenced($1) AS referenced", [reference])).rows[0].referenced;
   // Files precede the SQL commit. After success or rollback, remove only bytes
   // that the committed database does not own, while retaining the digest locks.
   // A disconnected/crashed process leaves files for the bounded-age orphan sweep.
@@ -269,7 +320,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const withBlobPublication = <T>(digests: string[], work: () => Promise<T>) =>
     withBlobReferences(digests.map((sha256) => sha256 + ".json"), work);
   const priorRun = async (id: string, sha256: string): Promise<RunResult | null> => {
-    const row = (await client.query("SELECT request_sha256,status,failure_code FROM public.predictive_ingestion_runs WHERE id=$1", [id])).rows[0];
+    const row = (await query("SELECT request_sha256,status,failure_code FROM public.predictive_ingestion_runs WHERE id=$1", [id])).rows[0];
     if (!row) return null;
     if (row.request_sha256 !== sha256) refuse("run-id-conflict");
     return { id, status: row.status, failureCode: row.failure_code, reused: true };
@@ -277,7 +328,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const insertRun = async (id: string, sha256: string, now: string, status: RunResult["status"], failureCode: string | null,
     counts: { artifacts: number; captures: number; rows: number }, consumedBytes: number,
     codeVersion = "predictive-local-store-v2", peakRssBytes: number | null = null, budget: object = PERSISTENCE_BOUNDS) => {
-    await client.query(`INSERT INTO public.predictive_ingestion_runs
+    await query(`INSERT INTO public.predictive_ingestion_runs
       (id,request_sha256,code_version,started_at,finished_at,status,failure_code,budget,requests,consumed_bytes,artifact_count,capture_count,row_count,peak_rss_bytes)
       VALUES ($1,$2,$11,$3,$3,$4,$5,$6,0,$7,$8,$9,$10,$12)`,
       [id, sha256, now, status, failureCode, budget, consumedBytes, counts.artifacts, counts.captures, counts.rows, codeVersion, peakRssBytes]);
@@ -286,67 +337,67 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const persistProfile = async (profile: Profile) => {
     const existing = (await profilesFor([profile.id]))[0];
     if (existing) { if (canonical(existing) !== canonical(profile)) refuse("profile-id-conflict"); return; }
-    await client.query(`INSERT INTO public.predictive_source_profiles (id,purpose,provider,feed,release_tag,asset_pattern,header_profile_sha256,
+    await query(`INSERT INTO public.predictive_source_profiles (id,purpose,provider,feed,release_tag,asset_pattern,header_profile_sha256,
       parser_version,allowlist_version,license,attribution,evidence_kinds,registered_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
       [profile.id, profile.purpose, profile.provider, profile.feed, profile.releaseTag, profile.assetPattern, profile.headerProfileSha256,
         profile.parserVersion, profile.allowlistVersion, profile.license, profile.attribution, profile.evidenceKinds, profile.registeredAt]);
   };
   const persistRights = async (decision: RightsDecision) => {
-    const existing = (await client.query(RIGHTS_SQL.replace("profile_id=ANY($1::text[])", "id=$1"), [decision.id])).rows[0]?.decision;
+    const existing = (await query(RIGHTS_SQL.replace("profile_id=ANY($1::text[])", "id=$1"), [decision.id])).rows[0]?.decision;
     if (existing) { if (canonical(existing) !== canonical(decision)) refuse("rights-id-conflict"); return; }
-    await client.query(`INSERT INTO public.predictive_rights_decisions (id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,
+    await query(`INSERT INTO public.predictive_rights_decisions (id,profile_id,predecessor_id,allowed_uses,effective_from,effective_to,
       decided_at,evidence_kind,evidence_reference) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [decision.id, decision.profileId, decision.predecessorId, decision.allowedUses, decision.effectiveFrom, decision.effectiveTo,
         decision.decidedAt, decision.evidenceKind, decision.evidenceReference]);
   };
   const persistArtifact = async (artifact: Artifact, mediaType: ArtifactMediaType = "application/json") => {
     const byteSize = Buffer.byteLength(artifact.bytes);
-    await client.query(`INSERT INTO public.predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,$3,$4)
+    await query(`INSERT INTO public.predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,$3,$4)
       ON CONFLICT (sha256) DO NOTHING`, [artifact.sha256, byteSize, mediaType, artifact.sha256 + (mediaType === "text/csv" ? ".csv" : ".json")]);
-    const blob = (await client.query("SELECT byte_size,media_type FROM public.predictive_blobs WHERE sha256=$1", [artifact.sha256])).rows[0];
+    const blob = (await query("SELECT byte_size,media_type FROM public.predictive_blobs WHERE sha256=$1", [artifact.sha256])).rows[0];
     if (blob.byte_size !== byteSize || blob.media_type !== mediaType) refuse("blob-conflict");
     const values = [artifact.id, artifact.sha256, artifact.profileId, artifact.retrievalKind, artifact.origin, artifact.providerEtag,
       artifact.providerLastModified, artifact.releaseUpdatedAt, artifact.scopeKind, artifact.scopeSeason, artifact.scopeWeek, artifact.scopeGameId, artifact.scopeFilter];
-    const row = (await client.query(`SELECT id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,provider_last_modified,
+    const row = (await query(`SELECT id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,provider_last_modified,
       ${timestamp("release_updated_at")} AS release_updated_at,scope_kind,scope_season,scope_week,scope_game_id,scope_filter
       FROM public.predictive_artifacts WHERE id=$1`, [artifact.id])).rows[0];
     if (row) { if (canonical(Object.values(row)) !== canonical(values)) refuse("artifact-id-conflict"); return; }
     // A game-scoped artifact names its game before any revision registers it.
-    if (artifact.scopeGameId) await client.query("INSERT INTO public.predictive_games (id) VALUES ($1) ON CONFLICT DO NOTHING", [artifact.scopeGameId]);
-    await client.query(`INSERT INTO public.predictive_artifacts (id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,provider_last_modified,
+    if (artifact.scopeGameId) await query("INSERT INTO public.predictive_games (id) VALUES ($1) ON CONFLICT DO NOTHING", [artifact.scopeGameId]);
+    await query(`INSERT INTO public.predictive_artifacts (id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,provider_last_modified,
       release_updated_at,scope_kind,scope_season,scope_week,scope_game_id,scope_filter) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, values);
   };
   const persistCapture = async (capture: Capture, runId: string) => {
-    const existing = (await client.query(`SELECT jsonb_build_object('id',id,'artifactId',artifact_id,'capturedAt',${timestamp("captured_at")},
+    const existing = (await query(`SELECT jsonb_build_object('id',id,'artifactId',artifact_id,'capturedAt',${timestamp("captured_at")},
       'availableAt',${timestamp("available_at")},'ingestedAt',${timestamp("ingested_at")},'publishedAt',${timestamp("published_at")},
       'publicationEvidence',publication_evidence,'state',state,'bodyComplete',body_complete,'headerVerified',header_verified,
       'parserSucceeded',parser_succeeded,'parsedRows',parsed_rows) AS capture FROM public.predictive_captures WHERE id=$1`, [capture.id])).rows[0];
     if (existing) { if (canonical(existing.capture) !== canonical(capture)) refuse("capture-id-conflict"); return; }
-    await client.query(`INSERT INTO public.predictive_captures (id,run_id,artifact_id,captured_at,available_at,ingested_at,published_at,
+    await query(`INSERT INTO public.predictive_captures (id,run_id,artifact_id,captured_at,available_at,ingested_at,published_at,
       publication_evidence,state,body_complete,header_verified,parser_succeeded,parsed_rows) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
       [capture.id, runId, capture.artifactId, capture.capturedAt, capture.availableAt, capture.ingestedAt, capture.publishedAt,
         capture.publicationEvidence, capture.state, capture.bodyComplete, capture.headerVerified, capture.parserSucceeded, capture.parsedRows]);
   };
   const persistRevision = async (revision: Revision, artifact: Artifact) => {
-    const old = (await client.query("SELECT kind,profile_id,source_record_id,data,predecessor_id,correction_reason FROM public.predictive_observations WHERE id=$1", [revision.id])).rows[0];
+    const old = (await query("SELECT kind,profile_id,source_record_id,data,predecessor_id,correction_reason FROM public.predictive_observations WHERE id=$1", [revision.id])).rows[0];
     if (old && (old.profile_id !== artifact.profileId || canonical({ id: revision.id, kind: old.kind, sourceRecordId: old.source_record_id, data: old.data,
       predecessorId: old.predecessor_id, correctionReason: old.correction_reason }) !== canonical(revision))) refuse("observation-id-conflict");
     if (!old) {
       const games = [...("gameId" in revision.data && revision.data.gameId ? [revision.data.gameId] : []),
         ...(revision.kind === "schedule-coverage" ? revision.data.gameIds : []), ...(revision.kind === "game-relation" ? [revision.data.predecessorGameId] : [])];
-      for (const id of games) await client.query("INSERT INTO public.predictive_games (id) VALUES ($1) ON CONFLICT DO NOTHING", [id]);
-      await client.query(`INSERT INTO public.predictive_observations (id,kind,profile_id,source_record_id,data,entity_key,source_key,predecessor_id,correction_reason)
+      for (const id of games) await query("INSERT INTO public.predictive_games (id) VALUES ($1) ON CONFLICT DO NOTHING", [id]);
+      await query(`INSERT INTO public.predictive_observations (id,kind,profile_id,source_record_id,data,entity_key,source_key,predecessor_id,correction_reason)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [revision.id, revision.kind, artifact.profileId, revision.sourceRecordId, revision.data,
         entityKey(revision), sourceKey(revision, artifact.profileId), revision.predecessorId, revision.correctionReason]);
     }
-    await client.query("INSERT INTO public.predictive_artifact_observations (artifact_id,observation_id) VALUES ($1,$2) ON CONFLICT DO NOTHING", [artifact.id, revision.id]);
+    await query("INSERT INTO public.predictive_artifact_observations (artifact_id,observation_id) VALUES ($1,$2) ON CONFLICT DO NOTHING", [artifact.id, revision.id]);
   };
   // Identity links are immutable registrations: a repeated ID must be identical.
   const persistIdentityLink = async (link: IdentityLink) => {
-    const existing = (await client.query(`SELECT jsonb_build_object('id',id,'statsProfileId',stats_profile_id,'bridgeProfileId',bridge_profile_id,
+    const existing = (await query(`SELECT jsonb_build_object('id',id,'statsProfileId',stats_profile_id,'bridgeProfileId',bridge_profile_id,
       'provider',provider,'decidedAt',${timestamp("decided_at")}) AS link FROM public.predictive_profile_identity_links WHERE id=$1`, [link.id])).rows[0]?.link;
     if (existing) { if (canonical(existing) !== canonical(link)) refuse("identity-link-id-conflict"); return; }
-    await client.query(`INSERT INTO public.predictive_profile_identity_links (id,stats_profile_id,bridge_profile_id,provider,decided_at)
+    await query(`INSERT INTO public.predictive_profile_identity_links (id,stats_profile_id,bridge_profile_id,provider,decided_at)
       VALUES ($1,$2,$3,$4,$5)`, [link.id, link.statsProfileId, link.bridgeProfileId, link.provider, link.decidedAt]);
   };
   const persistRegistrations = async (dataset: Dataset) => {
@@ -360,12 +411,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
   };
   const persistDecision = async (decision: Decision, runId: string) => {
-    const existing = (await client.query(DECISION_BY_ID_SQL, [decision.id])).rows[0]?.decision;
+    const existing = (await query(DECISION_BY_ID_SQL, [decision.id])).rows[0]?.decision;
     if (existing) { if (canonical(existing) !== canonical({ ...decision, inputs: [...decision.inputs].sort((a, b) => a.observationId < b.observationId ? -1 : 1) })) refuse("decision-id-conflict"); return; }
-    await client.query(`INSERT INTO public.predictive_decisions (id,kind,entity_key,policy_id,mode,outcome,run_id,decided_at,predecessor_id)
+    await query(`INSERT INTO public.predictive_decisions (id,kind,entity_key,policy_id,mode,outcome,run_id,decided_at,predecessor_id)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, [decision.id, decision.kind, decision.entityKey, decision.policyId, decision.mode, decision.outcome,
       runId, decision.decidedAt, decision.predecessorId]);
-    for (const input of decision.inputs) await client.query("INSERT INTO public.predictive_decision_inputs (decision_id,observation_id,role) VALUES ($1,$2,$3)",
+    for (const input of decision.inputs) await query("INSERT INTO public.predictive_decision_inputs (decision_id,observation_id,role) VALUES ($1,$2,$3)",
       [decision.id, input.observationId, input.role]);
   };
   // Labels are immutable versions; the deferred check enforces all eight bindings.
@@ -373,16 +424,16 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const columns = [label.id, label.playerId, label.gameId, label.seasonType, label.stat, label.value, label.state, label.mode, label.policyId,
       label.labelVersion, label.predecessorId, runId, label.completionDecisionId, label.participationDecisionId, label.reconciliationDecisionId,
       label.selectedObservationId, label.eligibleFinalAt, label.postWindowCaptureId, label.finalizedAt, label.createdAt, label.playerBridgeObservationId];
-    const existing = (await client.query("SELECT id FROM public.predictive_outcome_labels WHERE id=$1", [label.id])).rows[0];
+    const existing = (await query("SELECT id FROM public.predictive_outcome_labels WHERE id=$1", [label.id])).rows[0];
     if (existing) refuse("label-id-conflict");
-    await client.query(`INSERT INTO public.predictive_outcome_labels (id,player_id,game_id,season_type,stat,value,state,mode,policy_id,label_version,
+    await query(`INSERT INTO public.predictive_outcome_labels (id,player_id,game_id,season_type,stat,value,state,mode,policy_id,label_version,
       predecessor_id,run_id,completion_decision_id,participation_decision_id,reconciliation_decision_id,selected_observation_id,eligible_final_at,
       post_window_capture_id,finalized_at,created_at,player_bridge_observation_id)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)`, columns);
   };
   // The decision each published capture relied on, recorded for audit. A missing
   // decision leaves no row, and the deferred publication check refuses commit.
-  const recordRunRights = (runId: string) => client.query(`INSERT INTO public.predictive_run_rights (run_id,rights_decision_id)
+  const recordRunRights = (runId: string) => query(`INSERT INTO public.predictive_run_rights (run_id,rights_decision_id)
     SELECT DISTINCT c.run_id, public.predictive_rights_in_force(a.profile_id, c.captured_at, c.captured_at)
     FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id
     WHERE c.run_id=$1 AND c.state='published' AND public.predictive_rights_in_force(a.profile_id, c.captured_at, c.captured_at) IS NOT NULL
@@ -396,9 +447,9 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       await artifacts.write(artifact.bytes, artifact.sha256, "text/csv");
       return transaction(async () => {
         const existing = await priorRun(input.id, requestHash); if (existing) return existing;
-        await client.query("SELECT pg_advisory_xact_lock(520053,hashtext($1))", [input.profile.id]);
+        await query("SELECT pg_advisory_xact_lock(520053,hashtext($1))", [input.profile.id]);
         // Importing an old archive is knowledge now, never a historical SQL write.
-        const now = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string;
+        const now = (await query(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string;
         if (instant(input.capturedAt) > instant(now)) refuse("source-publication-time-refused");
         await persistRegistrations({ formatVersion: 2, profiles: [input.profile], rightsDecisions: input.rightsDecisions,
           artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] });
@@ -408,7 +459,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         await persistCapture({ id: input.captureId, artifactId: artifact.id, capturedAt: input.capturedAt, availableAt: input.capturedAt,
           ingestedAt: now, publishedAt: null, publicationEvidence: null, state: "published", bodyComplete: true,
           headerVerified: true, parserSucceeded: true, parsedRows: prepared.rows.length }, input.id);
-        for (const row of prepared.rows) await client.query(`INSERT INTO public.predictive_source_stats_rows
+        for (const row of prepared.rows) await query(`INSERT INTO public.predictive_source_stats_rows
           (id,capture_id,row_ordinal,raw_key_sha256,selected_sha256,projection,failure_code) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
           [row.id, input.captureId, row.rowOrdinal, row.rawKeySha256, row.selectedSha256, row.projection, row.failureCode]);
         await recordRunRights(input.id);
@@ -421,18 +472,18 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (!(source instanceof Uint8Array) || source.length < 1 || source.length > 8_000_000) refuse("compressed-publication-wire-refused");
     const bytes = Buffer.from(source), pinned = structuredClone(input);
     return withBlobReferences([pinned.artifact.sha256 + ".csv.gz"], () => transaction(async () => {
-      const now = (await client.query("SELECT public.predictive_compressed_write_guard() AS clock")).rows[0].clock as string;
-      await client.query("SET LOCAL idle_in_transaction_session_timeout = '45s'");
+      const now = (await query("SELECT public.predictive_compressed_write_guard() AS clock")).rows[0].clock as string;
+      await query("SET LOCAL idle_in_transaction_session_timeout = '45s'");
       const checked = checkCompressedPublicationInput(pinned, now);
       await persistRegistrations({ formatVersion: 2, profiles: [pinned.profile], rightsDecisions: pinned.rightsDecisions,
         artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] });
-      const authoritative = (await client.query(RIGHTS_SQL, [[pinned.profile.id]])).rows.map(row => row.decision as RightsDecision);
+      const authoritative = (await query(RIGHTS_SQL, [[pinned.profile.id]])).rows.map(row => row.decision as RightsDecision);
       checkCompressedPublicationInput({ ...pinned, rightsDecisions: authoritative }, now);
-      await client.query("SELECT public.predictive_compressed_source_access($1,$2)",[pinned.profile.id,pinned.capturedAt]);
+      await query("SELECT public.predictive_compressed_source_access($1,$2)",[pinned.profile.id,pinned.capturedAt]);
       const existing = await priorRun(pinned.id, checked.requestHash);
       const prepared = await prepareCompressedPublication(bytes, pinned, now);
       const currentAccess = async () => {
-        await client.query("SELECT public.predictive_compressed_source_access($1,$2)",[pinned.profile.id,pinned.capturedAt]);
+        await query("SELECT public.predictive_compressed_source_access($1,$2)",[pinned.profile.id,pinned.capturedAt]);
       };
       await currentAccess();
       const reference = await artifacts.writeBinary(bytes, pinned.artifact.sha256);
@@ -441,23 +492,23 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       if (!existing) {
         await insertRun(pinned.id, checked.requestHash, now, "published", null, { artifacts: 1, captures: 1, rows: prepared.rows.length },
           bytes.length, COMPRESSED_SOURCE_CLAIM_VERSION, prepared.worker.peakRssBytes, { ...COMPRESSED_SOURCE_LIMITS, workerMemoryBytes: prepared.worker.memoryLimitBytes });
-        await client.query("INSERT INTO public.predictive_blobs VALUES($1,$2,'application/gzip',$3) ON CONFLICT DO NOTHING", [pinned.artifact.sha256,bytes.length,reference]);
-        const blob = (await client.query("SELECT byte_size,media_type,storage_ref FROM public.predictive_blobs WHERE sha256=$1", [pinned.artifact.sha256])).rows[0];
+        await query("INSERT INTO public.predictive_blobs VALUES($1,$2,'application/gzip',$3) ON CONFLICT DO NOTHING", [pinned.artifact.sha256,bytes.length,reference]);
+        const blob = (await query("SELECT byte_size,media_type,storage_ref FROM public.predictive_blobs WHERE sha256=$1", [pinned.artifact.sha256])).rows[0];
         if (blob.byte_size !== bytes.length || blob.media_type !== "application/gzip" || blob.storage_ref !== reference) refuse("blob-conflict");
         const a = pinned.artifact;
         const columns = [a.id,a.sha256,a.profileId,a.retrievalKind,a.origin,a.providerEtag,a.providerLastModified,a.releaseUpdatedAt,
           a.scopeKind,a.scopeSeason,a.scopeWeek,a.scopeGameId,a.scopeFilter];
-        const prior = (await client.query(`SELECT id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,provider_last_modified,
+        const prior = (await query(`SELECT id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,provider_last_modified,
           ${timestamp("release_updated_at")} AS release_updated_at,scope_kind,scope_season,scope_week,scope_game_id,scope_filter
           FROM public.predictive_artifacts WHERE id=$1`, [a.id])).rows[0];
         if (prior && canonical(Object.values(prior)) !== canonical(columns)) refuse("artifact-id-conflict");
-        if (!prior) await client.query(`INSERT INTO public.predictive_artifacts(id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,
+        if (!prior) await query(`INSERT INTO public.predictive_artifacts(id,blob_sha256,profile_id,retrieval_kind,origin,provider_etag,
           provider_last_modified,release_updated_at,scope_kind,scope_season,scope_week,scope_game_id,scope_filter)
           VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,columns);
         await persistCapture({ id:pinned.captureId,artifactId:a.id,capturedAt:pinned.capturedAt,availableAt:pinned.capturedAt,ingestedAt:now,
           publishedAt:null,publicationEvidence:null,state:"published",bodyComplete:true,headerVerified:true,parserSucceeded:true,parsedRows:prepared.rows.length },pinned.id);
       }
-      const seal = (await client.query("SELECT public.predictive_record_compressed_publication($1,$2,$3) AS seal",
+      const seal = (await query("SELECT public.predictive_record_compressed_publication($1,$2,$3) AS seal",
         [pinned.captureId,prepared.inspection,JSON.stringify(prepared.rows)])).rows[0].seal;
       if (seal.requestHash !== checked.requestHash || seal.claimsSha256 !== digest(canonical(prepared.rows))) refuse("compressed-publication-integrity-failed");
       await recordRunRights(pinned.id);
@@ -565,11 +616,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
             profile.allowlistVersion !== "predictive-raw-allowlist-v1" || profile.feed !== feed ||
             profile.releaseTag !== asset.tag || profile.assetPattern !== asset.name) refuse("compressed-selection-profile-refused");
         const access = async () => {
-          if (!(await client.query("SELECT public.predictive_rights_allow($1,clock_timestamp(),clock_timestamp(),'internal-research') AS allowed",
+          if (!(await query("SELECT public.predictive_rights_allow($1,clock_timestamp(),clock_timestamp(),'internal-research') AS allowed",
             [selection.profileId])).rows[0].allowed) refuse("compressed-selection-rights-refused");
         };
         await access();
-        captures = (await client.query(`SELECT c.id,c.run_id AS "runId",c.artifact_id AS "artifactId",
+        captures = (await query(`SELECT c.id,c.run_id AS "runId",c.artifact_id AS "artifactId",
           ${timestamp("c.captured_at")} AS "capturedAt",${timestamp("c.available_at")} AS "availableAt",
           ${timestamp("c.ingested_at")} AS "ingestedAt",c.parsed_rows AS "parsedRows",b.sha256,
           b.storage_ref AS "storageRef",b.byte_size AS "byteSize"
@@ -585,7 +636,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         if (!ids.length) {
           await access();
           const source = selectCompressedSourceClaim(selection, [], batchClock!);
-          const removed = (await client.query(`SELECT 1 FROM public.predictive_retention_events
+          const removed = (await query(`SELECT 1 FROM public.predictive_retention_events
             WHERE scope_descriptor->>'kind'='source' AND scope_descriptor->'profileIds' ? $1
               AND (scope_descriptor->>'capturedFrom' IS NULL OR (scope_descriptor->>'capturedFrom')::timestamptz <= $2::timestamptz)
             LIMIT 1`, [selection.profileId,selection.cutoff])).rows.length > 0;
@@ -598,17 +649,17 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       }
       type Entry = { captureId: string; proof: Awaited<ReturnType<typeof inspectCompressedSource>>; reference: string; sha256: string; byteSize: number; rows?: SourceClaimRow[];
         publication?: {requestHash:string;claimsSha256:string;recordedAt:string} };
-      const load = async (): Promise<Entry[]> => (await client.query(mode === "publication" ? "SELECT public.predictive_read_compressed_publications($1) AS entries" :
+      const load = async (): Promise<Entry[]> => (await query(mode === "publication" ? "SELECT public.predictive_read_compressed_publications($1) AS entries" :
         "SELECT public.predictive_read_compressed_inspections($1) AS entries", [ids])).rows[0].entries;
       registerCompressedAccess(canonical([mode,ids]),async()=>{
-        await client.query("SELECT public.predictive_read_compressed_inspections($1)",[ids]);
+        await query("SELECT public.predictive_read_compressed_inspections($1)",[ids]);
       });
       await batchAccess!();
       const entries = await memoEvidence("compressed-metadata",[mode,ids],load);
       if (mode !== "inspect" && entries.some(entry => !["player","team"].includes(entry.proof.feed))) refuse("compressed-claims-feed-refused");
       // A 30s execution deadline plus bounded runtime cleanup must fit within
       // this guarded transaction's idle timeout; no image is pulled here.
-      await client.query("SET LOCAL idle_in_transaction_session_timeout = '45s'");
+      await query("SET LOCAL idle_in_transaction_session_timeout = '45s'");
       // Full immutable publication integrity is checked above and against the
       // independently decoded bytes below. Clock-sensitive access gates need
       // only the guarded codec/capture envelope, not repeated full-array hashes.
@@ -623,7 +674,8 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
           const remainingRows = Math.min(maxRows-decodedRows,160_000-compressedDecodedRows);
           if (remainingBytes < 1 || remainingRows < 1) refuse("compressed-batch-work-budget-exceeded");
           const bytes = await readWireBytes(entry.reference, entry.sha256, entry.byteSize);
-          const worker = await runCompressedWorker(mode === "inspect" ? "inspect" : "claims", bytes, request, { captureId: entry.captureId, limits: {
+          const worker = await runCompressedWorker(mode === "inspect" ? "inspect" : "claims", bytes, request, { captureId: entry.captureId,
+            signal: trainingOperation?.signal, deadlineMs: trainingOperation ? Math.min(30_000, trainingOperation.remainingMs()) : undefined, limits: {
             decodedBytes: Math.min(COMPRESSED_SOURCE_LIMITS.decodedBytes, remainingBytes),
             rows: Math.min(COMPRESSED_SOURCE_LIMITS.rows, remainingRows) } });
           const prepared = mode !== "inspect" ? worker.result as Awaited<ReturnType<typeof prepareCompressedSourceClaims>> : null;
@@ -682,7 +734,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (providedSource) {
       if (!batchAccess || !batchClock) refuse("compressed-replay-guard-required");
       registerCompressedAccess("native-rights",async () => {
-        if (nativeProfiles.size && (await client.query(`SELECT id FROM unnest($1::text[]) AS profiles(id)
+        if (nativeProfiles.size && (await query(`SELECT id FROM unnest($1::text[]) AS profiles(id)
           WHERE NOT public.predictive_rights_allow(id,clock_timestamp(),clock_timestamp(),'internal-research')`,[[...nativeProfiles]])).rows.length)
           refuse("source-normalization-rights-refused");
       });
@@ -698,7 +750,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       const raw = (await readQuery(sql, values)).rows.map((row) => row.envelope as Raw);
       const ids = [...new Set(raw.map((row) => row.artifact.profileId))];
       const rights = (await readQuery(RIGHTS_SQL, [ids])).rows.map((row) => row.decision as RightsDecision);
-      const rightsClock = providedSource ? (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string : clock;
+      const rightsClock = providedSource ? (await query(`SELECT ${timestamp("clock_timestamp()")} AS now`)).rows[0].now as string : clock;
       const blocked = blockedProfiles(rights, ids, rightsClock, "internal-research");
       if (providedSource) for (const id of ids) if (!blocked.has(id)) nativeProfiles.add(id);
       // Permission is checked before opening context bytes, including when the
@@ -750,14 +802,14 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const pinned = structuredClone(request);
     return transaction(async () => {
       exact(pinned,["profileId","rawGameId","rawTeam","rawPlayerId"]);
-      batchClock = (await client.query("SELECT public.predictive_compressed_binding_guard() AS clock")).rows[0].clock as string;
+      batchClock = (await query("SELECT public.predictive_compressed_binding_guard() AS clock")).rows[0].clock as string;
       const scoped = {...pinned,cutoff:batchClock!};
-      const old = (await client.query("SELECT plan,predecessor_id FROM public.predictive_source_bindings WHERE id=$1",[id])).rows[0];
+      const old = (await query("SELECT plan,predecessor_id FROM public.predictive_source_bindings WHERE id=$1",[id])).rows[0];
       if (old && (old.predecessor_id !== expectedHeadId || canonical(old.plan.binding.sourceRequest) !== canonical({...scoped,cutoff:old.plan.binding.cutoff})))
         refuse("source-binding-id-conflict");
       const plan = await readSourceNormalization(old?.plan.binding.sourceRequest ?? scoped, undefined, COMPRESSED_SOURCE_NORMALIZATION_VERSION);
       if (old && sourceNormalizationBasis(plan) !== sourceNormalizationBasis(old.plan)) refuse("stored-source-binding-plan-mismatch");
-      const result = (await client.query("SELECT public.predictive_record_compressed_source_binding($1,$2,$3) AS result",
+      const result = (await query("SELECT public.predictive_record_compressed_source_binding($1,$2,$3) AS result",
         [id,expectedHeadId,old?.plan ?? plan])).rows[0].result;
       const history = await bindingHistory(scoped,result.recordedAt);
       const event = history.find(item=>item.id===id) ?? refuse("stored-source-binding-missing");
@@ -821,17 +873,17 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const recordSourceNormalization = (id: string, request: Omit<SourceStatsRequest, "cutoff">, expectedHeadId: string | null) => transaction(async () => {
     exact(request, ["profileId", "rawGameId", "rawTeam", "rawPlayerId"]);
     const clock = await databaseClock(); const scoped = { ...request, cutoff: clock }; sourceStatsRawKey(scoped);
-    const existing = (await client.query("SELECT profile_id,raw_key_sha256,predecessor_id,plan FROM public.predictive_source_bindings WHERE id=$1", [id])).rows[0];
+    const existing = (await query("SELECT profile_id,raw_key_sha256,predecessor_id,plan FROM public.predictive_source_bindings WHERE id=$1", [id])).rows[0];
     if (existing && (existing.profile_id !== request.profileId || existing.raw_key_sha256 !== sourceStatsRawKey(scoped) || existing.predecessor_id !== expectedHeadId))
       refuse("source-binding-id-conflict");
     const plan = existing?.plan as SourceNormalizationPlan | undefined ?? await readSourceNormalization(scoped, clock);
     if (existing && !await currentBindingAccess([{ plan }], clock)) refuse("predictive-source-plan-rights-profile-invalid");
     // Retries re-verify their original files too. SQL independently checks
     // current rights on both new records and exact retries.
-    if (existing && canonical(await readSourceNormalization(plan.binding.sourceRequest, (await client.query(
+    if (existing && canonical(await readSourceNormalization(plan.binding.sourceRequest, (await query(
       `SELECT ${timestamp("recorded_at")} AS now FROM public.predictive_source_bindings WHERE id=$1`, [id])).rows[0].now, plan.binding.version)) !== canonical(plan))
       refuse("stored-source-binding-plan-mismatch");
-    const result = (await client.query("SELECT public.predictive_record_source_binding($1,$2,$3) AS result", [id, expectedHeadId, JSON.stringify(plan)])).rows[0].result;
+    const result = (await query("SELECT public.predictive_record_source_binding($1,$2,$3) AS result", [id, expectedHeadId, JSON.stringify(plan)])).rows[0].result;
     const history = await bindingHistory(scoped, result.recordedAt);
     const event = history.find((row) => row.id === id) ?? refuse("stored-source-binding-missing");
     sourceBindingHeadsAt(history, result.recordedAt);
@@ -983,13 +1035,13 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const recordSourceDecision = (id: string, input: Omit<SourceDecisionRequest, "cutoff">, expectedHeadId: string | null) => sourceTransaction(async () => {
     exact(input, ["kind", "profileIds", "entityKey"]);
     const request = sourceDecisionRequest({ ...input, cutoff: await databaseClock() });
-    const old = (await client.query(`SELECT id,predecessor_id AS "predecessorId",${timestamp("recorded_at")} AS "recordedAt",plan
+    const old = (await query(`SELECT id,predecessor_id AS "predecessorId",${timestamp("recorded_at")} AS "recordedAt",plan
       FROM public.predictive_source_decisions WHERE id=$1`, [id])).rows[0] as SourceDecisionRecord | undefined;
     if (old && (old.plan.kind !== request.kind || old.plan.entityKey !== request.entityKey ||
         canonical(old.plan.witness.profileIds) !== canonical(request.profileIds) || old.predecessorId !== expectedHeadId)) refuse("source-decision-id-conflict");
     const plan = old?.plan ?? await readSourceDecisionPlan(request);
     if (old) await verifySourceDecision(old);
-    const { reused, ...record } = (await client.query("SELECT public.predictive_record_source_decision($1,$2,$3) AS result", [id, expectedHeadId, plan])).rows[0].result as SourceDecisionRecord & { reused: boolean };
+    const { reused, ...record } = (await query("SELECT public.predictive_record_source_decision($1,$2,$3) AS result", [id, expectedHeadId, plan])).rows[0].result as SourceDecisionRecord & { reused: boolean };
     if (record.id !== id || record.predecessorId !== expectedHeadId || canonical(record.plan) !== canonical(plan)) refuse("stored-source-decision-record-mismatch");
     return { record, reused, featuresPublished: false as const, labelsFinalized: false as const };
   },input.profileIds,true);
@@ -1095,9 +1147,9 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const bytes = canonical(body); const sha256 = digest(bytes);
     return withBlobPublication([sha256],() => sourceTransaction(async () => {
       await artifacts.write(bytes,sha256);
-      await client.query(`INSERT INTO public.predictive_blobs(sha256,byte_size,media_type,storage_ref) VALUES($1,$2,'application/json',$3)
+      await query(`INSERT INTO public.predictive_blobs(sha256,byte_size,media_type,storage_ref) VALUES($1,$2,'application/json',$3)
         ON CONFLICT(sha256) DO NOTHING`,[sha256,Buffer.byteLength(bytes),sha256 + ".json"]);
-      const record = (await client.query("SELECT public.predictive_record_source_consumer($1,$2,$3) AS result",[id,expectedHeadId,body])).rows[0].result as SourceConsumerRecord;
+      const record = (await query("SELECT public.predictive_record_source_consumer($1,$2,$3) AS result",[id,expectedHeadId,body])).rows[0].result as SourceConsumerRecord;
       if (record.id !== id || record.bodySha256 !== sha256 || canonical(record.body) !== canonical(body) ||
           record.executionDigest !== sourceConsumerExecutionDigest(sha256,record.rightsDecisions,record.recordedAt)) refuse("source-consumer-record-mismatch");
       return record;
@@ -1143,15 +1195,15 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   };
   const replaySourceConsumer = async (id: string) => {
     if(busy)refuse("predictive-session-busy");await assertTarget();
-    const metadata=(await client.query("SELECT body->'manifest'->'profileIds' AS profiles FROM public.predictive_source_consumers WHERE id=$1",[id])).rows[0];
+    const metadata=(await query("SELECT body->'manifest'->'profileIds' AS profiles FROM public.predictive_source_consumers WHERE id=$1",[id])).rows[0];
     return sourceTransaction(async () => {
     // The SQL reader checks current use rights and sealed association closure
     // before the application opens either the run blob or source evidence.
-    const record = (await client.query("SELECT public.predictive_source_consumer_check($1) AS result",[id])).rows[0].result as SourceConsumerRecord | null;
+    const record = (await query("SELECT public.predictive_source_consumer_check($1) AS result",[id])).rows[0].result as SourceConsumerRecord | null;
     if (!record) return null;
     const result=await verifySourceConsumer(record);
     if(batchAccess)await batchAccess();
-    const final=(await client.query("SELECT public.predictive_source_consumer_check($1) AS result",[id])).rows[0].result;
+    const final=(await query("SELECT public.predictive_source_consumer_check($1) AS result",[id])).rows[0].result;
     if(canonical(final)!==canonical(record))refuse("stored-source-consumer-mismatch");
     return result;
     },metadata?.profiles??[]);
@@ -1160,14 +1212,14 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // All current use rights and association checks precede the first byte read,
   // including kickoff context not present in a selected consumer's profile set.
   const authorizeConsumerBatch = async (ids: string[], extraUses: { profile: string; use: "model-input" | "outcome-label" }[] = []) => {
-    const check = () => client.query(`SELECT id,public.predictive_source_consumer_check(id) AS result
+    const check = () => query(`SELECT id,public.predictive_source_consumer_check(id) AS result
       FROM unnest($1::text[]) id ORDER BY id COLLATE "C"`, [ids]);
     const checked = (await check()).rows as { id: string; result: SourceConsumerRecord | null }[];
     const records = new Map(checked.map((row) => [row.id, row.result]));
     if (checked.length !== ids.length || records.size !== ids.length || ids.some((id) => !records.has(id))) refuse("training-evidence-inventory-mismatch");
     if (Buffer.byteLength(canonical(checked)) > TRAINING_BOUNDS.pageBytes) refuse("training-page-byte-bounds-refused");
     const rightsIds = [...new Set(checked.flatMap(({ result }) => result?.rightsDecisions ?? []))];
-    const rights = (await client.query("SELECT id,profile_id FROM public.predictive_rights_decisions WHERE id=ANY($1::text[])", [rightsIds])).rows;
+    const rights = (await query("SELECT id,profile_id FROM public.predictive_rights_decisions WHERE id=ANY($1::text[])", [rightsIds])).rows;
     if (rights.length !== rightsIds.length) refuse("training-evidence-inventory-mismatch");
     const profileByRight = new Map(rights.map((row) => [row.id, row.profile_id as string]));
     const consumerUses = checked.flatMap(({ result }) => result?.rightsDecisions.map((id) => {
@@ -1180,7 +1232,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     // at delivery, bypassing the metadata cache. Full SQL reconstruction was
     // already checked per record above and need not be repeated at delivery.
     batchAccess = async () => {
-      const allowed = (await client.query(`WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS t)
+      const allowed = (await query(`WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS t)
         SELECT coalesce(bool_and(public.predictive_rights_allow(x.profile,c.t,c.t,'internal-research')
           AND public.predictive_rights_allow(x.profile,c.t,c.t,x.use)),true) AS allowed
         FROM jsonb_to_recordset($1::jsonb) x(profile text,use text) CROSS JOIN clock c`, [JSON.stringify(uses)])).rows[0].allowed;
@@ -1194,13 +1246,13 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     // Frozen pre-0016 training checkpoints contain no source-dataset pins.
     // Preserve their existing preview/verifier APIs during forward upgrades.
     if (!(await readQuery("SELECT to_regprocedure('public.predictive_training_pinned_consumers(text[])') AS available")).rows[0].available) return new Set<string>();
-    return new Set<string>((await client.query("SELECT public.predictive_training_pinned_consumers($1) AS ids", [ids])).rows[0].ids);
+    return new Set<string>((await query("SELECT public.predictive_training_pinned_consumers($1) AS ids", [ids])).rows[0].ids);
   };
   const extendTrainingAccess = async (uses: TrainingRunInventory["protectedUses"]) => {
     const original = batchAccess!;
     batchAccess = async () => {
       await original();
-      const allowed = (await client.query(`WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS t)
+      const allowed = (await query(`WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS t)
         SELECT coalesce(bool_and(public.predictive_rights_allow(x.profile,c.t,c.t,'internal-research')
           AND public.predictive_rights_allow(x.profile,c.t,c.t,x.use)),true) AS allowed
         FROM jsonb_to_recordset($1::jsonb) x(profile text,use text) CROSS JOIN clock c`, [JSON.stringify(uses)])).rows[0].allowed;
@@ -1296,7 +1348,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const supplied = structuredClone(input);
     return transaction(async () => {
       const snapshotAt = batchClock!, request = normalizeFittingRunRequest(supplied, snapshotAt);
-      const metadata = checkTrainingMetadataSelection((await client.query<TrainingMetadataSelection>(TRAINING_SELECTION_SQL,
+      const metadata = checkTrainingMetadataSelection((await query<TrainingMetadataSelection>(TRAINING_SELECTION_SQL,
         [...trainingSelectionParameters(request, snapshotAt)])).rows, request.slots.length);
       const context = await trainingKickoffContext(request);
       const ids = [...new Set(metadata.flatMap((row) => [row.featureId, row.labelId].filter((id): id is string => id !== null)))];
@@ -1318,11 +1370,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // pin these exact selections before a fitting run can become usable.
   const prepareFittingRun = (input: FittingRunRequest) => {
     const request = structuredClone(input);
-    return transaction(async () => (await client.query("SELECT public.predictive_prepare_training_run($1) AS result", [request]))
+    return transaction(async () => (await query("SELECT public.predictive_prepare_training_run($1) AS result", [request]))
       .rows[0].result as TrainingRunInventory & { reused: boolean });
   };
   const readFittingRun = (id: string) => transaction(async () =>
-    (await client.query("SELECT public.predictive_training_run_read($1) AS result", [id])).rows[0].result as TrainingRunInventory | null,
+    (await query("SELECT public.predictive_training_run_read($1) AS result", [id])).rows[0].result as TrainingRunInventory | null,
   false, true);
 
   // Verify only an already-assigned shard. No latest-match SQL is run and no
@@ -1330,13 +1382,13 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // will reuse this guarded path in the same transaction as its SQL recorder.
   const verifyAssignedShard = async (supplied: TrainingShardRequest, dataset?: TrainingDatasetContext,
     runAccess?: { uses: TrainingRunInventory["protectedUses"]; rows: TrainingRunInventory["rows"]; pinned: ReadonlySet<string> }) => {
-    const inventory = dataset?.inventory ?? (await client.query("SELECT public.predictive_training_run_read($1) AS result", [supplied.fittingRunId]))
+    const inventory = dataset?.inventory ?? (await query("SELECT public.predictive_training_run_read($1) AS result", [supplied.fittingRunId]))
       .rows[0].result as TrainingRunInventory | null;
     if (!inventory) refuse("training-run-not-found");
     const rows = trainingShardMembership(inventory, supplied);
     const featureIds = rows.flatMap((row) => row.selection.featureId ? [row.selection.featureId] : []);
     const pinned = await trainingPinnedConsumers(featureIds);
-    const currentClock = async () => (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+    const currentClock = async () => (await query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
     const accessRows = runAccess?.rows ?? rows, accessPins = runAccess?.pinned ?? pinned;
     assertTrainingShardUnexpired(accessRows, await currentClock(), accessPins);
     const context = await trainingKickoffContext({ ...inventory.request, slots: rows.map((row) => row.slot) });
@@ -1364,7 +1416,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   };
 
   const datasetContext = async (id: string): Promise<TrainingDatasetContext | null> =>
-    (await client.query("SELECT public.predictive_training_dataset_context($1) AS result", [id])).rows[0].result;
+    (await query("SELECT public.predictive_training_dataset_context($1) AS result", [id])).rows[0].result;
   const prepareDataset = (input: TrainingDatasetRequest) => {
     const supplied = normalizeTrainingDatasetRequest(input);
     const { pinId: _pin, ...shard } = supplied; void _pin;
@@ -1374,7 +1426,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         refuse("training-dataset-inventory-mismatch");
       }
       await verifyAssignedShard(shard, existing ?? undefined);
-      const result = (await client.query("SELECT public.predictive_prepare_training_dataset($1) AS result", [supplied])).rows[0].result;
+      const result = (await query("SELECT public.predictive_prepare_training_dataset($1) AS result", [supplied])).rows[0].result;
       // SQL computes the closure; its hashes do not replace filesystem checks.
       await extendTrainingAccess((result as TrainingDatasetManifest).protectedUses);
       for (const blob of (result as TrainingDatasetManifest).closure.blobs) {
@@ -1400,22 +1452,22 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       const context = await datasetContext(supplied.datasetId);
       if (!context) refuse("training-dataset-not-found");
       await verifyAssignedShard(shard, context);
-      const pin = (await client.query("SELECT public.predictive_pin_training_dataset($1,$2,$3,$4) AS result",
+      const pin = (await query("SELECT public.predictive_pin_training_dataset($1,$2,$3,$4) AS result",
         [supplied.datasetId, supplied.pinId, supplied.fittingRunId, supplied.inventorySha256])).rows[0].result as
           { id: string; datasetId: string; recordedAt: string; reused: boolean };
-      const manifest = (await client.query("SELECT public.predictive_training_dataset_read($1) AS result", [supplied.datasetId])).rows[0].result as TrainingDatasetManifest;
+      const manifest = (await query("SELECT public.predictive_training_dataset_read($1) AS result", [supplied.datasetId])).rows[0].result as TrainingDatasetManifest;
       await batchAccess!();
       return { ...manifest, pin };
     }, false, true, true);
   };
   const releaseDatasetPin = (id: string) => transaction(async () =>
-    (await client.query("SELECT public.predictive_release_training_dataset_pin($1) AS result", [id])).rows[0].result as
+    (await query("SELECT public.predictive_release_training_dataset_pin($1) AS result", [id])).rows[0].result as
       { pinId: string; releasedAt: string; reused: boolean });
 
   const readFittingRunReadiness = async (input: TrainingRunReadRequest) => {
     const supplied = normalizeTrainingRunReadRequest(input);
     return transaction(async () => {
-      const inventory = (await client.query("SELECT public.predictive_training_run_read($1) AS result", [supplied.fittingRunId]))
+      const inventory = (await query("SELECT public.predictive_training_run_read($1) AS result", [supplied.fittingRunId]))
         .rows[0].result as TrainingRunInventory | null;
       if (!inventory) refuse("training-run-not-found");
       const ids = trainingRunDatasetIds(inventory, supplied), contexts = new Map<string, TrainingDatasetContext | null>();
@@ -1442,12 +1494,12 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         const rightsAccess = batchAccess!;
         batchAccess = async () => {
           await rightsAccess();
-          const clock = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+          const clock = (await query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
           assertTrainingShardUnexpired(inventory.rows, clock, pinned);
         };
       }
       await batchAccess!();
-      const checkedAt = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+      const checkedAt = (await query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
       assertTrainingShardUnexpired(inventory.rows, checkedAt, pinned);
       const result = { ...trainingRunReadiness(inventory, supplied, checked, checkedAt), verification: { ...batch!.metrics(), verifiedBytes } };
       assertTrainingResponseBytes(result, TRAINING_BOUNDS.pageBytes);
@@ -1467,7 +1519,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       trainingPageMembers(supplied, context.manifest); // Reject wrong addresses before private files.
       const { records } = await verifyAssignedShard({ version: supplied.version, fittingRunId: supplied.fittingRunId,
         inventorySha256: supplied.inventorySha256, datasetId: supplied.datasetId }, context);
-      const accessAt = (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+      const accessAt = (await query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
       const result = { ...trainingDatasetPage(supplied, context.manifest, records, accessAt),
         verification: { ...batch!.metrics(), verifiedBytes } };
       assertTrainingResponseBytes(result, supplied.limits.bytes);
@@ -1478,11 +1530,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const readTrainingLabels = async (request: TrainingLabelRequest, labelsAsOf: string) => {
     const snapshotAt = batchClock!;
     if (instant(labelsAsOf) > instant(snapshotAt)) refuse("training-future-cutoff");
-    const metadata = checkTrainingLabelMetadata((await client.query<TrainingLabelMetadata>(TRAINING_LABEL_SELECTION_SQL,
+    const metadata = checkTrainingLabelMetadata((await query<TrainingLabelMetadata>(TRAINING_LABEL_SELECTION_SQL,
       [JSON.stringify(request.keys), labelsAsOf, snapshotAt])).rows, request.keys.length);
     const ids = [...new Set(metadata.flatMap((row) => row.id ? [row.id] : []))];
     const records = await authorizeConsumerBatch(ids, request.selection.profileIds.map((profile) => ({ profile, use: "outcome-label" })));
-    const removed = (await client.query(`SELECT EXISTS(SELECT 1 FROM public.predictive_retention_events e
+    const removed = (await query(`SELECT EXISTS(SELECT 1 FROM public.predictive_retention_events e
       WHERE e.scope_descriptor->>'kind'='source' AND e.scope_descriptor->'profileIds' ?| $1::text[]
       AND (e.scope_descriptor->>'capturedFrom' IS NULL OR (e.scope_descriptor->>'capturedFrom')::timestamptz <= $2::timestamptz)) AS removed`,
     [request.selection.profileIds, labelsAsOf])).rows[0].removed as boolean;
@@ -1496,7 +1548,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         missing: rows.filter((row) => row.state === "missing").length },
       fittingReady: false as const, populationCoverage: "unqualified" as const };
     const result = { ...body, responseSha256: digest(canonical(body)),
-      accessAt: (await client.query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string,
+      accessAt: (await query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string,
       verification: { ...batch!.metrics(), verifiedBytes } };
     assertTrainingResponseBytes(result, request.limits.bytes);
     await batchAccess!();
@@ -1563,7 +1615,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         if (checked.decisions.length) {
           const profiles = new Map([...(await profilesFor([...new Set([...known.values()].map((row) => row.artifact.profileId))])), ...dataset.profiles]
             .map((profile) => [profile.id, profile]));
-          const earlier = (await client.query(DECISIONS_BY_ID_SQL,
+          const earlier = (await query(DECISIONS_BY_ID_SQL,
             [checked.decisions.flatMap((decision) => decision.predecessorId ? [decision.predecessorId] : [])])).rows.map((row) => row.decision as Decision);
           const all = [...earlier.filter((item) => !checked.decisions.some((decision) => decision.id === item.id)), ...checked.decisions];
           validateDecisions(all, known, profiles);
@@ -1657,22 +1709,22 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (rows.length > PERSISTENCE_BOUNDS.rows) refuse("replay-row-bounds-refused");
     // Current access uses the database clock, never a caller-supplied time: an
     // old computedAt cannot bypass a later revocation.
-    const clock = (await client.query(`SELECT ${timestamp("now()")} AS now`)).rows[0].now as string;
+    const clock = (await query(`SELECT ${timestamp("now()")} AS now`)).rows[0].now as string;
     const profileIds = [...new Set(rows.map((row) => row.artifact.profileId))];
-    const rights = (await client.query(RIGHTS_SQL, [profileIds])).rows.map((row) => row.decision as RightsDecision);
+    const rights = (await query(RIGHTS_SQL, [profileIds])).rows.map((row) => row.decision as RightsDecision);
     const visible = validateObservations(rows);
     const decisionKeys = new Set([...visible.values()].flatMap((row) => ["reconciliation:" + row.entityKey,
       ...("gameId" in row.revision.data && row.revision.data.gameId ? ["completion:" + row.revision.data.gameId] : []),
       ...("gameId" in row.revision.data && row.revision.data.gameId && "playerId" in row.revision.data && row.revision.data.playerId === request.playerId
         ? ["participation:" + row.revision.data.gameId + ":" + request.playerId] : [])]));
-    const decisions = (await client.query(DECISION_SQL, [request.cutoff, [...decisionKeys]])).rows.map((row) => row.decision as Decision);
+    const decisions = (await query(DECISION_SQL, [request.cutoff, [...decisionKeys]])).rows.map((row) => row.decision as Decision);
     const profileMap = new Map((await profilesFor(profileIds)).map((profile) => [profile.id, profile]));
     validateDecisions(decisions, visible, profileMap);
     validateCompletionDecisions(decisions, visible, profileMap);
     validateParticipationDecisions(decisions, visible, profileMap);
     // Profiles an executed source retention event may have removed evidence from
     // at or before the cutoff; replay reports retained-evidence-removed for them.
-    const retention = (await client.query(`SELECT scope_descriptor->'profileIds' AS profiles FROM public.predictive_retention_events
+    const retention = (await query(`SELECT scope_descriptor->'profileIds' AS profiles FROM public.predictive_retention_events
       WHERE scope_descriptor->>'kind'='source' AND (scope_descriptor->>'capturedFrom' IS NULL
         OR (scope_descriptor->>'capturedFrom')::timestamptz <= $1::timestamptz)`, [request.cutoff])).rows.flatMap((row) => row.profiles as string[]);
     const bundle = buildPassingYardsFromReplay(replayObservations(rows, blockedProfiles(rights, profileIds, clock), decisions, retention), request);
@@ -1692,11 +1744,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const { run, dependencies, bundleBytes, bundleSha256 } = featureRunRequest(bundle, synthetic);
     try {
       return await withBlobPublication([bundleSha256], () => transaction(async () => {
-        await client.query("SET LOCAL ROLE predictive_recorder");
+        await query("SET LOCAL ROLE predictive_recorder");
         await artifacts.write(bundleBytes, bundleSha256);
-        await client.query(`INSERT INTO public.predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'application/json',$3)
+        await query(`INSERT INTO public.predictive_blobs (sha256,byte_size,media_type,storage_ref) VALUES ($1,$2,'application/json',$3)
           ON CONFLICT (sha256) DO NOTHING`, [bundleSha256, Buffer.byteLength(bundleBytes), bundleSha256 + ".json"]);
-        const recorded = (await client.query("SELECT public.predictive_record_feature_run($1,$2) AS result",
+        const recorded = (await query("SELECT public.predictive_record_feature_run($1,$2) AS result",
           [JSON.stringify(run), JSON.stringify(dependencies)])).rows[0].result as { featureRunId: string; recordedAt: string; executionDigest: string; rightsDecisions: string[] };
         const expected = executionDigest({ inputDigest: bundle.inputDigest, rightsDecisions: recorded.rightsDecisions, policies: dependencies.policies,
           featureVersion: bundle.featureVersion, codeVersion: FEATURE_CODE_VERSION, computedAt: bundle.computedAt, recordedAt: recorded.recordedAt });
@@ -1720,15 +1772,15 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // row references it (a concurrent publication may have re-added the bytes).
   const retain = async (event: RetentionEvent): Promise<RetentionResult> => {
     const result = await transaction(async () => {
-      if (!(await client.query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='predictive_retention_owner'")).rows.length) refuse("retention-owner-role-unavailable");
-      await client.query("SET LOCAL ROLE predictive_retention_owner");
-      const removed = (await client.query("SELECT public.predictive_retention_execute($1,$2,$3,$4,$5,$6) AS result",
+      if (!(await query("SELECT 1 FROM pg_catalog.pg_roles WHERE rolname='predictive_retention_owner'")).rows.length) refuse("retention-owner-role-unavailable");
+      await query("SET LOCAL ROLE predictive_retention_owner");
+      const removed = (await query("SELECT public.predictive_retention_execute($1,$2,$3,$4,$5,$6) AS result",
         [event.id, event.reason, event.authority, event.decidedAt, JSON.stringify(event.scope), event.auditLevel])).rows[0].result as RetentionResult;
       // Older prefixes have no training hook/audit API. Historical upgrade
       // tests still use the original store, so discover this optional forward
       // capability without changing legacy zero-row results.
-      if ((await client.query("SELECT to_regprocedure('public.predictive_training_retention_result(text)') AS available")).rows[0].available) {
-        const audit = (await client.query("SELECT public.predictive_training_retention_result($1) AS result", [event.id])).rows[0].result;
+      if ((await query("SELECT to_regprocedure('public.predictive_training_retention_result(text)') AS available")).rows[0].available) {
+        const audit = (await query("SELECT public.predictive_training_retention_result($1) AS result", [event.id])).rows[0].result;
         if (audit) removed.trainingRetention = audit;
       }
       return removed;
@@ -1744,11 +1796,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     await withBlobLocks([sha256], async () => {
       const referenced = await blobReferenced(reference);
       if (!referenced) await artifacts.remove(reference, sha256);
-      await client.query("SELECT public.predictive_ack_blob_removal($1)", [reference]);
+      await query("SELECT public.predictive_ack_blob_removal($1)", [reference]);
     });
   };
   const resumeBlobRemovals = async () => {
-    const references = (await client.query("SELECT public.predictive_pending_blob_removals() AS storage_ref")).rows
+    const references = (await query("SELECT public.predictive_pending_blob_removals() AS storage_ref")).rows
       .map((row) => row.storage_ref as string);
     for (const reference of references) await removeQueuedBlob(reference);
     return references;
@@ -1757,24 +1809,24 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   // Recheck both age and committed references after acquiring each digest lock.
   const sweepOrphanBlobs = async (graceMs = 24 * 60 * 60 * 1000) => {
     if (!Number.isSafeInteger(graceMs) || graceMs < 60 * 60 * 1000 || graceMs > 30 * 24 * 60 * 60 * 1000) refuse("blob-grace-refused");
-    const before = Number((await client.query("SELECT extract(epoch FROM clock_timestamp()) * 1000 AS now")).rows[0].now) - graceMs;
+    const before = Number((await query("SELECT extract(epoch FROM clock_timestamp()) * 1000 AS now")).rows[0].now) - graceMs;
     const removed: string[] = [];
     for (const candidate of await artifacts.candidates(before)) await withBlobLocks([candidate.sha256], async () => {
       // Both role-checked APIs confirm the lock. Temporary names are never
       // referenced; final ownership binds the exact address, including suffix.
-      if (candidate.kind === "temporary") await client.query("SELECT public.predictive_blob_lock_guard($1)", [candidate.sha256]);
+      if (candidate.kind === "temporary") await query("SELECT public.predictive_blob_lock_guard($1)", [candidate.sha256]);
       else if (await blobReferenced(candidate.reference)) return;
       if (await artifacts.removeOrphan(candidate, before)) removed.push(candidate.reference);
     });
     return removed;
   };
   const retentionEvents = async (): Promise<RecordedRetentionEvent[]> => {
-    const events = (await client.query(`SELECT id,reason,authority,${timestamp("decided_at")} AS "decidedAt",
+    const events = (await query(`SELECT id,reason,authority,${timestamp("decided_at")} AS "decidedAt",
       scope_descriptor AS scope,audit_level AS "auditLevel",removed_counts AS "removedCounts",removed_ids_digest AS "removedIdsDigest",
       ${timestamp("executed_at")} AS "executedAt" FROM public.predictive_retention_history()`)).rows as RecordedRetentionEvent[];
-    if ((await client.query("SELECT to_regprocedure('public.predictive_training_retention_result(text)') AS available")).rows[0].available) {
+    if ((await query("SELECT to_regprocedure('public.predictive_training_retention_result(text)') AS available")).rows[0].available) {
       for (const event of events) {
-        const audit = (await client.query("SELECT public.predictive_training_retention_result($1) AS result", [event.id])).rows[0].result;
+        const audit = (await query("SELECT public.predictive_training_retention_result($1) AS result", [event.id])).rows[0].result;
         if (audit) event.trainingRetention = audit;
       }
     }
@@ -1786,7 +1838,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const reapply = async (events: RecordedRetentionEvent[]) => {
     const results: { eventId: string; status: "present" | "reapplied"; matched: boolean }[] = [];
     for (const event of [...events].sort((a, b) => instant(a.executedAt) - instant(b.executedAt) || compareText(a.id, b.id))) {
-      if ((await client.query("SELECT 1 FROM public.predictive_retention_history() WHERE id=$1", [event.id])).rows.length) {
+      if ((await query("SELECT 1 FROM public.predictive_retention_history() WHERE id=$1", [event.id])).rows.length) {
         results.push({ eventId: event.id, status: "present", matched: true }); continue;
       }
       const result = await retain({ id: event.id, reason: event.reason, authority: event.authority, decidedAt: event.decidedAt, scope: event.scope, auditLevel: event.auditLevel });
@@ -1796,8 +1848,87 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
     return results;
   };
+  const recordTrainingInvalidation = async (input: TrainingInvalidationRequest) => {
+    const supplied = normalizeTrainingInvalidationRequest(input);
+    return transaction(async () => {
+      if (!(await query("SELECT to_regprocedure('public.predictive_record_training_invalidation(jsonb)') AS available")).rows[0].available) {
+        refuse("training-invalidation-not-installed");
+      }
+      const receipt = (await query("SELECT public.predictive_record_training_invalidation($1) AS result", [supplied]))
+        .rows[0].result as TrainingInvalidationReceipt & { reused: boolean };
+      if (trainingInvalidationReceiptDigest(receipt) !== receipt.eventSha256) refuse("training-invalidation-receipt-integrity-refused");
+      return receipt;
+    }, false, true);
+  };
+  const readTrainingInvalidations = async (input: TrainingInvalidationHistoryRequest) => {
+    const supplied = normalizeTrainingInvalidationHistoryRequest(input);
+    return transaction(async () => {
+      if (!(await query("SELECT to_regprocedure('public.predictive_training_invalidation_history(jsonb)') AS available")).rows[0].available) {
+        refuse("training-invalidation-not-installed");
+      }
+      const result = (await query("SELECT public.predictive_training_invalidation_history($1) AS result", [supplied]))
+        .rows[0].result as TrainingInvalidationHistory;
+      if (result.entries.some((entry) => trainingInvalidationReceiptDigest(entry) !== entry.eventSha256)) refuse("training-invalidation-receipt-integrity-refused");
+      assertTrainingResponseBytes(result, TRAINING_BOUNDS.pageBytes);
+      return result;
+    }, true);
+  };
+  const withTrainingInvalidation = async <T>(target: TrainingInvalidationTarget, operation: TrainingInvalidationOperation, work: () => Promise<T>): Promise<T> => {
+    try { return await work(); }
+    catch (error) {
+      const failureCode = trainingInvalidationFailure(error);
+      if (!failureCode) throw error;
+      // The failed evidence transaction has rolled back and released its guard.
+      // A separate, fresh transaction durably records the refusal. Neither a
+      // failed audit nor an older installation can turn a withheld read usable.
+      let audit: TrainingInvalidationAudit;
+      try {
+        const receipt = await recordTrainingInvalidation({ version: TRAINING_INVALIDATION_VERSION, target, operation, failureCode });
+        audit = { status: "recorded", receipt };
+      } catch (auditError) {
+        const code = auditError instanceof Error ? auditError.message : "";
+        audit = code === "training-invalidation-not-installed" ? { status: "not-installed" } : { status: "failed", code:
+          ["training-invalidation-target-unknown", "training-invalidation-target-mismatch", "training-invalidation-quota-refused",
+            "training-invalidation-receipt-integrity-refused", "training-invalidation-not-authorized", "predictive-session-busy"].includes(code)
+            ? code : "training-invalidation-audit-failed" };
+      }
+      throw new TrainingReadWithheldError(failureCode, error, audit);
+    }
+  };
+  const preparationMs = TRAINING_TIME_BOUNDS.preparationMs, readMs = TRAINING_TIME_BOUNDS.readMs;
   return { publish, publishSourceStats, publishCompressedSource, replaySourceStats, replayCompressedSourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, planCompressedSourceStatsNormalization, recordSourceNormalization, recordCompressedSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
-    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer, replaySourceConsumers, previewFittingRun, prepareFittingRun, readFittingRun, verifyDatasetShard,
-    prepareDataset, readDatasetManifest, pinDataset, releaseDatasetPin, readDatasetPage, readCurrentLabels, readLabelsAt, readFittingRunReadiness,
+    planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer,
+    replaySourceConsumers: (ids: string[], options: TrainingOperationOptions = {}) => withTrainingDeadline(options, readMs, () => replaySourceConsumers(ids)),
+    previewFittingRun: (input: FittingRunRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, preparationMs, () => previewFittingRun(input)),
+    prepareFittingRun: (input: FittingRunRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, preparationMs, () => prepareFittingRun(input)),
+    readFittingRun: (id: string, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, readMs,
+      () => withTrainingInvalidation({ kind: "run", id, sha256: null }, "run-metadata", () => readFittingRun(id))),
+    verifyDatasetShard: (input: TrainingShardRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, preparationMs, async () => {
+      const supplied = normalizeTrainingShardRequest(input);
+      return withTrainingInvalidation({ kind: "run", id: supplied.fittingRunId, sha256: supplied.inventorySha256 }, "shard-verify", () => verifyDatasetShard(supplied));
+    }),
+    prepareDataset: (input: TrainingDatasetRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, preparationMs, async () => {
+      const supplied = normalizeTrainingDatasetRequest(input);
+      return withTrainingInvalidation({ kind: "run", id: supplied.fittingRunId, sha256: supplied.inventorySha256 }, "dataset-prepare", () => prepareDataset(supplied));
+    }),
+    readDatasetManifest: (id: string, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, preparationMs,
+      () => withTrainingInvalidation({ kind: "dataset", id, sha256: null }, "dataset-manifest", () => readDatasetManifest(id))),
+    pinDataset: (input: TrainingDatasetRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, preparationMs, async () => {
+      const supplied = normalizeTrainingDatasetRequest(input);
+      return withTrainingInvalidation({ kind: "dataset", id: supplied.datasetId, sha256: null }, "dataset-pin", () => pinDataset(supplied));
+    }),
+    releaseDatasetPin: (id: string, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, readMs, () => releaseDatasetPin(id)),
+    readDatasetPage: (input: TrainingPageRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, readMs, async () => {
+      const supplied = normalizeTrainingPageRequest(input);
+      return withTrainingInvalidation({ kind: "dataset", id: supplied.datasetId, sha256: supplied.manifestSha256 }, "dataset-page", () => readDatasetPage(supplied));
+    }),
+    readCurrentLabels: (input: TrainingLabelRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, readMs, () => readCurrentLabels(input)),
+    readLabelsAt: (input: TrainingHistoricalLabelRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, readMs, () => readLabelsAt(input)),
+    readFittingRunReadiness: (input: TrainingRunReadRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, TRAINING_TIME_BOUNDS.readinessMs, async () => {
+      const supplied = normalizeTrainingRunReadRequest(input);
+      return withTrainingInvalidation({ kind: "run", id: supplied.fittingRunId, sha256: supplied.inventorySha256 }, "run-readiness", () => readFittingRunReadiness(supplied));
+    }),
+    recordTrainingInvalidation: (input: TrainingInvalidationRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, readMs, () => recordTrainingInvalidation(input)),
+    readTrainingInvalidations: (input: TrainingInvalidationHistoryRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, readMs, () => readTrainingInvalidations(input)),
     replay, replayAndRecord, safeReplay, recordRefusal, retain, retentionEvents, reapply, resumeBlobRemovals, sweepOrphanBlobs };
 };

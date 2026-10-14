@@ -1,16 +1,17 @@
-# #106 / #118 integration prefix — 2026-10-13
+# #106 / #118 integration prefix — 2026-10-14
 
-#118 integrated #106's pushed `4f1ad06` checkpoint on
-`feature/dfsEV-118-training-reads-retention`. The combined fixed prefix is now
-**0001–0016**, including #118's immutable run inventory/dataset pins and #106's
-guarded codec inspection. Qualified compressed publication and full compressed consumer
-reconstruction remain unfinished.
+#118 integrates #106's frozen `dae2940` checkpoint with its `a6da525` audited
+invalidation implementation on `feature/dfsEV-118-training-reads-retention`.
+The combined frozen ordered prefix is **0001–0019**. #106's 0001–0018 SQL and catalog
+contracts remain byte-for-byte unchanged; 0019 is #118's only addition. Qualified
+compressed publication, binding/consumer reconstruction and dataset closure are
+fixture-backed. Combined final validation is recorded at the end of this document.
 Neither session has published a usable real feature or label.
 
 ## Fixed integration prefix
 
-Use the ordered **0001–0016** prefix in [migration-manifest.json](../db/migration-manifest.json).
-Released 0001–0011 and the integrated 0012–0015 remain byte-for-byte unchanged.
+Use the ordered **0001–0019** prefix in [migration-manifest.json](../db/migration-manifest.json).
+Released 0001–0011 and #106's frozen 0012–0018 remain byte-for-byte unchanged.
 For branch integration, keep #118's 0012 fixed:
 
 ```text
@@ -26,8 +27,11 @@ to this shared prefix use forward migrations.
 
 **0016 belongs to #118 dataset/pin DDL**, as authorized by the owner after
 #106 confirmed its complete prefix through 0015. The owner then confirmed
-**0016 is #118's complete next range; 0017 only is reserved for #106's qualified
-compressed publication.** Neither session should reserve
+**0016 is #118's complete integrated range; #106 owns 0017 qualified compressed
+publication and the owner subsequently allocated 0018 to #106 normalization,
+consumer evidence and retention integration, followed by 0019 to #118 audited
+invalidation.** #106 published the frozen 0001–0018 checkpoint at `dae2940`;
+Relay now finalizes 0019 against that prefix. Neither session should reserve
 a further range silently. Integrate by merge after preserving local work; do not rebase or
 cherry-pick duplicate copies of the prefix. Keep #106's binary artifact
 implementation when resolving shared files. Regenerate migration/catalog/
@@ -691,6 +695,51 @@ next number after #106's complete frozen prefix; this checkpoint reserves none.
 Deadlines/cancellation, representative capacity and independent review are also
 outstanding. The evidence checkpoint records the adversarial tests and final gates.
 
+## #118 provisional invalidation interface checkpoint
+
+The owner confirmed the 0018/#106 then 0019/#118 allocation. On the latest remote
+check #106 still ends at `9d8fde7`/0017. Relay's ordered migrations, schema,
+manifest, catalog contracts and readiness artifacts stay at 0001–0016. Reserved
+0019 lives in `db/migration-drafts/`, not the ordered migration directory. It is
+not finalized or ledger-applied. #106 can merge Relay's reader/API checkpoint
+without a migration-number collision; neither session should promote the draft
+before verifying it against the complete frozen prefix18.
+
+No shared artifact read/binary/hash, receipt-ingestion clock, quota or exact-address
+cleanup interface changes in this increment. Current rights and guards remain
+mandatory before source bytes; audit reads contain no source bytes. New public
+store methods are `recordTrainingInvalidation` and `readTrainingInvalidations`,
+using `qb-training-invalidation-v1` (separate from read-v1). Seven immutable
+run/dataset read or preparation/pin methods now throw `TrainingReadWithheldError`
+for eligible evidence refusals, with a canonical original error and explicit
+audit success/not-installed/failure. Older prefixes still withhold output and
+report `not-installed`; other error classes retain their existing behavior.
+
+The SQL design adds digest-only immutable addresses and append-only receipts,
+database clocks, indexed bounded snapshot history and first-occurrence
+deduplication. Authorized dataset/run deletion hooks record invalidation in the
+same transaction, including a removed shard's impact on its parent inventory.
+They use the existing authorization, preserve legacy retention counts/digests
+and avoid another full procedure copy. The diagnostic ceiling cannot block
+mandatory deletion. Historical receipts are diagnostics, not repair certificates,
+access grants or permanent dataset state; readers continue verifying evidence.
+
+Nine focused PostgreSQL cases pass, including restricted non-superuser reads and
+retention, damaged/missing files, audit failure, quota/concurrent retries, exact
+expiry, late deletion rollback and actual restoration of original synthetic
+database clocks/blobs followed by retention reapplication. Final provisional
+gates are in [predictive-training-evidence.md](predictive-training-evidence.md).
+Finalization still requires the published prefix18, catalog/readiness/bootstrap
+regeneration and integrated checks. Deadlines/cancellation, representative capacity
+and independent review remain #118 work. Both issues remain incomplete and
+#54 Part B is blocked; no persistent/hosted database was migrated.
+
+Final provisional validation passes 760 Node tests, 75 Node DB checks and 205
+PostgreSQL tests (180 mandatory predictive cases), all 17 existing prefix catalog
+contracts, typecheck and affected-file lint. The 36 frozen/generated prefix files
+match `86c141d`; local documentation links and whitespace pass. These gates cover
+the prefix16-plus-draft harness, not a completed prefix19 integration.
+
 Final validation passes 756 Node tests, 75 Node DB checks and 196 PostgreSQL tests
 (171 mandatory predictive cases), typecheck, affected-file lint and all 17 catalog
 contracts. Frozen/generated prefix files match `986bfed`. No new migration or
@@ -751,3 +800,109 @@ cases), 75 DB checks, 11 isolated worker checks, 19 catalog contracts, typecheck
 full lint, migration/readiness checks and whitespace checks. Only disposable
 local databases were migrated; the final gate removed its service and scratch data.
 #118 can finalize 0019 against this prefix; #106 reserves no further DDL.
+
+## 0019 combined integration and frozen checkpoint
+
+Relay integrates `dae2940` by merge, preserving branch history and both sessions'
+readers and tests. Migration 0018 matches the supplied SHA-256
+`58f0d5ae8cf11700d64370bf4dfdde8844dd2be6380935e103c84457a538de1e`.
+The former `a6da525` draft moves into the ordered chain as
+`0019_predictive_training_invalidations.sql`. Its failure vocabulary additionally
+recognizes the compressed source rights and wire/publication/inspection integrity
+errors introduced by the integrated reader. Resource/runtime/cancellation errors
+remain outside the evidence-invalidation vocabulary.
+
+Tests now apply 0019 through the actual migration runner and ledger. A populated
+prefix18 upgrade backfills exact inventory/manifest addresses, preserves the
+previous ledger/evidence and verifies idempotent reruns. Injected failure after
+the final catalog verification rolls back all 0019 DDL, addresses and ledger rows;
+the original dataset still replays. Fresh installation and every prior upgrade
+fixture now target the complete prefix19. The older-installation refusal case
+retains prefix18, where audit status stays explicitly `not-installed`.
+
+A new compressed-consumer regression uses the replay-only and retention-only
+logins. Damaged wire bytes and a mismatched stored decoded proof append sanitized
+reader diagnostics after rollback. Restored bytes/proof replay the same manifest.
+Revoked rights refuse before any binary read and yield a database-confirmed
+receipt. Mandatory deletion removes compressed bytes and the existing closure,
+while its digest-only audit survives. Existing text and exact-backup recovery
+cases remain mandatory. No binary storage, quota, codec worker or retention
+procedure is replaced by 0019.
+
+The combined final gate passes: **787 Node tests**, **75 DB checks + 229
+PostgreSQL tests** (204 mandatory predictive cases), **11 codec-worker checks**,
+all **20 catalog contracts**, typecheck and full lint. Logs are
+`/private/tmp/dfs118-schema19-db-clean.log` and
+`/private/tmp/dfs118-schema19-{node,types,lint,contracts}.log`.
+The bootstrap inventory ordering was corrected; three later wall-time timeouts
+passed focused rechecks before the clean full gate. No timeout was relaxed.
+
+0019 is now frozen with SHA-256
+`4b4502b2b1431faa753ee067a90998f247955437c55edd0db8bc47bfa196e568`.
+All 37 frozen SQL/catalog artifacts in #106's 0001–0018 prefix match `dae2940`
+byte for byte. No migration after 0019 is reserved by this checkpoint. All databases used here
+are disposable/local. #118 still needs deadlines/cancellation, representative
+capacity evidence and independent review; both issues remain incomplete and
+#54 Part B stays blocked by real-source and population qualification.
+
+
+## #118 execution-control increment after the frozen prefix
+
+Frozen 0001–0019 integration is pushed at `2aee941`; #106's 0001–0018 artifacts
+remain byte-for-byte unchanged. The next #118 increment adds optional execution
+controls to the training APIs, with no DDL or new migration reservation. Text and
+binary artifact reads now accept an optional fourth `{ signal }` argument; their
+existing three-argument behavior and exact-address integrity checks are retained.
+Guarded compressed reads receive the parent signal and remaining operation time,
+while current rights, wire quotas and decoded-work ceilings remain in force.
+
+Training methods use one cumulative 10/30-second execution budget. Interrupted
+sessions are cancelled through a bounded same-login connection that checks the
+original PID/start time, database and user, then retired. Reconnect and retry
+immutable IDs after interruption; a commit-boundary disconnect can have unknown
+commit outcome. Native local file reads are cooperatively cancelled between
+syscalls, and codec/session cleanup is drained before settlement. No claims of
+hard OS preemption, real-source capacity or training readiness are made.
+
+The increment passes 81 affected PostgreSQL cases, 792 Node tests plus the
+focused artifact/controller regression, report-contract checks, typecheck and
+lint. It preserves all 39 frozen SQL/catalog artifacts. The 229-case full database
+gate belongs to `2aee941`; it is not claimed to have been repeated for this reader
+increment.
+
+See [the execution contract](predictive-training-handoff.md#training-execution-deadlines-and-interrupted-recovery)
+and [the evidence checkpoint](predictive-training-evidence.md).
+Next gates are representative capacity and independent review. No migration
+after 0019 is reserved.
+
+## #106 adoption of frozen schema 19 and interrupted-read recovery
+
+#106 integrates Relay's `2aee941` and `c1edc8e` on top of its real-evidence
+intake checkpoint `f26e05b`. The merge is conflict-free. All 36 SQL/catalog
+files for 0001–0018 remain byte-for-byte equal to `dae2940`; 0019 matches
+the frozen SHA-256
+`4b4502b2b1431faa753ee067a90998f247955437c55edd0db8bc47bfa196e568`.
+No migration after 0019 is allocated or added.
+
+The optional fourth artifact-read argument reaches gzip wire reads as well as
+native JSON/CSV reads. Guarded decoding receives the training operation's signal
+and remaining deadline, preserving its independent wire/decoded/row limits and
+fresh rights checks. Interrupted training sessions are retired; recovery uses a
+fresh connection and the original immutable request IDs. A commit-boundary
+interruption must be treated as an unknown commit outcome until exact retry or
+read resolves it. Older individual source APIs do not acquire training execution
+controls merely because they share the store implementation.
+
+Focused integration validation passes: 49 PostgreSQL cases covering compressed
+bindings/publication/consumers, invalidation and cancellation/recovery; 575
+predictive Node cases; two isolated decoder cancellation/deadline cases; six
+report-contract cases; typecheck, affected-file lint, migration/readiness and
+whitespace checks. The PostgreSQL run took 196.61 seconds. This is an affected
+integration pass, not a repeat of Relay's 229-case full database gate. Only the
+disposable local PostgreSQL service was used.
+
+#106's real-evidence qualification gates and unresolved Week 18 participation
+remain as documented in `predictive-106-real-slice.md`. Neither this merge nor
+the passing synthetic cases establishes real features, final labels, capacity
+or #54 Part B readiness. Relay continues capacity validation and independent
+review; #106 reserves no additional DDL.
