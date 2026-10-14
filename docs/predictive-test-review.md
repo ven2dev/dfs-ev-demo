@@ -646,3 +646,53 @@ no competing consumer commits. Existing guarded evidence tests separately
 exercise revocation/retention races and scheduled rights changes. These prove
 preview behavior only; they do not establish durable SQL split enforcement,
 training readiness, pins, rights after later access or real-source qualification.
+
+## #118 immutable SQL inventory tests (0014, 2026-10-13)
+
+Seven mandatory PostgreSQL cases exercise actual store and direct SQL calls
+through non-superuser logins. The inventory case independently specifies B as
+the latest feature, another player's missing slot, canonical shard order and
+partition counts. It checks database-clock bounds and hashes without invoking
+SQL selection again. Recording C afterward cannot change the retry/read result.
+No file is opened and no numerical payload is returned. Identity/model/fold
+changes refuse; cross-run walk-forward reuse has explicit correlated counts,
+while fixed-holdout event reuse refuses.
+
+The direct SQL case bypasses application normalization and tests an unapproved
+history hash, forged/unobserved kickoff, wrong exact feature scope, future label
+clock, null policy/player fields, run/shard limits, cross-shard duplicate targets
+and same-game training/evaluation overlap across players. Each failure must
+leave zero run and identity rows. A separate direct SQL probe registers 15
+additional permitted profiles, combines them with the original selected feed,
+and supplies a cutoff-visible kickoff from a seventeenth profile. All consumers
+are missing in that expanded scope. The total-profile guard must refuse; without
+it the probe produced a sealed inventory, confirming that selected-feed bounds
+alone were insufficient. The concurrency case holds a real transaction,
+requires the second preparer to time out, then verifies an idempotent retry and
+late-shard refusal after commit.
+
+The missing-consumer deletion case has protected schedule/context evidence but
+no features/labels. A narrow provider request still erases the pending inventory
+through an execute-only retention owner. Expected counts and the independently
+constructed training-run ID digest are explicit. Legacy counts remain separate;
+digest-only audit retains no raw run IDs. Reusing the erased run or adding a new
+fold under its erased plan refuses. The rights case damages only profile links
+with superuser harness controls, proves closure refusal, restores them and then
+revokes current model-input rights to prove the independent access gate.
+
+Recovery injects a real failure during run deletion and checks that run,
+retention event and supplemental audit all roll back. A successful deletion
+then re-applies to a fresh registered database reconstructed with the same IDs,
+despite newer receipt/snapshot clocks; both audit digests/counts must match.
+This establishes reconstruction/reapply behavior, not a physical production
+backup procedure. The v13 upgrade case compares the old ledger and consumer
+hashes/clocks byte-for-byte, replays before/after through restricted roles,
+refuses private evidence-guard access and requires a migration no-op rerun.
+
+The first full gate found two stale existing test setups. Bootstrap's complete
+table list now includes all six inventory/audit tables. Privileged append-only
+and foreign-key probes now cite the existing `expiry-1` retention event rather
+than a nonexistent `probe`; the new hook validates event existence before those
+probes. The role-denial probes still use the invalid event and must refuse
+execution before authorization. Neither correction changes production SQL or
+weakens the asserted immutable/FK boundaries.

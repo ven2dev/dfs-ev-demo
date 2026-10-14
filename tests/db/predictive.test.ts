@@ -509,7 +509,7 @@ it("predictive archive restoration recreates the same cutoff bundles in fresh sc
   const root = await realpath(await mkdtemp(join(tmpdir(), "dfs-ev-predictive-restore-")));
   try {
     const captured = await runLocalProof(["demo", "--artifact-root", root], process.env);
-    expect(captured).toMatchObject({ schemaVersion: 13, earlierReplayUnchanged: true, restoredReplayUnchanged: true });
+    expect(captured).toMatchObject({ schemaVersion: 14, earlierReplayUnchanged: true, restoredReplayUnchanged: true });
     const restored = await runLocalProof(["restore", "--artifact-root", root, "--archive", captured.archive.reference,
       "--archive-bytes", String(captured.archive.byteSize)], process.env);
     expect(restored.capturedA).toEqual(captured.capturedA); expect(restored.laterB).toEqual(captured.laterB);
@@ -525,10 +525,10 @@ it("predictive v2 upgrade preserves application rows and no-op migrations preser
       await client.query("INSERT INTO creators (channel_name) VALUES ('Synthetic v2 survivor')");
       const before = (await client.query("SELECT * FROM creators")).rows;
       const historical = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 13, executed: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13] });
+      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 14, executed: [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] });
       expect((await client.query("SELECT * FROM creators")).rows).toEqual(before);
       const upgraded = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
-      expect(upgraded.slice(0, 2)).toEqual(historical); expect(upgraded).toHaveLength(13);
+      expect(upgraded.slice(0, 2)).toEqual(historical); expect(upgraded).toHaveLength(14);
       expect(upgraded[2]).toMatchObject({ version: 3, filename: "0003_predictive_evidence.sql", provenance: "executed" });
       expect(upgraded[3]).toMatchObject({ version: 4, filename: "0004_creator_corpus_projection.sql", provenance: "executed" });
       expect(upgraded[4]).toMatchObject({ version: 5, filename: "0005_predictive_source_claims.sql", provenance: "executed" });
@@ -536,7 +536,7 @@ it("predictive v2 upgrade preserves application rows and no-op migrations preser
       expect(upgraded[6]).toMatchObject({ version: 7, filename: "0007_predictive_unavailable_bindings.sql", provenance: "executed" });
       expect(upgraded[7]).toMatchObject({ version: 8, filename: "0008_predictive_source_witnesses.sql", provenance: "executed" });
       expect(upgraded[8]).toMatchObject({ version: 9, filename: "0009_predictive_source_decisions.sql", provenance: "executed" });
-      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 13, executed: [] });
+      expect(await runScratchMigrations(client, options)).toMatchObject({ schemaVersion: 14, executed: [] });
       expect((await client.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
     });
   } finally { await harness.close(); }
@@ -1263,9 +1263,12 @@ it("predictive retention expires unpinned feature runs with digest-only audit an
       await expect(client.query("DELETE FROM predictive_observations WHERE id='player-correction-B'")).rejects.toMatchObject(appendOnly);
     });
     // Audit rows stay immutable even inside an authorized transaction.
+    // Use a real event: the training hook validates the authorization's event
+    // before the append-only/FK probes run. A nonexistent event is not a valid
+    // authorization, even when the disposable harness is superuser.
     for (const sql of ["DELETE FROM predictive_retention_events", "UPDATE predictive_retention_events SET authority='x'"]) {
       await sqlProbe(client, async () => {
-        await client.query("INSERT INTO predictive_retention_authorizations (txid,retention_event_id) VALUES (pg_current_xact_id(),'probe')");
+        await client.query("INSERT INTO predictive_retention_authorizations (txid,retention_event_id) VALUES (pg_current_xact_id(),'expiry-1')");
         await expect(client.query(sql)).rejects.toMatchObject(appendOnly);
       });
     }
@@ -1273,11 +1276,11 @@ it("predictive retention expires unpinned feature runs with digest-only audit an
     // chain descendant or a link fails.
     const predecessor = (await client.query("SELECT predecessor_id FROM predictive_observations WHERE id='team-correction-B'")).rows[0].predecessor_id;
     await sqlProbe(client, async () => {
-      await client.query("INSERT INTO predictive_retention_authorizations (txid,retention_event_id) VALUES (pg_current_xact_id(),'probe')");
+      await client.query("INSERT INTO predictive_retention_authorizations (txid,retention_event_id) VALUES (pg_current_xact_id(),'expiry-1')");
       await expect(client.query("DELETE FROM predictive_observations WHERE id=$1", [predecessor])).rejects.toMatchObject({ code: "23503" });
     });
     await sqlProbe(client, async () => {
-      await client.query("INSERT INTO predictive_retention_authorizations (txid,retention_event_id) VALUES (pg_current_xact_id(),'probe')");
+      await client.query("INSERT INTO predictive_retention_authorizations (txid,retention_event_id) VALUES (pg_current_xact_id(),'expiry-1')");
       await client.query("DELETE FROM predictive_artifact_observations WHERE observation_id=$1", [predecessor]);
       await client.query("DELETE FROM predictive_observations WHERE id=$1", [predecessor]);
       await expect(client.query("SET CONSTRAINTS ALL IMMEDIATE")).rejects.toMatchObject({ code: "23503" });

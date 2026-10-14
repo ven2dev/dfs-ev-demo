@@ -71,6 +71,12 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
       "predictive_source_stats_revisions",
       "predictive_source_stats_rows",
       "predictive_teams",
+      "predictive_training_retention_audits",
+      "predictive_training_run_events",
+      "predictive_training_run_identities",
+      "predictive_training_run_profiles",
+      "predictive_training_run_slots",
+      "predictive_training_runs",
       "sync_state",
     ]);
     const historySql = "SELECT * FROM public.db_migrations ORDER BY version";
@@ -89,6 +95,7 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
       { version: 11, provenance: "executed", sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
       { version: 12, provenance: "executed", sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
       { version: 13, provenance: "executed", sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
+      { version: 14, provenance: "executed", sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
     ]);
     await client.query(`INSERT INTO live_prop_inputs_cache (sport_key, event_id, market_key, player_name)
       VALUES ('synthetic-bootstrap', 'synthetic-event', 'player_pass_yds', 'Synthetic Player')`);
@@ -96,7 +103,7 @@ it("bootstraps the full application schema twice on PostgreSQL 18", async () => 
     const result = await bootstrapTestDatabase();
     expect(result.first.executed).toEqual([]);
     expect(result.repeat.executed).toEqual([]);
-    expect(result.repeat.schemaVersion).toBe(13);
+    expect(result.repeat.schemaVersion).toBe(14);
     expect((await client.query(historySql)).rows).toEqual(history);
     expect((await client.query("SELECT * FROM live_prop_inputs_cache")).rows).toEqual(rows);
   });
