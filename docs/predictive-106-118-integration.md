@@ -481,3 +481,27 @@ tests (160 mandatory predictive cases), typecheck, affected-file lint and all 17
 catalog contracts pass. Frozen 0001–0015 and their contracts/ledger remain
 unchanged from `84945bf`. Only disposable databases ran 0016. The evidence
 checkpoint records the corrected host/database-clock test fixture and log paths.
+
+## #106 accepted frozen schema-16 base (2026-10-14)
+
+The owner relayed #118's confirmation: 0016 is its complete next migration
+range, and **0017 only is reserved for #106**. Relay's frozen checkpoint
+`2f57d12` is integrated at `379a095`. Its 0016 SHA-256 matches the recorded
+`fd0e99ae3b3cc5f2dedb019d6d35fe3fe41d27b960179a91599496f8b0492883`.
+The shared prefix is now **0001–0016**; no migration in that prefix was edited.
+This supersedes the earlier pending-prefix statements above.
+
+The only merge conflict was the handoff document; both sessions' sections were
+retained. Assigned-shard/dataset/pin behavior and #106's binary, worker,
+inspection, complete-claim and publication-preparation interfaces are preserved.
+Combined validation passes 757 Node tests, all 11 real worker checks, 75 Node DB
+checks, 188 PostgreSQL tests (163 mandatory predictive cases), all 17 catalog
+contracts, typecheck, full lint and whitespace checks. The disposable database
+was removed after the gate. No hosted database was migrated.
+
+The allocation/base dependency is resolved. The next implementation remains
+0017's qualified raw compressed publication and independently verified replay,
+following the publication requirements above. It is not implemented or activated
+by this integration checkpoint. Canonical/consumer activation, usable real
+features/labels and source-evidence qualifications remain outstanding. Any
+migration after 0017 requires coordination in this chat.
