@@ -16,6 +16,7 @@ import type { TrainingRunInventory } from "../../src/lib/predictive/trainingRuns
 import type { TrainingDatasetManifest } from "../../src/lib/predictive/trainingDatasets.ts";
 import { seedCapacity, runRequest } from "./trainingCapacityFixtures.ts";
 import { createScratchHarness } from "./scratch.mjs";
+import { compareTrainingCapacity } from "./trainingCapacityComparison.ts";
 
 type Store = Awaited<ReturnType<typeof createLocalPredictiveStore>>;
 type Target = { expected: object; assertTarget: (config: object) => void };
@@ -80,6 +81,7 @@ const measure = async <T>(client: Client, target: Target, artifacts: PrivateArti
 };
 
 it("measures independent QB training records with default budgets and exact evidence", async () => {
+  if (process.env.PREDICTIVE_CAPACITY_INTERLEAVED === "1") { await compareTrainingCapacity(); return; }
   const max = Number(process.env.PREDICTIVE_CAPACITY_MAX_ROWS ?? 64);
   if (![1, 16, 64].includes(max)) throw new Error("capacity-size-refused");
   const reviewDrafts = process.env.PREDICTIVE_CAPACITY_REVIEW_DRAFTS === "1";

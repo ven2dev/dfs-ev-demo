@@ -23,6 +23,7 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "scratch snapshots clone only registered disposable targets and isolate later writes",
   "QB review liveness draft removes an earlier pinned dataset when deletion widens through a later provider correction",
   "QB review liveness draft acquires the shared retention lock before table guards and permits concurrent readers",
   "QB indexed closure draft preserves sealed CSV and gzip history rights and original capture membership",

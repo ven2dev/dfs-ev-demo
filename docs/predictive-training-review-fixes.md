@@ -5,6 +5,14 @@ The fix branch is `fix/dfsEV-118-foundation-review`, starting at
 #118 at `9cf2a8f`; the intervening commit changed evidence and documentation,
 not the affected runtime or SQL. This document tracks fixes, not approval.
 
+The independent read-only re-review of `938fa00..93399ec` accepted the
+application fixes, the three draft SQL repairs and the regression reasoning.
+It ran no tests or benchmarks and required a report correction: all completed
+preparation calls in the retained draft run were slower than the original
+baseline, and 16-row dataset preparation lost completion. The
+[capacity report](predictive-training-capacity.md) now discloses that comparison.
+Correctness acceptance does not approve performance or promote the drafts.
+
 ## Shared foundation scope exception
 
 The owner approved a deliberate exception to one branch per issue: land the
@@ -135,6 +143,32 @@ while preserving current rights/deletion checks, rather than raised deadlines.
 See the [capacity report](predictive-training-capacity.md) for the complete
 scope, warm-run limits and omitted operations. The aggregate correctness gate
 has not been rerun or claimed green.
+
+## Capacity report correction and paired comparison
+
+The [interleaved evidence](evidence/predictive-training-capacity64-interleaved-review-drafts-2026-10-14.json)
+compares the pinned `938fa00` runtime against `93399ec` plus unchanged proposals,
+using one checked 64-QB seed and four isolated clones in baseline/draft/draft/
+baseline order. It records source/benchmark/SQL hashes and per-query groups.
+Two trials per version show nearly unchanged run preparation, about 7.1% slower
+one-row dataset preparation, and two 16-row dataset deadline refusals per
+version. Warm closure probes are about seven times slower with the draft,
+with exact closure and protected-use parity at both widths. The old broad
+34–39% slowdown is not reproduced, but the closure regression is repeatable.
+0023 must be optimized before promotion; no proposal SQL changed in this
+reporting increment. See the [capacity report](predictive-training-capacity.md)
+for ranges, attribution limits and reproduction.
+
+The paired diagnostic completes in 805.8 seconds, including 574.2 seconds of
+checked setup. Its 12 completed preparations and four refusals are not a green
+capacity gate; it does not repeat numerical page/label reads. A separate one-QB
+smoke comparison and the registered-snapshot isolation/refusal regression pass.
+The latter is now a required named database case. Six report-contract cases,
+typecheck, affected ESLint and frozen SQL/catalog equality checks pass. There is
+no new application or SQL change, so the previous affected correctness results
+remain relevant; no aggregate database gate was repeated. #106's frozen 0021
+integration, dependency/table-list rechecks, successful capacity gates and final
+aggregate validation remain outstanding.
 
 ## Merge gates
 

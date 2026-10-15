@@ -23,9 +23,13 @@ export async function createScratchHarness(environment) {
   }
   return {
     assertTarget,
-    async withDatabase(run) {
+    async withDatabase(run, { template } = {}) {
+      // Only an owned, still-registered scratch database may be snapshotted.
+      // Its connections must be closed before PostgreSQL permits the clone.
+      if (template !== undefined) assertTarget(template);
       const name = "dfs_ev_test_" + randomBytes(10).toString("hex");
-      await admin.query(`CREATE DATABASE "${name}"`);
+      await admin.query(template === undefined ? `CREATE DATABASE "${name}"` :
+        `CREATE DATABASE "${name}" TEMPLATE "${template.database}"`);
       active.add(name);
       const config = Object.freeze({ ...base, database: name });
       const client = new Client(config);

@@ -1,5 +1,28 @@
 # #118 guarded evidence checkpoint
 
+## Paired capacity report correction
+
+Independent re-review accepted the correctness fixes through `93399ec` and
+required the capacity report to disclose the draft slowdown. The
+[corrected report](predictive-training-capacity.md) now preserves the original
+comparison and the [controlled ABBA record](evidence/predictive-training-capacity64-interleaved-review-drafts-2026-10-14.json):
+one 64-QB/eight-profile seed, four disposable clones, exact historical/current
+runtime hashes and unchanged proposal hashes. Run preparation is nearly
+unchanged; one-row dataset preparation is about 7.1% slower with drafts;
+both versions refuse 16-row preparation twice. Warm SQL closure probes are
+about seven times slower with exact closure parity. 0023 remains a draft and
+needs optimization; the old blanket 34–39% slowdown is not reproduced.
+
+The diagnostic completes (12 preparations, four refusals) without demonstrating
+numerical page/label capacity. Snapshot isolation/refusal, a one-QB comparison,
+six report-contract checks, typecheck and affected ESLint pass. The snapshot
+regression is a required named case. Frozen ordered SQL/catalog files and all
+three proposals remain unchanged; only benchmark infrastructure and reporting
+changed. The full aggregate gate remains for the integrated candidate after
+#106's frozen 0021, dependency coverage and successful capacity gates. Local
+working log: `/private/tmp/dfs118-interleaved64.log`. #118 is incomplete and
+#54 Part B remains blocked.
+
 ## Review fixes in progress
 
 Checkpoint `87e5206` contains tested reserved SQL proposals for deletion/lock

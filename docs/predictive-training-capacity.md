@@ -6,6 +6,73 @@ one consumer body. It does not qualify real sources, historical availability,
 population coverage or #54 Part B. The prior shared-context measurement remains
 in [the evidence log](predictive-training-evidence.md).
 
+## Interleaved baseline/draft comparison — 2026-10-14
+
+The [paired evidence](evidence/predictive-training-capacity64-interleaved-review-drafts-2026-10-14.json)
+compares the archived `938fa00` runtime with `93399ec` and the unchanged
+0022–0024 proposals. It seeds the 64-QB/eight-profile fixture once, then runs
+baseline → drafts → drafts → baseline on four clones of that immutable seed.
+All trials use the same process, dependencies, artifact bytes and machine;
+each API gets a fresh restricted connection. Frozen 0001–0020, current-rights
+checks and the normal 10/30-second deadlines are unchanged. The evidence pins
+the runtime revisions, source/benchmark hashes and every SQL proposal hash.
+
+**The one-row dataset regression persists, at about 7% in this comparison.
+The earlier 34–39% slowdown across all completed calls is not reproduced.**
+These are two observations per version, not statistical capacity guarantees:
+
+| Preparation | Baseline range (median) | Draft range (median) | Result |
+| --- | ---: | ---: | --- |
+| Run, 1 row | 2.026–2.097 s (2.062 s) | 2.033–2.148 s (2.091 s) | All complete; overlapping ranges |
+| Dataset, 1 row | 13.939–14.180 s (14.060 s) | 14.978–15.131 s (15.055 s) | All complete; draft median about 7.1% slower |
+| Run, 16 rows | 7.910–7.969 s (7.940 s) | 7.930–7.977 s (7.954 s) | All complete; overlapping ranges |
+| Dataset, 16 rows | Refused at 30.019–30.023 s | Refused at 30.020–30.024 s | Both versions refuse twice |
+
+The original retained baseline did complete 16-row preparation, as recorded
+below. Both baseline trials now refuse it, so this comparison does not reproduce
+a completion difference attributable to the drafts. The workload remains close
+to or beyond its limit in both versions; a timeout is a censored observation,
+not a completed 30-second duration.
+
+The SQL closure regression is clearer. After excluding each trial/width's first
+probe, one-member closure takes **52.4–54.3 ms baseline versus 377.5–407.4 ms
+draft**. At 16 members it takes **52.2–54.3 ms versus 377.1–384.7 ms**. Warm
+median ratios are about 7.3× and 7.1×. Warm shared-buffer hits rise from
+379 to 3,450–3,456 at width1 and from 359 to 4,306 at width16. All 24 probes
+preserve exactly the same closure: 381 references / 17 blobs at width1 and
+476 references / 32 blobs at width16, including identical protected uses.
+The successful one-row sealed manifests also match those closures.
+
+Each completed call has identical client statement counts across versions:
+nine for run preparation and 3,645 for one-row dataset preparation. The single
+`predictive_prepare_training_dataset` call rises from 531–540 ms to
+1,521–1,537 ms, close to the end-to-end increase. This localizes reproducible
+extra cost to the database preparation path, consistent with the closure probes;
+it does not establish whether planning, JIT or per-node execution dominates.
+The grouped timings include client queue wait, not just server CPU, and their
+sums must not be interpreted as independent elapsed-time shares. Both versions'
+one-row preparation also makes 1,052 compressed-inspection queries and 311
+rights-authorization queries: repeated application work remains another target.
+
+**Do not promote 0023 as a performance improvement.** Its exact indexed
+dependency traversal needs further profiling and optimization before promotion;
+retain the approved deletion, lock-order and rights guarantees. The comparison
+records 12 completed preparations and four refusals. Its diagnostic test passes
+because the comparison and parity assertions complete; it is not a capacity gate
+pass. It does not repeat numerical pages, standalone labels or width64, whose
+last full matrix still fails. Full histories and representative file sizes are
+also unproven.
+
+Setup takes 574.2 s; the complete comparison takes 805.8 s. Database clones
+isolate trial writes but do not reset operating-system caches, thermal state
+or background host load. Trial order reduces a simple time trend; two samples
+cannot resolve all noise. The bundle includes both reviewed application changes
+and all three SQL proposals, so API differences cannot be assigned exclusively
+to 0023. The separate closure probes compare the SQL implementations directly.
+A pg concurrent-query deprecation warning remains; this does not demonstrate
+compatibility with pg@9. #54 Part B remains blocked by capacity and missing
+qualified real evidence.
+
 ## Review drafts on prefix20 — 2026-10-14
 
 The [review-draft matrix](evidence/predictive-training-capacity64-review-drafts-2026-10-14.json)
@@ -14,6 +81,29 @@ chain. It records each proposal hash separately; 0021 is unavailable and no
 combined catalog approval is implied. All frozen migrations and application
 deadlines remain unchanged. This is one warm local sample, not a controlled
 performance comparison or an operating-capacity approval.
+
+The draft run is **observably slower than the retained `938fa00` baseline** on
+the same fixture and machine. All completed preparation calls take longer;
+16-row dataset preparation now refuses where the baseline completed:
+
+| Preparation | Baseline | With drafts | Observed change |
+| --- | ---: | ---: | ---: |
+| Run, 1 row | 1.53 s | 2.05 s | about 34% slower |
+| Dataset, 1 row | 10.88 s | 15.12 s | about 39% slower |
+| Run, 16 rows | 5.86 s | 8.00 s | about 37% slower |
+| Dataset, 16 rows | 23.41 s, completed | refused at 30.02 s | completion lost |
+
+The three completed calls have identical client SQL statement counts in the
+two runs, so the slowdown is not explained by more client statements in those
+calls. Equal statement counts do not establish that each statement became
+slower; server work, client work and contention are not yet separated. Run
+preparation does not use the closure but slowed similarly, which is evidence
+against assigning the whole difference to 0023. Per-node PL/pgSQL traversal is
+also a possible added cost. The runs were not interleaved, so workload noise
+and draft overhead cannot be separated by these two runs alone. The interleaved
+comparison above now isolates a repeatable closure/preparation regression;
+0023 remains unpromoted. The original record establishes a failed gate, not a
+performance improvement.
 
 **The strict capacity gate fails: three measured operations complete and six
 refuse. No numerical page or final-label read completes.** The benchmark now
@@ -259,6 +349,29 @@ and a private temporary artifact directory, validates the complete catalog,
 then removes both. It does not reset the primary harness database. This test is
 outside the normal correctness gate; changes to parsing, recorders or readers
 need their own affected correctness cases.
+
+For the focused interleaved comparison, archive the pinned historical runtime
+outside the repository and share only the installed dependencies. The comparison
+checks every archived source/script/target file against its Git blob before
+importing it:
+
+```sh
+capacity_baseline=$(mktemp -d /private/tmp/dfs118-baseline.XXXXXX)
+git archive 938fa00ccac61fed9222e4fedb4bec96547b1941 src scripts tests/db/target.mts | tar -xf - -C "$capacity_baseline"
+ln -s "$PWD/node_modules" "$capacity_baseline/node_modules"
+TEST_DATABASE_URL='postgresql://dfs_ev_test:dfs_ev_test@[::1]:54329/dfs_ev_test' PREDICTIVE_CAPACITY_INTERLEAVED=1 PREDICTIVE_CAPACITY_MAX_ROWS=64 PREDICTIVE_CAPACITY_BASELINE_ROOT="$capacity_baseline" npm run bench:predictive:training
+```
+
+This mode seeds once, clones registered disposable snapshots, and measures
+baseline → drafts → drafts → baseline in one process. Each trial analyzes the
+same initial rows; each API uses a fresh restricted connection. Three guarded
+closure probes at each width precede dataset preparation and check exact
+reference/blob/rights parity. It records the four preparation comparisons at
+widths 1/16, not the full matrix or numerical reads. A successful diagnostic
+test means the comparison completed and its assertions held; deadline refusals
+remain failures to demonstrate capacity. Use the separate require-complete
+matrix for capacity approval. Snapshots and private artifacts are removed on
+completion; the archived source directory can be removed afterward.
 
 ## Workload and interpretation
 
