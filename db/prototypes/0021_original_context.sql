@@ -1,4 +1,4 @@
--- Scratch-only 0021 prototype. Not an ordered migration or a canonical writer.
+-- Scratch-only 0021 prototype. Not an ordered migration or a qualified consumer path.
 -- Original-byte replay remains mandatory; a raw ingest seal is not authority.
 CREATE TABLE public.predictive_context_captures (
   capture_id text PRIMARY KEY REFERENCES public.predictive_captures(id) ON DELETE CASCADE,
@@ -9,6 +9,46 @@ CREATE TABLE public.predictive_context_captures (
   recorded_at timestamptz NOT NULL DEFAULT date_trunc('milliseconds',clock_timestamp())
     CHECK(isfinite(recorded_at) AND recorded_at=date_trunc('milliseconds',recorded_at))
 );
+CREATE TABLE public.predictive_context_associations (
+  capture_id text PRIMARY KEY REFERENCES public.predictive_context_captures(capture_id) ON DELETE CASCADE,
+  artifact_id text NOT NULL UNIQUE REFERENCES public.predictive_artifacts(id),
+  basis jsonb NOT NULL, association_sha256 text NOT NULL CHECK(association_sha256~'^[a-f0-9]{64}$'),
+  recorded_at timestamptz NOT NULL DEFAULT date_trunc('milliseconds',clock_timestamp())
+    CHECK(isfinite(recorded_at) AND recorded_at=date_trunc('milliseconds',recorded_at))
+);
+CREATE TABLE public.predictive_context_association_audits (
+  event_id text NOT NULL REFERENCES public.predictive_retention_events(id),
+  capture_digest text NOT NULL CHECK(capture_digest~'^[a-f0-9]{64}$'),
+  removed_observations integer NOT NULL CHECK(removed_observations BETWEEN 2 AND 512),
+  removed_ids_digest text NOT NULL CHECK(removed_ids_digest~'^[a-f0-9]{64}$'), PRIMARY KEY(event_id,capture_digest)
+);
+CREATE FUNCTION public.predictive_context_association_immutable() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE event text; ids jsonb;
+BEGIN
+  IF TG_OP='DELETE' AND pg_has_role(session_user,'predictive_retention_owner','MEMBER') THEN
+    SELECT retention_event_id INTO event FROM public.predictive_retention_authorizations WHERE txid=pg_current_xact_id();
+    IF event IS NOT NULL THEN
+      SELECT jsonb_agg(id ORDER BY id COLLATE "C") INTO ids FROM (
+        SELECT value->'schedule'->>'id' AS id FROM jsonb_array_elements(OLD.basis->'bindings')
+        UNION SELECT value->'bridge'->>'id' FROM jsonb_array_elements(OLD.basis->'bindings')) x;
+      INSERT INTO public.predictive_context_association_audits VALUES(event,public.predictive_source_digest(to_jsonb(OLD.capture_id)),
+        jsonb_array_length(ids),public.predictive_source_digest(ids));
+      RETURN OLD;
+    END IF;
+  END IF;
+  RAISE EXCEPTION 'context-association-append-only' USING ERRCODE='23514';
+END $$;
+CREATE TRIGGER predictive_context_association_immutable BEFORE UPDATE OR DELETE ON public.predictive_context_associations
+ FOR EACH ROW EXECUTE FUNCTION public.predictive_context_association_immutable();
+CREATE TRIGGER predictive_context_association_no_truncate BEFORE TRUNCATE ON public.predictive_context_associations
+ FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_context_association_immutable();
+CREATE TRIGGER predictive_context_association_audit_immutable BEFORE UPDATE OR DELETE ON public.predictive_context_association_audits
+ FOR EACH ROW EXECUTE FUNCTION public.predictive_retention_audit_immutable();
+CREATE TRIGGER predictive_context_association_audit_no_truncate BEFORE TRUNCATE ON public.predictive_context_association_audits
+ FOR EACH STATEMENT EXECUTE FUNCTION public.predictive_retention_audit_immutable();
+REVOKE ALL ON public.predictive_context_associations,public.predictive_context_association_audits FROM PUBLIC;
+
 CREATE TABLE public.predictive_context_retention_audits (
   event_id text NOT NULL REFERENCES public.predictive_retention_events(id),
   capture_digest text NOT NULL CHECK(capture_digest~'^[a-f0-9]{64}$'), removed_rows integer NOT NULL CHECK(removed_rows BETWEEN 1 AND 80000),
@@ -45,7 +85,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
 DECLARE clock text;
 BEGIN
   clock:=public.predictive_training_read_guard_prefix20();
-  LOCK TABLE public.predictive_context_captures IN SHARE MODE;
+  LOCK TABLE public.predictive_context_captures,public.predictive_context_associations IN SHARE MODE;
   RETURN clock;
 END $$;
 -- Extend the existing memo's dependency set through forward DDL. No prior file
@@ -54,7 +94,7 @@ DO $extend$ DECLARE definition text; needle text:='''predictive_compressed_inspe
   definition:=pg_get_functiondef('public.predictive_training_memo_ready()'::regprocedure);
   IF (length(definition)-length(replace(definition,needle,'')))/length(needle)<>1 THEN
     RAISE EXCEPTION 'context-memo-prefix-refused'; END IF;
-  EXECUTE replace(definition,needle,'''predictive_compressed_inspections'',''predictive_compressed_publications'',''predictive_context_captures'']');
+  EXECUTE replace(definition,needle,'''predictive_compressed_inspections'',''predictive_compressed_publications'',''predictive_context_captures'',''predictive_context_associations'']');
 END $extend$;
 
 CREATE FUNCTION public.predictive_context_profile_valid(artifact text) RETURNS boolean
@@ -78,7 +118,7 @@ BEGIN
   IF NOT pg_has_role(session_user,'predictive_ingest','MEMBER') THEN RAISE EXCEPTION 'context-not-authorized' USING ERRCODE='42501'; END IF;
   PERFORM pg_advisory_xact_lock(520052,1);
   PERFORM public.predictive_training_read_guard();
-  LOCK TABLE public.predictive_context_captures IN SHARE ROW EXCLUSIVE MODE;
+  LOCK TABLE public.predictive_context_captures,public.predictive_context_associations IN SHARE ROW EXCLUSIVE MODE;
   RETURN public.predictive_source_time(date_trunc('milliseconds',clock_timestamp()));
 END $$;
 CREATE FUNCTION public.predictive_context_access(profile text,captured timestamptz) RETURNS void
@@ -252,7 +292,8 @@ BEGIN
     'ingestedAt',public.predictive_source_time(c.ingested_at),'artifactId',a.id,'profileId',a.profile_id,'wireSha256',b.sha256,
     'wireBytes',b.byte_size,'storageRef',b.storage_ref,'origin',a.origin,'providerEtag',a.provider_etag,'providerLastModified',a.provider_last_modified,
     'releaseUpdatedAt',CASE WHEN a.release_updated_at IS NULL THEN NULL ELSE public.predictive_source_time(a.release_updated_at) END,
-    'seasonRange',s.season_range,'claims',s.claims,'claimsSha256',s.claims_sha256,'recordedAt',public.predictive_source_time(s.recorded_at))
+    'seasonRange',s.season_range,'claims',s.claims,'claimsSha256',s.claims_sha256,'recordedAt',public.predictive_source_time(s.recorded_at),
+    'hasAssociations',EXISTS(SELECT 1 FROM public.predictive_context_associations links WHERE links.capture_id=c.id))
     ,a.profile_id,c.captured_at INTO result,profile,captured FROM public.predictive_context_captures s
     JOIN public.predictive_captures c ON c.id=s.capture_id JOIN public.predictive_artifacts a ON a.id=c.artifact_id
     JOIN public.predictive_blobs b ON b.sha256=a.blob_sha256 WHERE c.id=predictive_read_context_capture.id;
@@ -261,13 +302,129 @@ BEGIN
   RETURN result;
 END $$;
 
--- Until canonical association authentication is implemented, the new parser
--- cannot use the ordinary native JSON association route either.
+-- Independent reconstruction from sealed raw claims and actual database heads.
+-- Caller digests certify identity only; they never authorize a revision payload.
+CREATE FUNCTION public.predictive_context_revision(profile text,capture text,claim text,kind text,data jsonb,expected text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE source_record text; heads jsonb; head jsonb;
+BEGIN
+  source_record:='original-context:'||kind||':'||(data->>'rawGameId');
+  SELECT coalesce(jsonb_agg(jsonb_build_object('id',o.id,'kind',o.kind,'sourceRecordId',o.source_record_id,
+    'predecessorId',o.predecessor_id,'correctionReason',o.correction_reason,'data',o.data)),'[]'::jsonb) INTO heads
+    FROM public.predictive_observations o WHERE o.profile_id=profile AND o.kind=predictive_context_revision.kind
+      AND o.source_record_id=source_record AND NOT EXISTS(SELECT 1 FROM public.predictive_observations n WHERE n.predecessor_id=o.id);
+  IF jsonb_array_length(heads)>1 THEN RAISE EXCEPTION 'context-association-head-refused' USING ERRCODE='23514'; END IF;
+  head:=heads->0;
+  IF head->>'id' IS DISTINCT FROM expected OR head IS NOT NULL AND head->'data'->>'gameId' IS DISTINCT FROM data->>'gameId' THEN
+    RAISE EXCEPTION 'context-association-head-refused' USING ERRCODE='23514'; END IF;
+  IF head->'data'=data THEN RETURN head; END IF;
+  RETURN jsonb_build_object('id','context-observation:'||public.predictive_source_digest(jsonb_build_array(
+    'nflverse-original-schedule-associations-v1',capture,claim,kind,data,head->>'id')),
+    'kind',kind,'sourceRecordId',source_record,'predecessorId',head->>'id',
+    'correctionReason',CASE WHEN head IS NULL THEN NULL ELSE 'original-context-source-update' END,'data',data);
+END $$;
+
+CREATE FUNCTION public.predictive_record_context_associations(id text,basis jsonb) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE c public.predictive_captures; a public.predictive_artifacts; s public.predictive_context_captures;
+  prior public.predictive_context_associations; item jsonb; row jsonb; p jsonb; schedule jsonb; bridge jsonb;
+  checked jsonb:='[]'::jsonb; ids text[]:='{}'; keys text[]:='{}'; games text[]:='{}'; revision jsonb; hash text;
+BEGIN
+  IF NOT pg_has_role(session_user,'predictive_ingest','MEMBER') THEN RAISE EXCEPTION 'context-not-authorized' USING ERRCODE='42501'; END IF;
+  IF NOT EXISTS(SELECT 1 FROM pg_locks WHERE pid=pg_backend_pid() AND relation='public.predictive_context_associations'::regclass
+    AND granted AND mode='ShareRowExclusiveLock') THEN RAISE EXCEPTION 'context-guard-required' USING ERRCODE='55000'; END IF;
+  SELECT * INTO c FROM public.predictive_captures WHERE predictive_captures.id=predictive_record_context_associations.id;
+  SELECT * INTO a FROM public.predictive_artifacts WHERE predictive_artifacts.id=c.artifact_id;
+  SELECT * INTO s FROM public.predictive_context_captures WHERE capture_id=c.id;
+  IF s.capture_id IS NULL OR NOT public.predictive_context_profile_valid(a.id)
+    OR (SELECT feed FROM public.predictive_source_profiles WHERE predictive_source_profiles.id=a.profile_id)<>'schedule'
+    OR public.predictive_source_exact(basis,ARRAY['version','captureId','sourceRequestHash','claimsSha256','bindings']) IS NOT TRUE
+    OR basis->>'version' IS DISTINCT FROM 'nflverse-original-schedule-associations-v1'
+    OR basis->>'captureId' IS DISTINCT FROM c.id OR basis->>'sourceRequestHash' IS DISTINCT FROM s.request_hash
+    OR basis->>'claimsSha256' IS DISTINCT FROM s.claims_sha256 OR jsonb_typeof(basis->'bindings') IS DISTINCT FROM 'array'
+    OR jsonb_array_length(basis->'bindings') NOT BETWEEN 1 AND 256 OR octet_length(basis::text)>2000000 THEN
+    RAISE EXCEPTION 'context-association-envelope-refused' USING ERRCODE='23514'; END IF;
+  PERFORM public.predictive_compressed_source_access(a.profile_id,c.captured_at);
+  hash:=public.predictive_source_digest(basis);
+  SELECT * INTO prior FROM public.predictive_context_associations WHERE capture_id=c.id;
+  IF prior.capture_id IS NOT NULL THEN
+    IF prior.basis<>basis THEN RAISE EXCEPTION 'context-association-conflict' USING ERRCODE='23514'; END IF;
+    RETURN jsonb_build_object('associationSha256',prior.association_sha256,'recordedAt',public.predictive_source_time(prior.recorded_at));
+  END IF;
+  -- A committed raw capture/artifact cannot acquire later facts. Both must be
+  -- created in THIS transaction, with the normal server ingestion-clock trigger.
+  IF NOT EXISTS(SELECT 1 FROM public.predictive_captures WHERE predictive_captures.id=c.id AND xmin=pg_current_xact_id()::xid)
+    OR NOT EXISTS(SELECT 1 FROM public.predictive_artifacts WHERE predictive_artifacts.id=a.id AND xmin=pg_current_xact_id()::xid)
+    OR NOT EXISTS(SELECT 1 FROM public.predictive_ingestion_runs WHERE predictive_ingestion_runs.id=c.run_id AND xmin=pg_current_xact_id()::xid)
+    OR EXISTS(SELECT 1 FROM public.predictive_captures WHERE artifact_id=a.id AND predictive_captures.id<>c.id) THEN
+    RAISE EXCEPTION 'context-association-new-capture-required' USING ERRCODE='23514'; END IF;
+  FOR item IN SELECT value FROM jsonb_array_elements(basis->'bindings') LOOP
+    SELECT value INTO row FROM jsonb_array_elements(s.claims) WHERE value->>'id'=item->>'claimId'; p:=row->'projection';
+    IF row IS NULL OR p->>'kind' IS DISTINCT FROM 'raw-schedule' OR row->'failureCode'<>'null'::jsonb
+      OR item->>'claimId'=ANY(ids) OR row->>'rawKeySha256'=ANY(keys) OR item->'schedule'->'data'->>'gameId'=ANY(games) THEN
+      RAISE EXCEPTION 'context-association-claim-refused' USING ERRCODE='23514'; END IF;
+    ids:=array_append(ids,item->>'claimId'); keys:=array_append(keys,row->>'rawKeySha256'); games:=array_append(games,item->'schedule'->'data'->>'gameId');
+    schedule:=jsonb_build_object('gameId',item->'schedule'->'data'->>'gameId','rawGameId',p->'rawGameId','season',p->'season',
+      'seasonType',p->'seasonType','week',p->'week','kickoff',p->'kickoff','rawGameday',p->'rawGameday','rawGametime',p->'rawGametime',
+      'homeTeamId','nfl:team:'||(p->>'rawHomeTeam'),'awayTeamId','nfl:team:'||(p->>'rawAwayTeam'),
+      'rawHomeTeam',p->'rawHomeTeam','rawAwayTeam',p->'rawAwayTeam','rawRoof',NULL,'rawSurface',NULL,'rawStadiumId',NULL);
+    bridge:=jsonb_build_object('provider','nflverse','rawGameId',p->'rawGameId','gameId',schedule->'gameId');
+    IF (schedule->>'gameId'~'^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$') IS NOT TRUE THEN
+      RAISE EXCEPTION 'context-association-identity-refused' USING ERRCODE='23514'; END IF;
+    checked:=checked||jsonb_build_array(jsonb_build_object('claimId',row->'id','rowOrdinal',row->'rowOrdinal',
+      'rawKeySha256',row->'rawKeySha256','selectedSha256',row->'selectedSha256',
+      'expectedScheduleHead',item->'expectedScheduleHead','expectedBridgeHead',item->'expectedBridgeHead',
+      'schedule',public.predictive_context_revision(a.profile_id,c.id,row->>'id','schedule',schedule,item->>'expectedScheduleHead'),
+      'bridge',public.predictive_context_revision(a.profile_id,c.id,row->>'id','game-bridge',bridge,item->>'expectedBridgeHead')));
+  END LOOP;
+  SELECT jsonb_agg(value ORDER BY value->>'claimId' COLLATE "C") INTO checked FROM jsonb_array_elements(checked);
+  IF basis->'bindings' IS DISTINCT FROM checked THEN RAISE EXCEPTION 'context-association-proof-refused' USING ERRCODE='23514'; END IF;
+  -- One logical recording instant for this atomic publication: the fresh
+  -- capture's server-stamped ingestion clock is also the native reader cutoff.
+  INSERT INTO public.predictive_context_associations(capture_id,artifact_id,basis,association_sha256,recorded_at)
+    VALUES(c.id,a.id,basis,hash,c.ingested_at) RETURNING * INTO prior;
+  FOR revision IN SELECT value->'schedule' FROM jsonb_array_elements(checked) UNION ALL SELECT value->'bridge' FROM jsonb_array_elements(checked) LOOP
+    INSERT INTO public.predictive_games VALUES((revision->'data'->>'gameId')::uuid) ON CONFLICT DO NOTHING;
+    INSERT INTO public.predictive_observations(id,kind,profile_id,source_record_id,data,entity_key,source_key,predecessor_id,correction_reason)
+      VALUES(revision->>'id',revision->>'kind',a.profile_id,revision->>'sourceRecordId',revision->'data',
+        public.predictive_entity_key(revision->>'kind',revision->'data'),
+        public.predictive_entity_key(revision->>'kind',revision->'data')||'|'||a.profile_id||'|'||(revision->>'sourceRecordId'),
+        revision->>'predecessorId',revision->>'correctionReason') ON CONFLICT ON CONSTRAINT predictive_observations_pkey DO NOTHING;
+    IF NOT EXISTS(SELECT 1 FROM public.predictive_observations o WHERE o.id=revision->>'id' AND o.profile_id=a.profile_id AND
+      jsonb_build_object('id',o.id,'kind',o.kind,'sourceRecordId',o.source_record_id,'predecessorId',o.predecessor_id,
+        'correctionReason',o.correction_reason,'data',o.data)=revision) THEN
+      RAISE EXCEPTION 'context-association-observation-conflict' USING ERRCODE='23514'; END IF;
+    INSERT INTO public.predictive_artifact_observations VALUES(a.id,revision->>'id');
+  END LOOP;
+  RETURN jsonb_build_object('associationSha256',hash,'recordedAt',public.predictive_source_time(prior.recorded_at));
+END $$;
+
+CREATE FUNCTION public.predictive_context_association_check() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE actual jsonb; expected jsonb; profile text; captured timestamptz;
+BEGIN
+  SELECT jsonb_agg(observation_id ORDER BY observation_id COLLATE "C") INTO actual
+    FROM public.predictive_artifact_observations WHERE artifact_id=NEW.artifact_id;
+  SELECT jsonb_agg(id ORDER BY id COLLATE "C") INTO expected FROM (
+    SELECT value->'schedule'->>'id' AS id FROM jsonb_array_elements(NEW.basis->'bindings')
+    UNION SELECT value->'bridge'->>'id' FROM jsonb_array_elements(NEW.basis->'bindings')) x;
+  IF actual IS DISTINCT FROM expected THEN RAISE EXCEPTION 'context-association-set-refused' USING ERRCODE='23514'; END IF;
+  SELECT a.profile_id,c.captured_at INTO profile,captured FROM public.predictive_captures c JOIN public.predictive_artifacts a ON a.id=c.artifact_id WHERE c.id=NEW.capture_id;
+  PERFORM public.predictive_compressed_source_access(profile,captured);
+  RETURN NULL;
+END $$;
+CREATE CONSTRAINT TRIGGER predictive_context_association_check AFTER INSERT ON public.predictive_context_associations
+ DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_context_association_check();
+
+-- Exact sealed links only. The raw/native route stays closed for every other
+-- observation and for earlier, already-committed raw artifacts.
 CREATE FUNCTION public.predictive_context_canonical_guard() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
 BEGIN
   IF EXISTS(SELECT 1 FROM public.predictive_artifacts a JOIN public.predictive_source_profiles p ON p.id=a.profile_id
-      WHERE a.id=NEW.artifact_id AND p.parser_version='nflverse-original-context-qualification-v1') THEN
+      WHERE a.id=NEW.artifact_id AND p.parser_version='nflverse-original-context-qualification-v1') AND NOT EXISTS(
+      SELECT 1 FROM public.predictive_context_associations s CROSS JOIN LATERAL jsonb_array_elements(s.basis->'bindings') b
+      WHERE s.artifact_id=NEW.artifact_id AND NEW.observation_id IN (b->'schedule'->>'id',b->'bridge'->>'id')) THEN
     RAISE EXCEPTION 'context-canonical-association-not-qualified' USING ERRCODE='23514'; END IF;
   RETURN NEW;
 END $$;
@@ -280,3 +437,6 @@ REVOKE ALL ON FUNCTION public.predictive_context_immutable(),public.predictive_c
 GRANT EXECUTE ON FUNCTION public.predictive_context_guard(),public.predictive_record_context_capture(text,jsonb,jsonb) TO predictive_ingest;
 GRANT EXECUTE ON FUNCTION public.predictive_read_context_capture(text),public.predictive_training_read_guard() TO predictive_replay;
 GRANT EXECUTE ON FUNCTION public.predictive_context_access(text,timestamptz) TO predictive_ingest,predictive_replay;
+REVOKE ALL ON FUNCTION public.predictive_context_revision(text,text,text,text,jsonb,text),
+ public.predictive_record_context_associations(text,jsonb),public.predictive_context_association_check(),public.predictive_context_association_immutable() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.predictive_record_context_associations(text,jsonb) TO predictive_ingest;

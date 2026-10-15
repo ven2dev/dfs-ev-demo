@@ -1034,3 +1034,24 @@ retain reserved 0022–0024 outside the ordered chain until that handoff. Its fi
 reported PostgreSQL regressions do not establish capacity: broader measurements
 completed three operations and refused six, with no successful page/label read.
 Those Relay results are reported here, not independently rerun by #106.
+
+## #106 atomic association recorder; 0021 still provisional
+
+The scratch prototype now records schedule/game-bridge associations atomically
+with a new original-byte artifact/capture/run. SQL verifies current-transaction
+ownership, reconstructs revisions from sealed claims and actual correction heads,
+and seals the exact authorized link set. Committed raw captures cannot acquire
+later facts; earlier cutoff queries exclude the new associations. Current rights
+are checked before delivery/commit, with rollback and recovery coverage.
+
+The new association table participates in the read guard/memo dependencies and
+cascades through existing mandatory capture deletion, with supplemental digest
+audits. Public byte-reading and retention interfaces remain unchanged. The new
+publisher is scratch-only; existing consumers explicitly refuse this parser
+until original-byte association hydration is implemented. No frozen migration
+or generated catalog changes. **Do not promote #118's 0022–0024 yet:** #106 still
+owes frozen 0021 after consumer/integrated closure and migration validation.
+
+Focused validation passes: 17 context PostgreSQL cases, two final clock-boundary
+rechecks, 824 Node tests, six report-contract cases, typecheck and affected lint.
+No full database gate or real-source association benchmark is claimed.

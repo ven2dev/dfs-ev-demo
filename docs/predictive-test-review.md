@@ -1,5 +1,45 @@
 # Delivery 2 test reasoning review
 
+## #106 atomic schedule association recorder QC (2026-10-14)
+
+Seven mandatory PostgreSQL cases exercise the original-byte association writer
+after frozen prefix 20 plus the scratch prototype. An actual non-superuser
+ingest/replay login can publish/retry but cannot read the private association
+table; a replay-only login cannot execute the writer. A raw publication precedes
+the association capture: an independent earlier-cutoff query returns no schedule,
+while the later query returns only the newly associated artifact. The older raw
+artifact remains unlinked. Actual database heads reject a stale assertion that
+passes detached preparation. Reusing a committed raw capture is refused.
+
+SQL mutation tests alter kickoff, ordinal, fingerprint, revision ID or extra
+fields after application preparation. The recorder computes the supplied
+basis's digest itself, then independently reconstructs the expected content;
+each mutation reaches `context-association-proof-refused` and rolls back all
+observations/captures. A clean retry subsequently succeeds. Correction queries
+retain the independently specified 17:00 UTC historical kickoff while exposing
+the new 20:25 UTC revision only at the later cutoff, with the same game UUID and
+the exact predecessor. An unsealed extra link to the earlier artifact is refused.
+
+The memo is usable under the shared guard and becomes unusable after a write
+lock on the association table. Retention-only deletion removes seals and linked
+observations, records a digest-only ID/count audit, and refuses resurrection.
+A test-only trigger withholds an approved link; forcing the association-set
+constraint first isolates its refusal from the older orphan-observation check.
+Deferred rights expiry independently refuses at commit. Both failures remove SQL
+rows and private files, followed by clean recovery. Earlier raw-context cases
+continue to cover full-file replay and revoked rights before file opening.
+
+This does not validate canonical consumer hydration: that path explicitly
+refuses until original-byte association verification is implemented. No hosted
+database, production evidence, model training or ordered migration was changed.
+
+Validation: all 17 context PostgreSQL cases pass in one 18.42-second focused run;
+the two affected cutoff cases pass again after aligning the association recording
+time with its fresh capture's server ingestion clock. All 824 Node tests, six
+report-contract cases, typecheck, affected-file lint and whitespace checks pass.
+Frozen SQL/catalog files through 0020 are unchanged. The full database gate was
+not repeated; ordered migration promotion and aggregate CI remain future gates.
+
 ## #106 schedule association preparation QC (2026-10-14)
 
 Eleven focused cases test independently specified schedule/bridge values and

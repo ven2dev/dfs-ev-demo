@@ -2,7 +2,8 @@ import { Client, type QueryResultRow } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
 import type { ArtifactMediaType, PrivateArtifactStore } from "./artifacts.ts";
 import { createEvidenceBatch } from "./batchEvidence.ts";
-import { prepareSourceContextPublication, type SourceContextPublication } from "./sourceContextPublication.ts";
+import { prepareSourceContextPublication, SOURCE_CONTEXT_PROFILE_VERSION, type SourceContextPublication } from "./sourceContextPublication.ts";
+import { prepareSourceContextAssociations, SOURCE_CONTEXT_ASSOCIATION_LIMIT, type SourceContextAssociationRequest, type SourceContextScheduleSelection } from "./sourceContextAssociations.ts";
 import { SOURCE_CONTEXT_VERSION, SOURCE_CONTEXT_BOUNDS } from "./sourceContextClaims.ts";
 import { createTrainingOperation, TRAINING_TIME_BOUNDS, type TrainingOperationOptions } from "./trainingOperation.ts";
 import { normalizeFittingRunRequest, selectTrainingRows, TRAINING_BOUNDS, type FittingRunRequest } from "./training.ts";
@@ -230,6 +231,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     const parsed = verifiedJson;
     const result: Observation[] = [];
     for (const row of raw) {
+      if (profiles.get(row.artifact.profileId)?.parserVersion === SOURCE_CONTEXT_PROFILE_VERSION) refuse("context-consumer-replay-not-installed");
       let stored = parsed.get(row.artifact.id);
       if (!stored) {
         const { byteSize, storageRef, ...metadata } = row.artifact;
@@ -523,13 +525,16 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }));
   };
 
-  const publishSourceContext = (input: SourceContextPublication): Promise<RunResult> => {
+  const publishContext = (input: SourceContextPublication, selections?: SourceContextScheduleSelection[]): Promise<RunResult> => {
     if (typeof input?.artifact?.bytes !== "string" || Buffer.byteLength(input.artifact.bytes) > SOURCE_CONTEXT_BOUNDS.bytes) refuse("artifact-integrity-failed");
     const pinned = structuredClone(input);
+    const selected = selections === undefined ? undefined : structuredClone(selections);
     return withBlobReferences([pinned.artifact.sha256 + ".csv"], () => transaction(async () => {
       if (!(await query("SELECT to_regprocedure('public.predictive_record_context_capture(text,jsonb,jsonb)') IS NOT NULL AS available")).rows[0].available) refuse("context-recording-not-installed");
+      if (selected !== undefined && !(await query("SELECT to_regprocedure('public.predictive_record_context_associations(text,jsonb)') IS NOT NULL AS available")).rows[0].available) refuse("context-association-recording-not-installed");
       const now = (await query("SELECT public.predictive_context_guard() AS clock")).rows[0].clock as string;
       const prepared = await prepareSourceContextPublication(pinned, now);
+      const associations = selected === undefined ? null : await prepareSourceContextAssociations({ source: pinned, selections: selected }, now);
       await persistRegistrations({ formatVersion: 2, profiles: [pinned.profile], rightsDecisions: pinned.rightsDecisions,
         artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] });
       const authoritative = (await query(RIGHTS_SQL, [[pinned.profile.id]])).rows.map(row => row.decision as RightsDecision);
@@ -551,9 +556,21 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       const seal = (await query("SELECT public.predictive_record_context_capture($1,$2,$3) AS seal",
         [pinned.captureId, JSON.stringify(pinned.seasonRange), JSON.stringify(prepared.prepared.rows)])).rows[0].seal;
       if (seal.requestHash !== prepared.requestHash || seal.claimsSha256 !== prepared.prepared.claimsSha256) refuse("context-publication-integrity-failed");
+      if (associations) {
+        const { version, captureId, sourceRequestHash, claimsSha256, bindings } = associations;
+        const recorded = (await query("SELECT public.predictive_record_context_associations($1,$2) AS seal",
+          [pinned.captureId, JSON.stringify({ version, captureId, sourceRequestHash, claimsSha256, bindings })])).rows[0].seal;
+        if (recorded.associationSha256 !== associations.associationSha256) refuse("context-association-integrity-failed");
+      }
       await recordRunRights(pinned.id); await access();
       return existing ?? { id: pinned.id, status: "published", failureCode: null, reused: false };
     }));
+  };
+  const publishSourceContext = (input: SourceContextPublication) => publishContext(input);
+  const publishSourceContextAssociations = (input: SourceContextAssociationRequest) => {
+    exact(input, ["source", "selections"]);
+    if (!Array.isArray(input.selections) || input.selections.length < 1 || input.selections.length > SOURCE_CONTEXT_ASSOCIATION_LIMIT) refuse("context-association-bounds-refused");
+    return publishContext(input.source, input.selections);
   };
   const replaySourceContext = (captureId: string) => transaction(async () => {
     if (typeof captureId !== "string" || !captureId.trim() || captureId.length > 256) refuse("context-request-refused");
@@ -573,7 +590,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     if (prepared.prepared.claimsSha256 !== metadata.claimsSha256 || canonical(prepared.prepared.rows) !== canonical(metadata.claims)) refuse("context-replay-integrity-failed");
     await batchAccess();
     return { captureId, ingestedAt: metadata.ingestedAt, recordedAt: metadata.recordedAt, prepared: prepared.prepared,
-      canonicalEvidencePublished: false, featuresPublished: false, labelsFinalized: false } as const;
+      canonicalEvidencePublished: metadata.hasAssociations === true, featuresPublished: false, labelsFinalized: false } as const;
   }, false, true);
 
   const readSourceStats = async (request: SourceStatsRequest, accessAt?: string): Promise<SourceStatsReplay> => {
@@ -1956,7 +1973,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
   };
   const preparationMs = TRAINING_TIME_BOUNDS.preparationMs, readMs = TRAINING_TIME_BOUNDS.readMs;
-  return { publish, publishSourceStats, publishCompressedSource, publishSourceContext, replaySourceContext, replaySourceStats, replayCompressedSourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, planCompressedSourceStatsNormalization, recordSourceNormalization, recordCompressedSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
+  return { publish, publishSourceStats, publishCompressedSource, publishSourceContext, publishSourceContextAssociations, replaySourceContext, replaySourceStats, replayCompressedSourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, planCompressedSourceStatsNormalization, recordSourceNormalization, recordCompressedSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
     planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer,
     replaySourceConsumers: (ids: string[], options: TrainingOperationOptions = {}) => withTrainingDeadline(options, readMs, () => replaySourceConsumers(ids)),
     previewFittingRun: (input: FittingRunRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, preparationMs, () => previewFittingRun(input)),

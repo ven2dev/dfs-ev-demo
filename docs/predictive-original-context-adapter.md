@@ -5,8 +5,8 @@ real QB slice. It does not register a parser/profile, mint canonical evidence
 or approve a new source use. Frozen 0001–0020 stay unchanged. #106 owns 0021
 only for the context recorder; #118 owns 0022–0024 for subsequent foundation
 review fixes, to finalize after integrating frozen 0021. No later number is
-allocated. The 0021 migration is not yet implemented by these pure preparation
-checkpoints.
+allocated. The 0021 implementation remains scratch-only until original-byte
+consumer replay and integrated migration checks pass.
 
 ## Why the existing publisher is insufficient
 
@@ -256,3 +256,46 @@ Eleven association cases plus the existing twenty context parser/preparation
 cases pass. Typecheck, affected-file lint and whitespace checks pass. No database
 gate is needed for this pure preparer; it does not call persistence or change
 database behavior. This is not evidence of usable real features or labels.
+
+## Atomic association recorder prototype
+
+`publishSourceContextAssociations` now prepares and records schedule/game-bridge
+pairs in the same transaction as a fresh original-file artifact, capture, run
+and raw seal. The source's actual earlier receipt time remains distinct from
+the new database ingestion time. SQL requires the artifact/capture/run tuples
+to belong to the current transaction; a committed raw capture cannot acquire
+later canonical facts. Exact retries verify the immutable association set and
+current rights without creating new observations.
+
+The association's logical recording time is exactly that fresh capture's
+server-stamped ingestion time, which existing native SQL readers use as their
+cutoff. It is not a separate later wall-clock value or a caller timestamp.
+
+The execute-only recorder independently reconstructs schedule/bridge payloads,
+provenance, revision IDs and correction lineage from sealed raw claims and actual
+database heads. Asserted stale heads, UUID changes in an existing raw-game chain,
+forged fields, extra fields and changed row fingerprints are refused. Existing
+database publication constraints also enforce bridge ambiguity and correction
+chronology. Unchanged revisions are reused. A private association seal authorizes
+only the exact observation links for its fresh artifact; adding a different fact
+to an earlier artifact remains blocked. A deferred check requires the complete
+authorized link set and fresh rights at commit.
+
+The association table enters the shared guard and validation memo dependency
+set. Mandatory deletion cascades the seal through the existing capture closure
+and adds a digest-only audit of each seal's linked observation IDs/count. Existing
+retention signatures and frozen 0001–0020 are unchanged. Seven new mandatory
+PostgreSQL regressions cover restricted roles, earlier cutoff isolation, exact
+retry, stale heads, forged payload/provenance, historical correction visibility,
+native-link refusal, memo invalidation, retention, missing-link rollback and
+commit-time expiry followed by recovery. They join ten raw-context regressions.
+
+**Consumer hydration remains unavailable.** Ordinary feature/source readers
+explicitly refuse `context-consumer-replay-not-installed` when they encounter
+this parser. They must authenticate canonical associations against original CSV
+bytes before consuming them; a SQL raw seal or association digest alone cannot
+authenticate the source file. Raw context replay reports whether associations
+exist but does not claim consumer qualification. Ordered 0021 promotion, consumer
+replay and integrated deletion/dataset/upgrade checks remain outstanding. This
+checkpoint uses disposable fixtures; the earlier real-file timing proof applies
+to its archived prototype, not a new benchmark of this association path.

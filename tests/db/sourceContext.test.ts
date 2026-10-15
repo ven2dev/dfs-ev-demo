@@ -10,7 +10,8 @@ import { loadCatalogContracts, createCatalogVerifier } from "../../scripts/db-mi
 import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
 import { ensurePredictiveRoles } from "../../scripts/predictive/harness.ts";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
-import { createLocalPredictiveStore } from "../../src/lib/predictive/persistence.ts";
+import { createLocalPredictiveStore, SCHEDULE_READ_SQL } from "../../src/lib/predictive/persistence.ts";
+import { prepareSourceContextAssociations, type SourceContextAssociationRequest } from "../../src/lib/predictive/sourceContextAssociations.ts";
 import { prepareSourceContextPublication, SOURCE_CONTEXT_PROFILE_VERSION, type SourceContextPublication } from "../../src/lib/predictive/sourceContextPublication.ts";
 import { SOURCE_HEADERS } from "../../src/lib/predictive/sourceHeaders.ts";
 import { canonical, digest } from "../../src/lib/predictive/validation.ts";
@@ -55,6 +56,162 @@ const input = (feed: "schedule" | "identifiers", many = false) => {
   value.rightsDecisions = value.rightsDecisions.map(r => ({ ...r, id: "context-rights:" + feed, profileId: value.profile.id }));
   return value;
 };
+const associationInput = (suffix = ""): SourceContextAssociationRequest => {
+  const source = input("schedule"); source.id += suffix; source.captureId += suffix; source.artifact.id += suffix;
+  return { source, selections: [{ claimId: "context-row:" + digest(canonical([source.captureId, 1])),
+    gameId: "00000000-0000-4000-8000-000000000001", scheduleHead: null, bridgeHead: null }] };
+};
+it("context associations atomically publish exact pairs through restricted roles with fresh cutoff visibility", async () => {
+  await proof(async (admin, target, artifacts) => {
+    const raw = input("schedule"), store = await createLocalPredictiveStore(admin, target, artifacts);
+    await store.publishSourceContext(raw);
+    const cutoff = (await admin.query("SELECT predictive_source_time(clock_timestamp()) AS t")).rows[0].t as string;
+    const request = associationInput("-associated");
+    await login(admin, target, ["predictive_ingest", "predictive_replay"], async (client, local) => {
+      const writer = await createLocalPredictiveStore(client, local, artifacts);
+      expect(await writer.publishSourceContextAssociations(request)).toMatchObject({ status: "published", reused: false });
+      expect(await writer.publishSourceContextAssociations(request)).toMatchObject({ reused: true });
+      expect((await writer.replaySourceContext(request.source.captureId))!.canonicalEvidencePublished).toBe(true);
+      await expect(client.query("SELECT * FROM predictive_context_associations")).rejects.toMatchObject({ code: "42501" });
+    });
+    const before = await admin.query(SCHEDULE_READ_SQL, [cutoff, ["nfl:team:PHI"], 2024, 2026]);
+    expect(before.rows).toHaveLength(0);
+    const after = await admin.query(SCHEDULE_READ_SQL, [new Date().toISOString(), ["nfl:team:PHI"], 2024, 2026]);
+    expect(after.rows).toHaveLength(1);
+    expect(after.rows[0].envelope.capture.artifactId).toBe(request.source.artifact.id);
+    expect(after.rows[0].envelope.revision.data.kickoff).toBe("2026-10-18T17:00:00.000Z");
+    expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_artifact_observations WHERE artifact_id=$1", [raw.artifact.id])).rows[0].n).toBe(0);
+    expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_observations")).rows[0].n).toBe(2);
+    expect((await admin.query(`SELECT s.recorded_at=c.ingested_at AS same_clock FROM predictive_context_associations s
+      JOIN predictive_captures c ON c.id=s.capture_id WHERE s.capture_id=$1`, [request.source.captureId])).rows).toEqual([{ same_clock: true }]);
+    await login(admin, target, ["predictive_replay"], async client => {
+      await expect(client.query("SELECT predictive_record_context_associations('missing','{}')")).rejects.toMatchObject({ code: "42501" });
+    });
+  });
+});
+it("context associations refuse post-hoc raw publication and stale database heads", async () => {
+  await proof(async (admin, target, artifacts) => {
+    const store = await createLocalPredictiveStore(admin, target, artifacts), raw = associationInput();
+    await store.publishSourceContext(raw.source);
+    await expect(store.publishSourceContextAssociations(raw)).rejects.toThrow("context-association-new-capture-required");
+    const first = associationInput("-first"); await store.publishSourceContextAssociations(first);
+    const next = associationInput("-stale");
+    await expect(store.publishSourceContextAssociations(next)).rejects.toThrow("context-association-head-refused");
+    expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_context_associations")).rows[0].n).toBe(1);
+    expect((await admin.query("SELECT id FROM predictive_captures WHERE id=$1", [next.source.captureId])).rows).toEqual([]);
+  });
+});
+it("context associations reconstruct SQL proofs instead of trusting rehashed caller revisions or provenance", async () => {
+  await proof(async (admin, target, artifacts) => {
+    for (const field of ["kickoff", "rowOrdinal", "selectedSha256", "id", "extra"] as const) {
+      const proxy = new Proxy(admin, { get(client, key) {
+        if (key === "query") return (sql: string, values?: unknown[]) => {
+          if (sql.startsWith("SELECT public.predictive_record_context_associations(") && values) {
+            const basis = JSON.parse(values[1] as string), row = basis.bindings[0];
+            if (field === "kickoff") row.schedule.data.kickoff = "2026-10-18T18:00:00.000Z";
+            else if (field === "rowOrdinal") row.rowOrdinal = 2;
+            else if (field === "selectedSha256") row.selectedSha256 = "0".repeat(64);
+            else if (field === "id") row.schedule.id = "forged-observation";
+            else row.unapproved = true;
+            return client.query(sql, [values[0], JSON.stringify(basis)]);
+          }
+          return client.query(sql, values);
+        };
+        const value = Reflect.get(client, key); return typeof value === "function" ? value.bind(client) : value;
+      } });
+      const store = await createLocalPredictiveStore(proxy, target, artifacts);
+      await expect(store.publishSourceContextAssociations(associationInput("-forged-" + field))).rejects.toThrow("context-association-proof-refused");
+      expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_observations")).rows[0].n).toBe(0);
+      expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_captures")).rows[0].n).toBe(0);
+    }
+    const store = await createLocalPredictiveStore(admin, target, artifacts);
+    expect((await store.publishSourceContextAssociations(associationInput("-recovered"))).status).toBe("published");
+  });
+});
+it("context association corrections preserve earlier cutoff and refuse unsealed native additions", async () => {
+  await proof(async (admin, target, artifacts) => {
+    const store = await createLocalPredictiveStore(admin, target, artifacts), first = associationInput("-first");
+    await store.publishSourceContextAssociations(first);
+    const before = (await admin.query("SELECT predictive_source_time(clock_timestamp()) AS t")).rows[0].t as string;
+    const prior = (await prepareSourceContextAssociations(first, before)).bindings[0];
+    const next = associationInput("-corrected"); next.selections[0].scheduleHead = prior.schedule; next.selections[0].bridgeHead = prior.bridge;
+    next.source.artifact.bytes = sourceCsv("schedule", [{ ...sourceSamples().schedule[0], gametime: "16:25" }]);
+    next.source.artifact.sha256 = digest(next.source.artifact.bytes);
+    await store.publishSourceContextAssociations(next);
+    const historical = (await admin.query(SCHEDULE_READ_SQL, [before, ["nfl:team:PHI"], 2024, 2026])).rows;
+    expect(historical.map(row => row.envelope.revision.data.kickoff)).toEqual(["2026-10-18T17:00:00.000Z"]);
+    const current = (await admin.query(SCHEDULE_READ_SQL, [new Date().toISOString(), ["nfl:team:PHI"], 2024, 2026])).rows;
+    expect(current).toHaveLength(2);
+    const corrected = current.find(row => row.envelope.revision.predecessorId === prior.schedule.id);
+    expect(corrected.envelope.revision.data.kickoff).toBe("2026-10-18T20:25:00.000Z");
+    expect(corrected.envelope.revision.data.gameId).toBe(prior.schedule.data.gameId);
+    await expect(admin.query("INSERT INTO predictive_artifact_observations VALUES($1,$2)", [first.source.artifact.id, corrected.envelope.revision.id])).rejects.toThrow("context-canonical-association-not-qualified");
+    await admin.query("BEGIN");
+    try {
+      await admin.query("SELECT predictive_training_read_guard()");
+      expect((await admin.query("SELECT predictive_training_memo_ready() AS ready")).rows[0].ready).toBe(true);
+      await admin.query("LOCK TABLE predictive_context_associations IN ROW EXCLUSIVE MODE");
+      expect((await admin.query("SELECT predictive_training_memo_ready() AS ready")).rows[0].ready).toBe(false);
+    } finally { await admin.query("ROLLBACK"); }
+  });
+});
+it("context association retention cascades sealed pairs and records digest-only removal evidence", async () => {
+  await proof(async (admin, target, artifacts) => {
+    const store = await createLocalPredictiveStore(admin, target, artifacts), request = associationInput();
+    await store.publishSourceContextAssociations(request);
+    await login(admin, target, ["predictive_retention_owner"], async (client, local) => {
+      const retention = await createLocalPredictiveStore(client, local, artifacts);
+      await retention.retain({ id: "association-delete", reason: "provider-request", authority: "fixture-only deletion", decidedAt: request.source.capturedAt,
+        auditLevel: "full", scope: { kind: "source", profileIds: [request.source.profile.id], capturedFrom: null, capturedBefore: null } });
+    });
+    expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_context_associations")).rows[0].n).toBe(0);
+    expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_observations")).rows[0].n).toBe(0);
+    expect((await admin.query("SELECT removed_observations FROM predictive_context_association_audits WHERE event_id='association-delete'")).rows).toEqual([{ removed_observations: 2 }]);
+    await expect(store.publishSourceContextAssociations(request)).rejects.toThrow("compressed-publication-erased-source");
+  });
+});
+it("context association commit checks reject missing links and roll back the full publication", async () => {
+  await proof(async (admin, target, artifacts) => {
+    await admin.query(`CREATE FUNCTION public.context_test_skip_bridge() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+      IF (SELECT kind FROM public.predictive_observations WHERE id=NEW.observation_id)='game-bridge' THEN RETURN NULL; END IF; RETURN NEW; END $$;
+      CREATE TRIGGER context_test_skip_bridge BEFORE INSERT ON predictive_artifact_observations FOR EACH ROW EXECUTE FUNCTION context_test_skip_bridge()`);
+    const orderedCommit = new Proxy(admin, { get(client, key) {
+      if (key === "query") return async (sql: string, values?: unknown[]) => {
+        // Exercise this constraint before the older orphan-observation check.
+        if (sql === "COMMIT") await client.query("SET CONSTRAINTS predictive_context_association_check IMMEDIATE");
+        return client.query(sql, values);
+      };
+      const value = Reflect.get(client, key); return typeof value === "function" ? value.bind(client) : value;
+    } });
+    const store = await createLocalPredictiveStore(orderedCommit, target, artifacts), request = associationInput();
+    await expect(store.publishSourceContextAssociations(request)).rejects.toThrow("context-association-set-refused");
+    expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_context_associations")).rows[0].n).toBe(0);
+    expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_observations")).rows[0].n).toBe(0);
+    expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_captures")).rows[0].n).toBe(0);
+    await expect(artifacts.database.read(request.source.artifact.sha256 + ".csv", request.source.artifact.sha256,
+      Buffer.byteLength(request.source.artifact.bytes))).rejects.toMatchObject({ code: "ENOENT" });
+    await admin.query("DROP TRIGGER context_test_skip_bridge ON predictive_artifact_observations; DROP FUNCTION context_test_skip_bridge()");
+    expect((await store.publishSourceContextAssociations(request)).status).toBe("published");
+  });
+});
+it("context association rights expiry at commit rolls back revisions seals and files before recovery", async () => {
+  await proof(async (admin, target, artifacts) => {
+    const definition = (await admin.query("SELECT pg_get_functiondef('public.predictive_context_association_check()'::regprocedure) AS body")).rows[0].body as string;
+    const needle = "PERFORM public.predictive_compressed_source_access(profile,captured);";
+    expect(definition.split(needle)).toHaveLength(2);
+    await admin.query(definition.replace(needle, "PERFORM pg_sleep(1.1); " + needle));
+    const request = associationInput(), store = await createLocalPredictiveStore(admin, target, artifacts);
+    request.source.rightsDecisions[0].effectiveTo = (await admin.query(`SELECT predictive_source_time(clock_timestamp()+interval '1 second') AS t`)).rows[0].t;
+    await expect(store.publishSourceContextAssociations(request)).rejects.toThrow("compressed-publication-rights-refused");
+    expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_context_associations")).rows[0].n).toBe(0);
+    expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_observations")).rows[0].n).toBe(0);
+    expect((await admin.query("SELECT count(*)::integer AS n FROM predictive_captures")).rows[0].n).toBe(0);
+    await expect(artifacts.database.read(request.source.artifact.sha256 + ".csv", request.source.artifact.sha256,
+      Buffer.byteLength(request.source.artifact.bytes))).rejects.toMatchObject({ code: "ENOENT" });
+    await admin.query(definition); request.source.rightsDecisions[0].effectiveTo = null;
+    expect((await store.publishSourceContextAssociations(request)).status).toBe("published");
+  });
+});
 it("context prototype records both original feeds through restricted roles and replays complete immutable claims", async () => {
   await proof(async (admin, target, artifacts) => {
     await login(admin, target, ["predictive_ingest", "predictive_replay"], async (client, local) => {
