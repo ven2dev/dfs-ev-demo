@@ -36,7 +36,7 @@ generators or effective database behavior.
 | 2. Reader/retention deadlock | Acquire the shared retention advisory lock before table locks; test concurrent ordering | Draft 0022 implemented; concurrent-reader/writer regression passed |
 | 3. Pure label selection time backstop | Withhold later labels even when a supplied selection bypasses ordinary head filtering; retain inclusive as-of behavior | Implemented; focused checks passed |
 | 4. Readiness access callback replacement | Preserve earlier compressed-file access checks across all assigned datasets | Implemented; restricted-login multi-shard and affected scheduled-revocation cases passed |
-| 5. Full-table closure scans | Traverse only selected dependency addresses through indexes; preserve exact closure and deletion behavior | Draft 0023 implemented; sealed CSV/gzip parity passed; broader capacity pending |
+| 5. Full-table closure scans | Traverse only selected dependency addresses through indexes; preserve exact closure and deletion behavior | Draft 0023 implemented; sealed CSV/gzip parity passed; broader capacity still fails |
 | 6. Unindexed kickoff lookup | Provide indexed ordinary/source schedule lookups and inspect natural query plans | Draft 0023 implemented; natural plans use both new indexes at 4,096 unrelated schedule rows |
 | 7. String-patched functions and nested guards | Publish complete effective function bodies in forward DDL; centralize the guard relation list | Drafts 0022/0024 implemented; effective policy, ACL, rollback and audit parity passed |
 | 8. Direct SQL temporal rules | Bypass TypeScript validation and test all three fit-clock refusals independently | Passed; includes both training label/event fit boundaries |
@@ -118,10 +118,23 @@ All **five focused PostgreSQL draft cases** pass together (28.53 seconds), as do
 the six report-contract cases. They are mandatory named cases so skipping or
 removing one fails the aggregate report contract. Logs:
 `/private/tmp/dfs118-review-drafts-db.log` and
-`/private/tmp/dfs118-kickoff-draft.log`. Broader capacity is being measured with
-the explicit opt-in draft mode; its results must name the draft hashes separately
-from the frozen prefix20 hashes. Finalization must reconcile these definitions
-and inventories with 0021 before generating the combined catalog.
+`/private/tmp/dfs118-kickoff-draft.log`. TypeScript and affected ESLint pass.
+Finalization must reconcile these definitions and inventories with 0021 before
+generating the combined catalog.
+
+The [completed broader matrix](evidence/predictive-training-capacity64-review-drafts-2026-10-14.json)
+records draft hashes separately from the ordered prefix20 hashes. Its strict
+capacity assertion **fails: three operations complete and six refuse**. No page
+or final-label read completes in the 64-QB/eight-profile inventory. One-member
+dataset preparation takes 15.12 s and 3,645 client statements; the indexed
+closure probe takes 428 ms. Width16 preparation exceeds its 30-second ceiling,
+and width64 run preparation exceeds its SQL statement limit. The focused SQL
+fixes preserve behavior but do not resolve the wider validation/access cost.
+Next performance work needs per-query profiling and reduced repeated validation
+while preserving current rights/deletion checks, rather than raised deadlines.
+See the [capacity report](predictive-training-capacity.md) for the complete
+scope, warm-run limits and omitted operations. The aggregate correctness gate
+has not been rerun or claimed green.
 
 ## Merge gates
 

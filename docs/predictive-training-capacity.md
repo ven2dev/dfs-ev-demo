@@ -6,6 +6,54 @@ one consumer body. It does not qualify real sources, historical availability,
 population coverage or #54 Part B. The prior shared-context measurement remains
 in [the evidence log](predictive-training-evidence.md).
 
+## Review drafts on prefix20 — 2026-10-14
+
+The [review-draft matrix](evidence/predictive-training-capacity64-review-drafts-2026-10-14.json)
+uses `87e5206` with the reserved 0022–0024 proposals applied outside the ordered
+chain. It records each proposal hash separately; 0021 is unavailable and no
+combined catalog approval is implied. All frozen migrations and application
+deadlines remain unchanged. This is one warm local sample, not a controlled
+performance comparison or an operating-capacity approval.
+
+**The strict capacity gate fails: three measured operations complete and six
+refuse. No numerical page or final-label read completes.** The benchmark now
+offers an explicit require-complete mode, used for this run, so bounded deadline
+refusals cannot produce a green capacity result.
+
+| Operation | Selected rows | Result | Wall time | Client SQL statements |
+| --- | ---: | --- | ---: | ---: |
+| Prepare run | 1 | Completed | 2.05 s | 9 |
+| Prepare dataset and pin | 1 | Completed | 15.12 s | 3,645 |
+| Read page | 1 | Operation deadline | 10.03 s | 2,222 |
+| Read final labels | 1 | Operation deadline | 10.02 s | 2,107 |
+| Prepare run | 16 | Completed | 8.00 s | 9 |
+| Prepare dataset and pin | 16 | Preparation deadline | 30.02 s | 3,664 |
+| Read final labels | 16 | Operation deadline | 10.02 s | 9 |
+| Prepare run | 64 | SQL statement timeout | 10.01 s | 9 |
+| Read final labels | 64 | Operation deadline | 10.02 s | 9 |
+
+Pages at width16 are not attempted after dataset preparation refuses; width64
+dataset/pages are not attempted after run preparation refuses. Metadata selection
+still takes only 0.331/1.457/4.530 ms. The guarded width16 feature check takes
+5.035 s / 254,833 buffer hits; its label check exceeds the 15-second diagnostic
+ceiling. The guarded width64 feature and label probes also exceed that ceiling.
+
+The new one-member closure probe takes 428 ms / 3,888 buffer hits, with exactly
+the original 381 references, 17 blobs, 140,143 wire bytes and 180,510 charged bytes.
+This checks the indexed traversal in the wider inventory but does not establish
+its scaling at 16/64 members, since those datasets were not sealed. The remaining
+end-to-end cost includes repeated SQL reconstruction and thousands of application
+statements; exact attribution needs per-query profiling. The new indexes and
+closure rewrite alone do not clear that bottleneck. Do not raise deadlines.
+
+Checked fixture setup takes 488.4 s; the complete matrix takes 684.4 s. It uses
+the same 64-QB/eight-profile, four-CSV/four-gzip inventory and one numerical
+history slot without opponent context. Full history, larger source files,
+qualified populations and real sources remain unproven. Local log:
+`/private/tmp/dfs118-review-draft-capacity64.log`. The assertion failure is the
+explicit capacity gate reporting the retained refusals; the five focused
+behavior/permission/retention regressions pass separately.
+
 ## Prefix20 wider-inventory checkpoint — 2026-10-14
 
 The [64-QB matrix](evidence/predictive-training-capacity64-prefix20-2026-10-14.json)

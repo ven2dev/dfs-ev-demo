@@ -2,6 +2,14 @@
 
 ## Review fixes in progress
 
+Checkpoint `87e5206` contains tested reserved SQL proposals for deletion/lock
+liveness, indexed closure/kickoff reads and static effective definitions. Five
+focused PostgreSQL cases, typecheck, affected ESLint and report contracts pass.
+The [strict broader draft benchmark](evidence/predictive-training-capacity64-review-drafts-2026-10-14.json)
+fails with three completed operations and six refusals; no page or label read
+completes in its 64-QB/eight-profile inventory. These are proposals outside the
+ordered chain, not a frozen combined migration checkpoint or merge approval.
+
 The [review-fix record](predictive-training-review-fixes.md) tracks current work
 on `fix/dfsEV-118-foundation-review`, including focused checks and negative
 controls for the label-clock and multi-dataset access fixes. Frozen 0001–0020 is
