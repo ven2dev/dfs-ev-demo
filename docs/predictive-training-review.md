@@ -54,6 +54,12 @@ need forward changes to the guard/dependency set and memo keys.
 
 ## Outstanding finish gates
 
+- Follow the [revised capacity plan](predictive-training-capacity-plan.md):
+  nested run-read/aggregation profiling, serialized client submissions,
+  reduced duplicate inspection/access work and repeated completion within 70%
+  of each deadline (30% headroom).
+  Withdraw the per-node closure prototype from planned promotion; keep the
+  original set-based closure unless inventory scaling evidence supports change.
 - Independent review of the complete training implementation and consumed
   source/codec boundaries, with findings resolved and a written disposition.
 - Representative capacity evidence and reviewed operating guidance: row width,
@@ -76,5 +82,7 @@ current-label read, including at width1 in the 64-QB/eight-profile inventory.
 The guarded width16 SQL label probe itself takes 14.808 s; byte-backed one-member
 preparation also issues 3,645 statements. Assess both SQL validation and fresh
 metadata/access work before accepting larger-workload readiness. A pg concurrent
-query deprecation warning is retained as a future driver-compatibility limitation;
-it is not proof of a correctness defect in the current pg release.
+query deprecation warning is reproduced with four distinct features without
+benchmark instrumentation and traced to parallel before-file rights checks.
+The common executor needs a strict no-overlap repair and interruption/draining
+regressions; the current trace does not claim that repair is implemented.

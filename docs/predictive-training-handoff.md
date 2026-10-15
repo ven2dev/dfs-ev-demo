@@ -771,12 +771,22 @@ are not attempted. Guarded width16 label validation alone takes 14.808 s;
 one-member byte-backed preparation performs 3,645 client statements. Tiny
 response pages and larger deadlines are not a demonstrated solution.
 
-The next capacity iteration should isolate repeated SQL label validation and
+The current [capacity iteration plan](predictive-training-capacity-plan.md)
+supersedes the historical next step below: profile nested run-read and heavy
+aggregation calls, serialize store query submissions, then reduce repeated
+inspection/access work without losing fresh before-file/delivery checks.
+Require repeated completion within 70% of each deadline. The per-node closure draft is withdrawn
+from planned promotion; retain the released set-based closure and intended
+kickoff indexes. #106 owns 0021 and #118 reserves 0022–0024 as drafts until that
+frozen prefix is available. No additional slot is allocated by this plan.
+
+The prior next capacity iteration proposed isolating repeated SQL label validation and
 application metadata/current-access round trips, preserving full lineages,
 exact cutoff/version identities and fresh rights before bytes/delivery. Repeat
 the same matrix after a concrete optimization; then assess full numerical
-histories, opponent context and provider file sizes. No forward migration number
-is allocated. Coordinate DDL with #106 before adding any ordered file.
+histories, opponent context and provider file sizes. At that historical
+checkpoint no forward migration number was allocated. Coordinate DDL with #106
+before adding any ordered file.
 
 Only benchmark setup changes here: blob metadata is staged in the disposable
 scratch database before unchanged checked SQL recording under the read guard.

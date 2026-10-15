@@ -13,6 +13,15 @@ baseline, and 16-row dataset preparation lost completion. The
 [capacity report](predictive-training-capacity.md) now discloses that comparison.
 Correctness acceptance does not approve performance or promote the drafts.
 
+The owner accepted the corrected reporting at `0724027` and redirected the next
+iteration to the dominant run-read, aggregation and repeated access work. The
+[current plan](predictive-training-capacity-plan.md) supersedes closure-first
+optimization: keep the original set-based closure in the intended reduced
+0023 scope, profile nested statements first, and require repeated capacity with
+30% deadline headroom (completion within 70%). The unchanged proposal file remains retained experimental
+evidence until that reduction is prepared. The pg warning is now reproduced
+without a benchmark proxy and traced to parallel before-file rights checks.
+
 ## Shared foundation scope exception
 
 The owner approved a deliberate exception to one branch per issue: land the
@@ -44,7 +53,7 @@ generators or effective database behavior.
 | 2. Reader/retention deadlock | Acquire the shared retention advisory lock before table locks; test concurrent ordering | Draft 0022 implemented; concurrent-reader/writer regression passed |
 | 3. Pure label selection time backstop | Withhold later labels even when a supplied selection bypasses ordinary head filtering; retain inclusive as-of behavior | Implemented; focused checks passed |
 | 4. Readiness access callback replacement | Preserve earlier compressed-file access checks across all assigned datasets | Implemented; restricted-login multi-shard and affected scheduled-revocation cases passed |
-| 5. Full-table closure scans | Traverse only selected dependency addresses through indexes; preserve exact closure and deletion behavior | Draft 0023 implemented; sealed CSV/gzip parity passed; broader capacity still fails |
+| 5. Full-table closure scans | Preserve exact closure; measure inventory growth before replacing set-based traversal | Per-node draft has parity but regresses; withdrawn from planned promotion; kickoff indexes retained in intended reduced scope |
 | 6. Unindexed kickoff lookup | Provide indexed ordinary/source schedule lookups and inspect natural query plans | Draft 0023 implemented; natural plans use both new indexes at 4,096 unrelated schedule rows |
 | 7. String-patched functions and nested guards | Publish complete effective function bodies in forward DDL; centralize the guard relation list | Drafts 0022/0024 implemented; effective policy, ACL, rollback and audit parity passed |
 | 8. Direct SQL temporal rules | Bypass TypeScript validation and test all three fit-clock refusals independently | Passed; includes both training label/event fit boundaries |
@@ -155,8 +164,9 @@ one-row dataset preparation, and two 16-row dataset deadline refusals per
 version. Warm closure probes are about seven times slower with the draft,
 with exact closure and protected-use parity at both widths. The old broad
 34–39% slowdown is not reproduced, but the closure regression is repeatable.
-0023 must be optimized before promotion; no proposal SQL changed in this
-reporting increment. See the [capacity report](predictive-training-capacity.md)
+That checkpoint proposed optimizing 0023. The revised plan now withdraws its
+per-node closure rewrite and prioritizes nested run-read/aggregation profiling;
+no proposal SQL changed in this reporting increment. See the [capacity report](predictive-training-capacity.md)
 for ranges, attribution limits and reproduction.
 
 The paired diagnostic completes in 805.8 seconds, including 574.2 seconds of

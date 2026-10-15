@@ -6,6 +6,25 @@ one consumer body. It does not qualify real sources, historical availability,
 population coverage or #54 Part B. The prior shared-context measurement remains
 in [the evidence log](predictive-training-evidence.md).
 
+## Current next step
+
+The [revised iteration plan](predictive-training-capacity-plan.md) replaces the
+closure-first priority below. Profile the run-read call and four heavy
+aggregation batches before rewriting SQL, then reduce repeated compressed
+inspection and rights-authorization work while preserving every before-file
+and delivery check. The closure scan concern was an unmeasured scaling argument;
+the per-node draft regresses at the measured scale. Plan to retain the released
+set-based closure and the useful kickoff indexes, withdrawing the traversal
+rewrite from promotion. Proposal files remain unchanged until that reduced
+candidate is prepared; their retained hashes remain valid.
+
+The working capacity target is repeated completion within 70% of unchanged
+deadlines (7-second reads / 21-second preparations), with every candidate
+sample reported and no refusals averaged away. The same baseline moved from
+10.88 seconds to about 14.06 seconds for one-row preparation across sessions;
+a single pass close to a deadline is insufficient. The plan also records the
+pg warning's reproduced store-side call site. No capacity claim changes here.
+
 ## Interleaved baseline/draft comparison — 2026-10-14
 
 The [paired evidence](evidence/predictive-training-capacity64-interleaved-review-drafts-2026-10-14.json)
@@ -54,9 +73,11 @@ sums must not be interpreted as independent elapsed-time shares. Both versions'
 one-row preparation also makes 1,052 compressed-inspection queries and 311
 rights-authorization queries: repeated application work remains another target.
 
-**Do not promote 0023 as a performance improvement.** Its exact indexed
-dependency traversal needs further profiling and optimization before promotion;
-retain the approved deletion, lock-order and rights guarantees. The comparison
+**Do not promote 0023 as a performance improvement.** The per-node traversal
+is withdrawn from the planned promotion scope; retain the released set-based
+closure and measure larger-inventory growth before proposing a replacement.
+Run-read/aggregation/access work is the next priority. Retain the approved
+deletion, lock-order and rights guarantees. The comparison
 records 12 completed preparations and four refusals. Its diagnostic test passes
 because the comparison and parity assertions complete; it is not a capacity gate
 pass. It does not repeat numerical pages, standalone labels or width64, whose

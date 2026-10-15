@@ -1,5 +1,23 @@
 # #118 guarded evidence checkpoint
 
+## Next iteration revised after reporting acceptance
+
+The owner accepted `0724027`'s reporting and requested a different priority.
+The [updated plan](predictive-training-capacity-plan.md) profiles the dominant
+run-read/aggregation calls before changing SQL, then targets repeated compressed
+inspection/access queries. It withdraws the per-node closure from planned 0023
+promotion and proposes keeping the released set-based closure with the kickoff
+indexes. Files remain unchanged pending a reduced candidate. Capacity acceptance
+now targets repeated completion within 70% of each deadline rather than a pass
+near the timeout. No new full matrix or aggregate gate was run.
+
+A small four-feature direct-client probe reproduces the pg deprecation warning
+at parallel before-file rights checks in `persistence.ts`; this is store-side,
+not dependent on the benchmark proxy. The probe passes with the warning; it is
+diagnosis, not a serialization fix. The existing shared-body 1/16/64 regression
+passes without reproducing it. The plan records stack, scope and working logs.
+No application, ordered SQL, catalog or proposal SQL changed in this increment.
+
 ## Paired capacity report correction
 
 Independent re-review accepted the correctness fixes through `93399ec` and

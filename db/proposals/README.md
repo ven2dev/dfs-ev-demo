@@ -10,6 +10,14 @@ not frozen it. #118 owns 0022–0024, but must first integrate the published fro
 | 0023 | `0023_predictive_training_indexed_closure.sql` | Indexed dependency traversal and kickoff lookup indexes, preserving historical closure |
 | 0024 | `0024_predictive_training_readable_contracts.sql` | Static effective function definitions and memo initialization from the central inventory |
 
+The per-node 0023 closure is a measured regression and is withdrawn from the
+planned promotion scope. Its file remains unchanged as experimental evidence;
+the next reduced candidate should retain the kickoff indexes and the released
+set-based closure. Profile run-read/aggregation/access work first, as specified
+in the [current capacity plan](../../docs/predictive-training-capacity-plan.md).
+Any future traversal replacement requires measured inventory growth and parity;
+the original full-scan concern alone does not justify a rewrite.
+
 The focused cases in `tests/db/sourceClaims.test.ts` apply these drafts only to
 disposable databases after frozen prefix20. They check behavior and rollback,
 not an ordered catalog upgrade. They deliberately detect effective-body drift;
