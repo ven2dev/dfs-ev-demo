@@ -3559,6 +3559,48 @@ it("QB complete run checks refuse invalid addresses damaged later shards revocat
   });
 });
 
+it("QB complete run preserves earlier compressed access checks after authorizing a later empty shard", async () => {
+  await withProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store, undefined, false, true);
+    await store.recordSourcePassingYards("multi-shard-compressed-feature", seed.request, seed.profiles);
+    const input = await previewRequest(client, seed);
+    input.slots[0].datasetId = "A-compressed";
+    input.slots.push({ ...input.slots[0], playerId: "00-0000002", datasetId: "Z-missing" });
+    const inventory = await store.prepareFittingRun(input);
+    await store.prepareDataset(datasetRequest(inventory));
+    await store.prepareDataset({ ...datasetRequest(inventory, "later-empty-pin"), datasetId: "Z-missing" });
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      let authorizations = 0, earlierCaptureRechecks = 0, wireReads = 0;
+      const tracked = { query: async (sql: string, params?: unknown[]) => {
+        const result = await login.query(sql, params);
+        if (sql.includes("FROM unnest($1::text[]) id ORDER BY id")) {
+          authorizations++;
+          if (authorizations === 2) expect(params).toEqual([[]]);
+        }
+        if (authorizations === 2 && sql === "SELECT public.predictive_read_compressed_inspections($1)") {
+          expect(params).toEqual([[seed.fixture.input.captureId]]);
+          earlierCaptureRechecks++;
+        }
+        return result;
+      } } as unknown as Client;
+      const observed = { ...artifacts, database: { ...artifacts.database,
+        readBinary: async (...args: Parameters<typeof artifacts.database.readBinary>) => {
+          wireReads++; return artifacts.database.readBinary(...args);
+        } } };
+      const replay = await createLocalPredictiveStore(tracked, loginTarget, observed);
+      const result = await replay.readFittingRunReadiness(readinessRequest(inventory));
+      expect(result.datasets.map((dataset) => dataset.datasetId)).toEqual(["A-compressed", "Z-missing"]);
+      expect(result.datasetsComplete).toBe(true);
+      expect(authorizations).toBe(2);
+      // The second shard has no consumer. Its authorization must still retain
+      // the first shard's real SQL codec/capture recheck through delivery.
+      // Existing revocation cases establish what that recheck refuses.
+      expect(earlierCaptureRechecks).toBeGreaterThan(0);
+      expect(wireReads).toBe(1);
+    });
+  });
+});
+
 it("QB complete run checks guard direct SQL writers through every shard and recheck scheduled rights before delivery", async () => {
   await withProof(async ({ client, store, artifacts, target }) => {
     const seed = await seedConsumers(store);
@@ -4493,6 +4535,12 @@ it("QB run SQL rejects forged history kickoff clocks and cross-shard leakage bef
         ["unobserved kickoff", (r) => { r.slots[0].featureCutoff = r.fitCutoff = "2026-10-06T00:00:00.000Z"; }, "training-kickoff-missing"],
         ["wrong exact scope", (r) => { r.slots[0].featureRef = feature.id; r.slots[0].playerId = "00-0000002"; }, "training-feature-reference-mismatch"],
         ["future label clock", (r) => { r.slots[0].labelsAsOf = "2099-01-01T00:00:00.000Z"; }, "training-future-cutoff"],
+        ["feature at kickoff", (r) => { r.slots[0].kickoff = r.slots[0].featureCutoff; }, "training-feature-not-pregame"],
+        ["training label after fit", (r) => { Object.assign(r.slots[0], { partition: "training", kickoff: "2026-10-04T17:00:00.000Z",
+          featureCutoff: "2026-10-04T12:00:00.000Z", labelsAsOf: "2026-10-08T00:00:00.000Z" }); r.fitCutoff = "2026-10-07T00:00:00.000Z"; }, "training-label-after-fit"],
+        ["training event at fit", (r) => { Object.assign(r.slots[0], { partition: "training", kickoff: "2026-10-07T00:00:00.000Z",
+          featureCutoff: "2026-10-06T12:00:00.000Z", labelsAsOf: "2026-10-07T00:00:00.000Z" }); r.fitCutoff = "2026-10-07T00:00:00.000Z"; }, "training-label-after-fit"],
+        ["evaluation feature before fit", (r) => { r.slots[0].featureCutoff = new Date(Date.parse(r.fitCutoff) - 1).toISOString(); }, "training-evaluation-before-fit"],
         ["missing model hash", (r) => { Object.assign(r.modelIdentity, { configurationSha256: null }); }, "training-policy-identity-refused"],
         ["null canonical player", (r) => { Object.assign(r.slots[0], { playerId: null }); }, "training-slot-refused"],
         ["oversized run", (r) => { r.slots = Array.from({ length: 1025 }, (_, i) => ({ ...r.slots[0], playerId: "00-" + String(i).padStart(7, "0") })); }, "training-slot-bounds-refused"],

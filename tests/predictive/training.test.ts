@@ -355,6 +355,24 @@ describe("deterministic training selection over verified records", () => {
     const metadata = [{ ordinal: 0, featureId: "removed-feature", labelId: null, labelSupersededAsOf: false, labelSupersededAtSnapshot: false }];
     expect(() => selectTrainingRows(runRequest(), SNAPSHOT, [], new Set(), metadata)).toThrow("training-selection-inventory-mismatch");
   });
+  it("withholds a fixed future label independently of SQL filtering and keeps the as-of boundary inclusive", () => {
+    const asOf = "2026-10-16T00:00:00.000Z";
+    const request = runRequest([slot({ labelsAsOf: asOf })]);
+    const later = label("after-as-of", "2026-10-16T00:00:00.001Z", 999);
+    const metadata = [{ ordinal: 0, featureId: null, labelId: later.id, labelSupersededAsOf: false, labelSupersededAtSnapshot: false }];
+    const row = selectTrainingRows(request, SNAPSHOT, [later], new Set(), metadata)[0];
+    expect(row.label).toEqual({ state: "missing", reason: "label-after-as-of", reference: null,
+      supersededAsOf: false, supersededNow: false, record: null });
+    expect(canonical(row)).not.toContain('"value":999');
+    // Ordinary head selection also withholds the future record. A requested
+    // exact ID is an invalid reference, rather than a missing head.
+    expect(selectTrainingRows(request, SNAPSHOT, [later])[0].label.reason).toBe("label-not-recorded");
+    expect(() => selectTrainingRows(runRequest([slot({ labelsAsOf: asOf, labelRef: later.id })]), SNAPSHOT, [later]))
+      .toThrow("training-label-reference-mismatch");
+    const atBoundary = label("at-as-of", asOf, 0);
+    const inclusive = selectTrainingRows(request, SNAPSHOT, [atBoundary], new Set(), [{ ...metadata[0], labelId: atBoundary.id }])[0];
+    expect(inclusive.label).toMatchObject({ state: "usable", reference: { id: atBoundary.id }, record: { body: { value: 0 } } });
+  });
   it("rejects malformed metadata flags before source files can be opened", () => {
     const item = { ordinal: 0, featureId: null, labelId: null, labelSupersededAsOf: false, labelSupersededAtSnapshot: false };
     expect(() => checkTrainingMetadataSelection([{ ...item, labelSupersededAtSnapshot: null } as never], 1))

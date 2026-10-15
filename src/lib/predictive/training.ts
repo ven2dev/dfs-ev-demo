@@ -227,13 +227,14 @@ export const selectTrainingRows = (request: FittingRunRequest, snapshotAt: strin
     if (label && (!labelMatches(label, slot, run.selection) || instant(label.recordedAt) > instant(slot.labelsAsOf))) {
       if (slot.labelRef !== null) refuse("training-label-reference-mismatch");
     }
-    const selected = label && labelMatches(label, slot, run.selection) ? label : null;
+    const labelAfterAsOf = label !== null && instant(label.recordedAt) > instant(slot.labelsAsOf);
+    const selected = label && !labelAfterAsOf && labelMatches(label, slot, run.selection) ? label : null;
     const currentSuccessor = selected && currentSuccessors.has(selected.id);
     return { ordinal, slot,
       history: { policy: TRAINING_HISTORY_POLICY, definitionSha256: TRAINING_HISTORY_SHA256,
         fromSeason: slot.season - 2, throughSeason: slot.season, windows: [4, 8, 16], maximumSlots: 16 },
       feature: featureSelection,
-      label: { state: selected ? "usable" : "missing", reason: selected ? null : label ? "label-profile-mismatch" : "label-not-recorded",
+      label: { state: selected ? "usable" : "missing", reason: selected ? null : labelAfterAsOf ? "label-after-as-of" : label ? "label-profile-mismatch" : "label-not-recorded",
         reference: selected ? reference(selected) : null, supersededAsOf: selected ? fixed?.labelSupersededAsOf ?? successors.has(selected.id) : false,
         supersededNow: selected ? fixed?.labelSupersededAtSnapshot ?? Boolean(currentSuccessor) : false, record: selected },
     };

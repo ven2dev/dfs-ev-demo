@@ -45,6 +45,34 @@ it("training validation migration preserves evidence and refuses cache policy an
       expect(upgraded.slice(0, 19)).toEqual(ledger);
       expect(await runScratchMigrations(admin, { ...target, files, verify })).toMatchObject({ schemaVersion: 20, executed: [] });
       expect((await admin.query("SELECT * FROM db_migrations ORDER BY version")).rows).toEqual(upgraded);
+      // Inspect the installed effective bodies, including renamed kernels and
+      // transitive helpers. Over-approximate identifiers against real public
+      // relations/functions so static SQL, qualified/unqualified calls and
+      // literal dynamic SQL are included. Memo infrastructure is excluded from
+      // the evidence traversal; its pg_temp state is checked separately below.
+      const functions = (await admin.query(`SELECT p.proname,p.prosrc FROM pg_proc p
+        JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public'`)).rows as { proname: string; prosrc: string }[];
+      const relations = new Set<string>((await admin.query(`SELECT c.relname FROM pg_class c
+        JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p')`)).rows.map((row) => row.relname));
+      const memoDefinition = functions.find((fn) => fn.proname === "predictive_training_memo_ready")!.prosrc;
+      const memoTables = [...memoDefinition.matchAll(/'(predictive_[a-z0-9_]+)'/g)].map((match) => match[1]).filter((name) => relations.has(name));
+      expect(memoTables).toHaveLength(36);
+      const pending = ["predictive_source_plan_v2", "predictive_source_plan_v3", "predictive_source_plan_check",
+        "predictive_source_witness_at", "predictive_source_consumer_check"], visited = new Set<string>(), dependencies = new Set<string>();
+      while (pending.length) {
+        const name = pending.pop()!;
+        if (visited.has(name) || name.startsWith("predictive_training_memo_")) continue;
+        visited.add(name);
+        for (const fn of functions.filter((fn) => fn.proname === name)) {
+          for (const [token] of fn.prosrc.matchAll(/\bpredictive_[a-z0-9_]+\b/g)) {
+            if (relations.has(token)) dependencies.add(token);
+            if (!visited.has(token) && functions.some((candidate) => candidate.proname === token)) pending.push(token);
+          }
+        }
+      }
+      expect([...dependencies].filter((table) => !memoTables.includes(table)), "uncaptured memo evidence dependencies").toEqual([]);
+      expect(dependencies.has("predictive_rights_decisions")).toBe(true);
+      expect(dependencies.has("predictive_compressed_publications")).toBe(true);
       const clock = async () =>
         (await admin.query("SELECT predictive_source_time(clock_timestamp()) AS t")).rows[0].t as string;
       const probe = async (work: () => Promise<void>) => {
@@ -156,6 +184,47 @@ it("training validation migration preserves evidence and refuses cache policy an
         await reader.query("ROLLBACK");
         await admin.query(`INSERT INTO predictive_rights_decisions VALUES('memo-restored',$1,'memo-expiring','{internal-research,model-input,outcome-label}',
           date_trunc('milliseconds',clock_timestamp()),NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','restore fixture uses')`, [examples[0].profileId]);
+
+        // Exercise the plan and witness caches directly. Unlike consumer hits,
+        // neither has a separate fresh access check that could mask a missing
+        // epoch in its key. Explicit audited clocks avoid wall-clock sleeps;
+        // no evidence or ingestion time is backdated to create these probes.
+        const boundary = new Date(Date.parse(await clock()) + 600_000).toISOString();
+        const beforeBoundary = new Date(Date.parse(boundary) - 1).toISOString();
+        for (const [index, example] of examples.entries()) {
+          await admin.query(`INSERT INTO predictive_rights_decisions
+            SELECT $1,profile_id,id,'{}',$3,NULL,date_trunc('milliseconds',clock_timestamp()),'synthetic','scheduled cache epoch probe'
+            FROM predictive_rights_decisions d WHERE profile_id=$2 AND NOT EXISTS
+              (SELECT 1 FROM predictive_rights_decisions successor WHERE successor.predecessor_id=d.id)`,
+          ["memo-epoch-" + index, example.profileId, boundary]);
+        }
+        await probe(async () => {
+          for (const example of examples) {
+            const planRequest = { profileId: example.profileId, rawGameId: example.prior.rawGameId,
+              rawTeam: example.prior.rawHomeTeam, rawPlayerId: example.playerId, cutoff: seed.cutoff };
+            const witnessRequest = { profileIds: [example.profileId],
+              entityKeys: ["player-game-stats:" + example.prior.gameId + ":" + example.playerId], cutoff: seed.cutoff };
+            const planFunction = example === examples[0] ? "predictive_source_plan_v2" : "predictive_source_plan_v3";
+            for (const name of [planFunction, "predictive_source_witness_at"]) {
+              const request = name === "predictive_source_witness_at" ? witnessRequest : planRequest;
+              const original = (await admin.query(`SELECT ${name}_unmemoized($1,$2) AS result`, [request, beforeBoundary])).rows[0].result;
+              expect((await admin.query(`SELECT ${name}($1,$2) AS result`, [request, beforeBoundary])).rows[0].result).toEqual(original);
+              expect((await admin.query(`SELECT ${name}($1,$2) AS result`, [request, beforeBoundary])).rows[0].result).toEqual(original);
+              const kind = name === "predictive_source_witness_at" ? "witness" : name === "predictive_source_plan_v2" ? "plan-v2-dispatch" : "plan-v3";
+              expect((await admin.query("SELECT count(*)::integer AS n FROM pg_temp.predictive_training_memo WHERE kind=$1 AND key->0=$2::jsonb",
+                [kind, request])).rows[0].n).toBe(1);
+              if (name === "predictive_source_witness_at") {
+                const refused = (await admin.query(`SELECT ${name}_unmemoized($1,$2) AS result`, [request, boundary])).rows[0].result;
+                expect(refused).toMatchObject({ reason: "rights-not-in-force", heads: [] });
+                expect((await admin.query(`SELECT ${name}($1,$2) AS result`, [request, boundary])).rows[0].result).toEqual(refused);
+              } else for (const variant of [name + "_unmemoized", name]) {
+                await admin.query("SAVEPOINT epoch_refusal");
+                await expect(admin.query(`SELECT ${variant}($1,$2)`, [request, boundary])).rejects.toThrow("predictive-source-plan-rights-profile-invalid");
+                await admin.query("ROLLBACK TO SAVEPOINT epoch_refusal");
+              }
+            }
+          }
+        });
 
         // No cached success crosses transactions into a mandatory deletion.
         await reader.query("BEGIN"); await reader.query("SELECT predictive_training_read_guard()");

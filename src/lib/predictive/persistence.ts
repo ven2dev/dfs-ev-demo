@@ -1236,7 +1236,11 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     // expiry still can: check its current rights before EACH unique file and
     // at delivery, bypassing the metadata cache. Full SQL reconstruction was
     // already checked per record above and need not be repeated at delivery.
+    // Readiness authorizes several datasets in one transaction. Preserve the
+    // earlier datasets' codec/native checks and scheduled-expiry backstops.
+    const previousAccess = batchAccess;
     batchAccess = async () => {
+      if (previousAccess) await previousAccess();
       const allowed = (await query(`WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS t)
         SELECT coalesce(bool_and(public.predictive_rights_allow(x.profile,c.t,c.t,'internal-research')
           AND public.predictive_rights_allow(x.profile,c.t,c.t,x.use)),true) AS allowed

@@ -18,7 +18,9 @@ checkpoint. Main/integration changes need an affected review.
 
 Ordered **0001–0020 is frozen**. #118 owns 0012, 0014, 0016, 0019 and 0020;
 0013, 0015, 0017 and 0018 are consumed #106 source/codec dependencies. No later
-migration is allocated. Review migration/catalog pairs, manifest generation,
+migration was allocated at that checkpoint. The current
+[review-fix plan](predictive-training-review-fixes.md) records the shared-foundation
+exception, findings and subsequent migration allocation. Review migration/catalog pairs, manifest generation,
 readiness contracts and application consumers together. Do not rewrite a frozen
 migration to address a finding.
 

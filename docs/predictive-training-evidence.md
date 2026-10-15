@@ -1,5 +1,15 @@
 # #118 guarded evidence checkpoint
 
+## Review fixes in progress
+
+The [review-fix record](predictive-training-review-fixes.md) tracks current work
+on `fix/dfsEV-118-foundation-review`, including focused checks and negative
+controls for the label-clock and multi-dataset access fixes. Frozen 0001–0020 is
+unchanged. #106 owns 0021 and #118 reserves 0022–0024, to finalize after integrating
+the frozen 0021 checkpoint. SQL retention/lock/performance findings, affected
+independent review, successful capacity gates and aggregate validation remain
+merge prerequisites. Neither #106 nor #118 is complete.
+
 ## Prefix20 broader capacity and review preparation
 
 The [retained 64-QB matrix](evidence/predictive-training-capacity64-prefix20-2026-10-14.json)
@@ -40,7 +50,7 @@ not established by this run.
 
 The [independent review map](predictive-training-review.md) identifies complete
 scope, review bases, policy boundaries and remaining approvals. It is not an
-independent review. No later migration is allocated. #118 remains incomplete;
+independent review. No later migration was allocated at that checkpoint. #118 remains incomplete;
 #54 Part B remains blocked by reader capacity and #106/#107 qualification.
 
 ## 0020 guarded SQL validation and 16-row capacity

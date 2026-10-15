@@ -119,6 +119,7 @@ export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
   "QB complete run checks enumerate every assigned dataset and reconcile sparse missing slots through replay roles",
   "QB complete run checks refuse invalid addresses damaged later shards revocation and deleted inventories without a subset result",
   "QB complete run checks guard direct SQL writers through every shard and recheck scheduled rights before delivery",
+  "QB complete run preserves earlier compressed access checks after authorizing a later empty shard",
   "QB operation cancellation releases a blocked SQL session without recording a partial run and retries immutably",
   "QB operation deadlines stop SQL before its statement timeout and release guards for a fresh reader",
   "QB operation cancellation drains file verification without a partial dataset pin or invalidation and can recover",
