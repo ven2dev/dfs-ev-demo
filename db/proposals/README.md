@@ -18,6 +18,13 @@ in the [current capacity plan](../../docs/predictive-training-capacity-plan.md).
 Any future traversal replacement requires measured inventory growth and parity;
 the original full-scan concern alone does not justify a rewrite.
 
+`training_witness_population.sql` is an **unnumbered profiling experiment**,
+not an additional reserved migration. It reuses the released witness kernel's
+complete unfiltered result within the existing guarded/rights-epoch memo and
+projects exact entity views. Its [diagnosis and test boundary](../../docs/predictive-training-nested-profile.md)
+are separate from the retained per-node closure experiment. Final placement
+within an agreed forward migration requires 0021 integration and review.
+
 The focused cases in `tests/db/sourceClaims.test.ts` apply these drafts only to
 disposable databases after frozen prefix20. They check behavior and rollback,
 not an ordered catalog upgrade. They deliberately detect effective-body drift;

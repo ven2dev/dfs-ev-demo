@@ -22,6 +22,14 @@ optimization: keep the original set-based closure in the intended reduced
 evidence until that reduction is prepared. The pg warning is now reproduced
 without a benchmark proxy and traced to parallel before-file rights checks.
 
+The next [profile/optimization checkpoint](predictive-training-nested-profile.md)
+serializes those submissions and passes cancellation/rollback regressions. The
+64-QB nested profile identifies repeated full-population witness reconstruction
+inside run reads and decision-plan batches. An unnumbered population-reuse draft
+passes released-kernel parity, rights/cutoff isolation and restricted replay;
+larger before/after capacity remains unmeasured because setup attempts failed.
+No migration is promoted and no foundation merge gate is cleared by this work.
+
 ## Shared foundation scope exception
 
 The owner approved a deliberate exception to one branch per issue: land the

@@ -2,6 +2,7 @@ import { Client, type QueryResultRow } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
 import type { ArtifactMediaType, PrivateArtifactStore } from "./artifacts.ts";
 import { createEvidenceBatch } from "./batchEvidence.ts";
+import { createQueryQueue } from "./queryQueue.ts";
 import { createTrainingOperation, TRAINING_TIME_BOUNDS, type TrainingOperationOptions } from "./trainingOperation.ts";
 import { normalizeFittingRunRequest, selectTrainingRows, TRAINING_BOUNDS, type FittingRunRequest } from "./training.ts";
 import { checkTrainingMetadataSelection, TRAINING_SELECTION_SQL, trainingSelectionParameters, type TrainingMetadataSelection } from "./trainingSql.ts";
@@ -141,9 +142,15 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
   const artifacts = privateArtifacts.database;
   let sessionRetired = false;
   let trainingOperation: ReturnType<typeof createTrainingOperation> | null = null;
+  const queries = createQueryQueue();
   const query = <R extends QueryResultRow = QueryResultRow>(sql: string, values: unknown[] = []) => {
-    if (sessionRetired) return Promise.reject(new Error("predictive-session-retired"));
-    return trainingOperation ? trainingOperation.wait(() => client.query<R>(sql, values)) : client.query<R>(sql, values);
+    const operation = trainingOperation;
+    return queries.run(() => {
+      // Check at submission, after waiting behind earlier statements. An
+      // interrupted connection must never execute its queued access work.
+      if (sessionRetired) refuse("predictive-session-retired");
+      return operation ? operation.wait(() => client.query<R>(sql, values)) : client.query<R>(sql, values);
+    });
   };
   const assertTarget = async () => {
     const check = async () => { target.assertTarget(target.expected); await checkConnectedTarget(client, target.expected); };
@@ -268,7 +275,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
         // Interruption closes this connection; PostgreSQL then rolls back and
         // releases its guards. Otherwise drain a real rollback before reuse.
         if (!sessionRetired) {
-          try { await client.query("ROLLBACK"); }
+          try { await queries.run(async () => { if (!sessionRetired) await client.query("ROLLBACK"); }); }
           catch (rollbackError) { if (!sessionRetired) throw rollbackError; }
         }
         throw error;

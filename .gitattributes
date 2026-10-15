@@ -8,3 +8,4 @@ tests/db/fixtures/*.sql text eol=lf
 db/catalog-contracts/*.json linguist-generated=true
 db/schema.sql linguist-generated=true
 docs/evidence/predictive-training-capacity*.json linguist-generated=true
+docs/evidence/predictive-training-nested*.json linguist-generated=true

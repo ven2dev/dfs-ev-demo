@@ -23,6 +23,8 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "QB witness population draft preserves filtered history, routing, rights epochs and restricted consumer replay",
+  "QB distinct feature verification serializes direct and batched SQL and drains failed branches before rollback",
   "scratch snapshots clone only registered disposable targets and isolate later writes",
   "QB review liveness draft removes an earlier pinned dataset when deletion widens through a later provider correction",
   "QB review liveness draft acquires the shared retention lock before table guards and permits concurrent readers",

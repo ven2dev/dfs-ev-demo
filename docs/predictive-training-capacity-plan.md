@@ -159,3 +159,35 @@ reproduces the same stack and passes in 4.99 seconds; its working log is
 `/private/tmp/dfs118-final-query-trace.log`. Typecheck, affected ESLint, document
 links and whitespace checks pass. No new full benchmark, aggregate
 gate, application change or SQL change is claimed by this planning checkpoint.
+
+## Executor repair
+
+The common store executor now serializes direct and batched statements through
+one promise queue. Each queued submission retains its original operation clock
+and checks connection retirement after waiting. ROLLBACK drains the same queue;
+an interrupted connection still requires replacement. Independent verification
+branches and metadata coalescing remain enabled. This changes submission order,
+not the rights, cutoff, reconstruction or numerical rules.
+
+A restricted-login regression seeds four distinct features, rejects overlapping
+submissions, and injects an actual division-by-zero SQL failure while sibling
+verification branches are pending. It verifies rollback, no dataset publication,
+zero remaining statements, and recovery to independently expected feature values
+with explicit missing labels. Five affected SQL/file cancellation, deadline,
+partial-pin rollback and chained compressed-access regressions also pass. Eleven
+focused Node cases, six report-contract cases, typecheck and affected lint pass.
+These checks establish executor behavior, not training capacity.
+
+The opt-in `vitest.training-profile.config.mts` profiles nested `auto_explain`
+statements on an owned disposable prefix20 database. Administrative setup enables
+instrumentation for a restricted login; measured APIs keep their ordinary
+deadlines. Four-player smoke profiling passes. Larger-inventory profiling and
+the resulting optimization evidence are recorded separately from capacity gates.
+
+The [nested diagnosis and witness experiment](predictive-training-nested-profile.md)
+now retain the 64-QB profile and test one concrete optimization: reconstruct an
+unfiltered witness population once per guarded scope/cutoff/rights epoch, then
+derive exact entity views. The expanded parity regression passes, as does the
+four-QB interleaved smoke comparison. Two larger comparison attempts stopped
+during setup, so no 64-QB speed improvement or capacity pass is claimed. The
+unnumbered SQL remains an experiment outside the ordered migration chain.

@@ -81,6 +81,9 @@ const measure = async <T>(admin: Client, target: Target, artifacts: PrivateArtif
   } finally { await client.end(); await admin.query(`DROP OWNED BY ${login}`); await admin.query(`DROP ROLE ${login}`); }
 };
 
+// Shared restricted-connection instrumentation for opt-in, isolated comparisons.
+export { measure };
+
 export const compareTrainingCapacity = async () => {
   const max = Number(process.env.PREDICTIVE_CAPACITY_MAX_ROWS ?? 64);
   if (![1, 64].includes(max)) throw new Error("paired-capacity-size-refused");
