@@ -1,5 +1,5 @@
-import { randomBytes } from "node:crypto";
-import { mkdtemp, realpath, rm } from "node:fs/promises";
+import { createHash, randomBytes } from "node:crypto";
+import { mkdtemp, readFile, realpath, rm } from "node:fs/promises";
 import { tmpdir, cpus, platform, arch } from "node:os";
 import { join } from "node:path";
 import { Client } from "pg";
@@ -82,6 +82,8 @@ const measure = async <T>(client: Client, target: Target, artifacts: PrivateArti
 it("measures independent QB training records with default budgets and exact evidence", async () => {
   const max = Number(process.env.PREDICTIVE_CAPACITY_MAX_ROWS ?? 64);
   if (![1, 16, 64].includes(max)) throw new Error("capacity-size-refused");
+  const reviewDrafts = process.env.PREDICTIVE_CAPACITY_REVIEW_DRAFTS === "1";
+  const requireComplete = process.env.PREDICTIVE_CAPACITY_REQUIRE_COMPLETE === "1";
   const harness = await createScratchHarness(process.env), root = await realpath(await mkdtemp(join(tmpdir(), "dfs118-capacity-")));
   const measurements: Measurement[] = [], plans: unknown[] = [];
   try {
@@ -91,6 +93,15 @@ it("measures independent QB training records with default budgets and exact evid
       await ensurePredictiveRoles(client);
       await runScratchMigrations(client, { ...target, files, verify: createCatalogVerifier(contracts) });
       await ensureHarnessSession(client);
+      // Reserved forward DDL is measured separately while #106's 0021 is
+      // pending. Never manufacture an ordered prefix or catalog approval.
+      const drafts: { file: string; sha256: string }[] = [];
+      if (reviewDrafts) for (const name of ["0022_predictive_training_liveness.sql", "0023_predictive_training_indexed_closure.sql",
+        "0024_predictive_training_readable_contracts.sql"]) {
+        const sql = await readFile(new URL("../../db/proposals/"+name, import.meta.url), "utf8");
+        await client.query(sql);
+        drafts.push({ file: name, sha256: createHash("sha256").update(sql).digest("hex") });
+      }
       const artifacts = await openArtifactStore(root, 8_000_000), store = await createLocalPredictiveStore(client, target, artifacts);
       const seedStarted = performance.now(), seed = await seedCapacity(store, client, artifacts, max, { guardedRecording: true });
       process.stdout.write("capacity seed " + JSON.stringify({ rows: max, wallMs: Math.round(performance.now() - seedStarted) }) + "\n");
@@ -104,7 +115,7 @@ it("measures independent QB training records with default budgets and exact evid
           try {
             const plan = (await client.query("EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + sql, values)).rows[0]["QUERY PLAN"][0];
             const functions = (await client.query(`SELECT funcname,calls,total_time,self_time FROM pg_stat_xact_user_functions
-              WHERE calls>0 AND funcname LIKE 'predictive_source_%' ORDER BY total_time DESC LIMIT 12`)).rows;
+              WHERE calls>0 AND (funcname LIKE 'predictive_source_%' OR funcname LIKE 'predictive_training_%') ORDER BY total_time DESC LIMIT 16`)).rows;
             plans.push({ name, count, plan, functions });
           } catch (error) {
             if (!(error instanceof Error && "code" in error && error.code === "57014")) throw error;
@@ -128,6 +139,8 @@ it("measures independent QB training records with default budgets and exact evid
             (reader) => reader.prepareDataset(datasetRequest), measurements);
           if (manifest) {
             expect(manifest.rows).toHaveLength(count);
+            await explain("retained-closure", "SELECT public.predictive_training_dataset_closure($1,$2)",
+              [manifest.fittingRunId,manifest.datasetId], true);
             plans.push({ name: "retained-closure", count, references: manifest.closure.references.length, blobs: manifest.closure.blobs.length,
               chargedWireBytes: manifest.closure.blobs.reduce((sum, row) => sum + Number(row.byteSize), 0),
               serializedManifestBytes: Buffer.byteLength(canonical(manifest)),
@@ -158,14 +171,14 @@ it("measures independent QB training records with default budgets and exact evid
         }
         process.stdout.write("capacity checkpoint " + JSON.stringify({ count, measurements: measurements.filter((m) => m.count === count) }) + "\n");
       }
-      if (max === 1) expect(measurements.every((row) => row.status === "completed")).toBe(true);
-      expect(measurements.some((row) => row.status === "completed")).toBe(true);
       process.stdout.write("training capacity evidence " + JSON.stringify({ version: "synthetic-training-capacity-v1", measuredAt: new Date().toISOString(),
         runtime: { node: process.version, postgres: (await client.query("SHOW server_version")).rows[0].server_version, platform: platform(), arch: arch(),
           logicalCpus: cpus().length, cpu: cpus()[0]?.model },
         scope: { players: max, groups: Math.ceil(max / 8), sourceProfiles: seed.profiles.length, historySlots: 1, candidate: "stats-v1:player_pass_yds",
           compressedGroups: Math.floor(Math.ceil(max / 8) / 2), populationCoverage: "unqualified", datasetLabels: "missing", labelsReadSeparately: true },
-        migrations: files.map((file: { version: number; sha256: string }) => ({ version: file.version, sha256: file.sha256 })), measurements, plans }) + "\n");
+        migrations: files.map((file: { version: number; sha256: string }) => ({ version: file.version, sha256: file.sha256 })), drafts, measurements, plans }) + "\n");
+      if (max === 1 || requireComplete) expect(measurements.filter((row) => row.status !== "completed"), "capacity refusals are not successful reads").toEqual([]);
+      expect(measurements.some((row) => row.status === "completed")).toBe(true);
     });
   } finally { try { await harness.close(); } finally { await rm(root, { recursive: true, force: true }); } }
 });

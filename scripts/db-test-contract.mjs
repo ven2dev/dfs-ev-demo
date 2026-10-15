@@ -23,6 +23,11 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "QB review liveness draft removes an earlier pinned dataset when deletion widens through a later provider correction",
+  "QB review liveness draft acquires the shared retention lock before table guards and permits concurrent readers",
+  "QB indexed closure draft preserves sealed CSV and gzip history rights and original capture membership",
+  "QB indexed kickoff draft uses natural entity and raw-game plans in a larger schedule inventory",
+  "QB readable contract drafts preserve effective policies permissions sealed manifests and retention audits",
   "training validation migration preserves evidence and refuses cache policy and temporal bypasses",
   "compressed bindings materialize all 8193 sealed rows while binding only requested player claims",
   "compressed consumers verify numerical features labels dataset pins and mandatory source deletion in the shared graph",

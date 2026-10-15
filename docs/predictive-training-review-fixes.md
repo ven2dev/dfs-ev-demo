@@ -32,13 +32,13 @@ generators or effective database behavior.
 
 | Finding | Required behavior and regression | Status |
 | --- | --- | --- |
-| 1. Consumer deletion blocked by sealed datasets | Derive dataset cleanup from actual consumer deletion, preserving invalidation and audits; reproduce mixed-profile label corrections | Pending |
-| 2. Reader/retention deadlock | Acquire the shared retention advisory lock before table locks; test concurrent ordering | Pending |
+| 1. Consumer deletion blocked by sealed datasets | Derive dataset cleanup from actual consumer deletion, preserving invalidation and audits; reproduce mixed-profile label corrections | Draft 0022 implemented; focused regression passed |
+| 2. Reader/retention deadlock | Acquire the shared retention advisory lock before table locks; test concurrent ordering | Draft 0022 implemented; concurrent-reader/writer regression passed |
 | 3. Pure label selection time backstop | Withhold later labels even when a supplied selection bypasses ordinary head filtering; retain inclusive as-of behavior | Implemented; focused checks passed |
 | 4. Readiness access callback replacement | Preserve earlier compressed-file access checks across all assigned datasets | Implemented; restricted-login multi-shard and affected scheduled-revocation cases passed |
-| 5. Full-table closure scans | Traverse only selected dependency addresses through indexes; preserve exact closure and deletion behavior | Pending |
-| 6. Unindexed kickoff lookup | Provide indexed ordinary/source schedule lookups and inspect natural query plans | Pending |
-| 7. String-patched functions and nested guards | Publish complete effective function bodies in forward DDL; centralize the guard relation list | Pending |
+| 5. Full-table closure scans | Traverse only selected dependency addresses through indexes; preserve exact closure and deletion behavior | Draft 0023 implemented; sealed CSV/gzip parity passed; broader capacity pending |
+| 6. Unindexed kickoff lookup | Provide indexed ordinary/source schedule lookups and inspect natural query plans | Draft 0023 implemented; natural plans use both new indexes at 4,096 unrelated schedule rows |
+| 7. String-patched functions and nested guards | Publish complete effective function bodies in forward DDL; centralize the guard relation list | Drafts 0022/0024 implemented; effective policy, ACL, rollback and audit parity passed |
 | 8. Direct SQL temporal rules | Bypass TypeScript validation and test all three fit-clock refusals independently | Passed; includes both training label/event fit boundaries |
 | 9. Memo rights-epoch coverage | Directly test witness/plan caches across scheduled rights changes | Passed for CSV dispatch, gzip plan and witness caches |
 | Memo dependency coverage | Inspect the installed cached kernels and transitive helper bodies for evidence-table dependencies | Passed for the frozen prefix20 kernels and 36-table list |
@@ -76,6 +76,52 @@ Local logs: `/private/tmp/dfs118-review-focused-db.log`,
 `/private/tmp/dfs118-access-regression-green.log`, and
 `/private/tmp/dfs118-label-regression-green.log`. GitHub issues and the eventual PR
 remain the durable review record; local logs are working evidence only.
+
+## Forward SQL preparation checkpoint
+
+#106 reported pushed checkpoint `680a3d7`, but its context recorder is still a
+prototype and the ordered chain ends at 0020. There is no frozen 0021 to integrate
+yet. The three reserved #118 drafts live in [db/proposals](../db/proposals/README.md),
+are exercised only in owned disposable databases, and are **not deployable
+migrations or a frozen 0022–0024 checkpoint**. All ordered SQL/catalog artifacts
+through 0020 remain unchanged.
+
+Draft 0022 removes datasets referencing the consumer actually being deleted,
+including an older label reached by a later provider's correction. Its regression
+first reproduces the old `23503` failure, then verifies deletion through a
+retention-only login, dataset/pin cleanup, supplemental audit and invalidation.
+The separate lock regression proves that a reader waiting behind exclusive
+retention holds no table SHARE locks, concurrent readers succeed, and retention
+proceeds when their guard is released.
+
+Draft 0023 follows indexed dependency addresses instead of materializing every
+evidence edge. Sealed CSV and gzip feature/label manifests keep exactly their
+original closure, rights obligations, blob list and manifest digest; a later
+label correction does not enter the historical closure. A separate plan-only
+test uses 4,096 uncommitted unrelated schedule observations, rolls them back,
+and observes natural index selection for both kickoff lookup predicates (three
+shared buffer hits each). These rows are not published evidence, and tiny
+lookup timings do not establish complete read capacity.
+
+Draft 0024 contains full static definitions of the effective retention executor,
+training retention hook and run recorder. It preserves their existing bodies
+and execute-only ACLs. It also makes memo initialization use 0022's central
+58-relation inventory / 36-relation dependency subset. The test checks DDL
+rollback, repeatable replacement, effective policy and permissions, transitive
+memo-table coverage, actual protected OIDs, write-lock cache refusal, unchanged
+sealed manifests through a replay-only login, and exact pre/post deletion counts,
+digests and dataset audit records through a retention-only login. The comparison
+uses the same committed evidence after rolling back the original deletion; it
+does not claim a full external backup restoration test.
+
+All **five focused PostgreSQL draft cases** pass together (28.53 seconds), as do
+the six report-contract cases. They are mandatory named cases so skipping or
+removing one fails the aggregate report contract. Logs:
+`/private/tmp/dfs118-review-drafts-db.log` and
+`/private/tmp/dfs118-kickoff-draft.log`. Broader capacity is being measured with
+the explicit opt-in draft mode; its results must name the draft hashes separately
+from the frozen prefix20 hashes. Finalization must reconcile these definitions
+and inventories with 0021 before generating the combined catalog.
 
 ## Merge gates
 

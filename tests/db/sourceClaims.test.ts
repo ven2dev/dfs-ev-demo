@@ -3973,6 +3973,258 @@ it("QB pinned datasets never block mandatory deletion and reproduce supplemental
   await proof(false); await proof(true);
 });
 
+it("QB review liveness draft removes an earlier pinned dataset when deletion widens through a later provider correction", async () => {
+  await withDatasetProof(async ({ client, store, artifacts, target }) => {
+    const seed = await seedConsumers(store, "2026-10-11T12:00:00.000Z", true);
+    const a = await store.recordSourceFinalLabel("late-provider-label-A", seed.labelRequest, null);
+    const slot: TrainingSlot = { datasetId: "before-provider-change", partition: "training", playerId: seed.request.playerId,
+      gameId: seed.labelRequest.gameId, season: 2026, seasonType: "REG", kickoff: "2026-10-04T17:00:00.000Z",
+      kickoffObservationId: "game-schedule", featureCutoff: "2026-10-04T12:00:00.000Z", labelsAsOf: a.recordedAt,
+      featureRef: null, labelRef: null };
+    const inventory = await store.prepareFittingRun(metadataRun([slot], seed.profiles, a.recordedAt));
+    const manifest = await store.prepareDataset(datasetRequest(inventory));
+    const second = structuredClone(seed.fixture.input);
+    second.id = "late-provider"; second.captureId = "late-provider-capture"; second.artifact.id = "late-provider-artifact";
+    second.profile.id = "csv-late-player"; second.artifact.profileId = second.profile.id;
+    second.rightsDecisions = [{ ...second.rightsDecisions[0], id: "rights:late-provider", profileId: second.profile.id }];
+    await store.publishSourceStats(second);
+    await client.query("INSERT INTO predictive_profile_identity_links VALUES('late-provider-link',$1,$2,'gsis','2026-01-01T00:00:00Z')", [second.profile.id, BRIDGE_PROFILE]);
+    const raw = { ...seed.raw, profileId: second.profile.id };
+    await store.recordSourceNormalization("late-provider-binding", raw, null);
+    await store.recordSourceDecision("late-provider-reconciliation", decisionScope(raw.profileId), null);
+    await store.recordSourceDecision("late-provider-participation", decisionScope(raw.profileId, "participation"), null);
+    const b = await store.recordSourceFinalLabel("late-provider-label-B", { ...seed.labelRequest, profileIds: [second.profile.id] }, a.id);
+    expect(manifest.protectedUses.map((use) => use.profile)).not.toContain(second.profile.id);
+    const removal = { id: "late-provider-removal", reason: "provider-request" as const, authority: "disposable liveness proof",
+      decidedAt: await witnessClock(client), scope: { kind: "source" as const, profileIds: [second.profile.id], capturedFrom: null, capturedBefore: null },
+      auditLevel: "full" as const };
+    // Negative control against the frozen prefix: deletion widens from B to A,
+    // and the earlier sealed dataset is absent from profile-based cleanup.
+    await expect(store.retain(removal)).rejects.toMatchObject({ code: "23503" });
+    expect((await store.readDatasetManifest(manifest.datasetId))?.activePin).toBe(true);
+    const draft = await readFile(new URL("../../db/proposals/0022_predictive_training_liveness.sql", import.meta.url), "utf8");
+    const guard = (await client.query("SELECT pg_get_functiondef('predictive_training_read_guard()'::regprocedure) AS sql")).rows[0].sql;
+    await client.query("BEGIN"); await client.query(draft); await client.query("ROLLBACK");
+    expect((await client.query("SELECT pg_get_functiondef('predictive_training_read_guard()'::regprocedure) AS sql")).rows[0].sql).toBe(guard);
+    expect((await client.query("SELECT to_regprocedure('predictive_training_consumer_delete()') AS f")).rows[0].f).toBeNull();
+    await client.query(draft);
+    await withLogin(client, target, ["predictive_retention_owner"], async (owner, ownerTarget) => {
+      const retention = await createLocalPredictiveStore(owner, ownerTarget, artifacts);
+      const result = await retention.retain(removal);
+      expect(result.removedCounts.sourceConsumers).toBe(2);
+      expect(result.trainingRetention?.removedCounts).toMatchObject({ datasets: 1, datasetConsumers: 1, datasetPins: 1 });
+      const events = await retention.retentionEvents();
+      expect(events).toHaveLength(1);
+      expect(events[0].trainingRetention).toEqual(result.trainingRetention);
+      expect((await retention.reapply(events))[0].matched).toBe(true);
+    });
+    expect((await client.query("SELECT id FROM predictive_source_consumers WHERE id=ANY($1)", [[a.id,b.id]])).rows).toEqual([]);
+    expect((await client.query("SELECT id FROM predictive_training_datasets")).rows).toEqual([]);
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_training_dataset_retention_audits")).rows[0].n).toBe(1);
+    const receipts = await store.readTrainingInvalidations(auditHistoryRequest({ kind: "dataset", id: manifest.datasetId, sha256: manifest.manifestSha256 }));
+    expect(receipts.entries).toMatchObject([{ operation: "retention", origin: "authorized-retention", failureCode: "retention-evidence-removed" }]);
+    await expect(store.readDatasetManifest(manifest.datasetId)).rejects.toThrow("training-dataset-evidence-removed");
+  });
+});
+
+it("QB review liveness draft acquires the shared retention lock before table guards and permits concurrent readers", async () => {
+  await withProof(async ({ client, target, artifacts }) => {
+    await client.query(await readFile(new URL("../../db/proposals/0022_predictive_training_liveness.sql", import.meta.url), "utf8"));
+    await withLogin(client, target, ["predictive_replay"], async (one) => {
+      await withLogin(client, target, ["predictive_replay", "predictive_retention_owner"], async (two, twoTarget) => {
+        const readerPid = (await one.query("SELECT pg_backend_pid() AS pid")).rows[0].pid;
+        await client.query("BEGIN"); await client.query("SELECT pg_advisory_xact_lock(520052,1)");
+        await client.query("LOCK predictive_retention_events IN ROW EXCLUSIVE MODE");
+        await one.query("BEGIN");
+        const pending = one.query("SELECT predictive_training_read_guard()").then(() => null, (error: unknown) => error);
+        try {
+          await expect.poll(async () => (await client.query("SELECT wait_event FROM pg_stat_activity WHERE pid=$1", [readerPid])).rows[0].wait_event)
+            .toBe("advisory");
+          expect((await client.query("SELECT count(*)::integer AS n FROM pg_locks WHERE pid=$1 AND mode='ShareLock' AND locktype='relation'", [readerPid])).rows[0].n).toBe(0);
+        } finally { await client.query("COMMIT"); }
+        expect(await pending).toBeNull();
+        // A second reader can acquire the same shared advisory and table locks.
+        await two.query("BEGIN"); await two.query("SET LOCAL lock_timeout='250ms'");
+        await two.query("SELECT predictive_training_read_guard()"); await two.query("COMMIT");
+        const retained = await createLocalPredictiveStore(two, twoTarget, artifacts);
+        const retentionPid = (await two.query("SELECT pg_backend_pid() AS pid")).rows[0].pid;
+        const removing = retained.retain({ id: "guard-order-no-rows", reason: "expiry", authority: "disposable lock order proof",
+          decidedAt: await witnessClock(client), scope: { kind: "feature-run-expiry", asOf: await witnessClock(client) }, auditLevel: "digest-only" })
+          .then((value) => ({ value }), (error: unknown) => ({ error }));
+        try {
+          await expect.poll(async () => (await client.query("SELECT wait_event FROM pg_stat_activity WHERE pid=$1", [retentionPid])).rows[0].wait_event)
+            .toBe("advisory");
+        } finally { await one.query("COMMIT"); }
+        const result = await removing;
+        expect("error" in result ? result.error : null).toBeNull();
+        await expect(one.query("SELECT predictive_training_relations()")).rejects.toMatchObject({ code: "42501" });
+      });
+    });
+  });
+});
+
+it("QB indexed closure draft preserves sealed CSV and gzip history rights and original capture membership", async () => {
+  for (const compressed of [false,true]) await withProof(async ({ client, store }) => {
+    const seed = await seedConsumers(store, "2026-10-11T12:00:00.000Z", true, compressed);
+    await store.recordSourcePassingYards("closure-feature", seed.request, seed.profiles);
+    const a = await store.recordSourceFinalLabel("closure-label-A", seed.labelRequest, null);
+    const b = await store.recordSourceFinalLabel("closure-label-B", seed.labelRequest, a.id);
+    // Separate runs retain legal fitting clocks for the historical label and
+    // future target feature while exercising both use obligations.
+    const featureInput = await previewRequest(client, seed);
+    featureInput.fittingRunId = "closure-feature-run"; featureInput.evaluationPlanId = "closure-feature-plan";
+    const featureInventory = await store.prepareFittingRun(featureInput);
+    const featureDataset = await store.prepareDataset(datasetRequest(featureInventory));
+    const labelSlot: TrainingSlot = { ...featureInput.slots[0], datasetId: "closure-label-shard", partition: "training",
+      gameId: seed.labelRequest.gameId, kickoff: "2026-10-04T17:00:00.000Z", kickoffObservationId: "game-schedule",
+      featureCutoff: "2026-10-04T12:00:00.000Z", labelsAsOf: b.recordedAt };
+    const labelInput = metadataRun([labelSlot], seed.profiles, b.recordedAt);
+    labelInput.fittingRunId = "closure-label-run"; labelInput.evaluationPlanId = "closure-label-plan";
+    const labelInventory = await store.prepareFittingRun(labelInput);
+    const labelDataset = await store.prepareDataset(datasetRequest(labelInventory, "closure-label-pin"));
+    const expected = [featureDataset,labelDataset].map((manifest) => manifest.closure);
+    expect(expected[1].references).toContainEqual({ kind: "source-consumer", id: a.id });
+    expect(expected[1].references).toContainEqual({ kind: "source-consumer", id: b.id });
+    expect(expected[0].protectedUses).toContainEqual({ profile: seed.raw.profileId, use: "model-input" });
+    expect(expected[1].protectedUses).toContainEqual({ profile: seed.raw.profileId, use: "outcome-label" });
+    // Later corrections are real later records in this synthetic database;
+    // neither closure may acquire the successor after its own sealed snapshot.
+    const c = await store.recordSourceFinalLabel("closure-label-C", seed.labelRequest, b.id);
+    const draft = await readFile(new URL("../../db/proposals/0023_predictive_training_indexed_closure.sql", import.meta.url), "utf8");
+    await client.query(draft);
+    for (const [index, manifest] of [featureDataset,labelDataset].entries()) {
+      const closure = (await client.query("SELECT predictive_training_dataset_closure($1,$2) AS c", [manifest.fittingRunId,manifest.datasetId])).rows[0].c;
+      expect(closure).toEqual(expected[index]);
+      expect(closure.references).not.toContainEqual({ kind: "source-consumer", id: c.id });
+      expect((await store.readDatasetManifest(manifest.datasetId))?.manifestSha256).toBe(manifest.manifestSha256);
+    }
+  });
+});
+
+it("QB indexed kickoff draft uses natural entity and raw-game plans in a larger schedule inventory", async () => {
+  await withProof(async ({ client, store }) => {
+    const seed = await seedConsumers(store);
+    await client.query(await readFile(new URL("../../db/proposals/0023_predictive_training_indexed_closure.sql", import.meta.url), "utf8"));
+    await probe(client, async () => {
+      // Unpublished plan-only rows stay in a rolled-back transaction. Deferred
+      // publication checks must never commit these capture-less observations.
+      const rawGame = (await client.query("SELECT data->'rawGameId' AS id FROM predictive_observations WHERE id='source-target'")).rows[0].id;
+      await client.query(`INSERT INTO predictive_games SELECT
+        ('10000000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid FROM generate_series(1,4096) n`);
+      await client.query(`INSERT INTO predictive_observations(id,kind,profile_id,source_record_id,data,entity_key,source_key)
+        SELECT 'lookup-filler-'||n,'schedule',profile_id,'',payload,public.predictive_entity_key('schedule',payload),
+          public.predictive_entity_key('schedule',payload)||'|'||profile_id||'|' FROM predictive_observations o
+          CROSS JOIN generate_series(1,4096) n CROSS JOIN LATERAL
+            (SELECT o.data||jsonb_build_object('gameId','10000000-0000-4000-8000-'||lpad(n::text,12,'0'),'rawGameId','lookup-game-'||n) AS payload) x
+        WHERE o.id='source-target'`);
+      await client.query("ANALYZE predictive_observations");
+      const plans = [];
+      for (const [sql,values,expectedIndex] of [
+        ["SELECT id FROM predictive_observations WHERE entity_key=$1", ["schedule:"+seed.request.gameId], "predictive_training_observation_entity"],
+        ["SELECT id FROM predictive_observations WHERE kind='schedule' AND data->'rawGameId'=$1::jsonb", [JSON.stringify(rawGame)], "predictive_training_schedule_raw_game"],
+      ] as const) {
+        const plan = (await client.query("EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) "+sql, [...values])).rows[0]["QUERY PLAN"][0];
+        expect(JSON.stringify(plan.Plan)).toContain(expectedIndex);
+        expect(plan.Plan["Actual Rows"]).toBe(1);
+        plans.push({ index: expectedIndex, executionMs: plan["Execution Time"], sharedHits: plan.Plan["Shared Hit Blocks"] });
+      }
+      process.stdout.write("training kickoff natural indexed plans "+JSON.stringify(plans)+"\n");
+    });
+    expect((await client.query("SELECT count(*)::integer AS n FROM predictive_observations WHERE id LIKE 'lookup-filler-%'")).rows[0].n).toBe(0);
+  });
+});
+
+it("QB readable contract drafts preserve effective policies permissions sealed manifests and retention audits", async () => {
+  await withProof(async ({ client, store, target, artifacts }) => {
+    const seed = await seedConsumers(store);
+    await store.recordSourcePassingYards("readable-feature", seed.request, seed.profiles);
+    const inventory = await store.prepareFittingRun(await previewRequest(client, seed));
+    const manifest = await store.prepareDataset(datasetRequest(inventory));
+    const originalManifest = await store.readDatasetManifest(manifest.datasetId);
+    const signatures = ["public.predictive_retention_execute(text,text,text,timestamptz,jsonb,text)",
+      "public.predictive_training_retention_hook()", "public.predictive_prepare_training_run(jsonb)", "public.predictive_training_memo_ready()"];
+    const definitions = async () => (await client.query(`SELECT oid,prosrc,proacl,prosecdef,proconfig FROM pg_proc
+      WHERE oid=ANY(ARRAY(SELECT x::regprocedure::oid FROM unnest($1::text[]) x)) ORDER BY oid`, [signatures])).rows;
+    const original = await definitions();
+    const event = { id: "readable-delete", reason: "provider-request" as const, authority: "disposable readable SQL parity proof",
+      decidedAt: await witnessClock(client), scope: { kind: "source" as const, profileIds: [BRIDGE_PROFILE], capturedFrom: null, capturedBefore: null },
+      auditLevel: "digest-only" as const };
+    let originalRemoval: Record<string, unknown> = {};
+    const audits = async () => (await client.query(`SELECT removed_counts,removed_ids_digest,removed_ids
+      FROM predictive_training_dataset_retention_audits ORDER BY dataset_sha256`)).rows;
+    let originalAudits: unknown;
+    // Compare the actual pre-upgrade deletion inside a rollback. No byte
+    // cleanup runs, so the same committed backup is available after upgrade.
+    await probe(client, async () => {
+      originalRemoval = (await client.query("SELECT predictive_retention_execute($1,$2,$3,$4,$5,$6) AS result",
+        [event.id,event.reason,event.authority,event.decidedAt,event.scope,event.auditLevel])).rows[0].result;
+      originalAudits = await audits();
+    });
+    const drafts = await Promise.all(["0022_predictive_training_liveness.sql", "0023_predictive_training_indexed_closure.sql",
+      "0024_predictive_training_readable_contracts.sql"].map((name) => readFile(new URL("../../db/proposals/"+name, import.meta.url), "utf8")));
+    await probe(client, async () => { for (const draft of drafts) await client.query(draft); });
+    expect(await definitions()).toEqual(original);
+    expect((await client.query("SELECT to_regprocedure('predictive_training_relations()') AS f")).rows[0].f).toBeNull();
+    await client.query("BEGIN");
+    try { for (const draft of drafts) await client.query(draft); await client.query("COMMIT"); }
+    catch (error) { await client.query("ROLLBACK"); throw error; }
+    const upgraded = await definitions();
+    for (const before of original) {
+      const after = upgraded.find((fn) => fn.oid === before.oid)!;
+      expect({ ...after, prosrc: before.prosrc }).toEqual(before);
+      if (!before.prosrc.includes("CREATE TEMP TABLE predictive_training_memo")) expect(after.prosrc).toBe(before.prosrc);
+    }
+    // Full definitions are repeatable and preserve ACLs rather than recreating
+    // PUBLIC execution grants. No pg_get_functiondef/string seam runs in DDL.
+    await client.query(drafts[2]); expect(await definitions()).toEqual(upgraded);
+    expect(drafts[2]).not.toContain("pg_get_functiondef");
+    const relations = (await client.query("SELECT * FROM predictive_training_relations() ORDER BY relation_name")).rows;
+    expect(relations).toHaveLength(58);
+    const memoTables = relations.filter((row) => row.memo_dependency).map((row) => row.relation_name);
+    expect(memoTables).toHaveLength(36);
+    const functions = (await client.query(`SELECT p.proname,p.prosrc FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+      WHERE n.nspname='public'`)).rows as { proname: string; prosrc: string }[];
+    const tableNames = new Set((await client.query(`SELECT relname FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='public' AND c.relkind IN ('r','p')`)).rows.map((row) => row.relname));
+    const pending = ["predictive_source_plan_v2", "predictive_source_plan_v3", "predictive_source_plan_check",
+      "predictive_source_witness_at", "predictive_source_consumer_check"], visited = new Set<string>(), dependencies = new Set<string>();
+    while (pending.length) {
+      const name = pending.pop()!;
+      if (visited.has(name) || name.startsWith("predictive_training_memo_")) continue;
+      visited.add(name);
+      for (const fn of functions.filter((fn) => fn.proname === name)) for (const [token] of fn.prosrc.matchAll(/\bpredictive_[a-z0-9_]+\b/g)) {
+        if (tableNames.has(token)) dependencies.add(token);
+        if (!visited.has(token) && functions.some((candidate) => candidate.proname === token)) pending.push(token);
+      }
+    }
+    expect([...dependencies].filter((name) => !memoTables.includes(name))).toEqual([]);
+    await probe(client, async () => {
+      expect((await client.query("SELECT predictive_training_memo_ready() AS ready")).rows[0].ready).toBe(false);
+      await client.query("SELECT predictive_training_read_guard()");
+      expect((await client.query("SELECT predictive_training_memo_ready() AS ready")).rows[0].ready).toBe(true);
+      const protectedNames = (await client.query(`SELECT c.relname FROM pg_temp.predictive_training_memo m
+        CROSS JOIN LATERAL jsonb_array_elements_text(m.key) x(oid) JOIN pg_class c ON c.oid=x.oid::oid
+        WHERE m.kind='state' ORDER BY c.relname`)).rows.map((row) => row.relname);
+      expect(protectedNames).toEqual(memoTables);
+      await client.query("LOCK predictive_source_stats_rows IN ROW EXCLUSIVE MODE");
+      expect((await client.query("SELECT predictive_training_memo_ready() AS ready")).rows[0].ready).toBe(false);
+    });
+    await withLogin(client, target, ["predictive_replay"], async (login, loginTarget) => {
+      await expect(login.query("SELECT predictive_training_relations()")).rejects.toMatchObject({ code: "42501" });
+      const reader = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      expect(await reader.readDatasetManifest(manifest.datasetId)).toEqual(originalManifest);
+    });
+    await withLogin(client, target, ["predictive_retention_owner"], async (login, loginTarget) => {
+      const owner = await createLocalPredictiveStore(login, loginTarget, artifacts);
+      const removed = await owner.retain(event);
+      expect(removed.removedCounts).toEqual(originalRemoval.removedCounts);
+      expect(removed.removedIdsDigest).toBe(originalRemoval.removedIdsDigest);
+      expect(await audits()).toEqual(originalAudits);
+    });
+    await expect(store.readDatasetManifest(manifest.datasetId)).rejects.toThrow("training-dataset-evidence-removed");
+  });
+});
+
 it("QB dataset active pins survive the exact expiry sweep and the last release restores eligibility", async () => {
   await withDatasetProof(async ({ client, store }) => {
     const seed = await seedConsumers(store); const feature = await store.recordSourcePassingYards("dataset-expiry-feature", seed.request, seed.profiles);
