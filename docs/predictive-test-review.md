@@ -1,5 +1,25 @@
 # Delivery 2 test reasoning review
 
+## #106 schedule association preparation QC (2026-10-14)
+
+Eleven focused cases test independently specified schedule/bridge values and
+17:00/20:25 UTC kickoffs, exact ordinal provenance, unchanged revision reuse and
+the explicit correction predecessor. Negative cases refuse a different UUID for
+an existing game, an unrelated source head, two raw games assigned to one UUID,
+duplicate selection, missing/out-of-scope/bad-time/conflicting rows, injected
+schedule data or caller knowledge clocks, unsupported identity feeds, damaged
+bytes, expired research rights and out-of-bound selection counts. Caller mutation
+after invocation cannot change source bytes or canonical assignment. Reversing
+selection order preserves the plan; an unselected wire-byte change alters source
+identity while preserving the derived schedule values.
+
+All 31 context tests pass, with typecheck, affected lint and whitespace checks.
+No SQL or database behavior changes, so no database suite was rerun. Expected
+heads remain caller assertions until the future recorder checks them under the
+write guard. These cases do not claim historical cutoff enforcement, concurrent
+rights/deletion safety, canonical persistence or consumer readiness; those still
+require the planned database cases before 0021 can be frozen.
+
 ## #106 scratch raw-context recorder QC (2026-10-14)
 
 Ten mandatory PostgreSQL cases apply only the explicit prototype after frozen

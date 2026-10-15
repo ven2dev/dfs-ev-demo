@@ -1017,3 +1017,20 @@ closure must land before promotion. The new raw store methods explicitly refuse
 on prefix 20 without the scratch prototype; no ordered or generated migration
 artifact changed. #106 still owns 0021 only; #118 retains 0022–0024. No change to
 the existing TypeScript byte-reading or retention interface is required.
+
+## #106 schedule association preparation; prefix unchanged
+
+The pure original-byte association preparer reconstructs selected schedule/game
+bridge pairs with exact raw-row provenance, preserves UUIDs across kickoff
+corrections, and carries explicit expected heads for later guarded SQL comparison.
+It accepts no caller knowledge clock and publishes no observations. Eleven new
+cases and the existing twenty context cases pass, with typecheck and affected
+lint. No SQL, byte-reading or retention interface changes are included.
+
+**0021 is still scratch-only and not frozen.** Atomic association recording,
+original-byte consumer hydration, correction/cutoff and deletion closure tests
+remain before promotion. #118's reported `87e5206` / `93399ec` foundation fixes
+retain reserved 0022–0024 outside the ordered chain until that handoff. Its five
+reported PostgreSQL regressions do not establish capacity: broader measurements
+completed three operations and refused six, with no successful page/label read.
+Those Relay results are reported here, not independently rerun by #106.

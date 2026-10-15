@@ -223,3 +223,36 @@ Only after these paths and their regression/upgrade checks pass can 0021 be
 promoted and frozen for #118's reserved 0022–0024. Dated membership, independent
 schedule coverage and permitted completion/participation/reconciliation evidence
 remain separate source qualifications.
+
+## Schedule association preparation
+
+`sourceContextAssociations.ts` prepares at most 256 selected schedule rows from
+one completely reparsed original capture. Each binding pins the raw capture,
+claim ID, physical ordinal, selected-row fingerprint and raw-key digest, together
+with the reconstructed schedule and nflverse game bridge. A canonical UUID is
+an explicit assignment, never a name/date match. Duplicate raw-game selections,
+two raw games mapped to one UUID, refused/missing source claims and unsupported
+identifier associations are rejected. Venue fields remain unqualified/null;
+this projection makes no assertion about the original venue cells.
+
+Correction requests carry asserted schedule/bridge heads. Both must belong to
+the expected source chain and preserve the existing game UUID. A kickoff change
+produces a new schedule revision referencing its predecessor; unchanged data
+reuses the existing revision. Request order does not affect association identity,
+but every original wire-byte change remains part of its source request identity.
+Input is detached before parsing awaits. No caller knowledge clock is accepted.
+
+These are preparation checks, not SQL authorization. The future recorder must
+compare asserted heads against the actual guarded database heads, independently
+validate the row/revision correspondence, and atomically seal a new associated
+artifact/capture using the database ingestion clock. It must not add canonical
+links to the earlier raw artifact: existing readers would otherwise expose the
+new association at that artifact's older cutoff. The raw canonical guard remains
+closed. Consumer byte hydration, complete deletion/dataset closure and historical
+replay tests remain required before promoting 0021. No ordered SQL or generated
+catalog file changes in this increment.
+
+Eleven association cases plus the existing twenty context parser/preparation
+cases pass. Typecheck, affected-file lint and whitespace checks pass. No database
+gate is needed for this pure preparer; it does not call persistence or change
+database behavior. This is not evidence of usable real features or labels.

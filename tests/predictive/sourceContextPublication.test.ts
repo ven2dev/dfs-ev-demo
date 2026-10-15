@@ -1,21 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { prepareSourceContextPublication, SOURCE_CONTEXT_PROFILE_VERSION, type SourceContextPublication } from "../../src/lib/predictive/sourceContextPublication.ts";
-import { sourceClaimFixture } from "./fixtures/sourceClaims.ts";
-import { sourceCsv, sourceSamples } from "./fixtures/source.ts";
-import { SOURCE_HEADERS } from "../../src/lib/predictive/sourceHeaders.ts";
-import { canonical, digest } from "../../src/lib/predictive/validation.ts";
+import { prepareSourceContextPublication, type SourceContextPublication } from "../../src/lib/predictive/sourceContextPublication.ts";
+import { sourceContextFixture as fixture } from "./fixtures/sourceContext.ts";
 const checkedAt = "2026-10-13T12:00:00.000Z";
-function fixture(feed: "schedule" | "identifiers" = "schedule"): SourceContextPublication {
-  const base = sourceClaimFixture("original-context"), bytes = sourceCsv(feed, feed === "schedule" ? sourceSamples().schedule : [{ gsis_id: "00-0000001", position: "QB" }]);
-  const tag = feed === "schedule" ? "schedules" : "players", asset = feed === "schedule" ? "games.csv" : "players.csv";
-  return { ...base, rightsDecisions: base.rightsDecisions.map(r => ({ ...r, evidenceKind: "terms-review", evidenceReference: "fixture-only-context-terms" })),
-    profile: { ...base.profile, purpose: "source", feed, releaseTag: tag, assetPattern: asset,
-    parserVersion: SOURCE_CONTEXT_PROFILE_VERSION, headerProfileSha256: digest(canonical(SOURCE_HEADERS[feed])),
-    evidenceKinds: feed === "schedule" ? ["schedule", "game-bridge", "team-alias"] : ["player-bridge"] },
-    artifact: { ...base.artifact, bytes, sha256: digest(bytes), scopeKind: "all-seasons", scopeSeason: null,
-      origin: `https://github.com/nflverse/nflverse-data/releases/download/${tag}/${asset}` },
-    seasonRange: feed === "schedule" ? { fromSeason: 2024, throughSeason: 2026 } : null };
-}
 describe("detached context publication preparation", () => {
   it.each(["schedule", "identifiers"] as const)("prepares %s from original bytes with exact research rights references", async feed => {
     const input = fixture(feed), result = await prepareSourceContextPublication(input, checkedAt);
