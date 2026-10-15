@@ -1,10 +1,12 @@
 # #106 original-byte context adapter: implementation boundary
 
 Checkpoint: 2026-10-14. This identifies the next engineering dependency for the
-real QB slice. It does not register a parser/profile, mint canonical evidence,
-approve a new source use or allocate a migration. #118 owns 0020; frozen
-0001–0019 stay unchanged. Keep this increment unnumbered until its DDL footprint
-and the next shared prefix are coordinated here.
+real QB slice. It does not register a parser/profile, mint canonical evidence
+or approve a new source use. Frozen 0001–0020 stay unchanged. #106 owns 0021
+only for the context recorder; #118 owns 0022–0024 for subsequent foundation
+review fixes, to finalize after integrating frozen 0021. No later number is
+allocated. The 0021 migration is not yet implemented by these pure preparation
+checkpoints.
 
 ## Why the existing publisher is insufficient
 
@@ -128,3 +130,29 @@ Private proof retains the source/header/claim-array hashes and exact selected
 row provenance. No canonical context, membership interval or feature/label was
 published. Next: the independent context recorder/association contract after
 Relay freezes 0020 and migration allocation is coordinated here.
+
+## Context publication preparation after frozen 0020 integration
+
+`sourceContextPublication.ts` adds detached original-byte preparation for
+schedule/identifier context. It pins caller input before awaiting parsing and
+validates metadata/rights envelopes, the explicit context parser version, exact
+provider/release/asset/header and selected-column version. Original scope must
+be unfiltered `all-seasons` with full retrieval; three-season schedule selection
+stays separate from original-file scope. Profile evidence kinds are player
+bridges for identifiers, and schedule/game bridges/team aliases for schedules.
+Roster membership and effective timestamps are not accepted here.
+
+The supplied rights chain must allow research at both capture and preparation.
+Future capture/registration/review dates and release updates after capture are
+refused. Original bytes must pass size/hash/header and complete-row checks.
+The result pins rights references and request identity; it grants no rights and
+publishes no canonical context, feature or label. The eventual recorder must
+verify persisted registrations/rights under the guard, obtain database recording
+time, independently validate claims and recheck current rights before commit.
+New evidence dependencies must extend 0020's protected table set and memo keys.
+
+Eight focused cases cover both feeds, provider/origin/parser/filter substitution,
+adapter-only rights, expiry, late grants, later revocation, future capture,
+damaged bytes and caller mutation. Fixture terms records are test-only. All
+813 Node tests, typecheck, affected-file lint and whitespace checks pass.
+No real registration, rights insertion or SQL context record is claimed.

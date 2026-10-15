@@ -74,7 +74,14 @@ hash/size and stored-byte quotas from decoded-output bytes, CSV parsing work,
 rows/record sizes and cancellation/time limits. Stop bounded decompression before
 unbounded allocation; measure the selected multi-season slice before changing
 limits. Do not charge compressed size as decoded work or decoded size as storage.
-The current `verifiedBytes` metric has no separate gzip decoded-work metric yet.
+Training verification now also reports actual transaction-local `decodedBytes`,
+`decodedRows` and `peakWorkerRssBytes`. These operational counters remain outside
+immutable evidence/page/readiness digests. `verifiedBytes` continues to charge
+unique stored wire bytes. See [capacity measurements](predictive-training-capacity.md)
+for the current limit: a 16-QB/two-profile case hit SQL/read deadlines before any
+bytes opened. The counters and benchmark add no DDL; 0001–0019 remains frozen,
+with no later number allocated. #106 should retain explicit interruption recovery
+and independently review deadline behavior before adopting the readers.
 
 SQL gzip publication must update blob/removal address constraints and the
 role-checked reference guard, CSV media predicates and receipt-clock handling.
@@ -917,3 +924,76 @@ parsing/source-contract work can proceed unnumbered. Coordinate the context
 recorder's DDL footprint after #118's 0020 checkpoint is frozen, preserving its
 guarded validation/reuse interface. The real weekly membership interpretation,
 independent coverage and official evidence gates remain separate prerequisites.
+## #118 guarded SQL validation increment (0020)
+
+0020 is frozen at this checkpoint for #118's training-validation optimization.
+The complete fixed prefix is **0001–0020**. The ordered
+file is `0020_predictive_training_validation_memo.sql`, with SHA-256
+`fed741f76177ec35e07ac1d1d09f39b33ceb26d406ac06b0e4ecd97e7816ada3`.
+All 39 frozen SQL/catalog artifacts through 0019 match `c744ffa` byte for byte;
+the earlier #106 prefix remains intact. No migration after 0020 is allocated.
+
+The optimization shares successful reconstruction inside a guarded transaction;
+it does not change feature or label definitions, source receipt clocks, v1
+multi-season history, byte verification, training requests, cancellation,
+wire/decoded quotas or retention interfaces. **No TypeScript byte-reading,
+verification or cleanup interface changes are required by #106.**
+
+The final ordered 1/16-width benchmark passes under the original API deadlines.
+At 16 rows, run preparation takes 2.27 s, dataset/pin preparation 6.78 s, a 16-row page
+5.77 s and labels 7.70 s. This uses one numerical history slot, two profiles and
+mixed CSV/gzip in a synthetic 16-QB inventory; it proves no real-source, full
+history, opponent or population capacity. Source hashes, migration hashes and
+raw measurements are retained in
+[the capacity artifact](evidence/predictive-training-capacity-prefix20-2026-10-14.json).
+
+Memoization requires all 36 kernel evidence tables to have SHARE locks; writes in
+the same transaction disable reuse. Exact requests, cutoffs and versions remain
+separate. Historical validation retains its exact rights clock; current reuse
+requires the same global rights epoch and fresh context authorization. Private
+temp state is disposed at transaction end. Callers cannot submit cache results
+or authorize a record by creating a shadow temp relation. Original validators
+remain the fallback, including outside the guarded training path.
+
+After a committed guarded read, the session's empty TEMP namespace persists.
+Catalog/migration operations must use a fresh administrative connection, as the
+CLI does; the collector's strict no-temp rule is unchanged. Training sessions
+may be reused normally, except after an interruption. Upgrade fixtures test
+the fresh-migrator boundary without changing the recorded evidence or ledger.
+
+For #106's forthcoming original-byte context recorder, any new table consulted
+by these kernels must enter the read guard and memo's protected dependency set
+through coordinated forward DDL. Reuse assumes that the access clock changes
+kernel results only through rights boundaries and cutoff eligibility. New
+clock-dependent policies must update that key or remain uncached. Frozen 0020
+must not be edited to accommodate later dependencies.
+
+The [evidence checkpoint](predictive-training-evidence.md) records migration
+rollback/parity, restricted-role, temporal and deletion checks. Representative
+64-row/full-history/opponent/file-size cases and independent review remain.
+#118 and #106 remain incomplete; #54 Part B retains all real/population gates.
+
+Validation covers all 234 PostgreSQL cases through one complete run and focused
+rechecks of four corrected fixtures, plus the strengthened safety case. It also
+passes 75 DB checks, 11 worker checks, 21 catalog contracts, 873 jsdom/793 Node
+tests, typecheck, full lint and final affected-file/report checks. The complete
+database command's aggregate report was not rerun after those fixture corrections;
+final PR CI remains required. Only owned disposable/local databases were migrated.
+
+## #106 frozen-0020 adoption and context preparation
+
+#106 integrates `9cf2a8f` without changing any of the 40 numbered frozen
+SQL/catalog files through 0020. The dedicated migration/memo safety regression
+passes in 38.95 seconds, with all 813 Node tests, typecheck and affected-file
+lint. This is focused integration validation; Relay's final aggregate CI and
+broader capacity/review gates remain outstanding.
+
+#106 owns **0021 only** for original-byte context recording. #118 owns
+**0022–0024** for foundation review fixes, to finalize after integrating frozen
+0021. No later allocation is made. Context preparation now verifies the detached
+profile/origin/full-file/byte/rights contract. It does not write a context record
+or add a table. New 0021 dependencies must enter the shared read guard and 0020
+memo dependency set through forward DDL; frozen 0020 must not be edited.
+Migration/catalog work uses a fresh administrative connection, never the
+post-training session with its persistent empty TEMP namespace. No TypeScript
+byte-reading or retention API was changed by this increment.

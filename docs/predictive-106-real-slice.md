@@ -30,9 +30,10 @@ Creator comparison horizon is not narrowed by this one-game engineering proof.
 Handoff agreement: [#106/#118 contract at b7db281](https://github.com/ven2dev/dfs-ev-demo/blob/b7db281e156ac4decfd181e4d158ce912bef57e0/docs/predictive-training-handoff.md).
 Relay owns training-read/dataset/pin runtime. This branch owns raw evidence,
 qualified bridges/membership/completion, source consumers and the real slice.
-Current allocation: preserve frozen 0001–0019, including #118's audited
-invalidation migration frozen at `2aee941`. #106 reserves no further DDL.
-Coordinate any new migration with #118 here.
+Current allocation: preserve frozen 0001–0020 at Relay's `9cf2a8f` checkpoint.
+#106 owns 0021 only for original-byte context recording. #118 owns 0022–0024
+for subsequent foundation review fixes, to finalize after integrating frozen
+0021. No later number is allocated.
 
 ## Executable inventory
 
@@ -422,3 +423,22 @@ changed; #118's 0020 validation remains independent. The context recorder is
 the next engineering increment, with DDL allocation pending its shared-prefix
 handoff. Real completion, permitted official reconciliation and participation
 qualification remain required even after context publication is implemented.
+
+## Frozen 0020 adoption and detached context publication
+
+Integrated Relay's `9cf2a8f` checkpoint, retaining both sessions' appended
+handoff sections. All 40 numbered SQL/catalog artifacts through 0020 match it
+byte for byte. 0020 SHA-256:
+`fed741f76177ec35e07ac1d1d09f39b33ceb26d406ac06b0e4ecd97e7816ada3`.
+The dedicated SQL migration/memo safety case passes in 38.95 seconds: CSV/gzip
+feature/label parity, temporal/rights separation, cache bypass refusals,
+same-transaction writes, cache disposal and mandatory deletion. No full
+database gate was repeated.
+
+The [context publication preparer](predictive-original-context-adapter.md#context-publication-preparation-after-frozen-0020-integration)
+now checks profile/origin/full-file scope, original bytes and research rights
+at capture and preparation without assigning database clocks or creating
+canonical evidence. Eight new cases pass in the 813-case Node suite;
+typecheck and affected-file lint pass. No 0021 DDL or runtime context recorder
+exists yet. The recorder is next; membership/coverage, completion,
+participation and official reconciliation gates remain open.

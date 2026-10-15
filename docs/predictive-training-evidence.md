@@ -1,5 +1,132 @@
 # #118 guarded evidence checkpoint
 
+## 0020 guarded SQL validation and 16-row capacity
+
+The owner reserved 0020 for #118. This increment follows `c744ffa` and preserves
+all 39 frozen SQL/catalog artifacts through 0019. The new ordered migration
+wraps released validation kernels with private transaction-local reuse under
+the complete evidence guard. It does not change evidence rows, cutoff/history
+policy, numerical logic, source-byte verification, retention or TypeScript reader
+interfaces. Optional replay-role provisioning follows the existing migrations.
+
+The mandatory safety case seeds nine QBs at prefix19, including CSV and gzip.
+It captures original feature/final-label answers before the wrappers, then
+injects failure after verifying candidate20's catalog. DDL and ledger roll back,
+and original feature replay remains usable. A real upgrade/rerun preserves the
+prior ledger and produces identical records. Additional checks cover exact
+cutoff boundaries, distinct later cutoffs, forged plans, future cutoffs,
+own-transaction writes, denied private helper/cache access, caller-owned temp
+state, commit/rollback disposal, a scheduled model-input-only revocation and
+mandatory deletion after prior successful access. The fixture's 120-second
+setup/test budget does not change application deadlines.
+
+The final [retained capacity JSON](evidence/predictive-training-capacity-prefix20-2026-10-14.json)
+matches 0020's checksum and tested source hashes. All 1/16-width API cases pass
+with the original budgets. Width16 run preparation takes 2.27 s, dataset/pin
+preparation 6.78 s, pages about 5.77 s and standalone final labels 7.70 s.
+Guarded 16-record SQL feature checks take 1.332 s / 43,188 hits, compared with
+prefix19's 13.883 s / 1,006,951 hits. The unguarded probe still exceeds its
+15-second ceiling. [The capacity report](predictive-training-capacity.md) separates
+these probes, API times, source-inventory size, file/decoder work and memory
+observations. This is short synthetic history, without opponent inputs or a
+qualified population; it does not prove realistic 64-row or full-history capacity.
+
+The focused integration has 15 passing cases plus the corrected historical
+invalidation rollback case. That case now explicitly targets prefix19 for failure
+injection before upgrading to the complete prefix; the runner verifies the final
+requested catalog once, so an injection at19 cannot fire on a request ending20.
+The prior prototype and initial ordered measurements are exploratory checks;
+the retained capacity artifact uses the final ordered file. Typecheck and full
+lint pass. Application tests pass **873 jsdom + 793 Node cases** after allowing
+their local server ports; the sandbox's EPERM run is not a code-failure result.
+
+The first combined-gate attempt refused the primary disposable database's older
+draft20 checksum during its owner-plan test. No PostgreSQL behavior suite ran in
+that attempt. Recreating only the owned tmpfs test service removes that draft
+ledger; final validation uses a clean installation. Logs:
+`/private/tmp/dfs118-prefix20-{db,node-unrestricted,types,lint}.log`,
+`/private/tmp/dfs118-prefix20-final-capacity16.log` and
+`/private/tmp/dfs118-memo-{focused-db,invalidation-recheck}.log`.
+
+The complete clean run passes all **75 DB checks**, **11 isolated worker checks**
+and **21 catalog contracts**, followed by **230 passing / four failing PostgreSQL
+cases**. Two failures were older latest-version assertions. The other two were
+post-read no-op migration checks reusing an administrative session whose committed
+guarded read had created a TEMP namespace. Its table is gone at commit; PostgreSQL
+retains the namespace, and the catalog checker correctly refuses it. Those
+fixtures now use fresh migrator connections, matching the CLI. The four corrected
+cases pass a focused rerun; no implementation SQL changed after the full run.
+The strengthened safety case passes separately, including the committed-read
+refusal and successful fresh-session no-op migration. A rolled-back first read also rolls back namespace
+creation, so the initial added refusal assertion was corrected to commit a read
+first. No catalog security check was relaxed.
+
+These runs provide coverage of all 234 PostgreSQL cases, with affected rechecks
+instead of repeating the full suite after fixture-only corrections. The automated
+full-gate command was not rerun to a green aggregate report after those corrections;
+final PR CI still must run that gate. Additional logs are
+`/private/tmp/dfs118-prefix20-db-rechecks.log`,
+`/private/tmp/dfs118-prefix20-validation-final.log` and
+`/private/tmp/dfs118-prefix20-final-{types,lint,report}.log`.
+
+Frozen prefix at this checkpoint: **0001–0020**. 0020 SHA-256 is
+`fed741f76177ec35e07ac1d1d09f39b33ceb26d406ac06b0e4ecd97e7816ada3`.
+No later migration is allocated. The 39 earlier SQL/catalog files match exactly.
+Retained hashes identify the tested source bytes; the evidence separately records
+one subsequent trailing-blank-line removal in the extracted fixture. Its executable
+body is unchanged. Final affected-file typecheck/lint and all
+six report-contract checks pass; no full implementation gate was repeated for
+documentation or fixture-only changes.
+
+Larger/representative capacity cases and independent review remain outstanding.
+#118 is incomplete, and #54 Part B remains blocked by real and population
+qualification as well as the remaining training-read gates.
+
+## Diverse capacity diagnostic increment
+
+The opt-in benchmark and additive decoded-work/worker-RSS counters follow
+`c1edc8e`. They allocate no DDL and preserve all 39 frozen SQL/catalog artifacts
+through 0019. The [capacity report](predictive-training-capacity.md) links retained
+raw JSON, source-file hashes and natural EXPLAIN plans. Current tested scope is
+one and 16 selected rows in a complete 16-QB/two-profile source inventory, with
+different identities, two prior/target games, two source captures and mixed
+CSV/gzip. An isolated one-QB smoke also passes. Fixture values, fixed membership
+and missing future outcomes are checked through restricted recorder/replay logins.
+
+One-row dataset preparation/pinning took 8.36 s; its page took 5.39 s and its
+standalone label read 5.03 s. Width 16 failed run preparation's 10-second SQL
+limit and standalone labels' 10-second cumulative deadline before any file
+opened. Natural metadata selection took 1.486 ms, compared with 13.883 s and
+1,006,951 buffer hits for 16 SQL consumer checks. Smaller pages cannot hide the
+raw-lineage/closure cost. The 64-QB matrix is deferred until this bottleneck is
+addressed; the safety ceilings are not benchmarked supported operating limits.
+No protected partial result is accepted as a successful capacity case.
+
+The corrected 16-QB benchmark passes in 124.8 s including 67.8 s of fixture setup.
+Two larger setup attempts produced no accepted capacity result: an initial
+per-record setup timed out at 600 s, and an intermediate shared-snapshot fixture
+passed a multi-key snapshot to the single-target label builder. The latter is a
+benchmark setup error, corrected before the retained 16-QB measurements. The
+opt-in total test budget includes checked setup and matrix work; production
+operation and statement ceilings remain unchanged.
+
+Seven affected PostgreSQL cases pass in 73.3 s (169 unrelated cases skipped):
+compressed consumers/pins/deletion, complete-run checks, numerical pages,
+historical labels, assigned-shard verification, run preview and shared guarded
+batches. The gzip regression proves actual decoded bytes/rows, a bounded worker
+peak, one wire read per call, counter reset on retry and unchanged page digest.
+Typecheck, affected-file lint, whitespace, local links and frozen artifact
+comparison pass. Logs are `/private/tmp/dfs118-capacity-{smoke,16,db,types,lint}.log`;
+failed setup evidence uses `dfs118-capacity-setup-timeout.log` and
+`dfs118-capacity-full.log`. The frozen integration gate below remains the full-gate
+evidence; it was not repeated for telemetry and benchmark scaffolding.
+
+Next: profile/share repeated SQL validation without reducing rights, cutoff,
+raw-lineage, association or finality checks; remeasure affected widths, then
+larger history/opponent/source-file cases. Coordinate any required forward DDL
+before allocating a number. Independent review remains outstanding. #118 is
+incomplete, and #54 Part B retains its real/population qualification gates.
+
 ## Deadline and cancellation increment
 
 This increment follows pushed frozen integration `2aee941`, changes no SQL or
