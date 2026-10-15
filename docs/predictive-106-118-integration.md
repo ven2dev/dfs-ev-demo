@@ -1055,3 +1055,32 @@ owes frozen 0021 after consumer/integrated closure and migration validation.
 Focused validation passes: 17 context PostgreSQL cases, two final clock-boundary
 rechecks, 824 Node tests, six report-contract cases, typecheck and affected lint.
 No full database gate or real-source association benchmark is claimed.
+
+## #106 original-byte consumer hydration; promotion gate next
+
+Schedule/game-bridge hydration now reconstructs the complete sealed association
+set from original CSV bytes under the shared guard, including exact historical
+heads, raw claims, SQL revision payloads, link membership and the database cutoff
+clock. Native/source-feature reads route through the guard when context profiles
+exist; JSON-only read-only behavior is preserved. Per-capture proof/file reuse
+avoids repeated row-level verification. Fresh rights checks precede file access
+and transaction delivery; concurrent mandatory deletion waits for the read.
+Model-input permission has its own fresh delivery check, including scheduled
+model-only expiry that preserves research permission. Native current access uses
+the database wall clock rather than transaction start time.
+
+The new `replaySourceContextAssociations(captureId, cutoff)` is research replay,
+not real feature/label qualification. Existing TypeScript byte-reading and
+retention signatures remain unchanged. No migration after #106's 0021 is needed
+for this checkpoint. Frozen 0001–0020 remain byte-identical; #118 retains 0022–0024.
+
+Focused checks include the context/legacy PostgreSQL suite, synthetic feature-run
+deletion and use-specific expiry, 824 Node tests, six report-contract cases,
+typecheck and affected lint. **0021 is not frozen yet.** Next is ordered migration/catalog
+promotion, upgrade/combined contract validation and review. Remaining real-source
+qualifications do not expand the supported migration contract by implication.
+
+All 56 distinct context/legacy cases are verified across the final combined run
+and focused correction: 55 passed together, then the remaining host/DB cutoff
+fixture and its affected control passed using server-clock timestamps. No final
+aggregate rerun or full database gate is claimed after that test-only correction.

@@ -1,5 +1,45 @@
 # Delivery 2 test reasoning review
 
+## #106 original-byte consumer hydration QC (2026-10-14)
+
+Seven mandatory cases use actual restricted replay logins and complete original
+CSV fixtures. Independently specified 17:00/20:25 UTC kickoffs verify canonical
+hydration, historical cutoff isolation and correction predecessors. Allowed
+rights renewal preserves the exact prior association identity and observation
+set. Native and source-feature readers consume the verified schedule while
+preserving missing-membership refusal; fixture-only model-input grants do not
+expand real permissions. File-open counting establishes one wire read per
+transaction across the two associated revisions.
+
+Same-size byte corruption, a rehashed false raw claim array and a modified SQL
+canonical payload each fail reconstruction. Scheduled rights expiry during file
+verification refuses delivery; a subsequent refused read opens no file, and an
+explicit fixture renewal permits clean recovery. A separate retention connection
+is observed blocked by the reader in PostgreSQL's lock graph. Releasing the read
+permits audited deletion, and the same reader then returns no evidence. A mixed
+synthetic feature fixture replaces only its target's JSON schedule with the
+CSV-backed association: the derived run cites that context and mandatory source
+deletion removes it through the existing dependency graph.
+
+An additional scheduled decision removes only model permission during source
+verification while leaving research access allowed. The source consumer's final
+use check refuses delivery even when an earlier access query was memoized. The
+native reader uses the current database clock and withholds the target; direct
+research replay still returns authenticated observations. This separates research
+permission from model authorization without granting any real use.
+
+The initial combined context/legacy run passed 54 cases; the added derived-run,
+unchanged-recapture and model-only expiry checks also passed targeted runs. Final
+validation covers all 56 distinct context/legacy cases: 55 passed the final
+combined run; its one clock-ordering fixture was changed from host time to the
+database clock, and both affected source-reader cases then passed a focused
+recheck. The final aggregate command was not repeated after this test-only fix.
+All 824 Node tests, six report-contract
+cases, typecheck, affected lint and whitespace checks pass. Frozen
+SQL/catalog files through 0020 are unchanged. No full database gate, hosted DB,
+real feature/label output or representative capacity result is claimed. Ordered
+migration promotion, upgrade and combined contract validation remain before freeze.
+
 ## #106 atomic schedule association recorder QC (2026-10-14)
 
 Seven mandatory PostgreSQL cases exercise the original-byte association writer

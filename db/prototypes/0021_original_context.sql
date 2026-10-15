@@ -416,6 +416,32 @@ END $$;
 CREATE CONSTRAINT TRIGGER predictive_context_association_check AFTER INSERT ON public.predictive_context_associations
  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION public.predictive_context_association_check();
 
+CREATE FUNCTION public.predictive_read_context_associations(id text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $$
+DECLARE raw jsonb; result jsonb;
+BEGIN
+  -- This accessor also enforces the shared guard and fresh current rights.
+  raw:=public.predictive_read_context_capture(id);
+  IF raw IS NULL THEN RETURN NULL; END IF;
+  IF NOT EXISTS(SELECT 1 FROM pg_locks WHERE pid=pg_backend_pid() AND relation='public.predictive_context_associations'::regclass
+    AND granted AND mode='ShareLock') THEN RAISE EXCEPTION 'context-guard-required' USING ERRCODE='55000'; END IF;
+  SELECT jsonb_build_object('raw',raw||jsonb_build_object('requestHash',c.request_hash),
+    'basis',s.basis,'associationSha256',s.association_sha256,'recordedAt',public.predictive_source_time(s.recorded_at),
+    'heads',coalesce((SELECT jsonb_agg(jsonb_build_object('id',o.id,'kind',o.kind,'sourceRecordId',o.source_record_id,
+      'predecessorId',o.predecessor_id,'correctionReason',o.correction_reason,'data',o.data) ORDER BY o.id COLLATE "C")
+      FROM public.predictive_observations o WHERE o.id IN (
+        SELECT value->>'expectedScheduleHead' FROM jsonb_array_elements(s.basis->'bindings')
+        UNION SELECT value->>'expectedBridgeHead' FROM jsonb_array_elements(s.basis->'bindings'))),'[]'::jsonb),
+    'observationIds',(SELECT jsonb_agg(l.observation_id ORDER BY l.observation_id COLLATE "C")
+      FROM public.predictive_artifact_observations l WHERE l.artifact_id=s.artifact_id),
+    'revisions',(SELECT jsonb_agg(jsonb_build_object('id',o.id,'kind',o.kind,'sourceRecordId',o.source_record_id,
+      'predecessorId',o.predecessor_id,'correctionReason',o.correction_reason,'data',o.data) ORDER BY o.id COLLATE "C")
+      FROM public.predictive_artifact_observations l JOIN public.predictive_observations o ON o.id=l.observation_id WHERE l.artifact_id=s.artifact_id)) INTO result
+    FROM public.predictive_context_associations s JOIN public.predictive_context_captures c ON c.capture_id=s.capture_id
+    WHERE s.capture_id=predictive_read_context_associations.id;
+  RETURN result;
+END $$;
+
 -- Exact sealed links only. The raw/native route stays closed for every other
 -- observation and for earlier, already-committed raw artifacts.
 CREATE FUNCTION public.predictive_context_canonical_guard() RETURNS trigger
@@ -440,3 +466,5 @@ GRANT EXECUTE ON FUNCTION public.predictive_context_access(text,timestamptz) TO 
 REVOKE ALL ON FUNCTION public.predictive_context_revision(text,text,text,text,jsonb,text),
  public.predictive_record_context_associations(text,jsonb),public.predictive_context_association_check(),public.predictive_context_association_immutable() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.predictive_record_context_associations(text,jsonb) TO predictive_ingest;
+REVOKE ALL ON FUNCTION public.predictive_read_context_associations(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.predictive_read_context_associations(text) TO predictive_replay;

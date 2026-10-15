@@ -17,6 +17,9 @@ import { SOURCE_HEADERS } from "../../src/lib/predictive/sourceHeaders.ts";
 import { canonical, digest } from "../../src/lib/predictive/validation.ts";
 import { sourceClaimFixture } from "../predictive/fixtures/sourceClaims.ts";
 import { sourceCsv, sourceSamples } from "../predictive/fixtures/source.ts";
+import { backendPid, waitForBlocked } from "./leaseSupport.ts";
+import { passingYardsFixture, TARGET, PLAYER } from "../predictive/fixtures/passingYards.ts";
+import type { Revision } from "../../src/lib/predictive/types.ts";
 
 const fixture = (feed: "schedule" | "identifiers", many = false): SourceContextPublication => {
   const base = sourceClaimFixture("context:" + feed), bytes = sourceCsv(feed, feed === "schedule" ? sourceSamples().schedule :
@@ -61,6 +64,186 @@ const associationInput = (suffix = ""): SourceContextAssociationRequest => {
   return { source, selections: [{ claimId: "context-row:" + digest(canonical([source.captureId, 1])),
     gameId: "00000000-0000-4000-8000-000000000001", scheduleHead: null, bridgeHead: null }] };
 };
+it("context consumers authenticate original CSV associations through restricted native and source readers", async () => {
+  await proof(async (admin, target, artifacts) => {
+    const store = await createLocalPredictiveStore(admin, target, artifacts), request = associationInput();
+    request.source.rightsDecisions[0].allowedUses.push("model-input"); // Synthetic fixture permission only.
+    await store.publishSourceContextAssociations(request);
+    const numerical = sourceClaimFixture("context-consumer-numerical");
+    numerical.rightsDecisions[0].allowedUses.push("model-input");
+    await store.publishSourceStats(numerical);
+    let reads = 0;
+    const tracked = { ...artifacts, database: { ...artifacts.database, read: async (...args: Parameters<typeof artifacts.database.read>) => {
+      reads++; return artifacts.database.read(...args);
+    } } };
+    const cutoff = (await admin.query("SELECT predictive_source_time(clock_timestamp()) AS t")).rows[0].t as string;
+    await login(admin, target, ["predictive_replay"], async (client, local) => {
+      const reader = await createLocalPredictiveStore(client, local, tracked);
+      const result = await reader.replaySourceContextAssociations(request.source.captureId, cutoff);
+      expect(result!.observations).toHaveLength(2);
+      expect(result!.observations.find(row => row.revision.kind === "schedule")!.revision.data).toMatchObject({ kickoff: "2026-10-18T17:00:00.000Z" });
+      const query = { candidate: "stats-v1:player_pass_yds" as const, gameId: request.selections[0].gameId, playerId: "00-0000001", cutoff, computedAt: cutoff };
+      const bundle = await reader.replay(query);
+      expect(bundle.target?.kickoff).toBe("2026-10-18T17:00:00.000Z");
+      expect(bundle.reasons).toContain("target-membership-missing");
+      const source = await reader.replaySourcePassingYards(query, [numerical.profile.id]);
+      expect(source.bundle.target?.kickoff).toBe("2026-10-18T17:00:00.000Z");
+    });
+    // One wire read per transaction; both associated revisions use that file.
+    expect(reads).toBe(3);
+  });
+});
+it("context consumers preserve historical corrections and association identity across rights renewal", async () => {
+  await proof(async (admin, target, artifacts) => {
+    const store = await createLocalPredictiveStore(admin, target, artifacts), first = associationInput("-first");
+    first.source.rightsDecisions[0].allowedUses.push("model-input"); // Synthetic fixture permission only.
+    await store.publishSourceContextAssociations(first);
+    const before = new Date().toISOString(), earlier = await store.replaySourceContextAssociations(first.source.captureId, before);
+    const prior = (await prepareSourceContextAssociations(first, before)).bindings[0], next = associationInput("-next");
+    const recaptured = associationInput("-unchanged"); recaptured.source.rightsDecisions[0].allowedUses.push("model-input");
+    recaptured.selections[0].scheduleHead = prior.schedule; recaptured.selections[0].bridgeHead = prior.bridge;
+    await store.publishSourceContextAssociations(recaptured);
+    expect(await store.replaySourceContextAssociations(recaptured.source.captureId, before)).toBeNull();
+    const unchanged = await store.replaySourceContextAssociations(recaptured.source.captureId, new Date().toISOString());
+    expect(unchanged!.observations.map(row => row.revision)).toEqual(earlier!.observations.map(row => row.revision));
+    next.source.rightsDecisions[0].allowedUses.push("model-input");
+    next.selections[0].scheduleHead = prior.schedule; next.selections[0].bridgeHead = prior.bridge;
+    next.source.artifact.bytes = sourceCsv("schedule", [{ ...sourceSamples().schedule[0], gametime: "16:25" }]);
+    next.source.artifact.sha256 = digest(next.source.artifact.bytes);
+    await store.publishSourceContextAssociations(next);
+    expect(await store.replaySourceContextAssociations(next.source.captureId, before)).toBeNull();
+    const after = new Date().toISOString(), current = await store.replaySourceContextAssociations(next.source.captureId, after);
+    expect(current!.observations.find(row => row.revision.kind === "schedule")!.revision.data).toMatchObject({ kickoff: "2026-10-18T20:25:00.000Z" });
+    expect((await store.replaySourceContextAssociations(first.source.captureId, before))!.observations).toEqual(earlier!.observations);
+    await admin.query(`INSERT INTO predictive_rights_decisions VALUES('context-renewed',$1,$2,ARRAY['internal-research','model-input'],date_trunc('milliseconds',clock_timestamp()),NULL,date_trunc('milliseconds',clock_timestamp()),'terms-review','fixture-only renewal')`,
+      [first.source.profile.id, first.source.rightsDecisions[0].id]);
+    const renewed = await store.replaySourceContextAssociations(next.source.captureId, after);
+    expect(renewed).toEqual(current);
+    const query = { candidate: "stats-v1:player_pass_yds" as const, gameId: first.selections[0].gameId, playerId: "00-0000001", computedAt: after };
+    expect((await store.replay({ ...query, cutoff: before })).target?.kickoff).toBe("2026-10-18T17:00:00.000Z");
+    expect((await store.replay({ ...query, cutoff: after })).target?.kickoff).toBe("2026-10-18T20:25:00.000Z");
+  });
+});
+it("context consumers refuse damaged bytes rehashed raw claims and forged canonical payloads", async () => {
+  await proof(async (admin, target, artifacts, root) => {
+    const store = await createLocalPredictiveStore(admin, target, artifacts), request = associationInput();
+    await store.publishSourceContextAssociations(request);
+    const cutoff = new Date().toISOString(), path = join(root, ".db-blobs", request.source.artifact.sha256 + ".csv");
+    await writeFile(path, Buffer.alloc(Buffer.byteLength(request.source.artifact.bytes)));
+    await expect(store.replaySourceContextAssociations(request.source.captureId, cutoff)).rejects.toThrow("artifact-integrity-failed");
+    await writeFile(path, request.source.artifact.bytes);
+    await admin.query("ALTER TABLE predictive_context_captures DISABLE TRIGGER USER");
+    const original = (await admin.query("SELECT claims,claims_sha256 FROM predictive_context_captures WHERE capture_id=$1", [request.source.captureId])).rows[0];
+    try {
+      await admin.query(`UPDATE predictive_context_captures SET claims=jsonb_set(claims,'{0,projection,kickoff}','"2026-10-18T18:00:00.000Z"'),
+        claims_sha256=predictive_source_digest(jsonb_set(claims,'{0,projection,kickoff}','"2026-10-18T18:00:00.000Z"')) WHERE capture_id=$1`, [request.source.captureId]);
+      await expect(store.replaySourceContextAssociations(request.source.captureId, cutoff)).rejects.toThrow("context-association-replay-integrity-failed");
+    } finally {
+      await admin.query("UPDATE predictive_context_captures SET claims=$2,claims_sha256=$3 WHERE capture_id=$1", [request.source.captureId, JSON.stringify(original.claims), original.claims_sha256]);
+      await admin.query("ALTER TABLE predictive_context_captures ENABLE TRIGGER USER");
+    }
+    await admin.query("ALTER TABLE predictive_observations DISABLE TRIGGER USER");
+    try {
+      await admin.query(`UPDATE predictive_observations SET data=jsonb_set(jsonb_set(data,'{kickoff}','"2026-10-18T18:00:00.000Z"'),'{rawGametime}','"14:00"') WHERE kind='schedule'`);
+      await expect(store.replaySourceContextAssociations(request.source.captureId, cutoff)).rejects.toThrow("context-association-replay-integrity-failed");
+    } finally { await admin.query("ALTER TABLE predictive_observations ENABLE TRIGGER USER"); }
+  });
+});
+it("context consumers refuse revoked rights before bytes and expiry during verification before delivery", async () => {
+  await proof(async (admin, target, artifacts) => {
+    const request = associationInput(), store = await createLocalPredictiveStore(admin, target, artifacts);
+    request.source.rightsDecisions[0].effectiveTo = (await admin.query("SELECT predictive_source_time(clock_timestamp()+interval '2 seconds') AS t")).rows[0].t;
+    await store.publishSourceContextAssociations(request);
+    let reads = 0;
+    const slow = await createLocalPredictiveStore(admin, target, { ...artifacts, database: { ...artifacts.database, read: async (...args) => {
+      reads++; const bytes = await artifacts.database.read(...args); await admin.query("SELECT pg_sleep(2.1)"); return bytes;
+    } } });
+    const cutoff = new Date().toISOString();
+    await expect(slow.replaySourceContextAssociations(request.source.captureId, cutoff)).rejects.toThrow("context-publication-rights-refused");
+    expect(reads).toBe(1);
+    await expect(slow.replaySourceContextAssociations(request.source.captureId, cutoff)).rejects.toThrow("compressed-publication-rights-refused");
+    expect(reads).toBe(1);
+    await admin.query(`INSERT INTO predictive_rights_decisions VALUES('context-recovered',$1,$2,ARRAY['internal-research'],date_trunc('milliseconds',clock_timestamp()),NULL,date_trunc('milliseconds',clock_timestamp()),'terms-review','fixture-only recovery')`,
+      [request.source.profile.id, request.source.rightsDecisions[0].id]);
+    expect(await store.replaySourceContextAssociations(request.source.captureId, cutoff)).not.toBeNull();
+  });
+});
+it("context consumers hold the deletion guard through byte verification and return no evidence after deletion", async () => {
+  await proof(async (admin, target, artifacts) => {
+    const request = associationInput(), store = await createLocalPredictiveStore(admin, target, artifacts);
+    await store.publishSourceContextAssociations(request);
+    await login(admin, target, ["predictive_replay"], async (client, local) => {
+      await login(admin, target, ["predictive_retention_owner"], async (deleter, deletionTarget) => {
+        let opened!: () => void, release!: () => void;
+        const openedFile = new Promise<void>(resolve => { opened = resolve; }), released = new Promise<void>(resolve => { release = resolve; });
+        const reader = await createLocalPredictiveStore(client, local, { ...artifacts, database: { ...artifacts.database, read: async (...args) => {
+          const bytes = await artifacts.database.read(...args); opened(); await released; return bytes;
+        } } });
+        const retention = await createLocalPredictiveStore(deleter, deletionTarget, artifacts), readerPid = await backendPid(client), deletionPid = await backendPid(deleter);
+        const reading = reader.replaySourceContextAssociations(request.source.captureId, new Date().toISOString());
+        await openedFile;
+        const deleting = retention.retain({ id: "context-consumer-delete", reason: "provider-request", authority: "fixture-only deletion", decidedAt: request.source.capturedAt,
+          auditLevel: "full", scope: { kind: "source", profileIds: [request.source.profile.id], capturedFrom: null, capturedBefore: null } });
+        try {
+          await waitForBlocked(admin, [deletionPid], readerPid); release();
+          expect((await reading)!.observations).toHaveLength(2); await deleting;
+        } finally { release(); await Promise.allSettled([reading, deleting]); }
+        expect(await reader.replaySourceContextAssociations(request.source.captureId, new Date().toISOString())).toBeNull();
+      });
+    });
+  });
+});
+it("context consumers record a synthetic feature dependency and mandatory deletion removes its derived run", async () => {
+  await proof(async (admin, target, artifacts) => {
+    const dataset = passingYardsFixture(false);
+    // Replace only the target schedule's synthetic JSON provenance with an
+    // original-CSV association; all remaining feature evidence is synthetic.
+    for (const artifact of dataset.artifacts) {
+      const rows = (JSON.parse(artifact.bytes) as Revision[]).filter(row => !(row.kind === "schedule" && row.data.gameId === TARGET));
+      artifact.bytes = canonical(rows); artifact.sha256 = digest(artifact.bytes);
+      dataset.captures.filter(capture => capture.artifactId === artifact.id).forEach(capture => { capture.parsedRows = rows.length; });
+    }
+    const store = await createLocalPredictiveStore(admin, target, artifacts);
+    await store.publish("context-native-fixture", dataset, "2026-10-09T00:00:00.000Z");
+    const request = associationInput(); request.selections[0].gameId = TARGET;
+    request.source.rightsDecisions[0].allowedUses.push("model-input"); // Fixture-only; no real grant.
+    await store.publishSourceContextAssociations(request);
+    const now = new Date().toISOString(), result = await store.replayAndRecord({ gameId: TARGET, playerId: PLAYER,
+      candidate: "stats-v1:player_pass_yds", cutoff: now, computedAt: now });
+    expect(result.status).toBe("recorded");
+    if (result.status !== "recorded") throw new Error("fixture feature recording failed");
+    expect(result.bundle.target?.kickoff).toBe("2026-10-18T17:00:00.000Z");
+    expect(result.bundle.dependencies.some(dependency => dependency.profileId === request.source.profile.id)).toBe(true);
+    expect((await admin.query("SELECT id FROM predictive_feature_runs WHERE id=$1", [result.featureRunId])).rows).toHaveLength(1);
+    await store.retain({ id: "context-feature-delete", reason: "provider-request", authority: "fixture-only deletion", decidedAt: now,
+      auditLevel: "full", scope: { kind: "source", profileIds: [request.source.profile.id], capturedFrom: null, capturedBefore: null } });
+    expect((await admin.query("SELECT id FROM predictive_feature_runs WHERE id=$1", [result.featureRunId])).rows).toHaveLength(0);
+    expect(await store.replaySourceContextAssociations(request.source.captureId, now)).toBeNull();
+  });
+});
+it("context consumers distinguish continuing research access from model permission expiring before delivery", async () => {
+  await proof(async (admin, target, artifacts) => {
+    const request = associationInput(), store = await createLocalPredictiveStore(admin, target, artifacts);
+    request.source.rightsDecisions[0].allowedUses.push("model-input"); // Fixture-only permission.
+    await store.publishSourceContextAssociations(request);
+    const numerical = sourceClaimFixture("context-model-boundary"); numerical.rightsDecisions[0].allowedUses.push("model-input");
+    await store.publishSourceStats(numerical);
+    const boundary = (await admin.query("SELECT predictive_source_time(clock_timestamp()+interval '2 seconds') AS t")).rows[0].t;
+    await admin.query(`INSERT INTO predictive_rights_decisions VALUES('context-research-only',$1,$2,ARRAY['internal-research'],$3,NULL,
+      date_trunc('milliseconds',clock_timestamp()),'terms-review','fixture-only scheduled model refusal')`,
+      [request.source.profile.id, request.source.rightsDecisions[0].id, boundary]);
+    const slow = await createLocalPredictiveStore(admin, target, { ...artifacts, database: { ...artifacts.database, read: async (...args) => {
+      const bytes = await artifacts.database.read(...args); await admin.query("SELECT pg_sleep(2.1)"); return bytes;
+    } } });
+    const cutoff = (await admin.query("SELECT predictive_source_time(clock_timestamp()) AS t")).rows[0].t as string;
+    const query = { gameId: request.selections[0].gameId, playerId: PLAYER,
+      candidate: "stats-v1:player_pass_yds" as const, cutoff, computedAt: cutoff };
+    await expect(slow.replaySourcePassingYards(query, [numerical.profile.id])).rejects.toThrow("context-consumer-use-refused");
+    const blocked = await store.replay(query);
+    expect(blocked.target).toBeNull(); expect(blocked.reasons).toContain("rights-not-in-force");
+    expect((await store.replaySourceContextAssociations(request.source.captureId, cutoff))!.observations).toHaveLength(2);
+  });
+});
 it("context associations atomically publish exact pairs through restricted roles with fresh cutoff visibility", async () => {
   await proof(async (admin, target, artifacts) => {
     const raw = input("schedule"), store = await createLocalPredictiveStore(admin, target, artifacts);

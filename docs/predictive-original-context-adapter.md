@@ -5,8 +5,8 @@ real QB slice. It does not register a parser/profile, mint canonical evidence
 or approve a new source use. Frozen 0001–0020 stay unchanged. #106 owns 0021
 only for the context recorder; #118 owns 0022–0024 for subsequent foundation
 review fixes, to finalize after integrating frozen 0021. No later number is
-allocated. The 0021 implementation remains scratch-only until original-byte
-consumer replay and integrated migration checks pass.
+allocated. The 0021 implementation remains scratch-only pending ordered
+migration/catalog promotion and integrated upgrade checks.
 
 ## Why the existing publisher is insufficient
 
@@ -299,3 +299,51 @@ exist but does not claim consumer qualification. Ordered 0021 promotion, consume
 replay and integrated deletion/dataset/upgrade checks remain outstanding. This
 checkpoint uses disposable fixtures; the earlier real-file timing proof applies
 to its archived prototype, not a new benchmark of this association path.
+
+## Original-byte consumer hydration checkpoint
+
+The guarded association reader and `replaySourceContextAssociations(captureId,
+cutoff)` now authenticate associated revisions against the complete retained
+CSV. The reader obtains the sealed association set and its asserted historical
+predecessors under the shared guard, reparses original bytes, reconstructs the
+expected schedules/game bridges, and compares all claims, fingerprints, revision
+payloads/IDs, authorized link IDs and the recording clock. SQL observation rows
+must match this reconstruction as well; a rehashed false raw seal or modified
+canonical payload cannot replace the original file. This supersedes the previous
+checkpoint's explicit consumer refusal.
+
+Canonical hydration supplies those verified observations to the native and
+source-feature readers. When a context profile is registered, these readers use
+the shared read-committed guard rather than a stale read-only snapshot. JSON-only
+databases retain the released read-only path. If context registration races the
+routing probe, an unguarded reader refuses instead of opening context bytes.
+Per-capture proof and wire reads are reused inside the transaction; fresh rights
+checks run before bytes and again at transaction delivery, not once per row.
+Feature delivery separately rechecks model-input permission: continuing research
+permission cannot authorize model use after that use expires. Native access
+decisions use `clock_timestamp()`, not the transaction-start `now()` value.
+Expiry during verification refuses delivery. Mandatory deletion waits for the
+guarded read to finish, then removes the capture and subsequent reads return no
+evidence. Transaction cleanup clears proof/access state after success or refusal.
+
+Allowed rights renewals do not manufacture a new association or alter historical
+request identity. Preparation verifies the current authoritative rights chain;
+the immutable raw run/seal retains the original request hash. Existing cutoffs
+continue to select only captures known then, including unchanged revisions
+recaptured later and corrections with historical predecessors.
+
+Seven new mandatory PostgreSQL cases cover restricted native/source hydration,
+one file read per transaction, corrections and renewal, damaged bytes, rehashed
+raw claims, forged canonical payloads, expiry/refusal/recovery, concurrent
+deletion, and a recorded synthetic feature whose context deletion removes its
+derived run, and scheduled model-only expiry while research remains permitted.
+Only fixture permissions include model input; no real source use
+was expanded. Missing real membership/coverage/participation remains unresolved.
+
+Validation includes the combined context/legacy PostgreSQL suite, all 824 Node
+tests, six report-contract cases, typecheck and affected lint; the final counts
+are recorded in the test reasoning review. Frozen 0001–0020 are unchanged.
+Next for 0021: promote the
+bounded supported adapter to the ordered migration, generate catalog/schema
+artifacts, validate upgrade/combined contracts and complete review before freezing.
+Raw identifiers still do not establish dated player bridges or membership.
