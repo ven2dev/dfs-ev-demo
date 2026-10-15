@@ -2,6 +2,8 @@ import { Client, type QueryResultRow } from "pg";
 import { checkConnectedTarget } from "../../../scripts/db-migrations/core.mjs";
 import type { ArtifactMediaType, PrivateArtifactStore } from "./artifacts.ts";
 import { createEvidenceBatch } from "./batchEvidence.ts";
+import { prepareSourceContextPublication, type SourceContextPublication } from "./sourceContextPublication.ts";
+import { SOURCE_CONTEXT_VERSION, SOURCE_CONTEXT_BOUNDS } from "./sourceContextClaims.ts";
 import { createTrainingOperation, TRAINING_TIME_BOUNDS, type TrainingOperationOptions } from "./trainingOperation.ts";
 import { normalizeFittingRunRequest, selectTrainingRows, TRAINING_BOUNDS, type FittingRunRequest } from "./training.ts";
 import { checkTrainingMetadataSelection, TRAINING_SELECTION_SQL, trainingSelectionParameters, type TrainingMetadataSelection } from "./trainingSql.ts";
@@ -520,6 +522,59 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
       return existing ?? { id:pinned.id,status:"published",failureCode:null,reused:false };
     }));
   };
+
+  const publishSourceContext = (input: SourceContextPublication): Promise<RunResult> => {
+    if (typeof input?.artifact?.bytes !== "string" || Buffer.byteLength(input.artifact.bytes) > SOURCE_CONTEXT_BOUNDS.bytes) refuse("artifact-integrity-failed");
+    const pinned = structuredClone(input);
+    return withBlobReferences([pinned.artifact.sha256 + ".csv"], () => transaction(async () => {
+      if (!(await query("SELECT to_regprocedure('public.predictive_record_context_capture(text,jsonb,jsonb)') IS NOT NULL AS available")).rows[0].available) refuse("context-recording-not-installed");
+      const now = (await query("SELECT public.predictive_context_guard() AS clock")).rows[0].clock as string;
+      const prepared = await prepareSourceContextPublication(pinned, now);
+      await persistRegistrations({ formatVersion: 2, profiles: [pinned.profile], rightsDecisions: pinned.rightsDecisions,
+        artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] });
+      const authoritative = (await query(RIGHTS_SQL, [[pinned.profile.id]])).rows.map(row => row.decision as RightsDecision);
+      await prepareSourceContextPublication({ ...pinned, rightsDecisions: authoritative }, now);
+      const access = () => query("SELECT public.predictive_context_access($1,$2)", [pinned.profile.id, pinned.capturedAt]);
+      await access();
+      const existing = await priorRun(pinned.id, prepared.requestHash);
+      const reference = await artifacts.write(pinned.artifact.bytes, pinned.artifact.sha256, "text/csv");
+      await access();
+      await artifacts.read(reference, pinned.artifact.sha256, Buffer.byteLength(pinned.artifact.bytes));
+      if (!existing) {
+        await insertRun(pinned.id, prepared.requestHash, now, "published", null,
+          { artifacts: 1, captures: 1, rows: prepared.prepared.rows.length }, Buffer.byteLength(pinned.artifact.bytes), SOURCE_CONTEXT_VERSION);
+        await persistArtifact(pinned.artifact, "text/csv");
+        await persistCapture({ id: pinned.captureId, artifactId: pinned.artifact.id, capturedAt: pinned.capturedAt, availableAt: pinned.capturedAt,
+          ingestedAt: now, publishedAt: null, publicationEvidence: null, state: "published", bodyComplete: true,
+          headerVerified: true, parserSucceeded: true, parsedRows: prepared.prepared.rows.length }, pinned.id);
+      }
+      const seal = (await query("SELECT public.predictive_record_context_capture($1,$2,$3) AS seal",
+        [pinned.captureId, JSON.stringify(pinned.seasonRange), JSON.stringify(prepared.prepared.rows)])).rows[0].seal;
+      if (seal.requestHash !== prepared.requestHash || seal.claimsSha256 !== prepared.prepared.claimsSha256) refuse("context-publication-integrity-failed");
+      await recordRunRights(pinned.id); await access();
+      return existing ?? { id: pinned.id, status: "published", failureCode: null, reused: false };
+    }));
+  };
+  const replaySourceContext = (captureId: string) => transaction(async () => {
+    if (typeof captureId !== "string" || !captureId.trim() || captureId.length > 256) refuse("context-request-refused");
+    if (!(await query("SELECT to_regprocedure('public.predictive_read_context_capture(text)') IS NOT NULL AS available")).rows[0].available) refuse("context-recording-not-installed");
+    const now = (await query(`SELECT ${timestamp("clock_timestamp()")} AS clock`)).rows[0].clock as string;
+    const metadata = (await readQuery("SELECT public.predictive_read_context_capture($1) AS evidence", [captureId])).rows[0].evidence;
+    if (!metadata) return null;
+    const profile = (await profilesFor([metadata.profileId]))[0];
+    const rightsDecisions = (await readQuery(RIGHTS_SQL, [[metadata.profileId]])).rows.map(row => row.decision as RightsDecision);
+    batchAccess = () => query("SELECT public.predictive_context_access($1,$2)", [metadata.profileId, metadata.capturedAt]).then(() => {});
+    await batchAccess();
+    const bytes = await readBytes(metadata.storageRef, metadata.wireSha256, metadata.wireBytes);
+    const prepared = await prepareSourceContextPublication({ id: metadata.runId, captureId, capturedAt: metadata.capturedAt, profile, rightsDecisions,
+      seasonRange: metadata.seasonRange, artifact: { id: metadata.artifactId, profileId: metadata.profileId, bytes, sha256: metadata.wireSha256,
+        retrievalKind: "full", origin: metadata.origin, providerEtag: metadata.providerEtag, providerLastModified: metadata.providerLastModified,
+        releaseUpdatedAt: metadata.releaseUpdatedAt, scopeKind: "all-seasons", scopeSeason: null, scopeWeek: null, scopeGameId: null, scopeFilter: null } }, now);
+    if (prepared.prepared.claimsSha256 !== metadata.claimsSha256 || canonical(prepared.prepared.rows) !== canonical(metadata.claims)) refuse("context-replay-integrity-failed");
+    await batchAccess();
+    return { captureId, ingestedAt: metadata.ingestedAt, recordedAt: metadata.recordedAt, prepared: prepared.prepared,
+      canonicalEvidencePublished: false, featuresPublished: false, labelsFinalized: false } as const;
+  }, false, true);
 
   const readSourceStats = async (request: SourceStatsRequest, accessAt?: string): Promise<SourceStatsReplay> => {
     instant(request.cutoff);
@@ -1901,7 +1956,7 @@ export const createLocalPredictiveStore = async (client: Client, target: Target,
     }
   };
   const preparationMs = TRAINING_TIME_BOUNDS.preparationMs, readMs = TRAINING_TIME_BOUNDS.readMs;
-  return { publish, publishSourceStats, publishCompressedSource, replaySourceStats, replayCompressedSourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, planCompressedSourceStatsNormalization, recordSourceNormalization, recordCompressedSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
+  return { publish, publishSourceStats, publishCompressedSource, publishSourceContext, replaySourceContext, replaySourceStats, replayCompressedSourceStats, replayCompressedInspections, replayCompressedClaims, replayPublishedCompressedClaims, planSourceStatsNormalization, planCompressedSourceStatsNormalization, recordSourceNormalization, recordCompressedSourceNormalization, replaySourceNormalization, replaySourceStatsFacts,
     planSourceDecision, recordSourceDecision, replaySourceDecision, replaySourcePassingYards, recordSourcePassingYards, recordSourceFinalLabel, replaySourceConsumer,
     replaySourceConsumers: (ids: string[], options: TrainingOperationOptions = {}) => withTrainingDeadline(options, readMs, () => replaySourceConsumers(ids)),
     previewFittingRun: (input: FittingRunRequest, options: TrainingOperationOptions = {}) => withTrainingDeadline(options, preparationMs, () => previewFittingRun(input)),

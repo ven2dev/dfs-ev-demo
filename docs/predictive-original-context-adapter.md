@@ -156,3 +156,70 @@ adapter-only rights, expiry, late grants, later revocation, future capture,
 damaged bytes and caller mutation. Fixture terms records are test-only. All
 813 Node tests, typecheck, affected-file lint and whitespace checks pass.
 No real registration, rights insertion or SQL context record is claimed.
+
+## Scratch raw-context recorder checkpoint
+
+`db/prototypes/0021_original_context.sql` and the local store's
+`publishSourceContext` / `replaySourceContext` implement the first recordable
+slice in registered disposable databases. **This is not frozen 0021.** Ordered
+migrations and generated catalog/schema artifacts remain at 0020. On that
+unchanged prefix, both methods refuse `context-recording-not-installed`.
+
+The prototype seals a complete original CSV capture and its entire claim array.
+Publication uses an ingest-plus-replay login; replay-only and retention-only
+logins exercise their separate existing permissions.
+Published capture/run rows require a matching seal at commit; source receipt
+time is database-stamped. Registrations and authoritative rights are checked
+before file publication. Every raw replay holds the shared guard, rechecks
+current rights/deletion before bytes and delivery, verifies exact wire bytes,
+reparses the complete CSV and compares every claim. A well-shaped raw ingest
+seal alone is not evidence authority. SQL validates structural/key/ordinal,
+scope, conflict and Eastern kickoff consistency; the application still must
+reconstruct claims from original bytes. Canonical associations remain blocked,
+including direct ordinary native JSON association attempts.
+
+The private seal table joins the read guard and 0020 memo dependency set by
+forward prototype DDL. A write-capable lock on it disables memo reuse. Mandatory
+source deletion cascades the seal under the existing authorization, adds a
+digest-only supplemental row-count/ID audit and uses the existing blob removal
+queue. Existing byte-reading/retention signatures and legacy numerical limits
+are unchanged. An 8,193-row context capture succeeds while the same run size
+under the released CSV numerical code version is explicitly refused.
+
+Ten mandatory PostgreSQL cases pass: restricted roles and both feeds, 8,193
+records, forged SQL ordinal/kickoff and missing-seal commits, changed bytes and
+rehashed stored claims, native association refusal, commit-time rights expiry
+with complete rollback/file cleanup and recovery, unavailable-prefix behavior,
+mandatory deletion/resurrection refusal, memo/orphan-run protection, and exact
+canonical hash parity with escaping/Unicode/nulls/array order. The full focused
+run took 12.43 seconds; the later strengthened legacy-bound case also passed.
+All 813 Node tests, six report-contract checks, typecheck, affected-file lint
+and whitespace checks pass. No full database gate was repeated.
+
+Actual original-file proof reverified the durable source journal, recorded the
+existing selected core-feed internal-research review, and published/replayed both
+complete sources in a scratch database. It grants no model-input, outcome-label
+or public use. Schedule: 7,548 rows, publication 2,306 ms, two replays 1,577 ms.
+Identifiers: 24,854 rows, publication 6,787 ms, two replays 2,815 ms. Both repeated
+replays are identical; zero canonical observations/features/labels are created.
+Original October 14 receipt times are preserved; SQL ingestion/recording clocks
+are later actual times. The scratch database and its private blob files were
+removed; original source archives remain under their existing retention receipts.
+
+The first real identifier run reached the unchanged 10-second SQL timeout.
+The fix specializes canonical serialization to this exact validated schema,
+preserving the original digest bytes while removing recursive per-scalar SQL
+calls. Independent comparison against the released general canonical hash and
+the TypeScript digest passes. No timeout or source limit was raised. Final
+proof retains the SQL and application file hashes. The draft SQL hash is
+`2e0d1a01f8330a94cc9f6f4ffc7514431b9cb26b7fdbc2ecb784f52550c9856b`;
+it is a measurement identifier, **not** a frozen migration checksum.
+
+Next: canonical association authorization and replay. New bindings must not
+retroactively attach facts to the earlier raw capture's cutoff. Recording time
+and the immutable authorized association set must govern all SQL/application
+readers, with original-byte authentication and complete deletion/dataset closure.
+Only after these paths and their regression/upgrade checks pass can 0021 be
+promoted and frozen for #118's reserved 0022–0024. Dated membership, independent
+schedule coverage and permitted completion/participation/reconciliation evidence
+remain separate source qualifications.

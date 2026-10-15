@@ -442,3 +442,21 @@ canonical evidence. Eight new cases pass in the 813-case Node suite;
 typecheck and affected-file lint pass. No 0021 DDL or runtime context recorder
 exists yet. The recorder is next; membership/coverage, completion,
 participation and official reconciliation gates remain open.
+
+## Provisional raw-context recording proof
+
+The next [context recorder slice](predictive-original-context-adapter.md#scratch-raw-context-recorder-checkpoint)
+now records complete raw schedule/identifier captures and replays them against
+original bytes in a scratch-only 0021 prototype. Ten mandatory PostgreSQL cases,
+813 Node tests, report-contract checks, typecheck and affected-file lint pass.
+The real 7,548-row schedule and 24,854-row identifier files publish in 2.31/6.79
+seconds and replay repeatedly with identical evidence under unchanged limits.
+No canonical observation, feature or label is created. Only the already selected
+internal-research use is recorded in the disposable proof.
+
+Frozen 0001–0020 and all 40 numbered SQL/catalog files remain unchanged. 0021 is
+not frozen or added to the ordered chain: canonical association authorization,
+recording-time/cutoff isolation, consumer hydration and closure remain next.
+The prototype is under `db/prototypes/`, and ordinary prefix-20 stores explicitly
+refuse these new recorder methods until the prototype is installed in a test
+scratch database. #118's 0022–0024 allocation remains intact.

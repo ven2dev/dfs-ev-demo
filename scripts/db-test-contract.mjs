@@ -23,6 +23,16 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "context prototype records both original feeds through restricted roles and replays complete immutable claims",
+  "context prototype preserves 8193 rows without widening legacy numerical limits",
+  "context prototype refuses forged SQL rows and requires a seal before a capture can commit",
+  "context prototype verifies original bytes and refuses current revoked rights before opening files",
+  "context prototype refuses native canonical associations instead of treating raw captures as native JSON evidence",
+  "context prototype commit-time rights refusal rolls back capture seals and files and permits clean recovery",
+  "context recording stays explicitly unavailable on the frozen prefix without scratch DDL",
+  "context prototype mandatory deletion removes sealed claims and original bytes with supplemental audit",
+  "context prototype extends the guarded memo dependencies without allowing orphan ingestion runs",
+  "context prototype canonical hashing preserves escaped strings null projections and exact array order",
   "training validation migration preserves evidence and refuses cache policy and temporal bypasses",
   "compressed bindings materialize all 8193 sealed rows while binding only requested player claims",
   "compressed consumers verify numerical features labels dataset pins and mandatory source deletion in the shared graph",

@@ -1,5 +1,35 @@
 # Delivery 2 test reasoning review
 
+## #106 scratch raw-context recorder QC (2026-10-14)
+
+Ten mandatory PostgreSQL cases apply only the explicit prototype after frozen
+prefix 20 in registered random scratch databases. Independent expectations check
+the target's 17:00 UTC kickoff, complete ordinal counts, zero canonical outputs,
+server-stamped receipt time, exact repeated replay, restricted role permissions
+and seal-required commit boundaries. The 8,193-row namespace also probes the
+released CSV run version's refusal at that count. SQL ordinal and kickoff
+forgeries reach their specific validators under the real digest lock; hashes
+alone do not establish source truth. Byte corruption and an administrator-only
+resealed false claim both fail original-file replay. Revoked rights refuse
+before any file open. Deferred commit-time expiry rolls back SQL and private
+files, followed by clean recovery. Native canonical association remains blocked.
+
+Retention-only deletion removes complete raw seals and source files with a
+supplemental row-count/ID digest audit and refuses resurrection. The new table
+enters the guard/memo protected set; its write-capable lock disables reuse.
+Orphan ingestion runs and APIs on an unextended prefix 20 are refused. Specialized
+canonical hashing matches both the released SQL reference and TypeScript with
+quotes, backslashes, Unicode, null projections and reversed array order. Static
+required-case registration and six report-contract checks protect test presence.
+
+All ten cases pass in 12.43 seconds, with a focused rerun of the strengthened
+legacy-bound assertion, 813 Node tests, typecheck and affected-file lint. The real
+complete 7,548/24,854-row source proof also passes unchanged limits after removing
+recursive hashing overhead; retained hashes match final prototype/application
+files. Only disposable databases were used. This is raw source persistence proof,
+not a frozen 0021 migration, canonical context, historical membership or model
+readiness. Canonical association time/coverage and consumer hydration remain next.
+
 ## #106 pure original-context preparation QC (2026-10-14)
 
 Twelve new context-parser cases use independently specified kickoff/teams,

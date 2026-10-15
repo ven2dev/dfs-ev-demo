@@ -997,3 +997,23 @@ memo dependency set through forward DDL; frozen 0020 must not be edited.
 Migration/catalog work uses a fresh administrative connection, never the
 post-training session with its persistent empty TEMP namespace. No TypeScript
 byte-reading or retention API was changed by this increment.
+
+## #106 provisional raw-context recorder, not frozen 0021
+
+#106's scratch-only `db/prototypes/0021_original_context.sql` adds private raw
+capture seals, execute-only publication/replay, deferred seal/rights checks,
+supplemental deletion audits and the context table's read-guard/memo dependency.
+All ten focused PostgreSQL cases pass, including hash parity, native association
+refusal, commit-time expiry/recovery, missing-seal/orphan runs, legacy row bounds
+and mandatory deletion. Both real complete files also publish/replay under the
+unchanged 10-second SQL statement timeout after eliminating recursive seal-hash
+overhead. Real publication measurements are 2.31 seconds for 7,548 schedule rows
+and 6.79 seconds for 24,854 identifier rows. This measures raw recording only,
+not training capacity or canonical context readiness.
+
+**0001–0020 remain the frozen prefix. 0021 is not ready for #118 integration.**
+Canonical binding authorization, current/historical consumer replay and complete
+closure must land before promotion. The new raw store methods explicitly refuse
+on prefix 20 without the scratch prototype; no ordered or generated migration
+artifact changed. #106 still owns 0021 only; #118 retains 0022–0024. No change to
+the existing TypeScript byte-reading or retention interface is required.
