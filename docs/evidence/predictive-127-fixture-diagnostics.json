@@ -1,0 +1,44 @@
+{
+  "version": "spike127-fixture-diagnostics-v1",
+  "baseline": "4064557a8407954f2b84e1285cc736ba3a89536c",
+  "attempts": [
+    {
+      "population": 64,
+      "targetGames": 4,
+      "phase": "fixture-consumer-construction",
+      "status": "failed",
+      "durationMs": 324860,
+      "completedSourceBindings": 64,
+      "completedSourceDecisions": 128,
+      "timedSamples": 0,
+      "reason": "Later targets are correctly unavailable: intervening-player-game and intervening-team-game. Initial fixture incorrectly expected usable. No latency comparison claimed."
+    },
+    {
+      "population": 9,
+      "targetGames": 4,
+      "phase": "small-fixture-probe",
+      "status": "failed",
+      "durationMs": 10930,
+      "timedSamples": 0,
+      "reason": "Confirmed unavailable reasons for target 2. Fixed fixture expectations, preserving the frozen policy."
+    },
+    {
+      "population": 256,
+      "targetGames": 1,
+      "phase": "fixture-seeding-before-first-binding-progress",
+      "status": "failed",
+      "testDurationMs": 85745,
+      "timedSamples": 0,
+      "reason": "Query read timeout",
+      "observations": {
+        "firstBindingProgressEmitted": false,
+        "lastObservedSql": "COMMIT",
+        "activitySnapshot": "active, no wait_event; query age approximately 80 seconds during failure cleanup",
+        "source": "read-only pg_stat_activity snapshot and retained Vitest output",
+        "queryTimeoutMs": 20000,
+        "statementTimeoutMs": 15000
+      },
+      "conclusion": "No 256-QB scale timing or completed fixture is claimed. The active COMMIT observation does not isolate its validation cost from cleanup."
+    }
+  ]
+}

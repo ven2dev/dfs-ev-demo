@@ -1,0 +1,210 @@
+{
+  "version": "verify-on-write-spike-v1",
+  "measuredAt": "2026-10-16T22:28:00.442Z",
+  "baseline": "4064557a8407954f2b84e1285cc736ba3a89536c",
+  "applicationRevision": "d3197137aee09d0be829b9f19dcd6467d92f31e1",
+  "sourceHashes": {
+    "db/proposals/spike127_verified_reads.sql": "1f3c5a2c7885ed1017c2216cd6cbc502e4df035f65de5818cd0fa81aa8fab06e",
+    "tests/db/prototypes/verifiedTraining.ts": "6ebf29bd83b114c1cbcc981585f3c9ec055df3310208363d09bc108398dde712",
+    "tests/db/verifiedTraining.bench.ts": "f9b8046ce1186789a4e1f06b0118301467155468bb82de74d7e0c54909c13e3d",
+    "tests/db/prototypes/verifiedTrainingParity.ts": "1a6ffb8e9770a5b07b6c38e140732de67a710453931b653a3a43917dcb9d5e89",
+    "tests/db/trainingCapacityFixtures.ts": "daee26b0cbfb3bbbe4675a4eaeeed259eda36711a2dd5ce82c45b5f291a2ba8c",
+    "src/lib/predictive/persistence.ts": "63f056619359762a5beec9bb155b46807cb417cc08fdab681902cfd2174ef42c",
+    "src/lib/predictive/trainingReads.ts": "c267096e0e05934aa56db313e661f9ba4ed14a4130eda19ba99df14e0a85d054",
+    "src/lib/predictive/artifacts.ts": "686c601bb9a85d7d1652f04ba74f9990287b04b9c554331523d7815f2c601a0e",
+    "src/lib/predictive/training.ts": "acd32d4521a4bbe82de3e4fa5b8ae0fcb060fabbe6a7ac25bac0b7af40a1f0fd",
+    "tests/db/scratch.mjs": "d60664e566dc2c04a8b46822bf0b3e25d09ba4e03311dee8c13ff912b520b43a"
+  },
+  "migrations": [
+    {
+      "version": 1,
+      "sha256": "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98"
+    },
+    {
+      "version": 2,
+      "sha256": "df35a458b5d6e3f26cbbdd84d8cfa65244e865dd6963b6f0e1f8f5f0e8dd7297"
+    },
+    {
+      "version": 3,
+      "sha256": "ec72796bc69169e8a8a487c2dfd2240c86a4dc94c4ab74b29e4c05c83df9e695"
+    },
+    {
+      "version": 4,
+      "sha256": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba"
+    },
+    {
+      "version": 5,
+      "sha256": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a"
+    },
+    {
+      "version": 6,
+      "sha256": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19"
+    },
+    {
+      "version": 7,
+      "sha256": "fc10fe50cb8913c2c755db8ff15c0aa3d40e49b5a92d2471fff86c89c4409679"
+    },
+    {
+      "version": 8,
+      "sha256": "ea824b2f2b943feafc576ed0cb7130f0f78ea37376859995f7a1fa0b2e139cfb"
+    },
+    {
+      "version": 9,
+      "sha256": "f861c1afd210c65886628581b78a1f135bb950f6b5e5d00989d065930a49ea31"
+    },
+    {
+      "version": 10,
+      "sha256": "813ca0e75d014bc5e38c9d454c481a479890f1c43e16128400442da6ad57ee35"
+    },
+    {
+      "version": 11,
+      "sha256": "3908fa33bcb79301a870dca9a6c18dddacf755580a303025610d20bb20716d67"
+    },
+    {
+      "version": 12,
+      "sha256": "52dbb7400c93d9eb231fa210a4cce859e425ba7f836841ba5743c978efcf2fc3"
+    },
+    {
+      "version": 13,
+      "sha256": "b681598ddf0285905041b4120d2ee133306eda5c456377599130969284181813"
+    },
+    {
+      "version": 14,
+      "sha256": "5a1d4d4d7c8d1f8dd0caa0faea942e26a127fcb024bcd6c627602afeaaca6239"
+    },
+    {
+      "version": 15,
+      "sha256": "ab77314b75baddb7793c6c9a1dfe472c4cb9d74b203e8e8403f111158514e255"
+    },
+    {
+      "version": 16,
+      "sha256": "fd0e99ae3b3cc5f2dedb019d6d35fe3fe41d27b960179a91599496f8b0492883"
+    },
+    {
+      "version": 17,
+      "sha256": "5c7dbaec1bc41924c9539a7e65034a6c50a27a0c1a7c95d922b361c372f53305"
+    },
+    {
+      "version": 18,
+      "sha256": "58f0d5ae8cf11700d64370bf4dfdde8844dd2be6380935e103c84457a538de1e"
+    },
+    {
+      "version": 19,
+      "sha256": "4b4502b2b1431faa753ee067a90998f247955437c55edd0db8bc47bfa196e568"
+    },
+    {
+      "version": 20,
+      "sha256": "fed741f76177ec35e07ac1d1d09f39b33ceb26d406ac06b0e4ecd97e7816ada3"
+    }
+  ],
+  "runtime": {
+    "node": "v24.18.1",
+    "postgres": "18.6",
+    "cpu": "Apple M3 Pro",
+    "logicalCpus": 12
+  },
+  "setup": {},
+  "workload": {
+    "population": 256,
+    "distinctTargetEventsPerQb": 1,
+    "widths": [
+      16,
+      64,
+      256
+    ],
+    "repeatsPerArm": 3,
+    "historySlots": 1,
+    "opponentContext": false,
+    "targetLabels": "missing",
+    "historicalLabels": "usable",
+    "populationQualified": false
+  },
+  "order": [
+    "baseline",
+    "prototype",
+    "prototype",
+    "baseline"
+  ],
+  "protocol": {
+    "sameSeed": true,
+    "restrictedFreshConnectionPerApi": true,
+    "baselinePagesAndLabelsChunkSize": 64,
+    "prototypeMaxRows": 256,
+    "p95Method": "nearest-rank; empirical small-sample result, not a tail-confidence bound",
+    "statements": "client calls; nested SQL separately reported",
+    "buffers": "pg_stat_statements top-level shared blocks, excluding observer queries; cumulative hits, not unique physical pages",
+    "guardRemoved": false,
+    "deletionChanged": false,
+    "deadlines": {
+      "readMs": 10000,
+      "preparationMs": 30000
+    },
+    "rightsQueries": "nested set-based authorization statements (prototype) or SQL rights-allow evaluations (baseline)",
+    "certificatesCreatedDuringCheckedIngestion": true,
+    "metadataRecorder": "preserves frozen selection rules; consumes certificates"
+  },
+  "experimentFailure": "Query read timeout",
+  "targets": [
+    {
+      "target": "seal-256-at-most-5s",
+      "pass": false
+    },
+    {
+      "target": "page-256-p95-at-most-1s",
+      "p95Ms": null,
+      "pass": false
+    },
+    {
+      "target": "labels-256-p95-at-most-1s",
+      "p95Ms": null,
+      "pass": false
+    },
+    {
+      "target": "at-least-30-percent-deadline-headroom",
+      "pass": false
+    },
+    {
+      "target": "one-rights-query-per-request",
+      "pass": false
+    },
+    {
+      "target": "file-verifications-at-most-unique-files",
+      "pass": false
+    },
+    {
+      "target": "flat-client-sql-statements",
+      "pass": false
+    },
+    {
+      "target": "feature-and-label-recording-overhead-at-most-20-percent",
+      "pass": false
+    },
+    {
+      "target": "correctness-parity-including-adversarial-certification",
+      "pass": false
+    },
+    {
+      "target": "required-fixture-widths-executed",
+      "pass": false
+    }
+  ],
+  "summaries": [],
+  "writes": [
+    {
+      "operation": "record-feature",
+      "baselineMedianMs": null,
+      "prototypeMedianMs": null,
+      "overheadPercent": null,
+      "pass": false
+    },
+    {
+      "operation": "record-label",
+      "baselineMedianMs": null,
+      "prototypeMedianMs": null,
+      "overheadPercent": null,
+      "pass": false
+    }
+  ],
+  "correctness": [],
+  "measurements": []
+}

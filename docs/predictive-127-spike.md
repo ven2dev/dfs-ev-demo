@@ -3,6 +3,9 @@
 Baseline: held `fix/dfsEV-118-foundation-review` at `4064557`. This branch is an
 experiment, not a migration or a production reader. Frozen 0001–0020 stay intact.
 
+Result: **no-go**. See the [target-by-target report](predictive-127-results.md)
+and its raw interleaved evidence before reviewing this proposal as a design.
+
 The approved pattern is immutable, content-addressed verification certificates
 created by the trusted recorder, followed by set-based reads of those records.
 Current rights, evidence removal, expiry and file hashes remain read-time work.

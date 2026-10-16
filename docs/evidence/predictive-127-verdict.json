@@ -1,0 +1,325 @@
+{
+  "version": "spike127-aggregate-verdict-v1",
+  "decision": "NO-GO",
+  "baseline": "4064557a8407954f2b84e1285cc736ba3a89536c",
+  "executedSourceChecks": [
+    {
+      "evidence": "predictive-127-fixture-probe.json",
+      "executedSourceCheckpoint": "dc2f158c53ba83b3db1b73e4fe42b3872457f707",
+      "sourceHashesVerified": true,
+      "reportTimeRevision": "4064557a8407954f2b84e1285cc736ba3a89536c"
+    },
+    {
+      "evidence": "predictive-127-qb64.json",
+      "executedSourceCheckpoint": "dc2f158c53ba83b3db1b73e4fe42b3872457f707",
+      "sourceHashesVerified": true,
+      "reportTimeRevision": "d3197137aee09d0be829b9f19dcd6467d92f31e1"
+    },
+    {
+      "evidence": "predictive-127-qb256.json",
+      "executedSourceCheckpoint": "d3197137aee09d0be829b9f19dcd6467d92f31e1",
+      "sourceHashesVerified": true,
+      "reportTimeRevision": "d3197137aee09d0be829b9f19dcd6467d92f31e1"
+    },
+    {
+      "evidence": "predictive-127-restricted-probe.json",
+      "executedSourceCheckpoint": "213a6642995ba949bfef5eace43250d650702916",
+      "sourceHashesVerified": true,
+      "reportTimeRevision": "213a6642995ba949bfef5eace43250d650702916"
+    }
+  ],
+  "targets": [
+    {
+      "target": "seal-256-at-most-5s",
+      "pass": false,
+      "observed64Pass": true,
+      "max64Ms": 4875.233666999964,
+      "reason": "64-QB mixed-state fixture passes; required 256-QB scale workload unmeasured"
+    },
+    {
+      "target": "page-256-p95-at-most-1s",
+      "pass": false,
+      "observed64Pass": true,
+      "p95Ms": 347.4581659999676,
+      "samples": 6,
+      "reason": "64-QB mixed-state fixture passes; required 256-QB scale workload unmeasured"
+    },
+    {
+      "target": "labels-256-p95-at-most-1s",
+      "pass": false,
+      "reason": "No 256 distinct label sample exists; 64-QB fixture has only 64 historical labels and scale setup failed"
+    },
+    {
+      "target": "at-least-30-percent-api-deadline-headroom",
+      "pass": false,
+      "observed64Pass": true,
+      "reason": "Every 64-QB candidate API operation meets 21s preparation/7s read limits; required scale API operations unmeasured"
+    },
+    {
+      "target": "one-rights-query-per-request",
+      "pass": false,
+      "measuredReads": 2,
+      "measuredSeal": 3,
+      "inventoryRightsChecksByWidth": {
+        "16": 371,
+        "64": 2291,
+        "256": 16775
+      },
+      "reason": "Measured query budget exceeded"
+    },
+    {
+      "target": "file-verifications-at-most-unique-files",
+      "pass": false,
+      "observed64Pass": true,
+      "pageCountsByWidth": {
+        "16": 32,
+        "64": 80,
+        "256": 272
+      },
+      "reason": "Equality holds in completed comparisons; required 256-QB scale workload unmeasured"
+    },
+    {
+      "target": "flat-sql-statement-count-as-rows-grow",
+      "pass": false,
+      "observedClientCalls": {
+        "prepare-run": 1,
+        "seal": 5,
+        "page": 4,
+        "labels": 6
+      },
+      "reason": "Client counts constant at measured widths, but nested inventory rights checks grow 371/2291/16775; full server totals not captured in qb64 matrix"
+    },
+    {
+      "target": "feature-and-label-recording-overhead-at-most-20-percent",
+      "pass": false,
+      "reason": "Feature persistence overhead +37.49%; label +18.34%; a stronger certifier still needs measurement"
+    },
+    {
+      "target": "same-results-including-revocation-deletion-and-adversarial-inputs",
+      "pass": false,
+      "reason": "Prototype accepts forged numerical window and serves zero; held full replay refuses stored-source-consumer-mismatch"
+    },
+    {
+      "target": "both-required-fixtures-and-widths-executed",
+      "pass": false,
+      "reason": "64-QB 16/64/256 ABBA complete; 256-QB setup aborted before timed arms"
+    },
+    {
+      "target": "proposal-sql-only-and-frozen-prefix-unchanged",
+      "pass": true,
+      "reason": "Proposal SQL only under db/proposals; held branch, production source and frozen artifacts unchanged"
+    },
+    {
+      "target": "interleaved-recorded-evidence-with-source-hashes",
+      "pass": true,
+      "reason": "Small and 64-QB ABBA include raw timings, query groups, buffers and file counts; failed scale attempt is recorded without invented samples"
+    }
+  ],
+  "notes": [
+    "Aggregate verdict includes adversarial correctness checks from the small fixture; per-matrix fixture parity flags are not overall approval.",
+    "64-QB local flat-client-SQL verdict is false because it requires a 256-label width absent from that fixture. Observed client query counts for existing widths are flat; retained nested historical rights checks grow.",
+    "256-QB setup aborted before any interleaved timed arm. No failed or missing latency sample is counted as a completed measurement.",
+    "Small probe SPIKE127_TARGET_GAMES=4 overrides the runner default; its workload.distinctTargetEventsPerQb=1 field is incorrect. The completed 64-QB matrix correctly uses four target games; the failed 256-QB attempt uses one.",
+    "ApplicationRevision is emitted at report time, while sourceHashes pin executed code. The first two runs executed dc2f158, despite later evidence emission at d319713.",
+    "Cancelled SQL buffer metrics may be partial and must not be read as zero database work."
+  ],
+  "frozenBaselineAudit": {
+    "heldBranchUnchanged": true,
+    "pathsIdenticalToBaseline": [
+      "src",
+      "db/migrations",
+      "db/migration-manifest.json",
+      "db/schema.sql",
+      "db/catalog-contracts"
+    ],
+    "all20MigrationHashesEqualAcrossAttempts": true
+  },
+  "evidenceFiles": [
+    {
+      "path": "docs/evidence/predictive-127-fixture-probe.json",
+      "sha256": "88193bdb5ac067d21c0ac66696ea077aa9b332441b90663eea39ad1c2a3063c9"
+    },
+    {
+      "path": "docs/evidence/predictive-127-qb64.json",
+      "sha256": "822411d9b7ee0db6372c78c3d10dd6218ba7c2f67bcb8ff9e46222aae08ab401"
+    },
+    {
+      "path": "docs/evidence/predictive-127-qb256.json",
+      "sha256": "122dbd2791ed7635c98a94e244bd268fa905191f494453b0efaab7b6c31def46"
+    },
+    {
+      "path": "docs/evidence/predictive-127-fixture-diagnostics.json",
+      "sha256": "2f7618eba6df8c392b3f41fc665d5825c4878b114e5b8ccd980d7eb367555c3d"
+    },
+    {
+      "path": "docs/evidence/predictive-127-restricted-probe.json",
+      "sha256": "8f519e1a18d9823b7d1f9ba177a9239c8168dc930b460734f503636d564aff2a"
+    }
+  ],
+  "fixtureMetadata": {
+    "smallProbe": {
+      "population": 9,
+      "targetGamesPerQb": 4
+    },
+    "completedMatrix": {
+      "population": 64,
+      "targetGamesPerQb": 4,
+      "usableFeatures": 64,
+      "unavailableFeatures": 192,
+      "maximumDistinctHistoricalLabels": 64
+    },
+    "failedScaleAttempt": {
+      "population": 256,
+      "targetGamesPerQb": 1,
+      "timedSamples": 0,
+      "failure": "Query read timeout",
+      "testDurationMs": 85745
+    }
+  },
+  "measurementCounts": {
+    "smallABBA": 40,
+    "qb64ABBA": 120,
+    "qb256ABBA": 0,
+    "restrictedRecorderABBA": 40
+  },
+  "writes64": [
+    {
+      "operation": "record-feature",
+      "baselineMedianMs": 1938.9577499998268,
+      "prototypeMedianMs": 2665.822959000012,
+      "overheadPercent": 37.48741864025917,
+      "pass": false
+    },
+    {
+      "operation": "record-label",
+      "baselineMedianMs": 3065.924708999926,
+      "prototypeMedianMs": 3628.3294580001384,
+      "overheadPercent": 18.343723423777835,
+      "pass": true
+    }
+  ],
+  "adversarialChecks": [
+    {
+      "case": "certificate-union-matches-frozen-full-closure-9",
+      "passed": true
+    },
+    {
+      "case": "usable-label",
+      "passed": true,
+      "details": {
+        "baselineReason": null,
+        "prototypeReason": null
+      }
+    },
+    {
+      "case": "missing-exact-label",
+      "passed": true,
+      "details": {
+        "baselineReason": null,
+        "prototypeReason": null
+      }
+    },
+    {
+      "case": "label-before-recording-cutoff",
+      "passed": true,
+      "details": {
+        "baselineReason": null,
+        "prototypeReason": null
+      }
+    },
+    {
+      "case": "future-exact-label-refusal",
+      "passed": true,
+      "details": {
+        "baselineReason": "training-label-reference-mismatch",
+        "prototypeReason": "training-label-reference-mismatch"
+      }
+    },
+    {
+      "case": "wrong-player-exact-label-refusal",
+      "passed": true,
+      "details": {
+        "baselineReason": "training-label-reference-mismatch",
+        "prototypeReason": "training-label-reference-mismatch"
+      }
+    },
+    {
+      "case": "restricted-login-cannot-forge-or-mutate-certificate",
+      "passed": true
+    },
+    {
+      "case": "forged-numerical-window-refused-at-certification",
+      "passed": false,
+      "details": {
+        "baselineReason": "stored-source-consumer-mismatch",
+        "prototypeDeliveredValue": 0,
+        "certifierSessionSuperuser": false,
+        "syntheticHarnessMembership": true,
+        "implication": "existing SQL recorder is not a complete verify-on-write boundary; production ingestion needs trusted full reconstruction before certificate creation"
+      }
+    },
+    {
+      "case": "revoked-before-files-capacity-stats-0",
+      "passed": true,
+      "details": {
+        "baselineReason": "predictive-source-plan-rights-profile-invalid",
+        "prototypeReason": "training-dataset-rights-refused",
+        "fileReads": 0
+      }
+    },
+    {
+      "case": "revoked-before-files-capacity-context",
+      "passed": true,
+      "details": {
+        "baselineReason": "source-consumer-rights-refused",
+        "prototypeReason": "training-dataset-rights-refused",
+        "fileReads": 0
+      }
+    },
+    {
+      "case": "authorized-deletion-removes-certificates-and-invalidates-dataset",
+      "passed": true
+    },
+    {
+      "case": "revocation-during-file-read-withholds-delivery",
+      "passed": true,
+      "details": "training-dataset-rights-refused"
+    },
+    {
+      "case": "deletion-during-file-read-withholds-delivery",
+      "passed": true,
+      "details": "training-dataset-evidence-removed"
+    },
+    {
+      "case": "external-file-corruption-refused-by-both-paths",
+      "passed": true
+    },
+    {
+      "case": "baseline-inventory-rows-and-protected-uses-9-0",
+      "passed": true
+    },
+    {
+      "case": "prototype-inventory-rows-and-protected-uses-9-1",
+      "passed": true
+    },
+    {
+      "case": "prototype-inventory-rows-and-protected-uses-9-2",
+      "passed": true
+    },
+    {
+      "case": "baseline-inventory-rows-and-protected-uses-9-3",
+      "passed": true
+    }
+  ],
+  "restrictedRecorderCounterexample": {
+    "case": "forged-numerical-window-refused-at-certification",
+    "passed": false,
+    "details": {
+      "baselineReason": "stored-source-consumer-mismatch",
+      "prototypeDeliveredValue": 0,
+      "certifierSessionSuperuser": false,
+      "syntheticHarnessMembership": true,
+      "implication": "existing SQL recorder is not a complete verify-on-write boundary; production ingestion needs trusted full reconstruction before certificate creation"
+    }
+  }
+}
