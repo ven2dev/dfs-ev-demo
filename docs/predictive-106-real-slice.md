@@ -31,9 +31,11 @@ Handoff agreement: [#106/#118 contract at b7db281](https://github.com/ven2dev/df
 Relay owns training-read/dataset/pin runtime. This branch owns raw evidence,
 qualified bridges/membership/completion, source consumers and the real slice.
 Current allocation: preserve frozen 0001–0020 at Relay's `9cf2a8f` checkpoint.
-#106 owns 0021 only for original-byte context recording. #118 owns 0022–0024
-for subsequent foundation review fixes, to finalize after integrating frozen
-0021. No later number is allocated.
+#106's 0021 context adapter remains provisional. On 2026-10-16 the owner released
+the previous #118 reservations for 0022–0024; no replacement numbers are allocated
+here. #106 reviews #129 and #132 before promotion against the revised verified
+read-model design. Current conditions are in the integration handoff's opening
+coordination section; later allocation entries in this log are historical.
 
 ## Executable inventory
 

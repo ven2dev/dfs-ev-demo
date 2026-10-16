@@ -3,10 +3,10 @@
 Checkpoint: 2026-10-14. This identifies the next engineering dependency for the
 real QB slice. It does not register a parser/profile, mint canonical evidence
 or approve a new source use. Frozen 0001–0020 stay unchanged. #106 owns 0021
-only for the context recorder; #118 owns 0022–0024 for subsequent foundation
-review fixes, to finalize after integrating frozen 0021. No later number is
-allocated. The 0021 implementation remains scratch-only pending ordered
-migration/catalog promotion and integrated upgrade checks.
+only for the context recorder. Update 2026-10-16: the owner released the previous
+#118 reservations for 0022–0024. No replacement allocation is made here. The 0021
+implementation remains scratch-only pending the #106 review of #129/#132 and
+the revised promotion/upgrade boundary documented in the integration handoff.
 
 ## Why the existing publisher is insufficient
 

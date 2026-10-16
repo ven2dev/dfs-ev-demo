@@ -1,5 +1,75 @@
 # #106 / #118 integration prefix — 2026-10-14
 
+## Current coordination — 2026-10-16
+
+Owner update: **0022–0024 reservations are released.** No replacement allocation
+is made here. Earlier allocation notes below are historical and superseded.
+#106's local checkpoint is `61e0f39`; ordered migrations still stop at 0020 and
+0021 remains a scratch prototype. Promotion is pending the design review below,
+not an assumption that the previous #118 migration sequence still applies.
+
+#106 owns review of [#129](https://github.com/ven2dev/dfs-ev-demo/issues/129)
+(verified evidence at recording/backfill) and
+[#132](https://github.com/ven2dev/dfs-ev-demo/issues/132)
+(guard/memo retirement and evidence scrub). This is an initial premise review,
+not implementation approval or a completed code review.
+
+The proposed pattern is a materialized, verified read model: validate evidence
+when recording it, then perform set-based reads with current authorization and
+invalidation checks. Two alternatives are unsuitable for the training hot path:
+full reconstruction under broad table locks has already missed capacity targets;
+a TTL-only proof cache can outlive rights revocation or mandatory deletion.
+The immutable proof is evidence of validation, not perpetual permission to use it.
+No new table family, lock, cache or migration is implemented by this review.
+
+### #129 review conditions
+
+- Include plain original-context CSV, numerical CSV and gzip paths. A raw ingest
+  seal is not original-byte verification; confusing them could certify forged
+  source projections.
+- Bind receipts to the exact feature/label, complete closure, file hashes,
+  protected uses, rights references, cutoffs and versions. The existing #106
+  feature path computes and records in separate transactions, so writing a
+  receipt in the second transaction alone would not establish that the earlier
+  validation remains valid. Review the atomic validation-to-recording boundary.
+- Preserve refused/missing records and report backfill failures explicitly so a
+  successful subset cannot silently redefine the training population.
+- Review [#128](https://github.com/ven2dev/dfs-ev-demo/issues/128)'s knowledge-time
+  and owner-approved legacy-row policy alongside these receipts. Caller-dated
+  reviews cannot establish when the database learned a fact, and backfill cannot
+  fabricate earlier verified knowledge or capture authorization.
+
+### #132 review conditions
+
+#106 currently depends on the guard and transaction memo for compressed and
+context verification, source normalization/consumers and canonical feature
+hydration. **#106 cannot yet confirm that dependency is removed.** Distinguish
+retiring the training hot-path use from removing shared functions still used by
+raw research replay or ingestion.
+
+Review the replacements in #130/#131 before approving retirement: fresh
+use-specific rights, cutoff/correction parity, logical deletion during a read,
+file lifetime through bounded verification, reference-safe cleanup and current
+access checks before opening bytes and delivering results. Otherwise the change
+could return deleted/revoked evidence or race physical file removal. A scheduled
+scrub can detect corruption; its cadence alone cannot enforce immediate rights
+revocation or mandatory deletion.
+
+### Measurement and next boundary
+
+[#127](https://github.com/ven2dev/dfs-ev-demo/issues/127) supplies the approval
+spike: dataset sealing at 256 examples ≤5 seconds; pages/labels ≤1 second p95;
+≥30% deadline headroom; one request-level rights query, verification bounded by
+unique files and flat statement counts; recording overhead ≤20%. These are
+proposed targets, not measured #106 results. Interleaved parity and capacity
+evidence precedes permanent verified-record implementation. #106's review also
+checks original-context coverage alongside numerical CSV/gzip coverage.
+
+Next: review the spike and the #129/#132 handoff against #106's existing callers,
+then decide how the supported 0021 adapter is promoted within the revised chain.
+No Relay chat or GitHub review/comment was posted from this session. No runtime
+code or frozen migration changed, and no database suite was run for this note.
+
 #118 integrates #106's frozen `dae2940` checkpoint with its `a6da525` audited
 invalidation implementation on `feature/dfsEV-118-training-reads-retention`.
 The combined frozen ordered prefix is **0001–0019**. #106's 0001–0018 SQL and catalog

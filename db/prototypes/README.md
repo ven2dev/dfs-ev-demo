@@ -16,4 +16,6 @@ The public store methods return
 `context-recording-not-installed` against frozen prefix 0020.
 The raw ingest seal is not authority: replay must parse the original exact
 CSV bytes and compare every claim. Ordered migration/catalog promotion, upgrade
-and integrated checks remain before 0021 can be frozen for #118's 0022–0024 work.
+and integrated checks remain before 0021 can be frozen. As of 2026-10-16 the
+owner released the old 0022–0024 reservations; the revised #129/#132 design also
+needs #106 review before assuming the previous promotion sequence still applies.
