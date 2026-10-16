@@ -27,6 +27,7 @@ type Spike = Awaited<ReturnType<typeof createVerifiedTrainingSpike>>;
 type Stat = { userid: number; queryid: string; toplevel: boolean; query: string; calls: number; hits: number; reads: number; ms: number };
 type Measurement = { trial: number; mode: Mode; operation: string; rows: number; sample: number; status: "completed" | "refused";
   reason: string | null; wallMs: number; statements: number; uniqueFiles: number; fileVerifications: number;
+  serverStatements: number; nestedServerStatements: number;
   rightsQueries: number; sharedBufferHits: number; sharedBufferReads: number; responseBytes: number; sql: { calls: number; hash: string; preview: string; wallMs: number }[];
   nested: Stat[] };
 const sha = (bytes: string | Buffer) => createHash("sha256").update(bytes).digest("hex");
@@ -108,6 +109,7 @@ it("measures the #127 verify-on-write spike with interleaved unchanged-deadline 
       const top = nested.filter((row) => row.toplevel);
       const row: Measurement = { ...header, status: reason ? "refused" : "completed", reason, wallMs,
         statements: [...sql.values()].reduce((n, group) => n + group.calls, 0), uniqueFiles: new Set(reads).size, fileVerifications: reads.length,
+        serverStatements: nested.reduce((n, row) => n + row.calls, 0), nestedServerStatements: nested.filter((row) => !row.toplevel).reduce((n, row) => n + row.calls, 0),
         rightsQueries: nested.filter((row) => row.query.includes("current_rights c ON c.profile_id=r.profile") || row.query.includes("purpose = ANY(d.allowed_uses)")).reduce((n, row) => n + row.calls, 0),
         sharedBufferHits: top.reduce((n, row) => n + row.hits, 0), sharedBufferReads: top.reduce((n, row) => n + row.reads, 0),
         responseBytes: result === null ? 0 : Buffer.byteLength(canonical(result)), sql: [...sql.values()], nested: nested.sort((a, b) => b.ms - a.ms).slice(0, 12) };
