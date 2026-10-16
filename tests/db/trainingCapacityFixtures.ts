@@ -9,7 +9,7 @@ import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { recordCompletion } from "../../src/lib/predictive/completion.ts";
 import { compressedSourceAsset, COMPRESSED_SOURCE_PROFILE_VERSION } from "../../src/lib/predictive/compressedPublication.ts";
 import { sourceDecisionPlan, type SourceDecisionRecord } from "../../src/lib/predictive/sourceDecisions.ts";
-import { sourceFactSnapshot } from "../../src/lib/predictive/sourceFacts.ts";
+import { sourceFactSnapshot, type SourceFactSnapshot } from "../../src/lib/predictive/sourceFacts.ts";
 import { sourceFactWitness } from "../../src/lib/predictive/sourceWitness.ts";
 import { buildSourcePassingYards, buildSourceFinalLabel, sourceConsumerInputDigest, type SourceConsumerBody, type SourceConsumerFact } from "../../src/lib/predictive/sourceConsumers.ts";
 import { TRAINING_HISTORY_POLICY, TRAINING_HISTORY_SHA256, type FittingRunRequest, type TrainingSlot } from "../../src/lib/predictive/training.ts";
@@ -62,19 +62,24 @@ const recordCapacityBody = async (client: Client, artifacts: PrivateArtifactStor
   } finally { await client.query("SELECT pg_advisory_unlock(520054,$1)", [key]); }
 };
 export const seedCapacity = async (store: Store, client: Client, artifacts: PrivateArtifactStore, size: number,
-  { guardedRecording = false }: { guardedRecording?: boolean } = {}) => {
+  { guardedRecording = false, targetGames = 1 }: { guardedRecording?: boolean; targetGames?: number } = {}) => {
+  if (!Number.isInteger(size) || size < 1 || size > 256 || ![1, 4].includes(targetGames)) throw new Error("capacity-fixture-bounds-refused");
   const context: Dataset = { formatVersion: 2, profiles: [profile(NATIVE)], rightsDecisions: [rights(NATIVE)],
     artifacts: [], captures: [], decisions: [], labels: [], identityLinks: [] };
   const examples: Example[] = [];
   const publications = [];
-  const groups = Math.ceil(size / 8);
+  const playersPerGroup = size > 64 ? 32 : 8;
+  const groups = Math.ceil(size / playersPerGroup);
   for (let group = 0; group < groups; group++) {
     const [home, away] = pairs[group], teamId = "nfl:team:" + home, opponentId = "nfl:team:" + away;
     const rawGameId = `2026_06_${away}_${home}`;
     const prior = { ...schedule(600 + group, "2026-10-04T17:00:00.000Z", teamId, opponentId), rawGameId, week: 6 };
     const target = { ...schedule(700 + group, KICKOFF, teamId, opponentId), rawGameId: `2026_07_${away}_${home}`, week: 7 };
-    const players = Array.from({ length: Math.min(8, size - group * 8) }, (_, i) => {
-      const index = group * 8 + i;
+    const targets = Array.from({ length: targetGames }, (_, event) => event === 0 ? target : ({
+      ...schedule(700 + group + event * 1000, `2026-${event === 1 ? "10-25" : event === 2 ? "11-01" : "11-08"}T17:00:00.000Z`, teamId, opponentId),
+      rawGameId: `2026_${String(7 + event).padStart(2, "0")}_${away}_${home}`, week: 7 + event }));
+    const players = Array.from({ length: Math.min(playersPerGroup, size - group * playersPerGroup) }, (_, i) => {
+      const index = group * playersPerGroup + i;
       return { playerId: "00-" + String(100 + index).padStart(7, "0"), attempts: 10 + index, passingYards: 80 + index * 3 };
     });
     const csv = sourceCsv("player", players.map((player) => ({ player_id: player.playerId, position: "QB", game_id: rawGameId,
@@ -96,23 +101,25 @@ export const seedCapacity = async (store: Store, client: Client, artifacts: Priv
       revision("capacity-map-" + group, "game-bridge", { provider: "nflverse", rawGameId, gameId: prior.gameId }),
       ...[home, away].map((alias) => revision("capacity-alias-" + alias, "team-alias", { provider: "nflverse", rawAlias: alias,
         teamId: "nfl:team:" + alias, effectiveFromSeason: 2026, effectiveToSeason: 2026 })),
-      revision("capacity-prior-" + group, "schedule", prior), revision("capacity-target-" + group, "schedule", target),
-      revision("capacity-coverage-" + group, "schedule-coverage", coverage(teamId, [prior.gameId, target.gameId])),
+      revision("capacity-prior-" + group, "schedule", prior),
+      ...targets.map((game, event) => revision("capacity-target-" + group + (event ? "-" + event : ""), "schedule", game)),
+      revision("capacity-coverage-" + group, "schedule-coverage", coverage(teamId, [prior.gameId, ...targets.map((game) => game.gameId)])),
       ...completionMarkers(prior),
     ];
     for (const player of players) {
       rows.push(revision("capacity-player-map-" + player.playerId, "player-bridge", { provider: "gsis", rawPlayerId: player.playerId,
         playerId: player.playerId, effectiveFrom: "2026-01-01T00:00:00.000Z", effectiveTo: "2027-01-01T00:00:00.000Z" }),
-      ...[prior, target].map((game) => revision("capacity-member-" + game.gameId + "-" + player.playerId, "membership",
+      ...[prior, ...targets].map((game) => revision("capacity-member-" + game.gameId + "-" + player.playerId, "membership",
         membership(game, { playerId: player.playerId, rawPlayerId: player.playerId, teamId, rawTeam: home }))));
-      examples.push({ ...player, prior, target, targetObservationId: "capacity-target-" + group, profileId: input.profile.id,
-        featureId: "capacity-feature-" + player.playerId, labelId: "capacity-label-" + player.playerId });
+      for (const [event, game] of targets.entries()) examples.push({ ...player, prior, target: game,
+        targetObservationId: "capacity-target-" + group + (event ? "-" + event : ""), profileId: input.profile.id,
+        featureId: "capacity-feature-" + player.playerId + (event ? "-" + event : ""), labelId: "capacity-label-" + player.playerId });
     }
     addCapture(context, "capacity-native-" + group, rows, "2026-10-07T12:00:00.000Z", NATIVE);
     Object.assign(context.artifacts.at(-1)!, { scopeKind: "season-file", scopeSeason: 2026 });
   }
   const replay = createReplay(context, "2026-10-12T12:00:00.000Z", "2026-10-12T12:00:00.000Z", "internal-research");
-  context.decisions = examples.filter((_, i) => i % 8 === 0).map(({ prior }) => recordCompletion("capacity-complete-" + prior.gameId,
+  context.decisions = [...new Map(examples.map((example) => [example.prior.gameId, example])).values()].map(({ prior }) => recordCompletion("capacity-complete-" + prior.gameId,
     prior.gameId, replay.completion(prior.gameId).inputs, "2026-10-08T12:00:00.000Z", "synthetic-proof"));
   for (const { input, compressed } of publications) {
     if (compressed) {
@@ -123,20 +130,29 @@ export const seedCapacity = async (store: Store, client: Client, artifacts: Priv
   }
   expect(await store.publish("capacity-context-run", context, "2026-10-12T12:00:00.000Z")).toMatchObject({ status: "published" });
   const profiles = publications.map(({ input }) => input.profile.id).sort();
-  for (const [index, example] of examples.entries()) {
+  const players = [...new Map(examples.map((example) => [example.playerId, example])).values()];
+  for (const [index, example] of players.entries()) {
     const raw = { profileId: example.profileId, rawGameId: example.prior.rawGameId, rawTeam: example.prior.rawHomeTeam,
       rawPlayerId: example.playerId };
-    const normalize = Math.floor(index / 8) % 2 ? store.recordCompressedSourceNormalization : store.recordSourceNormalization;
+    const normalize = Math.floor(index / playersPerGroup) % 2 ? store.recordCompressedSourceNormalization : store.recordSourceNormalization;
     await normalize("capacity-binding-" + example.playerId, raw, null);
     if ((index + 1) % 16 === 0 || index + 1 === size) process.stdout.write("capacity bindings " + (index + 1) + "\n");
   }
   const clock = async () => (await client.query("SELECT predictive_source_time(clock_timestamp()) AS time")).rows[0].time as string;
-  const entityKeys = examples.map((example) => "player-game-stats:" + example.prior.gameId + ":" + example.playerId).sort();
-  const snapshot = await store.replaySourceStatsFacts({ profileIds: profiles, entityKeys, cutoff: await clock() });
-  expect(snapshot.reason).toBeNull();
+  const entityKeys = players.map((example) => "player-game-stats:" + example.prior.gameId + ":" + example.playerId).sort();
+  const snapshots: SourceFactSnapshot[] = [], snapshotAt = await clock();
+  // Source fact requests retain their frozen 64-key ceiling even when the
+  // synthetic population grows. Every key belongs to one complete batch.
+  for (let offset = 0; offset < entityKeys.length; offset += 64) {
+    snapshots.push(await store.replaySourceStatsFacts({ profileIds: profiles, entityKeys: entityKeys.slice(offset, offset + 64), cutoff: snapshotAt }));
+  }
+  for (const snapshot of snapshots) { expect(snapshot.reason).toBeNull(); expect(snapshot.withheld).toEqual([]); }
+  expect(snapshots.reduce((n, snapshot) => n + snapshot.heads.length, 0)).toBe(size);
+  const snapshotFor = (key: string) => snapshots.find((snapshot) => snapshot.request.entityKeys.includes(key))!;
   const decisions = new Map<string, { rec: SourceDecisionRecord; part: SourceDecisionRecord }>();
-  for (const example of examples) {
+  for (const example of players) {
     const entityKey = "player-game-stats:" + example.prior.gameId + ":" + example.playerId;
+    const snapshot = snapshotFor(entityKey);
     const record = async (kind: "reconciliation" | "participation") => {
       const plan = sourceDecisionPlan(snapshot, { kind, profileIds: profiles, entityKey, cutoff: snapshot.request.cutoff }, [], "synthetic-proof");
       if (guardedRecording) await client.query("BEGIN");
@@ -151,20 +167,24 @@ export const seedCapacity = async (store: Store, client: Client, artifacts: Priv
     decisions.set(entityKey, { rec: await record("reconciliation"), part: await record("participation") });
   }
   const cutoff = await clock();
-  expect(snapshot.withheld).toEqual([]); expect(snapshot.heads).toHaveLength(size);
-  const facts = new Map<string, SourceConsumerFact>(entityKeys.map((key) => [key, {
+  const facts = new Map<string, SourceConsumerFact>(entityKeys.map((key) => {
+    const snapshot = snapshotFor(key);
+    return [key, {
     // The label builder requires one target, while source verification above
     // checks the entire population before any canonical filtering.
     snapshot: sourceFactSnapshot({ ...snapshot.request, entityKeys: [key], cutoff },
       snapshot.heads.filter((head) => head.entityKey === key), [], null),
-    reconciliation: decisions.get(key)!.rec, participation: decisions.get(key)!.part, reconciliationReason: null, participationReason: null }]));
+    reconciliation: decisions.get(key)!.rec, participation: decisions.get(key)!.part, reconciliationReason: null, participationReason: null }];
+  }));
   process.stdout.write("capacity decisions " + size * 2 + "\n");
   for (const [index, example] of examples.entries()) {
     // Replay records cited decisions; each independent consumer starts fresh.
     const native = createReplay(context, cutoff, cutoff, "model-input");
     const body = buildSourcePassingYards(native, { playerId: example.playerId, gameId: example.target.gameId,
       cutoff, computedAt: cutoff, candidate: "stats-v1:player_pass_yds" }, profiles, facts);
-    expect(body.bundle.status).toBe("ready-inputs");
+    const intervening = example.target.kickoff > KICKOFF;
+    expect(body.bundle.status, canonical({ featureId: example.featureId, reasons: body.bundle.reasons })).toBe(intervening ? "unavailable-inputs" : "ready-inputs");
+    if (intervening) expect(body.bundle.reasons).toEqual(["intervening-player-game", "intervening-team-game"]);
     expect(body.bundle.player[0]).toMatchObject({ passingYardsSum: example.passingYards, attemptsSum: example.attempts });
     await recordCapacityBody(client, artifacts, example.featureId, body, guardedRecording);
     const fact = facts.get("player-game-stats:" + example.prior.gameId + ":" + example.playerId)!;
@@ -178,17 +198,17 @@ export const seedCapacity = async (store: Store, client: Client, artifacts: Priv
     label.manifest.observations = native.completion(example.prior.gameId).inputs.map((row) => row.revision.id).sort();
     label.inputDigest = sourceConsumerInputDigest(label);
     expect(label.value).toBe(example.passingYards);
-    await recordCapacityBody(client, artifacts, example.labelId, label, guardedRecording);
+    if (example.featureId === "capacity-feature-" + example.playerId) await recordCapacityBody(client, artifacts, example.labelId, label, guardedRecording);
     if ((index + 1) % 16 === 0 || index + 1 === size) {
       process.stdout.write("capacity consumers " + (index + 1) * 2 + "\n");
     }
   }
-  return { examples, profiles, cutoff };
+  return { examples: examples.sort((a, b) => a.target.kickoff.localeCompare(b.target.kickoff) || a.playerId.localeCompare(b.playerId)), profiles, cutoff };
 };
 
 export const runRequest = (seed: Awaited<ReturnType<typeof seedCapacity>>, count: number, labelsAsOf: string): FittingRunRequest => {
   const slots: TrainingSlot[] = seed.examples.slice(0, count).map((example) => ({ datasetId: "capacity-dataset-" + count,
-    partition: "evaluation", playerId: example.playerId, gameId: example.target.gameId, season: 2026, seasonType: "REG", kickoff: KICKOFF,
+    partition: "evaluation", playerId: example.playerId, gameId: example.target.gameId, season: 2026, seasonType: "REG", kickoff: example.target.kickoff,
     kickoffObservationId: example.targetObservationId, featureCutoff: seed.cutoff, labelsAsOf, featureRef: null, labelRef: null }));
   return { version: "qb-training-read-v1", fittingRunId: "capacity-run-" + count, evaluationPlanId: "capacity-plan-" + count,
     foldId: "capacity-fold", fitCutoff: seed.cutoff,
