@@ -29,10 +29,11 @@ export const checkVerifiedTrainingParity = async (harness: Harness, template: ob
   const restricted = async <T>(admin: Client, expected: object, work: (client: Client, target: { expected: object; assertTarget: (config: object) => void }) => Promise<T>) => {
     const login = "dfs127_parity_" + randomBytes(8).toString("hex");
     await admin.query(`CREATE ROLE ${login} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD 'disposable-parity'`);
-    await admin.query(`GRANT predictive_replay,predictive_recorder TO ${login}`);
+    await admin.query(`GRANT predictive_replay,predictive_recorder,predictive_harness TO ${login}`);
     const config = { ...expected, user: login, password: "disposable-parity" }, client = new Client(config);
     try {
       await client.connect();
+      expect((await client.query("SELECT rolsuper FROM pg_roles WHERE rolname=session_user")).rows[0].rolsuper).toBe(false);
       return await work(client, { expected: config, assertTarget: (supplied) => { expect(supplied).toEqual(config); harness.assertTarget(expected); } });
     } finally { await client.end(); await admin.query(`DROP OWNED BY ${login}`); await admin.query(`DROP ROLE ${login}`); }
   };
@@ -75,7 +76,11 @@ export const checkVerifiedTrainingParity = async (harness: Harness, template: ob
     const bytes = canonical(body), hash = digest(bytes);
     await artifacts.database.write(bytes, hash);
     await admin.query("INSERT INTO predictive_blobs VALUES($1,$2,'application/json',$3) ON CONFLICT DO NOTHING", [hash, Buffer.byteLength(bytes), hash + ".json"]);
-    const publication = await attempt(() => admin.query("SELECT spike127_record_source_consumer('forged-window',NULL,$1)", [body]));
+    // Staging is owned by the fixture harness; certification runs as the
+    // ordinary recorder login. This isolates an application-body bug from any
+    // database-owner ability to bypass append-only/certificate protections.
+    const publication = await restricted(admin, expected, async (client) =>
+      attempt(() => client.query("SELECT spike127_record_source_consumer('forged-window',NULL,$1)", [body])));
     if (publication.reason) checks.push({ case: "forged-numerical-window-refused-at-certification", passed: true, details: publication.reason });
     else {
       const producer = await createLocalPredictiveStore(admin, { expected, assertTarget: harness.assertTarget }, artifacts);
@@ -90,6 +95,7 @@ export const checkVerifiedTrainingParity = async (harness: Harness, template: ob
         datasetId: "forged-dataset", manifestSha256: forged.manifestSha256 });
       checks.push({ case: "forged-numerical-window-refused-at-certification", passed: false,
         details: { baselineReason: old.reason, prototypeDeliveredValue: selected.rows[0].feature.bundle?.player[0].passingYardsSum,
+          certifierSessionSuperuser: false, syntheticHarnessMembership: true,
           implication: "existing SQL recorder is not a complete verify-on-write boundary; production ingestion needs trusted full reconstruction before certificate creation" } });
     }
   }, { template });
