@@ -44,7 +44,8 @@
     "predictive:local": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/local.ts",
     "predictive:source": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/source.ts",
     "predictive:source:local": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/sourceLocal.ts",
-    "test:watch": "vitest --config vitest.config.ts"
+    "test:watch": "vitest --config vitest.config.ts",
+    "test:feature-store:db": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/feature-store/schema.check.mts"
   },
   "dependencies": {
     "@neondatabase/serverless": "1.2.0",

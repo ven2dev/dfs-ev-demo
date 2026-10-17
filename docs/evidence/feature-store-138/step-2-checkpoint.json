@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "issue": 138,
+  "step": 2,
+  "recordedAt": "2026-10-17T11:56:41.625831+00:00",
+  "baseCommit": "6aa7953dfd0df0c9bf879c2be64e94eaa2c55a3f",
+  "remoteMainObserved": "6863d8f7531bc5256ad3e72e76e6d359bf444207",
+  "integrationWithObservedMain": "pending; current tests cover this branch base only",
+  "implementation": "uncommitted, awaiting owner review and approval",
+  "verdict": "pass for step-2 correctness only; full spike acceptance incomplete",
+  "codeHashes": {
+    "db/proposals/138_feature_store.sql": "d0e988beb00a8e9de1cacb165d842bd117a10ddee353d85b2a6a160d1b664c16",
+    "src/lib/featureStore/objectStore.ts": "23cc5e523e40d57f8f0abb4068327a48d34565395d89dfec8ecd4c04fb99e583",
+    "src/lib/featureStore/localObjectStore.ts": "464ba4cc1d3dbae3d60d11a2472996cffd69aa154b2f29a62f481434fa37efbb",
+    "src/lib/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "tests/feature-store/schema.check.mts": "4f710b7a2963f009b4b37334577753c022f27d260a6ac90b0d5f297c40600f24",
+    "tests/predictive/featureStoreObjectStore.test.ts": "34d0950fa729ee7b90cef997d58c0d6f85005d82e71a87a09e379b3ece9a4f70"
+  },
+  "checks": {
+    "objectStore": {
+      "verdict": "pass",
+      "tests": 7,
+      "report": "docs/evidence/feature-store-138/step-2-objects.json",
+      "sha256": "e8f4b5e42a3772114eb3da7a6df1659ae7ee8abfe6a48d1f54c1b8c08c80b8c2"
+    },
+    "postgresql": {
+      "verdict": "pass",
+      "probes": 8,
+      "parentTests": 1,
+      "report": "docs/evidence/feature-store-138/step-2-schema.json",
+      "sha256": "5ffb248c55355cc220a0a22f49d9de70ce86c0e2c583b24c2095aa88d40391a1"
+    },
+    "typecheck": {
+      "verdict": "pass",
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    "lint": {
+      "verdict": "pass",
+      "command": "node node_modules/eslint/bin/eslint.js src/lib/featureStore tests/predictive/featureStoreObjectStore.test.ts tests/feature-store/schema.check.mts",
+      "exitCode": 0
+    },
+    "whitespace": {
+      "verdict": "pass",
+      "scope": "git diff --check plus all added implementation/test text"
+    }
+  },
+  "capacityTargets": [
+    {
+      "operation": "ingest one season file",
+      "deadlineMs": 60000,
+      "headroomLimitMs": 42000,
+      "verdict": "not-measured"
+    },
+    {
+      "operation": "one-season feature job",
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "not-measured"
+    },
+    {
+      "operation": "five-season dataset build",
+      "deadlineMs": 30000,
+      "headroomLimitMs": 21000,
+      "verdict": "not-measured"
+    },
+    {
+      "operation": "prediction p95",
+      "deadlineMs": 300,
+      "headroomLimitMs": 210,
+      "verdict": "not-measured"
+    }
+  ],
+  "fullCorrectnessProbes": {
+    "pipelineOnlyWrites": "passes for normalized tables; extend to later derived families",
+    "backdatedRights": "database knowledge-clock probe passes; end-to-end reader probe pending",
+    "correctionAndLastValidDisplay": "not-implemented",
+    "deletionInvalidation": "not-implemented",
+    "corruptDownloadRefusal": "not-implemented; existing-object integrity refusal passes"
+  },
+  "externalChecks": {
+    "gcsLiveTest": "gated: owner Blaze/budget/dedicated service-account confirmation required at step 8",
+    "neonStatementTimeout": "not-confirmed"
+  },
+  "initialFailure": {
+    "report": "docs/evidence/feature-store-138/step-2-schema-initial.json",
+    "cause": "fixture SQL inferred one repeated parameter as both text and the digest domain; explicit casts corrected it; dependent normalized probe also failed"
+  }
+}

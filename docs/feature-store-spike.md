@@ -97,16 +97,88 @@ worktrees or import retired graph/recorder/cache code. Port only the pure
 parsers/policies and codec listed in the platform design, with provenance recorded.
 No scheduled hosted jobs or product UI integration in this spike.
 
-Step 1 is prepared locally: [sources](feature-store-spike-sources.md),
+Step 1 was committed with owner approval at `6aa7953`: [sources](feature-store-spike-sources.md),
 [inventory evidence](evidence/feature-store-138/source-inventory.json), and
-[scoring preregistration](feature-store-spike-preregistration.md). No evaluation,
-proposal SQL, database operation or new commit has run. Only documents,
-JSON inventory evidence and the archived inspection recipes are changed.
-Commit approval is required by the owner's workflow; pushing needs fresh consent. Owner-run Codex
-review remains required.
+[scoring preregistration](feature-store-spike-preregistration.md). The preregistration
+therefore precedes evaluation. Vernon approved the step 2 commit on 2026-10-17;
+see the implementation and evidence checkpoint below. No real-source ingestion,
+evaluation or capacity benchmark has run. Pushing needs fresh owner consent;
+owner-run Codex review remains required.
 
 GCS live tests pause for owner confirmation of Blaze, budget and a dedicated
 bucket-scoped pipeline service account. Never use the app Firebase admin key,
 because that would cross the approved credential boundary. Neon configuration
 verification remains read-only and uses only an owner-designated non-production
 connection if actual configuration is inspected.
+
+## Step 2 local checkpoint
+
+Pattern remains trusted ELT plus immutable content-addressed object storage.
+There is no new cache, reader lock, evidence graph or architecture exception.
+The local adapter uses atomic create-if-absent filesystem links; overwrite-by-rename
+would break immutability, while adding a lock service is unnecessary for a
+create-once primitive. Reads do not rehash bytes: validation belongs to ingestion
+and later recompute audits. `head` reports size and the digest encoded in the key;
+it is not an integrity certificate.
+
+- `ObjectStore` has put-if-absent, get, head, namespace list and idempotent delete.
+  Keys are `raw|datasets|models|audits/<wire-sha256>` without media suffixes. Binary
+  bytes are preserved. Repeated writes validate existing bytes and refuse corruption.
+  The local adapter uses an existing canonical private directory and bounded files
+  (default 256 MiB). Its root and parents are controlled by the pipeline's OS user,
+  just as bucket administration is trusted. Concurrent deletion may make an in-flight
+  operation fail safely; step 5's delayed cleanup prevents normal delivery races.
+- `db/proposals/138_feature_store.sql` creates isolated `fs138` objects alongside
+  main's 0001–0011. The proposal is mutable spike SQL, applied in a single scratch
+  transaction. It contains profiles, append-only rights/snapshots, job identities
+  and four normalized families. Feature/label/dataset/model tables arrive in their
+  later roadmap steps, with the same role checks extended to them.
+- `fs138_pipeline_writer` owns no tables and can insert derived rows. It cannot
+  overwrite normalized rows, disable triggers or backdate knowledge timestamps.
+  `fs138_reader` has SELECT only. Neither role has schema CREATE or DELETE; a later
+  narrow governance path handles mandatory deletion. No default writer grants are
+  assumed for future tables, to prevent silently widening access.
+- Database `clock_timestamp()` stamps profile/rights/job knowledge time, snapshot
+  ingestion and job completion. Actual source publication/capture times remain
+  separate. The rights probe proves a new decision is excluded by an earlier
+  knowledge cutoff; the application rights selector is still step 5 work.
+- Job identity includes kind, input-set digest, code SHA and policy digest. Only
+  the insert winner executes. Retrying an existing running/failed/succeeded identity
+  returns its state; automatic retry/recovery of abandoned jobs is not implemented.
+  Helpers use short default READ COMMITTED operations. A stronger caller isolation
+  level may refuse an invisible concurrent identity; it cannot duplicate execution.
+
+Validation: seven ObjectStore tests, eight PostgreSQL behavior probes (plus their
+parent test), typecheck and changed-file ESLint pass on Node 24.18.1. The SQL suite
+uses three actual restricted logins on PostgreSQL 18.6, and verifies main's catalog
+and frozen migration hashes before/after. The first SQL attempt failed because a
+test parameter was inferred as both `text` and the digest domain; the dependent
+normalized-row test also failed. Explicit casts fixed the fixture, and the focused
+rerun passed. Both attempts are retained:
+
+- [Initial SQL probe](evidence/feature-store-138/step-2-schema-initial.json)
+- [Passing SQL probe](evidence/feature-store-138/step-2-schema.json)
+- [ObjectStore test report](evidence/feature-store-138/step-2-objects.json)
+- [Checkpoint results and source hashes](evidence/feature-store-138/step-2-checkpoint.json)
+
+Reproduce using Node 24 and locked dependencies (`npm ci`), with no application
+credentials or `.env` loading:
+
+```sh
+node node_modules/vitest/vitest.mjs run --config vitest.node.config.ts tests/predictive/featureStoreObjectStore.test.ts
+docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml up -d --wait
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test npm run test:feature-store:db
+docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml down --volumes
+```
+
+These are synthetic correctness probes, not a capacity result or real-data proof.
+All four absolute performance targets remain unmeasured. Raw download validation,
+the normalizer/as-of reader, end-to-end rights delivery, correction/deletion/audit
+probes and GCS tests remain in later steps. Abrupt termination can leave a hidden
+local temporary write; it cannot be listed as a complete object. Temporary-file
+housekeeping and committed-object orphan recovery remain step 5 cleanup work.
+
+Remote main advanced to `6863d8f` during this step (the #135 UI changes and
+development dependency updates). This checkpoint is tested on the #138 base,
+not that newer integrated state. Integrate and recheck before a final PR;
+no other worktree or branch has been changed here.
