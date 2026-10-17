@@ -16,8 +16,55 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    # Deny-by-default suite selection: a suite is skipped only when nothing it
+    # depends on changed (see scripts/ci/affected.mjs). Pushes to main run all.
+    name: Detect affected suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.affected.outputs.app }}
+      db: ${{ steps.affected.outputs.db }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Check changed files for whitespace errors
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            git diff --check "$BASE_SHA...$HEAD_SHA"
+          elif [[ "$BASE_SHA" =~ ^0+$ ]]; then
+            git diff-tree --check --root "$HEAD_SHA"
+          else
+            git diff --check "$BASE_SHA" "$HEAD_SHA"
+          fi
+
+      - name: Decide which suites this change needs
+        id: affected
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/ci/affected.mjs
+
   app:
     name: App checks
+    needs: changes
+    if: ${{ needs.changes.outputs.app == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -25,7 +72,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Node.js
@@ -48,21 +94,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Check changed files for whitespace errors
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          if [[ "$EVENT_NAME" == "pull_request" ]]; then
-            git diff --check "$BASE_SHA...$HEAD_SHA"
-          elif [[ "$BASE_SHA" =~ ^0+$ ]]; then
-            git diff-tree --check --root "$HEAD_SHA"
-          else
-            git diff --check "$BASE_SHA" "$HEAD_SHA"
-          fi
 
       - name: Check types
         run: npm run typecheck
@@ -87,6 +118,8 @@ jobs:
 
   db:
     name: DB integration
+    needs: changes
+    if: ${{ needs.changes.outputs.db == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -117,23 +150,28 @@ jobs:
         run: npm run test:db:down
 
   ci:
-    # Preserve the required check name; neither upstream job may bypass it.
+    # Preserve the required check name. Every needed suite must succeed; a
+    # suite may be skipped only when the change detector said it is not needed.
     name: CI
-    needs: [app, db]
+    needs: [changes, app, db]
     if: ${{ always() }}
     permissions: {}
     runs-on: ubuntu-latest
     timeout-minutes: 2
 
     steps:
-      - name: Require every upstream job to succeed
+      - name: Require every needed suite to succeed
         shell: bash
         env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          APP_NEEDED: ${{ needs.changes.outputs.app }}
           APP_RESULT: ${{ needs.app.result }}
+          DB_NEEDED: ${{ needs.changes.outputs.db }}
           DB_RESULT: ${{ needs.db.result }}
         run: |
-          echo "App checks: $APP_RESULT; DB integration: $DB_RESULT"
-          if [[ "$APP_RESULT" != "success" || "$DB_RESULT" != "success" ]]; then
-            echo "CI requires both App checks and DB integration to succeed."
+          echo "Detect: $CHANGES_RESULT; App checks: $APP_RESULT (needed: $APP_NEEDED); DB integration: $DB_RESULT (needed: $DB_NEEDED)"
+          suite_ok() { [[ ( "$1" == "true" && "$2" == "success" ) || ( "$1" == "false" && "$2" == "skipped" ) ]]; }
+          if [[ "$CHANGES_RESULT" != "success" ]] || ! suite_ok "$APP_NEEDED" "$APP_RESULT" || ! suite_ok "$DB_NEEDED" "$DB_RESULT"; then
+            echo "CI requires change detection to succeed, every needed suite to succeed, and only unneeded suites to be skipped."
             exit 1
           fi

@@ -211,8 +211,22 @@ It is validation evidence, not a passing integration run.
 
 ## CI enforcement
 
-On PRs to `main` and pushes to `main`, `App checks` and `DB integration` run
-independently on Linux. The database job runs a clean Node 24 `npm ci`, the
+On PRs to `main`, a `Detect affected suites` job runs first
+(`scripts/ci/affected.mjs`, #140). It also hosts the whitespace check, so
+docs-only PRs are still checked. Suite selection is deny-by-default:
+
+- Docs-only PRs skip both suites.
+- `DB integration` is skipped only when every changed path is on its
+  known-safe list: docs, UI components, store, non-API app files, public
+  assets, unit tests, Firestore rules and `.env.example`.
+- For `package.json`/`package-lock.json` changes, `DB integration` is skipped
+  only when nothing but dependency versions changed and no changed lock entry
+  is reachable from the packages the database suite imports. That set is
+  computed from the suite's import graph, then expanded through the lockfile
+  dependency tree.
+- Pushes to `main` and any unrecognized path run everything.
+
+When needed, `App checks` and `DB integration` run independently on Linux. The database job runs a clean Node 24 `npm ci`, the
 target/bootstrap/report guards, and `npm run test:db:local`. The local command
 requires migration/reference integrity, all named database cases and freshly
 rebuilt contract equality to succeed. This uses the same Compose file,
@@ -221,19 +235,31 @@ the laptop command. An additional `always()` cleanup step runs
 `npm run test:db:down`; no production credentials or external database access
 are configured in either CI job.
 
-The sole job named `CI` depends on both jobs and uses `if: always()` with
-`permissions: {}` and no checkout. It fails unless both dependency results are
-exactly `success`, including when a dependency failed, was cancelled, or was
-skipped. This retains the existing ruleset's required `CI` check without a
+The sole job named `CI` depends on the detector and both suites. It uses
+`if: always()` with `permissions: {}` and no checkout. It passes only when:
+
+- detection succeeded;
+- every suite marked needed finished `success`;
+- every suite marked not needed was `skipped`.
+
+A failure, a cancellation, or a skip of a needed suite fails it. This retains the existing ruleset's required `CI` check without a
 settings change. Workflow cancellation can cancel the gate itself; cancellation
 does not provide a successful required check. GitHub documents these results
 in the [needs context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context).
 
 `npm run test:ci-gate` extracts and executes the actual inline gate shell script
-against all 16 combinations of GitHub's four job results. It also rejects empty
-or unexpected results and checks the gate's always-run condition, dependency
-list, unique check name, empty permissions, and absence of checkout. This runs
-inside `App checks`. The extraction checks the current YAML block layout;
+against every combination of detector result, needed flags and GitHub's four
+job results. It also:
+
+- rejects empty or unexpected values;
+- checks the gate's always-run condition, dependency list, unique check name,
+  empty permissions and absence of checkout;
+- checks each suite's `needs`/`if` wiring;
+- unit-tests the detector's path, package-closure and decision rules
+  (`tests/ciAffected.check.mjs`).
+
+This runs inside `App checks`. A docs-only PR cannot change the workflow or
+the detector without leaving the docs-only category. The extraction checks the current YAML block layout;
 `actionlint` remains the workflow syntax validator.
 
 ### Hosted gate validation
