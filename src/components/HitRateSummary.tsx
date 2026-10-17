@@ -4,7 +4,7 @@ type HitRateSummaryProps = {
   sampleSize?: number;
 };
 
-export function HitRateSummary({ rate, adjustedRate, sampleSize }: HitRateSummaryProps) {
+export const HitRateSummary = ({ rate, adjustedRate, sampleSize }: HitRateSummaryProps) => {
   const extreme = [rate, adjustedRate].some((value) =>
     ["0.0", "100.0"].includes((value * 100).toFixed(1))
   );
@@ -28,4 +28,4 @@ export function HitRateSummary({ rate, adjustedRate, sampleSize }: HitRateSummar
       )}
     </div>
   );
-}
+};

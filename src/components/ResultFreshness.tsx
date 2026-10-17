@@ -7,7 +7,7 @@ type ResultFreshnessProps = {
   compact?: boolean;
 };
 
-export function ResultFreshness({ snapshot, requestedWindow, connectionStatus, compact = false }: ResultFreshnessProps) {
+export const ResultFreshness = ({ snapshot, requestedWindow, connectionStatus, compact = false }: ResultFreshnessProps) => {
   if (!snapshot.stages || !snapshot.evScore) return null;
   const windowChanged = snapshot.sampleWindow !== undefined && snapshot.sampleWindow !== requestedWindow;
   const failed = snapshot.refreshState === "failed";
@@ -41,4 +41,4 @@ export function ResultFreshness({ snapshot, requestedWindow, connectionStatus, c
       )}
     </div>
   );
-}
+};
