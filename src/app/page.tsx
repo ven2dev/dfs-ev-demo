@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Sparkline } from "@/components/Sparkline";
+import { HitRateSummary } from "@/components/HitRateSummary";
+import { ResultFreshness } from "@/components/ResultFreshness";
 import { MarketConsensusSummary } from "@/components/MarketConsensusSummary";
 import { SlateBrowser } from "@/components/SlateBrowser";
 import { getAuthHeaders } from "@/lib/authHeaders";
@@ -27,10 +29,10 @@ import { useLiveOddsStream } from "@/store/useLiveOddsStream";
 import { toggleWatchedProp } from "@/store/watchlistToggle";
 
 const STAGES = [
-  { key: "baseRate", label: "Base rate" },
-  { key: "afterEnvironment", label: "Environment adjustment" },
-  { key: "afterCoverage", label: "Coverage adjustment (mocked)" },
-  { key: "final", label: "Final EV" },
+  { key: "baseRate", label: "Recent hit rate" },
+  { key: "afterEnvironment", label: "Illustrative weather adjustment" },
+  { key: "afterCoverage", label: "Coverage adjustment (sample data)" },
+  { key: "final", label: "Illustrative edge" },
 ] as const;
 
 export default function Home() {
@@ -277,18 +279,27 @@ export default function Home() {
 
           {watched?.stages && watched.evScore && (
             <div className="mt-6 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span>Base rate ({matchupConfig.sampleWindow}-game hit rate)</span>
-                <span>{(watched.stages.baseRate * 100).toFixed(1)}%</span>
-              </div>
+              <ResultFreshness
+                snapshot={watched}
+                requestedWindow={matchupConfig.sampleWindow}
+                connectionStatus={connectionStatus}
+              />
+              <HitRateSummary
+                rate={watched.stages.baseRate}
+                adjustedRate={watched.evScore.modelProb}
+                sampleSize={watched.sampleSize}
+              />
+              <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                Weather and coverage adjustments are illustrative, not calibrated.
+              </p>
               <div className="flex justify-between text-sm">
                 <span>{provenance.environment}</span>
                 <span>{(watched.stages.afterEnvironment * 100).toFixed(1)}%</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>
-                  After coverage adjustment{" "}
-                  <em className="text-zinc-400">(sample data — mocked)</em>
+                  Illustrative adjusted estimate{" "}
+                  <em className="text-zinc-600 dark:text-zinc-400">(includes sample coverage data)</em>
                 </span>
                 <span>{(watched.stages.afterCoverage * 100).toFixed(1)}%</span>
               </div>
@@ -301,7 +312,10 @@ export default function Home() {
                 />
               )}
               <div className="flex justify-between border-t border-zinc-200 pt-3 text-sm font-medium dark:border-zinc-800">
-                <span>Final EV (edge, vs. same-line market consensus)</span>
+                <span>
+                  Illustrative edge vs. same-line market consensus{" "}
+                  <em className="font-normal">(includes sample coverage data)</em>
+                </span>
                 <span
                   className={
                     watched.evScore.edge > 0 ? "text-green-600" : "text-red-600"
@@ -315,7 +329,7 @@ export default function Home() {
 
           {watched?.recentStatAverage !== undefined && (
             <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-              Avg last {matchupConfig.sampleWindow} games:{" "}
+              Average · {watched.sampleSize === undefined ? "sample size unavailable" : `n = ${watched.sampleSize} games`}:{" "}
               {watched.recentStatAverage.toFixed(1)} {primaryWatch.propType.toLowerCase()}{" "}
               <em className="text-zinc-400">
                 ({provenance.history})
@@ -323,7 +337,7 @@ export default function Home() {
             </p>
           )}
 
-          {goal?.kind === "pickEm" && watched?.evScore !== undefined && (
+          {goal?.kind === "pickEm" && watched?.stages && watched.evScore !== undefined && (
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
               Adding this pick to your {goal.pickCount}-pick entry:{" "}
               {(computeEntryHitProbability(goal.picks) * 100).toFixed(1)}% →{" "}
@@ -339,9 +353,8 @@ export default function Home() {
               ).toFixed(1)}%{" "}
               joint hit probability{" "}
               <em className="text-zinc-400">
-                (independence-assumption estimate, using our model&rsquo;s probability
-                for this pick, not the market&rsquo;s — legs from the same game can be
-                correlated, which this doesn&rsquo;t account for)
+                (illustrative, uncalibrated estimate using the adjusted recent hit rate;
+                includes sample coverage data and assumes independent picks)
               </em>
             </p>
           )}
@@ -360,14 +373,20 @@ export default function Home() {
             </span>
           </div>
         </div>
-        {watched?.evScore && primaryWatch ? (
+        {watched?.stages && watched.evScore && primaryWatch ? (
           <div className="mt-4">
             <div className="flex justify-between text-sm">
               <span>
-                {primaryWatch.playerName} — {provenance.edge}
+                {primaryWatch.playerName} — illustrative edge (includes sample coverage data)
               </span>
               <span>{(watched.evScore.edge * 100).toFixed(1)}%</span>
             </div>
+            <ResultFreshness
+              snapshot={watched}
+              requestedWindow={matchupConfig.sampleWindow}
+              connectionStatus={connectionStatus}
+              compact
+            />
             <div className="mt-2">
               <Sparkline values={watched.evHistory.map((h) => h.evScore)} />
             </div>
@@ -389,8 +408,7 @@ export default function Home() {
                   {secondaryWatch.playerName} — {secondaryWatch.propType}
                 </p>
                 <p className="text-xs text-zinc-400">
-                  Optimistic watch/unwatch demo — REST call has a simulated
-                  ~30% failure rate to demonstrate rollback
+                  Watch changes appear immediately and revert if saving fails.
                 </p>
               </div>
               <button

@@ -323,6 +323,8 @@ export async function GET(request: NextRequest) {
               afterCoverage: result.afterCoverage,
             },
             recentStatAverage,
+            sampleWindow,
+            sampleSize: recentStatWindow.length,
           });
         } catch (err) {
           send({ type: "error", message: String(err) });
