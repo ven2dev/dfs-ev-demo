@@ -29,3 +29,5 @@ export const HitRateSummary = ({ rate, adjustedRate, sampleSize }: HitRateSummar
     </div>
   );
 };
+
+// CI staging probe for #140 (throwaway).
