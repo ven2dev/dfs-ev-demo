@@ -61,23 +61,19 @@ export type WatchedProp = {
   // Server-authoritative provenance for every value in the latest tick.
   // UI copy must not infer this from hostnames or missing credentials.
   dataSource?: OddsDataSource;
-  // Optional, not a zeroed placeholder: undefined means "no fresh tick
-  // yet under the CURRENT sampleWindow" (either never watched live, or
-  // just reconnected after a window change) -- a zeroed EVScore would
-  // be indistinguishable from a real "0% edge" result. The optimistic
-  // watch/unwatch placeholder (watchlistToggle.ts) still seeds a
-  // zeroed value for its own narrower purpose (that flow never reads
-  // evScore back), but every evScore-dependent UI element must treat
-  // undefined as "nothing to show yet," not "edge is zero."
+  // Latest valid result for this prop. Keep its original provenance while
+  // refreshing; a placeholder without stages is not a calculated result.
   evScore?: EVScore;
   evHistory: EVHistory;
-  // Optional: only present once a fresh SSE tick has landed under the
-  // CURRENT sampleWindow.
+  // Present after a valid tick. Window/count belong to this snapshot, not
+  // the currently requested window. Older saved entries may lack metadata.
+  sampleWindow?: 3 | 5 | 7;
+  sampleSize?: number;
+  updatedAt?: number;
+  refreshState?: "updating" | "failed" | "paused";
   stages?: EVPipelineStages;
   // Average of the prop's OWN stat (same stat as the line itself, e.g.
-  // passing yards) over the currently-selected sampleWindow -- not a
-  // fantasy-points projection. Same "undefined until a fresh tick
-  // lands" rule as evScore/stages.
+  // passing yards) over this snapshot's sampleWindow, not a projection.
   recentStatAverage?: number;
   // The tick's line and weather belong to the same prop identity as the
   // EV values above. Keeping them here prevents a newly-selected prop
