@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { APP_DOC_INPUTS, DOC_LIKE, decide, isDbSafe, run } from "../scripts/ci/affected.mjs";
-import { DB_ENTRY_POINTS, auditInputs, declaredPackages, fsTree, hasDynamicLoad, listSourceFiles, makeTree,
+import { auditInputs, dbEntryPoints, declaredPackages, fsTree, hasDynamicLoad, listSourceFiles, makeTree,
   referencedDocs } from "../scripts/ci/inputAudit.mjs";
 
 // Fixture paths are fictional so this file never looks like a reader of real docs.
@@ -13,9 +13,29 @@ const pr = (files) => decide({ event: "pull_request", files });
 const tree = (files) => makeTree(Object.keys(files), (path) => files[path] ?? null);
 const declared = new Set(["pg", "vitest"]);
 
-// Literal matches in DB-suite code that are not filesystem reads.
-const AUDIT_EXCEPTIONS = {
-  "public/": "PostgreSQL schema name used by the catalog tooling, not a read of the public/ folder",
+// Exact literal occurrences in DB-suite code that name a DB-safe directory but
+// are not filesystem reads. Tied to file, literal and occurrence count, so any
+// new reference (even the same text in the same file) fails the audit.
+const SCHEMA = "PostgreSQL schema name, not a read of the public/ folder";
+const AUDIT_EXCEPTIONS = [
+  { dir: "public/", file: "scripts/db-catalog.mjs", literal: "public", count: 1, reason: SCHEMA },
+  { dir: "public/", file: "scripts/compare-db-catalog.mjs", literal: "public", count: 1, reason: SCHEMA },
+  { dir: "public/", file: "tests/db/catalog-unit.check.mjs", literal: "public", count: 1, reason: SCHEMA },
+  { dir: "public/", file: "tests/db/catalog.integration.check.mjs", literal: "public", count: 1, reason: SCHEMA },
+];
+
+// DB-suite inputs that reach the DB-safe set, after exact-occurrence exceptions.
+const safeViolations = (result, files, exceptions = []) => {
+  const violations = [...result.files].filter(isDbSafe).map((file) => `file ${file}`);
+  for (const [dir, refs] of result.dirRefs) {
+    if (!isDbSafe(dir) && ![...files].some((file) => file.startsWith(dir) && isDbSafe(file))) continue;
+    for (const [key, count] of refs) {
+      const [file, literal] = key.split("\0");
+      const excepted = exceptions.some((entry) => entry.dir === dir && entry.file === file && entry.literal === literal && entry.count === count);
+      if (!excepted) violations.push(`dir ${dir} via ${file} ${JSON.stringify(literal)} x${count}`);
+    }
+  }
+  return violations;
 };
 
 // --- Selection rules -------------------------------------------------------
@@ -78,18 +98,26 @@ test("renames count both paths, and unusual file names survive (real git)", () =
 // --- Verification that the rules hold for the real repository --------------
 
 const repo = fsTree();
-const audit = auditInputs(repo, DB_ENTRY_POINTS, declaredPackages());
+const entries = dbEntryPoints();
+const audit = auditInputs(repo, entries.entries, declaredPackages());
+
+test("the DB suite's entry points come from the CI DB job's real commands", () => {
+  assert.deepEqual(entries.issues, []);
+  assert.ok(entries.entries.includes("scripts/test-db.mjs"));
+  assert.ok([...audit.files].some((file) => /^tests\/db\/.+\.test\.ts$/.test(file)), "Vitest DB tests are reached via the config glob");
+});
 
 test("the DB suite's inputs are fully classified", () => {
-  assert.deepEqual(audit.issues, [], "fix the code or teach the audit; never ignore an unclassified input");
+  assert.deepEqual(audit.issues, [], "fix the code or declare the input; never ignore an unclassified input");
   for (const name of ["pg", "@neondatabase/serverless", "vitest"]) assert.ok(audit.packages.has(name), name);
 });
 
 test("no DB-suite input lies in the DB-safe set", () => {
-  assert.deepEqual([...audit.files].filter(isDbSafe), [], "these files would let a DB-relevant change skip DB integration");
-  const overlapping = [...audit.dirs].filter((dir) => isDbSafe(dir) || [...repo.files].some((file) => file.startsWith(dir) && isDbSafe(file)));
-  assert.deepEqual(overlapping.filter((dir) => !AUDIT_EXCEPTIONS[dir]), [], "directories referenced by the DB suite overlap the DB-safe set");
-  for (const dir of Object.keys(AUDIT_EXCEPTIONS)) assert.ok(overlapping.includes(dir), `stale audit exception: ${dir}`);
+  assert.deepEqual(safeViolations(audit, repo.files, AUDIT_EXCEPTIONS), [], "these would let a DB-relevant change skip DB integration");
+  for (const entry of AUDIT_EXCEPTIONS) {
+    const count = audit.dirRefs.get(entry.dir)?.get(`${entry.file}\0${entry.literal}`);
+    assert.equal(count, entry.count, `stale audit exception: ${entry.file} ${entry.literal}`);
+  }
 });
 
 test("every doc named by code is declared as an App input", () => {
@@ -130,4 +158,46 @@ test("non-literal module loads are reported; literal ones are followed", () => {
     'const re = /require(x)/; // import(name)\nconst s = "import(name)";']) {
     assert.equal(hasDynamicLoad(code), false, code);
   }
+});
+
+// --- Second-round counterexamples ------------------------------------------
+
+test("an exception covers only its exact occurrences, not every use of the path", () => {
+  const files = { "scripts/db-catalog.mjs": 'const schema = "public"; readdirSync("public");', "public/icon.svg": "" };
+  const result = auditInputs(tree(files), ["scripts/db-catalog.mjs"], declared);
+  const exception = [{ dir: "public/", file: "scripts/db-catalog.mjs", literal: "public", count: 1, reason: "schema" }];
+  assert.deepEqual(safeViolations(result, Object.keys(files), exception), ['dir public/ via scripts/db-catalog.mjs "public" x2']);
+});
+
+test("opaque executables are issues unless their inputs are declared, and declared inputs are audited", () => {
+  const files = { "tests/db/x.test.ts": 'spawn("scripts/check.sh");', "scripts/check.sh": "node src/components/db-helper.mjs\n",
+    "src/components/db-helper.mjs": "" };
+  assert.deepEqual(auditInputs(tree(files), ["tests/db/x.test.ts"], declared).issues, ["scripts/check.sh: opaque executable; declare its inputs"]);
+  const declaredRun = auditInputs(tree(files), ["tests/db/x.test.ts"], declared, { "scripts/check.sh": ["src/components/db-helper.mjs"] });
+  assert.deepEqual(declaredRun.issues, []);
+  assert.deepEqual(safeViolations(declaredRun, Object.keys(files)), ["file src/components/db-helper.mjs"]);
+});
+
+test("entry points follow the package script the CI DB job runs", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ci-entries-"));
+  const write = (path, text) => { mkdirSync(join(dir, dirname(path)), { recursive: true }); writeFileSync(join(dir, path), text); };
+  try {
+    write(".github/workflows/ci.yml", "jobs:\n  db:\n    steps:\n      - run: npm ci\n      - run: npm run test:db:local\n  ci:\n    steps: []\n");
+    write("package.json", JSON.stringify({ scripts: { "test:db:local": "node src/components/db-runner.mjs" } }));
+    write("src/components/db-runner.mjs", "");
+    const derived = dbEntryPoints(dir);
+    assert.deepEqual(derived, { entries: ["src/components/db-runner.mjs"], issues: [] });
+    const result = auditInputs(fsTree(dir), derived.entries, declared);
+    assert.deepEqual(safeViolations(result, ["src/components/db-runner.mjs"]), ["file src/components/db-runner.mjs"]);
+    write("package.json", JSON.stringify({ scripts: { "test:db:local": "bash ./run.sh" } }));
+    assert.match(dbEntryPoints(dir).issues[0], /uninterpreted command: bash \.\/run\.sh/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("file-URL literals are canonicalized before matching", () => {
+  const files = { "tests/db/x.test.ts": 'readFileSync(new URL("../../src/components/db%2Dhelper.mjs?audit=1#x", import.meta.url));',
+    "src/components/db-helper.mjs": "" };
+  const result = auditInputs(tree(files), ["tests/db/x.test.ts"], declared);
+  assert.ok(result.files.has("src/components/db-helper.mjs"));
+  assert.deepEqual(safeViolations(result, Object.keys(files)), ["file src/components/db-helper.mjs"]);
 });

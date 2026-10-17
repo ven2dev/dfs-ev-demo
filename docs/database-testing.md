@@ -236,27 +236,47 @@ relies on dependency analysis.
   blocks the required `CI` gate without running suites.
 
 **Verification.** `scripts/ci/inputAudit.mjs` parses the DB suite with the
-lockfile-pinned TypeScript compiler. `tests/ciAffected.check.mjs` (in
-`App checks`) fails CI when any of these happen:
+lockfile-pinned TypeScript compiler. Its entry points are derived from the
+`run:` commands of the CI DB job and the npm scripts they call (including
+nested `npm run` and pre/post hooks), so they cannot drift from what CI
+executes. `tests/ciAffected.check.mjs` (in `App checks`) fails CI when any of
+these happen:
 
-- a DB-suite input (imported or path-named file, including non-JS files and
-  bare directory names) lies in `DB_SAFE`;
+- a DB-suite input lies in `DB_SAFE`. Inputs are traced through imports, path
+  literals (canonicalized file URLs, directory-anchored globs, bare directory
+  names) and declared executables.
 - an input is unclassifiable: an unresolved import, an alias or `#imports`
-  specifier, an undeclared package, a non-literal load or a parse error;
+  specifier, an undeclared package, a non-literal load, a parse error, an
+  undeclared opaque executable (shell or other non-JS program), or a CI command
+  the audit cannot interpret.
 - a doc named by code is missing from `APP_DOC_INPUTS`.
 
-A gap therefore surfaces as a failing test, never as a silent skip. Justified
-exceptions (currently the PostgreSQL schema name `public`) are listed in the
-test, and the test fails if an exception becomes unnecessary.
+Literal occurrences that name a safe directory but are not reads (currently
+the PostgreSQL schema name `public`) are excepted by exact file, literal and
+occurrence count. Any new occurrence, or a stale exception, fails the test. A
+gap therefore surfaces as a failing test, never as a silent skip.
 
-**Residual risk.** Reads through computed paths and ambient execution inputs
-(runner image, npm version, environment, secrets, external tool versions)
-cannot be selected from a diff. Mitigation:
+**Threat model and stopping rule.** The selector defends against *accidental*
+misclassification by contributors and agents. It does not defend against code
+deliberately written to evade static analysis, which a determined author could
+always construct. Reviews should report counterexamples that ordinary code
+could plausibly produce. Contrived evasions are accepted residual risk, for
+three reasons:
 
-- the safe set is limited to UI, docs and public assets;
-- computed reads in DB code must stay outside it;
-- pushes to `main` always run everything, so ambient drift is caught after
-  merge.
+- `DB_SAFE` is limited to UI, docs and public assets;
+- pushes to `main` always run every suite;
+- this selector is interim until per-package selection in #148.
+
+**Residual risk.** Inputs a static audit cannot see:
+
+- reads through computed paths;
+- programs started with computed paths;
+- deliberate evasion;
+- ambient execution inputs (runner image, npm version, environment, secrets,
+  external tool versions).
+
+Mitigation: DB code must not compute paths into `DB_SAFE`, and the full
+post-merge run on `main` catches ambient drift.
 
 When needed, `App checks` and `DB integration` run independently on Linux. The database job runs a clean Node 24 `npm ci`, the
 target/bootstrap/report guards, and `npm run test:db:local`. The local command

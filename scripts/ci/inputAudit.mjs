@@ -10,7 +10,12 @@
 //   names such as "fixtures";
 // - issues: anything the audit cannot classify: unresolved local imports,
 //   specifiers that are neither local, a Node built-in nor a declared package
-//   (e.g. "#imports" or path aliases), non-literal module loads and parse errors.
+//   (e.g. "#imports" or path aliases), non-literal module loads, parse errors,
+//   and opaque executables (shell or other non-JS programs) whose own inputs
+//   have not been declared.
+// Entry points are derived from the commands the CI DB job actually runs.
+// Threat model: accidental misclassification by contributors, not adversarial
+// code; see docs/database-testing.md.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { builtinModules } from "node:module";
 import { dirname, join, posix, resolve } from "node:path";
@@ -19,16 +24,10 @@ import ts from "typescript";
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
-// Code entry points of the DB integration suite.
-export const DB_ENTRY_POINTS = [
-  "tests/db", "scripts/test-db.mjs", "scripts/db-migrations",
-  "scripts/db-catalog.mjs", "scripts/db-catalog-contracts.mjs", "scripts/compare-db-catalog.mjs",
-  "scripts/db-migrate.mjs", "scripts/db-migrate-dev.mjs", "scripts/db-migration-artifacts.mjs",
-  "scripts/db-readiness-manifest.mjs", "scripts/db-test-contract.mjs", "scripts/db-test-reporter.mjs",
-  "vitest.db.config.mts", "compose.test.yml",
-];
-
 const SOURCE = /\.(?:[cm]?[jt]sx?)$/;
+// Programs whose own inputs the audit cannot see. Reaching one is an issue
+// unless its inputs are declared.
+const OPAQUE_EXECUTABLE = /(?:\.(?:sh|bash|zsh|py|rb|pl|ps1)|\/[^./]+)$/;
 const BUILTINS = new Set(builtinModules.flatMap((name) => [name, `node:${name}`]));
 
 // A read-only view of the repository: `files` are repo-relative POSIX paths.
@@ -109,13 +108,32 @@ const packageName = (specifier) => {
 
 // Repository files and directories a string literal can name, resolved against
 // the referencing file's directory and the repository root.
-const literalTargets = (tree, file, literal) => {
-  if (!literal || literal.length > 4096 || /^[./]*$/.test(literal) || literal.includes("\n")) return [];
+// URL-style literals are canonicalized: a query string or fragment is removed
+// and percent-escapes are decoded, as Node does for file URLs.
+export const canonicalLiteral = (literal) => {
+  const path = literal.replace(/[?#].*$/s, "");
+  try { return decodeURIComponent(path); } catch { return path; }
+};
+
+const globRegex = (pattern) => new RegExp(`^${pattern.split(/(\*\*\/?|\*)/).map((part) =>
+  part === "**/" || part === "**" ? ".*" : part === "*" ? "[^/]*" : part.replace(/[.+^${}()|[\]\\?]/g, "\\$&")).join("")}$`);
+
+const literalTargets = (tree, file, raw) => {
+  if (!raw || raw.length > 4096 || raw.includes("\n")) return [];
+  const literal = canonicalLiteral(raw);
+  if (/^[./]*$/.test(literal)) return [];
   const targets = [];
   for (const candidate of new Set([posix.normalize(posix.join(posix.dirname(file), literal)), posix.normalize(literal)])) {
     const path = candidate.replace(/\/$/, "");
     if (path.startsWith("..") || path.startsWith("/") || path.startsWith("node_modules")) continue;
-    if (tree.files.has(path)) targets.push({ kind: "file", path });
+    if (path.includes("*")) {
+      // Only path globs anchored at an existing directory (e.g. "tests/db/**/*.test.ts");
+      // comment markers such as "/*" and unrelated patterns are not file references.
+      const prefix = path.slice(0, path.indexOf("*"));
+      if (!prefix.includes("/") || !tree.dirs.has(prefix.slice(0, prefix.lastIndexOf("/")))) continue;
+      const pattern = globRegex(path);
+      for (const match of tree.files) if (pattern.test(match)) targets.push({ kind: "file", path: match });
+    } else if (tree.files.has(path)) targets.push({ kind: "file", path });
     else if (tree.dirs.has(path)) targets.push({ kind: "dir", path: `${path}/` });
   }
   return targets;
@@ -124,18 +142,25 @@ const literalTargets = (tree, file, literal) => {
 // The suite's transitive inputs. `declared` holds the package names the root
 // package.json declares; anything else that is neither local nor built-in is
 // reported as an issue.
-export const auditInputs = (tree, entryPoints, declared) => {
+export const auditInputs = (tree, entryPoints, declared, executables = {}) => {
   const queue = entryPoints.flatMap((path) => tree.files.has(path) ? [path]
     : [...tree.files].filter((file) => file.startsWith(`${path}/`)));
   const files = new Set();
   const dirs = new Set();
+  const dirRefs = new Map(); // dir -> Map("file\0literal" -> occurrence count)
   const packages = new Set();
   const issues = [];
   while (queue.length) {
     const file = queue.pop();
     if (files.has(file)) continue;
     files.add(file);
-    if (!SOURCE.test(file)) continue; // non-JS inputs are leaves
+    if (!SOURCE.test(file)) {
+      if (OPAQUE_EXECUTABLE.test(`/${file}`)) {
+        if (executables[file]) queue.push(...executables[file]);
+        else issues.push(`${file}: opaque executable; declare its inputs`);
+      }
+      continue; // data files are leaves
+    }
     const { specifiers, literals, dynamic } = analyseSource(file, tree.read(file) ?? "");
     if (dynamic) issues.push(`${file}: non-literal module load or unparsable source`);
     for (const specifier of specifiers) {
@@ -152,11 +177,60 @@ export const auditInputs = (tree, entryPoints, declared) => {
     }
     for (const literal of literals) {
       for (const target of literalTargets(tree, file, literal)) {
-        if (target.kind === "file") queue.push(target.path); else dirs.add(target.path);
+        if (target.kind === "file") { queue.push(target.path); continue; }
+        dirs.add(target.path);
+        const refs = dirRefs.get(target.path) ?? new Map();
+        const key = `${file}\0${literal}`;
+        refs.set(key, (refs.get(key) ?? 0) + 1);
+        dirRefs.set(target.path, refs);
       }
     }
   }
-  return { files, dirs, packages, issues };
+  return { files, dirs, dirRefs, packages, issues };
+};
+
+// Repository paths a shell command names (files, directories or globs).
+const commandTargets = (tree, command) => command.split(/\s+|&&|\|\||;|\|/).filter(Boolean)
+  .flatMap((token) => literalTargets(tree, "package.json", token.replace(/^["']|["']$/g, "")));
+
+// The DB suite's entry points, derived from the `run:` commands of the CI
+// workflow's DB job and the npm scripts they call (including pre/post hooks
+// and nested `npm run`). Commands the audit cannot interpret are issues.
+export const dbEntryPoints = (root = ROOT) => {
+  const workflow = readFileSync(join(root, ".github/workflows/ci.yml"), "utf8");
+  const issues = [];
+  const job = workflow.match(/^  db:\n([\s\S]*?)(?=^  [a-z][\w-]*:\n)/m)?.[1] ?? "";
+  // Both "run:" under a named step and the "- run:" shorthand. A block scalar
+  // ("run: |") is reported as an uninterpreted command rather than skipped.
+  const commands = [...job.matchAll(/^\s+(?:-\s+)?run:\s*(.+)$/gm)].map((match) => match[1].trim());
+  if (!commands.length) issues.push("workflow DB job: no run commands found");
+  const scripts = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).scripts ?? {};
+  const tree = fsTree(root);
+  const entries = new Set();
+  const seen = new Set();
+  const expand = (command, origin) => {
+    for (const part of command.split(/&&|\|\||;/).map((value) => value.trim()).filter(Boolean)) {
+      const npmRun = part.match(/^npm run ([\w:.-]+)/);
+      if (npmRun) {
+        for (const name of [`pre${npmRun[1]}`, npmRun[1], `post${npmRun[1]}`]) {
+          if (!scripts[name] || seen.has(name)) continue;
+          seen.add(name);
+          expand(scripts[name], `npm script ${name}`);
+        }
+        if (!scripts[npmRun[1]]) issues.push(`${origin}: unknown npm script ${npmRun[1]}`);
+      } else if (/^npm ci\b/.test(part)) {
+        continue; // installation: every package file already runs DB integration
+      } else if (/^node\b/.test(part)) {
+        const targets = commandTargets(tree, part);
+        if (!targets.length) issues.push(`${origin}: command names no repository file: ${part}`);
+        for (const target of targets) entries.add(target.kind === "dir" ? target.path.replace(/\/$/, "") : target.path);
+      } else {
+        issues.push(`${origin}: uninterpreted command: ${part}`);
+      }
+    }
+  };
+  for (const command of commands) expand(command, "workflow DB job");
+  return { entries: [...entries].sort(), issues };
 };
 
 export const declaredPackages = (root = ROOT) => {
