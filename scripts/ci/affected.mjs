@@ -23,7 +23,7 @@ export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 // Changing any of these can change how every suite runs.
 export const GLOBAL_INPUTS = [
-  /^\.github\/workflows\//, /^\.nvmrc$/, /^tsconfig[^/]*\.json$/, /^scripts\/ci\//,
+  /^\.github\/(?!ISSUE_TEMPLATE\/)/, /^\.gitattributes$/, /^\.nvmrc$/, /^tsconfig[^/]*\.json$/, /^scripts\/ci\//,
   /^vitest[^/]*\.m?[jt]s$/, /^eslint\.config\.[cm]?[jt]s$/, /^next\.config\.[cm]?[jt]s$/,
   /^postcss\.config\.[cm]?[jt]s$/, /^\.npmrc$/,
 ];
@@ -65,6 +65,8 @@ const literalText = (node) => node && (ts.isStringLiteral(node) || ts.isNoSubsti
 const isRequireCallee = (node) => (ts.isIdentifier(node) && node.text === "require")
   || (ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "require"
     && node.name.text === "resolve");
+const isMetaResolve = (node) => ts.isPropertyAccessExpression(node) && node.name.text === "resolve"
+  && ts.isMetaProperty(node.expression) && node.expression.keywordToken === ts.SyntaxKind.ImportKeyword;
 
 // Parses one source file with the TypeScript compiler (handles JS/TS, comments,
 // strings, templates and regex literals correctly). Returns its module
@@ -91,7 +93,8 @@ export const analyseSource = (path, text) => {
     } else if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) {
       const specifier = literalText(node.argument.literal);
       if (specifier !== null) specifiers.push(specifier);
-    } else if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || isRequireCallee(node.expression))) {
+    } else if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || isRequireCallee(node.expression)
+      || isMetaResolve(node.expression))) {
       const specifier = literalText(node.arguments[0]);
       if (specifier === null) dynamic = true; else specifiers.push(specifier);
     } else if (ts.isIdentifier(node) && node.text === "createRequire") {
@@ -133,14 +136,14 @@ export const fsTree = (root = ROOT) => {
   return makeTree(walk(""), (path) => readFileSync(join(root, path), "utf8"));
 };
 
-const git = (args, input) => execFileSync("git", args, { cwd: ROOT, input, maxBuffer: 512 * 1024 * 1024 });
+const git = (args, input, cwd = ROOT) => execFileSync("git", args, { cwd, input, maxBuffer: 512 * 1024 * 1024 });
 
 // The repository at a commit, read through git. Source files are loaded with
 // a single `git cat-file --batch` call.
-export const gitTree = (sha) => {
-  const paths = git(["ls-tree", "-r", "-z", "--name-only", sha]).toString("utf8").split("\0").filter(Boolean);
+export const gitTree = (sha, cwd = ROOT) => {
+  const paths = git(["ls-tree", "-r", "-z", "--name-only", sha], undefined, cwd).toString("utf8").split("\0").filter(Boolean);
   const sources = paths.filter((path) => SOURCE.test(path) && !path.includes("node_modules/"));
-  const output = git(["cat-file", "--batch"], sources.map((path) => `${sha}:${path}`).join("\n") + "\n");
+  const output = git(["cat-file", "--batch"], sources.map((path) => `${sha}:${path}`).join("\n") + "\n", cwd);
   const contents = new Map();
   let offset = 0;
   for (const path of sources) {
@@ -183,8 +186,10 @@ export const importGraph = (tree, entryPoints = DB_ENTRY_POINTS) => {
     const file = queue.pop();
     if (files.has(file)) continue;
     files.add(file);
-    const { specifiers, dynamic } = analyseSource(file, tree.read(file) ?? "");
+    const { specifiers, literals, dynamic } = analyseSource(file, tree.read(file) ?? "");
     if (dynamic) unresolved.push(`${file}: non-literal module load or unparsable source`);
+    // Scripts started by path (spawn, worker, new URL) are code inputs too.
+    for (const path of literalFiles(tree, file, literals)) if (SOURCE.test(path)) queue.push(path);
     for (const specifier of specifiers) {
       if (specifier.startsWith(".") || specifier.startsWith("@/")) {
         const local = resolveLocal(tree, file, specifier);
@@ -198,6 +203,14 @@ export const importGraph = (tree, entryPoints = DB_ENTRY_POINTS) => {
   }
   return { files, packages, unresolved };
 };
+
+// Existing repo files named by path-like string literals in `file`, resolved
+// relative to the file and to the repository root.
+const literalFiles = (tree, file, literals) => literals.flatMap((literal) => {
+  if (!PATH_LIKE.test(literal) || /^[./]+$/.test(literal)) return [];
+  return [posix.normalize(posix.join(posix.dirname(file), literal)), posix.normalize(literal)]
+    .filter((candidate) => !candidate.startsWith("..") && !candidate.startsWith("node_modules/") && tree.files.has(candidate));
+});
 
 // Union of two graphs, so removed dependencies still count.
 export const unionGraphs = (a, b) => ({
@@ -273,14 +286,22 @@ const withoutDependencies = (manifest) => {
 };
 
 export const decide = ({ event, files, dbFiles = new Set(), unresolved = [], manifestChanged = false,
-  dbPackagesChanged = false, selectorPackagesChanged = false, referencedDocs = new Set() }) => {
+  dbPackagesChanged = false, selectorFiles = new Set(), selectorUnresolved = [], selectorPackagesChanged = false,
+  referencedDocs = new Set() }) => {
   if (event !== "pull_request" || files.length === 0) return { app: true, db: true, reason: "full run" };
   const global = files.find((file) => GLOBAL_INPUTS.some((rule) => rule.test(file)));
   if (global) return { app: true, db: true, reason: `global input: ${global}` };
   // A selector must never use an updated dependency of its own to decide that
   // tests are unnecessary.
+  // The selector graph over-approximates (it also follows path literals), so a
+  // file in both graphs reports the more specific database-suite reason below;
+  // either way every suite runs.
+  const selectorFile = files.find((file) => selectorFiles.has(file) && !dbFiles.has(file) && !covered(file, SIDE_INPUTS.db));
+  if (selectorFile) return { app: true, db: true, reason: `suite selector code changed: ${selectorFile}` };
+  if (selectorUnresolved.length) return { app: true, db: true, reason: `incomplete selector graph: ${selectorUnresolved[0]}` };
   if (selectorPackagesChanged) return { app: true, db: true, reason: "a dependency of the suite selector changed" };
-  const appInput = (file) => !DOC_LIKE.some((rule) => rule.test(file)) || covered(file, SIDE_INPUTS.app) || referencedDocs.has(file);
+  const referenced = [...referencedDocs];
+  const appInput = (file) => !DOC_LIKE.some((rule) => rule.test(file)) || covered(file, SIDE_INPUTS.app) || covered(file, referenced);
   const appFile = files.find(appInput);
   const dbFile = files.find((file) => dbFiles.has(file) || covered(file, SIDE_INPUTS.db));
   const db = Boolean(dbFile) || unresolved.length > 0 || manifestChanged || dbPackagesChanged;
@@ -292,13 +313,14 @@ export const decide = ({ event, files, dbFiles = new Set(), unresolved = [], man
   return { app: Boolean(appFile) || db, db, reason };
 };
 
-const readJsonAt = (sha, path) => {
-  try { return JSON.parse(git(["show", `${sha}:${path}`]).toString("utf8")); } catch { return {}; }
+const readJsonAt = (sha, path, cwd) => {
+  try { return JSON.parse(git(["show", `${sha}:${path}`], undefined, cwd).toString("utf8")); } catch { return {}; }
 };
 
 // The decision for one PR, analysing both the merge base and the head.
 export const analyse = ({ files, trees, locks = [{}, {}], manifests = [{}, {}] }) => {
   const graph = unionGraphs(importGraph(trees[0]), importGraph(trees[1]));
+  const selector = unionGraphs(importGraph(trees[0], SELECTOR_ENTRY_POINTS), importGraph(trees[1], SELECTOR_ENTRY_POINTS));
   let manifestChanged = false;
   let dbPackagesChanged = false;
   let selectorPackagesChanged = false;
@@ -306,7 +328,6 @@ export const analyse = ({ files, trees, locks = [{}, {}], manifests = [{}, {}] }
     manifestChanged = withoutDependencies(manifests[0]) !== withoutDependencies(manifests[1]);
     const changed = changedPackages(locks[0], locks[1]);
     const reachableFrom = (roots) => new Set([...dependencyClosure(locks[0], roots), ...dependencyClosure(locks[1], roots)]);
-    const selector = unionGraphs(importGraph(trees[0], SELECTOR_ENTRY_POINTS), importGraph(trees[1], SELECTOR_ENTRY_POINTS));
     const selectorReachable = reachableFrom(selector.packages);
     const dbReachable = reachableFrom(graph.packages);
     selectorPackagesChanged = [...changed].some((name) => selectorReachable.has(name));
@@ -316,17 +337,20 @@ export const analyse = ({ files, trees, locks = [{}, {}], manifests = [{}, {}] }
     ? trees.flatMap((tree) => [...referencedPaths(tree, ["src", "scripts", "tests"].flatMap((dir) => listSourceFiles(tree, dir)))])
     : []);
   return decide({ event: "pull_request", files, dbFiles: graph.files, unresolved: graph.unresolved,
-    manifestChanged, dbPackagesChanged, selectorPackagesChanged, referencedDocs });
+    manifestChanged, dbPackagesChanged, selectorFiles: selector.files, selectorUnresolved: selector.unresolved,
+    selectorPackagesChanged, referencedDocs });
 };
 
-const detect = ({ event, base, head }) => {
+const detect = ({ event, base, head, cwd = ROOT }) => {
   if (event !== "pull_request") return decide({ event, files: [] });
-  const mergeBase = git(["merge-base", base, head]).toString("utf8").trim();
-  const files = git(["diff", "--name-only", `${mergeBase}...${head}`]).toString("utf8").split("\n").filter(Boolean);
+  const mergeBase = git(["merge-base", base, head], undefined, cwd).toString("utf8").trim();
+  // --no-renames lists both the old and new path of a moved file.
+  const files = git(["diff", "--no-renames", "--name-only", `${mergeBase}...${head}`], undefined, cwd)
+    .toString("utf8").split("\n").filter(Boolean);
   const shas = [mergeBase, head];
-  return analyse({ files, trees: shas.map(gitTree),
-    locks: shas.map((sha) => readJsonAt(sha, "package-lock.json")),
-    manifests: shas.map((sha) => readJsonAt(sha, "package.json")) });
+  return analyse({ files, trees: shas.map((sha) => gitTree(sha, cwd)),
+    locks: shas.map((sha) => readJsonAt(sha, "package-lock.json", cwd)),
+    manifests: shas.map((sha) => readJsonAt(sha, "package.json", cwd)) });
 };
 
 // Any detection error runs every suite rather than blocking or skipping.

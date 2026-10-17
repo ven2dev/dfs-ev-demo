@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, mkdirSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { SELECTOR_ENTRY_POINTS, SIDE_INPUTS, analyse, changedPackages, covered, decide, dependencyClosure, fsTree, hasDynamicLoad, importGraph,
   listSourceFiles, makeTree, referencedPaths, run } from "../scripts/ci/affected.mjs";
@@ -147,7 +151,67 @@ test("a change to the selector's own dependencies runs every suite", () => {
 });
 
 test("the real selector's dependency roots are derived from its imports", () => {
-  assert.deepEqual([...importGraph(repo, SELECTOR_ENTRY_POINTS).packages], ["typescript"]);
+  const selector = importGraph(repo, SELECTOR_ENTRY_POINTS);
+  assert.ok(selector.packages.has("typescript"));
+  assert.deepEqual(selector.unresolved, []);
+});
+
+test("selector boundary: its full transitive code graph is a global input", () => {
+  const helper = tree({ "scripts/ci/affected.mjs": 'import { parse } from "../selector-helper.mjs";',
+    "scripts/selector-helper.mjs": "export const parse = 1;" });
+  const result = analyse({ files: ["scripts/selector-helper.mjs"], trees: [helper, helper] });
+  assert.deepEqual([result.app, result.db, result.reason], [true, true, "suite selector code changed: scripts/selector-helper.mjs"]);
+  // An incomplete selector graph runs everything, even for a docs-only change.
+  const computed = tree({ "scripts/ci/affected.mjs": "const parser = await import(name);" });
+  const docs = analyse({ files: ["docs/example-notes.md"], trees: [computed, computed] });
+  assert.deepEqual([docs.app, docs.db], [true, true]);
+  assert.match(docs.reason, /^incomplete selector graph/);
+  // A selector helper deleted at head still counts through the base graph.
+  const head = tree({ "scripts/ci/affected.mjs": "export const x = 1;" });
+  assert.equal(analyse({ files: ["scripts/selector-helper.mjs"], trees: [helper, head] }).db, true);
+});
+
+test("scripts started by path are followed as code inputs", () => {
+  const suite = tree({ "scripts/test-db.mjs": 'spawn(process.execPath, ["scripts/spawned-check.mjs"]);',
+    "scripts/spawned-check.mjs": 'import "./spawned-helper.mjs";', "scripts/spawned-helper.mjs": "" });
+  assert.ok(importGraph(suite).files.has("scripts/spawned-helper.mjs"));
+  assert.equal(analyse({ files: ["scripts/spawned-helper.mjs"], trees: [suite, suite] }).db, true);
+});
+
+test("import.meta.resolve is a module load", () => {
+  assert.equal(hasDynamicLoad("const where = import.meta.resolve(name);"), true);
+  assert.equal(hasDynamicLoad('const where = import.meta.resolve("./adapter.mjs");'), false);
+});
+
+test("all of .github except issue templates, and .gitattributes, are global inputs", () => {
+  for (const file of [".github/actions/setup/action.yml", ".github/dependabot.yml", ".gitattributes"]) {
+    assert.deepEqual([pr([file]).app, pr([file]).db], [true, true], file);
+  }
+  assert.deepEqual([pr([".github/ISSUE_TEMPLATE/example.md"]).app, pr([".github/ISSUE_TEMPLATE/example.md"]).db], [false, false]);
+});
+
+test("a directory reference makes every doc below it an App input", () => {
+  assert.equal(pr(["docs/any/example-notes.md"], { referencedDocs: new Set(["docs/any/"]) }).app, true);
+});
+
+test("renames select suites through the old path as well as the new one (real git)", () => {
+  const dir = mkdtempSync(join(tmpdir(), "ci-affected-"));
+  const g = (...args) => execFileSync("git", args, { cwd: dir, encoding: "utf8" }).trim();
+  const write = (path, text) => { mkdirSync(join(dir, dirname(path)), { recursive: true }); writeFileSync(join(dir, path), text); };
+  try {
+    g("init", "-q", "-b", "main"); g("config", "user.email", "probe@example.invalid"); g("config", "user.name", "probe");
+    write("scripts/creator-corpus/readiness-gate.json", "{\"gate\": 1}\n");
+    write("README.txt", "x\n");
+    g("add", "-A"); g("commit", "-qm", "base");
+    const base = g("rev-parse", "HEAD");
+    // Move a declared database side input somewhere undeclared, unchanged.
+    mkdirSync(join(dir, "notes"), { recursive: true });
+    renameSync(join(dir, "scripts/creator-corpus/readiness-gate.json"), join(dir, "notes/readiness-gate.json"));
+    g("add", "-A"); g("commit", "-qm", "move");
+    const result = run({ event: "pull_request", base, head: g("rev-parse", "HEAD"), cwd: dir });
+    assert.equal(result.db, true, result.reason);
+    assert.equal(result.reason, "database-suite input: scripts/creator-corpus/readiness-gate.json");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
 test("metadata-only changes to a reachable lock entry select the database suite", () => {

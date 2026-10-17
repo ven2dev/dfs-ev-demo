@@ -249,6 +249,29 @@ docs-only PRs are still checked. Selection fails closed:
   documentation that no suite declares and no code file references.
 - **Pushes to `main`** and any detection error run everything.
 
+**Selector invariant and input checklist.** A suite may be skipped only if
+nothing that suite or the selector itself depends on differs between the PR's
+merge base and its head. Each input class is covered as follows:
+
+| Input class | Coverage |
+|---|---|
+| Suite code (transitive imports, both sides) | Graph union of base and head |
+| Scripts a suite starts by path | Path literals that name source files are followed as graph edges |
+| Non-literal or unparsable loads | Fail closed (TypeScript parser) |
+| Non-code runtime reads | Declared `SIDE_INPUTS`; enforcement test for literal paths |
+| Suite packages | Lockfile closure, full-entry comparison, both sides |
+| Selector code (transitive, both sides) | Any change, or any incomplete selector graph, runs everything |
+| Selector packages (e.g. TypeScript) | Any change in their lockfile closure runs everything |
+| Renames and moves | `git diff --no-renames`, so old and new paths both count |
+| CI, tooling and repo config | Global: all of `.github/` except issue templates, `.gitattributes`, `.nvmrc`, `tsconfig*`, `.npmrc`, test/lint/build configs |
+| `package.json` non-dependency fields | DB integration runs |
+| Detection failure | Runs everything |
+
+**Residual risk.** A file read through a *computed* path (for example
+`join(dir, name)`) cannot be found by static analysis. It must be covered by a
+declared `SIDE_INPUTS` directory. When adding such a read, declare its
+directory; reviewers check this in PRs touching suite code.
+
 When needed, `App checks` and `DB integration` run independently on Linux. The database job runs a clean Node 24 `npm ci`, the
 target/bootstrap/report guards, and `npm run test:db:local`. The local command
 requires migration/reference integrity, all named database cases and freshly
@@ -287,6 +310,10 @@ job results. It also:
   - bare-name runtime inputs;
   - metadata-only lock changes;
   - selector-dependency (TypeScript) updates;
+  - selector helper files and incomplete selector graphs;
+  - scripts started by path;
+  - renames through real git;
+  - `.github/`, `.gitattributes` and directory-referenced docs;
   - fail-safe detection errors;
 - enforces that every file the suites' code names is declared.
 
