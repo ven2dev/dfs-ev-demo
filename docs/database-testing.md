@@ -213,18 +213,24 @@ It is validation evidence, not a passing integration run.
 
 On PRs to `main`, a `Detect affected suites` job runs first
 (`scripts/ci/affected.mjs`, #140). It also hosts the whitespace check, so
-docs-only PRs are still checked. Suite selection is deny-by-default:
+docs-only PRs are still checked. Selection fails closed:
 
-- Docs-only PRs skip both suites.
-- `DB integration` is skipped only when every changed path is on its
-  known-safe list: docs, UI components, store, non-API app files, public
-  assets, unit tests, Firestore rules and `.env.example`.
-- For `package.json`/`package-lock.json` changes, `DB integration` is skipped
-  only when nothing but dependency versions changed and no changed lock entry
-  is reachable from the packages the database suite imports. That set is
-  computed from the suite's import graph, then expanded through the lockfile
-  dependency tree.
-- Pushes to `main` and any unrecognized path run everything.
+- **Global inputs run everything:** workflows, `.nvmrc`, `tsconfig*`, Vitest,
+  ESLint, Next and PostCSS configs, `.npmrc`, and the detector itself.
+- **`DB integration` code inputs** are its transitive local-import closure,
+  recomputed every run from its entry points (`tests/db`, `scripts/test-db.mjs`
+  and the `scripts/db-*` tools). Any unresolvable local import runs it.
+- **Non-code files** a suite reads at runtime (SQL, fixtures, contracts,
+  corpus JSON, docs) are declared in `SIDE_INPUTS`. A test scans the suites'
+  code for literal file references and fails when a referenced file is
+  undeclared.
+- **`package.json`/`package-lock.json`:** `DB integration` runs if
+  `package.json` changed outside dependency versions, or if a changed lock
+  entry is reachable from the packages the suite imports. Reachability expands
+  those imports through the lockfile dependency tree.
+- **Docs-only skip:** a PR skips both suites only when every file is
+  documentation that no suite declares and no code file references.
+- **Pushes to `main`** and any detection error run everything.
 
 When needed, `App checks` and `DB integration` run independently on Linux. The database job runs a clean Node 24 `npm ci`, the
 target/bootstrap/report guards, and `npm run test:db:local`. The local command
@@ -255,8 +261,10 @@ job results. It also:
 - checks the gate's always-run condition, dependency list, unique check name,
   empty permissions and absence of checkout;
 - checks each suite's `needs`/`if` wiring;
-- unit-tests the detector's path, package-closure and decision rules
-  (`tests/ciAffected.check.mjs`).
+- unit-tests the detector (`tests/ciAffected.check.mjs`), including
+  regressions for test-read docs, closure-based database relevance,
+  unresolved imports and fail-safe detection errors;
+- enforces that every file the suites' code names is declared.
 
 This runs inside `App checks`. A docs-only PR cannot change the workflow or
 the detector without leaving the docs-only category. The extraction checks the current YAML block layout;

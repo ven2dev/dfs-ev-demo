@@ -1,32 +1,55 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { changedPackages, decide, dependencyClosure, importedPackages } from "../scripts/ci/affected.mjs";
+import { ROOT, SIDE_INPUTS, changedPackages, covered, decide, dependencyClosure, importGraph, listSourceFiles,
+  referencedPaths, run } from "../scripts/ci/affected.mjs";
 
-const pr = (files, extra = {}) => decide({ event: "pull_request", files, manifestChanged: false, dbPackagesChanged: false, ...extra });
+// Fixture paths are deliberately fictional so this file never looks like a real
+// reader of repository docs.
+const pr = (files, extra = {}) => decide({ event: "pull_request", files, ...extra });
+const graph = importGraph();
 
 test("pushes and empty diffs run every suite", () => {
-  assert.deepEqual(decide({ event: "push", files: ["docs/a.md"] }), { app: true, db: true, reason: "full run" });
+  assert.deepEqual(decide({ event: "push", files: ["docs/example-notes.md"] }), { app: true, db: true, reason: "full run" });
   assert.equal(pr([]).db, true);
   assert.equal(pr([]).app, true);
 });
 
-test("docs-only changes skip both suites", () => {
-  const result = pr(["README.md", "docs/predictive-data-platform.md", ".github/ISSUE_TEMPLATE/feature.md", "AGENTS.md"]);
-  assert.equal(result.app, false);
-  assert.equal(result.db, false);
+test("global inputs run every suite", () => {
+  for (const file of [".github/workflows/ci.yml", ".nvmrc", "tsconfig.json", "scripts/ci/affected.mjs",
+    "vitest.config.ts", "eslint.config.mjs", "next.config.ts"]) {
+    assert.deepEqual([pr([file]).app, pr([file]).db], [true, true], file);
+  }
 });
 
-test("UI-only changes run app checks but skip the database suite", () => {
-  const result = pr(["src/components/HitRateSummary.tsx", "src/app/page.tsx", "src/store/hooks.ts", "src/app/page.test.tsx"]);
-  assert.equal(result.app, true);
-  assert.equal(result.db, false);
+test("unreferenced, undeclared docs skip both suites", () => {
+  const result = pr(["README.md", "docs/example-notes.md", ".github/ISSUE_TEMPLATE/example.md", "AGENTS.md"]);
+  assert.deepEqual([result.app, result.db, result.reason], [false, false, "docs only"]);
 });
 
-test("anything not known to be database-safe runs the database suite (deny-by-default)", () => {
-  for (const file of ["src/lib/db.ts", "src/app/api/stream/route.ts", "db/migrations/0012_x.sql", "tests/db/setup.ts",
-    "scripts/test-db.mjs", "compose.test.yml", ".github/workflows/ci.yml", ".nvmrc", "src/types/index.ts",
-    "vitest.db.config.mts", "some/new/file.ts"]) {
-    assert.equal(pr(["src/components/A.tsx", file]).db, true, file);
+test("P1 regression: docs read by tests schedule App checks", () => {
+  for (const doc of ["docs/creator-corpus-operations.md", "docs/creator-corpus-test-matrix.md"]) {
+    assert.equal(pr([doc]).app, true, doc);
+  }
+  // A doc referenced from code is an input even if the manifest misses it.
+  assert.equal(pr(["docs/example-notes.md"], { referencedDocs: new Set(["docs/example-notes.md"]) }).app, true);
+});
+
+test("P2 regression: database relevance comes from the live import closure, not directories", () => {
+  for (const file of ["src/app/admin/export/route.ts", "src/app/admin/page.tsx", "src/components/DatabaseReport.tsx"]) {
+    assert.equal(pr([file]).db, false, `${file} is outside the closure`);
+    assert.equal(pr([file], { dbFiles: new Set([file]) }).db, true, `${file} once imported by the suite`);
+    assert.equal(pr([file]).app, true, file);
+  }
+});
+
+test("unresolved local imports run the database suite", () => {
+  assert.equal(pr(["src/components/A.tsx"], { unresolved: ["tests/db/x.test.ts -> ./missing"] }).db, true);
+});
+
+test("declared database side inputs run the database suite", () => {
+  for (const file of ["db/migrations/0012_x.sql", "db/catalog-contracts/0001.json", "tests/db/fixtures/pre-41.schema.sql",
+    "compose.test.yml", "scripts/creator-corpus/readiness-gate.json"]) {
+    assert.equal(pr([file]).db, true, file);
   }
 });
 
@@ -52,14 +75,32 @@ test("dependency closure follows dependencies and required peers but not optiona
   assert.deepEqual([...dependencyClosure(lock, ["pg"])].sort(), ["native", "pg", "pg-pool", "required"]);
 });
 
-test("changed packages include nested lock entries and additions/removals", () => {
+test("changed packages include nested lock entries, additions and removals", () => {
   const before = { packages: { "": {}, "node_modules/a": { version: "1" }, "node_modules/x/node_modules/b": { version: "1" }, "node_modules/gone": { version: "1" } } };
   const after = { packages: { "": {}, "node_modules/a": { version: "1" }, "node_modules/x/node_modules/b": { version: "2" }, "node_modules/new": { version: "1" } } };
   assert.deepEqual([...changedPackages(before, after)].sort(), ["b", "gone", "new"]);
 });
 
-test("the real database suite import graph reaches its driver and test runner", () => {
-  const packages = importedPackages();
-  for (const name of ["pg", "@neondatabase/serverless", "vitest"]) assert.ok(packages.has(name), name);
-  for (const name of packages) assert.match(name, /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/);
+test("the real database import graph resolves fully and reaches its driver and test runner", () => {
+  assert.deepEqual(graph.unresolved, []);
+  for (const name of ["pg", "@neondatabase/serverless", "vitest"]) assert.ok(graph.packages.has(name), name);
+  assert.ok(graph.files.has("src/lib/db.ts"));
+});
+
+test("every file the database suite's code names is in its closure or declared as a side input", () => {
+  const undeclared = [...referencedPaths(ROOT, [...graph.files])]
+    .filter((path) => !graph.files.has(path) && !covered(path, SIDE_INPUTS.db));
+  assert.deepEqual(undeclared, [], "declare these in SIDE_INPUTS.db");
+});
+
+test("every doc named by any code is declared as an App side input", () => {
+  const code = ["src", "scripts", "tests"].flatMap((dir) => listSourceFiles(ROOT, dir)).map((file) => file.slice(ROOT.length + 1));
+  const docs = [...referencedPaths(ROOT, code)].filter((path) => /\.md$|^docs\//.test(path));
+  assert.deepEqual(docs.filter((path) => !covered(path, SIDE_INPUTS.app)), [], "declare these in SIDE_INPUTS.app");
+});
+
+test("a detection error runs every suite instead of failing or skipping", () => {
+  const result = run({ event: "pull_request", base: "0".repeat(40), head: "f".repeat(40) });
+  assert.deepEqual([result.app, result.db], [true, true]);
+  assert.match(result.reason, /^detection error, running everything/);
 });

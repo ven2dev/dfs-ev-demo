@@ -1,33 +1,31 @@
-// Decides which expensive CI suites a change needs. Deny-by-default: a suite
-// is skipped only when every changed path is known not to affect it, or (for
-// dependency files) when no changed package is reachable from that suite's
-// code. Anything unrecognized runs everything.
+// Decides which expensive CI suites a change needs (#140). Fail closed:
+// - The database suite's code inputs are its transitive local-import closure,
+//   recomputed from the suite's entry points on every run. An unresolvable
+//   local import runs the suite.
+// - Non-code files a suite reads at runtime (SQL, fixtures, docs) are declared
+//   in SIDE_INPUTS. tests/ciAffected.check.mjs scans the code for literal file
+//   references and fails when a read file is not declared, so the manifest
+//   cannot silently go stale.
+// - Global inputs (workflows, toolchain, configs, this detector) run everything.
 import { execFileSync } from "node:child_process";
 import { appendFileSync, existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
-// Paths that cannot change application behavior or any test outcome.
-const DOCS_ONLY = [/\.md$/, /^docs\//, /^\.github\/ISSUE_TEMPLATE\//];
-
-// Paths the database suite never imports or reads. Verified against the DB
-// import graph; route handlers and UI are outside it. Lockfiles are handled
-// separately by package reachability.
-const DB_SAFE = [
-  ...DOCS_ONLY,
-  /^src\/components\//,
-  /^src\/store\//,
-  /^src\/app\/(?!api\/)/,
-  /^public\//,
-  /^\.env\.example$/,
-  /^src\/.*\.test\.tsx?$/,
-  /^firestore\.rules$/,
-  /^tests\/firestoreRules[^/]*$/,
+// Changing any of these can change how every suite runs.
+export const GLOBAL_INPUTS = [
+  /^\.github\/workflows\//, /^\.nvmrc$/, /^tsconfig[^/]*\.json$/, /^scripts\/ci\//,
+  /^vitest[^/]*\.m?[jt]s$/, /^eslint\.config\.[cm]?[jt]s$/, /^next\.config\.[cm]?[jt]s$/,
+  /^postcss\.config\.[cm]?[jt]s$/, /^\.npmrc$/,
 ];
 
-// Every file the database suite executes starts from these entry points.
+// Documentation that affects nothing unless a suite declares or references it.
+const DOC_LIKE = [/\.md$/, /^docs\//, /^\.github\/ISSUE_TEMPLATE\//];
+
+// Code entry points for the database suite. Its full code input set is the
+// transitive local-import closure of these files.
 export const DB_ENTRY_POINTS = [
   "tests/db", "scripts/test-db.mjs", "scripts/db-migrations",
   "scripts/db-catalog.mjs", "scripts/db-catalog-contracts.mjs", "scripts/compare-db-catalog.mjs",
@@ -35,26 +33,37 @@ export const DB_ENTRY_POINTS = [
   "scripts/db-readiness-manifest.mjs", "scripts/db-test-contract.mjs", "scripts/db-test-reporter.mjs",
   "vitest.db.config.mts",
 ];
+
+// Non-code files or directories each suite reads at runtime. Paths ending in
+// "/" cover everything below them.
+export const SIDE_INPUTS = {
+  db: ["db/", "tests/db/", "compose.test.yml",
+    "scripts/creator-corpus/registration.json", "scripts/creator-corpus/readiness-gate.json"],
+  app: ["docs/creator-corpus-operations.md", "docs/creator-corpus-test-matrix.md"],
+};
+
 const DEPENDENCY_FILES = new Set(["package.json", "package-lock.json"]);
 const SOURCE = /\.(?:[cm]?[jt]sx?)$/;
+const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
+const IMPORT = /(?:from\s*|import\s*\(\s*|import\s+|require\s*\(\s*)["']([^"']+)["']/g;
 
-const listFiles = (root, path) => {
+const toRepoPath = (root, absolute) => relative(root, absolute).split(sep).join("/");
+export const covered = (path, entries) => entries.some((entry) => entry.endsWith("/") ? path.startsWith(entry) : path === entry);
+
+export const listSourceFiles = (root, path) => {
   const full = join(root, path);
-  if (!existsSync(full)) return [];
+  if (!existsSync(full) || full.includes(`${sep}node_modules`)) return [];
   if (statSync(full).isFile()) return SOURCE.test(path) ? [full] : [];
-  return readdirSync(full).flatMap((name) => listFiles(root, join(path, name)));
+  return readdirSync(full).flatMap((name) => listSourceFiles(root, join(path, name)));
 };
 
 const resolveLocal = (root, from, specifier) => {
   const base = specifier.startsWith("@/") ? join(root, "src", specifier.slice(2)) : resolve(dirname(from), specifier);
-  for (const suffix of ["", ".ts", ".tsx", ".mts", ".mjs", ".js", "/index.ts", "/index.tsx"]) {
-    const candidate = base + suffix;
-    if (existsSync(candidate) && statSync(candidate).isFile()) return candidate;
-  }
-  return null;
+  const candidates = ["", ".ts", ".tsx", ".mts", ".mjs", ".js", "/index.ts", "/index.tsx"].map((suffix) => base + suffix);
+  if (/\.js$/.test(base)) candidates.push(base.replace(/\.js$/, ".ts"), base.replace(/\.js$/, ".tsx"));
+  return candidates.find((candidate) => existsSync(candidate) && statSync(candidate).isFile()) ?? null;
 };
 
-const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
 const packageName = (specifier) => {
   if (specifier.startsWith("node:")) return null;
   const parts = specifier.split("/");
@@ -62,27 +71,29 @@ const packageName = (specifier) => {
   return PACKAGE.test(name) ? name : null;
 };
 
-// npm packages imported anywhere in the suite's transitive local import graph.
-export const importedPackages = (root = ROOT, entryPoints = DB_ENTRY_POINTS) => {
-  const queue = entryPoints.flatMap((path) => listFiles(root, path));
-  const seen = new Set();
+// The suite's transitive local files, the npm packages they import, and any
+// local import that could not be resolved (which forces the suite to run).
+export const importGraph = (root = ROOT, entryPoints = DB_ENTRY_POINTS) => {
+  const queue = entryPoints.flatMap((path) => listSourceFiles(root, path));
+  const files = new Set();
   const packages = new Set();
-  const pattern = /(?:from\s*|import\s*\(\s*|import\s+|require\s*\(\s*)["']([^"']+)["']/g;
+  const unresolved = [];
   while (queue.length) {
     const file = queue.pop();
-    if (seen.has(file)) continue;
-    seen.add(file);
-    for (const [, specifier] of readFileSync(file, "utf8").matchAll(pattern)) {
+    if (files.has(file)) continue;
+    files.add(file);
+    for (const [, specifier] of readFileSync(file, "utf8").matchAll(IMPORT)) {
       if (specifier.startsWith(".") || specifier.startsWith("@/")) {
         const local = resolveLocal(root, file, specifier);
         if (local) queue.push(local);
+        else unresolved.push(`${toRepoPath(root, file)} -> ${specifier}`);
       } else {
         const name = packageName(specifier);
         if (name) packages.add(name);
       }
     }
   }
-  return packages;
+  return { files: new Set([...files].map((file) => toRepoPath(root, file))), packages, unresolved };
 };
 
 const entryName = (key) => key.slice(key.lastIndexOf("node_modules/") + "node_modules/".length);
@@ -127,16 +138,40 @@ const withoutDependencies = (manifest) => {
   return JSON.stringify(rest);
 };
 
-export const decide = ({ event, files, manifestChanged, dbPackagesChanged }) => {
+// Repo paths named by string literals in source files, either root-relative
+// ("db/x.sql") or relative to the referencing file ("../../db/schema.sql").
+// Used to enforce SIDE_INPUTS and to keep referenced docs out of "docs only".
+export const referencedPaths = (root, sourceFiles) => {
+  const found = new Set();
+  for (const file of sourceFiles) {
+    const absolute = join(root, file);
+    for (const [, literal] of readFileSync(absolute, "utf8").matchAll(/["'`]([A-Za-z0-9_.][A-Za-z0-9_./-]*\/[A-Za-z0-9_./-]*)["'`]/g)) {
+      if (/^[./]+$/.test(literal)) continue;
+      for (const candidate of [resolve(dirname(absolute), literal), resolve(root, literal)]) {
+        if (!candidate.startsWith(root + sep) || !existsSync(candidate)) continue;
+        const path = toRepoPath(root, candidate);
+        if (!path.startsWith("node_modules/")) found.add(statSync(candidate).isDirectory() ? `${path}/` : path);
+      }
+    }
+  }
+  return found;
+};
+
+export const decide = ({ event, files, dbFiles = new Set(), unresolved = [], manifestChanged = false,
+  dbPackagesChanged = false, referencedDocs = new Set() }) => {
   if (event !== "pull_request" || files.length === 0) return { app: true, db: true, reason: "full run" };
-  const docsOnly = files.every((file) => DOCS_ONLY.some((rule) => rule.test(file)));
-  if (docsOnly) return { app: false, db: false, reason: "docs only" };
-  const outsideDbSafe = files.filter((file) => !DEPENDENCY_FILES.has(file) && !DB_SAFE.some((rule) => rule.test(file)));
-  const db = outsideDbSafe.length > 0 || manifestChanged || dbPackagesChanged;
-  const reason = outsideDbSafe.length ? `db-relevant path: ${outsideDbSafe[0]}`
+  const global = files.find((file) => GLOBAL_INPUTS.some((rule) => rule.test(file)));
+  if (global) return { app: true, db: true, reason: `global input: ${global}` };
+  const appInput = (file) => !DOC_LIKE.some((rule) => rule.test(file)) || covered(file, SIDE_INPUTS.app) || referencedDocs.has(file);
+  const appFile = files.find(appInput);
+  const dbFile = files.find((file) => dbFiles.has(file) || covered(file, SIDE_INPUTS.db));
+  const db = Boolean(dbFile) || unresolved.length > 0 || manifestChanged || dbPackagesChanged;
+  const reason = dbFile ? `database-suite input: ${dbFile}`
+    : unresolved.length ? `unresolved import: ${unresolved[0]}`
     : manifestChanged ? "package.json changed outside dependency versions"
-    : dbPackagesChanged ? "a database-suite dependency changed" : "no database-relevant change";
-  return { app: true, db, reason };
+    : dbPackagesChanged ? "a database-suite dependency changed"
+    : appFile ? `app input: ${appFile}` : "docs only";
+  return { app: Boolean(appFile) || db, db, reason };
 };
 
 const git = (...args) => execFileSync("git", args, { cwd: ROOT, encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
@@ -144,19 +179,29 @@ const readAt = (sha, path) => {
   try { return JSON.parse(git("show", `${sha}:${path}`)); } catch { return {}; }
 };
 
-export const run = ({ event, base, head }) => {
+// Any detection error runs every suite rather than blocking or skipping.
+export const run = (options) => {
+  try { return detect(options); }
+  catch (error) { return { app: true, db: true, reason: `detection error, running everything: ${error.message.split("\n")[0]}` }; }
+};
+
+const detect = ({ event, base, head }) => {
   if (event !== "pull_request") return decide({ event, files: [] });
   const files = git("diff", "--name-only", `${base}...${head}`).split("\n").filter(Boolean);
+  const graph = importGraph();
   let manifestChanged = false;
   let dbPackagesChanged = false;
   if (files.some((file) => DEPENDENCY_FILES.has(file))) {
     manifestChanged = withoutDependencies(readAt(base, "package.json")) !== withoutDependencies(readAt(head, "package.json"));
     const [beforeLock, afterLock] = [readAt(base, "package-lock.json"), readAt(head, "package-lock.json")];
-    const roots = importedPackages();
-    const reachable = new Set([...dependencyClosure(beforeLock, roots), ...dependencyClosure(afterLock, roots)]);
+    const reachable = new Set([...dependencyClosure(beforeLock, graph.packages), ...dependencyClosure(afterLock, graph.packages)]);
     dbPackagesChanged = [...changedPackages(beforeLock, afterLock)].some((name) => reachable.has(name));
   }
-  return decide({ event, files, manifestChanged, dbPackagesChanged });
+  const docs = files.filter((file) => DOC_LIKE.some((rule) => rule.test(file)));
+  const referencedDocs = docs.length
+    ? referencedPaths(ROOT, ["src", "scripts", "tests"].flatMap((dir) => listSourceFiles(ROOT, dir)).map((file) => toRepoPath(ROOT, file)))
+    : new Set();
+  return decide({ event, files, dbFiles: graph.files, unresolved: graph.unresolved, manifestChanged, dbPackagesChanged, referencedDocs });
 };
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
