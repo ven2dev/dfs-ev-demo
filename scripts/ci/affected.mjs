@@ -2,9 +2,10 @@
 // - Both sides of a PR are analysed. The database suite's code inputs are the
 //   union of its transitive local-import closures at the merge base and at the
 //   head, so deleted or renamed dependencies still select the suite.
-// - Any unresolvable local import, or any non-literal module load (dynamic
-//   import(), require() or createRequire with a computed argument) in the
-//   suite's code runs the suite, because a static graph cannot follow it.
+// - Sources are parsed with the TypeScript compiler, not regexes. Any
+//   unresolvable local import, any non-literal module load (computed import(),
+//   require() or require.resolve(), an aliased require, createRequire), or any
+//   unparsable source in the suite's code runs the suite.
 // - Non-code files a suite reads at runtime (SQL, fixtures, contracts, docs)
 //   are declared in SIDE_INPUTS. tests/ciAffected.check.mjs scans the code for
 //   literal file references, including bare file names, and fails when a read
@@ -15,6 +16,7 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, posix, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
 
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -49,33 +51,61 @@ export const SIDE_INPUTS = {
 const DEPENDENCY_FILES = new Set(["package.json", "package-lock.json"]);
 const SOURCE = /\.(?:[cm]?[jt]sx?)$/;
 const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
-const IMPORT = /(?:from\s*|import\s*\(\s*|import\s+|require\s*\(\s*)["']([^"']+)["']/g;
-// Module-loading calls. A call is static only when its first argument is
-// exactly one plain string literal, followed by ")" or "," (e.g. import options).
-const LOAD_CALL = /\b(?:import|require(?:\.resolve)?)\s*\(/g;
+// Path-like string literals considered as possible runtime file references.
+const PATH_LIKE = /^[A-Za-z0-9_.][A-Za-z0-9_./-]*$/;
 
-// True when any import()/require() argument is not exactly one string literal
-// (concatenation, a variable, a template literal, a comment), or createRequire
-// is used. Such loads cannot be followed statically, so the graph is incomplete.
-export const hasDynamicLoad = (text) => {
-  if (/\bcreateRequire\b/.test(text)) return true;
-  for (const match of text.matchAll(LOAD_CALL)) {
-    let index = match.index + match[0].length;
-    while (/\s/.test(text[index] ?? "")) index++;
-    const quote = text[index];
-    if (quote !== '"' && quote !== "'") return true;
-    index++;
-    while (index < text.length && text[index] !== quote) {
-      if (text[index] === "\\" || text[index] === "\n") return true;
-      index++;
+const scriptKind = (path) => path.endsWith(".tsx") ? ts.ScriptKind.TSX : path.endsWith(".jsx") ? ts.ScriptKind.JSX
+  : /\.[cm]?ts$/.test(path) ? ts.ScriptKind.TS : ts.ScriptKind.JS;
+const literalText = (node) => node && (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) ? node.text : null;
+const isRequireCallee = (node) => (ts.isIdentifier(node) && node.text === "require")
+  || (ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "require"
+    && node.name.text === "resolve");
+
+// Parses one source file with the TypeScript compiler (handles JS/TS, comments,
+// strings, templates and regex literals correctly). Returns its module
+// specifiers, its string literals, and whether any module load cannot be
+// followed statically: an import()/require()/require.resolve() whose first
+// argument is not exactly one string literal, `require` used as a value,
+// createRequire, or a file the parser could not parse cleanly.
+const analysed = new Map();
+export const analyseSource = (path, text) => {
+  const key = `${path}\0${text}`;
+  if (analysed.has(key)) return analysed.get(key);
+  const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true, scriptKind(path));
+  const specifiers = [];
+  const literals = [];
+  // parseDiagnostics is the parser's own syntax-error list; any error fails closed.
+  let dynamic = (source.parseDiagnostics?.length ?? 0) > 0;
+  const visit = (node) => {
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
+      const specifier = literalText(node.moduleSpecifier);
+      if (specifier === null) dynamic = true; else specifiers.push(specifier);
+    } else if (ts.isImportEqualsDeclaration(node) && ts.isExternalModuleReference(node.moduleReference)) {
+      const specifier = literalText(node.moduleReference.expression);
+      if (specifier === null) dynamic = true; else specifiers.push(specifier);
+    } else if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) {
+      const specifier = literalText(node.argument.literal);
+      if (specifier !== null) specifiers.push(specifier);
+    } else if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || isRequireCallee(node.expression))) {
+      const specifier = literalText(node.arguments[0]);
+      if (specifier === null) dynamic = true; else specifiers.push(specifier);
+    } else if (ts.isIdentifier(node) && node.text === "createRequire") {
+      dynamic = true;
+    } else if (ts.isIdentifier(node) && node.text === "require" && !(ts.isCallExpression(node.parent) && node.parent.expression === node)
+      && !(ts.isPropertyAccessExpression(node.parent) && node.parent.expression === node && isRequireCallee(node.parent)
+        && ts.isCallExpression(node.parent.parent) && node.parent.parent.expression === node.parent)) {
+      dynamic = true; // `require` passed around or aliased
     }
-    index++;
-    while (/\s/.test(text[index] ?? "")) index++;
-    if (text[index] !== ")" && text[index] !== ",") return true;
-  }
-  return false;
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) literals.push(node.text);
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  const result = { specifiers, literals, dynamic };
+  analysed.set(key, result);
+  return result;
 };
-const LITERAL = /["'`]([A-Za-z0-9_.][A-Za-z0-9_./-]*)["'`]/g;
+
+export const hasDynamicLoad = (text, path = "probe.ts") => analyseSource(path, text).dynamic;
 
 export const covered = (path, entries) => entries.some((entry) => entry.endsWith("/") ? path.startsWith(entry) : path === entry);
 
@@ -148,9 +178,9 @@ export const importGraph = (tree, entryPoints = DB_ENTRY_POINTS) => {
     const file = queue.pop();
     if (files.has(file)) continue;
     files.add(file);
-    const text = tree.read(file) ?? "";
-    if (hasDynamicLoad(text)) unresolved.push(`${file}: non-literal module load`);
-    for (const [, specifier] of text.matchAll(IMPORT)) {
+    const { specifiers, dynamic } = analyseSource(file, tree.read(file) ?? "");
+    if (dynamic) unresolved.push(`${file}: non-literal module load or unparsable source`);
+    for (const specifier of specifiers) {
       if (specifier.startsWith(".") || specifier.startsWith("@/")) {
         const local = resolveLocal(tree, file, specifier);
         if (local) queue.push(local);
@@ -177,8 +207,8 @@ export const unionGraphs = (a, b) => ({
 export const referencedPaths = (tree, sourceFiles) => {
   const found = new Set();
   for (const file of sourceFiles) {
-    for (const [, literal] of (tree.read(file) ?? "").matchAll(LITERAL)) {
-      if (/^[./]+$/.test(literal)) continue;
+    for (const literal of analyseSource(file, tree.read(file) ?? "").literals) {
+      if (!PATH_LIKE.test(literal) || /^[./]+$/.test(literal)) continue;
       for (const candidate of [posix.normalize(posix.join(posix.dirname(file), literal)), posix.normalize(literal)]) {
         if (candidate.startsWith("..") || candidate.startsWith("node_modules/")) continue;
         const dir = candidate.replace(/\/$/, "");

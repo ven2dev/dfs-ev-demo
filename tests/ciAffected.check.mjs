@@ -78,7 +78,10 @@ test("a load is static only when its whole argument is one string literal", () =
   // confidently follow adapter.mjs and miss adapter-pg.mjs.
   for (const code of ['const suffix = process.env.DRIVER;\nawait import("./adapter" + suffix);',
     'const m = require("./adapter" + suffix);', "require.resolve('./adapter' + suffix);",
-    'await import("./adapter"/* driver */ + suffix);', 'await import("./ad\\x61pter.mjs");']) {
+    'await import("./adapter"/* driver */ + suffix);',
+    'await import /* selector */ ("./adapter-" + suffix);', 'require /* selector */ ("./adapter-" + suffix);',
+    'await import // selector\n("./adapter-" + suffix);', "const load = require; load(name);",
+    "const re = /import(/; await import(name);", "export const broken = (;"]) {
     assert.equal(hasDynamicLoad(code), true, code);
     const suite = tree({ "scripts/test-db.mjs": code, "scripts/adapter.mjs": "", "scripts/adapter-pg.mjs": "" });
     // adapter-pg.mjs is outside the static closure; the incomplete graph must still select the suite.
@@ -87,9 +90,13 @@ test("a load is static only when its whole argument is one string literal", () =
   }
   for (const code of ['await import("./adapter.mjs");', "await import( './adapter.mjs' );",
     'await import("./data.json", { with: { type: "json" } });', 'const pg = require("pg");', "import.meta.url;",
-    'import x from "./adapter.mjs";']) {
+    'import x from "./adapter.mjs";', 'const re = /require(x)/; // import(name)\nconst s = "import(name)";',
+    "type T = import(\"./adapter.mjs\").Thing;"]) {
     assert.equal(hasDynamicLoad(code), false, code);
   }
+  // A real parser decodes escapes, so this is a static load of ./adapter.mjs.
+  const escaped = tree({ "scripts/test-db.mjs": 'await import("./ad\\x61pter.mjs");', "scripts/adapter.mjs": "" });
+  assert.deepEqual([...importGraph(escaped).files].sort(), ["scripts/adapter.mjs", "scripts/test-db.mjs"]);
 });
 
 test("runtime-input discovery includes bare file names and relative paths", () => {

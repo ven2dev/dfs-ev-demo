@@ -222,9 +222,16 @@ docs-only PRs are still checked. Selection fails closed:
   every run from its entry points (`tests/db`, `scripts/test-db.mjs` and the
   `scripts/db-*` tools). Analysing both sides keeps deleted and renamed
   dependencies selected.
-- **Incomplete graphs fail closed.** Any unresolvable local import, or any
-  non-literal module load (a computed `import()`, `require()`, or any
-  `createRequire`) in the suite's code, runs it.
+- **Sources are parsed with the lockfile-pinned TypeScript compiler**, not
+  regular expressions, so comments, strings, template literals and regex
+  literals cannot hide or fake a module load. The detect job therefore runs
+  `npm ci --ignore-scripts` first.
+- **Incomplete graphs fail closed.** These run the suite:
+  - an unresolvable local import;
+  - a non-literal module load in the suite's code: a computed `import()`,
+    `require()` or `require.resolve()`, an aliased `require`, or any
+    `createRequire`;
+  - a source file the parser cannot parse cleanly.
 - **Non-code files** a suite reads at runtime (SQL, fixtures, contracts,
   corpus JSON, docs) are declared in `SIDE_INPUTS`. A test scans the suites'
   code for literal file references, including bare file names, and fails when
