@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { SIDE_INPUTS, analyse, changedPackages, covered, decide, dependencyClosure, fsTree, importGraph,
+import { SIDE_INPUTS, analyse, changedPackages, covered, decide, dependencyClosure, fsTree, hasDynamicLoad, importGraph,
   listSourceFiles, makeTree, referencedPaths, run } from "../scripts/ci/affected.mjs";
 
 // Fixture paths are deliberately fictional so this file never looks like a real
@@ -71,6 +71,25 @@ test("non-literal module loading in the database suite fails closed", () => {
   }
   const literal = tree({ "tests/db/x.test.ts": 'await import("./dep.mjs"); await import("pg");', "tests/db/dep.mjs": "" });
   assert.deepEqual(importGraph(literal).unresolved, []);
+});
+
+test("a load is static only when its whole argument is one string literal", () => {
+  // The literal prefix resolves to a real module, so a prefix-only check would
+  // confidently follow adapter.mjs and miss adapter-pg.mjs.
+  for (const code of ['const suffix = process.env.DRIVER;\nawait import("./adapter" + suffix);',
+    'const m = require("./adapter" + suffix);', "require.resolve('./adapter' + suffix);",
+    'await import("./adapter"/* driver */ + suffix);', 'await import("./ad\\x61pter.mjs");']) {
+    assert.equal(hasDynamicLoad(code), true, code);
+    const suite = tree({ "scripts/test-db.mjs": code, "scripts/adapter.mjs": "", "scripts/adapter-pg.mjs": "" });
+    // adapter-pg.mjs is outside the static closure; the incomplete graph must still select the suite.
+    assert.ok(!importGraph(suite).files.has("scripts/adapter-pg.mjs"));
+    assert.equal(analyse({ files: ["scripts/adapter-pg.mjs"], trees: [suite, suite] }).db, true, code);
+  }
+  for (const code of ['await import("./adapter.mjs");', "await import( './adapter.mjs' );",
+    'await import("./data.json", { with: { type: "json" } });', 'const pg = require("pg");', "import.meta.url;",
+    'import x from "./adapter.mjs";']) {
+    assert.equal(hasDynamicLoad(code), false, code);
+  }
 });
 
 test("runtime-input discovery includes bare file names and relative paths", () => {

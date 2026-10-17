@@ -50,8 +50,31 @@ const DEPENDENCY_FILES = new Set(["package.json", "package-lock.json"]);
 const SOURCE = /\.(?:[cm]?[jt]sx?)$/;
 const PACKAGE = /^(?:@[a-z0-9][a-z0-9._~-]*\/)?[a-z0-9][a-z0-9._~-]*$/;
 const IMPORT = /(?:from\s*|import\s*\(\s*|import\s+|require\s*\(\s*)["']([^"']+)["']/g;
-// A module load whose argument is not a plain string literal.
-const DYNAMIC_LOAD = /\bimport\s*\(\s*(?!["'])|\brequire(?:\.resolve)?\s*\(\s*(?!["'])|\bcreateRequire\b/;
+// Module-loading calls. A call is static only when its first argument is
+// exactly one plain string literal, followed by ")" or "," (e.g. import options).
+const LOAD_CALL = /\b(?:import|require(?:\.resolve)?)\s*\(/g;
+
+// True when any import()/require() argument is not exactly one string literal
+// (concatenation, a variable, a template literal, a comment), or createRequire
+// is used. Such loads cannot be followed statically, so the graph is incomplete.
+export const hasDynamicLoad = (text) => {
+  if (/\bcreateRequire\b/.test(text)) return true;
+  for (const match of text.matchAll(LOAD_CALL)) {
+    let index = match.index + match[0].length;
+    while (/\s/.test(text[index] ?? "")) index++;
+    const quote = text[index];
+    if (quote !== '"' && quote !== "'") return true;
+    index++;
+    while (index < text.length && text[index] !== quote) {
+      if (text[index] === "\\" || text[index] === "\n") return true;
+      index++;
+    }
+    index++;
+    while (/\s/.test(text[index] ?? "")) index++;
+    if (text[index] !== ")" && text[index] !== ",") return true;
+  }
+  return false;
+};
 const LITERAL = /["'`]([A-Za-z0-9_.][A-Za-z0-9_./-]*)["'`]/g;
 
 export const covered = (path, entries) => entries.some((entry) => entry.endsWith("/") ? path.startsWith(entry) : path === entry);
@@ -126,7 +149,7 @@ export const importGraph = (tree, entryPoints = DB_ENTRY_POINTS) => {
     if (files.has(file)) continue;
     files.add(file);
     const text = tree.read(file) ?? "";
-    if (DYNAMIC_LOAD.test(text)) unresolved.push(`${file}: non-literal module load`);
+    if (hasDynamicLoad(text)) unresolved.push(`${file}: non-literal module load`);
     for (const [, specifier] of text.matchAll(IMPORT)) {
       if (specifier.startsWith(".") || specifier.startsWith("@/")) {
         const local = resolveLocal(tree, file, specifier);
