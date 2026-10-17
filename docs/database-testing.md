@@ -217,16 +217,22 @@ docs-only PRs are still checked. Selection fails closed:
 
 - **Global inputs run everything:** workflows, `.nvmrc`, `tsconfig*`, Vitest,
   ESLint, Next and PostCSS configs, `.npmrc`, and the detector itself.
-- **`DB integration` code inputs** are its transitive local-import closure,
-  recomputed every run from its entry points (`tests/db`, `scripts/test-db.mjs`
-  and the `scripts/db-*` tools). Any unresolvable local import runs it.
+- **`DB integration` code inputs** are the union of its transitive
+  local-import closures at the PR's merge base and at its head, recomputed
+  every run from its entry points (`tests/db`, `scripts/test-db.mjs` and the
+  `scripts/db-*` tools). Analysing both sides keeps deleted and renamed
+  dependencies selected.
+- **Incomplete graphs fail closed.** Any unresolvable local import, or any
+  non-literal module load (a computed `import()`, `require()`, or any
+  `createRequire`) in the suite's code, runs it.
 - **Non-code files** a suite reads at runtime (SQL, fixtures, contracts,
   corpus JSON, docs) are declared in `SIDE_INPUTS`. A test scans the suites'
-  code for literal file references and fails when a referenced file is
-  undeclared.
+  code for literal file references, including bare file names, and fails when
+  a referenced file is undeclared.
 - **`package.json`/`package-lock.json`:** `DB integration` runs if
-  `package.json` changed outside dependency versions, or if a changed lock
-  entry is reachable from the packages the suite imports. Reachability expands
+  `package.json` changed outside dependency versions, or if any part of a lock
+  entry (not only its version) changed for a package reachable from the
+  packages the suite imports. Reachability expands
   those imports through the lockfile dependency tree.
 - **Docs-only skip:** a PR skips both suites only when every file is
   documentation that no suite declares and no code file references.
@@ -262,8 +268,14 @@ job results. It also:
   empty permissions and absence of checkout;
 - checks each suite's `needs`/`if` wiring;
 - unit-tests the detector (`tests/ciAffected.check.mjs`), including
-  regressions for test-read docs, closure-based database relevance,
-  unresolved imports and fail-safe detection errors;
+  regressions for:
+  - test-read docs;
+  - closure-based database relevance;
+  - deleted and renamed modules;
+  - non-literal module loading;
+  - bare-name runtime inputs;
+  - metadata-only lock changes;
+  - fail-safe detection errors;
 - enforces that every file the suites' code names is declared.
 
 This runs inside `App checks`. A docs-only PR cannot change the workflow or

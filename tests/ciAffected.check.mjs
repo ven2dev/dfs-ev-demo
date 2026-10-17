@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { ROOT, SIDE_INPUTS, changedPackages, covered, decide, dependencyClosure, importGraph, listSourceFiles,
-  referencedPaths, run } from "../scripts/ci/affected.mjs";
+import { SIDE_INPUTS, analyse, changedPackages, covered, decide, dependencyClosure, fsTree, importGraph,
+  listSourceFiles, makeTree, referencedPaths, run } from "../scripts/ci/affected.mjs";
 
 // Fixture paths are deliberately fictional so this file never looks like a real
 // reader of repository docs.
 const pr = (files, extra = {}) => decide({ event: "pull_request", files, ...extra });
-const graph = importGraph();
+const tree = (files) => makeTree(Object.keys(files), (path) => files[path] ?? null);
+const repo = fsTree();
+const graph = importGraph(repo);
 
 test("pushes and empty diffs run every suite", () => {
   assert.deepEqual(decide({ event: "push", files: ["docs/example-notes.md"] }), { app: true, db: true, reason: "full run" });
@@ -22,11 +24,11 @@ test("global inputs run every suite", () => {
 });
 
 test("unreferenced, undeclared docs skip both suites", () => {
-  const result = pr(["README.md", "docs/example-notes.md", ".github/ISSUE_TEMPLATE/example.md", "AGENTS.md"]);
+  const result = pr(["EXAMPLE-NOTES.md", "docs/example-notes.md", ".github/ISSUE_TEMPLATE/example.md", "examples/EXAMPLE.md"]);
   assert.deepEqual([result.app, result.db, result.reason], [false, false, "docs only"]);
 });
 
-test("P1 regression: docs read by tests schedule App checks", () => {
+test("docs read by tests schedule App checks", () => {
   for (const doc of ["docs/creator-corpus-operations.md", "docs/creator-corpus-test-matrix.md"]) {
     assert.equal(pr([doc]).app, true, doc);
   }
@@ -34,12 +36,47 @@ test("P1 regression: docs read by tests schedule App checks", () => {
   assert.equal(pr(["docs/example-notes.md"], { referencedDocs: new Set(["docs/example-notes.md"]) }).app, true);
 });
 
-test("P2 regression: database relevance comes from the live import closure, not directories", () => {
+test("database relevance comes from the import closure, not directories", () => {
   for (const file of ["src/app/admin/export/route.ts", "src/app/admin/page.tsx", "src/components/DatabaseReport.tsx"]) {
     assert.equal(pr([file]).db, false, `${file} is outside the closure`);
     assert.equal(pr([file], { dbFiles: new Set([file]) }).db, true, `${file} once imported by the suite`);
     assert.equal(pr([file]).app, true, file);
   }
+});
+
+test("deleting a database-suite module selects the suite from the base-side graph", () => {
+  const base = tree({ "tests/db/catalog-unit.check.mjs": 'import { x } from "../../scripts/db-catalog.mjs";',
+    "scripts/db-catalog.mjs": "export const x = 1;" });
+  const head = tree({ "tests/db/catalog-unit.check.mjs": 'import { x } from "../../scripts/db-catalog.mjs";' });
+  assert.equal(analyse({ files: ["scripts/db-catalog.mjs"], trees: [base, head] }).db, true);
+});
+
+test("renaming a database-suite entry point or transitive module selects the suite", () => {
+  const base = tree({ "tests/db/a.test.ts": 'import "../../src/lib/old.ts";', "src/lib/old.ts": 'import "./leaf.ts";',
+    "src/lib/leaf.ts": "" });
+  const head = tree({ "tests/db/a.test.ts": 'import "../../src/lib/renamed.ts";', "src/lib/renamed.ts": "" });
+  assert.equal(analyse({ files: ["src/lib/old.ts", "src/lib/leaf.ts"], trees: [base, head] }).db, true);
+  assert.equal(analyse({ files: ["src/lib/renamed.ts"], trees: [base, head] }).db, true);
+  const renamedEntry = tree({ "scripts/test-db.mjs": "" });
+  const removedEntry = tree({});
+  assert.equal(analyse({ files: ["scripts/test-db.mjs"], trees: [renamedEntry, removedEntry] }).db, true);
+});
+
+test("non-literal module loading in the database suite fails closed", () => {
+  for (const code of ['const target = "dep.mjs";\nawait import(target);', "await import(\n  target\n);",
+    "const r = createRequire(import.meta.url);", "require(name);", "await import(`./${name}.mjs`);"]) {
+    const suite = tree({ "tests/db/x.test.ts": code, "tests/db/dep.mjs": "" });
+    assert.ok(importGraph(suite).unresolved.length > 0, code);
+    assert.equal(analyse({ files: ["src/components/A.tsx"], trees: [suite, suite] }).db, true, code);
+  }
+  const literal = tree({ "tests/db/x.test.ts": 'await import("./dep.mjs"); await import("pg");', "tests/db/dep.mjs": "" });
+  assert.deepEqual(importGraph(literal).unresolved, []);
+});
+
+test("runtime-input discovery includes bare file names and relative paths", () => {
+  const suite = tree({ "scripts/db-x.mjs": 'readFileSync("fixture.sql"); readFileSync("../db/schema.sql");',
+    "scripts/fixture.sql": "", "db/schema.sql": "" });
+  assert.deepEqual([...referencedPaths(suite, ["scripts/db-x.mjs"])].sort(), ["db/schema.sql", "scripts/fixture.sql"]);
 });
 
 test("unresolved local imports run the database suite", () => {
@@ -53,11 +90,24 @@ test("declared database side inputs run the database suite", () => {
   }
 });
 
-test("dependency files skip the database suite only when no database-reachable package changed", () => {
-  assert.equal(pr(["package.json", "package-lock.json"]).db, false);
-  assert.equal(pr(["package-lock.json"], { dbPackagesChanged: true }).db, true);
-  assert.equal(pr(["package.json"], { manifestChanged: true }).db, true);
-  assert.equal(pr(["package.json", "package-lock.json"]).app, true);
+test("dependency files skip the database suite only when no database-reachable lock entry changed", () => {
+  const suite = tree({ "tests/db/x.test.ts": 'import pg from "pg";' });
+  const lock = (pg) => ({ packages: { "": {}, "node_modules/pg": pg, "node_modules/next": { version: "1" } } });
+  const files = ["package.json", "package-lock.json"];
+  const unrelated = { packages: { ...lock({ version: "1" }).packages, "node_modules/next": { version: "2" } } };
+  assert.equal(analyse({ files, trees: [suite, suite], locks: [lock({ version: "1" }), unrelated] }).db, false);
+  assert.equal(analyse({ files, trees: [suite, suite], locks: [lock({ version: "1" }), lock({ version: "2" })] }).db, true);
+  assert.equal(analyse({ files, trees: [suite, suite], manifests: [{ scripts: { a: "1" } }, { scripts: { a: "2" } }] }).db, true);
+});
+
+test("metadata-only changes to a reachable lock entry select the database suite", () => {
+  const before = { packages: { "": {}, "node_modules/pg": { version: "1", integrity: "x", dependencies: { a: "1" } } } };
+  const after = { packages: { "": {}, "node_modules/pg": { version: "1", integrity: "x", dependencies: { a: "1", b: "1" } } } };
+  assert.deepEqual([...changedPackages(before, after)], ["pg"]);
+  const scripts = { packages: { "": {}, "node_modules/pg": { version: "1", integrity: "x", dependencies: { a: "1" }, hasInstallScript: true } } };
+  assert.deepEqual([...changedPackages(before, scripts)], ["pg"]);
+  const reordered = { packages: { "": {}, "node_modules/pg": { dependencies: { a: "1" }, integrity: "x", version: "1" } } };
+  assert.deepEqual([...changedPackages(before, reordered)], []);
 });
 
 test("dependency closure follows dependencies and required peers but not optional peers", () => {
@@ -75,32 +125,26 @@ test("dependency closure follows dependencies and required peers but not optiona
   assert.deepEqual([...dependencyClosure(lock, ["pg"])].sort(), ["native", "pg", "pg-pool", "required"]);
 });
 
-test("changed packages include nested lock entries, additions and removals", () => {
-  const before = { packages: { "": {}, "node_modules/a": { version: "1" }, "node_modules/x/node_modules/b": { version: "1" }, "node_modules/gone": { version: "1" } } };
-  const after = { packages: { "": {}, "node_modules/a": { version: "1" }, "node_modules/x/node_modules/b": { version: "2" }, "node_modules/new": { version: "1" } } };
-  assert.deepEqual([...changedPackages(before, after)].sort(), ["b", "gone", "new"]);
+test("a detection error runs every suite instead of failing or skipping", () => {
+  const result = run({ event: "pull_request", base: "0".repeat(40), head: "f".repeat(40) });
+  assert.deepEqual([result.app, result.db], [true, true]);
+  assert.match(result.reason, /^detection error, running everything/);
 });
 
-test("the real database import graph resolves fully and reaches its driver and test runner", () => {
+test("the real database import graph is complete and reaches its driver and test runner", () => {
   assert.deepEqual(graph.unresolved, []);
   for (const name of ["pg", "@neondatabase/serverless", "vitest"]) assert.ok(graph.packages.has(name), name);
   assert.ok(graph.files.has("src/lib/db.ts"));
 });
 
 test("every file the database suite's code names is in its closure or declared as a side input", () => {
-  const undeclared = [...referencedPaths(ROOT, [...graph.files])]
+  const undeclared = [...referencedPaths(repo, [...graph.files])]
     .filter((path) => !graph.files.has(path) && !covered(path, SIDE_INPUTS.db));
   assert.deepEqual(undeclared, [], "declare these in SIDE_INPUTS.db");
 });
 
 test("every doc named by any code is declared as an App side input", () => {
-  const code = ["src", "scripts", "tests"].flatMap((dir) => listSourceFiles(ROOT, dir)).map((file) => file.slice(ROOT.length + 1));
-  const docs = [...referencedPaths(ROOT, code)].filter((path) => /\.md$|^docs\//.test(path));
+  const code = ["src", "scripts", "tests"].flatMap((dir) => listSourceFiles(repo, dir));
+  const docs = [...referencedPaths(repo, code)].filter((path) => /\.md$|^docs\//.test(path));
   assert.deepEqual(docs.filter((path) => !covered(path, SIDE_INPUTS.app)), [], "declare these in SIDE_INPUTS.app");
-});
-
-test("a detection error runs every suite instead of failing or skipping", () => {
-  const result = run({ event: "pull_request", base: "0".repeat(40), head: "f".repeat(40) });
-  assert.deepEqual([result.app, result.db], [true, true]);
-  assert.match(result.reason, /^detection error, running everything/);
 });
