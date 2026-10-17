@@ -1,17 +1,13 @@
-// Interim CI suite selection (#140) until the workspace monorepo (#148) moves
-// selection to per-package Turborepo task graphs.
+// Interim CI suite selection (#140): skip both suites only for documentation
+// that no test or CI step reads. Every other change runs every suite.
+// Faster DB integration itself is tracked separately, and per-package
+// selection arrives with the workspace monorepo (#148).
 //
-// Pattern: conservative path rules, verified by tests. Selection never relies
-// on dependency analysis; tests/ciAffected.check.mjs runs the analysis in
-// scripts/ci/inputAudit.mjs and fails CI if a rule stops being true.
-// - DB integration is skipped only when every changed file is in DB_SAFE.
-//   Everything else runs it: library code, scripts, tests, database files,
-//   package and install files, configs, workflows and this selector.
-// - App checks are skipped only when every changed file is documentation that
-//   no test reads (APP_DOC_INPUTS).
-// - Pushes to main and any selector error run everything. A failure before or
-//   after selection (dependency setup, writing outputs) fails the detect job,
-//   which blocks the required CI gate without running suites.
+// The docs-only rule is verified by tests/ciAffected.check.mjs: every doc that
+// code names must be listed in APP_DOC_INPUTS, so it is never treated as
+// skippable. Pushes to main and any selection error run everything. A failure
+// before or after selection (runner setup, writing outputs) fails the detect
+// job, which blocks the required CI gate without running suites.
 import { execFileSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -23,30 +19,15 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 // fixtures under tests/) is treated as code input.
 export const DOC_LIKE = [/^[^/]+\.md$/, /^docs\//, /^\.github\/ISSUE_TEMPLATE\//];
 
-// Paths that cannot affect DB integration. Verified by tests/ciAffected.check.mjs:
-// the DB suite's code, the files it references and its module specifiers must
-// never reach these paths.
-export const DB_SAFE = [
-  ...DOC_LIKE,
-  /^src\/components\//,
-  /^src\/app\/(?!api\/)/,
-  /^src\/store\//,
-  /^public\//,
-];
-
-// Documentation that tests read at runtime. Verified by the same tests: every
-// doc or docs directory named in code must be listed here.
+// Documentation that tests read at runtime, and is therefore never skippable.
 export const APP_DOC_INPUTS = ["docs/creator-corpus-operations.md", "docs/creator-corpus-test-matrix.md"];
 
-export const isDbSafe = (file) => DB_SAFE.some((rule) => rule.test(file));
-const isSkippableDoc = (file) => DOC_LIKE.some((rule) => rule.test(file)) && !APP_DOC_INPUTS.includes(file);
+export const isSkippableDoc = (file) => DOC_LIKE.some((rule) => rule.test(file)) && !APP_DOC_INPUTS.includes(file);
 
 export const decide = ({ event, files }) => {
   if (event !== "pull_request" || files.length === 0) return { app: true, db: true, reason: "full run" };
-  const appFile = files.find((file) => !isSkippableDoc(file));
-  const dbFile = files.find((file) => !isDbSafe(file));
-  const reason = dbFile ? `DB input: ${dbFile}` : appFile ? `app input: ${appFile}` : "docs only";
-  return { app: Boolean(appFile || dbFile), db: Boolean(dbFile), reason };
+  const input = files.find((file) => !isSkippableDoc(file));
+  return input ? { app: true, db: true, reason: `input: ${input}` } : { app: false, db: false, reason: "docs only" };
 };
 
 // Both paths of a rename are listed (--no-renames); -z keeps unusual names intact.

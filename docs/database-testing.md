@@ -212,71 +212,40 @@ It is validation evidence, not a passing integration run.
 ## CI enforcement
 
 On PRs to `main`, a dependency-free `Detect affected suites` job runs first
-(`scripts/ci/affected.mjs`, #140). It also hosts the whitespace check. This is
-an interim selector; the workspace monorepo (#148) replaces it with
-per-package Turborepo selection.
+(`scripts/ci/affected.mjs`, #140). It also hosts the whitespace check.
 
-**Pattern: conservative path rules, verified by tests.** Selection never
-relies on dependency analysis.
+**Rule: docs-only PRs skip both suites; every other change runs every suite.**
+A change is docs-only when every file is top-level Markdown, under `docs/`, or
+an issue template, and none of them is a doc that tests read
+(`APP_DOC_INPUTS`). Markdown elsewhere (for example fixtures under `tests/`)
+counts as code.
 
-- `DB integration` is skipped only when every changed file is in `DB_SAFE`:
-  - top-level Markdown, `docs/` and issue templates;
-  - `src/components/`, `src/store/` and non-API `src/app/`;
-  - `public/`.
-
-  Everything else runs it: library code, types, API routes, scripts, tests,
-  database files, every package or install file (`package.json`,
-  `package-lock.json`, `npm-shrinkwrap.json`, `.npmrc`), configs, workflows and
-  the selector itself.
-- `App checks` are skipped only when every changed file is documentation that
-  no test reads (`APP_DOC_INPUTS`).
 - Renames count both paths (`git diff --no-renames -z`).
-- Pushes to `main` and any selection error run everything. A failure before or
-  after selection (runner setup, writing outputs) fails the detect job, which
-  blocks the required `CI` gate without running suites.
+- Pushes to `main` and any selection error run everything.
+- A failure before or after selection (runner setup, writing outputs) fails
+  the detect job, which blocks the required `CI` gate without running suites.
 
-**Verification.** `scripts/ci/inputAudit.mjs` parses the DB suite with the
-lockfile-pinned TypeScript compiler. Its entry points are derived from the
-`run:` commands of the CI DB job and the npm scripts they call (including
-nested `npm run` and pre/post hooks), so they cannot drift from what CI
-executes. `tests/ciAffected.check.mjs` (in `App checks`) fails CI when any of
-these happen:
+**Verification.** `tests/ciAffected.check.mjs` (in `App checks`) parses all
+code under `src`, `scripts` and `tests` with the TypeScript compiler. It
+resolves string literals, including file URLs and bare names, and fails if:
 
-- a DB-suite input lies in `DB_SAFE`. Inputs are traced through imports, path
-  literals (canonicalized file URLs, directory-anchored globs, bare directory
-  names) and declared executables.
-- an input is unclassifiable: an unresolved import, an alias or `#imports`
-  specifier, an undeclared package, a non-literal load, a parse error, an
-  undeclared opaque executable (shell or other non-JS program), or a CI command
-  the audit cannot interpret.
-- a doc named by code is missing from `APP_DOC_INPUTS`.
+- any doc that code names is missing from `APP_DOC_INPUTS`;
+- code names a docs directory;
+- an `APP_DOC_INPUTS` entry is stale.
 
-Literal occurrences that name a safe directory but are not reads (currently
-the PostgreSQL schema name `public`) are excepted by exact file, literal and
-occurrence count. Any new occurrence, or a stale exception, fails the test. A
-gap therefore surfaces as a failing test, never as a silent skip.
+**Why docs-only.** Skipping DB integration for wider sets (for example UI-only
+changes) requires proving that the DB suite can never read or execute those
+paths. Seven review rounds showed this cannot be established with static
+analysis. Imports, shell commands, Compose mounts, glob semantics and symlinks
+each open another path. Only hermetic sandboxing (for example Bazel)
+guarantees it. Faster feedback for other PRs instead comes from:
 
-**Threat model and stopping rule.** The selector defends against *accidental*
-misclassification by contributors and agents. It does not defend against code
-deliberately written to evade static analysis, which a determined author could
-always construct. Reviews should report counterexamples that ordinary code
-could plausibly produce. Contrived evasions are accepted residual risk, for
-three reasons:
+- making DB integration itself faster (template databases, parallel shards);
+- per-package selection in the workspace monorepo (#148).
 
-- `DB_SAFE` is limited to UI, docs and public assets;
-- pushes to `main` always run every suite;
-- this selector is interim until per-package selection in #148.
-
-**Residual risk.** Inputs a static audit cannot see:
-
-- reads through computed paths;
-- programs started with computed paths;
-- deliberate evasion;
-- ambient execution inputs (runner image, npm version, environment, secrets,
-  external tool versions).
-
-Mitigation: DB code must not compute paths into `DB_SAFE`, and the full
-post-merge run on `main` catches ambient drift.
+**Residual risk.** A test that reads documentation through a computed path,
+shell command or mount is not detected. Docs that tests read must be declared.
+Pushes to `main` always run everything.
 
 When needed, `App checks` and `DB integration` run independently on Linux. The database job runs a clean Node 24 `npm ci`, the
 target/bootstrap/report guards, and `npm run test:db:local`. The local command
@@ -307,7 +276,7 @@ job results. It also:
 - checks the gate's always-run condition, dependency list, unique check name,
   empty permissions and absence of checkout;
 - checks each suite's `needs`/`if` wiring;
-- tests the selection rules and runs the input audit
+- tests the selection rule and the doc-reference check
   (`tests/ciAffected.check.mjs`, described above).
 
 This runs inside `App checks`. A docs-only PR cannot change the workflow or

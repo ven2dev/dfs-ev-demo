@@ -17,8 +17,8 @@ concurrency:
 
 jobs:
   changes:
-    # Conservative path rules (scripts/ci/affected.mjs), verified by tests in
-    # App checks. Dependency-free; pushes to main run everything.
+    # Docs-only PRs skip both suites; everything else runs both
+    # (scripts/ci/affected.mjs, verified in App checks). Pushes to main run all.
     name: Detect affected suites
     runs-on: ubuntu-latest
     timeout-minutes: 5
