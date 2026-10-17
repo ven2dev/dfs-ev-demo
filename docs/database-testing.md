@@ -217,6 +217,10 @@ docs-only PRs are still checked. Selection fails closed:
 
 - **Global inputs run everything:** workflows, `.nvmrc`, `tsconfig*`, Vitest,
   ESLint, Next and PostCSS configs, `.npmrc`, and the detector itself.
+- **Selector dependencies run everything.** The detector's own package
+  dependencies are derived from its imports (today the TypeScript parser).
+  Any change to a lock entry in their dependency tree runs every suite, so an
+  updated parser can never decide that its own update needs no tests.
 - **`DB integration` code inputs** are the union of its transitive
   local-import closures at the PR's merge base and at its head, recomputed
   every run from its entry points (`tests/db`, `scripts/test-db.mjs` and the
@@ -282,6 +286,7 @@ job results. It also:
   - non-literal module loading;
   - bare-name runtime inputs;
   - metadata-only lock changes;
+  - selector-dependency (TypeScript) updates;
   - fail-safe detection errors;
 - enforces that every file the suites' code names is declared.
 

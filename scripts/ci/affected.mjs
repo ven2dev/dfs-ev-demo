@@ -10,8 +10,9 @@
 //   are declared in SIDE_INPUTS. tests/ciAffected.check.mjs scans the code for
 //   literal file references, including bare file names, and fails when a read
 //   file is undeclared, so the manifest cannot silently go stale.
-// - Global inputs (workflows, toolchain, configs, this detector) and any
-//   detection error run everything.
+// - Global inputs (workflows, toolchain, configs, this detector), any change
+//   to a lock entry the detector's own imports depend on (e.g. the TypeScript
+//   parser), and any detection error run everything.
 import { execFileSync } from "node:child_process";
 import { appendFileSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, posix, resolve } from "node:path";
@@ -39,6 +40,10 @@ export const DB_ENTRY_POINTS = [
   "scripts/db-readiness-manifest.mjs", "scripts/db-test-contract.mjs", "scripts/db-test-reporter.mjs",
   "vitest.db.config.mts",
 ];
+
+// The selector itself. Packages it imports (today the TypeScript parser) are
+// derived from this graph; any change to their lock entries runs everything.
+export const SELECTOR_ENTRY_POINTS = ["scripts/ci"];
 
 // Non-code files or directories each suite reads at runtime. Paths ending in
 // "/" cover everything below them.
@@ -268,10 +273,13 @@ const withoutDependencies = (manifest) => {
 };
 
 export const decide = ({ event, files, dbFiles = new Set(), unresolved = [], manifestChanged = false,
-  dbPackagesChanged = false, referencedDocs = new Set() }) => {
+  dbPackagesChanged = false, selectorPackagesChanged = false, referencedDocs = new Set() }) => {
   if (event !== "pull_request" || files.length === 0) return { app: true, db: true, reason: "full run" };
   const global = files.find((file) => GLOBAL_INPUTS.some((rule) => rule.test(file)));
   if (global) return { app: true, db: true, reason: `global input: ${global}` };
+  // A selector must never use an updated dependency of its own to decide that
+  // tests are unnecessary.
+  if (selectorPackagesChanged) return { app: true, db: true, reason: "a dependency of the suite selector changed" };
   const appInput = (file) => !DOC_LIKE.some((rule) => rule.test(file)) || covered(file, SIDE_INPUTS.app) || referencedDocs.has(file);
   const appFile = files.find(appInput);
   const dbFile = files.find((file) => dbFiles.has(file) || covered(file, SIDE_INPUTS.db));
@@ -293,16 +301,22 @@ export const analyse = ({ files, trees, locks = [{}, {}], manifests = [{}, {}] }
   const graph = unionGraphs(importGraph(trees[0]), importGraph(trees[1]));
   let manifestChanged = false;
   let dbPackagesChanged = false;
+  let selectorPackagesChanged = false;
   if (files.some((file) => DEPENDENCY_FILES.has(file))) {
     manifestChanged = withoutDependencies(manifests[0]) !== withoutDependencies(manifests[1]);
-    const reachable = new Set([...dependencyClosure(locks[0], graph.packages), ...dependencyClosure(locks[1], graph.packages)]);
-    dbPackagesChanged = [...changedPackages(locks[0], locks[1])].some((name) => reachable.has(name));
+    const changed = changedPackages(locks[0], locks[1]);
+    const reachableFrom = (roots) => new Set([...dependencyClosure(locks[0], roots), ...dependencyClosure(locks[1], roots)]);
+    const selector = unionGraphs(importGraph(trees[0], SELECTOR_ENTRY_POINTS), importGraph(trees[1], SELECTOR_ENTRY_POINTS));
+    const selectorReachable = reachableFrom(selector.packages);
+    const dbReachable = reachableFrom(graph.packages);
+    selectorPackagesChanged = [...changed].some((name) => selectorReachable.has(name));
+    dbPackagesChanged = [...changed].some((name) => dbReachable.has(name));
   }
   const referencedDocs = new Set(files.some((file) => DOC_LIKE.some((rule) => rule.test(file)))
     ? trees.flatMap((tree) => [...referencedPaths(tree, ["src", "scripts", "tests"].flatMap((dir) => listSourceFiles(tree, dir)))])
     : []);
   return decide({ event: "pull_request", files, dbFiles: graph.files, unresolved: graph.unresolved,
-    manifestChanged, dbPackagesChanged, referencedDocs });
+    manifestChanged, dbPackagesChanged, selectorPackagesChanged, referencedDocs });
 };
 
 const detect = ({ event, base, head }) => {

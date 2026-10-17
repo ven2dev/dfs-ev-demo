@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { SIDE_INPUTS, analyse, changedPackages, covered, decide, dependencyClosure, fsTree, hasDynamicLoad, importGraph,
+import { SELECTOR_ENTRY_POINTS, SIDE_INPUTS, analyse, changedPackages, covered, decide, dependencyClosure, fsTree, hasDynamicLoad, importGraph,
   listSourceFiles, makeTree, referencedPaths, run } from "../scripts/ci/affected.mjs";
 
 // Fixture paths are deliberately fictional so this file never looks like a real
@@ -124,6 +124,30 @@ test("dependency files skip the database suite only when no database-reachable l
   assert.equal(analyse({ files, trees: [suite, suite], locks: [lock({ version: "1" }), unrelated] }).db, false);
   assert.equal(analyse({ files, trees: [suite, suite], locks: [lock({ version: "1" }), lock({ version: "2" })] }).db, true);
   assert.equal(analyse({ files, trees: [suite, suite], manifests: [{ scripts: { a: "1" } }, { scripts: { a: "2" } }] }).db, true);
+});
+
+test("a change to the selector's own dependencies runs every suite", () => {
+  const repo = tree({ "scripts/ci/affected.mjs": 'import ts from "typescript";', "tests/db/x.test.ts": 'import pg from "pg";' });
+  const lock = (typescript, extra = {}) => ({ packages: { "": {}, "node_modules/pg": { version: "8" },
+    "node_modules/typescript": typescript, "node_modules/jsdom": { version: "30.1.2" }, ...extra } });
+  const files = ["package.json", "package-lock.json"];
+  const full = (locks) => analyse({ files, trees: [repo, repo], locks });
+  // TypeScript version update (the reviewer's reproduction).
+  assert.deepEqual(Object.values(full([lock({ version: "5.9.2" }), lock({ version: "5.9.3" })])),
+    [true, true, "a dependency of the suite selector changed"]);
+  // Metadata-only TypeScript change.
+  assert.equal(full([lock({ version: "5.9.3", integrity: "a" }), lock({ version: "5.9.3", integrity: "b" })]).db, true);
+  // A package inside the selector's dependency closure.
+  const withHelper = (helper) => lock({ version: "5.9.3", dependencies: { "parser-helper": "1" } },
+    { "node_modules/parser-helper": { version: helper } });
+  assert.equal(full([withHelper("1.0.0"), withHelper("1.0.1")]).db, true);
+  // Unrelated dependency bumps still skip the database suite.
+  const unrelated = full([lock({ version: "5.9.3" }), lock({ version: "5.9.3" }, { "node_modules/jsdom": { version: "30.1.3" } })]);
+  assert.deepEqual([unrelated.app, unrelated.db], [true, false]);
+});
+
+test("the real selector's dependency roots are derived from its imports", () => {
+  assert.deepEqual([...importGraph(repo, SELECTOR_ENTRY_POINTS).packages], ["typescript"]);
 });
 
 test("metadata-only changes to a reachable lock entry select the database suite", () => {
