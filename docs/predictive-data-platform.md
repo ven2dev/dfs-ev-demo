@@ -1,6 +1,7 @@
 # Predictive data platform v2: feature-store design
 
-Status: approved by owner, 2026-10-16. Supersedes the per-record
+Status: approved by owner, 2026-10-16; spike amendments approved 2026-10-17
+(see [#138 roadmap](feature-store-spike.md)). Supersedes the per-record
 evidence-graph design of #106/#118 and the #127 verify-on-write roadmap. This
 document is written to the #126 standard (AGENTS.md "Project engineering
 standards").
@@ -102,8 +103,8 @@ The spike measures these before anything is frozen.
 | Feature job, one full season of QB passing-yards features | ≤ 2 min |
 | Build a 5-season training/evaluation dataset (point-in-time join, write and hash the file) | ≤ 30 s |
 | Serve one prediction to the app | ≤ 300 ms p95 |
-| Headroom | ≥ 30% under every deadline, across interleaved runs |
-| Work budgets (CI) | Dataset build is a fixed number of SQL statements regardless of row count. Rights check: 1 query per build or read. No per-row verification calls. |
+| Headroom | ≥ 30% under every deadline, across repeated cold/warm runs; ABBA when comparing optimizations |
+| Work budgets (CI) | Dataset build is a fixed number of SQL statements regardless of row count. Rights/status: 1 batched query at authorization + 1 before delivery, 2 total per build/read. No per-row verification calls. |
 
 ## 3. Architecture
 
@@ -183,6 +184,10 @@ nflverse release files ──► [ingest job] ──► raw snapshots (object st
 - A feature at cutoff *t* uses only snapshots with
   `available_at ≤ t AND ingested_at ≤ t`, except retrospective backfills,
   which use `available_at` alone and are flagged `retrospective`.
+- Owner-approved #138 research exception: `retrospective-reconstruction-v1`
+  may use today's corrected prior-game facts, with `historical-availability-unverified`
+  flags. This is separate from strict point-in-time evidence and does not rewrite
+  actual snapshot timestamps. See the [preregistration](feature-store-spike-preregistration.md).
 - A label at label cutoff *L* uses the latest valid stats snapshot as of *L*.
 - Stat corrections are new snapshots; the earlier label row is marked
   `superseded`.
@@ -211,7 +216,8 @@ nflverse release files ──► [ingest job] ──► raw snapshots (object st
   before delivery.
 - Deletion is two-step:
   1. Mark deleted and invalidate dependents immediately.
-  2. Remove the bytes after a grace period (5 minutes) via a cleanup job.
+  2. Remove the bytes via a cleanup job after a configurable grace period
+     (default 5 minutes; tests explicitly use a shorter value).
 - No reader table locks.
 
 ### Audit
@@ -241,7 +247,8 @@ Researched 2026-10-16 against current vendor docs.
 
 **Object storage: Google Cloud Storage (owner decision, 2026-10-16), behind
 our own `ObjectStore` interface.** The interface offers put-if-absent, get,
-head and list, with a local-filesystem adapter for development and tests.
+head, list and delete, with a local-filesystem adapter for development and tests.
+Deletion also goes through this interface so cleanup works with both adapters.
 
 - GCS lives in the same Google Cloud project as the existing Firebase app, so
   there is no new vendor, account or bill.
@@ -321,8 +328,9 @@ goes in `db/proposals/` only.
 6. **Baseline:** fit `empirical-integer-v1` and evaluate it walk-forward
    (Brier, log loss, calibration, sample counts versus the naive and market
    baselines where available).
-7. **Measure** every target in section 2, interleaved and repeated, and record
-   the work counts.
+7. **Measure** every target in section 2 with repeated cold and warm runs,
+   and record the work counts. Use ABBA interleaving only for optimization
+   comparisons against the original implementation.
 8. **Correctness probes:**
    - a forged-value attempt by a non-pipeline role is refused;
    - a backdated rights insert does not change historical answers;
