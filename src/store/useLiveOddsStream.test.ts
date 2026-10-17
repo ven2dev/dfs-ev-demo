@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { useAppStore } from "@/store";
 import { buildWatchPropId } from "@/lib/watchPropId";
+import { STALE_TIMEOUT_MS } from "@/lib/streamConfig";
 import { useLiveOddsStream } from "./useLiveOddsStream";
 
 class FakeEventSource {
@@ -28,6 +29,7 @@ afterEach(() => {
   useAppStore.setState(initialState, true);
   FakeEventSource.instances = [];
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 const samplePrimaryWatch = {
@@ -175,13 +177,7 @@ describe("useLiveOddsStream: connection URL", () => {
     unmount();
   });
 
-  it("clears the selected prop's complete live snapshot on reconnect", () => {
-    // Reproduces a real review finding, twice over: an earlier fix only
-    // cleared stages/evHistory, missing evScore and recentStatAverage --
-    // neither is gated behind `stages` in the UI, so the live edge, the
-    // sparkline, "Avg last N games," and the PickEm entry-impact number
-    // all kept showing OLD-window values under the NEW window's label
-    // until the first fresh tick landed.
+  it("retains the selected prop's complete snapshot with its original window while reconnecting", () => {
     vi.stubGlobal("EventSource", FakeEventSource);
     useAppStore.setState({
       matchupConfig: { ...useAppStore.getState().matchupConfig, sampleWindow: 5 },
@@ -190,6 +186,9 @@ describe("useLiveOddsStream: connection URL", () => {
         [samplePropId]: {
           propId: samplePropId,
           dataSource: "live",
+          sampleWindow: 5,
+          sampleSize: 4,
+          updatedAt: 123,
           evScore: { modelProb: 0.6, impliedProb: 0.5, edge: 0.1 },
           evHistory: [{ timestamp: 1, evScore: 0.1 }],
           stages: { baseRate: 0.6, afterEnvironment: 0.6, afterCoverage: 0.5 },
@@ -214,17 +213,23 @@ describe("useLiveOddsStream: connection URL", () => {
     });
 
     const entry = useAppStore.getState().watchlist[samplePropId];
-    expect(entry.stages).toBeUndefined();
-    expect(entry.dataSource).toBeUndefined();
-    expect(entry.evHistory).toEqual([]);
-    expect(entry.evScore).toBeUndefined();
-    expect(entry.recentStatAverage).toBeUndefined();
-    expect(entry.line).toBeUndefined();
-    expect(entry.marketConsensus).toBeUndefined();
-    expect(entry.weather).toBeUndefined();
-    // The entry's identity (propId) survives -- only the window-
-    // dependent fields are cleared.
-    expect(entry.propId).toBe(samplePropId);
+    expect(entry).toMatchObject({
+      propId: samplePropId,
+      sampleWindow: 5,
+      sampleSize: 4,
+      updatedAt: 123,
+      refreshState: "updating",
+      stages: { baseRate: 0.6, afterEnvironment: 0.6, afterCoverage: 0.5 },
+      dataSource: "live",
+      evHistory: [{ timestamp: 1, evScore: 0.1 }],
+      evScore: { modelProb: 0.6, impliedProb: 0.5, edge: 0.1 },
+      recentStatAverage: 233.5,
+      line: 214.5,
+      marketConsensus: { method: "exact-line-median", version: 1, contributingBookCount: 4 },
+      weather: { temperatureF: 60, windSpeedMph: 8, precipitationMm: 0 },
+    });
+    act(() => FakeEventSource.instances[1].onopen?.());
+    expect(useAppStore.getState().watchlist[samplePropId].refreshState).toBe("updating");
     unmount();
   });
 
@@ -268,6 +273,8 @@ describe("useLiveOddsStream: connection URL", () => {
           dataSource: "fixture",
           propId: samplePropId,
           timestamp: 123,
+          sampleWindow: 5,
+          sampleSize: 3,
           line: 250.5,
           weather: { temperatureF: 65, windSpeedMph: 5, precipitationMm: 0 },
           evScore: { modelProb: 0.6, impliedProb: 0.52, edge: 0.08 },
@@ -287,7 +294,100 @@ describe("useLiveOddsStream: connection URL", () => {
       version: 1,
       contributingBookCount: 4,
     });
-    expect(useAppStore.getState().watchlist[samplePropId].dataSource).toBe("fixture");
+    expect(useAppStore.getState().watchlist[samplePropId]).toMatchObject({
+      dataSource: "fixture", sampleWindow: 5, sampleSize: 3, updatedAt: 123,
+    });
+    expect(useAppStore.getState().watchlist[samplePropId].refreshState).toBeUndefined();
+    unmount();
+  });
+});
+
+describe("useLiveOddsStream: retained-result lifecycle", () => {
+  const tick = (window: 3 | 5 | 7, timestamp: number, edge = 0.08) => ({
+    type: "tick", dataSource: "live", propId: samplePropId, timestamp,
+    sampleWindow: window, sampleSize: window, line: 250.5,
+    evScore: { modelProb: 0.6, impliedProb: 0.52, edge },
+    stages: { baseRate: 0.6, afterEnvironment: 0.6, afterCoverage: 0.6 },
+    recentStatAverage: 255,
+  });
+  const receive = (source: FakeEventSource, data: unknown) => act(() => {
+    source.onmessage?.({ data: JSON.stringify(data) });
+  });
+  const start = () => {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    useAppStore.setState({ primaryWatch: samplePrimaryWatch });
+    const hook = renderHook(() => useLiveOddsStream());
+    const source = FakeEventSource.instances[0];
+    receive(source, tick(5, 123));
+    return { ...hook, source };
+  };
+
+  it("replaces the old window atomically and rejects a late callback from the retired stream", () => {
+    const { source, unmount } = start();
+    act(() => useAppStore.setState({ matchupConfig: { ...useAppStore.getState().matchupConfig, sampleWindow: 3 } }));
+    const replacement = FakeEventSource.instances[1];
+    receive(replacement, tick(3, 456, 0.12));
+    expect(useAppStore.getState().watchlist[samplePropId]).toMatchObject({
+      sampleWindow: 3, sampleSize: 3, updatedAt: 456,
+      evHistory: [{ timestamp: 456, evScore: 0.12 }],
+    });
+    receive(source, tick(5, 999, 0.99));
+    act(() => source.onerror?.());
+    expect(useAppStore.getState().watchlist[samplePropId].updatedAt).toBe(456);
+    expect(useAppStore.getState().watchlist[samplePropId].refreshState).toBeUndefined();
+    expect(useAppStore.getState().connectionStatus).toBe("live");
+    unmount();
+  });
+
+  it("retains values after an upstream tick failure and clears the failure on recovery", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { source, unmount } = start();
+    receive(source, { type: "error", message: "provider unavailable" });
+    expect(useAppStore.getState().watchlist[samplePropId]).toMatchObject({ updatedAt: 123, refreshState: "failed", line: 250.5 });
+    expect(useAppStore.getState().connectionStatus).toBe("stale");
+    receive(source, tick(5, 456));
+    expect(useAppStore.getState().watchlist[samplePropId].refreshState).toBeUndefined();
+    expect(useAppStore.getState().watchlist[samplePropId].updatedAt).toBe(456);
+    unmount();
+    error.mockRestore();
+  });
+
+  it("keeps the last result through disconnect, reconnect and opening until a valid tick arrives", () => {
+    vi.useFakeTimers();
+    const { source, unmount } = start();
+    act(() => source.onerror?.());
+    expect(useAppStore.getState().watchlist[samplePropId]).toMatchObject({ updatedAt: 123, refreshState: "failed" });
+    act(() => vi.advanceTimersByTime(1000));
+    const next = FakeEventSource.instances[1];
+    act(() => next.onopen?.());
+    expect(useAppStore.getState().watchlist[samplePropId]).toMatchObject({ updatedAt: 123, refreshState: "updating" });
+    receive(source, tick(5, 999));
+    expect(useAppStore.getState().watchlist[samplePropId].updatedAt).toBe(123);
+    receive(next, tick(5, 456));
+    expect(useAppStore.getState().watchlist[samplePropId].refreshState).toBeUndefined();
+    expect(useAppStore.getState().watchlist[samplePropId].evHistory).toHaveLength(2);
+    unmount();
+  });
+
+  it.each(["idle", "timeout"])("marks a retained value paused on %s", (state) => {
+    vi.useFakeTimers();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { source, unmount } = start();
+    if (state === "idle") receive(source, { type: "idle", message: "polling cap" });
+    else act(() => vi.advanceTimersByTime(STALE_TIMEOUT_MS));
+    expect(useAppStore.getState().watchlist[samplePropId]).toMatchObject({ updatedAt: 123, refreshState: "paused" });
+    expect(useAppStore.getState().connectionStatus).toBe("stale");
+    unmount();
+    warn.mockRestore();
+  });
+
+  it("restores only the previously selected prop's own snapshot when returning to it", () => {
+    const { unmount } = start();
+    act(() => useAppStore.getState().setPrimaryWatch({ ...samplePrimaryWatch, playerName: "Sam Darnold" }));
+    const other = useAppStore.getState().watchlist[buildWatchPropId({ ...samplePrimaryWatch, playerName: "Sam Darnold" })];
+    expect(other.evScore).toBeUndefined();
+    act(() => useAppStore.getState().setPrimaryWatch(samplePrimaryWatch));
+    expect(useAppStore.getState().watchlist[samplePropId]).toMatchObject({ updatedAt: 123, refreshState: "updating", line: 250.5 });
     unmount();
   });
 });
