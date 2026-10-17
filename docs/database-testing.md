@@ -211,66 +211,52 @@ It is validation evidence, not a passing integration run.
 
 ## CI enforcement
 
-On PRs to `main`, a `Detect affected suites` job runs first
-(`scripts/ci/affected.mjs`, #140). It also hosts the whitespace check, so
-docs-only PRs are still checked. Selection fails closed:
+On PRs to `main`, a dependency-free `Detect affected suites` job runs first
+(`scripts/ci/affected.mjs`, #140). It also hosts the whitespace check. This is
+an interim selector; the workspace monorepo (#148) replaces it with
+per-package Turborepo selection.
 
-- **Global inputs run everything:** workflows, `.nvmrc`, `tsconfig*`, Vitest,
-  ESLint, Next and PostCSS configs, `.npmrc`, and the detector itself.
-- **Selector dependencies run everything.** The detector's own package
-  dependencies are derived from its imports (today the TypeScript parser).
-  Any change to a lock entry in their dependency tree runs every suite, so an
-  updated parser can never decide that its own update needs no tests.
-- **`DB integration` code inputs** are the union of its transitive
-  local-import closures at the PR's merge base and at its head, recomputed
-  every run from its entry points (`tests/db`, `scripts/test-db.mjs` and the
-  `scripts/db-*` tools). Analysing both sides keeps deleted and renamed
-  dependencies selected.
-- **Sources are parsed with the lockfile-pinned TypeScript compiler**, not
-  regular expressions, so comments, strings, template literals and regex
-  literals cannot hide or fake a module load. The detect job therefore runs
-  `npm ci --ignore-scripts` first.
-- **Incomplete graphs fail closed.** These run the suite:
-  - an unresolvable local import;
-  - a non-literal module load in the suite's code: a computed `import()`,
-    `require()` or `require.resolve()`, an aliased `require`, or any
-    `createRequire`;
-  - a source file the parser cannot parse cleanly.
-- **Non-code files** a suite reads at runtime (SQL, fixtures, contracts,
-  corpus JSON, docs) are declared in `SIDE_INPUTS`. A test scans the suites'
-  code for literal file references, including bare file names, and fails when
-  a referenced file is undeclared.
-- **`package.json`/`package-lock.json`:** `DB integration` runs if
-  `package.json` changed outside dependency versions, or if any part of a lock
-  entry (not only its version) changed for a package reachable from the
-  packages the suite imports. Reachability expands
-  those imports through the lockfile dependency tree.
-- **Docs-only skip:** a PR skips both suites only when every file is
-  documentation that no suite declares and no code file references.
-- **Pushes to `main`** and any detection error run everything.
+**Pattern: conservative path rules, verified by tests.** Selection never
+relies on dependency analysis.
 
-**Selector invariant and input checklist.** A suite may be skipped only if
-nothing that suite or the selector itself depends on differs between the PR's
-merge base and its head. Each input class is covered as follows:
+- `DB integration` is skipped only when every changed file is in `DB_SAFE`:
+  - top-level Markdown, `docs/` and issue templates;
+  - `src/components/`, `src/store/` and non-API `src/app/`;
+  - `public/`.
 
-| Input class | Coverage |
-|---|---|
-| Suite code (transitive imports, both sides) | Graph union of base and head |
-| Scripts a suite starts by path | Path literals that name source files are followed as graph edges |
-| Non-literal or unparsable loads | Fail closed (TypeScript parser) |
-| Non-code runtime reads | Declared `SIDE_INPUTS`; enforcement test for literal paths |
-| Suite packages | Lockfile closure, full-entry comparison, both sides |
-| Selector code (transitive, both sides) | Any change, or any incomplete selector graph, runs everything |
-| Selector packages (e.g. TypeScript) | Any change in their lockfile closure runs everything |
-| Renames and moves | `git diff --no-renames`, so old and new paths both count |
-| CI, tooling and repo config | Global: all of `.github/` except issue templates, `.gitattributes`, `.nvmrc`, `tsconfig*`, `.npmrc`, test/lint/build configs |
-| `package.json` non-dependency fields | DB integration runs |
-| Detection failure | Runs everything |
+  Everything else runs it: library code, types, API routes, scripts, tests,
+  database files, every package or install file (`package.json`,
+  `package-lock.json`, `npm-shrinkwrap.json`, `.npmrc`), configs, workflows and
+  the selector itself.
+- `App checks` are skipped only when every changed file is documentation that
+  no test reads (`APP_DOC_INPUTS`).
+- Renames count both paths (`git diff --no-renames -z`).
+- Pushes to `main` and any selection error run everything. A failure before or
+  after selection (runner setup, writing outputs) fails the detect job, which
+  blocks the required `CI` gate without running suites.
 
-**Residual risk.** A file read through a *computed* path (for example
-`join(dir, name)`) cannot be found by static analysis. It must be covered by a
-declared `SIDE_INPUTS` directory. When adding such a read, declare its
-directory; reviewers check this in PRs touching suite code.
+**Verification.** `scripts/ci/inputAudit.mjs` parses the DB suite with the
+lockfile-pinned TypeScript compiler. `tests/ciAffected.check.mjs` (in
+`App checks`) fails CI when any of these happen:
+
+- a DB-suite input (imported or path-named file, including non-JS files and
+  bare directory names) lies in `DB_SAFE`;
+- an input is unclassifiable: an unresolved import, an alias or `#imports`
+  specifier, an undeclared package, a non-literal load or a parse error;
+- a doc named by code is missing from `APP_DOC_INPUTS`.
+
+A gap therefore surfaces as a failing test, never as a silent skip. Justified
+exceptions (currently the PostgreSQL schema name `public`) are listed in the
+test, and the test fails if an exception becomes unnecessary.
+
+**Residual risk.** Reads through computed paths and ambient execution inputs
+(runner image, npm version, environment, secrets, external tool versions)
+cannot be selected from a diff. Mitigation:
+
+- the safe set is limited to UI, docs and public assets;
+- computed reads in DB code must stay outside it;
+- pushes to `main` always run everything, so ambient drift is caught after
+  merge.
 
 When needed, `App checks` and `DB integration` run independently on Linux. The database job runs a clean Node 24 `npm ci`, the
 target/bootstrap/report guards, and `npm run test:db:local`. The local command
@@ -301,21 +287,8 @@ job results. It also:
 - checks the gate's always-run condition, dependency list, unique check name,
   empty permissions and absence of checkout;
 - checks each suite's `needs`/`if` wiring;
-- unit-tests the detector (`tests/ciAffected.check.mjs`), including
-  regressions for:
-  - test-read docs;
-  - closure-based database relevance;
-  - deleted and renamed modules;
-  - non-literal module loading;
-  - bare-name runtime inputs;
-  - metadata-only lock changes;
-  - selector-dependency (TypeScript) updates;
-  - selector helper files and incomplete selector graphs;
-  - scripts started by path;
-  - renames through real git;
-  - `.github/`, `.gitattributes` and directory-referenced docs;
-  - fail-safe detection errors;
-- enforces that every file the suites' code names is declared.
+- tests the selection rules and runs the input audit
+  (`tests/ciAffected.check.mjs`, described above).
 
 This runs inside `App checks`. A docs-only PR cannot change the workflow or
 the detector without leaving the docs-only category. The extraction checks the current YAML block layout;

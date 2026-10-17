@@ -17,8 +17,8 @@ concurrency:
 
 jobs:
   changes:
-    # Deny-by-default suite selection: a suite is skipped only when nothing it
-    # depends on changed (see scripts/ci/affected.mjs). Pushes to main run all.
+    # Conservative path rules (scripts/ci/affected.mjs), verified by tests in
+    # App checks. Dependency-free; pushes to main run everything.
     name: Detect affected suites
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -37,11 +37,6 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
-          cache: npm
-
-      # The detector parses sources with the lockfile-pinned TypeScript compiler.
-      - name: Install locked dependencies (no install scripts)
-        run: npm ci --ignore-scripts
 
       - name: Check changed files for whitespace errors
         shell: bash
