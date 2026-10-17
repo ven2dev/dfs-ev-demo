@@ -70,6 +70,7 @@ CREATE TABLE fs138.source_snapshots (
   available_at timestamptz NOT NULL,
   ingested_at timestamptz NOT NULL,
   evidence_basis text NOT NULL CHECK (evidence_basis IN ('prospective', 'retrospective')),
+  source_manifest jsonb NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(source_manifest) = 'object'),
   UNIQUE (profile_id, sha256),
   CHECK (captured_at <= ingested_at)
 );
@@ -200,3 +201,26 @@ REVOKE ALL ON ALL FUNCTIONS IN SCHEMA fs138 FROM PUBLIC;
 GRANT SELECT ON ALL TABLES IN SCHEMA fs138 TO fs138_pipeline_writer, fs138_reader;
 GRANT INSERT ON ALL TABLES IN SCHEMA fs138 TO fs138_pipeline_writer;
 GRANT UPDATE (status, counts, error_code, finished_at) ON fs138.job_runs TO fs138_pipeline_writer;
+
+
+-- Simple normalized evidence view. Cutoffs are parameters of the application
+-- selector, not session state or reader locks. Unknown normalizer versions are
+-- excluded explicitly by each versioned job.
+CREATE VIEW fs138.normalized_evidence AS
+WITH normalized AS (
+  SELECT 'stats'::text AS feed, n.player_id || '/' || n.game_id AS natural_key,
+    n.snapshot_id, n.normalizer_version, to_jsonb(n) - ARRAY['snapshot_id','normalizer_version','job_id'] AS data
+    FROM fs138.norm_player_game_stats n
+  UNION ALL
+  SELECT 'schedule', n.game_id, n.snapshot_id, n.normalizer_version,
+    to_jsonb(n) - ARRAY['snapshot_id','normalizer_version','job_id'] FROM fs138.norm_schedule n
+  UNION ALL
+  SELECT 'roster', n.player_id || '/' || n.season || '/' || n.week || '/' || n.team, n.snapshot_id, n.normalizer_version,
+    to_jsonb(n) - ARRAY['snapshot_id','normalizer_version','job_id'] FROM fs138.norm_identity n
+  UNION ALL
+  SELECT 'participation', n.player_id || '/' || n.game_id, n.snapshot_id, n.normalizer_version,
+    to_jsonb(n) - ARRAY['snapshot_id','normalizer_version','job_id'] FROM fs138.norm_participation n
+)
+SELECT n.*, s.profile_id, s.available_at, s.ingested_at
+FROM normalized n JOIN fs138.source_snapshots s USING (snapshot_id);
+GRANT SELECT ON fs138.normalized_evidence TO fs138_pipeline_writer, fs138_reader;

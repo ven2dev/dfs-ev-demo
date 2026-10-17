@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 1,
+  "issue": 138,
+  "step": 3,
+  "recordedAt": "2026-10-17T15:37:52.668772+00:00",
+  "baseCommit": "13ac8ce84f1ea1f78a11e49ab42021e331249f47",
+  "branch": "feature/dfsEV-138-feature-store-spike",
+  "remoteMainObserved": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+  "integrationWithObservedMain": "pending; validation covers the current branch base, not newer main",
+  "implementation": "uncommitted; awaiting owner review and commit approval; nothing pushed",
+  "verdict": "pass for step-3 ingestion/normalization/as-of correctness; full spike acceptance incomplete",
+  "ownerCheckpoint": "required pause before step 4; no feature/label/dataset/model implementation authorized by this checkpoint",
+  "provenance": {
+    "gitSha": "13ac8ce84f1ea1f78a11e49ab42021e331249f47",
+    "contentSha256": "5504c3f91052291215931b1ae8ea2bb3d51585761a201d56139a8d8f270d9337"
+  },
+  "implementationHashesMatchFinalRun": true,
+  "codeHashes": {
+    "src/lib/featureStore/objectStore.ts": "23cc5e523e40d57f8f0abb4068327a48d34565395d89dfec8ecd4c04fb99e583",
+    "src/lib/featureStore/localObjectStore.ts": "464ba4cc1d3dbae3d60d11a2472996cffd69aa154b2f29a62f481434fa37efbb",
+    "src/lib/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "src/lib/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7",
+    "src/lib/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "src/lib/featureStore/ingest.ts": "11d1bf28eb57dd95c2fb18346534ef3ce718cbf266565b485da6e844547cad09",
+    "src/lib/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+    "scripts/feature-store/harness.ts": "7697ea69dcb4f1a3badee3119c840b27c72bdd153b7778b8dd8452f4cb2c84a5",
+    "scripts/feature-store/ingest-spike.ts": "43b5a0b8ac78d40e95193e5369d9283ed84bda46f0fe99219a6ad702b2ca13ab",
+    "db/proposals/138_feature_store.sql": "d601aa444c639f6b773c1f08a6f022cd93f696e82e1a7ef804be5064525f7e2c",
+    "package-lock.json": "f93f6fe9bcc5e4347ea923542004efe6c1182af76d80e1e9fdafbf18f7e96570"
+  },
+  "currentTestAndSupplementHashes": {
+    "tests/feature-store/schema.check.mts": "4f710b7a2963f009b4b37334577753c022f27d260a6ac90b0d5f297c40600f24",
+    "tests/feature-store/ingest.check.mts": "cff0e10f27f7de1303a472bc4a5d13460107997694553cfceae2ca36fd4fc472",
+    "tests/feature-store/fixtures.ts": "d94d8041a5572c32858f4049a3947c737672c804d87aeb4dd5bf9c1d25339ba6",
+    "tests/predictive/featureStoreNormalize.test.ts": "3e64913af32973b8c5bb75a809c2bb28e4d133d4aff6abe163b9d75043afe3a9",
+    "tests/predictive/featureStoreObjectStore.test.ts": "34d0950fa729ee7b90cef997d58c0d6f85005d82e71a87a09e379b3ece9a4f70",
+    "scripts/feature-store/inspect-participation.ts": "3f0cd2ad3fa61a07e918bde17963386543c5796296414f31df83c230826b248f",
+    "package.json": "15050075f588c17ec5d46d84f68c1597aa3db4f1e900a115f5f2bb956e14e0da"
+  },
+  "evidence": {
+    "step-3-unit-tests.json": {
+      "path": "docs/evidence/feature-store-138/step-3-unit-tests.json",
+      "sha256": "aa8429be67eff772b4ff743ff0d94f34e7d5bbad58c16722b929dda11890bd68"
+    },
+    "step-3-integration.json": {
+      "path": "docs/evidence/feature-store-138/step-3-integration.json",
+      "sha256": "a9c65ac6655c9f21b3d73f632fd261b2db285964d63bd977d0424a260bbbbf99"
+    },
+    "step-3-schema-regression.json": {
+      "path": "docs/evidence/feature-store-138/step-3-schema-regression.json",
+      "sha256": "0c456a6798b4f03e621e3945b38f4686c0aff476c3d0cce44ff0aff1875aaa8e"
+    },
+    "step-3-real-ingestion.json": {
+      "path": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+      "sha256": "67cddea989c4bf20cf2fa6e0f15378785711f57a38bf2cbf8cecdd67b9aa64c0"
+    },
+    "step-3-source-manifest.json": {
+      "path": "docs/evidence/feature-store-138/step-3-source-manifest.json",
+      "sha256": "63517d4e667af249a6c8c3a4b6ea8cd72550d1afb578182510629d68ec710c38"
+    },
+    "step-3-real-ingestion-initial.json": {
+      "path": "docs/evidence/feature-store-138/step-3-real-ingestion-initial.json",
+      "sha256": "9a2121482f39b46b13bb5661e5e060023ec47ceb420412f38188f6ed302d1d72"
+    },
+    "step-3-source-manifest-initial.json": {
+      "path": "docs/evidence/feature-store-138/step-3-source-manifest-initial.json",
+      "sha256": "9115730c681fc31a323b01ffad9e091e15546c268d37eac56d1cf95e2459468f"
+    },
+    "step-3-participation-anomaly.json": {
+      "path": "docs/evidence/feature-store-138/step-3-participation-anomaly.json",
+      "sha256": "740a2e0833ada40d8de10a24dff98be207f174bbec9fa0e7f8d5c1d7416d9122"
+    }
+  },
+  "checks": {
+    "unit": {
+      "verdict": "pass",
+      "tests": 14,
+      "command": "node node_modules/vitest/vitest.mjs run --config vitest.node.config.ts tests/predictive/featureStoreObjectStore.test.ts tests/predictive/featureStoreNormalize.test.ts"
+    },
+    "ingestionPostgresql": {
+      "verdict": "pass",
+      "probes": 8,
+      "parentTests": 1
+    },
+    "schemaPostgresql": {
+      "verdict": "pass",
+      "probes": 8,
+      "parentTests": 1,
+      "reportStepField": "2 because this re-runs the unchanged step-2 schema suite against the step-3 proposal"
+    },
+    "typecheck": {
+      "verdict": "pass",
+      "exitCode": 0,
+      "runtime": "Node 24.18.1",
+      "command": "node node_modules/typescript/bin/tsc --noEmit"
+    },
+    "lint": {
+      "verdict": "pass",
+      "exitCode": 0,
+      "command": "node node_modules/eslint/bin/eslint.js src/lib/featureStore scripts/feature-store tests/feature-store tests/predictive/featureStoreObjectStore.test.ts tests/predictive/featureStoreNormalize.test.ts"
+    },
+    "whitespace": {
+      "verdict": "pass",
+      "scope": "git diff --check and all untracked text"
+    },
+    "frozenMigrations": {
+      "verdict": "pass",
+      "count": 11,
+      "sha256": {
+        "db/migrations/0001_pre_41_baseline.sql": "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98",
+        "db/migrations/0002_market_observation_history.sql": "df35a458b5d6e3f26cbbdd84d8cfa65244e865dd6963b6f0e1f8f5f0e8dd7297",
+        "db/migrations/0003_predictive_evidence.sql": "ec72796bc69169e8a8a487c2dfd2240c86a4dc94c4ab74b29e4c05c83df9e695",
+        "db/migrations/0004_creator_corpus_projection.sql": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba",
+        "db/migrations/0005_predictive_source_claims.sql": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a",
+        "db/migrations/0006_predictive_source_bindings.sql": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19",
+        "db/migrations/0007_predictive_unavailable_bindings.sql": "fc10fe50cb8913c2c755db8ff15c0aa3d40e49b5a92d2471fff86c89c4409679",
+        "db/migrations/0008_predictive_source_witnesses.sql": "ea824b2f2b943feafc576ed0cb7130f0f78ea37376859995f7a1fa0b2e139cfb",
+        "db/migrations/0009_predictive_source_decisions.sql": "f861c1afd210c65886628581b78a1f135bb950f6b5e5d00989d065930a49ea31",
+        "db/migrations/0010_predictive_source_consumers.sql": "813ca0e75d014bc5e38c9d454c481a479890f1c43e16128400442da6ad57ee35",
+        "db/migrations/0011_predictive_capture_ingestion_clock.sql": "3908fa33bcb79301a870dca9a6c18dddacf755580a303025610d20bb20716d67"
+      }
+    },
+    "finalRunHashParity": {
+      "verdict": "pass",
+      "scope": "all final ingestion code hashes and implementation-content manifest"
+    },
+    "qualificationParity": {
+      "verdict": "pass",
+      "scope": "wire digests, normalized content, coverage and participation gaps"
+    },
+    "localDocumentationLinks": {
+      "verdict": "pass",
+      "scope": "docs/feature-store-spike.md"
+    }
+  },
+  "realQualification": {
+    "completedRuns": 2,
+    "filesPerRun": 16,
+    "wireBytesPerRun": 246304787,
+    "initialPerFileMs": [
+      876.0078749999957,
+      5490.155959
+    ],
+    "finalPerFileMs": [
+      870.002375,
+      3902.7207500000004
+    ],
+    "sqlStatementsPerFile": 10,
+    "asOfStatementsPerSelection": 1,
+    "normalizedContentSha256": "2861cd0f0fd08dc808c14c7124fdc11a154baaffa8d9e958c071121ffc0bc41d",
+    "reconstructedRows": 103468,
+    "strictHistoricalRows": 0,
+    "evidenceFlag": "historical-availability-unverified",
+    "firstRunCreatedObjects": 16,
+    "finalRunReusedObjects": 16,
+    "finalPeakRssBytes": 547733504,
+    "initialPeakRssBytes": 617529344,
+    "rawObjectRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/objects",
+    "scratchDatabases": "dropped by harness after each run",
+    "evaluationRun": false,
+    "usableFeatureLabelDatasetModelProduced": false,
+    "coverageBySeason": [
+      {
+        "season": 2021,
+        "scheduleGames": 272,
+        "qbStatsRows": 655,
+        "zeroAttemptRows": 41,
+        "missingIdentity": 0,
+        "missingSchedule": 0,
+        "missingPositiveParticipation": 0,
+        "refusedStatsRows": 0
+      },
+      {
+        "season": 2022,
+        "scheduleGames": 271,
+        "qbStatsRows": 633,
+        "zeroAttemptRows": 16,
+        "missingIdentity": 0,
+        "missingSchedule": 0,
+        "missingPositiveParticipation": 0,
+        "refusedStatsRows": 0
+      },
+      {
+        "season": 2023,
+        "scheduleGames": 272,
+        "qbStatsRows": 663,
+        "zeroAttemptRows": 30,
+        "missingIdentity": 0,
+        "missingSchedule": 0,
+        "missingPositiveParticipation": 0,
+        "refusedStatsRows": 0
+      },
+      {
+        "season": 2024,
+        "scheduleGames": 272,
+        "qbStatsRows": 664,
+        "zeroAttemptRows": 33,
+        "missingIdentity": 0,
+        "missingSchedule": 0,
+        "missingPositiveParticipation": 0,
+        "refusedStatsRows": 0
+      },
+      {
+        "season": 2025,
+        "scheduleGames": 272,
+        "qbStatsRows": 664,
+        "zeroAttemptRows": 36,
+        "missingIdentity": 0,
+        "missingSchedule": 0,
+        "missingPositiveParticipation": 1,
+        "refusedStatsRows": 0
+      }
+    ],
+    "participationGaps": [
+      {
+        "season": 2025,
+        "playerId": "00-0029263",
+        "gameId": "2025_01_NYG_WAS",
+        "passingAttempts": 37,
+        "passingYards": 168,
+        "reason": "positive-offense-participation-missing"
+      }
+    ],
+    "malformedParticipationLists": [
+      {
+        "sourceOrdinal": 26090,
+        "gameId": "2024_02_CLE_JAX",
+        "playId": "1985",
+        "possessionTeam": "CLE",
+        "invalidTokens": [],
+        "duplicateTokens": [
+          "00-0029008"
+        ],
+        "decision": "play-not-used-for-positive-participation"
+      }
+    ],
+    "scheduleRefresh": {
+      "previousBytes": 515248,
+      "currentBytes": 515250,
+      "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd"
+    }
+  },
+  "capacityTargets": [
+    {
+      "operation": "ingest one season file",
+      "deadlineMs": 60000,
+      "headroomLimitMs": 42000,
+      "verdict": "pending-repeated-cold-warm-trials",
+      "qualification": "all files in both qualification runs below headroom limit; not a capacity acceptance verdict"
+    },
+    {
+      "operation": "one-season feature job",
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "not-measured"
+    },
+    {
+      "operation": "five-season dataset build",
+      "deadlineMs": 30000,
+      "headroomLimitMs": 21000,
+      "verdict": "not-measured"
+    },
+    {
+      "operation": "prediction p95",
+      "deadlineMs": 300,
+      "headroomLimitMs": 210,
+      "verdict": "not-measured"
+    }
+  ],
+  "fullCorrectnessProbes": {
+    "pipelineOnlyWrites": "pass for normalized families; later feature/label/dataset/model families pending",
+    "backdatedRights": "DB knowledge-clock probe passes; end-to-end rights delivery pending step 5",
+    "corruptDownloadRefusal": "pass; corrupt gzip is not stored and cannot replace good data",
+    "correctionAndLastValid": "as-of history passes; derived supersession and last-valid display pending step 4",
+    "deletionInvalidation": "not-implemented; step 5",
+    "orphanAndTemporaryCleanup": "not-implemented; failed-publication object remains discoverable for step-5 grace-period cleanup"
+  },
+  "remainingSteps": [
+    "4: features, labels, lineage, correction/supersession and last-valid behavior",
+    "5: dataset materialization, rights delivery, deletion, orphan/temp cleanup and audits",
+    "6: walk-forward scores and local predictions",
+    "7: repeated cold/warm capacity gates and deterministic work counts",
+    "8: external confirmations, gated GCS test and acceptance audit"
+  ],
+  "risks": [
+    "historical availability unverified; strict historical evidence empty",
+    "schedule upstream license chain unresolved beyond repository declaration; no commercial-clearance claim",
+    "one QB participation gap; population completeness remains #54 scope",
+    "two-step deletion, rights delivery and object cleanup still pending",
+    "new-main integration pending",
+    "repeated capacity acceptance gates not run"
+  ],
+  "externalChecks": {
+    "gcsLiveTest": "blocked until owner confirms Blaze upgrade, budget and dedicated pipeline service account; do not use app admin key",
+    "neonTimeoutAndConfiguration": "not-confirmed; no hosted database access performed"
+  },
+  "timebox": "Steps 1-3 implemented on first day; about one-week total owner timebox; no established remaining-days estimate"
+}

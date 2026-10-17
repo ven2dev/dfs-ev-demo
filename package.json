@@ -45,7 +45,8 @@
     "predictive:source": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/source.ts",
     "predictive:source:local": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/predictive/sourceLocal.ts",
     "test:watch": "vitest --config vitest.config.ts",
-    "test:feature-store:db": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/feature-store/schema.check.mts"
+    "test:feature-store:db": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-concurrency=1 tests/feature-store/*.check.mts",
+    "feature-store:ingest:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/ingest-spike.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "1.2.0",

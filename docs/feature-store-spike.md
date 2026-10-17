@@ -101,8 +101,10 @@ Step 1 was committed with owner approval at `6aa7953`: [sources](feature-store-s
 [inventory evidence](evidence/feature-store-138/source-inventory.json), and
 [scoring preregistration](feature-store-spike-preregistration.md). The preregistration
 therefore precedes evaluation. Vernon approved the step 2 commit on 2026-10-17;
-see the implementation and evidence checkpoint below. No real-source ingestion,
-evaluation or capacity benchmark has run. Pushing needs fresh owner consent;
+see the historical implementation checkpoint below. Step 2 was committed at
+`13ac8ce`. Step 3 implementation and evidence are ready for owner review, but
+remain uncommitted. Real-source ingestion qualification has run; no evaluation
+or complete capacity gate has run. Pushing needs fresh owner consent;
 owner-run Codex review remains required.
 
 GCS live tests pause for owner confirmation of Blaze, budget and a dedicated
@@ -182,3 +184,160 @@ Remote main advanced to `6863d8f` during this step (the #135 UI changes and
 development dependency updates). This checkpoint is tested on the #138 base,
 not that newer integrated state. Integrate and recheck before a final PR;
 no other worktree or branch has been changed here.
+
+## Step 3 owner checkpoint
+
+Status: implementation and qualification complete on the step-2 base, pending
+owner review and commit approval. Stop here before step 4 for the approved
+progress/risk checkpoint. No evaluation has run and no feature, label, dataset,
+model or app prediction has been produced.
+
+### Design basis and implementation
+
+The approved trusted-ELT pattern is unchanged. Jobs validate immutable source
+bytes once, normalize them in bulk, and stamp ingestion with the database clock.
+The internal as-of selector is one set-based query over normalized tables; it
+does not reopen files, re-prove evidence or lock reader tables. End-user delivery
+rights checks arrive in step 5; this selector is an internal pipeline primitive.
+
+Two rejected alternatives remain relevant: retaining caller-computed graph
+certificates would duplicate policy and restore the failed read cost; doing
+rights/byte validation per normalized row would violate the fixed-work delivery
+budget. Source snapshots record current license evidence without claiming that
+research-source qualification is commercial clearance.
+
+- Download/normalization is bounded: 64 MiB wire bytes, 192 MiB decoded bytes,
+  100,000 rows, 1 MiB CSV record and a 60-second operation deadline. HTTPS
+  redirects are allowlisted; transparent content decoding is refused so the
+  stored hash identifies exact downloaded bytes. Gzip CRC, UTF-8, expected
+  columns, widths, digests and numerical fields are checked before publication.
+- Normalization retains REG QB statistics (including zero attempts), weekly
+  QB identity/roster claims, 2021–2025 schedules and positive offense
+  participation. Missing participation is unknown, not a zero result. Conflicting
+  duplicate keys become ambiguous; a malformed player list supplies no positive
+  evidence. Eastern kickoff conversion rejects ambiguous/nonexistent clocks.
+- Successful ingestion uses ten SQL statements regardless of normalized row
+  count. Snapshot and normalized rows commit together. Retries return the existing
+  job state; failed or still-running jobs do not silently execute again.
+- Raw storage uses ObjectStore exclusively. A failed database publication may
+  leave a discoverable content-addressed object; step 5 owns grace-period orphan
+  cleanup. Immediate rollback deletion is avoided because another concurrent job
+  could already reference the same bytes. Abrupt termination may also leave a
+  hidden temporary file; housekeeping remains step 5 work.
+- Provenance includes the actual base Git SHA plus an implementation-content
+  manifest digest in job policy and snapshot metadata. The receipts do not claim
+  that uncommitted step-3 code is contained in the step-2 Git commit.
+- `strict-point-in-time-v1` requires both availability and ingestion at or before
+  cutoff. `retrospective-reconstruction-v1` uses corrected prior-game facts at a
+  pinned ingestion checkpoint, always flagged `historical-availability-unverified`.
+  Timestamps are preserved. Equal-time rival snapshots remain ambiguous and
+  unknown normalizer versions are excluded.
+
+### Real-file qualification
+
+Both complete runs downloaded and ingested all 16 files in fresh disposable
+databases through real restricted pipeline logins. The first created the raw
+objects; the second reused their immutable addresses, but still downloaded,
+validated and normalized every file. Both produced the same normalized-content
+digest, `2861cd0f0fd08dc808c14c7124fdc11a154baaffa8d9e958c071121ffc0bc41d`.
+
+The final run processed 246,304,787 wire bytes, taking 0.870–3.903 seconds per
+file (first run: 0.876–5.490 seconds). Each file used ten SQL statements; each
+as-of selection used one. Peak process RSS was 547,733,504 bytes (about 522 MiB)
+in the final run; the first peaked at 617,529,344 bytes. These are qualification
+observations, not the required repeated cold/warm capacity verdict. No optimization
+comparison or ABBA claim is made.
+
+| Season | REG games | QB-stat rows | Zero-attempt rows | Missing identity/schedule | Missing positive participation |
+|---|---:|---:|---:|---:|---:|
+| 2021 | 272 | 655 | 41 | 0 | 0 |
+| 2022 | 271 | 633 | 16 | 0 | 0 |
+| 2023 | 272 | 663 | 30 | 0 | 0 |
+| 2024 | 272 | 664 | 33 | 0 | 0 |
+| 2025 | 272 | 664 | 36 | 0 | 1 |
+
+The total is 3,279 QB-stat rows across 1,359 REG games; 156 QB rows have zero
+attempts. Reconstruction returns 103,468 normalized rows across all four source
+families. Strict historical selection returns **zero**: the current files were
+not ingested at the historical cutoff. These data do not establish historical
+availability or a usable prospective model.
+
+One QB-stat row lacks positive offense participation: player `00-0029263` in
+`2025_01_NYG_WAS` (37 attempts, 168 yards). It remains an explicit gap for the
+feature/label eligibility job, rather than a qualified label. This spike does
+not prove population completeness; that remains #54 scope.
+
+The 2024 participation file has one malformed REG player list: data-row ordinal
+26,090, `2024_02_CLE_JAX`, play `1985`, possession team `CLE`, with duplicate
+player `00-0029008`. That play is excluded from positive evidence. It produces
+no additional QB coverage gap; a supplemental ObjectStore inspection records
+the exact location and reproducible recipe.
+
+The schedule release changed after the initial inventory: `games.csv.gz` grew
+from 515,248 to 515,250 bytes. Both ingestion runs pinned current release digest
+`962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd`.
+Their 2021–2025 normalized results match. The source manifest preserves current
+asset metadata separately from the earlier inventory.
+
+### Validation and evidence
+
+Fourteen focused unit tests pass: seven ObjectStore and seven transport/normalizer
+cases. Eight new PostgreSQL probes (plus their parent) pass, covering atomic
+ingestion/retry, both inclusive cutoff clocks, reconstruction/checkpoint refusal,
+corrupt gzip, correction history, equal-time ambiguity, rollback/failed jobs and
+the fixed ten-statement budget at 1 and 64 rows. Eight existing schema/permission
+probes (plus their parent) also pass against the expanded proposal. They confirm
+actual non-pipeline refusal, DB clocks, immutable normalized rows and unchanged
+main catalog/frozen migrations. Typecheck and changed-file ESLint pass.
+
+- [Checkpoint verdicts, checks and hashes](evidence/feature-store-138/step-3-checkpoint.json)
+- [Final real ingestion](evidence/feature-store-138/step-3-real-ingestion.json)
+- [Current source manifest](evidence/feature-store-138/step-3-source-manifest.json)
+- [Initial real ingestion](evidence/feature-store-138/step-3-real-ingestion-initial.json)
+- [Initial source manifest](evidence/feature-store-138/step-3-source-manifest-initial.json)
+- [Participation anomaly](evidence/feature-store-138/step-3-participation-anomaly.json)
+- [Unit tests](evidence/feature-store-138/step-3-unit-tests.json)
+- [Ingestion/as-of PostgreSQL probes](evidence/feature-store-138/step-3-integration.json)
+- [Schema/permission regressions](evidence/feature-store-138/step-3-schema-regression.json)
+
+Reproduce the focused unit and DB probes with Node 24 and the local Compose
+database described in step 2. `npm run test:feature-store:db` now includes both
+schema and ingestion probes serially. Opt-in real ingestion is
+`npm run feature-store:ingest:spike -- ../dfs-ev-demo-138-data/objects`, with
+`TEST_DATABASE_URL` pointing only to the disposable local test database. It needs
+public GitHub access and downloads all 16 files again. Supplemental inspection:
+`node scripts/feature-store/inspect-participation.ts`.
+
+Raw objects remain in the private sibling directory
+`/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/objects`; they are
+accessed through ObjectStore and not committed. Scratch normalized databases are
+dropped after each proof; recipes, source metadata, hashes and results remain.
+
+### Remaining work and risks
+
+Steps 1–3 are implemented in this first day. Steps 4–8 still remain: feature/label
+jobs and supersession; dataset materialization, rights delivery, two-step deletion
+and audits; empirical walk-forward scoring and predictions; repeated capacity
+gates; external confirmations. No remaining-days forecast is established. The
+approved total timebox is about one week, so scope/capacity findings return to
+the owner rather than silently extending it or weakening targets.
+
+| Target | Step-3 verdict |
+|---|---|
+| Ingest ≤60 s, with ≤42 s headroom | Both qualification runs meet the per-file limit; required ≥3 cold/≥3 warm trials remain pending |
+| Season features ≤120 s, with ≤84 s headroom | Not measured; step 4 implementation pending |
+| Five-season dataset ≤30 s, with ≤21 s headroom | Not measured; step 5 implementation pending |
+| Prediction p95 ≤300 ms, with ≤210 ms headroom | Not measured; step 6 implementation pending |
+
+The source-license chain for schedules remains unresolved beyond the release
+repository declaration; no commercial-clearance claim is made. Historical
+availability is unverified and the participation gap above remains. Rights
+delivery, deletion and orphan/temp cleanup are not complete. Pipeline-only writes
+are proven for normalized tables, with later derived families still to be added.
+The GCS test remains blocked on owner confirmation of Blaze, budget and a
+dedicated pipeline service account; Neon timeout/configuration confirmation is
+also pending. Nothing uses the app Firebase admin key or a hosted database.
+
+Latest observed `origin/main` is `12290d8`; this branch is three commits ahead
+and twelve behind. Integration is pending before the final combined checkpoint.
+Only proposal SQL changed; ordered migrations and other worktrees are untouched.

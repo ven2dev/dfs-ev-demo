@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "issue": 138,
+  "step": 2,
+  "recordedAt": "2026-10-17T12:30:41.801Z",
+  "runtime": "v24.18.1",
+  "proposalSha256": "d601aa444c639f6b773c1f08a6f022cd93f696e82e1a7ef804be5064525f7e2c",
+  "codeHashes": {
+    "db/proposals/138_feature_store.sql": "d601aa444c639f6b773c1f08a6f022cd93f696e82e1a7ef804be5064525f7e2c",
+    "src/lib/featureStore/objectStore.ts": "23cc5e523e40d57f8f0abb4068327a48d34565395d89dfec8ecd4c04fb99e583",
+    "src/lib/featureStore/localObjectStore.ts": "464ba4cc1d3dbae3d60d11a2472996cffd69aa154b2f29a62f481434fa37efbb",
+    "src/lib/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "tests/feature-store/schema.check.mts": "4f710b7a2963f009b4b37334577753c022f27d260a6ac90b0d5f297c40600f24"
+  },
+  "workload": "synthetic role/clock/identity probes on main + proposal; no real-source evaluation or capacity claim",
+  "verdict": "pass",
+  "probes": [
+    {
+      "probe": "proposal application rolls back cleanly and leaves main unchanged",
+      "verdict": "pass",
+      "details": {
+        "orderedMigrations": 11,
+        "proposalSha256": "d601aa444c639f6b773c1f08a6f022cd93f696e82e1a7ef804be5064525f7e2c",
+        "server": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"
+      }
+    },
+    {
+      "probe": "real non-pipeline login cannot forge, overwrite, delete or escalate",
+      "verdict": "pass",
+      "details": {
+        "authenticatedNonSuperuser": true,
+        "derivedTables": [
+          "norm_schedule",
+          "norm_player_game_stats",
+          "norm_identity",
+          "norm_participation"
+        ],
+        "mutationRefusals": 39
+      }
+    },
+    {
+      "probe": "pipeline inserts use DB knowledge clocks and cannot later be backdated",
+      "verdict": "pass",
+      "details": {
+        "profile": true,
+        "job": true,
+        "snapshot": true
+      }
+    },
+    {
+      "probe": "backdated valid-time rights do not enter an earlier knowledge-time answer",
+      "verdict": "pass",
+      "details": {
+        "earlierAnswerCount": 0,
+        "currentDecisionCount": 1
+      }
+    },
+    {
+      "probe": "only pipeline logins publish normalized values and normalized rows are immutable",
+      "verdict": "pass",
+      "details": {
+        "publishedFamilies": 4,
+        "readerCanSelect": true,
+        "pipelineUpdateDeleteRefusals": 8
+      }
+    },
+    {
+      "probe": "concurrent idempotent jobs have one executor and distinct policies remain distinct",
+      "verdict": "pass",
+      "details": {
+        "concurrentExecutors": 1,
+        "successfulRetryRecomputed": false,
+        "changedPolicyCreated": true
+      }
+    },
+    {
+      "probe": "job completion is DB-stamped and terminal jobs cannot be rewritten",
+      "verdict": "pass",
+      "details": {
+        "callerCompletionTimeIgnored": true,
+        "terminalMutationRefused": true
+      }
+    },
+    {
+      "probe": "proposal leaves main catalog and frozen migration hashes unchanged",
+      "verdict": "pass",
+      "details": {
+        "mainCatalogVerified": true,
+        "orderedMigrations": 11
+      }
+    }
+  ]
+}
