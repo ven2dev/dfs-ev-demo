@@ -4,8 +4,6 @@ on:
   pull_request:
     branches:
       - main
-      # TEMPORARY staging trigger for #140 hosted verification; reverted before merge.
-      - feature/dfsEV-140-conditional-ci
   push:
     branches:
       - main
