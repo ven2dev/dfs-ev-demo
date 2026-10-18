@@ -289,15 +289,6 @@ export const SlateBrowser = () => {
     }
   };
 
-  const cycleBookmaker = (direction: 1 | -1) => {
-    if (allBookmakerKeys.length === 0 || !selectedBookmakerKey) return;
-    setSmartDefault(false); // cycling is a manual override -- it always wins over per-row smart defaults
-    const currentIndex = allBookmakerKeys.indexOf(selectedBookmakerKey);
-    const nextIndex =
-      (currentIndex + direction + allBookmakerKeys.length) % allBookmakerKeys.length;
-    setSelectedBookmakerKey(allBookmakerKeys[nextIndex]);
-  };
-
   const toggleComparisonBookmaker = (bookmakerKey: string) => {
     setComparisonBookmakerKeys((current) =>
       current.includes(bookmakerKey)
@@ -445,18 +436,6 @@ export const SlateBrowser = () => {
                   </div>
                 </>
               )}
-              <div className="mt-3 flex flex-wrap gap-2">
-                {visibleDiscoveredProps.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => fetchDiscoveredProps(true)}
-                    disabled={discoveryStatus === "loading"}
-                    className="min-h-11 rounded border border-zinc-300 px-3 py-2 text-sm disabled:opacity-50 dark:border-zinc-700"
-                  >
-                    Refresh odds
-                  </button>
-                )}
-              </div>
 
               {discoveryStatus === "error" && (
                 <p className="mt-2 text-sm text-red-700 dark:text-red-400">{discoveryError}</p>
@@ -465,45 +444,30 @@ export const SlateBrowser = () => {
               {visibleDiscoveredProps.length > 0 && (
                 <div className="mt-4">
                   <div className="flex flex-wrap items-center gap-3">
-                    {!comparisonMode && selectedBookmakerKey && (
-                      <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-                        <button
-                          type="button"
-                          aria-label="Previous bookmaker"
-                          onClick={() => cycleBookmaker(-1)}
-                          className="min-h-11 min-w-11 rounded px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                    <label className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+                      <span>Odds shown</span>
+                      <span className="relative min-w-0">
+                        <select
+                          value={smartDefault ? "" : selectedBookmakerKey ?? ""}
+                          disabled={comparisonMode}
+                          onChange={(event) => {
+                            setSmartDefault(event.target.value === "");
+                            setSelectedBookmakerKey(event.target.value || null);
+                          }}
+                          className="min-h-11 max-w-full appearance-none rounded border border-zinc-300 bg-white py-2 pr-10 pl-3 disabled:cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-900"
                         >
-                          ‹
-                        </button>
-                        <span
-                          data-testid="bookmaker-stepper-label"
-                          className="min-w-24 max-w-full break-words text-center font-medium"
-                        >
-                          {smartDefault
-                            ? `Best ${watchDirection === "over" ? "Over" : "Under"} price`
-                            : selectedBookmakerKey}
-                        </span>
-                        <button
-                          type="button"
-                          aria-label="Next bookmaker"
-                          onClick={() => cycleBookmaker(1)}
-                          className="min-h-11 min-w-11 rounded px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-                        >
-                          ›
-                        </button>
-                        {!smartDefault && (
-                          <button
-                            type="button"
-                            onClick={() => setSmartDefault(true)}
-                            className="min-h-11 rounded px-2 py-1.5 text-xs text-zinc-600 dark:text-zinc-400 underline hover:text-zinc-900 dark:hover:text-zinc-100"
-                          >
-                            Reset to best
-                          </button>
-                        )}
-                      </div>
-                    )}
+                          <option value="">Best available</option>
+                          {allBookmakerKeys.map((key) => <option key={key} value={key}>{key}</option>)}
+                        </select>
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                          className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-zinc-600 dark:text-zinc-400">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </span>
+                    </label>
                     <button
                       type="button"
+                      aria-pressed={comparisonMode}
                       onClick={() => setComparisonMode((current) => !current)}
                       className={`min-h-11 rounded px-3 py-2 text-sm ${
                         comparisonMode
@@ -512,6 +476,14 @@ export const SlateBrowser = () => {
                       }`}
                     >
                       Compare books
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fetchDiscoveredProps(true)}
+                      disabled={discoveryStatus === "loading"}
+                      className="min-h-11 rounded border border-zinc-300 px-3 py-2 text-sm disabled:cursor-wait dark:border-zinc-700"
+                    >
+                      {discoveryStatus === "loading" ? "Refreshing…" : "Refresh odds"}
                     </button>
                   </div>
 
@@ -532,22 +504,36 @@ export const SlateBrowser = () => {
                           {direction}
                         </button>
                       ))}
-                      <span className="w-full text-zinc-600 dark:text-zinc-400 sm:ml-2 sm:w-auto">Watch button assigns:</span>
-                      {(["primary", "secondary"] as const).map((target) => (
-                        <button
-                          key={target}
-                          type="button"
-                          onClick={() => setWatchAssignTarget(target)}
-                          className={`min-h-11 rounded px-3 py-1.5 ${
-                            watchAssignTarget === target
-                              ? "bg-black text-white dark:bg-white dark:text-black"
-                              : "border border-zinc-300 dark:border-zinc-700"
-                          }`}
-                        >
-                          {target === "primary" ? "Primary" : "Secondary (demo)"}
-                        </button>
-                      ))}
                     </div>
+                  )}
+
+                  {!comparisonMode && (
+                    <details className="mt-3 text-sm">
+                      <summary className="min-h-11 cursor-pointer rounded px-2 py-3 text-zinc-600 dark:text-zinc-400">
+                        Demo watch assignment
+                      </summary>
+                      <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
+                        Primary drives live analysis. Secondary demonstrates watch/unwatch and rollback only.
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="text-zinc-600 dark:text-zinc-400">Watch button assigns:</span>
+                        {(["primary", "secondary"] as const).map((target) => (
+                          <button
+                            key={target}
+                            type="button"
+                            aria-pressed={watchAssignTarget === target}
+                            onClick={() => setWatchAssignTarget(target)}
+                            className={`min-h-11 rounded px-3 py-1.5 ${
+                              watchAssignTarget === target
+                                ? "bg-black text-white dark:bg-white dark:text-black"
+                                : "border border-zinc-300 dark:border-zinc-700"
+                            }`}
+                          >
+                            {target === "primary" ? "Primary" : "Secondary (demo)"}
+                          </button>
+                        ))}
+                      </div>
+                    </details>
                   )}
 
                   {(primaryWatch || secondaryWatch) && (

@@ -322,31 +322,40 @@ describe("SlateBrowser", () => {
     expect(screen.queryByRole("button", { name: "Change selection" })).not.toBeInTheDocument();
   });
 
-  it("starts on the direction-aware smart price default, and cycling switches to a manual override starting from the first book alphabetically, wrapping around", async () => {
+  it("defaults Odds shown to Best available and switches to a specific book without a request", async () => {
     await showPropsWithFourBooks();
-    const stepperLabel = () => screen.getByTestId("bookmaker-stepper-label");
+    const odds = screen.getByLabelText("Odds shown");
+    expect(odds).toHaveValue("");
+    expect(screen.getByRole("option", { name: "Best available" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Next bookmaker")).not.toBeInTheDocument();
+    const requests = fetchMock().mock.calls.length;
 
-    expect(stepperLabel()).toHaveTextContent("Best Over price");
-    expect(screen.queryByText("Reset to best")).not.toBeInTheDocument();
+    fireEvent.change(odds, { target: { value: "bovada" } });
+    expect(odds).toHaveValue("bovada");
+    fireEvent.click(screen.getByText("Watch Over"));
+    expect(useAppStore.getState().primaryWatch?.bookmakerKey).toBe("bovada");
+    fireEvent.change(odds, { target: { value: "" } });
+    expect(odds).toHaveValue("");
+    fireEvent.click(screen.getByText("Watch Over"));
+    expect(useAppStore.getState().primaryWatch?.bookmakerKey).toBe("draftkings");
+    expect(fetchMock()).toHaveBeenCalledTimes(requests);
+  });
 
-    fireEvent.click(screen.getByLabelText("Next bookmaker"));
-    expect(stepperLabel()).toHaveTextContent("bovada"); // one past "betmgm", the alphabetically-first book
-    expect(screen.getByText("Reset to best")).toBeInTheDocument();
-
-    fireEvent.click(screen.getByLabelText("Next bookmaker"));
-    expect(stepperLabel()).toHaveTextContent("draftkings");
-
-    fireEvent.click(screen.getByLabelText("Previous bookmaker"));
-    expect(stepperLabel()).toHaveTextContent("bovada");
-
-    // Wrap backward from the first book to the last.
-    fireEvent.click(screen.getByLabelText("Previous bookmaker"));
-    fireEvent.click(screen.getByLabelText("Previous bookmaker"));
-    expect(stepperLabel()).toHaveTextContent("fanduel");
-
-    fireEvent.click(screen.getByText("Reset to best"));
-    expect(stepperLabel()).toHaveTextContent("Best Over price");
-    expect(screen.queryByText("Reset to best")).not.toBeInTheDocument();
+  it("discloses demo assignment only on demand and preserves the odds view through comparison", async () => {
+    await showPropsWithFourBooks();
+    expect(screen.getByText("Secondary (demo)")).not.toBeVisible();
+    fireEvent.click(screen.getByText("Demo watch assignment"));
+    expect(screen.getByRole("button", { name: "Primary" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Secondary (demo)" })).toBeInTheDocument();
+    const odds = screen.getByLabelText("Odds shown");
+    fireEvent.change(odds, { target: { value: "fanduel" } });
+    const compare = screen.getByRole("button", { name: "Compare books" });
+    fireEvent.click(compare);
+    expect(odds).toBeDisabled();
+    expect(compare).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(compare);
+    expect(odds).toBeEnabled();
+    expect(odds).toHaveValue("fanduel");
   });
 
   it("compare mode's book picker allows at most 3 selections, disabling the rest", async () => {
@@ -363,7 +372,7 @@ describe("SlateBrowser", () => {
 
   it("Watch assigns to the primary slot by default, using the currently-effective book", async () => {
     await showPropsWithFourBooks();
-    fireEvent.click(screen.getByLabelText("Next bookmaker")); // manual override -> "bovada"
+    fireEvent.change(screen.getByLabelText("Odds shown"), { target: { value: "bovada" } });
 
     fireEvent.click(screen.getByText("Watch Over"));
 
@@ -385,11 +394,12 @@ describe("SlateBrowser", () => {
 
   it("switching the assign target to Secondary watches a second discovered prop without disturbing the primary one", async () => {
     await showPropsWithFourBooks();
-    fireEvent.click(screen.getByLabelText("Next bookmaker")); // -> "bovada"
+    fireEvent.change(screen.getByLabelText("Odds shown"), { target: { value: "bovada" } });
     fireEvent.click(screen.getByText("Watch Over"));
 
+    fireEvent.click(screen.getByText("Demo watch assignment"));
     fireEvent.click(screen.getByRole("button", { name: "Secondary (demo)" }));
-    fireEvent.click(screen.getByLabelText("Next bookmaker")); // -> "draftkings"
+    fireEvent.change(screen.getByLabelText("Odds shown"), { target: { value: "draftkings" } });
     fireEvent.click(screen.getByText("Watch Over"));
 
     expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("bovada");
@@ -398,8 +408,9 @@ describe("SlateBrowser", () => {
 
   it("Clear removes one watch selection independently of the other", async () => {
     await showPropsWithFourBooks();
-    fireEvent.click(screen.getByLabelText("Next bookmaker"));
+    fireEvent.change(screen.getByLabelText("Odds shown"), { target: { value: "bovada" } });
     fireEvent.click(screen.getByText("Watch Over"));
+    fireEvent.click(screen.getByText("Demo watch assignment"));
     fireEvent.click(screen.getByRole("button", { name: "Secondary (demo)" }));
     fireEvent.click(screen.getByText("Watch Over"));
 
