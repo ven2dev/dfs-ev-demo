@@ -1,8 +1,11 @@
+import { equalMassSupport, probabilityAt as empiricalProbabilityAt, type SupportPoint, type Triple } from "./empirical.ts";
+export { priceSide, validateTriple } from "./empirical.ts";
+export type { Triple } from "./empirical.ts";
+
 /** Pure research baseline: callers supply qualified, versioned observations. */
 export const MODEL_VERSION = "empirical-integer-v1";
 export const MARKETS = ["player_pass_yds", "player_pass_attempts", "player_pass_completions", "player_pass_tds", "player_pass_interceptions", "player_rush_yds", "player_rush_attempts", "player_reception_yds", "player_receptions"] as const;
 export type Market = typeof MARKETS[number];
-export type Triple = { overProbability: number; underProbability: number; pushProbability: number };
 export interface Observation {
   id: string;
   eventId: string;
@@ -35,7 +38,7 @@ export type Projection = { status: "unavailable"; reason: string } | {
   sampleCount: number;
   minimumSamples: number;
   trainingIds: string[];
-  support: { value: number; mass: number }[];
+  support: SupportPoint[];
   quality: "exploratory";
 };
 export function instant(value: string): number {
@@ -63,42 +66,13 @@ export function fitBaseline(input: Input): Projection {
       if (!Number.isSafeInteger(row.value) || (!input.market.endsWith("_yds") && row.value < 0)) return unavailable("invalid-outcome");
     }
     if (input.history.length < input.minimumSamples) return unavailable("insufficient-samples");
-    const counts = new Map<number, number>();
-    for (const row of input.history) counts.set(row.value, (counts.get(row.value) ?? 0) + 1);
     return { status: "available", modelVersion: MODEL_VERSION, market: input.market, cutoff: input.cutoff,
       featureVersion: input.featureVersion, labelVersion: input.labelVersion, sampleCount: input.history.length, minimumSamples: input.minimumSamples,
       trainingIds: input.history.map(row => row.id).sort(), quality: "exploratory",
-      support: [...counts].sort(([a], [b]) => a - b).map(([value, count]) => ({ value, mass: count / input.history.length })) };
+      support: equalMassSupport(input.history.map(row => row.value)) };
   } catch { return unavailable("invalid-timestamp"); }
 }
-export function validateTriple(p: Triple): void {
-  const values = [p.overProbability, p.underProbability, p.pushProbability];
-  if (values.some(v => !Number.isFinite(v) || v < 0 || v > 1) || Math.abs(values.reduce((a, b) => a + b, 0) - 1) > 1e-12) throw new Error("invalid probability triple");
-}
+/** Preserve the strict fitter's public API; all arithmetic lives in the kernel. */
 export function probabilityAt(model: Projection, line: number): Triple | null {
-  if (!Number.isFinite(line)) throw new Error("line must be finite");
-  if (model.status === "unavailable") return null;
-  let underMass = 0, pushMass = 0, totalMass = 0;
-  for (const point of model.support) {
-    totalMass += point.mass;
-    if (point.value < line) underMass += point.mass;
-    if (point.value === line) pushMass += point.mass;
-  }
-  const underProbability = underMass / totalMass;
-  const pushProbability = pushMass / totalMass;
-  const p = { underProbability, pushProbability, overProbability: Math.max(0, 1 - underProbability - pushProbability) };
-  validateTriple(p);
-  return p;
-}
-/** Unit stake, decimal price, equality refunded. Voids/DNP are outside this contract. */
-export function priceSide(p: Triple, side: "over" | "under", decimalPrice?: number) {
-  validateTriple(p);
-  if (decimalPrice !== undefined && (!Number.isFinite(decimalPrice) || decimalPrice <= 1)) throw new Error("invalid decimal price");
-  const win = side === "over" ? p.overProbability : p.underProbability;
-  const loss = side === "over" ? p.underProbability : p.overProbability;
-  return {
-    noPushConditionalProbability: p.pushProbability === 1 ? null : win / (1 - p.pushProbability),
-    fairDecimalPrice: win === 0 ? null : (win + loss) / win,
-    expectedProfit: decimalPrice === undefined ? null : win * (decimalPrice - 1) - loss,
-  };
+  return empiricalProbabilityAt(model.status === "available" ? model.support : null, line);
 }
