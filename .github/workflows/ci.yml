@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - main
+      - codex/dfs-153-hosted-spike
 
 permissions:
   contents: read
@@ -86,6 +87,9 @@ jobs:
         run: npm audit --omit=dev --audit-level=critical
 
   db:
+    env:
+      SPIKE_PROFILE_PATH: /tmp/dfs153-hosted-profile.jsonl
+      SPIKE_TEMPLATE_PATH: /tmp/dfs153-hosted-templates.jsonl
     name: DB integration
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -109,7 +113,9 @@ jobs:
         run: npm run test:db:guard
 
       - name: Verify migration artifacts, catalog contracts and PostgreSQL behavior
-        run: npm run test:db:local
+        run: |
+          npm run test:db:local
+          cat "$SPIKE_PROFILE_PATH.runs.jsonl"
 
       - name: Remove disposable PostgreSQL
         if: ${{ always() }}

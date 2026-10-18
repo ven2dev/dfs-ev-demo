@@ -23,9 +23,10 @@ export async function createScratchHarness(environment) {
   }
   return {
     assertTarget,
-    async withDatabase(run) {
+    async withDatabase(run, template) {
       const name = "dfs_ev_test_" + randomBytes(10).toString("hex");
-      await admin.query(`CREATE DATABASE "${name}"`);
+      if (template !== undefined && !/^dfs_ev_test_[a-f0-9]{20}$/.test(template)) throw Error("Invalid template");
+      await admin.query(`CREATE DATABASE "${name}"${template ? ` TEMPLATE "${template}"` : ""}`);
       active.add(name);
       const config = Object.freeze({ ...base, database: name });
       const client = new Client(config);

@@ -58,7 +58,7 @@ async function runSuite(environment, filters) {
     if (code !== 0 || interrupted) return code || 1;
     const reportPath = join(reportDir, "results.json");
     code = await run(process.execPath, [
-      fileURLToPath(new URL("../node_modules/vitest/vitest.mjs", import.meta.url)),
+      fileURLToPath(new URL("./spike-vitest.mjs", import.meta.url)),
       "run", "--config", "vitest.db.config.mts", "--reporter=default",
       "--reporter=json", "--outputFile.json=" + reportPath, ...filters,
     ], environment);
@@ -79,7 +79,7 @@ async function main() {
   const [mode, ...filters] = process.argv.slice(2);
   if (mode === "down") return run("docker", [...composeArgs, "down", "--volumes", "--remove-orphans"]);
   assertNoApplicationCredentials(process.env);
-  if (mode === "run") return runSuite(process.env, filters);
+  if (mode === "run") return run(process.execPath, ["scripts/spike-concurrent.mjs"]);
   if (mode !== "local" && mode !== "repeat") throw new Error("Expected DB test mode: run, local, repeat, or down.");
   const repetitions = mode === "repeat" ? Number(filters.shift() ?? 20) : 1;
   if (!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 100 || (mode === "repeat" && filters.length)) {
@@ -97,7 +97,7 @@ async function main() {
     if (started === 0 && !interrupted) {
       for (let index = 0; index < repetitions && !interrupted; index++) {
         if (mode === "repeat") console.log(`DB suite repetition ${index + 1}/${repetitions}`);
-        result = await runSuite({ ...process.env, TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL }, filters);
+        result = await run(process.execPath, ["scripts/spike-concurrent.mjs"], { ...process.env, TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL });
         if (result !== 0) break;
       }
     }

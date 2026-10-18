@@ -1,3 +1,7 @@
+import { afterAll } from "vitest";
+import { templateFor, cleanupTemplates } from "./spike-template.mjs";
+afterAll(cleanupTemplates);
+import { appendFileSync as spikeAppend } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { mkdtemp, readdir, utimes, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -56,19 +60,25 @@ const withProof = async (run: (context: {
   client: Client; store: Awaited<ReturnType<typeof createLocalPredictiveStore>>; root: string;
   artifacts: Awaited<ReturnType<typeof openArtifactStore>>; target: { expected: object; assertTarget: (config: object) => void };
 }) => Promise<void>, migrationCount?: number) => {
+  const spikeStart = performance.now(); let spikeLast = spikeStart; const spike: any = { file: "predictive.test.ts", name: expect.getState().currentTestName, prefix: migrationCount ?? "latest", phases: {} };
+  const mark = (key: string) => { const now = performance.now(); spike.phases[key] = now - spikeLast; spikeLast = now; };
   const harness = await createScratchHarness(process.env);
   const root = await realpath(await mkdtemp(join(tmpdir(), "dfs-ev-predictive-db-")));
+  mark("adminAndTemp");
   try {
-    const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
+    const template = await templateFor(migrationCount); mark("templateAcquire");
     await harness.withDatabase(async (client: Client, expected: object) => {
+      mark("createConnect");
       const target = { expected, assertTarget: harness.assertTarget };
-      await ensurePredictiveRoles(client);
-      await runScratchMigrations(client, { ...target, files: files.slice(0, migrationCount), verify: createCatalogVerifier(contracts) });
+      await ensurePredictiveRoles(client); mark("roles");
+      // Spike: clone already catalog-verified at the requested migration prefix.
+      mark("migrationsIncludingVerify");
       await ensureHarnessSession(client);
       const artifacts = await openArtifactStore(root); const store = await createLocalPredictiveStore(client, target, artifacts);
-      await run({ client, store, root, artifacts, target });
-    });
-  } finally { try { await harness.close(); } finally { await rm(root, { recursive: true, force: true }); } }
+      mark("sessionArtifactsStore");
+      await run({ client, store, root, artifacts, target }); mark("body");
+    }, template);
+  } finally { try { await harness.close(); } finally { await rm(root, { recursive: true, force: true }); mark("cleanup"); spike.totalMs = performance.now() - spikeStart; spikeAppend(process.env.SPIKE_PROFILE_PATH!, JSON.stringify(spike)+"\n"); } }
 };
 
 it("predictive PostgreSQL seeds exactly the application team identities, refuses others and publishes Rams replay inputs", async () => {
