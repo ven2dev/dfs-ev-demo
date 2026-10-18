@@ -24,11 +24,10 @@ npm run test:db:local
 runs migration/reference/readiness artifact checks, all mandatory Node database
 checks, an independent catalog-contract drift check and the lease/readiness/
 predictive suite. It removes the
-service and its network after tests, including failures, while it holds the
-target lock. A refused contender or a run that loses its lock leaves the shared
-service in place so it cannot tear down another run. Startup failures before
-lock acquisition can also leave resources for explicit teardown. It preserves
-failure exit codes. SIGINT/SIGTERM also
+service and its network after tests, including failed startup, failed Compose
+up and lock loss. Only typed startup lock contention preserves the shared
+service, so a refused contender cannot tear down the active run. Failure exit
+codes are preserved. SIGINT/SIGTERM also
 request cleanup; a forced kill or machine shutdown can prevent cleanup. To
 remove any resources left by an interrupted run:
 
@@ -99,8 +98,11 @@ prefix once, owns interrupted-clone cleanup, and removes the chain after each
 run. See [the #153 design and validation](database-suite-speed.md).
 
 
-`vitest.db.config.mts` selects only `tests/db/**/*.test.ts`, runs files serially,
-and uses real Node timers. The jsdom suite excludes `tests/db/`. Setup installs
+`vitest.db.config.mts` runs the six primary/readiness/corpus files serially.
+`vitest.db.scratch.config.mts` runs four isolated predictive/source files with
+CPU-bounded workers and no primary reset hooks. The runner overlaps that lane
+with Node checks, catalog verification and then serial Vitest; one CPU falls
+back to consecutive lanes. Both use real Node timers. The jsdom suite excludes `tests/db/`. Setup installs
 ordered migrations through the repository runner, then verifies a no-op rerun;
 both calls verify the full application and ledger catalog before commit. The
 generated `db/schema.sql` remains a checked reference and is never executed by

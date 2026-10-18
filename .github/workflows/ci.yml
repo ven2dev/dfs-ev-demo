@@ -108,6 +108,9 @@ jobs:
       - name: Check database target, bootstrap and report guards
         run: npm run test:db:guard
 
+      - name: Verify startup recovery and failure cleanup
+        run: npm run test:db:lifecycle
+
       - name: Verify migration artifacts, catalog contracts and PostgreSQL behavior
         run: npm run test:db:local
 

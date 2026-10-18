@@ -93,8 +93,11 @@ all children and all repeat-mode repetitions. While holding it, startup drops
 every database whose name has the literal `dfs_ev_test_` prefix with FORCE,
 including sealed snapshots and connected abandoned clones, and logs
 `staleDatabasesSwept`. Names are identifier-escaped; `dfs_ev_test` is excluded.
-A refused local contender leaves the shared Compose service running. A lost
-lock connection stops the active child and fails the run.
+A refused local contender leaves the shared Compose service running only when
+startup raises `DatabaseTestRunActiveError` (`DB_TEST_RUN_ACTIVE`). Every other
+startup failure, failed Compose up, or lost lock still runs Compose down, as
+requested by the owner. A lost lock connection stops the active children and
+fails the run.
 
 This is startup reconciliation under an exclusive session lease. Teardown-only
 recovery cannot cover SIGKILL or runner termination; age/TTL-based sweeping
@@ -129,8 +132,55 @@ The normal runner prepares and owns the chain, passes only its manifest path
 to Vitest, reports the deterministic setup counts and cleans up in `finally`.
 `test:db`, `test:db:local` and `test:db:repeat` remain the entry points. Migrated
 fixtures refuse a missing manifest rather than silently reverting to migration
-replay. Files still execute serially in A; no CI workflow or selection rule is
-changed. There are no profiling `any` annotations or lint suppressions.
+replay. Step A kept files serial; Step B partitions the same cases as described below. There are no profiling `any` annotations or lint suppressions.
+
+## B: balanced files and overlapping lanes
+
+**Pattern:** fork/join orchestration of independent test lanes, bounded by
+`os.availableParallelism()`. This follows the measured spike rather than adding
+CI jobs. The serial lane runs the original 75 Node cases, catalog verification,
+then primary/bootstrap/lease/readiness/corpus Vitest files. The scratch lane
+runs source-claims, source-decisions, source-consumers and predictive files with
+independent cloned databases and no primary reset hooks. Corpus role/login
+operations remain in the serial lane. Templates and factory regressions finish
+before the lanes start, avoiding role-creation races.
+
+Source claims are three stable domain groups: source/binding/unavailable
+(39 declarations), canonical facts/witnesses/decisions (31), and consumers (9).
+`sourceClaimsSupport.ts` shares the original fixture helpers. All 79 declarations
+are byte-identical to the baseline; no generated test files or runtime Git
+history are needed. Predictive remains 31 declarations/32 cases.
+
+The allocation reserves `max(1, floor(CPUs / 4))` Node workers, then assigns
+`min(3, max(1, CPUs - Node workers))` scratch workers. On four CPUs this gives
+one Node plus three scratch workers, matching the hosted feasibility check.
+When the Node checks finish, catalog/serial Vitest uses that same lane. On a
+single CPU, the two lanes execute consecutively with one worker each. Three is
+a measured upper bound for scratch concurrency; it is not a fixed worker count
+on smaller runners. Alternatives are serial execution (measured slow),
+unbounded workers (CPU contention), and CI job sharding (duplicated startup;
+explicitly excluded by the owner).
+
+Every spawned child is tracked. Failure or interruption aborts both lanes; the
+parent waits for all children to close before fixture cleanup. Fresh reports
+are required from both lanes. Aggregation checks exact file membership,
+successful summaries, unique passed case names and complete assertion counts.
+The unchanged global named-case validators then gate all 136 Vitest cases.
+These checks prevent a successful sibling or stale/partial output from hiding
+a dropped, duplicated, skipped or failed case.
+
+The single CI job also runs `test:db:lifecycle`: real startup sweep/held-lock
+regressions, followed by an intentional disposable-password authentication
+failure that has to remove the service. Only the typed contention error skips
+Compose teardown. The main suite then starts with the normal public credentials
+in a new disposable service. This verifies the accepted P3 without application
+credentials, test skipping, or migration changes.
+
+Final acceptance is still the complete hosted DB-job median ≤150 seconds
+across three consecutive runs, with none >180 seconds. Local repeat validation
+and committed implementation precede fresh owner consent for a push; no local
+timing is substituted for that CI proof. B stops for commit approval before
+pushing or starting hosted acceptance runs.
 
 ## Evidence and validation
 
@@ -159,6 +209,15 @@ reconciliation rather than expanding teardown: [startup-sweep validation](eviden
 The admin-loss regression moved to the startup tests and now proves that failed
 teardown leaves snapshots that the next startup removes. The existing factory
 regression still proves normal abandoned-clone and malformed-registry cleanup.
+
+Step-B local validation and the remaining hosted acceptance gap are recorded in
+[the B evidence file](evidence/db-suite-speed-B-2026-10-18.json). Three final
+local repeats passed all 75 Node and 136 Vitest cases. A SIGTERM while both
+lanes were active exited 143; the next startup swept two abandoned Node
+fixtures, leaving no prefixed databases and preserving the primary. One
+earlier attempt failed with a masked cleanup error; its underlying cause was
+not reproduced and it is excluded from passing evidence. Diagnostics now
+preserve original and cleanup errors together. Hosted acceptance is pending.
 
 ## Approval checkpoints
 

@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { createTemplateRun } from "./templates.mts";
 import { test } from "node:test";
 import { Client } from "pg";
-import { startDatabaseTestRun } from "./startup.mts";
+import { DatabaseTestRunActiveError, startDatabaseTestRun } from "./startup.mts";
 import { parseTestDatabaseUrl } from "./target.mts";
 
 const execute = promisify(execFile);
@@ -46,7 +46,10 @@ test("a held session lock refuses a concurrent runner before it sweeps or starts
   const name = "dfs_ev_test_" + randomBytes(10).toString("hex");
   try {
     await admin.connect(); await admin.query(`CREATE DATABASE "${name}"`);
-    await assert.rejects(execute(process.execPath, ["scripts/test-db.mjs", "run"], { env: process.env, timeout: 10000 }), (error) => {
+    await assert.rejects(startDatabaseTestRun(process.env), (error) =>
+      error instanceof DatabaseTestRunActiveError && error.code === "DB_TEST_RUN_ACTIVE");
+    for (const mode of ["run", "local"]) await assert.rejects(execute(process.execPath,
+      ["scripts/test-db.mjs", mode], { env: process.env, timeout: 20000 }), (error) => {
       assert.equal(error.code, 1);
       assert.match(error.stderr, /another DB test run is active on this target/);
       assert.equal(error.stdout, "");

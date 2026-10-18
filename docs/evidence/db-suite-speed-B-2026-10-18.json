@@ -1,0 +1,241 @@
+{
+  "issue": 153,
+  "step": "B local implementation and review checkpoint",
+  "parentCommit": "76e17d9",
+  "completedAtUtc": "2026-10-18T11:40:07.646449+00:00",
+  "cap": "3 active engineering hours; waiting for owner service reservation excluded",
+  "status": "Uncommitted; no push. Three final hosted jobs remain pending owner commit approval and fresh push consent.",
+  "ownerTarget": {
+    "completeCiJobMedianOfThreeSeconds": 150,
+    "maximumIndividualJobSeconds": 180,
+    "ciSharding": false,
+    "proved": false
+  },
+  "pattern": "Balanced stable test files with shared helpers, run-scoped templates and fork/join lanes in one CI job",
+  "groups": {
+    "sourceClaims": 39,
+    "sourceDecisions": 31,
+    "sourceConsumers": 9,
+    "predictiveDeclarations": 31,
+    "predictiveCases": 32
+  },
+  "declarationPreservation": {
+    "sourceClaims.test.ts": {
+      "count": 79,
+      "files": [
+        "sourceClaims.test.ts",
+        "sourceDecisions.test.ts",
+        "sourceConsumers.test.ts"
+      ],
+      "sha256": "b648610ca0abd429db19b3972cb262f4f5587e92a1028b57688a3086e4c66e97"
+    },
+    "predictive.test.ts": {
+      "count": 31,
+      "files": [
+        "predictive.test.ts"
+      ],
+      "sha256": "bbf9c5ea738cc3f8933660feb25395e4c8dc55db4826c7ebff8c40312d4ef55c"
+    },
+    "corpus.test.ts": {
+      "count": 3,
+      "files": [
+        "corpus.test.ts"
+      ],
+      "sha256": "a274f60a330e72be7e7f441aaaa6f7825514950b64d5fee8f3d6ad7f5dc4693c"
+    },
+    "corpusImport.test.ts": {
+      "count": 5,
+      "files": [
+        "corpusImport.test.ts"
+      ],
+      "sha256": "51991581d41a2d448ae52ae6decde6c0ee597b9531af393ee06fe0ea57350283"
+    }
+  },
+  "localValidation": {
+    "guard": {
+      "passed": 21,
+      "skipped": 0
+    },
+    "lint": "pass",
+    "typecheck": "pass",
+    "applicationTests": {
+      "node": 898,
+      "jsdom": 666,
+      "status": "pass"
+    },
+    "ciAggregationTests": {
+      "passed": 3
+    },
+    "lifecycleIntegration": {
+      "passed": 1,
+      "nestedStartupRegressions": 3,
+      "nonContentionFault": "disposable role password changed; actual local runner failed authentication; Compose service then absent",
+      "typedContention": "DB_TEST_RUN_ACTIVE; run and local contenders refused while preserving active service",
+      "failedUp": "mocked Docker up failed; actual runner still issued down"
+    },
+    "repeat": {
+      "command": "npm run test:db:repeat -- 3",
+      "exitCode": 0,
+      "requiredCaseReports": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        },
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        },
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ],
+      "templateSetups": [
+        {
+          "migrationVersions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "templateCount": 11,
+          "catalogVerifications": 11
+        },
+        {
+          "migrationVersions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "templateCount": 11,
+          "catalogVerifications": 11
+        },
+        {
+          "migrationVersions": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "templateCount": 11,
+          "catalogVerifications": 11
+        }
+      ],
+      "workerAllocations": [
+        {
+          "availableCPUs": 12,
+          "nodeWorkers": 3,
+          "scratchWorkers": 3,
+          "overlap": true
+        },
+        {
+          "availableCPUs": 12,
+          "nodeWorkers": 3,
+          "scratchWorkers": 3,
+          "overlap": true
+        },
+        {
+          "availableCPUs": 12,
+          "nodeWorkers": 3,
+          "scratchWorkers": 3,
+          "overlap": true
+        }
+      ],
+      "laneSeconds": [
+        5.76,
+        55.25,
+        5.64,
+        54.45,
+        5.64,
+        53.07
+      ],
+      "timingBoundary": "Vitest lane times only; serial lane overlaps scratch. Not complete suite or CI-job timing.",
+      "serviceAndNetworkRemoved": true
+    },
+    "interruption": {
+      "bothLanesObserved": true,
+      "afterRecoverySweep": [],
+      "signal": "SIGTERM",
+      "exitCode": 143,
+      "observedActiveClone": true,
+      "remainingRunDatabases": [],
+      "primaryDatabase": "dfs_ev_test"
+    }
+  },
+  "allocation": {
+    "fourCpuUnitVerified": {
+      "node": 1,
+      "scratch": 3
+    },
+    "singleCpu": "lanes consecutive, one worker each"
+  },
+  "earlierFailedAttempt": {
+    "counted": false,
+    "observed": "First parallel repeat ended with a template cleanup error before complete lane reports. Original failure was masked; underlying cause was not reproduced.",
+    "change": "Preserve original and cleanup failures together and report aggregate messages.",
+    "subsequent": "Diagnostic full run plus three consecutive final repeats passed.",
+    "logSha256": "a354c06e5221275e48981203a7524dde92769ecd7cb6c3177fc623e3fc404607"
+  },
+  "sourceSha256": {
+    "scripts/test-db.mjs": "a90ab9ddf0f7e045a7f59605d87f3a6ff0a3fe907301285c781f4abd351c7214",
+    "scripts/db-test-lanes.mjs": "74a66d6c6975970d26780a88e574a99285d08f535c470b7fb8ad4376ed73cd0f",
+    "scripts/db-test-workers.mjs": "6afb761d4e27befc8d5ca1d3b45e47498e6ba971f6998b6731921766c67807db",
+    "tests/db/sourceClaimsSupport.ts": "5e19a00f8f2750bf1b547eca5da4289f4afd50e8c959a1b6261441b43ac7ac45",
+    "tests/db/sourceClaims.test.ts": "87d077944d89779189ca8421aa4a3f0113e2302a40103cb02f27f5facce70238",
+    "tests/db/sourceDecisions.test.ts": "09146e39c9ec68c9b5905095df163523e09c31a325f759ee9e8970dcbe7c56bd",
+    "tests/db/sourceConsumers.test.ts": "138cfd33838894135bc3f9cb8f195d6cf4a2f7d32d402e8059688e065cc4bea6",
+    "tests/db/startup.mts": "1cfbb77cc957c8a89904611ffc2452b3f61cb274940af3497e3e15f790f2e549",
+    "tests/db/startup.integration.check.mjs": "1b0cae6ce109fe20e6c2f1483c897baef324c9ff8aa5f2d2651e987e8a3b5cfe",
+    "tests/db/lifecycle.integration.check.mjs": "176ae2aa674309af59ac072d732970d27a3bcaaef8734fb21b411dfde50b45d1",
+    "tests/db/lifecycle-unit.check.mjs": "adc68d580c8fc7f64461c7c48d823e8de487c5fbe0eb7c177d81b0927025e40c",
+    "tests/db/lanes-unit.check.mjs": "c79909e9adf0b4f32420fd523f3c1d99c7ae442ae0254d9ee48c56f682236a34",
+    "vitest.db.config.mts": "8a45bc45fbfd0ae808cda7aa66d3328eef21665f9348b2f10dea8e89f49c8cd6",
+    "vitest.db.scratch.config.mts": "664ded657ba4916c132fc12f65645f934a8381877c7be8107050ddaedbee4a67",
+    ".github/workflows/ci.yml": "71d23aeb474cf5dc132e5a7657b54d08a920f039fef48d8495d2661220935c55"
+  },
+  "validationLogSha256": {
+    "repeat-final.log": "c17cc7cca90ce07529802b906ec191dc6ecdef93ae1fde0e99ed1695236fe336",
+    "diagnostic.log": "f02626b35f524ea6a347ed8eb34b3f95d269b2adc818f7b2094833b83a2b4140",
+    "guard.log": "7cf8c3db134399ed00d108eb518d5dbca309f51ee44d46852c3889caf1dc5ba2",
+    "lint.log": "b7aa93b961bf11814b8023fd7dd6e8504cb62e568a56f6af0afa43c7a2f0b701",
+    "typecheck.log": "c5ce797f4d891a7c297cfcf70cd71c9361eab3ab883b9f49011bdd73d1181e1c",
+    "app-tests.log": "1ba2d1bd4e2ab447dd7253492e617836b650627e08178a4a0f19371e7d2e08a1",
+    "ci-gate.log": "159f2eda09ad1a974455a1b3dc5cd3dc2b6334a8455538d2fce0b872632dd3e6",
+    "lifecycle.log": "2cc7fd411bf26f516a37ee0e8b559cb240c818d60b1192f12a07e6af4f10700d",
+    "interrupt-result.log": "4edba5afef5eb33304b261ffb61968cf7e42ccea63b91eb072e1428412aa8356"
+  }
+}

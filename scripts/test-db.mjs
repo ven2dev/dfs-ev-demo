@@ -1,5 +1,7 @@
-import { startDatabaseTestRun } from "../tests/db/startup.mts";
+import { DatabaseTestRunActiveError, startDatabaseTestRun } from "../tests/db/startup.mts";
 import { createTemplateRun } from "../tests/db/templates.mts";
+import { databaseTestWorkers } from "./db-test-workers.mjs";
+import { mergeDatabaseReports } from "./db-test-lanes.mjs";
 import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -18,14 +20,14 @@ const composeArgs = [
   "-f", fileURLToPath(new URL("../compose.test.yml", import.meta.url)),
 ];
 const stop = new AbortController();
-let activeChild;
+const activeChildren = new Set();
 let interrupted;
-const lostLock = () => { stop.abort(); activeChild?.kill("SIGTERM"); };
+const lostLock = () => { stop.abort(); for (const child of activeChildren) child.kill("SIGTERM"); };
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => {
     interrupted = signal;
     stop.abort();
-    activeChild?.kill("SIGTERM");
+    for (const child of activeChildren) child.kill("SIGTERM");
   });
 }
 
@@ -33,11 +35,11 @@ function run(command, args, environment = process.env, signal) {
   if (signal?.aborted) return Promise.resolve(1);
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, { cwd: root, env: environment, stdio: "inherit", signal });
-    activeChild = child;
+    activeChildren.add(child);
     let failure;
     child.on("error", (error) => { failure = error; });
     child.on("close", (code) => {
-      if (activeChild === child) activeChild = undefined;
+      activeChildren.delete(child);
       if (failure) reject(failure);
       else resolve(code ?? 1);
     });
@@ -50,38 +52,58 @@ async function runSuite(environment, filters, leaseSignal) {
   leaseSignal.throwIfAborted();
   const reportDir = await mkdtemp(join(tmpdir(), "dfs-ev-db-test-"));
   let templates;
+  let failure;
   try {
     let code = await run(process.execPath, ["scripts/db-migration-artifacts.mjs", "check"], environment);
     if (code !== 0 || interrupted) return code || 1;
     code = await run(process.execPath, ["scripts/db-readiness-manifest.mjs", "check"], environment);
     if (code !== 0 || interrupted) return code || 1;
-    const nodeReportPath = join(reportDir, "node-results.json");
-    code = await run(process.execPath, [
-      "--test", "--test-concurrency=4", "--test-timeout=60000",
-      "--test-reporter=spec", "--test-reporter=./scripts/db-test-reporter.mjs",
-      "--test-reporter-destination=stdout", "--test-reporter-destination=" + nodeReportPath,
-      ...Object.keys(NODE_REQUIRED_CASES),
-    ], environment);
-    if (code !== 0 || interrupted) return code || 1;
-    const nodeRequiredCases = validateNodeDbReport(JSON.parse(await readFile(nodeReportPath, "utf8")));
-    code = await run(process.execPath, ["scripts/db-catalog-contracts.mjs", "check"], environment);
-    if (code !== 0 || interrupted) return code || 1;
-    code = await run(process.execPath, ["--test", "--test-timeout=60000", "tests/db/templates.integration.check.mjs"], environment);
+    code = await run(process.execPath, ["--test", "--test-timeout=60000", "tests/db/templates.integration.check.mjs"], environment, leaseSignal);
     if (code !== 0 || interrupted) return code || 1;
     const templateDirectory = join(reportDir, "templates");
     await mkdir(templateDirectory, { mode: 0o700 });
     templates = await createTemplateRun(environment, templateDirectory, stop.signal);
     if (interrupted) return 1;
     console.log(JSON.stringify({ templateSetup: templates.stats }));
+    const workers = databaseTestWorkers();
+    console.log(JSON.stringify({ dbWorkers: workers }));
     const templateEnvironment = { ...environment, TEST_DATABASE_TEMPLATE_MANIFEST: templates.manifestPath };
-    const reportPath = join(reportDir, "results.json");
-    code = await run(process.execPath, [
+    const laneStop = new AbortController();
+    const signal = AbortSignal.any([templates.failureSignal, leaseSignal, stop.signal, laneStop.signal]);
+    const checked = async (args) => {
+      const result = await run(process.execPath, args, templateEnvironment, signal);
+      if (result !== 0) throw new Error("DB test lane failed with exit code " + result);
+    };
+    const nodeReportPath = join(reportDir, "node-results.json");
+    const serialPath = join(reportDir, "serial-results.json");
+    const scratchPath = join(reportDir, "scratch-results.json");
+    let nodeRequiredCases;
+    const vitest = (config, path) => checked([
       fileURLToPath(new URL("../node_modules/vitest/vitest.mjs", import.meta.url)),
-      "run", "--config", "vitest.db.config.mts", "--reporter=default",
-      "--reporter=json", "--outputFile.json=" + reportPath, ...filters,
-    ], templateEnvironment, AbortSignal.any([templates.failureSignal, leaseSignal]));
-    if (code !== 0 || interrupted) return code || 1;
-    const report = JSON.parse(await readFile(reportPath, "utf8"));
+      "run", "--config", config, "--reporter=default", "--reporter=json", "--outputFile.json=" + path, ...filters,
+    ]);
+    const serialLane = async () => {
+      await checked(["--test", "--test-concurrency=" + workers.nodeWorkers, "--test-timeout=60000",
+        "--test-reporter=spec", "--test-reporter=./scripts/db-test-reporter.mjs",
+        "--test-reporter-destination=stdout", "--test-reporter-destination=" + nodeReportPath,
+        ...Object.keys(NODE_REQUIRED_CASES)]);
+      nodeRequiredCases = validateNodeDbReport(JSON.parse(await readFile(nodeReportPath, "utf8")));
+      await checked(["scripts/db-catalog-contracts.mjs", "check"]);
+      await vitest("vitest.db.config.mts", serialPath);
+    };
+    const scratchLane = () => vitest("vitest.db.scratch.config.mts", scratchPath);
+    if (workers.overlap) {
+      const lanes = [serialLane, scratchLane].map(async (lane) => {
+        try { await lane(); } catch (error) { laneStop.abort(); throw error; }
+      });
+      const results = await Promise.allSettled(lanes);
+      const failures = results.filter((result) => result.status === "rejected");
+      if (failures.length) throw new AggregateError(failures.map((result) => result.reason), "DB test lanes failed.");
+    } else {
+      await serialLane(); await scratchLane();
+    }
+    const report = mergeDatabaseReports(JSON.parse(await readFile(serialPath, "utf8")),
+      JSON.parse(await readFile(scratchPath, "utf8")));
     const leaseRequiredCases = validateLeaseDbReport(report);
     const readinessRequiredCases = validateReadinessDbReport(report);
     const predictiveRequiredCases = validatePredictiveDbReport(report);
@@ -89,9 +111,15 @@ async function runSuite(environment, filters, leaseSignal) {
     console.log(JSON.stringify({ nodeRequiredCases, leaseRequiredCases, readinessRequiredCases, predictiveRequiredCases, corpusRequiredCases, result: "verified" }));
     leaseSignal.throwIfAborted();
     return 0;
+  } catch (error) {
+    failure = error;
+    throw error;
   } finally {
-    await templates?.close();
-    await rm(reportDir, { recursive: true, force: true });
+    try { await templates?.close(); }
+    catch (cleanup) {
+      if (failure) throw new AggregateError([failure, cleanup], "DB suite and cleanup failed.");
+      throw cleanup;
+    } finally { await rm(reportDir, { recursive: true, force: true }); }
   }
 }
 
@@ -118,6 +146,7 @@ async function main() {
   }
   let result = 1;
   let lease;
+  let contention = false;
   try {
     const started = await run("docker", [...composeArgs, "up", "-d", "--wait", "--wait-timeout", "60"]);
     if (started === 0 && !interrupted) {
@@ -129,26 +158,28 @@ async function main() {
         if (result !== 0) break;
       }
     }
+  } catch (error) {
+    contention = error instanceof DatabaseTestRunActiveError;
+    throw error;
   } finally {
-    // A refused contender must not tear down the service used by the lock holder.
-    if (lease) {
-      lease.failureSignal.removeEventListener("abort", lostLock);
-      try {
-        // Losing the session also loses authority to remove the shared service.
-        if (!lease.failureSignal.aborted) {
-          const cleaned = await run("docker", [...composeArgs, "down", "--volumes", "--remove-orphans"]);
-          if (cleaned !== 0) result = 1;
-        } else result = 1;
-      } finally { await lease.close(); }
-    }
+    lease?.failureSignal.removeEventListener("abort", lostLock);
+    try {
+      if (!contention) {
+        const cleaned = await run("docker", [...composeArgs, "down", "--volumes", "--remove-orphans"]);
+        if (cleaned !== 0) result = 1;
+      }
+    } finally { await lease?.close(); }
   }
+
   return result;
 }
 
 try {
   process.exitCode = await main();
 } catch (error) {
-  console.error(error instanceof Error ? error.message : "DB test harness failed.");
+  const messages = (value) => value instanceof AggregateError ?
+    [value.message, ...value.errors.flatMap(messages)] : [value instanceof Error ? value.message : "DB test harness failed."];
+  console.error(messages(error).join("\n"));
   process.exitCode = 1;
 }
 if (interrupted) process.exitCode = interrupted === "SIGINT" ? 130 : 143;
