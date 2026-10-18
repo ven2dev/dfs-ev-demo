@@ -52,13 +52,12 @@ updates:
           - "@testing-library/*"
           - pg
           - "@types/pg"
+      # rules-unit-testing peers on firebase's major version; they must move together.
       firebase-client:
         applies-to: version-updates
         patterns:
           - firebase
           - "@firebase/*"
-        exclude-patterns:
-          - "@firebase/rules-unit-testing"
       firebase-admin:
         applies-to: version-updates
         patterns:
@@ -67,7 +66,6 @@ updates:
         applies-to: version-updates
         patterns:
           - firebase-tools
-          - "@firebase/rules-unit-testing"
       production-minor-patch:
         applies-to: version-updates
         dependency-type: production
