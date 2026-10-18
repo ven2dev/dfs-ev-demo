@@ -353,10 +353,10 @@ export const SlateBrowser = () => {
       )}
 
       {realSlateStatus === "loading" && (
-        <p className="mt-2 text-sm text-zinc-500">Loading this week&rsquo;s games…</p>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Loading this week&rsquo;s games…</p>
       )}
       {realSlateStatus === "error" && (
-        <p className="mt-2 text-sm text-red-600">{realSlateError}</p>
+        <p className="mt-2 text-sm text-red-700 dark:text-red-400">{realSlateError}</p>
       )}
 
       {realSlateStatus === "loaded" && (
@@ -426,7 +426,7 @@ export const SlateBrowser = () => {
               </div>
 
               {discoveryStatus === "error" && (
-                <p className="mt-2 text-sm text-red-600">{discoveryError}</p>
+                <p className="mt-2 text-sm text-red-700 dark:text-red-400">{discoveryError}</p>
               )}
 
               {visibleDiscoveredProps.length > 0 && (
@@ -462,7 +462,7 @@ export const SlateBrowser = () => {
                           <button
                             type="button"
                             onClick={() => setSmartDefault(true)}
-                            className="min-h-11 rounded px-2 py-1.5 text-xs text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                            className="min-h-11 rounded px-2 py-1.5 text-xs text-zinc-600 dark:text-zinc-400 underline hover:text-zinc-900 dark:hover:text-zinc-100"
                           >
                             Reset to best
                           </button>
@@ -484,7 +484,7 @@ export const SlateBrowser = () => {
 
                   {!comparisonMode && (
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                      <span className="text-zinc-500">Track side:</span>
+                      <span className="text-zinc-600 dark:text-zinc-400">Track side:</span>
                       {(["over", "under"] as const).map((direction) => (
                         <button
                           key={direction}
@@ -499,7 +499,7 @@ export const SlateBrowser = () => {
                           {direction}
                         </button>
                       ))}
-                      <span className="w-full text-zinc-500 sm:ml-2 sm:w-auto">Watch button assigns:</span>
+                      <span className="w-full text-zinc-600 dark:text-zinc-400 sm:ml-2 sm:w-auto">Watch button assigns:</span>
                       {(["primary", "secondary"] as const).map((target) => (
                         <button
                           key={target}
@@ -525,14 +525,14 @@ export const SlateBrowser = () => {
                           className="flex flex-wrap items-center justify-between gap-2 rounded bg-zinc-50 px-3 py-2 dark:bg-zinc-900"
                         >
                           <span>
-                            <span className="text-zinc-400">Primary: </span>
+                            <span className="text-zinc-600 dark:text-zinc-400">Primary: </span>
                             {primaryWatch.playerName} — {primaryWatch.propType} (
                             {primaryWatch.direction}, {primaryWatch.bookmakerKey})
                           </span>
                           <button
                             type="button"
                             onClick={() => setPrimaryWatch(null)}
-                            className="min-h-11 min-w-11 text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                            className="min-h-11 min-w-11 text-zinc-600 dark:text-zinc-400 underline hover:text-zinc-900 dark:hover:text-zinc-100"
                           >
                             Clear
                           </button>
@@ -544,14 +544,14 @@ export const SlateBrowser = () => {
                           className="flex flex-wrap items-center justify-between gap-2 rounded bg-zinc-50 px-3 py-2 dark:bg-zinc-900"
                         >
                           <span>
-                            <span className="text-zinc-400">Secondary: </span>
+                            <span className="text-zinc-600 dark:text-zinc-400">Secondary: </span>
                             {secondaryWatch.playerName} — {secondaryWatch.propType} (
                             {secondaryWatch.direction}, {secondaryWatch.bookmakerKey})
                           </span>
                           <button
                             type="button"
                             onClick={() => setSecondaryWatch(null)}
-                            className="min-h-11 min-w-11 text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                            className="min-h-11 min-w-11 text-zinc-600 dark:text-zinc-400 underline hover:text-zinc-900 dark:hover:text-zinc-100"
                           >
                             Clear
                           </button>
@@ -571,7 +571,7 @@ export const SlateBrowser = () => {
                             key={bookmakerKey}
                             className={`flex min-h-11 max-w-full items-center gap-1.5 break-words rounded border px-2 py-1.5 text-sm ${
                               atLimit
-                                ? "border-zinc-100 text-zinc-400 dark:border-zinc-900"
+                                ? "border-zinc-100 text-zinc-600 dark:text-zinc-400 dark:border-zinc-900"
                                 : "border-zinc-300 dark:border-zinc-700"
                             }`}
                           >
@@ -585,7 +585,7 @@ export const SlateBrowser = () => {
                           </label>
                         );
                       })}
-                      <p className="w-full text-xs text-zinc-400">
+                      <p className="w-full text-xs text-zinc-600 dark:text-zinc-400">
                         Up to {MAX_COMPARISON_BOOKMAKERS} bookmakers, space permitting.
                       </p>
                     </div>

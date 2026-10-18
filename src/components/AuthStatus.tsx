@@ -26,7 +26,7 @@ const AvatarIcon = () => (
   <svg
     viewBox="0 0 24 24"
     fill="currentColor"
-    className="h-full w-full text-zinc-500 dark:text-zinc-400"
+    className="h-full w-full text-zinc-600 dark:text-zinc-400"
     aria-hidden="true"
   >
     <circle cx="12" cy="8" r="4" />
@@ -101,14 +101,14 @@ export const AuthStatus = () => {
   };
 
   if (authStatus === "loading") {
-    return <span className="text-sm text-zinc-500">…</span>;
+    return <span className="text-sm text-zinc-600 dark:text-zinc-400">…</span>;
   }
 
   if (authStatus === "unavailable") {
     return (
       <div className="flex flex-col items-end gap-1">
-        <span className="text-sm text-zinc-500">Sign-in unavailable</span>
-        {authError && <p className="text-xs text-red-600">{authError}</p>}
+        <span className="text-sm text-zinc-600 dark:text-zinc-400">Sign-in unavailable</span>
+        {authError && <p className="text-xs text-red-700 dark:text-red-400">{authError}</p>}
       </div>
     );
   }
@@ -153,7 +153,7 @@ export const AuthStatus = () => {
             </button>
           </div>
         )}
-        {authError && <p className="text-xs text-red-600">{authError}</p>}
+        {authError && <p className="text-xs text-red-700 dark:text-red-400">{authError}</p>}
       </div>
     );
   }
@@ -167,7 +167,7 @@ export const AuthStatus = () => {
       >
         Sign in with Google
       </button>
-      {authError && <p className="text-xs text-red-600">{authError}</p>}
+      {authError && <p className="text-xs text-red-700 dark:text-red-400">{authError}</p>}
     </div>
   );
 };

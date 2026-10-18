@@ -79,7 +79,7 @@ export const PlayerPropsCard = ({
         <p className="min-w-0 break-words text-sm font-medium">{player.playerName}</p>
       </div>
 
-      <p id={scrollHintId} className="mt-3 text-xs text-zinc-600 dark:text-zinc-400">
+      <p id={scrollHintId} className="mt-3 text-xs sm:sr-only text-zinc-600 dark:text-zinc-400">
         Scroll the table sideways for all prices and actions. Keyboard: focus the table, then use arrow keys.
       </p>
       <div
@@ -91,8 +91,8 @@ export const PlayerPropsCard = ({
       >
         <table className="w-full min-w-max border-separate border-spacing-0 text-xs">
           <thead>
-            <tr className="text-left text-zinc-400">
-              <th scope="col" className="sticky left-0 z-10 bg-white py-1 pr-4 text-zinc-600 dark:bg-black dark:text-zinc-400 font-normal">Prop</th>
+            <tr className="text-left text-zinc-600 dark:text-zinc-400">
+              <th scope="col" className="sticky left-0 z-10 bg-zinc-50 py-1 pr-4 text-zinc-600 dark:bg-black dark:text-zinc-400 font-normal">Prop</th>
               {mode === "single" ? (
                 <>
                   <th scope="col" className="py-1 pr-4 font-normal">Book</th>
@@ -127,7 +127,7 @@ export const PlayerPropsCard = ({
 
               return (
                 <tr key={market.marketKey} className="border-t border-zinc-100 dark:border-zinc-900">
-                  <th scope="row" className="sticky left-0 z-10 w-28 max-w-32 border-r border-zinc-200 bg-white py-2 pr-4 text-left font-normal whitespace-normal dark:border-zinc-800 dark:bg-black">
+                  <th scope="row" className="sticky left-0 z-10 w-28 max-w-32 border-r border-zinc-200 bg-zinc-50 py-2 pr-4 text-left font-normal whitespace-normal dark:border-zinc-800 dark:bg-black">
                     {marketLabel(market.marketKey as PlayerPropMarketKey)}
                   </th>
 
@@ -181,18 +181,18 @@ export const PlayerPropsCard = ({
                             direction: watchDirection,
                           })
                         }
-                        className="min-h-11 min-w-11 rounded px-2 py-1.5 text-zinc-500 underline hover:text-zinc-900 disabled:opacity-40 disabled:no-underline dark:hover:text-zinc-100"
+                        className="min-h-11 min-w-11 rounded px-2 py-1.5 text-zinc-600 dark:text-zinc-400 underline hover:text-zinc-900 disabled:cursor-not-allowed disabled:no-underline dark:hover:text-zinc-100"
                       >
                         Watch {watchDirection === "over" ? "Over" : "Under"}
                       </button>
                     )}
                     {mode === "single" && capability && !capability.trackable && (
-                      <span className="px-2 py-1.5 text-zinc-400">Browse only</span>
+                      <span className="px-2 py-1.5 text-zinc-600 dark:text-zinc-400">Browse only</span>
                     )}
                     <button
                       type="button"
                       onClick={() => onSeeAll(market.marketKey)}
-                      className="min-h-11 min-w-11 rounded px-2 py-1.5 text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                      className="min-h-11 min-w-11 rounded px-2 py-1.5 text-zinc-600 dark:text-zinc-400 underline hover:text-zinc-900 dark:hover:text-zinc-100"
                     >
                       See all
                     </button>

@@ -11,7 +11,7 @@ const COLORS = {
   disconnected: "bg-red-600",
 } as const;
 
-export function ConnectionIndicator() {
+export const ConnectionIndicator = () => {
   const status = useConnectionStatus();
   const primaryWatch = usePrimaryWatch();
   const source = useAppStore((state) =>
@@ -37,4 +37,4 @@ export function ConnectionIndicator() {
       <span>{label}</span>
     </div>
   );
-}
+};

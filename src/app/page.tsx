@@ -190,7 +190,7 @@ export default function Home() {
       // A genuine fetch failure, not just "still loading" -- shown
       // distinctly rather than an indefinite spinner, since we
       // genuinely don't know this account's real state yet.
-      <div className="text-sm text-red-600">
+      <div className="text-sm text-red-700 dark:text-red-400">
         {dataLoadError}{" "}
         <button
           type="button"
@@ -201,7 +201,7 @@ export default function Home() {
         </button>
       </div>
     ) : (
-      <p className="text-sm text-zinc-500">Loading…</p>
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">Loading…</p>
     );
   }
 
@@ -210,7 +210,7 @@ export default function Home() {
       <SlateBrowser />
 
       {!primaryWatch && (
-        <section className="min-w-0 break-words rounded-lg border border-zinc-200 p-4 sm:p-6 text-sm text-zinc-500 dark:border-zinc-800">
+        <section className="min-w-0 break-words rounded-lg border border-zinc-200 p-4 sm:p-6 text-sm text-zinc-600 dark:text-zinc-400 dark:border-zinc-800">
           Select a game and a prop above, then click <strong>Watch</strong> to start
           tracking its EV here.
         </section>
@@ -227,7 +227,7 @@ export default function Home() {
           <h2 className="text-lg font-medium">
             {primaryWatch.awayTeam} @ {primaryWatch.homeTeam}
           </h2>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             {primaryWatch.playerName} — {primaryWatch.propType}, line{" "}
             {watched?.line ?? "—"} ({primaryWatch.direction}, {primaryWatch.bookmakerKey};{" "}
             {provenance.line})
@@ -381,7 +381,7 @@ export default function Home() {
             </p>
           </div>
         ) : (
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             {primaryWatch ? provenance.waiting : "Nothing watched yet."}
           </p>
         )}
@@ -420,7 +420,7 @@ export default function Home() {
               // in, since nothing re-ran to clear it until the next click.
               <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">Sign in to watch this prop.</p>
             ) : (
-              watchError && <p className="mt-2 text-xs text-red-600">{watchError}</p>
+              watchError && <p className="mt-2 text-xs text-red-700 dark:text-red-400">{watchError}</p>
             )}
           </div>
         )}

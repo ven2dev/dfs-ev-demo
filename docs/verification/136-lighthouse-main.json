@@ -1,29 +1,78 @@
 {
   "issue": 136,
-  "source": "production webpack build, fixture mode, signed out, initial main-page state",
-  "url": "http://localhost:3138/",
-  "fetchTime": "2026-10-18T17:48:47.888Z",
-  "lighthouseVersion": "13.5.0",
-  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
-  "accessibilityScore": 0.95,
-  "formFactor": "mobile",
-  "screenEmulation": {
-    "mobile": true,
-    "width": 412,
-    "height": 823,
-    "deviceScaleFactor": 1.75,
-    "disabled": false
-  },
-  "failedAudits": [
+  "source": "production webpack build, fixture mode, signed out, loaded results and active watched prop",
+  "url": "http://localhost:3139/",
+  "procedure": [
+    "Select fixture game, check Passing Yards and Anytime Touchdown, Show props.",
+    "Watch Avery Stone Passing Yards as Primary; select Jordan Vale as Secondary.",
+    "DevTools > Lighthouse: Snapshot, Mobile, Accessibility only; Analyze page state.",
+    "Repeat using DevTools Emulate CSS prefers-color-scheme: light; then open Avery Stone Passing Yards See all and repeat."
+  ],
+  "runs": [
     {
-      "id": "color-contrast",
-      "title": "Background and foreground colors do not have a sufficient contrast ratio."
+      "attachment": "populated-mobile-dark.json",
+      "colorScheme": "dark",
+      "state": "fixture Passing Yards + Anytime Touchdown results, primary Avery Stone watched, secondary Jordan Vale selected",
+      "fetchTime": "2026-10-18T19:55:55.640Z",
+      "lighthouseVersion": "13.4.1",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "accessibilityScore": 1,
+      "colorContrastScore": 1,
+      "gatherMode": "snapshot",
+      "formFactor": "mobile",
+      "screenEmulation": {
+        "mobile": true,
+        "width": 412,
+        "height": 823,
+        "deviceScaleFactor": 1.75,
+        "disabled": true
+      },
+      "failedAudits": []
+    },
+    {
+      "attachment": "populated-mobile-light.json",
+      "colorScheme": "light",
+      "state": "same populated fixture state",
+      "fetchTime": "2026-10-18T19:58:12.229Z",
+      "lighthouseVersion": "13.4.1",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "accessibilityScore": 1,
+      "colorContrastScore": 1,
+      "gatherMode": "snapshot",
+      "formFactor": "mobile",
+      "screenEmulation": {
+        "mobile": true,
+        "width": 412,
+        "height": 823,
+        "deviceScaleFactor": 1.75,
+        "disabled": true
+      },
+      "failedAudits": []
+    },
+    {
+      "attachment": "bookmaker-sheet-mobile-light.json",
+      "colorScheme": "light",
+      "state": "populated fixture state with Avery Stone Passing Yards bookmaker sheet open",
+      "fetchTime": "2026-10-18T19:59:11.922Z",
+      "lighthouseVersion": "13.4.1",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "accessibilityScore": 1,
+      "colorContrastScore": 1,
+      "gatherMode": "snapshot",
+      "formFactor": "mobile",
+      "screenEmulation": {
+        "mobile": true,
+        "width": 412,
+        "height": 823,
+        "deviceScaleFactor": 1.75,
+        "disabled": true
+      },
+      "failedAudits": []
     }
   ],
-  "command": "npx --yes lighthouse http://localhost:3138/ --only-categories=accessibility --output=json --chrome-flags=--headless",
   "limitations": [
-    "Does not establish authenticated account accessibility (deferred by owner).",
-    "Does not establish Chrome installability or actual installation.",
-    "Contrast audit failures remain despite meeting the >=90 score target."
+    "Automated accessibility checks do not prove full WCAG conformance.",
+    "Authenticated account audit remains deferred by owner.",
+    "Raw reports and screenshots are external PR attachments, not repository assets."
   ]
 }

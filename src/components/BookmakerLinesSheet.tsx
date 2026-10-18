@@ -53,7 +53,7 @@ export const BookmakerLinesSheet = ({ target, players, onClose }: BookmakerLines
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 break-words">
             <p className="text-sm font-medium">{target.playerName}</p>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-zinc-600 dark:text-zinc-400">
               {marketLabel(target.marketKey as PlayerPropMarketKey)} — all bookmakers
             </p>
           </div>
@@ -61,7 +61,7 @@ export const BookmakerLinesSheet = ({ target, players, onClose }: BookmakerLines
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="min-h-11 min-w-11 shrink-0 rounded px-3 py-2 text-sm text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+            className="min-h-11 min-w-11 shrink-0 rounded px-3 py-2 text-sm text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900"
           >
             ✕
           </button>
@@ -69,7 +69,7 @@ export const BookmakerLinesSheet = ({ target, players, onClose }: BookmakerLines
 
         <table className="mt-3 w-full table-fixed text-sm">
           <thead>
-            <tr className="text-left text-zinc-400">
+            <tr className="text-left text-zinc-600 dark:text-zinc-400">
               <th scope="col" className="w-[44%] py-1 pr-2 font-normal">Bookmaker</th>
               {!isYesMarket && <th scope="col" className="w-[20%] py-1 pr-2 font-normal">Line</th>}
               <th scope="col" className="py-1 font-normal">{isYesMarket ? "Price" : "Over / Under"}</th>
