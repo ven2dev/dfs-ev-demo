@@ -3,8 +3,9 @@
 Owner-approved roadmap: [issue #163](https://github.com/ven2dev/dfs-ev-demo/issues/163#issuecomment-6250059648).
 Implementation branch: `feature/dfsEV-163-empirical-adapter`, created in a separate
 worktree from fresh `origin/main` at `20b712c7ec2a9a4e8cd3bbb5d780f5f4f559ac21`.
-The owner approved starting the issue iteration. The step-2 prototype passes its
-local latency/work-budget proof; the complete adapter remains unimplemented.
+The owner approved starting the issue iteration. Steps 1–2 are committed; the
+versioned research adapter is implemented and its focused step-3 correctness
+probes pass. Final adapter latency and between-query race probes remain step 4.
 
 ## Design basis
 
@@ -214,4 +215,64 @@ explicit supported-version/refusal handling, both evidence modes, stale/supersed
 disclosures, interrupted-connection handling and race probes remain steps 3–4,
 followed by the final adapter matrix and owner-run independent review.
 Revocations after the last query snapshot retain the approved delivery-gap limit.
-Step 2 is ready for the owner's commit approval. Nothing has been pushed.
+The owner approved the step-2 commit, recorded as `ff184a6`. Nothing has been
+pushed. Its timings describe that prototype commit, not the expanded step-3
+adapter or SQL.
+
+
+## Step 3 checkpoint — versioned research adapter
+
+`createEmpiricalAdapter` loads code-owned proposal SQL during setup, then reads an
+exact feature ID under an explicit knowledge-as-of timestamp and supported
+feature/history-policy/evidence-mode tuple. It uses the shared kernel over the
+materialized lagged history, with no label, normalized-data or object-byte read.
+Successes and refusals carry the adapter identity and research scope; successes
+also identify the uncalibrated interim hit-rate model, sample size, pinned/natural
+identities, original knowledge/cutoff clocks, source snapshot lineage, both rights
+decision receipts and current freshness. These outputs confer no serving rights.
+
+Pinned once-valid values remain available after newer usable or unavailable
+versions appear. The output distinguishes superseded from stale and carries the
+historical-availability-unverified flag in retrospective mode. Unknown version
+combinations, unavailable/missing features and malformed or out-of-policy history
+produce explicit unavailable results. Event comparisons preserve PostgreSQL
+microseconds, so equality is refused and one microsecond before cutoff is allowed
+in both evidence modes. Real knowledge clocks are not backdated.
+
+A successful call still executes three short statements: batched authorization,
+materialized history and batched delivery recheck. The actual client is connected,
+exclusive and non-pipelined; the caller owns connection setup and replacement.
+The 300 ms adapter deadline starts at invocation. A caller covering connection
+setup supplies an earlier absolute `deadlineAt` on the same monotonic clock.
+Pre-cancelled/expired requests issue no SQL and leave that connection reusable.
+An interrupted query terminates the connection and marks it `discard`; the caller
+replaces it, preventing timed-out work from leaking into a later request. No SQL
+rollback, retry, session setting or lock is added to the read budget. The accepted
+post-recheck delivery gap remains unchanged.
+
+All **16 named PostgreSQL contract probes** pass (17 Node test entries including
+the parent). They cover research-role read/write denials, hand probabilities,
+2/8/16 constant work, request/stored-version refusals, inclusive knowledge clocks,
+both evidence modes, missing/unavailable inputs, malformed history, target/equal/
+future events, microsecond boundaries, pinned freshness, current rights refusals,
+pre-cancellation, query timeout and in-flight abort. Interrupted connections refuse
+subsequent queries. Both timeout and abort probes use real PostgreSQL sleeping
+queries; malformed-history backstops also use explicitly corrupted read results.
+
+The fixture is synthetic contract data inserted by the pipeline login, with a
+small source object written through the local ObjectStore. Strict-mode success
+uses a fictional future target with sources captured now; it is **not** proof of
+genuine historical strict availability. No target labels are materialized. These
+are correctness probes, not an evaluation or a final latency benchmark. See the
+[compact receipt](evidence/feature-store-163/step-3-adapter.json) for every probe
+verdict and source hashes.
+
+All 33 kernel/legacy projection tests also pass. Typecheck, changed-file ESLint
+and whitespace checks pass. SQL remains proposal-only. No ordered migrations or
+other worktrees changed. Step 3 is ready for owner review and commit approval;
+no step-3 commit or push has been made.
+
+Step 4 remains: inject revocation/deletion between statements, exercise pruned
+inputs, run the final repeated cold/warm matrix with query tracing and stage
+percentiles against this completed adapter, and prepare the independent-review
+handoff. The step-2 speed result does not substitute for that final measurement.

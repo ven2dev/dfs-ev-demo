@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "issue": 163,
+  "step": 3,
+  "runtime": "v24.18.1",
+  "workload": "synthetic adapter contract and restricted PostgreSQL probes; no real evaluation or final latency claim",
+  "codeHashes": {
+    "src/lib/featureStore/empiricalAdapter.ts": "7289081f0500584fa7f0cadf922964bf3010eb9b685fb77524f06c6657c6c07b",
+    "db/proposals/163_empirical_authorize.sql": "ec8bbfb8ca91c31d15b4af41b8aedc9926fdf7a721357cc21f54f1f716ff2a86",
+    "db/proposals/163_empirical_history.sql": "f6c43d4a16504e4b9ce8e60a4adaa027712323276937dced6867b4c44859d0e2",
+    "db/proposals/163_empirical_reader.sql": "319f84b3ec4c85f0c650175e5676c062c40542dc6491640ea57c69a73371adf9",
+    "tests/feature-store/empirical-adapter.check.mts": "09e0a5248f3db5d57995574f9586b8784feb88242f06020ee8ea04f99365d15e"
+  },
+  "probes": [
+    {
+      "name": "restricted login cannot read labels, normalized evidence or raw manifests, or write derived values",
+      "verdict": "pass"
+    },
+    {
+      "name": "lagged features alone reproduce hand probabilities and expose research, clocks, versions and lineage",
+      "verdict": "pass"
+    },
+    {
+      "name": "2, 8 and 16 observations keep the same three-statement/two-rights budget",
+      "verdict": "pass"
+    },
+    {
+      "name": "unknown request versions and malformed inputs refuse before SQL",
+      "verdict": "pass"
+    },
+    {
+      "name": "stored unknown versions cannot be reinterpreted as the supported version",
+      "verdict": "pass"
+    },
+    {
+      "name": "real database knowledge clocks have inclusive as-of selection without backdating",
+      "verdict": "pass"
+    },
+    {
+      "name": "strict and retrospective feature versions remain distinct; no synthetic clock is backdated",
+      "verdict": "pass"
+    },
+    {
+      "name": "missing features, one-game history and unavailable features have explicit tagged refusals",
+      "verdict": "pass"
+    },
+    {
+      "name": "materialized history rejects malformed, noninteger, duplicate and mismatched rows",
+      "verdict": "pass"
+    },
+    {
+      "name": "target, equal-cutoff and future events refuse identically in both evidence modes",
+      "verdict": "pass"
+    },
+    {
+      "name": "one microsecond before the event cutoff is accepted in both modes",
+      "verdict": "pass"
+    },
+    {
+      "name": "pinned values survive corrections with current superseded and stale flags",
+      "verdict": "pass"
+    },
+    {
+      "name": "current rights refusals return no derived values or lineage",
+      "verdict": "pass"
+    },
+    {
+      "name": "pre-cancellation and an expired request deadline send no query and keep the connection reusable",
+      "verdict": "pass"
+    },
+    {
+      "name": "an in-flight query timeout terminates the connection and returns a discard refusal",
+      "verdict": "pass"
+    },
+    {
+      "name": "in-flight caller cancellation terminates the query connection without a follow-up SQL statement",
+      "verdict": "pass"
+    }
+  ],
+  "verdict": "pass"
+}
