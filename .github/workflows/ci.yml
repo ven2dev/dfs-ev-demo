@@ -114,6 +114,14 @@ jobs:
       - name: Verify migration artifacts, catalog contracts and PostgreSQL behavior
         run: npm run test:db:local
 
+      - name: Verify feature-store PostgreSQL behavior on standard fixture
+        shell: bash
+        env:
+          TEST_DATABASE_URL: postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test
+        run: |
+          docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml up -d --wait --wait-timeout 60
+          npm run test:feature-store:db
+
       - name: Remove disposable PostgreSQL
         if: ${{ always() }}
         timeout-minutes: 2
