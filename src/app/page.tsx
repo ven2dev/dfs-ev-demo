@@ -205,15 +205,6 @@ export default function Home() {
     );
   }
 
-  const statusColor =
-    connectionStatus === "live"
-      ? "bg-green-500"
-      : connectionStatus === "stale"
-        ? "bg-yellow-500"
-        : connectionStatus === "connecting"
-          ? "bg-blue-500"
-          : "bg-red-500";
-
   return (
     <>
       <SlateBrowser />
@@ -362,17 +353,7 @@ export default function Home() {
       )}
 
       <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-medium">EV Tracker</h2>
-          <div className="flex items-center gap-2 text-sm">
-            <span className={`h-2.5 w-2.5 rounded-full ${statusColor}`} />
-            <span className="capitalize">
-              {connectionStatus === "live" && provenance.stream
-                ? provenance.stream
-                : connectionStatus}
-            </span>
-          </div>
-        </div>
+        <h2 className="text-lg font-medium">EV Tracker</h2>
         {watched?.stages && watched.evScore && primaryWatch ? (
           <div className="mt-4">
             <div className="flex justify-between text-sm">
