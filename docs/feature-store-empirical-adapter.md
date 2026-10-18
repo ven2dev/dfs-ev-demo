@@ -3,9 +3,10 @@
 Owner-approved roadmap: [issue #163](https://github.com/ven2dev/dfs-ev-demo/issues/163#issuecomment-6250059648).
 Implementation branch: `feature/dfsEV-163-empirical-adapter`, created in a separate
 worktree from fresh `origin/main` at `20b712c7ec2a9a4e8cd3bbb5d780f5f4f559ac21`.
-The owner approved starting the issue iteration. Steps 1–2 are committed; the
-versioned research adapter is implemented and its focused step-3 correctness
-probes pass. Final adapter latency and between-query race probes remain step 4.
+The owner approved starting the issue iteration. Steps 1–3 are committed. The
+completed adapter passes the step-4 correctness and repeated local latency/work
+gates below. The owner approved the step-4 commit; owner-run independent review
+and hosted CI remain pending. Nothing has been pushed.
 
 ## Design basis
 
@@ -204,7 +205,10 @@ audit addresses. Typecheck and changed-script lint pass. No database suite or
 kernel suite was repeated for this script-only checkpoint; its actual PostgreSQL
 permission/work probes and repeated latency matrix ran successfully.
 
-Reproduce on Node 24 with the disposable local PostgreSQL service running:
+The step-2 receipt belongs to `ff184a6`, including that commit's prototype and
+SQL. Reproducing that historical measurement requires that checkpoint. The same
+command at the final candidate now measures the completed step-4 adapter on Node
+24 with the disposable local PostgreSQL service running:
 
 ```sh
 TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/empirical-spike.ts
@@ -269,10 +273,117 @@ verdict and source hashes.
 
 All 33 kernel/legacy projection tests also pass. Typecheck, changed-file ESLint
 and whitespace checks pass. SQL remains proposal-only. No ordered migrations or
-other worktrees changed. Step 3 is ready for owner review and commit approval;
-no step-3 commit or push has been made.
+other worktrees changed. The owner approved the step-3 commit, recorded as
+`02648ac`. Its receipt preserves the file hashes at that checkpoint.
 
-Step 4 remains: inject revocation/deletion between statements, exercise pruned
-inputs, run the final repeated cold/warm matrix with query tracing and stage
-percentiles against this completed adapter, and prepare the independent-review
-handoff. The step-2 speed result does not substitute for that final measurement.
+Step 4 was planned to inject revocation/deletion between statements, exercise
+pruned inputs, repeat the cold/warm matrix with query tracing and prepare the
+independent-review handoff. Its completed local results follow; the step-2 speed
+result does not substitute for the final adapter measurement.
+
+
+## Step 4 checkpoint — final local proof and review handoff
+
+No adapter or SQL change was needed after step 3. The existing benchmark now
+calls the completed versioned adapter, and its startup helper uses the same
+factory. The early prototype remains a historical script; it is not imported by
+the adapter or final benchmark. This is an absolute-target measurement, not an
+optimization comparison or a claim that the final adapter improved on step 2.
+
+All **22 named adapter PostgreSQL probes** pass (23 Node entries including the
+parent). Six added cases commit actual writer changes between reader statements:
+rights revocation and source deletion at either boundary; lineage expansion;
+pruning an exact version before/during delivery; the accepted post-final-snapshot
+revocation gap; and a real sleeping query interrupted by the absolute deadline
+without relying on a pg query timeout. Deleted/pruned versions return unavailable
+rather than silently selecting a replacement. Tests use separate restricted
+reader and pipeline-writer connections with no reader transaction or table lock,
+no timing sleeps for the committed-change races, and real database knowledge
+clocks. An assertion requires every named case to run even without receipt output.
+See the [correctness receipt](evidence/feature-store-163/step-4-correctness.json).
+
+The final fixture re-ingests all **16 exact #138 wire objects** (103,468 normalized
+rows) and materializes 2022–2025 features, retaining 2021 as warm-up history. No
+labels are materialized. Source bytes and the natural feature-content hash match
+the step-2 fixture exactly. The twelve selected player-games span four seasons
+and sample sizes 2, 8 and 16, with 25 requests per cell per mode. They remain
+retrospective reconstruction, with historical availability unverified.
+
+The matrix retains every request: three rounds, 100 cold and 100 warm requests
+each, with cohort order cold/warm, warm/cold, cold/warm. All six cohorts and both
+aggregate modes pass the unchanged **p95 <=210 ms** target against the **300 ms**
+deadline. There are no unexpected refusals, deadline failures or individual
+requests above 210 ms.
+
+| Boundary | Requests | p50 | p95 | Worst cohort p95 | Maximum | Verdict |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Cold | 300 | 17.91 ms | 26.89 ms | 41.40 ms | 62.98 ms | Pass |
+| Warm | 300 | 6.19 ms | 7.72 ms | 8.73 ms | 20.31 ms | Pass |
+
+Cold cohort p95 varied from 20.30 to 41.40 ms; the slowest cohort retains ample
+headroom. That variation remains visible in the receipt rather than selecting a
+faster run. Connection setup, both authorization queries, history read,
+calculation and serialization have separate p50/p95/max summaries per cohort and
+aggregate. Separate sample-size summaries retain all 100 requests per size/mode.
+
+All **600 requests execute exactly three SQL statements and two batched rights/
+status checks**. The proxy traces actual statement text and order, independently
+of the adapter counters. Restricted-role denials and EXPLAIN restrict relations
+to materialized features, feature inputs, source-snapshot metadata, job status
+and rights decisions: there are no raw, normalized, label or per-row validation
+queries. Setup, SQL loading and EXPLAIN occur outside the request boundary; no
+measured feature request is discarded as warm-up.
+
+Cold includes opening a fresh restricted connection in a running process; warm
+reuses an existing restricted connection. The cold caller gives the adapter an
+absolute deadline starting before connection setup. There is no result cache or
+named prepared statement. OS and PostgreSQL caches remain unflushed. Three
+separate fresh-process probes report process/module/setup time (72.40–84.84 ms)
+and parent-observed total (115.92–126.52 ms); these are measured, not gated. Local
+PostgreSQL does not establish Vercel cold boot, Neon wake, hosted networking,
+concurrent-load or production-capacity readiness. The broader gate remains #168.
+
+The [final latency receipt](evidence/feature-store-163/step-4-hot-path.json) records
+all boundaries, fixture/code/query hashes, run/stage/sample-size distributions,
+zero misses and each target verdict. Full per-request trials and plans are stored
+outside git through the local ObjectStore at the receipt's exact audit addresses.
+Only compact receipts belong to this change.
+
+### Acceptance evidence
+
+| #163 criterion | Local evidence | Status |
+| --- | --- | --- |
+| Preserve strict legacy numbers/refusals; explicit versions | Shared arithmetic only; 33 kernel/legacy tests; step-1 parity receipt; request/stored-version and evidence-mode probes | Pass |
+| Hand fixtures and event/sample boundaries | Signed/zero values, ties, integer/half-yard Push, n<2/n>16, malformed history and target/equal/future event probes in both modes | Pass |
+| Real clocks and retrospective disclosure; no target label read | Verbatim DB clocks, microsecond boundaries, research/uncalibrated flags; empty label table plus denied label/raw/normalized reads | Pass |
+| Compact repeated timing/count evidence and misses | All 600 final requests, six passing cohorts, 3 statements/2 rights checks, no forbidden relations, 0 misses | Pass |
+
+Final affected checks pass: **68/68 feature-store PostgreSQL test entries**
+(including the 23 adapter entries and the queue-progress boundary regression),
+**33/33 kernel/legacy projection tests**, TypeScript and changed-file ESLint.
+Frozen migration hashes and main catalog isolation remain covered by the existing
+feature-store schema probes. No repeated benchmark was needed after the passing
+matrix: only documentation and evidence packaging changed. The
+[checkpoint receipt](evidence/feature-store-163/step-4-checkpoint.json) indexes
+these results and the exact correctness/timing receipts. Repo-wide hosted CI and
+owner-run independent review remain pending.
+
+### Review focus and remaining workflow
+
+Review the premise first: the import-free domain kernel is shared by the strict
+legacy wrapper and a server-side versioned materialized-feature adapter. Check
+that it remains an uncalibrated research hit-rate model and does not imply
+population completeness or genuine historical availability. Then inspect the
+unchanged performance/work gates, exact-version selection, current rights and
+deletion checks, freshness disclosure and interrupted-connection replacement.
+
+The accepted delivery gap remains: revocation committed after the final query's
+snapshot may miss that response; the next request refuses. A named probe proves
+that limit. Callers supply an exclusive connected non-pipelined client, replace
+any client marked `discard`, and independently check serving rights before any
+future product request/delivery. No current product route consumes these outputs.
+
+The owner approved the step-4 commit. This checkpoint packages the completed
+local proof for owner-run independent review. Fresh consent precedes any push
+or PR; the owner merges.
+No frozen migration, hosted write, GCS, UI, deployment or retired branch changed.

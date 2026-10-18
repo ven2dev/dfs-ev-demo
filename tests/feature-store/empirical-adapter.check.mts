@@ -8,6 +8,7 @@ import { Client } from "pg";
 import { withFeatureStoreDatabase } from "../../scripts/feature-store/harness.ts";
 import { createEmpiricalAdapter, EMPIRICAL_ADAPTER, type EmpiricalRequest, type EmpiricalRead } from "../../src/lib/featureStore/empiricalAdapter.ts";
 import { FEATURE_VERSION, HISTORY_POLICY } from "../../src/lib/featureStore/derived.ts";
+import { deleteSources, pruneDerivedVersions } from "../../src/lib/featureStore/governance.ts";
 import { startJob, finishJob } from "../../src/lib/featureStore/jobs.ts";
 import { openLocalObjectStore } from "../../src/lib/featureStore/localObjectStore.ts";
 import { objectKey, sha256 } from "../../src/lib/featureStore/objectStore.ts";
@@ -50,21 +51,25 @@ test("#163 versioned materialized research adapter", { timeout: 120_000 }, async
         const digest = sha256(Buffer.from(randomUUID()));
         return (await startJob(writer, { kind, codeSha: "c".repeat(40), policySha256: digest, inputSetSha256: digest })).jobId;
       };
-      const sourceJob = await job("ingest");
       await writer.query(`INSERT INTO fs138.source_profiles(profile_id,provider,feed,parser_version,license)
         VALUES('fs163-synthetic','synthetic','stats','synthetic-contract-v1','{"scope":"synthetic tests only"}')`);
-      const bytes = Buffer.from("synthetic #163 source; no historical-availability claim");
-      const hash = sha256(bytes); const key = objectKey("raw", bytes); await store.putIfAbsent(key, bytes);
-      const snapshot = (await writer.query(`INSERT INTO fs138.source_snapshots(profile_id,job_id,sha256,byte_size,object_key,
-        media_type,decoded_sha256,header_sha256,row_count,captured_at,available_at,evidence_basis)
-        VALUES('fs163-synthetic',$1,$2,$3,$4,'text/csv',$2,$2,1,clock_timestamp(),clock_timestamp(),'prospective') RETURNING snapshot_id`,
-      [sourceJob, hash, bytes.length, key])).rows[0].snapshot_id as string;
-      await finishJob(writer, sourceJob, { counts: { syntheticSources: 1 } });
+      const source = async () => {
+        const sourceJob = await job("ingest");
+        const bytes = Buffer.from("synthetic #163 source; no historical-availability claim: " + randomUUID());
+        const hash = sha256(bytes); const key = objectKey("raw", bytes); await store.putIfAbsent(key, bytes);
+        const id = (await writer.query(`INSERT INTO fs138.source_snapshots(profile_id,job_id,sha256,byte_size,object_key,
+          media_type,decoded_sha256,header_sha256,row_count,captured_at,available_at,evidence_basis)
+          VALUES('fs163-synthetic',$1,$2,$3,$4,'text/csv',$2,$2,1,clock_timestamp(),clock_timestamp(),'prospective') RETURNING snapshot_id`,
+        [sourceJob, hash, bytes.length, key])).rows[0].snapshot_id as string;
+        await finishJob(writer, sourceJob, { counts: { syntheticSources: 1 } });
+        return id;
+      };
+      const snapshot = await source();
       const grant = async (uses: string[]) => { await writer.query(`INSERT INTO fs138.rights_decisions(profile_id,allowed_uses,valid_from,rationale)
         VALUES('fs163-synthetic',$1,clock_timestamp(),'synthetic contract probes; research only')`, [uses]); };
       await grant(["research"]);
       const seed = async (options: { mode?: typeof retrospective | typeof strict; rows?: unknown[]; state?: string;
-        player?: string; game?: string; cutoff?: string; version?: string; supersedes?: string } = {}): Promise<EmpiricalRequest> => {
+        player?: string; game?: string; cutoff?: string; version?: string; supersedes?: string; snapshotIds?: string[] } = {}): Promise<EmpiricalRequest> => {
         const jobId = await job(); const rows = options.rows ?? history();
         const state = options.state ?? (rows.length < 2 ? "unavailable" : "usable");
         const mode = options.mode ?? retrospective;
@@ -73,9 +78,22 @@ test("#163 versioned materialized research adapter", { timeout: 120_000 }, async
           VALUES($1,$2,$3,'passing_yards',2025,$4,clock_timestamp(),$5,$6,$7,$8,$9,'{}',$10,$11,'[]',$12)
           RETURNING feature_id`, [jobId, options.player ?? randomUUID(), options.game ?? "synthetic-target", options.cutoff ?? (mode === strict ? "2027-01-01T00:00:00Z" : "2025-09-01T00:00:00Z"),
           options.version ?? FEATURE_VERSION, HISTORY_POLICY, mode, state, state === "usable" ? [] : ["synthetic-unavailable"], rows.length, JSON.stringify(rows), options.supersedes ?? null])).rows[0].feature_id;
-        await writer.query("INSERT INTO fs138.feature_inputs(feature_id,snapshot_id) VALUES($1,$2)", [feature, snapshot]);
+        await writer.query("INSERT INTO fs138.feature_inputs SELECT $1,unnest($2::uuid[])", [feature, options.snapshotIds ?? [snapshot]]);
         await finishJob(writer, jobId, { counts: { syntheticFeatures: 1 } });
         return { featureId: feature, knownAsOf: await clock(), line: 0, featureVersion: FEATURE_VERSION, historyPolicy: HISTORY_POLICY, evidenceMode: mode };
+      };
+      // Commit a writer change after an exact reader statement has completed,
+      // before resolving it to the adapter. No sleeps or reader transactions.
+      const afterStatement = (nth: number, change: () => Promise<void>) => {
+        let seen = 0;
+        return new Proxy(reader, { get(target, property) {
+          if (property !== "query") return Reflect.get(target, property, target);
+          return async (...args: unknown[]) => {
+            const result = await Reflect.apply(target.query, target, args);
+            if (++seen === nth) await change();
+            return result;
+          };
+        } });
       };
       try {
         await check("restricted login cannot read labels, normalized evidence or raw manifests, or write derived values", async () => {
@@ -220,13 +238,73 @@ test("#163 versioned materialized research adapter", { timeout: 120_000 }, async
           assert.equal(result.work.statements, 1); assert.equal(result.response.connectionDisposition, "discard");
           await assert.rejects(slow.query("SELECT 1"));
         });
+        await check("committed research revocation at either read boundary withholds delivery", async () => {
+          for (const boundary of [1, 2]) {
+            const raced = afterStatement(boundary, () => grant([]));
+            unavailable(await predict(raced, request), "delivery-rights-or-status-refused");
+            await grant(["research"]);
+            assert.equal((await predict(reader, request)).response.status, "available");
+          }
+        });
+        await check("committed source deletion at either read boundary removes the selected feature and withholds delivery", async () => {
+          for (const boundary of [1, 2]) {
+            const id = await source(), selected = await seed({ snapshotIds: [id] });
+            let deleted: string[] = [];
+            const raced = afterStatement(boundary, async () => {
+              deleted = (await deleteSources(writer, [id], "synthetic #163 between-query deletion", .02)).feature_ids;
+            });
+            const result = await predict(raced, selected); unavailable(result, "feature-missing");
+            assert(deleted.includes(selected.featureId)); assert.equal(result.work.statements, boundary === 1 ? 2 : 3);
+            unavailable(await predict(reader, selected), "feature-missing");
+          }
+        });
+        await check("delivery refuses lineage attached after authorization instead of widening its authorization", async () => {
+          const selected = await seed(), extra = await source();
+          const raced = afterStatement(2, async () => {
+            await writer.query("INSERT INTO fs138.feature_inputs VALUES($1,$2)", [selected.featureId, extra]);
+          });
+          unavailable(await predict(raced, selected), "delivery-rights-or-status-refused");
+          assert.equal((await predict(reader, selected)).response.status, "available");
+        });
+        await check("pruned exact versions refuse before or during delivery and never fall back to a newer version", async () => {
+          for (const boundary of [0, 2]) {
+            const player = randomUUID(), game = randomUUID();
+            const selected = await seed({ player, game });
+            const latest = await seed({ player, game, supersedes: selected.featureId });
+            let pruned: string[] = [];
+            const prune = async () => { pruned = (await pruneDerivedVersions(writer)).featureIds; };
+            if (boundary === 0) await prune();
+            const result = await predict(boundary ? afterStatement(boundary, prune) : reader, selected);
+            unavailable(result, "feature-missing"); assert(pruned.includes(selected.featureId));
+            assert.equal(result.work.statements, boundary ? 3 : 1);
+            assert.equal((await predict(reader, latest)).response.status, "available");
+          }
+        });
+        await check("a revocation after the final snapshot illustrates the accepted delivery gap; the next request refuses", async () => {
+          const result = await predict(afterStatement(3, () => grant([])), request);
+          assert.equal(result.response.status, "available");
+          unavailable(await predict(reader, request), "current-rights-or-status-refused");
+          await grant(["research"]);
+        });
+        await check("the absolute request deadline interrupts a query even without a pg query timeout", async () => {
+          const slow = await open();
+          const delayed = new Proxy(slow, { get(target, property) {
+            if (property !== "query") return Reflect.get(target, property, target);
+            return () => target.query("SELECT pg_sleep(10)");
+          } });
+          const result = await predict(delayed, request, { deadlineAt: performance.now() + 40 });
+          unavailable(result, "deadline-exceeded"); assert.equal(result.work.statements, 1);
+          assert.equal(result.response.connectionDisposition, "discard"); await assert.rejects(slow.query("SELECT 1"));
+        });
       } finally { await Promise.all(clients.map(client => client.end())); }
     });
+    assert.equal(probes.length, 22, "all adapter contract cases ran");
+    assert(probes.every(probe => probe.verdict === "pass"));
   } finally {
     await rm(root, { recursive: true, force: true });
     if (process.env.FEATURE_STORE_EVIDENCE_PATH) await writeFile(process.env.FEATURE_STORE_EVIDENCE_PATH, JSON.stringify({
-      schemaVersion: 1, issue: 163, step: 3, runtime: process.version, workload: "synthetic adapter contract and restricted PostgreSQL probes; no real evaluation or final latency claim",
-      codeHashes, probes, verdict: probes.length === 16 && probes.every(probe => probe.verdict === "pass") ? "pass" : "fail",
+      schemaVersion: 1, issue: 163, step: 4, runtime: process.version, workload: "synthetic adapter contracts and committed between-query writer races on restricted PostgreSQL connections; no real evaluation or latency claim",
+      codeHashes, probes, verdict: probes.length === 22 && probes.every(probe => probe.verdict === "pass") ? "pass" : "fail",
     }, null, 2) + "\n");
   }
 });

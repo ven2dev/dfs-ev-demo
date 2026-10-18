@@ -7,7 +7,9 @@ import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { Client, type ClientConfig } from "pg";
 import { withFeatureStoreDatabase } from "./harness.ts";
-import { loadProbeSql, prototypePrediction, type ProbeRequest, type ProbeTiming } from "./empirical-prototype.ts";
+import { createEmpiricalAdapter, EMPIRICAL_ADAPTER, type EmpiricalRequest } from "../../src/lib/featureStore/empiricalAdapter.ts";
+import { FEATURE_VERSION, HISTORY_POLICY } from "../../src/lib/featureStore/derived.ts";
+type ProbeTiming = { connection: number; authorization: number; history: number; calculation: number; delivery: number; serialization: number; request: number };
 import { openLocalObjectStore } from "../../src/lib/featureStore/localObjectStore.ts";
 import { sha256, objectKey } from "../../src/lib/featureStore/objectStore.ts";
 import { ingestSource } from "../../src/lib/featureStore/ingest.ts";
@@ -17,12 +19,14 @@ import type { SourceAsset } from "../../src/lib/featureStore/source.ts";
 type Trial = { round: number; mode: "cold" | "warm"; ordinal: number; season: number; sampleSize: number;
   timing?: ProbeTiming; statements: number; rightsChecks: number; serializedBytes?: number; failure?: string };
 const root = new URL("../../", import.meta.url);
-const reportPath = new URL("docs/evidence/feature-store-163/step-2-hot-path.json", root);
+const reportPath = new URL("docs/evidence/feature-store-163/step-4-hot-path.json", root);
 const storageRoot = await realpath(await mkdtemp(join(tmpdir(), "dfs163-spike-")));
 const store = await openLocalObjectStore(storageRoot);
-const sql = await loadProbeSql();
+const predict = await createEmpiricalAdapter();
+const sql = { authorize: await readFile(new URL("db/proposals/163_empirical_authorize.sql", root), "utf8"),
+  history: await readFile(new URL("db/proposals/163_empirical_history.sql", root), "utf8") };
 const files = ["db/proposals/163_empirical_reader.sql", "db/proposals/163_empirical_authorize.sql", "db/proposals/163_empirical_history.sql",
-  "scripts/feature-store/empirical-prototype.ts", "scripts/feature-store/empirical-startup.ts", "scripts/feature-store/empirical-spike.ts",
+  "src/lib/featureStore/empiricalAdapter.ts", "scripts/feature-store/empirical-startup.ts", "scripts/feature-store/empirical-spike.ts",
   "scripts/feature-store/harness.ts", "src/lib/projection/empirical.ts", "src/lib/projection/baseline.ts",
   "src/lib/featureStore/derived.ts", "src/lib/featureStore/ingest.ts", "src/lib/featureStore/normalize.ts", "src/lib/featureStore/source.ts",
   "db/proposals/138_feature_store.sql", "db/proposals/138_dataset_governance.sql", "package-lock.json"];
@@ -32,7 +36,7 @@ const code = { gitSha: (await promisify(execFile)("git", ["rev-parse", "HEAD"]))
 const trials: Trial[] = [];
 const startups: Record<string, unknown>[] = [];
 const report: Record<string, unknown> = {
-  schemaVersion: 1, issue: 163, step: 2, recordedAt: new Date().toISOString(), code, codeHashes, runtime: process.version,
+  schemaVersion: 1, issue: 163, step: 4, adapter: EMPIRICAL_ADAPTER, recordedAt: new Date().toISOString(), code, codeHashes, runtime: process.version,
   machine: { platform: platform(), arch: arch(), cpus: cpus().length, memoryBytes: totalmem() }, storageRoot,
   boundary: { warm: "existing restricted connection through response JSON serialization",
     cold: "already-running process: new restricted connection through response JSON serialization",
@@ -41,7 +45,6 @@ const report: Record<string, unknown> = {
   cacheState: "No prediction result cache or prepared statement names; OS and PostgreSQL buffers are unflushed; setup SQL/artifacts loaded before request timing",
   limitations: ["Local PostgreSQL only; no Vercel function boot or Neon scale-to-zero wake measurement",
     "Retrospective reconstruction using current corrected files; historical availability unverified",
-    "Prototype proof only; complete adapter version/refusal/cancellation contract and race probes remain steps 3–4",
     "Revocations after the final SQL snapshot and before response bytes leave the process may not be observed"],
   verdict: "running",
 };
@@ -52,7 +55,7 @@ const distribution = (values: number[]) => {
 };
 const summarize = (rows: Trial[]) => {
   const complete = rows.filter(row => row.timing && !row.failure);
-  const stages = ["connection", "authorization", "history", "calculation", "recheck", "serialization", "request"] as const;
+  const stages = ["connection", "authorization", "history", "calculation", "delivery", "serialization", "request"] as const;
   const timeMs = Object.fromEntries(stages.map(stage => [stage, distribution(complete.map(row => row.timing![stage]))]));
   const misses = rows.filter(row => row.failure || row.statements !== 3 || row.rightsChecks !== 2 || row.timing!.request > 210);
   const verdict = rows.length >= 100 && complete.length === rows.length && complete.every(row => row.statements === 3 && row.rightsChecks === 2)
@@ -68,7 +71,7 @@ const save = async () => {
   await mkdir(new URL("docs/evidence/feature-store-163/", root), { recursive: true });
   await writeFile(reportPath, JSON.stringify(report, null, 2) + "\n");
 };
-const startup = async (config: ClientConfig, request: ProbeRequest) => new Promise<Record<string, unknown>>((resolve, reject) => {
+const startup = async (config: ClientConfig, request: EmpiricalRequest) => new Promise<Record<string, unknown>>((resolve, reject) => {
   const started = performance.now();
   const child = spawn(process.execPath, ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", fileURLToPath(new URL("empirical-startup.ts", import.meta.url))],
     { stdio: ["pipe", "pipe", "pipe"] });
@@ -133,7 +136,7 @@ try {
     const content = (await admin.query(`SELECT player_id,game_id,season,cutoff::text,state,reasons,flags,sample_size,history
       FROM fs138.feature_values ORDER BY season,game_id,player_id`)).rows;
     report.fixture = { sourceManifestSha256: sha256(sourceBytes), inputs, derived, featureContentSha256: sha256(Buffer.from(JSON.stringify(content))),
-      mode: "retrospective-reconstruction-v1", historicalAvailability: "unverified", labelsMaterialized: 0,
+      mode: "retrospective-reconstruction-v1", historicalAvailability: "unverified", labelsMaterialized: (await admin.query("SELECT count(*)::integer AS n FROM fs138.outcome_labels")).rows[0].n,
       examples: cases.map(({ season, sample_size }) => ({ season, sampleSize: sample_size })), knownAsOf };
     const connection = new Client(config); await connection.connect();
     const plans: Record<string, unknown> = {};
@@ -169,7 +172,8 @@ try {
         for (const mode of order) {
           for (let ordinal = 0; ordinal < 100; ordinal++) {
             const selected: { feature_id: string; season: number; sample_size: number } = cases[(ordinal + (round - 1) * 4) % cases.length];
-            const request = { featureId: selected.feature_id, knownAsOf, line: 224.5 };
+            const request: EmpiricalRequest = { featureId: selected.feature_id, knownAsOf, line: 224.5,
+              featureVersion: FEATURE_VERSION, historyPolicy: HISTORY_POLICY, evidenceMode: "retrospective-reconstruction-v1" };
             const trial: Trial = { round, mode, ordinal, season: selected.season, sampleSize: selected.sample_size, statements: 0, rightsChecks: 0 };
             const fresh = mode === "cold" ? new Client(config) : null;
             const client = fresh ?? connection;
@@ -188,13 +192,19 @@ try {
               const started = performance.now();
               if (fresh) await fresh.connect();
               const connectionMs = fresh ? performance.now() - started : 0;
-              const result = await prototypePrediction(measured, sql, request, started, connectionMs);
+              const result = await predict(measured, request, { deadlineAt: started + 300 });
+              const requestMs = performance.now() - started;
+              if (result.response.status !== "available") throw new Error(`adapter-refusal:${result.response.reason}`);
+              assert(requestMs <= 300, "request-deadline-missed");
               assert.deepEqual(seen, ["authorize", "history", "authorize"]);
               assert.equal(result.work.statements, trial.statements); assert.equal(result.work.rightsChecks, trial.rightsChecks);
               const output = JSON.parse(result.serialized);
               assert.equal(output.sampleSize, selected.sample_size); assert.equal(output.rightsScope, "research");
-              assert(output.feature.flags.includes("historical-availability-unverified"));
-              trial.timing = result.timing; trial.serializedBytes = Buffer.byteLength(result.serialized);
+              assert(output.flags.includes("historical-availability-unverified"));
+              assert.deepEqual(output.adapter, EMPIRICAL_ADAPTER);
+              assert.equal(output.designation, "uncalibrated-interim-hit-rate");
+              trial.timing = { connection: connectionMs, authorization: result.timingMs.authorization, history: result.timingMs.history,
+                calculation: result.timingMs.calculation, delivery: result.timingMs.delivery, serialization: result.timingMs.serialization, request: requestMs }; trial.serializedBytes = Buffer.byteLength(result.serialized);
             } catch (error) { trial.failure = String(error); }
             finally { await fresh?.end(); trials.push(trial); }
             // A refused request is a failed spike, never silently replaced.
@@ -205,7 +215,7 @@ try {
           if (summary.verdict !== "pass") throw new Error("hot-path-p95-target-missed");
         }
       }
-      for (let i = 0; i < 3; i++) startups.push(await startup(config, { featureId: cases[i * 4].feature_id, knownAsOf, line: 224.5 }));
+      for (let i = 0; i < 3; i++) startups.push(await startup(config, { featureId: cases[i * 4].feature_id, knownAsOf, line: 224.5, featureVersion: FEATURE_VERSION, historyPolicy: HISTORY_POLICY, evidenceMode: "retrospective-reconstruction-v1" }));
       report.processStartup = { probes: startups.map(row => ({ processReadyMs: row.processReadyMs,
         parentObservedTotalMs: row.parentObservedTotalMs, request: (row.result as { timing: ProbeTiming }).timing })),
         measuredOnly: true, n: startups.length };
@@ -223,6 +233,8 @@ try {
   report.strataCounts = [2022, 2023, 2024, 2025].flatMap(season => [2, 8, 16].map(sampleSize => ({ season, sampleSize,
     cold: trials.filter(row => row.mode === "cold" && row.season === season && row.sampleSize === sampleSize).length,
     warm: trials.filter(row => row.mode === "warm" && row.season === season && row.sampleSize === sampleSize).length })));
+  report.sampleSizeLatency = [2, 8, 16].flatMap(sampleSize => ["cold", "warm"].map(mode => ({ mode, sampleSize,
+    requestMs: distribution(trials.filter(row => row.mode === mode && row.sampleSize === sampleSize && row.timing && !row.failure).map(row => row.timing!.request)) })));
   report.targets = { coldP95: (report.aggregate as { mode: string; verdict: string }[]).find(row => row.mode === "cold")?.verdict,
     warmP95: (report.aggregate as { mode: string; verdict: string }[]).find(row => row.mode === "warm")?.verdict,
     constantThreeStatements: trials.length === 600 && trials.every(row => row.statements === 3) ? "pass" : "fail",
