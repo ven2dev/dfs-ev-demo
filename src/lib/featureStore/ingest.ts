@@ -28,23 +28,32 @@ export const ingestSource = async (
   const validatedMs = performance.now() - started - downloadedMs;
   signal.throwIfAborted();
   const key = objectKey("raw", receipt.bytes);
-  const stored = await store.putIfAbsent(key, receipt.bytes);
-  const storedMs = performance.now() - started - downloadedMs - validatedMs;
+  let stored: Awaited<ReturnType<ObjectStore["putIfAbsent"]>>;
+  let storedMs = 0;
   signal.throwIfAborted();
   const profile = profileId(asset);
   const policy = sha256(Buffer.from(JSON.stringify({ policy: policyDigest(asset, limits), implementation: code.contentSha256 })));
   const job = await startJob(client, { kind: "ingest", codeSha: code.gitSha, policySha256: policy,
     inputSetSha256: sha256(Buffer.from(JSON.stringify([profile, normalized.wireSha256]))) });
   if (!job.created) {
-    const prior = await client.query<{ snapshot_id: string }>(
-      "SELECT snapshot_id FROM fs138.source_snapshots WHERE profile_id = $1 AND sha256 = $2", [profile, normalized.wireSha256]);
-    return { status: job.status === "succeeded" ? "already-processed" as const : "job-unavailable" as const, jobId: job.jobId, jobStatus: job.status,
+    const prior = await client.query<{ snapshot_id: string; deleted_at: Date | null }>(
+      "SELECT snapshot_id,deleted_at FROM fs138.source_snapshots WHERE profile_id = $1 AND sha256 = $2", [profile, normalized.wireSha256]);
+    return { status: job.status === "succeeded" && prior.rows[0]?.deleted_at === null ? "already-processed" as const : "job-unavailable" as const, jobId: job.jobId, jobStatus: job.status,
       snapshotId: prior.rows[0]?.snapshot_id ?? null, elapsedMs: performance.now() - started };
   }
   let snapshotId: string;
+  let inTransaction = false;
   try {
+    const storeStarted = performance.now();
+    stored = await store.putIfAbsent(key,receipt.bytes);
+    storedMs = performance.now()-storeStarted;
     await client.query("BEGIN");
+    inTransaction = true;
     await client.query("SET LOCAL statement_timeout = '15s'");
+    await client.query("SELECT fs138.lock_object_for_publication($1)",[key]);
+    const object = await store.head(key);
+    if (!object || object.sha256!==normalized.wireSha256 || object.byteSize!==receipt.bytes.byteLength)
+      throw new Error("ingest-object-missing-or-mismatched");
     const license = { id: asset.license_id, attribution: asset.attribution, qualification: asset.license_qualification,
       evidenceUrl: asset.license_evidence_url, scope: "local research spike; no commercial-clearance claim" };
     await client.query(`INSERT INTO fs138.source_profiles (profile_id, provider, feed, parser_version, license)
@@ -73,16 +82,21 @@ export const ingestSource = async (
       SELECT $1::uuid, $2::text, $3::uuid, r.* FROM jsonb_to_recordset($4::jsonb) AS r(${target.fields})`,
     [snapshotId, NORMALIZER_VERSION, job.jobId, JSON.stringify(normalized.rows)]);
     await client.query("INSERT INTO fs138.job_inputs (job_id, snapshot_id) VALUES ($1,$2)", [job.jobId, snapshotId]);
+    // The bulk-load producer refreshes its own table before downstream jobs.
+    await client.query(`ANALYZE fs138.${target.table},fs138.source_snapshots,fs138.job_runs`);
     await finishJob(client, job.jobId, { counts: { rawRows: normalized.rowCount, normalizedRows: normalized.rows.length,
       wireBytes: receipt.bytes.byteLength, decodedBytes: normalized.decodedBytes } });
     signal.throwIfAborted();
     await client.query("COMMIT");
   } catch (error) {
-    await client.query("ROLLBACK");
+    if(error instanceof Error && /Query read timeout|Connection terminated|Connection closed/.test(error.message))
+      throw new Error("ingest-connection-interrupted-replace",{cause:error});
+    if (inTransaction) await client.query("ROLLBACK");
+    await client.query("SELECT fs138.requeue_removed_object($1)",[key]);
     await finishJob(client, job.jobId, { counts: {}, errorCode: "ingest-publication-failed" });
-    // A validated create-once object can remain after rollback. Step 5's grace-
-    // period sweep discovers it through ObjectStore.list; deleting immediately
-    // could remove bytes a concurrent successful publication now references.
+    // A failed write is discovered through ObjectStore.list. Both publication
+    // and orphan cleanup hold the same address lock, so a sweep cannot race
+    // a successful reference. No source byte removal bypasses ObjectStore.
     throw error;
   }
   return { status: "ingested" as const, jobId: job.jobId, snapshotId, profileId: profile, objectKey: key,

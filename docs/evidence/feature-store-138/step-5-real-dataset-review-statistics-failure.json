@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "issue": 138,
+  "step": 5,
+  "recordedAt": "2026-10-18T02:53:28.707Z",
+  "code": {
+    "gitSha": "d07f42c776797bc5c808ba8faaefe55870a71221",
+    "contentSha256": "bc6fe32a60b2e6d51d8a81e911e4c890d50ac2c0f31433a465adb791fd401617"
+  },
+  "codeHashes": {
+    "src/lib/featureStore/datasets.ts": "9f239fb8daa7e6f8a0a41c3c8d57f8418eddc5c181da68b2eca3b0696a2c4743",
+    "src/lib/featureStore/governance.ts": "b01e64b35098d63293325df6fb44933a6591425227b812c3eac49c5c4f5de127",
+    "src/lib/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "db/proposals/138_feature_store.sql": "82066c7045d0e6648e57eb9548955bd34ee923614fe4862dae64ecbaaa3e8626",
+    "db/proposals/138_dataset_governance.sql": "1a32292d09594409b0c7ed029ad40cc348816bbcb4e7a08dc36917ef8faeea8b",
+    "scripts/feature-store/harness.ts": "1101cad7e20462ea0bfc62a6459f4c959a46312c3007197fd0910e4a2d2ab65d",
+    "scripts/feature-store/dataset-spike.ts": "9c410eb0e546c5bf9df24546e9b4778f70a5059c3f4e79eeb0dc54cb460cafed",
+    "scripts/feature-store/dataset-cold.ts": "418c2c359be925aacb3c6156ae49877b84e63926db2920dac81a9c4ba0283a79",
+    "src/lib/featureStore/objectStore.ts": "d6a9f26c2fd8f54eef161ce5e8dcf8c127a284e90bc6a0e6051355ffc6e737e9",
+    "src/lib/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "src/lib/featureStore/ingest.ts": "8eb58246cccd2b08de801fcd9645c2b092e853d9c3741cccf34625e74d84ce56",
+    "src/lib/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "package-lock.json": "f93f6fe9bcc5e4347ea923542004efe6c1182af76d80e1e9fdafbf18f7e96570"
+  },
+  "sourceManifestSha256": "63517d4e667af249a6c8c3a4b6ea8cd72550d1afb578182510629d68ec710c38",
+  "runtime": "v24.18.1",
+  "machine": {
+    "cpus": 12,
+    "totalMemoryBytes": 19327352832,
+    "arch": "arm64",
+    "platform": "darwin"
+  },
+  "fixture": "exact step-3 raw objects, copied through ObjectStore to an isolated disposable root; no original objects deleted; no synthetic correction in real data",
+  "evidenceMode": "retrospective-reconstruction-v1",
+  "historicalAvailability": "unverified",
+  "scoringRun": false,
+  "cacheState": "three alternating fresh-process cold and warm builds; cold includes Node startup, new restricted connection, ObjectStore open, full join/write/hash; OS/DB caches not flushed",
+  "comparison": "absolute target only; no relative optimization or ABBA claim",
+  "deadlineMs": 30000,
+  "headroomLimitMs": 21000,
+  "setup": [
+    {
+      "name": "games.csv.gz",
+      "status": "ingested",
+      "wireSha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+      "rawRows": 7548,
+      "normalizedRows": 1359
+    },
+    {
+      "name": "pbp_participation_2021.csv",
+      "status": "ingested",
+      "wireSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+      "rawRows": 50714,
+      "normalizedRows": 18309
+    },
+    {
+      "name": "pbp_participation_2022.csv",
+      "status": "ingested",
+      "wireSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+      "rawRows": 50150,
+      "normalizedRows": 18193
+    },
+    {
+      "name": "pbp_participation_2023.csv",
+      "status": "ingested",
+      "wireSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+      "rawRows": 46168,
+      "normalizedRows": 17670
+    },
+    {
+      "name": "pbp_participation_2024.csv",
+      "status": "ingested",
+      "wireSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+      "rawRows": 45919,
+      "normalizedRows": 17564
+    },
+    {
+      "name": "pbp_participation_2025.csv",
+      "status": "ingested",
+      "wireSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+      "rawRows": 45184,
+      "normalizedRows": 17707
+    },
+    {
+      "name": "roster_weekly_2021.csv",
+      "status": "ingested",
+      "wireSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+      "rawRows": 46696,
+      "normalizedRows": 1916
+    },
+    {
+      "name": "roster_weekly_2022.csv",
+      "status": "ingested",
+      "wireSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+      "rawRows": 46163,
+      "normalizedRows": 1844
+    },
+    {
+      "name": "roster_weekly_2023.csv",
+      "status": "ingested",
+      "wireSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+      "rawRows": 45655,
+      "normalizedRows": 1812
+    },
+    {
+      "name": "roster_weekly_2024.csv.gz",
+      "status": "ingested",
+      "wireSha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+      "rawRows": 46579,
+      "normalizedRows": 1867
+    },
+    {
+      "name": "roster_weekly_2025.csv.gz",
+      "status": "ingested",
+      "wireSha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+      "rawRows": 46849,
+      "normalizedRows": 1948
+    },
+    {
+      "name": "stats_player_week_2021.csv.gz",
+      "status": "ingested",
+      "wireSha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+      "rawRows": 18969,
+      "normalizedRows": 655
+    },
+    {
+      "name": "stats_player_week_2022.csv.gz",
+      "status": "ingested",
+      "wireSha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+      "rawRows": 18831,
+      "normalizedRows": 633
+    },
+    {
+      "name": "stats_player_week_2023.csv.gz",
+      "status": "ingested",
+      "wireSha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+      "rawRows": 18643,
+      "normalizedRows": 663
+    },
+    {
+      "name": "stats_player_week_2024.csv.gz",
+      "status": "ingested",
+      "wireSha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+      "rawRows": 18983,
+      "normalizedRows": 664
+    },
+    {
+      "name": "stats_player_week_2025.csv.gz",
+      "status": "ingested",
+      "wireSha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+      "rawRows": 19422,
+      "normalizedRows": 664
+    }
+  ],
+  "trials": [],
+  "verdict": "fail",
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "error": "error: canceling statement due to statement timeout",
+  "peakRssBytes": 585170944,
+  "fullDiagnostics": {
+    "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/step-5-diagnostics/dataset-2026-10-18T02-53-28.708Z.json",
+    "sha256": "578e5178875b691d92a6bd258caebeda3f4f440de2bc10943cabe69893feff49",
+    "byteSize": 29177
+  }
+}

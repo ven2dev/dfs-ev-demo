@@ -9,6 +9,8 @@ export type ObjectStore = {
   head: (key: string) => Promise<ObjectInfo | null>;
   list: (namespace: ObjectNamespace) => Promise<ObjectInfo[]>;
   delete: (key: string) => Promise<void>;
+  // Optional local upload housekeeping; hosted adapters use their upload lifecycle.
+  cleanupTemporary?: (graceSeconds?: number) => Promise<string[]>;
 };
 export const OBJECT_NAMESPACES = ["raw", "datasets", "models", "audits"] as const;
 export type ObjectNamespace = typeof OBJECT_NAMESPACES[number];

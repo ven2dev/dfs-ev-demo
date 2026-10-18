@@ -70,6 +70,7 @@ CREATE TABLE fs138.source_snapshots (
   available_at timestamptz NOT NULL,
   ingested_at timestamptz NOT NULL,
   evidence_basis text NOT NULL CHECK (evidence_basis IN ('prospective', 'retrospective')),
+  deleted_at timestamptz,
   source_manifest jsonb NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(source_manifest) = 'object'),
   UNIQUE (profile_id, sha256),
   CHECK (captured_at <= ingested_at)
@@ -307,6 +308,28 @@ REVOKE ALL ON FUNCTION fs138.stamp_derived_time() FROM PUBLIC;
 
 -- Called once for the entire season, never per example. Windows rank normalized
 -- natural keys AFTER snapshot eligibility. All field access stays typed.
+-- Snapshot-level lineage is bounded to the seasons the typed job queries.
+-- Derive scope from normalized rows, rather than trusting manifest season tags.
+CREATE FUNCTION fs138.qb_job_snapshot_ids(p_season integer,p_checkpoint timestamptz,
+ p_purpose text,p_normalizer text) RETURNS TABLE(snapshot_id uuid)
+LANGUAGE sql STABLE AS $$
+ WITH scoped AS (
+  SELECT snapshot_id FROM fs138.norm_schedule WHERE normalizer_version=p_normalizer
+   AND season BETWEEN CASE WHEN p_purpose='labels' THEN p_season ELSE 2021 END AND p_season
+  UNION SELECT snapshot_id FROM fs138.norm_identity WHERE normalizer_version=p_normalizer
+   AND season BETWEEN CASE WHEN p_purpose='labels' THEN p_season ELSE 2021 END AND p_season
+  UNION SELECT snapshot_id FROM fs138.norm_player_game_stats WHERE normalizer_version=p_normalizer
+   AND substring(game_id from '^([0-9]{4})_')::integer BETWEEN CASE WHEN p_purpose='labels' THEN p_season ELSE 2021 END AND p_season
+  UNION SELECT snapshot_id FROM fs138.norm_participation WHERE normalizer_version=p_normalizer
+   AND substring(game_id from '^([0-9]{4})_')::integer BETWEEN CASE WHEN p_purpose='labels' THEN p_season ELSE 2021 END AND p_season
+ ) SELECT s.snapshot_id FROM scoped JOIN fs138.source_snapshots s USING(snapshot_id)
+ JOIN fs138.job_runs j ON j.job_id=s.job_id
+ WHERE s.ingested_at<=p_checkpoint AND s.deleted_at IS NULL AND j.status='succeeded'
+ AND p_purpose IN('features','labels');
+$$;
+REVOKE ALL ON FUNCTION fs138.qb_job_snapshot_ids(integer,timestamptz,text,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fs138.qb_job_snapshot_ids(integer,timestamptz,text,text) TO fs138_pipeline_writer;
+
 CREATE FUNCTION fs138.qb_job_context(p_season integer, p_checkpoint timestamptz,
   p_mode text, p_purpose text, p_normalizer text)
 RETURNS TABLE(player_id text, game_id text, season integer, cutoff timestamptz,
@@ -318,9 +341,10 @@ RETURNS TABLE(player_id text, game_id text, season integer, cutoff timestamptz,
 LANGUAGE sql STABLE AS $$
 WITH snapshots AS MATERIALIZED (
   SELECT s.* FROM fs138.source_snapshots s JOIN fs138.job_runs j ON j.job_id=s.job_id
-  WHERE s.ingested_at <= p_checkpoint AND j.status='succeeded'
+  WHERE s.ingested_at <= p_checkpoint AND s.deleted_at IS NULL AND j.status='succeeded'
     AND p_mode IN ('strict-point-in-time-v1','retrospective-reconstruction-v1')
     AND p_purpose IN ('features','labels')
+    AND s.snapshot_id IN(SELECT snapshot_id FROM fs138.qb_job_snapshot_ids(p_season,p_checkpoint,p_purpose,p_normalizer))
 ), discovery_schedule AS MATERIALIZED (
   SELECT DISTINCT ON(n.game_id) n.*,
     count(*) OVER(PARTITION BY n.game_id,s.available_at,s.ingested_at) AS heads

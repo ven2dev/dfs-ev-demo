@@ -1,0 +1,226 @@
+{
+  "issue": 138,
+  "step": 5,
+  "recordedAt": "2026-10-18T03:00:46.176Z",
+  "fixture": "synthetic only; not an observed source correction",
+  "codeHashes": {
+    "src/lib/featureStore/datasets.ts": "9f239fb8daa7e6f8a0a41c3c8d57f8418eddc5c181da68b2eca3b0696a2c4743",
+    "src/lib/featureStore/governance.ts": "b01e64b35098d63293325df6fb44933a6591425227b812c3eac49c5c4f5de127",
+    "db/proposals/138_dataset_governance.sql": "1a32292d09594409b0c7ed029ad40cc348816bbcb4e7a08dc36917ef8faeea8b",
+    "db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "src/lib/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "tests/feature-store/datasets.check.mts": "6ad9074eb5eedc1c55aa90fdde8c0387027027aab922eadea2d59973b54f3212"
+  },
+  "verdict": "pass",
+  "probes": [
+    {
+      "name": "pinned join excludes warm-up and unavailable labels; file hash reproduces, two constant rights checks",
+      "verdict": "pass",
+      "details": {
+        "rows": 2,
+        "exclusions": {
+          "warm-up-only": 4,
+          "feature-unavailable": 2
+        },
+        "statements": 8,
+        "rightsQueries": 2,
+        "repeatedHash": "170d90af8ea30ad4b0a312c31dfb5581881bb2973397546b733f4d09d3991ca6"
+      }
+    },
+    {
+      "name": "natural-key hash survives independent derived IDs and clocks but changes with values",
+      "verdict": "pass",
+      "details": {
+        "fileHashesDiffer": true,
+        "contentHash": "e6220862ba4a38a8683a47588f33e658ae7f183b345668f22923ff7863da37b0",
+        "independentDerivedIds": true
+      }
+    },
+    {
+      "name": "uploads hold no DB transaction; cleanup winning before publish refuses missing objects",
+      "verdict": "pass",
+      "details": {
+        "uploadInTransaction": false,
+        "missingObjectPublicationRefused": true,
+        "partialManifest": false
+      }
+    },
+    {
+      "name": "unknown versions and future clocks fail closed; non-pipeline cannot forge manifests or govern",
+      "verdict": "pass",
+      "details": {
+        "nonPipelineRefusals": 13
+      }
+    },
+    {
+      "name": "rights revoked before or during file I/O refuse delivery with no released bytes",
+      "verdict": "pass",
+      "details": {
+        "objectReadsWhenInitiallyDenied": 0,
+        "queriesDuringRevocation": 3,
+        "delivered": false
+      }
+    },
+    {
+      "name": "SQL and rights budgets stay constant as membership grows from 2 to 130 examples",
+      "verdict": "pass",
+      "details": {
+        "small": 2,
+        "large": 130,
+        "buildStatements": 8,
+        "readStatements": 3,
+        "batchedRightsQueriesPerOperation": 2
+      }
+    },
+    {
+      "name": "strict historical snapshots remain unavailable at dataset selection",
+      "verdict": "pass",
+      "details": {
+        "strictUsableRows": 0,
+        "historicalAvailability": "unverified",
+        "fabricatedHistoricalAvailability": false
+      }
+    },
+    {
+      "name": "correction uses pinned clocks; superseded inclusion policy is explicit; derived pruning preserves pins and latest",
+      "verdict": "pass",
+      "details": {
+        "syntheticCorrection": true,
+        "pins": 134,
+        "pruned": {
+          "labelIds": [
+            "16ef6d5f-cdc0-4dda-955a-41f7bd05704d",
+            "9dd4b4f7-c0d8-4f61-9c21-83af5d5669c5",
+            "4381f439-5a38-48c6-8c6d-d6d430ff9bc0",
+            "3213496d-6495-4364-9a16-484c8ac46095",
+            "fc9b619d-f7cd-4ef5-925c-75944da95c19",
+            "5383dd94-2bab-477e-8cf8-f624065f903d",
+            "f8530b92-f219-42d1-bf85-c3e92414aec6",
+            "c45af2f7-c0a3-4a95-bc1a-2070c77e5cf0",
+            "45e2ddc6-a14d-43be-a956-b69054a9372f",
+            "8f819d82-5c1b-4bd6-b6ac-206e2384fc1e",
+            "b33c1b3e-0f0f-41f9-afcd-7e6618741b04",
+            "cc3f8739-22d7-43d5-ba2d-90dd5797b1dd",
+            "ba5c1e0e-b0ce-45f6-88fc-b4e0220d54e8",
+            "fa1abdc6-a9a7-44d6-90c0-910413678883",
+            "0ab15c64-d272-459e-a533-24e50ad7a092",
+            "c9fc64d7-a613-41dd-b013-33cf4e12bccd",
+            "2a7f03d2-e525-456f-a265-0371cbbafbcd",
+            "01091fc7-61c3-4715-8dda-bded1a1ed982"
+          ],
+          "featureIds": [
+            "97545037-e2e7-452d-a53b-404a01d42eb4",
+            "eec8a7f4-8854-4fe8-8a42-b276ef37bdab",
+            "247df3d3-d1cf-416a-aa1e-cb42f324394c",
+            "adcfb41d-d3ac-4d83-8f12-4171a2461c9e",
+            "4b646f1d-9aae-4430-8b5b-c5269d933457",
+            "e6c39860-160e-4951-bac3-6ef0630ed09e",
+            "7a63b245-ff42-4912-b4e5-f73cb445f5cd",
+            "79ff0846-2fe9-490e-bf95-a4d962ae3448",
+            "a5533113-3c4a-44cc-84b8-f5583d34f3ce",
+            "61a17194-1ad8-4cdb-b2b1-6194bc2d5c8b",
+            "1df9fe05-2ddc-4587-bbcf-d37397e3dd78",
+            "aaa2cd3b-1612-4eeb-99a0-02fa9c63ef53",
+            "a2e23d6c-c7fe-42f2-8f13-9b072c344c53",
+            "2a9900a2-623b-417c-924e-e17f9c4fffc8",
+            "1421b393-c3e6-43ac-b97a-c348f713730d",
+            "c6e257ca-cbb1-4511-8230-aac0991bf969",
+            "46fa1dbe-4908-4c60-bef3-9bdb4696c5a6",
+            "a2cbda65-6aa2-4911-8a07-0ca20762050f",
+            "e51d46f5-1ce1-4be7-9b54-c7715a42d416",
+            "8dbfafc0-01c0-47da-9e7b-96bcf1729ada"
+          ]
+        }
+      }
+    },
+    {
+      "name": "failed dataset publication rolls back pins; immutable uncommitted file remains discoverable",
+      "verdict": "pass",
+      "details": {
+        "partialManifest": false,
+        "partialPins": false,
+        "objectsDiscoverable": 9
+      }
+    },
+    {
+      "name": "source deletion returns exact closure, invalidates immediately, delays bytes, resumes cleanup, recomputes surviving evidence",
+      "verdict": "pass",
+      "details": {
+        "receipt": {
+          "event_id": "7e3bb38f-6b51-4fda-925e-5badc4763121",
+          "recorded_at": "2026-10-18T03:00:42.415Z",
+          "reason": "synthetic source correction removal",
+          "grace_seconds": 1,
+          "snapshot_ids": [
+            "fb118fd4-0a8b-43d4-b053-4a5d2187add2"
+          ],
+          "feature_ids": [
+            "21751a3c-7f49-42d3-aa66-52ecf68b320b",
+            "244b7685-123d-48ad-9b9e-81b09330715f",
+            "2988677f-7606-4c87-910a-b920cdd39338",
+            "2bc376b3-22d4-4ecd-ba3a-0fb64d6db4a5",
+            "3ed7ba82-10b7-41fc-b1d8-45132d73a35c",
+            "98830722-a76b-4bc3-a9bc-0c017c035a1e",
+            "b7d288f6-adfc-4386-99fa-025cd001b161",
+            "dd434fab-73f4-48bd-9e45-8321db4710d9"
+          ],
+          "label_ids": [
+            "4e7df74a-9750-480b-9cff-da324c0b7c78",
+            "5608e90d-7804-44d7-8fe0-022fc45505bf",
+            "64015538-af35-40f0-8ecb-49e440b8b258",
+            "6a90aba7-e6e4-4639-b713-172f563a4912",
+            "6b40af08-26a1-4a73-9fba-78fcb9834dbd",
+            "702c6b9e-9a75-4e29-87ba-d7cce0856372",
+            "b96aaede-578b-434a-b706-510d0ad105bf",
+            "c72f23b9-0d49-4d58-8d29-5b4d8b31322c",
+            "d885dd23-21fe-447c-b87e-e5f045576141",
+            "e14812d1-dc85-4b34-9809-85c16f114d37"
+          ],
+          "dataset_ids": [
+            "d1909955-c92f-4d59-bd9f-c6b32b3b9904"
+          ]
+        },
+        "cleanup": {
+          "removed": [
+            "datasets/b538528df4d3cb313833d85d2f974d5eb500122a5cf37b26ddd5093a1a9d874b",
+            "raw/bcf833ab401ee07a791b13e4146bb25b3dc4b73cbc4618de9e577878eac4ae18"
+          ],
+          "shared": []
+        },
+        "recomputed": {
+          "datasetId": "b0d6c688-3151-429a-9df3-e1ff21f0660f",
+          "fileSha256": "f74a200cc948b95c80567b1efd113ae0ff867a8ced70303265ae9331392ef2de",
+          "rows": 130,
+          "correctedLabel": 250
+        }
+      }
+    },
+    {
+      "name": "orphan cleanup honors grace and publication locks; temp housekeeping preserves final objects",
+      "verdict": "pass",
+      "details": {
+        "orphanGraceSeconds": 1,
+        "publicationWaitObserved": true,
+        "committedFinalPreserved": true,
+        "agedTemporaryRemoved": true
+      }
+    },
+    {
+      "name": "publication and deletion serialize on input rows; reads hold no blocking locks",
+      "verdict": "pass",
+      "details": {
+        "observedWriterWait": true,
+        "subsequentPublicationRefused": true,
+        "eventId": "9186883d-94d0-4f8c-8f4a-be722c085d3e"
+      }
+    },
+    {
+      "name": "shared bytes survive one deletion and the last deletion starts its own grace",
+      "verdict": "pass",
+      "details": {
+        "sharedReferencePreserved": true,
+        "latestGraceEnforced": true
+      }
+    }
+  ]
+}

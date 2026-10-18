@@ -1,0 +1,21 @@
+{
+  "issue": 138,
+  "step": 5,
+  "status": "superseded before owner review corrections",
+  "verdict": "fail",
+  "error": "Error: dataset-trial-failed",
+  "diagnostics": {
+    "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/step-5-diagnostics/pre-review/step-5-real-dataset-initial.json",
+    "sha256": "cb4debff5f0fdb1548b8bade9f439ed7210cbb854e52720c326ceb806937ed7b",
+    "byteSize": 35765
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "mode": "cold",
+      "measuredMs": 15170.845333999998,
+      "verdict": "fail",
+      "error": "Error: Command failed: /Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON /Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138/scripts/feature-store/dataset-cold.ts\n/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138/node_modules/pg/lib/client.js:694\n          Error.captureStackTrace(err)\n                ^\n\nerror: canceling statement due to statement timeout\n    at /Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138/node_modules/pg/lib/client.js:694:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async buildDataset (file:///Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138/src/lib/featureStore/datasets.ts:99:22)\n    at async file:///Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138/scripts/feature-store/dataset-cold.ts:24:15 {\n  length: 109,\n  severity: 'ERROR',\n  code: '57014',\n  detail: undefined,\n  hint: undefined,\n  position: undefined,\n  internalPosition: undefined,\n  internalQuery: undefined,\n  where: undefined,\n  schema: undefined,\n  table: undefined,\n  column: undefined,\n  dataType: undefined,\n  constraint: undefined,\n  file: 'postgres.c',\n  line: '3444',\n  routine: 'ProcessInterrupts'\n}\n\nNode.js v24.18.1\n"
+    }
+  ]
+}

@@ -16,7 +16,8 @@ describe("derived job connection ownership",()=>{
   await expect(runDerivedJob(client as unknown as Pick<Client,"query">,"features",
    {season:2025,mode:"retrospective-reconstruction-v1"},{gitSha:"a".repeat(40),contentSha256:"b".repeat(64)}))
    .rejects.toThrow("derived-connection-interrupted-replace");
-  expect(calls).toHaveLength(6);
+  expect(calls).toHaveLength(5);
+  expect(calls.some(text=>text.startsWith("ANALYZE"))).toBe(false);
   expect(calls.some(text=>text==="ROLLBACK"||text==="COMMIT"||text.includes("UPDATE fs138.job_runs"))).toBe(false);
  });
 });

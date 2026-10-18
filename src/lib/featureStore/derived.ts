@@ -11,8 +11,8 @@ export type DerivedRequest = { season: number; mode: EvidenceMode; checkpoint?: 
 export type CodeIdentity = { gitSha: string; contentSha256: string };
 
 const featureSelect = `
-WITH context AS MATERIALIZED (
-  SELECT * FROM fs138.qb_job_context($2,$3,$4,'features',$5)
+WITH input_guard AS MATERIALIZED (SELECT fs138.lock_active_snapshots($8::uuid[]) AS ok), context AS MATERIALIZED (
+  SELECT c.* FROM fs138.qb_job_context($2,$3,$4,'features',$5) c CROSS JOIN input_guard WHERE input_guard.ok
 ), prior AS MATERIALIZED (
   SELECT *,count(*) OVER(PARTITION BY player_id,game_id,context_kickoff) AS kickoff_count,row_number() OVER(PARTITION BY player_id,game_id ORDER BY context_kickoff DESC,context_game_id) AS ordinal
   FROM context WHERE context_game_id<>game_id AND context_kickoff<cutoff AND cardinality(reasons)=0
@@ -51,8 +51,8 @@ SELECT count(*)::integer AS rows,count(*) FILTER(WHERE state='usable')::integer 
   count(*) FILTER(WHERE state='unavailable')::integer AS unavailable,coalesce(max(sample_size),0)::integer AS max_sample FROM inserted`;
 
 const labelSelect = `
-WITH context AS MATERIALIZED (
-  SELECT * FROM fs138.qb_job_context($2,$3,$4,'labels',$5)
+WITH input_guard AS MATERIALIZED (SELECT fs138.lock_active_snapshots($7::uuid[]) AS ok), context AS MATERIALIZED (
+  SELECT c.* FROM fs138.qb_job_context($2,$3,$4,'labels',$5) c CROSS JOIN input_guard WHERE input_guard.ok
 ), prepared AS MATERIALIZED (
   SELECT *,reasons || array_remove(ARRAY[CASE WHEN context_kickoff >= $3::timestamptz THEN 'game-not-before-label-cutoff' END],NULL) AS label_reasons
   FROM context
@@ -86,14 +86,14 @@ export const runDerivedJob = async (client: Pick<Client, "query">, kind: "featur
       !["strict-point-in-time-v1", "retrospective-reconstruction-v1"].includes(request.mode) ||
       (request.checkpoint !== undefined && (!zoned.test(request.checkpoint) || !Number.isFinite(Date.parse(request.checkpoint)))))
     throw new Error("derived-request-refused");
-  await client.query("ANALYZE fs138.job_runs,fs138.source_snapshots,fs138.norm_schedule,fs138.norm_player_game_stats,fs138.norm_identity,fs138.norm_participation");
   const plan = (await client.query<{ checkpoint: string; valid: boolean; inputs: { snapshot_id: string; sha256: string }[] }>(`
     WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS now), selected AS (
       SELECT coalesce($1::timestamptz,now) AS checkpoint,now FROM clock
     ) SELECT checkpoint::text,checkpoint<=now AS valid,
       coalesce((SELECT jsonb_agg(jsonb_build_object('snapshot_id',s.snapshot_id,'sha256',s.sha256) ORDER BY s.snapshot_id)
         FROM fs138.source_snapshots s JOIN fs138.job_runs j ON j.job_id=s.job_id
-        WHERE s.ingested_at<=checkpoint AND j.status='succeeded'),'[]') AS inputs FROM selected`, [request.checkpoint ?? null])).rows[0];
+        WHERE s.ingested_at<=checkpoint AND s.deleted_at IS NULL AND j.status='succeeded'
+          AND s.snapshot_id IN(SELECT snapshot_id FROM fs138.qb_job_snapshot_ids($2,checkpoint,$3,$4))),'[]') AS inputs FROM selected`, [request.checkpoint ?? null,request.season,kind,NORMALIZER_VERSION])).rows[0];
   if (!plan.valid) throw new Error("future-checkpoint-refused");
   const snapshotIds = plan.inputs.map((input) => input.snapshot_id);
   const policy = { kind,season: request.season,mode: request.mode,checkpoint: plan.checkpoint,
@@ -110,6 +110,8 @@ export const runDerivedJob = async (client: Pick<Client, "query">, kind: "featur
         kind === "features" ? FEATURE_VERSION : LABEL_VERSION,...(kind === "features" ? [HISTORY_POLICY,snapshotIds] : [snapshotIds])] };
     const result = await client.query<{ rows: number; usable: number; unavailable: number; max_sample: number }>(materialization);
     const counts = result.rows[0];
+    // Bulk-load statistics belong to the producing job, never its readers.
+    await client.query("ANALYZE fs138.job_runs,fs138.source_snapshots,fs138.norm_schedule,fs138.norm_player_game_stats,fs138.norm_identity,fs138.norm_participation,fs138.feature_values,fs138.outcome_labels,fs138.feature_inputs,fs138.label_inputs");
     await finishJob(client,job.jobId,{counts});
     await client.query("COMMIT");
     return { status: "succeeded" as const,jobId: job.jobId,checkpoint: plan.checkpoint,counts,

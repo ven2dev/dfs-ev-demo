@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { withFeatureStoreDatabase } from "../../scripts/feature-store/harness.ts";
 import { readNormalizedAsOf } from "../../src/lib/featureStore/asOf.ts";
+import { deleteSources,cleanupDeletedObjects,sweepOrphanObjects } from "../../src/lib/featureStore/governance.ts";
 import { ingestSource } from "../../src/lib/featureStore/ingest.ts";
 import { openLocalObjectStore } from "../../src/lib/featureStore/localObjectStore.ts";
 import { sha256 } from "../../src/lib/featureStore/objectStore.ts";
@@ -28,12 +29,24 @@ test("#138 ingestion and bitemporal selection", { timeout: 120_000 }, async (t) 
         const before = queryCounts.writer;
         first = await ingestSource(writer, store, initial.asset, code, { download });
         assert.equal(first.status, "ingested");
-        assert.equal(queryCounts.writer - before, 10);
+        assert.equal(queryCounts.writer - before, 12);
         assert.equal((await reader.query("SELECT passing_yards FROM fs138.norm_player_game_stats")).rows[0].passing_yards, 0);
         assert.equal((await ingestSource(writer, store, initial.asset, code, { download })).status, "already-processed");
         assert.equal((await reader.query("SELECT count(*)::int AS n FROM fs138.source_snapshots")).rows[0].n, 1);
       });
 
+      await check("raw upload is outside the transaction and a cleaner-winning race cannot publish",async()=>{
+        const row=[...STAT_ROW];row[8]='456';const fixture=sourceFixture(csvFixture(STAT_HEADER,[row]));
+        const writerPid=(await writer.query('SELECT pg_backend_pid() AS pid')).rows[0].pid;
+        let observedIdle=false;
+        const racing={...store,putIfAbsent:async(key:string,bytes:Uint8Array)=>{
+          observedIdle=(await admin.query('SELECT state FROM pg_stat_activity WHERE pid=$1',[writerPid])).rows[0].state==='idle';
+          const result=await store.putIfAbsent(key,bytes);await store.delete(key);return result;
+        }};
+        await assert.rejects(ingestSource(writer,racing,fixture.asset,code,{download:async()=>({bytes:fixture.bytes,capturedAt:new Date().toISOString(),requests:1})}),/ingest-object-missing/);
+        assert(observedIdle);
+        assert.equal((await reader.query('SELECT count(*)::integer AS n FROM fs138.source_snapshots')).rows[0].n,1);
+      });
       await check("strict cutoff is inclusive for both clocks and refuses either future clock", async () => {
         const times = (await reader.query("SELECT ingested_at::text AS ingested FROM fs138.source_snapshots")).rows[0];
         const before = (await admin.query("SELECT ($1::timestamptz - interval '1 microsecond')::text AS before", [times.ingested])).rows[0].before;
@@ -106,7 +119,7 @@ test("#138 ingestion and bitemporal selection", { timeout: 120_000 }, async (t) 
         } finally { await admin.query("GRANT INSERT ON fs138.norm_player_game_stats TO fs138_pipeline_writer"); }
         assert.equal((await reader.query("SELECT count(*)::int AS n FROM fs138.source_snapshots")).rows[0].n, 2);
         assert.equal((await reader.query("SELECT count(*)::int AS n FROM fs138.norm_player_game_stats")).rows[0].n, 2);
-        assert.equal((await reader.query("SELECT count(*)::int AS n FROM fs138.job_runs WHERE status = 'failed'")).rows[0].n, 1);
+        assert.equal((await reader.query("SELECT count(*)::int AS n FROM fs138.job_runs WHERE status = 'failed'")).rows[0].n, 2);
         // The orphan is discoverable for grace-period cleanup, never deleted
         // immediately while another successful publication could reference it.
         assert.equal((await store.list("raw")).length, 3);
@@ -122,14 +135,26 @@ test("#138 ingestion and bitemporal selection", { timeout: 120_000 }, async (t) 
         const before = queryCounts.writer;
         const result = await ingestSource(writer, store, fixture.asset, code, { download: async () => ({ bytes: fixture.bytes, capturedAt: new Date().toISOString(), requests: 1 }) });
         assert.equal(result.status, "ingested");
-        assert.equal(queryCounts.writer - before, 10);
+        assert.equal(queryCounts.writer - before, 12);
         assert.equal((await reader.query("SELECT count(*)::int AS n FROM fs138.norm_player_game_stats WHERE snapshot_id = $1", [result.snapshotId])).rows[0].n, 64);
+      });
+      await check("deletion tombstones prevent retry reintroducing bytes and failed writes are swept", async()=>{
+        const snapshot=(await reader.query('SELECT snapshot_id,object_key FROM fs138.source_snapshots WHERE sha256=$1',[sha256(initial.bytes)])).rows[0];
+        await deleteSources(writer,[snapshot.snapshot_id],'synthetic deletion/retry probe',0);
+        await cleanupDeletedObjects(writer,store);assert.equal(await store.head(snapshot.object_key),null);
+        const retry=await ingestSource(writer,store,initial.asset,code,{download});assert.equal(retry.status,'job-unavailable');
+        assert.equal(await store.head(snapshot.object_key),null);
+        await assert.rejects(ingestSource(writer,store,initial.asset,{...code,contentSha256:sha256(Buffer.from('changed implementation'))},{download}),/object-address-deleted/);
+        await cleanupDeletedObjects(writer,store);
+        assert.equal(await store.head(snapshot.object_key),null);
+        const before=await store.list('raw');const swept=await sweepOrphanObjects(writer,store,0);
+        assert(swept.removed.length>0);assert((await store.list('raw')).length<before.length);
       });
     });
   } finally {
     await rm(root, { recursive: true, force: true });
     if (process.env.FEATURE_STORE_EVIDENCE_PATH) await writeFile(process.env.FEATURE_STORE_EVIDENCE_PATH,
       JSON.stringify({ issue: 138, step: 3, workload: "synthetic ingestion/as-of probes", probes,
-        verdict: probes.length === 8 ? "pass" : "fail" }, null, 2) + "\n");
+        verdict: probes.length === 10 ? "pass" : "fail" }, null, 2) + "\n");
   }
 });

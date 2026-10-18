@@ -1,0 +1,122 @@
+{
+  "issue": 138,
+  "step": 5,
+  "recordedAt": "2026-10-18T03:01:22.275317+00:00",
+  "verdict": "pass",
+  "checks": [
+    {
+      "suite": "datasets",
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "--test",
+        "tests/feature-store/datasets.check.mts"
+      ],
+      "exitCode": 0,
+      "stdout": "\u25b6 #138 pinned datasets, rights, two-step deletion and bounded derived retention\n  \u2714 pinned join excludes warm-up and unavailable labels; file hash reproduces, two constant rights checks (59.905584ms)\n  \u2714 natural-key hash survives independent derived IDs and clocks but changes with values (92.220958ms)\n  \u2714 uploads hold no DB transaction; cleanup winning before publish refuses missing objects (43.695875ms)\n  \u2714 unknown versions and future clocks fail closed; non-pipeline cannot forge manifests or govern (10.668333ms)\n  \u2714 rights revoked before or during file I/O refuse delivery with no released bytes (7.502417ms)\n  \u2714 SQL and rights budgets stay constant as membership grows from 2 to 130 examples (51.897334ms)\n  \u2714 strict historical snapshots remain unavailable at dataset selection (46.25075ms)\n  \u2714 correction uses pinned clocks; superseded inclusion policy is explicit; derived pruning preserves pins and latest (277.486125ms)\n  \u2714 failed dataset publication rolls back pins; immutable uncommitted file remains discoverable (32.802125ms)\n  \u2714 source deletion returns exact closure, invalidates immediately, delays bytes, resumes cleanup, recomputes surviving evidence (1276.3585ms)\n  \u2714 orphan cleanup honors grace and publication locks; temp housekeeping preserves final objects (1229.444583ms)\n  \u2714 publication and deletion serialize on input rows; reads hold no blocking locks (50.092541ms)\n  \u2714 shared bytes survive one deletion and the last deletion starts its own grace (1166.772459ms)\n\u2714 #138 pinned datasets, rights, two-step deletion and bounded derived retention (5175.057708ms)\n\u2139 tests 14\n\u2139 suites 0\n\u2139 pass 14\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 5335.942334\n",
+      "stderr": "",
+      "evidence": "docs/evidence/feature-store-138/step-5-integration.json"
+    },
+    {
+      "suite": "ingest",
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "--test",
+        "tests/feature-store/ingest.check.mts"
+      ],
+      "exitCode": 0,
+      "stdout": "\u25b6 #138 ingestion and bitemporal selection\n  \u2714 trusted pipeline ingests atomically and retry does not republish (33.358667ms)\n  \u2714 raw upload is outside the transaction and a cleaner-winning race cannot publish (16.480042ms)\n  \u2714 strict cutoff is inclusive for both clocks and refuses either future clock (10.477292ms)\n  \u2714 reconstruction keeps its warning and never admits knowledge after its checkpoint (3.766458ms)\n  \u2714 corrupt download never replaces a valid snapshot or stores refused bytes (5.441042ms)\n  \u2714 later correction changes current selection but not the earlier checkpoint (15.743167ms)\n  \u2714 equal-time rivals are ambiguous and unknown normalizer versions are excluded (6.223584ms)\n  \u2714 failed publication rolls back normalized/snapshot rows and records a failed job (19.336208ms)\n  \u2714 SQL work stays fixed when normalized row count increases (16.878875ms)\n  \u2714 deletion tombstones prevent retry reintroducing bytes and failed writes are swept (43.264958ms)\n\u2714 #138 ingestion and bitemporal selection (843.273459ms)\n\u2139 tests 11\n\u2139 suites 0\n\u2139 pass 11\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 999.603708\n",
+      "stderr": "",
+      "evidence": "docs/evidence/feature-store-138/step-5-ingest-regression.json"
+    },
+    {
+      "suite": "schema",
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "--test",
+        "tests/feature-store/schema.check.mts"
+      ],
+      "exitCode": 0,
+      "stdout": "\u25b6 #138 proposal: main isolation, trusted writer, database clocks and idempotent jobs\n  \u2714 proposal application rolls back cleanly and leaves main unchanged (264.307125ms)\n  \u2714 real non-pipeline login cannot forge, overwrite, delete or escalate (47.065417ms)\n  \u2714 pipeline inserts use DB knowledge clocks and cannot later be backdated (9.436459ms)\n  \u2714 backdated valid-time rights do not enter an earlier knowledge-time answer (2.828042ms)\n  \u2714 only pipeline logins publish normalized values and normalized rows are immutable (7.908667ms)\n  \u2714 concurrent idempotent jobs have one executor and distinct policies remain distinct (5.60175ms)\n  \u2714 job completion is DB-stamped and terminal jobs cannot be rewritten (3.232459ms)\n  \u2714 proposal leaves main catalog and frozen migration hashes unchanged (73.194458ms)\n\u2714 #138 proposal: main isolation, trusted writer, database clocks and idempotent jobs (999.105916ms)\n\u2139 tests 9\n\u2139 suites 0\n\u2139 pass 9\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 1095.195542\n",
+      "stderr": "",
+      "evidence": "docs/evidence/feature-store-138/step-5-schema-regression.json"
+    },
+    {
+      "suite": "derived",
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "--test",
+        "tests/feature-store/derived.check.mts"
+      ],
+      "exitCode": 0,
+      "stdout": "\u25b6 #138 derived jobs: synthetic event-time, qualification, correction and budgets\n  \u2714 SQL excludes target, equal-cutoff and future events in BOTH evidence modes (80.16825ms)\n  \u2714 missing participation is an unavailable NULL label, and zero is preserved when qualified (35.909917ms)\n  \u2714 synthetic corrections preserve old labels and never put the corrected target outcome into its features (169.36575ms)\n  \u2714 ambiguous stats give an unavailable label while the earlier valid value stays visibly stale (24.005667ms)\n  \u2714 equal-time source rivals stay ambiguous and an unavailable feature preserves its last valid history (100.63125ms)\n  \u2714 only pipeline writes derived rows, timestamps are DB clocks and lineage is snapshot level (10.666125ms)\n  \u2714 feature SQL statement count stays constant from 2 to 65 QBs (14206.153792ms)\n  \u2714 history and gap aggregates execute once for the complete cohort (14081.008ms)\n  \u2714 derived publication rollback leaves no partial outputs or lineage (88.4955ms)\n\u2714 #138 derived jobs: synthetic event-time, qualification, correction and budgets (29549.564625ms)\n\u2139 tests 10\n\u2139 suites 0\n\u2139 pass 10\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 29658.012917\n",
+      "stderr": "",
+      "evidence": "docs/evidence/feature-store-138/step-5-derived-regression.json"
+    },
+    {
+      "suite": "unit",
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "vitest.node.config.ts",
+        "tests/predictive/featureStoreObjectStore.test.ts",
+        "tests/predictive/featureStoreNormalize.test.ts",
+        "tests/predictive/featureStoreDerived.test.ts"
+      ],
+      "exitCode": 0,
+      "stdout": "\n RUN  v5.0.3 /Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138\n\n\n Test Files  3 passed (3)\n      Tests  15 passed (15)\n   Start at  20:01:18\n   Duration  237ms (tests 41%, transform 41%, import 15%, worker 4%)\n\n",
+      "stderr": "(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:\n  - ESM syntax in a file loaded as CommonJS (vitest.node.config.ts:1:1). Use a `.mjs` extension or set `\"type\": \"module\"` in the closest package.json\nSet `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.\nThe plugin \"vite-tsconfig-paths\" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.\n"
+    },
+    {
+      "suite": "typecheck",
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "suite": "lint",
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "node_modules/eslint/bin/eslint.js",
+        "scripts/feature-store/harness.ts",
+        "src/lib/featureStore/derived.ts",
+        "src/lib/featureStore/ingest.ts",
+        "src/lib/featureStore/localObjectStore.ts",
+        "src/lib/featureStore/objectStore.ts",
+        "tests/feature-store/ingest.check.mts",
+        "tests/feature-store/schema.check.mts",
+        "tests/predictive/featureStoreDerived.test.ts",
+        "scripts/feature-store/dataset-cold.ts",
+        "scripts/feature-store/dataset-spike.ts",
+        "scripts/feature-store/profile-dataset-setup.ts",
+        "src/lib/featureStore/datasets.ts",
+        "src/lib/featureStore/governance.ts",
+        "tests/feature-store/datasets.check.mts"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "suite": "whitespace",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

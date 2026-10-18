@@ -1,0 +1,12 @@
+{
+  "issue": 138,
+  "step": 5,
+  "status": "superseded before owner review corrections",
+  "verdict": "diagnostic",
+  "error": null,
+  "diagnostics": {
+    "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/step-5-diagnostics/pre-review/step-5-cardinality-code.json",
+    "sha256": "c523526fd6cfa6978cf822e05adfde153cff7bd9751bb21e83ac5f92ca217de2",
+    "byteSize": 35813
+  }
+}

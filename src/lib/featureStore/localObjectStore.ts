@@ -62,6 +62,25 @@ export const openLocalObjectStore = async (
   };
 
   return {
+    cleanupTemporary: async (graceSeconds=300) => {
+      if (!Number.isFinite(graceSeconds) || graceSeconds<0 || graceSeconds>86400) throw new Error("temporary-grace-refused");
+      const removed:string[]=[];
+      const before=Date.now()-graceSeconds*1000;
+      for(const namespace of OBJECT_NAMESPACES){
+        await checkedPath(`${namespace}/${"0".repeat(64)}`);
+        for(const name of await readdir(join(root,namespace))){
+          if(!/^\.put-[a-f0-9-]{36}\.tmp$/.test(name))continue;
+          const path=join(root,namespace,name);
+          try{
+            const info=await lstat(path);
+            if(!info.isFile() || info.isSymbolicLink() || (info.mode&0o077)!==0 || info.mtimeMs>before)continue;
+            await unlink(path);removed.push(`${namespace}/${name}`);
+          }catch(error){if(!isMissing(error))throw error;}
+        }
+        await syncDirectory(join(root,namespace));
+      }
+      return removed;
+    },
     putIfAbsent: async (key, input) => {
       const expected = parseObjectKey(key);
       // Copy before the first await so a caller cannot mutate bytes after the

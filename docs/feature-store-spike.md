@@ -103,7 +103,7 @@ Step 1 was committed with owner approval at `6aa7953`: [sources](feature-store-s
 therefore precedes evaluation. Vernon approved the step 2 commit on 2026-10-17;
 see the historical implementation checkpoint below. Step 2 was committed at
 `13ac8ce`. Step 3 was approved and committed at `b9b6f81`. Step 4
-implementation and evidence are ready for owner review and remain uncommitted.
+was approved and committed locally at `d07f42c`.
 Real-source ingestion and feature/label qualification have run; evaluation has
 not run and the full spike capacity gate remains incomplete. Pushing needs fresh owner consent;
 owner-run Codex review remains required.
@@ -573,3 +573,220 @@ historical availability, the participation gap, main integration and external
 GCS/Blaze/dedicated-account plus Neon checks remain as recorded at step 3.
 No held legacy branches or hosted databases were changed. Stop for owner review
 before further implementation, keeping the approved about-one-week timebox.
+
+
+## Step 5 Design basis (owner-approved scope)
+
+**Pattern:** immutable materialized training datasets with explicit version pins;
+source-level batched authorization; tombstone-and-sweep deletion; lineage-driven
+invalidation/recomputation and garbage collection of unpinned nonlatest values.
+
+**Alternatives:** per-read evidence reconstruction repeats ingestion work and
+missed prior capacity targets; reader table locks block writers through file
+I/O; keeping all recomputable versions indefinitely causes unbounded growth.
+Immediate byte removal races already authorized readers and is rejected.
+
+**Targets:** full 2021–2025 input fixture; 2021 warm-up excluded from membership,
+2022–2025 evaluation. Dataset join/write/hash ≤21 s against 30 s, three fresh
+process cold plus three warm trials. Fixed SQL statement count and exactly two
+batched rights/status queries per successful build/read. Absolute trials alternate
+cold/warm; no optimization comparison or ABBA claim.
+
+**Requirement reasons:** pin IDs, versions, separate feature/label selection
+clocks and inclusion policy to prevent historical drift or silent mixing of
+retrospective and strict evidence. Reject unavailable labels rather than invent
+zero. Check current rights/deletion before I/O and before returning buffered
+bytes because those states can change. Legal deletion overrides last-valid
+display. Immediate tombstones invalidate dependents; ObjectStore cleanup waits
+configurable grace, default 300 s. Short writer-only row locks serialize
+publication with deletion; readers take no table or row locks. Governance APIs
+check role membership and qualify references to prevent unauthorized erasure.
+
+Pruning keeps the latest head and every dataset pin; only older unpinned values
+are removed, with their lineage. Audit retains IDs/counts, not erased values.
+Lineage is conservative within the seasons actually queried: features use
+2021 through the target season; labels use the target season only. A shared
+all-season schedule snapshot remains a genuine shared dependency. Restrict both
+the context query and its snapshot inventory to that scope, so future-season
+sources cannot invalidate earlier values. Compact receipts hash the exact ID
+sets; full diagnostic files remain outside Git.
+
+Object publication follows upload-then-publish: upload outside any transaction,
+then briefly lock active inputs and the object address, HEAD-check existence,
+digest metadata and size, and publish references. Cleanup takes the same address
+lock. A cleaner winning before publication causes a missing-object refusal,
+preventing dangling references. Recreated mandatory-deletion addresses are
+requeued on failure so completed tombstones cannot strand newly uploaded bytes.
+No upload holds database locks. ANALYZE runs after derived materialization, not
+inside dataset builds. Normalization refreshes its own bulk-loaded table at
+job end so the first derived job also starts with useful statistics. A separate natural-key/value hash excludes UUIDs and
+knowledge clocks to distinguish logical reproducibility from exact-file identity.
+
+**Assumptions:** trusted pipeline, untrusted app callers, trusted database owner;
+bounded local files and short transactions; eventual hosted storage behind the
+same interface. No hosted/GCS commands or scoring in this step. Future same-day
+team/opponent features require **final stats known before cutoff**, not merely
+kickoff before cutoff; those features are not implemented here.
+
+
+
+## Step 5 owner checkpoint (review corrections)
+
+Step 5 passed owner review and received local commit approval. Step 4 is
+committed at `d07f42c`; nothing pushed. Evidence receipts retain the state at
+measurement time, before owner approval. All SQL stays in mutable proposals. Ordered migrations
+and generated artifacts match that approved checkpoint byte for byte.
+
+### Review corrections
+
+Feature jobs inventory snapshots containing normalized data from 2021 through
+the target season; label jobs inventory only snapshots containing the target
+season. Context and input selection share that scope helper. Lineage remains
+conservative within those seasons, including rival and unavailable evidence.
+Mixed-season files, including the all-season schedule, remain shared dependencies.
+Future-season stats/roster/participation snapshots no longer invalidate earlier
+values. This is season-level snapshot lineage, not row-level provenance.
+
+Raw and dataset jobs upload through ObjectStore before BEGIN. Publication then
+locks active inputs (datasets), takes the address lock, checks HEAD existence,
+digest metadata and size, and inserts references. Cleanup uses the same address
+lock. A cleaner winning before publication causes a missing-object refusal with
+no dangling reference. Recreated mandatory-deletion addresses are refused and
+requeued, including after a completed cleanup. Readers hold no table locks.
+
+The exact-file SHA-256 covers IDs, selection clocks, source/rights pins, code and
+values. The new content SHA-256 covers natural player/game/stat keys, algorithm
+versions, evidence mode, event cutoff, sample size, ordered numerical history and
+label value. It excludes UUIDs, knowledge clocks and freshness flags. Both hashes
+are stored in the manifest/receipt; the content hash is also in the file. Tests
+prove independent derived IDs/clocks keep the content hash, while changing a
+label changes it. Re-materialized exact-file hashes differ.
+
+ANALYZE is absent from dataset builds. Ingestion refreshes its bulk-loaded typed
+table and metadata at job end; derived jobs refresh statistics after
+materialization. This supplies statistics before the first derived job and
+before subsequent dataset joins. Ingestion uses 12 statements, derived jobs 8,
+dataset builds 8 and dataset reads 3. Successful builds/reads use two batched
+rights/status checks regardless of row count. Benchmark counters measure those
+checks in both cold and warm trials.
+
+Only compact receipts remain in the worktree. Verbose reports, plans, code copies
+and UUID sets are archived in the private sibling data directory; receipts retain
+paths, byte counts and hashes. All new step-5 JSON receipts are under 32 KiB.
+Existing committed evidence is preserved. Full datasets and scratch databases
+are removed after tests; original raw objects survive.
+
+### Repeated real-file dataset target
+
+The exact 16 step-3 files were copied into an isolated ObjectStore root, normalized
+and derived before measurement. 2021 is warm-up only. All included examples are
+flagged historical-availability-unverified. No statistical evaluation has run.
+Cold includes fresh Node startup, a restricted connection, ObjectStore open and
+the complete build. Warm still performs the full join/write/hash. OS/DB caches
+were not flushed. These are alternating absolute trials, not a speedup comparison.
+
+| Trial | Cold ms | Warm ms | <=21,000 ms |
+|---|---:|---:|---|
+| 1 | 851.75 | 519.16 | Pass |
+| 2 | 600.89 | 463.93 | Pass |
+| 3 | 628.19 | 458.61 | Pass |
+
+All six builds produce 2,504 examples and 3,527,908 bytes,
+using eight statements and two measured rights queries. Exact-file hash:
+`9db8868df7d807b43ba9514b63762455bbd29ca7300d824e11cf16cff075dc05`.
+Natural-key/value content hash:
+`a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d`.
+Both hashes agree across the six trials. Event-time leakage: zero.
+
+| Season | Usable pairs | n=2–4 | n=5–8 | n=9–16 |
+|---|---:|---:|---:|---:|
+| 2022 | 595 | 62 | 67 | 466 |
+| 2023 | 632 | 50 | 81 | 501 |
+| 2024 | 644 | 25 | 51 | 568 |
+| 2025 | 633 | 39 | 34 | 560 |
+
+Exclusions: {"feature-unavailable": 1863, "label-unavailable": 3098, "warm-up-only": 1916}. They are evaluated
+in order: warm-up, unavailable features, unavailable labels, flag policy.
+Participation/identity gaps stay explicitly unavailable, never zero.
+
+### Scoped deletion and retention proof
+
+Deleting the isolated 2025 stats snapshot invalidates exactly
+1,948 features,
+1,948 labels and
+6 datasets. The exact sorted ID
+sets are checked against pre-deletion lineage and hashed in the receipt.
+No earlier-season feature/label ID appears in those deletion sets.
+
+Before any recomputation, all 5,517
+2022–2024 features and 5,517
+labels survive with identical IDs and every column value. Their complete-row
+hash before and after deletion is:
+`ed25fcad5e5478db4debffd9937ad6b2539aeee284e23f43abf27511f6c567f3`.
+Zero 2022–2024 jobs reran. Only 2025 jobs rerun; missing stats keep all 2025
+labels unavailable while features can still use surviving prior history. The rebuilt dataset contains
+1,871 surviving 2022–2024 usable pairs.
+
+Tombstones invalidate delivery immediately, then ObjectStore cleanup waits its
+grace (default 300 seconds, one second in tests), starting after invalidation work.
+Tests cover revocation/deletion during I/O, crash/resume, shared addresses and
+publication races. Pruning preserves latest heads, last usable values and all
+dataset pins; only other versions/lineage are removed. No automatic schedule is
+installed for these local jobs.
+
+### Failures and validation
+
+Earlier timeouts and the grace-clock failure remain as compact receipts with
+archived full diagnostics. The first review-correction setup also timed out at
+the unchanged 84-second derived limit before dataset trials. Its plan severely
+underestimated normalized populations and chose nested loops. The correction
+keeps snapshot season scoping without redundant discovery row-season filters,
+and places statistics maintenance in producing jobs. The single-job profile is
+diagnostic evidence, not a repeated feature-capacity claim. No target or timeout
+was relaxed. The final integrated setup completed before the dataset matrix.
+
+Final focused validation: 40 PostgreSQL probes (13 dataset, 10 ingestion, eight
+schema, nine derived), 15 unit tests, typecheck, ESLint and whitespace pass. Schema
+probes verify pipeline-only writes, proposal rollback and unchanged main catalog
+and frozen migration hashes. Full application/remote CI is not claimed.
+
+- [Checkpoint and per-target verdicts](evidence/feature-store-138/step-5-checkpoint.json)
+- [Dataset matrix and deletion survival](evidence/feature-store-138/step-5-real-dataset.json)
+- [Dataset/governance probes](evidence/feature-store-138/step-5-integration.json)
+- [Focused validation](evidence/feature-store-138/step-5-validation.json)
+- [Retained setup failure](evidence/feature-store-138/step-5-real-dataset-review-statistics-failure.json)
+- [Planner diagnostic](evidence/feature-store-138/step-5-producer-statistics.json)
+
+| Overall #138 target | Status |
+|---|---|
+| Ingest <=42 s headroom | Repeated network cold/warm gate pending |
+| Season features <=84 s headroom | Prior step-4 repeated pass; revised setup measured, no fresh repeated season matrix claimed |
+| Dataset <=21 s headroom | Pass: all six cold/warm trials |
+| Prediction p95 <=210 ms headroom | Not measured; later step |
+
+Reproduce with the disposable Compose fixture, Node 24 and the local
+TEST_DATABASE_URL: `npm run test:feature-store:db` then
+`npm run feature-store:dataset:spike`. Remaining acceptance includes scoring,
+predictions, other capacity gates, scheduled integrity/recompute audits,
+operations, external qualification and main integration/independent review.
+Future same-day team/opponent features require final stats known before cutoff.
+
+Stop for review. GCS testing remains gated on the owner's Blaze upgrade, budget
+and dedicated pipeline service account. No hosted writes, Production commands
+or app Firebase admin credentials were used.
+
+
+### Accepted carry-forward decisions after step-5 review
+
+- **Lineage granularity:** season-scoped snapshot lineage is accepted for this
+  spike. Deleting an earlier season can invalidate later-season features that
+  cite it, even when an individual selected 16-game history uses no row from
+  that file. This is conservative invalidation, not an exact-row dependency
+  claim. Per-row lineage is deferred unless deletion breadth warrants it.
+- **GCS adapter contract (gated, not implemented):** save `sha256` as custom
+  object metadata on upload; HEAD compares that metadata and byte size with the
+  expected object. GCS does not supply the application's SHA-256 itself.
+  `putIfAbsent` uses `ifGenerationMatch=0` for atomic create-only publication.
+  Missing or mismatched metadata refuses publication. The live test still waits
+  for the owner's Blaze, budget and dedicated pipeline-account decision; the
+  app Firebase admin key is outside this pipeline's credential boundary.
