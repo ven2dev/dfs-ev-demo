@@ -1,34 +1,14 @@
-import type { MatchupConfig } from "@/types";
+import type { MatchupConfig, WatchSelection } from "@/types";
 import type { StateCreator } from "zustand";
 import type { AppState } from "../types";
-import { mockCoverageFilters } from "../mockData";
+import { mockCoverageFilters } from "@/lib/mockCoverage";
 import type { SlateEvent } from "@/lib/oddsApi";
 import type { DiscoveredPlayer } from "@/lib/discoveredProps";
 import type { PlayerPropMarketKey } from "@/lib/playerPropMarkets";
-import type { PlayerPropDirection } from "@/lib/playerPropMarkets";
 import type { NflSlateWindow } from "@/lib/nflWeek";
 
 export type RealSlateStatus = "idle" | "loading" | "loaded" | "error";
 export type DiscoveryStatus = "idle" | "loading" | "loaded" | "error";
-
-// Captured at the moment a user clicks "Watch" on a real discovered
-// prop -- everything /api/stream and the header need to drive the live
-// EV pipeline off a real selection instead of mockMatchup. Display
-// fields (propType/homeTeam/awayTeam) are captured here rather than
-// re-derived later so page.tsx doesn't need to cross-reference
-// realSlate/PLAYER_PROP_MARKETS just to render a label.
-export type WatchSelection = {
-  eventId: string;
-  sportKey: string;
-  homeTeam: string;
-  awayTeam: string;
-  startTime: string;
-  marketKey: string;
-  propType: string;
-  playerName: string;
-  bookmakerKey: string;
-  direction: PlayerPropDirection;
-};
 
 export interface MatchupSlice {
   matchupConfig: MatchupConfig;
