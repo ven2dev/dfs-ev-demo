@@ -39,7 +39,7 @@ suite fails; bring that evidence to the owner.
 #177 remains on hold until this coverage PR lands. Existing dependency PRs are
 owner-merged first when ready; refresh the final integration baseline afterward.
 
-## Local checkpoint (2026-10-18)
+## Initial local checkpoint (2026-10-18, main `62daa3c`)
 
 All 77 PostgreSQL tests passed on a fresh standard fixture in
 56.844 seconds, with zero failures, skips or cancellations.
@@ -55,6 +55,26 @@ fixtures and package dependencies are unchanged.
 
 The [compact receipt](evidence/feature-store-185/standard-ci-validation.json)
 records counts, stage timings, source hashes and resource boundaries. Full logs
-stay outside git. Hosted CI remains pending and is the evidence for the hosted
+stay outside git. That combined run used the original dependency baseline. Hosted CI remains
+pending and is the evidence for the hosted
 10-minute deadline; local timing excludes dependency installation and runner
 setup. Commit, push and merge gates remain with the owner.
+
+## Main integration checkpoint (2026-10-18, main `85c1418`)
+
+Merged `85c14183db872b7479279a2cee421826709bf7a8` into the #185 branch,
+preserving commit `8be5371` and the existing history. Owner direction is
+merge-only integration; no rebase or amended commit was used.
+
+After `npm ci` from the merged lockfile, the feature-store PostgreSQL suite
+passed **77/77** in **49.838 seconds**, with zero failures, skips or
+cancellations, on a fresh unchanged standard 512 MiB data tmpfs. The CI gate
+checks passed **4/4**, changed-JavaScript lint passed, and cleanup succeeded.
+All 11 frozen migrations and all catalog/schema/readiness artifacts remain
+byte-identical to both baselines. The new CI step is unchanged.
+
+The receipt's top-level baseline and dependency hashes now describe `85c1418`.
+Its older combined-run timings remain explicitly attached to `62daa3c`; the
+full combined sequence was not repeated for this dependency-only integration.
+Hosted CI remains pending. PR #184 (Actions updates) was still open when main
+was merged; any later integration preserves the new feature-store step.
