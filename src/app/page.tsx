@@ -251,22 +251,25 @@ export default function Home() {
 
           {/* Active-node stepper — steps through base->env->coverage->final
               on each new tick; exactly one node active at a time. */}
-          <div className="mt-6 flex items-center gap-2 text-xs">
+          <ol
+            aria-label="Analysis pipeline"
+            className="mt-6 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4"
+          >
             {STAGES.map((stage, i) => (
-              <div key={stage.key} className="flex items-center gap-2">
-                <span
-                  className={`rounded-full px-2 py-1 transition-colors ${
-                    i === activeStageIndex
-                      ? "bg-black text-white dark:bg-white dark:text-black"
-                      : "bg-zinc-100 text-zinc-500 dark:bg-zinc-900"
-                  }`}
-                >
-                  {stage.label}
-                </span>
-                {i < STAGES.length - 1 && <span className="text-zinc-300">→</span>}
-              </div>
+              <li
+                key={stage.key}
+                aria-current={i === activeStageIndex ? "step" : undefined}
+                className={`flex min-w-0 items-center gap-2 rounded-lg px-3 py-2 transition-colors ${
+                  i === activeStageIndex
+                    ? "bg-black text-white dark:bg-white dark:text-black"
+                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
+                }`}
+              >
+                <span aria-hidden="true" className="shrink-0 font-medium">{i + 1}.</span>
+                <span className="break-words">{stage.label}</span>
+              </li>
             ))}
-          </div>
+          </ol>
 
           {watched?.stages && watched.evScore && (
             <div className="mt-6 space-y-3">

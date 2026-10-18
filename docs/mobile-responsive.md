@@ -63,3 +63,10 @@ After owner merges #136, repeat triage/roadmap approval for #104 on feature/dfsE
 - Fixture sheet checked at 360, 375, 390, 430, 768 and 1440 px. Document scroll width matched each viewport; table scroll width matched its client width at every size (326–396 px). Desktop panel remains capped at 384 px.
 - Escape dismissal verified in browser. All five existing sheet tests passed, including Close, backdrop and Escape behavior. TypeScript, changed-file ESLint and whitespace checks passed.
 - Screenshots: [phone](screenshots/136/bookmaker-sheet-phone-375.jpg), [desktop](screenshots/136/bookmaker-sheet-desktop-1440.jpg).
+
+## Pipeline-stepper iteration evidence
+
+- Numbered semantic list, with aria-current="step" on the active stage. One column on phones, two at sm, four at lg; wrapping labels and existing tick animation retained.
+- Fixture watched prop checked at 360, 375, 390, 430, 768 and 1440 px: no clipped stage items, exactly one current stage, document scroll width equals viewport width at every size.
+- Screenshots: [phone](screenshots/136/stepper-phone-375.jpg), [desktop](screenshots/136/stepper-desktop-1440.jpg).
+- Four existing page tests passed, including last-valid stale values and fixture/sample provenance; TypeScript, changed-file ESLint and whitespace checks passed. Sample-window buttons and numeric layout remain for the matchup/tracker iteration.
