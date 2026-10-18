@@ -1,0 +1,28 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-4-real-derived-warm-plan-failure.json",
+  "codeHashesReceipt": {"files": 8,"sha256": "0d7cdba43d99a5bf83fbf4c3d108329eab016a69d1efd37d59d68c82c6f9864a","encoding": "sorted-key compact JSON; complete map in original archive"},
+  "evaluationRun": false,
+  "setup": "ObjectStore reads exact pinned raw bytes for re-normalization; this is not an ingestion/network benchmark",
+  "cacheState": "cold trials use fresh restricted DB connections; warm trials reuse a connection; no app cache or job-output reuse; OS/DB buffers not flushed; one Node process",
+  "trials": [
+    {"season": 2025,"trialMode": "cold","trial": 1,"status": "succeeded","checkpoint": "2026-10-17 16:48:38.768236+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3214.6175829999993,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3214.7622499999998,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"},
+    {"season": 2025,"trialMode": "warm","trial": 1,"status": "succeeded","checkpoint": "2026-10-17 16:48:42.088615+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3213.373083999999,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3213.3928750000014,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"},
+    {"season": 2025,"trialMode": "cold","trial": 2,"status": "succeeded","checkpoint": "2026-10-17 16:48:45.392596+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3253.558250000002,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3253.568374999999,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"},
+    {"season": 2025,"trialMode": "warm","trial": 2,"status": "succeeded","checkpoint": "2026-10-17 16:48:48.723213+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3210.5215420000022,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3210.532916999997,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"},
+    {"season": 2025,"trialMode": "cold","trial": 3,"status": "succeeded","checkpoint": "2026-10-17 16:48:52.047142+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3212.741083000001,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3212.761999999999,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"},
+    {"season": 2025,"trialMode": "warm","trial": 3,"status": "succeeded","checkpoint": "2026-10-17 16:48:55.367866+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3280.350959000003,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3280.361499999999,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"}
+  ],
+  "qualification": [
+    {"kind": "features","season": 2021,"status": "succeeded","checkpoint": "2026-10-17 16:48:58.712427+00","counts": {"rows": 1916,"usable": 780,"unavailable": 1136,"max_sample": 16},"elapsedMs": 2790.2780829999974,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"queries": 8},
+    {"kind": "features","season": 2022,"status": "succeeded","checkpoint": "2026-10-17 16:49:01.502946+00","counts": {"rows": 1838,"usable": 1204,"unavailable": 634,"max_sample": 16},"elapsedMs": 3045.5615840000028,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"queries": 8}
+  ],
+  "verdict": "failed",
+  "error": "error: canceling statement due to statement timeout",
+  "peakRssBytes": 571031552,
+  "archivedDetails": [
+    "inputs",
+    "plainContextPlan"
+  ],
+  "recordedContext": {"schemaVersion": 1,"issue": 138,"step": 4,"recordedAt": "2026-10-17T16:48:21.001Z","code": {"gitSha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65","contentSha256": "c99adcd333553a4c9a69385b4ca94812211feebb979df09e68190f5b7b1f9a98"},"sourceManifestSha256": "63517d4e667af249a6c8c3a4b6ea8cd72550d1afb578182510629d68ec710c38","runtime": "v24.18.1","machine": {"arch": "arm64","platform": "darwin","cpus": 12,"totalMemoryBytes": 19327352832},"fixture": "exact step-3 wire objects; all five seasons normalized in a fresh scratch DB; no synthetic corrections","evidenceMode": "retrospective-reconstruction-v1","flags": ["historical-availability-unverified"],"database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"}
+}

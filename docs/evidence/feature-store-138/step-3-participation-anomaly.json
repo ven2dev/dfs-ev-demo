@@ -1,0 +1,12 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-3-participation-anomaly.json",
+  "wireSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+  "recipePath": "scripts/feature-store/inspect-participation.ts",
+  "recipeSha256": "3f0cd2ad3fa61a07e918bde17963386543c5796296414f31df83c230826b248f",
+  "rowsInspected": 45919,
+  "anomalies": [
+    {"sourceOrdinal": 26090,"gameId": "2024_02_CLE_JAX","playId": "1985","possessionTeam": "CLE","invalidTokens": [],"duplicateTokens": ["00-0029008"],"decision": "play-not-used-for-positive-participation"}
+  ],
+  "recordedContext": {"issue": 138,"step": 3,"recordedAt": "2026-10-17T15:36:30.726Z"}
+}

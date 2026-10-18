@@ -1,0 +1,20 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-5-real-dataset-review-statistics-failure.json",
+  "codeHashesReceipt": {"files": 13,"sha256": "1d163d234c61e041bc7872e084d04ed095685b502726d8e9398312f8ad57353a","encoding": "sorted-key compact JSON; complete map in original archive"},
+  "historicalAvailability": "unverified",
+  "scoringRun": false,
+  "cacheState": "three alternating fresh-process cold and warm builds; cold includes Node startup, new restricted connection, ObjectStore open, full join/write/hash; OS/DB caches not flushed",
+  "comparison": "absolute target only; no relative optimization or ABBA claim",
+  "deadlineMs": 30000,
+  "headroomLimitMs": 21000,
+  "trials": [],
+  "verdict": "fail",
+  "error": "error: canceling statement due to statement timeout",
+  "peakRssBytes": 585170944,
+  "fullDiagnostics": {"path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/step-5-diagnostics/dataset-2026-10-18T02-53-28.708Z.json","sha256": "578e5178875b691d92a6bd258caebeda3f4f440de2bc10943cabe69893feff49","byteSize": 29177},
+  "archivedDetails": [
+    "setup"
+  ],
+  "recordedContext": {"schemaVersion": 1,"issue": 138,"step": 5,"recordedAt": "2026-10-18T02:53:28.707Z","code": {"gitSha": "d07f42c776797bc5c808ba8faaefe55870a71221","contentSha256": "bc6fe32a60b2e6d51d8a81e911e4c890d50ac2c0f31433a465adb791fd401617"},"sourceManifestSha256": "63517d4e667af249a6c8c3a4b6ea8cd72550d1afb578182510629d68ec710c38","runtime": "v24.18.1","machine": {"cpus": 12,"totalMemoryBytes": 19327352832,"arch": "arm64","platform": "darwin"},"fixture": "exact step-3 raw objects, copied through ObjectStore to an isolated disposable root; no original objects deleted; no synthetic correction in real data","evidenceMode": "retrospective-reconstruction-v1","database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"}
+}

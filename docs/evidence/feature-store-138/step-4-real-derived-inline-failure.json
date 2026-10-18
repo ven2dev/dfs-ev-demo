@@ -1,0 +1,20 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-4-real-derived-inline-failure.json",
+  "codeHashesReceipt": {"files": 8,"sha256": "f81e4e3fc1654e4ac2fac895aaa8aa1e13d9f86768b5503e4db0382c6b592209","encoding": "sorted-key compact JSON; complete map in original archive"},
+  "evaluationRun": false,
+  "setup": "ObjectStore reads exact pinned raw bytes for re-normalization; this is not an ingestion/network benchmark",
+  "cacheState": "cold trials use fresh restricted DB connections; warm trials reuse a connection; no app cache or job-output reuse; OS/DB buffers not flushed; one Node process",
+  "trials": [
+    {"season": 2025,"trialMode": "cold","trial": 1,"status": "failed","error": "error: canceling statement due to statement timeout","measuredMs": 84143.931792,"queries": 8,"verdict": "fail"}
+  ],
+  "qualification": [],
+  "verdict": "failed",
+  "error": "Error: feature-trial-failed-stop-before-connection-reuse",
+  "peakRssBytes": 564330496,
+  "archivedDetails": [
+    "inputs",
+    "plainContextPlan"
+  ],
+  "recordedContext": {"schemaVersion": 1,"issue": 138,"step": 4,"recordedAt": "2026-10-17T16:51:53.813Z","code": {"gitSha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65","contentSha256": "548812e3664b2e626fa55b32f0297c5cd3c45673370b321a6df895b455d6f620"},"sourceManifestSha256": "63517d4e667af249a6c8c3a4b6ea8cd72550d1afb578182510629d68ec710c38","runtime": "v24.18.1","machine": {"arch": "arm64","platform": "darwin","cpus": 12,"totalMemoryBytes": 19327352832},"fixture": "exact step-3 wire objects; all five seasons normalized in a fresh scratch DB; no synthetic corrections","evidenceMode": "retrospective-reconstruction-v1","flags": ["historical-availability-unverified"],"database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"}
+}

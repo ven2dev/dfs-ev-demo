@@ -1,0 +1,122 @@
+{
+  "issue": 138,
+  "pr": 174,
+  "finding": "P1 shared addresses starve mandatory object-removal queue",
+  "baselineCommit": "df9643f5576ac9fa044281591894a1f187b57c87",
+  "verdict": "pass",
+  "measurement": "Deterministic correctness/work-page regression; elapsed times are not a capacity gate.",
+  "pageLimitUnchanged": 1024,
+  "sourceSha256": {
+    "db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "src/lib/featureStore/governance.ts": "5e3b72fdf6583dc2c920ba5a60d8cc2b07346db917365304dca4f4e00ad9da2b",
+    "tests/feature-store/datasets.check.mts": "4f36183206766dcfd6212a3059cecb6d479a030d878f7bccd6321d1883662245",
+    "tests/feature-store/removal-queue.check.mts": "7200b5f57f50d93a2bba1d7c3df99a256e0e451b1e9b917572283e074cda9e6f"
+  },
+  "before": {
+    "issue": 138,
+    "pr": 174,
+    "fixture": "synthetic local ObjectStore; 1025 shared addresses plus one later deletable address",
+    "recordedAt": "2026-10-18T11:41:03.798Z",
+    "verdict": "fail",
+    "elapsedMs": 10674.605958,
+    "details": {
+      "pageProgress": {
+        "sharedObjects": 1025,
+        "laterDeletableObjects": 1,
+        "firstPage": {
+          "shared": 1024,
+          "removed": 0
+        },
+        "secondPage": {
+          "shared": 1024,
+          "removed": 0
+        }
+      }
+    },
+    "failure": "AssertionError [ERR_ASSERTION]: later deletable object starved behind the shared page"
+  },
+  "after": {
+    "issue": 138,
+    "pr": 174,
+    "fixture": "synthetic local ObjectStore; 1025 shared addresses plus one later deletable address",
+    "recordedAt": "2026-10-18T11:43:20.771Z",
+    "verdict": "pass",
+    "elapsedMs": 15735.661792,
+    "details": {
+      "pageProgress": {
+        "sharedObjects": 1025,
+        "laterDeletableObjects": 1,
+        "firstPage": {
+          "shared": 1024,
+          "removed": 0
+        },
+        "secondPage": {
+          "shared": 1,
+          "removed": 1
+        }
+      },
+      "permissions": {
+        "nonPipelineApiRefusals": 3,
+        "directWriterUpdateRefused": true
+      },
+      "rollback": {
+        "sharedResolutionRolledBack": true,
+        "pendingRetryCompleted": true
+      },
+      "finalReferences": {
+        "rearmed": 1025,
+        "latestEventMatches": true,
+        "completionAndOutcomeReset": true,
+        "cleanupPageRemovals": [
+          1024,
+          1
+        ],
+        "pending": 0,
+        "objectsRemaining": 0
+      },
+      "recreatedTombstone": {
+        "publicationRefused": true,
+        "rearmedAndRemoved": true,
+        "repeatedCleanupEmpty": true
+      }
+    }
+  },
+  "existingGraceProbe": {
+    "verdict": "pass",
+    "seconds": 1,
+    "latestEventMatches": true,
+    "completionAndOutcomeReset": true,
+    "immediateRemovalRefused": true
+  },
+  "validation": {
+    "postgresql": {
+      "command": "npm run test:feature-store:db",
+      "verdict": "pass",
+      "behaviorProbes": 41,
+      "nodeTestEntries": 45,
+      "failed": 0,
+      "skipped": 0,
+      "durationMs": 53020.215208,
+      "fullLogSha256": "83cc6d4c8bef68c3789a6bcd5819cec89e0b3c17f26ade60b58854786cdc92ef"
+    },
+    "typescript": {
+      "command": "tsc --noEmit --incremental false",
+      "exitCode": 0
+    },
+    "changedFileEslint": {
+      "exitCode": 0
+    },
+    "proposalIsolation": "main catalog and frozen migration hashes unchanged"
+  },
+  "interruptedSetup": {
+    "recordedAt": "2026-10-18T11:39:35.038Z",
+    "verdict": "interrupted",
+    "observed": "PostgreSQL termination (57P01); original shared container no longer running.",
+    "cleanupError": "Error: Scratch databases remain active.",
+    "recovery": "Separate disposable Compose project, same pinned test image and target guards; removed after tests."
+  },
+  "limits": [
+    "Uncommitted worktree correction; independent focused re-review and owner approval pending.",
+    "No fresh application suite, capacity matrix or hosted CI run claimed."
+  ]
+}

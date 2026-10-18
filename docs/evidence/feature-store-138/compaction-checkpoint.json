@@ -1,0 +1,27 @@
+{
+  "archiveCommit": "1383b5c92f815b297497f333017dee720bed10aa",
+  "archivedJsonFiles": 52,
+  "originalJsonBytes": 1568299,
+  "originalJsonLines": 33185,
+  "checks": {
+    "timingsFailuresVerdictsCountsProbesAndCodeHashesPreserved": true,
+    "reproductionInputsPreserved": true,
+    "substantiveReductionNotJustMinification": true,
+    "totalEvidenceWellUnder2000Lines": true
+  },
+  "receiptJsonLines": 1404,
+  "receiptJsonBytes": 331982,
+  "allEvidenceLinesIncludingScriptsAndGuide": 1654,
+  "operation": "evidence/documentation-only; independent review still required",
+  "mainBaseline": "4e13c0f9770959096acd89ce6db284828b015cac",
+  "allOriginalCommitsPreservedByTag": true,
+  "testedImplementationFilesUnchanged": 29,
+  "allOtherTrackedChangesConfinedToEvidenceAndThreeGuides": true,
+  "frozenDatabaseArtifactsAndLockfileMatchMain": true,
+  "localEvidenceLinksResolve": true,
+  "newApplicationOrDatabaseTestRun": false,
+  "reason": "No implementation bytes changed; validate receipt parity and history rather than repeat green DB suites.",
+  "priorGreenCICommit": "1383b5c92f815b297497f333017dee720bed10aa",
+  "newCommitRemoteCI": "required; pending",
+  "independentReview": "pending owner-run Codex review"
+}
