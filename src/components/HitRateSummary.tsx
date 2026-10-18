@@ -29,3 +29,5 @@ export const HitRateSummary = ({ rate, adjustedRate, sampleSize }: HitRateSummar
     </div>
   );
 };
+
+// CI probe (throwaway).
