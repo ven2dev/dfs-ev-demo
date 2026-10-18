@@ -24,8 +24,10 @@ npm run test:db:local
 runs migration/reference/readiness artifact checks, all mandatory Node database
 checks, an independent catalog-contract drift check and the lease/readiness/
 predictive suite. It removes the
-service and its network even
-if startup or tests fail. It preserves failure exit codes. SIGINT/SIGTERM also
+service and its network after tests, including failed startup, failed Compose
+up and lock loss. Only typed startup lock contention preserves the shared
+service, so a refused contender cannot tear down the active run. Failure exit
+codes are preserved. SIGINT/SIGTERM also
 request cleanup; a forced kill or machine shutdown can prevent cleanup. To
 remove any resources left by an interrupted run:
 
@@ -87,8 +89,20 @@ remain deliberate; see the [dependency review guide](dependency-updates.md).
 
 ## Suite contract
 
-`vitest.db.config.mts` selects only `tests/db/**/*.test.ts`, runs files serially,
-and uses real Node timers. The jsdom suite excludes `tests/db/`. Setup installs
+Ordinary migrated fixtures clone sealed, run-scoped migration-prefix templates;
+explicit migration proofs keep empty scratch databases. A session advisory lock
+refuses concurrent runs; startup sweeps all leftover `dfs_ev_test_` databases
+and logs the count. Teardown is best-effort; the next run recovers leftovers
+after process termination or connection loss. The parent verifies each
+prefix once, owns interrupted-clone cleanup, and removes the chain after each
+run. See [the #153 design and validation](database-suite-speed.md).
+
+
+`vitest.db.config.mts` runs the six primary/readiness/corpus files serially.
+`vitest.db.scratch.config.mts` runs four isolated predictive/source files with
+CPU-bounded workers and no primary reset hooks. The runner overlaps that lane
+with Node checks, catalog verification and then serial Vitest; one CPU falls
+back to consecutive lanes. Both use real Node timers. The jsdom suite excludes `tests/db/`. Setup installs
 ordered migrations through the repository runner, then verifies a no-op rerun;
 both calls verify the full application and ledger catalog before commit. The
 generated `db/schema.sql` remains a checked reference and is never executed by
@@ -97,7 +111,8 @@ or adoption. Setup truncates only `live_prop_inputs_cache` between cases.
 Tracked database clients close after each case and suite.
 
 The runner also validates Vitest's JSON report: all 13 required #45 cases,
-four readiness cases and 15 predictive persistence cases must execute and pass.
+four readiness cases, 111 predictive/source-claims cases and eight corpus cases
+must execute and pass.
 Skipped/todo or missing cases fail. The #45 contract
 covers full-schema bootstrap, including ledger/data-preserving reruns, plus
 these lease scenarios:

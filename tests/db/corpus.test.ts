@@ -1,10 +1,6 @@
 import { expect, it } from "vitest";
 import type { Client } from "pg";
-import { checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
-import { createCatalogVerifier, loadCatalogContracts } from "../../scripts/db-migrations/contracts.mjs";
-import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
-import { ensureCorpusImporterRole } from "../../scripts/creator-corpus/dbHarness.ts";
-import { createScratchHarness } from "./scratch.mjs";
+import { withMigratedDatabase } from "./migrated.mts";
 
 const NOW = "2026-10-12T06:00:00.000Z";
 const CAPTURED = "2026-09-10T18:00:00.000Z";
@@ -12,23 +8,7 @@ const VIDEO = "abcdefghijk";
 const HEX = (value: string) => value.repeat(64);
 
 const withCorpusProof = async (run: (client: Client) => Promise<void>) => {
-  const harness = await createScratchHarness(process.env);
-  try {
-    const files = await checkMigrationArtifacts();
-    const contracts = await loadCatalogContracts(files);
-    await harness.withDatabase(async (client: Client, expected: object) => {
-      await ensureCorpusImporterRole(client);
-      await runScratchMigrations(client, {
-        expected,
-        files,
-        assertTarget: harness.assertTarget,
-        verify: createCatalogVerifier(contracts),
-      });
-      await run(client);
-    });
-  } finally {
-    await harness.close();
-  }
+  await withMigratedDatabase(process.env, (client) => run(client));
 };
 
 const insertImport = async (client: Client) => {

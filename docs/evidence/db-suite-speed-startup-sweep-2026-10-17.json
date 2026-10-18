@@ -1,0 +1,160 @@
+{
+  "issue": 153,
+  "step": "A accepted-review follow-up",
+  "parentCommit": "f71af1f",
+  "ownerDecision": "Resolve accepted P2s with an exclusive startup sweep, not expanded teardown handling. Add a commit, rerun three local repeats, stop for review before B.",
+  "pattern": "Startup reconciliation under a target-scoped session advisory lock",
+  "lock": {
+    "function": "pg_try_advisory_lock",
+    "namespace": 153045,
+    "targetKey": "primary database OID on the verified disposable cluster",
+    "scope": "Before all DB test lanes through teardown; one lease across repeat mode",
+    "refusal": "another DB test run is active on this target"
+  },
+  "sweep": {
+    "prefix": "dfs_ev_test_",
+    "match": "literal starts_with; not SQL LIKE",
+    "force": true,
+    "logField": "staleDatabasesSwept",
+    "teardown": "Best-effort, no reconnection or retry loops; no parent ownership of factory subprocess DBs"
+  },
+  "startupRegression": {
+    "command": "TEST_DATABASE_URL=<public loopback URL> npm run test:db:startup",
+    "exitCode": 0,
+    "passed": 3,
+    "skipped": 0,
+    "sweptFixtureCounts": [
+      3,
+      11
+    ],
+    "proofs": [
+      "sealed, connected and quoted-name stale databases swept on next run",
+      "primary and similarly named unrelated database preserved",
+      "held session lock refuses a real concurrent runner before sweeping or tests",
+      "template admin loss fails teardown; next startup recovers all 11 snapshots"
+    ],
+    "coverageMoved": "Template admin termination proof moved from the factory regression into next-startup recovery; normal abandoned-clone and malformed-registry cleanup remain covered."
+  },
+  "checks": {
+    "lint": "pass",
+    "typecheck": "pass",
+    "guard": {
+      "passed": 17,
+      "skipped": 0
+    }
+  },
+  "originalCases": {
+    "node": 75,
+    "vitest": 136,
+    "requiredContracts": "unchanged",
+    "testDeclarationHashes": "unchanged; see db-suite-speed-A-2026-10-17.json"
+  },
+  "hostedAcceptance": "Deferred to B: median of 3 consecutive complete CI DB jobs <=150 seconds, no run >180 seconds; no sharding",
+  "sourceSha256": {
+    "scripts/test-db.mjs": "f6a1c7753668a65909a80ad54571918895aa781d7dac0c63c419c83391a6f729",
+    "tests/db/startup.mts": "c4cce45fd6b229ba44dc260b77e024ec2ad371392ff92f521452f44e7398dfc9",
+    "tests/db/startup.integration.check.mjs": "66abb9f7a1edf98949e1eee88d5e9fa027e6eaf4d3ba8f6df09567467592c1cc",
+    "tests/db/templates.mts": "50c7e9e7a3ab7a6efc20a95293706ac20b5ae7515ad2774fbabf280d4aad72f1",
+    "tests/db/templates.integration.check.mjs": "f98aad29c0d9badcd1afbd3bca8478ab5942ddec947e6b1027f2e72b36a317ac"
+  },
+  "push": "Not authorized; not performed",
+  "completedAtUtc": "2026-10-18T04:43:51.197324+00:00",
+  "repeat": {
+    "command": "npm run test:db:repeat -- 3",
+    "exitCode": 0,
+    "requiredCaseReports": [
+      {
+        "nodeRequiredCases": 75,
+        "leaseRequiredCases": 13,
+        "readinessRequiredCases": 4,
+        "predictiveRequiredCases": 111,
+        "corpusRequiredCases": 8,
+        "result": "verified"
+      },
+      {
+        "nodeRequiredCases": 75,
+        "leaseRequiredCases": 13,
+        "readinessRequiredCases": 4,
+        "predictiveRequiredCases": 111,
+        "corpusRequiredCases": 8,
+        "result": "verified"
+      },
+      {
+        "nodeRequiredCases": 75,
+        "leaseRequiredCases": 13,
+        "readinessRequiredCases": 4,
+        "predictiveRequiredCases": 111,
+        "corpusRequiredCases": 8,
+        "result": "verified"
+      }
+    ],
+    "templateSetups": [
+      {
+        "migrationVersions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "templateCount": 11,
+        "catalogVerifications": 11
+      },
+      {
+        "migrationVersions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "templateCount": 11,
+        "catalogVerifications": 11
+      },
+      {
+        "migrationVersions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "templateCount": 11,
+        "catalogVerifications": 11
+      }
+    ],
+    "vitestSeconds": [
+      123.87,
+      123.26,
+      124.63
+    ],
+    "timingBoundary": "Local serial Vitest only, not full CI DB-job timing",
+    "serviceRemoved": true,
+    "initialSweepCount": 0
+  },
+  "logSha256": {
+    "sweep-repeat.log": "6dd9dd353a78bcd0d1c1e79394d7bdcbdbc636e15ee58af15fb770cd5c9b92a2",
+    "sweep-startup.log": "a5653516b554f8f2933239094cf0743f015835fa1311a290c74f3e38b5a2dea5",
+    "sweep-lint.log": "b7aa93b961bf11814b8023fd7dd6e8504cb62e568a56f6af0afa43c7a2f0b701",
+    "sweep-typecheck.log": "c5ce797f4d891a7c297cfcf70cd71c9361eab3ab883b9f49011bdd73d1181e1c",
+    "sweep-guard.log": "ca9f38991e10d6cca898f9871009ac9ac08100cdd09a73b6b0a08a117f3edb1e"
+  }
+}

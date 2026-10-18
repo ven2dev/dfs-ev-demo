@@ -7,7 +7,7 @@ import { expect, it } from "vitest";
 import { createCatalogVerifier, loadCatalogContracts } from "../../scripts/db-migrations/contracts.mjs";
 import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
 import { checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
-import { ensureHarnessSession, ensurePredictiveRoles } from "../../scripts/predictive/harness.ts";
+import { ensureHarnessSession } from "../../scripts/predictive/harness.ts";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { buildPassingYardsBundle, buildPassingYardsFromReplay } from "../../src/lib/predictive/passingYards.ts";
 import { createLocalPredictiveStore, MEMBERSHIP_READ_SQL, retentionIdsDigest, SCHEDULE_READ_SQL } from "../../src/lib/predictive/persistence.ts";
@@ -26,6 +26,7 @@ import { addCapture, CAPTURE_A, CAPTURE_B, completionMarkers, coverage, CUTOFF_B
   PLAYER, playerSnaps, playerStats, PRIOR, profile, PROFILE, request, revision, rights, schedule, TARGET, TEAM, teamSnaps } from "../predictive/fixtures/passingYards.ts";
 import { backendPid, waitForBlocked } from "./leaseSupport";
 import { createScratchHarness } from "./scratch.mjs";
+import { withMigratedDatabase } from "./migrated.mts";
 
 const NOW = "2026-10-09T00:00:00.000Z";
 const tables = ["predictive_source_profiles", "predictive_rights_decisions", "predictive_blobs", "predictive_ingestion_runs",
@@ -56,19 +57,14 @@ const withProof = async (run: (context: {
   client: Client; store: Awaited<ReturnType<typeof createLocalPredictiveStore>>; root: string;
   artifacts: Awaited<ReturnType<typeof openArtifactStore>>; target: { expected: object; assertTarget: (config: object) => void };
 }) => Promise<void>, migrationCount?: number) => {
-  const harness = await createScratchHarness(process.env);
   const root = await realpath(await mkdtemp(join(tmpdir(), "dfs-ev-predictive-db-")));
   try {
-    const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
-    await harness.withDatabase(async (client: Client, expected: object) => {
-      const target = { expected, assertTarget: harness.assertTarget };
-      await ensurePredictiveRoles(client);
-      await runScratchMigrations(client, { ...target, files: files.slice(0, migrationCount), verify: createCatalogVerifier(contracts) });
+    await withMigratedDatabase(process.env, async (client, target) => {
       await ensureHarnessSession(client);
       const artifacts = await openArtifactStore(root); const store = await createLocalPredictiveStore(client, target, artifacts);
       await run({ client, store, root, artifacts, target });
-    });
-  } finally { try { await harness.close(); } finally { await rm(root, { recursive: true, force: true }); } }
+    }, migrationCount);
+  } finally { await rm(root, { recursive: true, force: true }); }
 };
 
 it("predictive PostgreSQL seeds exactly the application team identities, refuses others and publishes Rams replay inputs", async () => {

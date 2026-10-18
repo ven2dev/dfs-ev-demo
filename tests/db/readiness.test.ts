@@ -4,10 +4,10 @@ import { expect, it } from "vitest";
 import { DB_READINESS_MANIFEST } from "../../src/lib/dbReadinessManifest";
 import { DB_READINESS_HISTORY_LIMIT, DB_READINESS_HISTORY_SQL, DB_READINESS_RELATIONS_SQL,
   DB_READINESS_SETTINGS_SQL, evaluateDatabaseReadiness, readinessRelations } from "../../src/lib/dbReadiness";
-import { createCatalogVerifier, loadCatalogContracts } from "../../scripts/db-migrations/contracts.mjs";
-import { insertLedgerRow, ledgerSql, runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
+import { insertLedgerRow, ledgerSql } from "../../scripts/db-migrations/core.mjs";
 import { checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
 import { createScratchHarness } from "./scratch.mjs";
+import { withMigratedDatabase } from "./migrated.mts";
 
 const required = [...DB_READINESS_MANIFEST.requiredTables, "db_migrations"];
 async function inspect(client: Client) {
@@ -20,16 +20,10 @@ async function inspect(client: Client) {
     return evaluateDatabaseReadiness({ ...state, history });
   } catch (error) { await client.query("ROLLBACK"); throw error; }
 }
-async function withScratch(run: (client: Client, install: () => Promise<unknown>) => Promise<void>) {
+async function withScratch(run: (client: Client) => Promise<void>) {
   const harness = await createScratchHarness(process.env);
-  const files = await checkMigrationArtifacts();
-  const contracts = await loadCatalogContracts(files);
-  try {
-    await harness.withDatabase(async (client: Client, expected: object) => {
-      await run(client, () => runScratchMigrations(client, { expected, files,
-        assertTarget: harness.assertTarget, verify: createCatalogVerifier(contracts) }));
-    });
-  } finally { await harness.close(); }
+  try { await harness.withDatabase((client: Client) => run(client)); }
+  finally { await harness.close(); }
 }
 
 it("database readiness reports missing ledger without creating one on authentic current schema", async () => {
@@ -44,8 +38,7 @@ it("database readiness reports missing ledger without creating one on authentic 
 });
 
 it("database readiness accepts migrated history and valid ahead history while preserving rows", async () => {
-  await withScratch(async (client, install) => {
-    await install();
+  await withMigratedDatabase(process.env, async (client) => {
     await client.query("INSERT INTO creators (channel_name) VALUES ('Synthetic readiness')");
     const rows = (await client.query("SELECT * FROM creators")).rows;
     const history = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
@@ -69,8 +62,7 @@ it("database readiness refuses behind, corrupt and missing-table states without 
     await insertLedgerRow(client, files[0], "adopted");
     expect(await inspect(client)).toMatchObject({ status: "not-ready", schemaVersion: 1, reasons: ["schema-behind"] });
   });
-  await withScratch(async (client, install) => {
-    await install();
+  await withMigratedDatabase(process.env, async (client) => {
     await client.query("UPDATE db_migrations SET sha256 = $1 WHERE version = 1", ["b".repeat(64)]);
     const corrupt = (await client.query("SELECT * FROM db_migrations ORDER BY version")).rows;
     expect(await inspect(client)).toMatchObject({ status: "not-ready", reasons: ["migration-history-invalid"] });
@@ -83,8 +75,7 @@ it("database readiness refuses behind, corrupt and missing-table states without 
 });
 
 it("database readiness reads are bounded, enforced read-only and reject view substitutes", async () => {
-  await withScratch(async (client, install) => {
-    await install();
+  await withMigratedDatabase(process.env, async (client) => {
     await client.query("DROP TABLE sync_state; CREATE VIEW sync_state AS SELECT 1 AS synthetic");
     expect(await inspect(client)).toMatchObject({ status: "not-ready", reasons: ["required-tables-missing"] });
     await client.query("BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY");

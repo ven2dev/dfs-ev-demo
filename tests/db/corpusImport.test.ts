@@ -2,10 +2,6 @@ import { expect, it } from "vitest";
 import type { Client } from "pg";
 import { buildCaptureEvent } from "../../src/lib/creatorCaptures.ts";
 import type { DecisionEvent } from "../../src/lib/creatorDecisions.ts";
-import { checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
-import { createCatalogVerifier, loadCatalogContracts } from "../../scripts/db-migrations/contracts.mjs";
-import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
-import { ensureCorpusImporterRole } from "../../scripts/creator-corpus/dbHarness.ts";
 import {
   CORPUS_LOCK_KEY,
   CORPUS_LOCK_NAMESPACE,
@@ -17,7 +13,7 @@ import { buildReadinessGate } from "../../scripts/creator-corpus/readinessGate.t
 import { generateCorpusReadinessReport, PICK_METRICS_PENDING } from "../../scripts/creator-corpus/readinessReport.ts";
 import { expireCorpusApiEvidence } from "../../scripts/creator-corpus/apiExpiry.ts";
 import { NOW, discoveryFor, record, vid } from "../../scripts/creator-corpus/testSupport.ts";
-import { createScratchHarness } from "./scratch.mjs";
+import { withMigratedDatabase } from "./migrated.mts";
 
 const decision = (n: number): DecisionEvent => ({
   videoId: vid(n),
@@ -52,25 +48,15 @@ const source = (version = 1): CorpusImportSource => {
 };
 
 const withImporterDatabase = async (run: (owner: Client, config: CorpusDatabaseConfig) => Promise<void>) => {
-  const harness = await createScratchHarness(process.env);
-  try {
-    const files = await checkMigrationArtifacts();
-    const contracts = await loadCatalogContracts(files);
-    await harness.withDatabase(async (owner: Client, expected: Record<string, unknown>) => {
-      await ensureCorpusImporterRole(owner);
-      await runScratchMigrations(owner, { expected, files, assertTarget: harness.assertTarget,
-        verify: createCatalogVerifier(contracts) });
-      await owner.query("ALTER ROLE corpus_importer LOGIN PASSWORD 'corpus-test-only'");
-      try {
-        await run(owner, { ...expected, user: "corpus_importer", password: "corpus-test-only",
-          application_name: "corpus-import-test" } as CorpusDatabaseConfig);
-      } finally {
-        await owner.query("ALTER ROLE corpus_importer NOLOGIN");
-      }
-    });
-  } finally {
-    await harness.close();
-  }
+  await withMigratedDatabase(process.env, async (owner, { expected }) => {
+    await owner.query("ALTER ROLE corpus_importer LOGIN PASSWORD 'corpus-test-only'");
+    try {
+      await run(owner, { ...expected, user: "corpus_importer", password: "corpus-test-only",
+        application_name: "corpus-import-test" } as CorpusDatabaseConfig);
+    } finally {
+      await owner.query("ALTER ROLE corpus_importer NOLOGIN");
+    }
+  });
 };
 
 it("corpus importer publishes one atomic snapshot, appends only owner tails and reruns as a no-op", async () => {

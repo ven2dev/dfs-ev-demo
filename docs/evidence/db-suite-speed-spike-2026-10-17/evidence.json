@@ -1,0 +1,4131 @@
+{
+  "issue": 153,
+  "baselineCommit": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+  "startedAtUtc": "2026-10-18T02:41:23Z",
+  "collectedAtUtc": "2026-10-18T03:10:29.429197+00:00",
+  "environment": {
+    "node": "24.21.0",
+    "host": "macOS arm64",
+    "postgres": "18.6",
+    "dockerCPUs": 12,
+    "dockerMemoryBytes": 8319238144,
+    "suiteTimingBoundary": "node scripts/test-db.mjs run; preinstalled dependencies, already-running PostgreSQL; excludes CI checkout, install, service startup and teardown"
+  },
+  "ciBaseline": {
+    "runUrl": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/39031183750",
+    "jobSeconds": 361,
+    "suiteStepSeconds": 329,
+    "nodeSeconds": 33.863,
+    "sourceClaimsSeconds": 211.102,
+    "predictiveSeconds": 52.468,
+    "vitestSeconds": 280.88
+  },
+  "targets": {
+    "ciJobSeconds": 150,
+    "consecutiveCIRuns": 3,
+    "headroomBenchmarkSeconds": 105,
+    "nodeCases": 75,
+    "vitestCases": 136,
+    "repeatCount": 3,
+    "setupBudget": "each ordered migration once per suite/shard; explicit migration behavior assertions retained separately"
+  },
+  "runs": [
+    {
+      "label": "baseline-full-1",
+      "seconds": 216.95732604153454,
+      "exit": 0,
+      "command": [
+        "node",
+        "scripts/test-db.mjs",
+        "run"
+      ],
+      "node": "24.21.0",
+      "commit": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+      "reportGates": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ]
+    },
+    {
+      "label": "baseline-full-2",
+      "seconds": 207.3031325004995,
+      "exit": 0,
+      "command": [
+        "node",
+        "scripts/test-db.mjs",
+        "run"
+      ],
+      "node": "24.21.0",
+      "commit": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+      "reportGates": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ]
+    },
+    {
+      "label": "baseline-full-3",
+      "seconds": 191.69014616776258,
+      "exit": 0,
+      "command": [
+        "node",
+        "scripts/test-db.mjs",
+        "run"
+      ],
+      "node": "24.21.0",
+      "commit": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+      "reportGates": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ]
+    },
+    {
+      "label": "concurrent-full-1",
+      "seconds": 56.960225749760866,
+      "exit": 0,
+      "command": [
+        "node",
+        "scripts/test-db.mjs",
+        "run"
+      ],
+      "node": "24.21.0",
+      "commit": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+      "reportGates": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ]
+    },
+    {
+      "label": "concurrent-repeat-3",
+      "seconds": 179.44869166612625,
+      "exit": 0,
+      "command": [
+        "npm",
+        "run",
+        "test:db:repeat",
+        "--",
+        "3"
+      ],
+      "node": "24.21.0",
+      "commit": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+      "reportGates": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        },
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        },
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ]
+    },
+    {
+      "label": "parallel-full-1",
+      "seconds": 82.68251174967736,
+      "exit": 0,
+      "command": [
+        "node",
+        "scripts/test-db.mjs",
+        "run"
+      ],
+      "node": "24.21.0",
+      "commit": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+      "reportGates": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ]
+    },
+    {
+      "label": "parallel-full-2",
+      "seconds": 81.53985291719437,
+      "exit": 0,
+      "command": [
+        "node",
+        "scripts/test-db.mjs",
+        "run"
+      ],
+      "node": "24.21.0",
+      "commit": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+      "reportGates": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ]
+    },
+    {
+      "label": "parallel-full-3",
+      "seconds": 80.0584215419367,
+      "exit": 0,
+      "command": [
+        "node",
+        "scripts/test-db.mjs",
+        "run"
+      ],
+      "node": "24.21.0",
+      "commit": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+      "reportGates": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ]
+    },
+    {
+      "label": "parallel-only-1",
+      "seconds": 109.75299587473273,
+      "exit": 0,
+      "command": [
+        "node",
+        "scripts/test-db.mjs",
+        "run"
+      ],
+      "node": "24.21.0",
+      "commit": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+      "reportGates": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ]
+    },
+    {
+      "label": "template-full-1",
+      "seconds": 157.4271450843662,
+      "exit": 0,
+      "command": [
+        "node",
+        "scripts/test-db.mjs",
+        "run"
+      ],
+      "node": "24.21.0",
+      "commit": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+      "reportGates": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ]
+    }
+  ],
+  "profiles": {
+    "baseline": {
+      "predictive.test.ts": {
+        "helperInvocations": 30,
+        "distinctTestNames": 29,
+        "totalHelperSeconds": 37.193927206999994,
+        "phaseSeconds": {
+          "adminAndTemp": 0.22973224799999456,
+          "loadArtifactsContracts": 2.327988794000007,
+          "createConnect": 0.9385028289999948,
+          "roles": 0.07719083599999851,
+          "migrationsIncludingVerify": 10.554018375000007,
+          "sessionArtifactsStore": 0.6030082929999933,
+          "body": 21.976118377000006,
+          "cleanup": 0.4869662069999843
+        },
+        "catalogVerificationSeconds": 2.1361303720000087,
+        "prefixCounts": {
+          "latest": 30
+        }
+      },
+      "sourceClaims.test.ts": {
+        "helperInvocations": 115,
+        "distinctTestNames": 79,
+        "totalHelperSeconds": 141.27871778800002,
+        "phaseSeconds": {
+          "adminAndTemp": 0.9121875859999702,
+          "loadArtifactsContracts": 9.17737991200002,
+          "createConnect": 3.295299082000037,
+          "roles": 0.286383668000007,
+          "migrationsIncludingVerify": 37.15315849799999,
+          "sessionArtifactsStore": 2.0587559169999787,
+          "body": 86.741788873,
+          "cleanup": 1.6526786250000305
+        },
+        "catalogVerificationSeconds": 7.6298058319998905,
+        "prefixCounts": {
+          "latest": 104,
+          "10": 1,
+          "3": 1,
+          "4": 1,
+          "5": 1,
+          "6": 4,
+          "7": 1,
+          "8": 1,
+          "9": 1
+        }
+      }
+    },
+    "baseline-full-1": {
+      "predictive.test.ts": {
+        "helperInvocations": 30,
+        "distinctTestNames": 29,
+        "totalHelperSeconds": 34.003347917000006,
+        "phaseSeconds": {
+          "adminAndTemp": 0.22180487600000606,
+          "loadArtifactsContracts": 2.367207583000009,
+          "createConnect": 0.8584552490000003,
+          "roles": 0.0670604169999931,
+          "migrationsIncludingVerify": 9.761198790000002,
+          "sessionArtifactsStore": 0.4612408769999984,
+          "body": 19.83401900100001,
+          "cleanup": 0.43201195899997946
+        },
+        "catalogVerificationSeconds": 2.052474123999995,
+        "prefixCounts": {
+          "latest": 30
+        }
+      },
+      "sourceClaims.test.ts": {
+        "helperInvocations": 115,
+        "distinctTestNames": 79,
+        "totalHelperSeconds": 147.12889783699993,
+        "phaseSeconds": {
+          "adminAndTemp": 0.9705756279999262,
+          "loadArtifactsContracts": 9.564129285000096,
+          "createConnect": 3.6607321679999414,
+          "roles": 0.30600021099996,
+          "migrationsIncludingVerify": 38.26913946600006,
+          "sessionArtifactsStore": 2.2500101590000186,
+          "body": 90.39821866599993,
+          "cleanup": 1.709065791000007
+        },
+        "catalogVerificationSeconds": 7.878558290999976,
+        "prefixCounts": {
+          "latest": 104,
+          "10": 1,
+          "3": 1,
+          "4": 1,
+          "5": 1,
+          "6": 4,
+          "7": 1,
+          "8": 1,
+          "9": 1
+        }
+      }
+    },
+    "baseline-full-2": {
+      "predictive.test.ts": {
+        "helperInvocations": 30,
+        "distinctTestNames": 29,
+        "totalHelperSeconds": 39.65079091599999,
+        "phaseSeconds": {
+          "adminAndTemp": 0.2586579189999809,
+          "loadArtifactsContracts": 2.4124843730000087,
+          "createConnect": 0.9613642909999891,
+          "roles": 0.0911930020000117,
+          "migrationsIncludingVerify": 11.914386330999989,
+          "sessionArtifactsStore": 0.5162814190000157,
+          "body": 22.966206290999995,
+          "cleanup": 0.5299589589999898
+        },
+        "catalogVerificationSeconds": 2.209971209999997,
+        "prefixCounts": {
+          "latest": 30
+        }
+      },
+      "sourceClaims.test.ts": {
+        "helperInvocations": 115,
+        "distinctTestNames": 79,
+        "totalHelperSeconds": 130.116611248,
+        "phaseSeconds": {
+          "adminAndTemp": 0.820564206999972,
+          "loadArtifactsContracts": 8.75324600400004,
+          "createConnect": 3.003203909999946,
+          "roles": 0.2577442500000325,
+          "migrationsIncludingVerify": 34.962190336,
+          "sessionArtifactsStore": 1.6630981689999775,
+          "body": 78.92077620699999,
+          "cleanup": 1.7350172500000474
+        },
+        "catalogVerificationSeconds": 7.304047876000047,
+        "prefixCounts": {
+          "latest": 104,
+          "10": 1,
+          "3": 1,
+          "4": 1,
+          "5": 1,
+          "6": 4,
+          "7": 1,
+          "8": 1,
+          "9": 1
+        }
+      }
+    },
+    "baseline-full-3": {
+      "predictive.test.ts": {
+        "helperInvocations": 30,
+        "distinctTestNames": 29,
+        "totalHelperSeconds": 30.916946494000005,
+        "phaseSeconds": {
+          "adminAndTemp": 0.17529757900001824,
+          "loadArtifactsContracts": 2.181690542999984,
+          "createConnect": 0.7848868330000064,
+          "roles": 0.06764570600000343,
+          "migrationsIncludingVerify": 9.169450793999985,
+          "sessionArtifactsStore": 0.47396587600001316,
+          "body": 17.663055626999995,
+          "cleanup": 0.4007394540000007
+        },
+        "catalogVerificationSeconds": 1.8409623769999923,
+        "prefixCounts": {
+          "latest": 30
+        }
+      },
+      "sourceClaims.test.ts": {
+        "helperInvocations": 115,
+        "distinctTestNames": 79,
+        "totalHelperSeconds": 127.27085370299997,
+        "phaseSeconds": {
+          "adminAndTemp": 0.8040321260000126,
+          "loadArtifactsContracts": 8.765781702999986,
+          "createConnect": 3.1810790439999863,
+          "roles": 0.2786067140000158,
+          "migrationsIncludingVerify": 35.24295228299992,
+          "sessionArtifactsStore": 1.7138442140000023,
+          "body": 75.66004715600006,
+          "cleanup": 1.6237778859999896
+        },
+        "catalogVerificationSeconds": 7.18343883600002,
+        "prefixCounts": {
+          "latest": 104,
+          "10": 1,
+          "3": 1,
+          "4": 1,
+          "5": 1,
+          "6": 4,
+          "7": 1,
+          "8": 1,
+          "9": 1
+        }
+      }
+    },
+    "template-full-1": {
+      "predictive.test.ts": {
+        "helperInvocations": 30,
+        "distinctTestNames": 29,
+        "totalHelperSeconds": 23.734836540000003,
+        "phaseSeconds": {
+          "adminAndTemp": 0.2299011650000067,
+          "templateAcquire": 0.4899865009999969,
+          "createConnect": 1.2966984990000021,
+          "roles": 0.09163679200000296,
+          "migrationsIncludingVerify": 6.96669999911137e-05,
+          "sessionArtifactsStore": 0.4650644600000012,
+          "body": 20.733309081999998,
+          "cleanup": 0.4279967920000013
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 30
+        }
+      },
+      "sourceClaims.test.ts": {
+        "helperInvocations": 115,
+        "distinctTestNames": 79,
+        "totalHelperSeconds": 97.23419257999997,
+        "phaseSeconds": {
+          "adminAndTemp": 0.8738808709999903,
+          "templateAcquire": 3.017004048999972,
+          "createConnect": 4.758366872000035,
+          "roles": 0.2730078339999982,
+          "migrationsIncludingVerify": 0.000145000999996455,
+          "sessionArtifactsStore": 1.5715156180000047,
+          "body": 85.08761824899996,
+          "cleanup": 1.6520447130000466
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 104,
+          "10": 1,
+          "3": 1,
+          "4": 1,
+          "5": 1,
+          "6": 4,
+          "7": 1,
+          "8": 1,
+          "9": 1
+        }
+      }
+    },
+    "parallel-only-1": {
+      "predictive.test.ts": {
+        "helperInvocations": 30,
+        "distinctTestNames": 29,
+        "totalHelperSeconds": 32.626547126,
+        "phaseSeconds": {
+          "adminAndTemp": 0.21287787800000318,
+          "loadArtifactsContracts": 2.2163640409999976,
+          "createConnect": 0.7941112079999926,
+          "roles": 0.06834829200002104,
+          "migrationsIncludingVerify": 9.806214788999975,
+          "sessionArtifactsStore": 0.44426808700001574,
+          "body": 18.65713816599999,
+          "cleanup": 0.4269902500000028
+        },
+        "catalogVerificationSeconds": 1.952305793999994,
+        "prefixCounts": {
+          "latest": 30
+        }
+      },
+      "sourceClaims.test.ts": {
+        "helperInvocations": 115,
+        "distinctTestNames": 79,
+        "totalHelperSeconds": 136.98159695400003,
+        "phaseSeconds": {
+          "adminAndTemp": 0.6761441640000457,
+          "loadArtifactsContracts": 7.961236498999999,
+          "createConnect": 2.946036412000005,
+          "roles": 0.2809457130000103,
+          "migrationsIncludingVerify": 39.32814800099998,
+          "sessionArtifactsStore": 1.590664168999971,
+          "body": 82.03527999400008,
+          "cleanup": 2.1627725890000002
+        },
+        "catalogVerificationSeconds": 7.346999039000015,
+        "prefixCounts": {
+          "latest": 104,
+          "6": 4,
+          "9": 1,
+          "3": 1,
+          "8": 1,
+          "7": 1,
+          "10": 1,
+          "5": 1,
+          "4": 1
+        }
+      }
+    },
+    "parallel-full-1": {
+      "predictive.test.ts": {
+        "helperInvocations": 30,
+        "distinctTestNames": 29,
+        "totalHelperSeconds": 20.849800126000005,
+        "phaseSeconds": {
+          "adminAndTemp": 0.18349870800001009,
+          "templateAcquire": 0.4798934179999947,
+          "createConnect": 0.9737262939999966,
+          "roles": 0.06388324500000805,
+          "migrationsIncludingVerify": 3.2333999994989427e-05,
+          "sessionArtifactsStore": 0.34084000199999875,
+          "body": 18.257873956999997,
+          "cleanup": 0.5499498330000014
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 30
+        }
+      },
+      "sourceClaims.test.ts": {
+        "helperInvocations": 115,
+        "distinctTestNames": 79,
+        "totalHelperSeconds": 95.31525345,
+        "phaseSeconds": {
+          "adminAndTemp": 0.7543386629999986,
+          "templateAcquire": 4.6182975000000095,
+          "createConnect": 4.023657457999997,
+          "roles": 0.27609362000001114,
+          "migrationsIncludingVerify": 0.00019129199998315017,
+          "sessionArtifactsStore": 1.4050197949999967,
+          "body": 82.15262934099997,
+          "cleanup": 2.084605867000021
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 104,
+          "6": 4,
+          "9": 1,
+          "3": 1,
+          "8": 1,
+          "4": 1,
+          "5": 1,
+          "7": 1,
+          "10": 1
+        }
+      }
+    },
+    "parallel-full-2": {
+      "predictive.test.ts": {
+        "helperInvocations": 30,
+        "distinctTestNames": 29,
+        "totalHelperSeconds": 20.248499955999996,
+        "phaseSeconds": {
+          "adminAndTemp": 0.16847354200000256,
+          "templateAcquire": 0.47146233299999873,
+          "createConnect": 0.9177854169999998,
+          "roles": 0.061284211000001844,
+          "migrationsIncludingVerify": 2.824499999383079e-05,
+          "sessionArtifactsStore": 0.33822829500000123,
+          "body": 17.787931624000006,
+          "cleanup": 0.5032135839999937
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 30
+        }
+      },
+      "sourceClaims.test.ts": {
+        "helperInvocations": 115,
+        "distinctTestNames": 79,
+        "totalHelperSeconds": 90.74205733000001,
+        "phaseSeconds": {
+          "adminAndTemp": 0.7046979180000117,
+          "templateAcquire": 4.124618169000017,
+          "createConnect": 3.641390375999993,
+          "roles": 0.24334632799998165,
+          "migrationsIncludingVerify": 0.00011708100001885669,
+          "sessionArtifactsStore": 1.3317090029999967,
+          "body": 78.74432837600001,
+          "cleanup": 1.9514651629999948
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 104,
+          "6": 4,
+          "9": 1,
+          "3": 1,
+          "4": 1,
+          "8": 1,
+          "5": 1,
+          "7": 1,
+          "10": 1
+        }
+      }
+    },
+    "parallel-full-3": {
+      "predictive.test.ts": {
+        "helperInvocations": 30,
+        "distinctTestNames": 29,
+        "totalHelperSeconds": 20.005119667,
+        "phaseSeconds": {
+          "adminAndTemp": 0.17589499799999964,
+          "templateAcquire": 0.46683800000000053,
+          "createConnect": 0.9126921259999939,
+          "roles": 0.06052887500000383,
+          "migrationsIncludingVerify": 2.6706000002150178e-05,
+          "sessionArtifactsStore": 0.3592923340000012,
+          "body": 17.54230833699999,
+          "cleanup": 0.4874480000000053
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 30
+        }
+      },
+      "sourceClaims.test.ts": {
+        "helperInvocations": 115,
+        "distinctTestNames": 79,
+        "totalHelperSeconds": 89.456772495,
+        "phaseSeconds": {
+          "adminAndTemp": 0.6892287039999901,
+          "templateAcquire": 4.03538979000001,
+          "createConnect": 3.825333091999979,
+          "roles": 0.24362824899999816,
+          "migrationsIncludingVerify": 9.85760000173741e-05,
+          "sessionArtifactsStore": 1.3777891669999947,
+          "body": 77.35522875199996,
+          "cleanup": 1.9296719200000148
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 104,
+          "6": 4,
+          "9": 1,
+          "3": 1,
+          "4": 1,
+          "8": 1,
+          "5": 1,
+          "7": 1,
+          "10": 1
+        }
+      }
+    },
+    "concurrent-full-1": {
+      "predictive.test.ts": {
+        "helperInvocations": 30,
+        "distinctTestNames": 29,
+        "totalHelperSeconds": 20.98832025399999,
+        "phaseSeconds": {
+          "adminAndTemp": 0.20933379399999621,
+          "templateAcquire": 0.44525687399999814,
+          "createConnect": 0.9741217510000003,
+          "roles": 0.06600699799999551,
+          "migrationsIncludingVerify": 3.229200000976107e-05,
+          "sessionArtifactsStore": 0.3971786669999918,
+          "body": 18.470153626000002,
+          "cleanup": 0.42605995800000485
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 30
+        }
+      },
+      "sourceClaims.test.ts": {
+        "helperInvocations": 115,
+        "distinctTestNames": 79,
+        "totalHelperSeconds": 97.25277891900002,
+        "phaseSeconds": {
+          "adminAndTemp": 0.7528546659999984,
+          "templateAcquire": 4.709310163999995,
+          "createConnect": 3.882765667999998,
+          "roles": 0.295921831000006,
+          "migrationsIncludingVerify": 0.000126756999984309,
+          "sessionArtifactsStore": 1.4054059080000099,
+          "body": 84.08268512800001,
+          "cleanup": 2.1233715419999726
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 104,
+          "6": 4,
+          "7": 1,
+          "10": 1,
+          "9": 1,
+          "3": 1,
+          "4": 1,
+          "8": 1,
+          "5": 1
+        }
+      }
+    },
+    "concurrent-repeat-3": {
+      "predictive.test.ts": {
+        "helperInvocations": 90,
+        "distinctTestNames": 29,
+        "totalHelperSeconds": 64.960676002,
+        "phaseSeconds": {
+          "adminAndTemp": 0.6387220400000048,
+          "templateAcquire": 1.3333644640000089,
+          "createConnect": 3.1574970369999877,
+          "roles": 0.20462538199999653,
+          "migrationsIncludingVerify": 0.00012153300000750278,
+          "sessionArtifactsStore": 1.2118119200000015,
+          "body": 57.060833704000004,
+          "cleanup": 1.3530857139999937
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 90
+        }
+      },
+      "sourceClaims.test.ts": {
+        "helperInvocations": 345,
+        "distinctTestNames": 79,
+        "totalHelperSeconds": 306.737871038,
+        "phaseSeconds": {
+          "adminAndTemp": 2.2620950729999785,
+          "templateAcquire": 14.745778761000043,
+          "createConnect": 12.367233876999979,
+          "roles": 0.8979679130000061,
+          "migrationsIncludingVerify": 0.00032624299999383765,
+          "sessionArtifactsStore": 4.227869006999955,
+          "body": 265.60548091699997,
+          "cleanup": 6.629857788000053
+        },
+        "catalogVerificationSeconds": 0.0,
+        "prefixCounts": {
+          "latest": 312,
+          "6": 12,
+          "7": 3,
+          "10": 3,
+          "9": 3,
+          "3": 3,
+          "4": 3,
+          "8": 3,
+          "5": 3
+        }
+      }
+    }
+  },
+  "perTestBaseline": [
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source persistence stamps import time, is idempotent and preserves A/B cutoff replay",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.879083000000037,
+        "loadArtifactsContracts": 69.45091699999989,
+        "createConnect": 68.52704199999994,
+        "roles": 4.144708000000037,
+        "migrationsIncludingVerify": 351.91525,
+        "sessionArtifactsStore": 20.798874999999953,
+        "body": 144.7380830000002,
+        "cleanup": 17.73279199999979
+      },
+      "verifyMs": 82.84362499999997,
+      "verifyCalls": 1,
+      "totalMs": 685.191542
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "ordinary evidence stamps database ingestion time for application and direct SQL writers without backdating cutoff visibility",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.094665999999961,
+        "loadArtifactsContracts": 82.18216700000039,
+        "createConnect": 27.802124999999705,
+        "roles": 2.92325000000028,
+        "migrationsIncludingVerify": 335.8834999999999,
+        "sessionArtifactsStore": 24.575874999999996,
+        "body": 139.16783299999997,
+        "cleanup": 15.608749999999873
+      },
+      "verifyMs": 71.58733399999983,
+      "verifyCalls": 1,
+      "totalMs": 634.2493330000002
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "ordinary synthetic capture times remain harness-only and cannot bypass production ingestion clocks",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.672125000000051,
+        "loadArtifactsContracts": 91.15537499999982,
+        "createConnect": 30.672791999999845,
+        "roles": 2.8131250000001273,
+        "migrationsIncludingVerify": 328.7967910000002,
+        "sessionArtifactsStore": 16.153124999999818,
+        "body": 124.11566700000003,
+        "cleanup": 14.755416999999852
+      },
+      "verifyMs": 71.08470799999986,
+      "verifyCalls": 1,
+      "totalMs": 618.14975
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "ordinary ingestion clock migration upgrades v10 without rewriting captures and reruns as a no-op",
+      "prefix": 10,
+      "phases": {
+        "adminAndTemp": 9.280582999999751,
+        "loadArtifactsContracts": 78.48133300000018,
+        "createConnect": 29.104334000000108,
+        "roles": 2.7972499999996217,
+        "migrationsIncludingVerify": 343.9522500000003,
+        "sessionArtifactsStore": 15.925083000000086,
+        "body": 288.16979200000014,
+        "cleanup": 13.320458000000144
+      },
+      "verifyMs": 65.18200000000024,
+      "verifyCalls": 1,
+      "totalMs": 781.0410829999996
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source replay exposes missing, refused and ambiguous rows without inventing zero",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.651832999999897,
+        "loadArtifactsContracts": 73.30333299999984,
+        "createConnect": 27.154459000000315,
+        "roles": 2.44012500000008,
+        "migrationsIncludingVerify": 334.5128329999998,
+        "sessionArtifactsStore": 19.919417000000067,
+        "body": 156.33704099999977,
+        "cleanup": 13.855333999999857
+      },
+      "verifyMs": 67.54908400000022,
+      "verifyCalls": 1,
+      "totalMs": 634.1792079999996
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source replay refuses tampered raw files and forged selected-row projections",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.2019579999996495,
+        "loadArtifactsContracts": 72.36033299999963,
+        "createConnect": 29.780209000000468,
+        "roles": 2.7150000000001455,
+        "migrationsIncludingVerify": 336.2007079999994,
+        "sessionArtifactsStore": 18.38458300000002,
+        "body": 69.86387500000001,
+        "cleanup": 12.36462500000016
+      },
+      "verifyMs": 71.42849999999999,
+      "verifyCalls": 1,
+      "totalMs": 548.8773749999991
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source publication rolls back files and refuses run conflicts and revoked current rights",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.687290999999277,
+        "loadArtifactsContracts": 77.10045900000023,
+        "createConnect": 28.496874999999818,
+        "roles": 2.3957080000000133,
+        "migrationsIncludingVerify": 343.26066700000047,
+        "sessionArtifactsStore": 18.853665999999976,
+        "body": 151.52566699999988,
+        "cleanup": 13.89049999999952
+      },
+      "verifyMs": 57.331874999999854,
+      "verifyCalls": 1,
+      "totalMs": 643.2257079999999
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source SQL enforces complete row ordinals, strict projection shape and the canonical binding boundary",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.230874999999287,
+        "loadArtifactsContracts": 76.25087500000063,
+        "createConnect": 27.703625000000102,
+        "roles": 2.4957909999993717,
+        "migrationsIncludingVerify": 366.35583399999996,
+        "sessionArtifactsStore": 20.65137500000037,
+        "body": 519.3210410000002,
+        "cleanup": 12.526667000000089
+      },
+      "verifyMs": 74.60345799999959,
+      "verifyCalls": 1,
+      "totalMs": 1033.5415829999993
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source replay keeps equal-time conflicts ambiguous and late older imports cannot replace a newer snapshot",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.450415999999677,
+        "loadArtifactsContracts": 69.31012499999997,
+        "createConnect": 25.173792000000503,
+        "roles": 2.316541999999572,
+        "migrationsIncludingVerify": 321.4965000000002,
+        "sessionArtifactsStore": 15.944124999999985,
+        "body": 154.62474999999995,
+        "cleanup": 13.903707999999824
+      },
+      "verifyMs": 71.7342920000001,
+      "verifyCalls": 1,
+      "totalMs": 609.2453749999995
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source migration upgrades released v3 without changing existing evidence or its recorded checksum",
+      "prefix": 3,
+      "phases": {
+        "adminAndTemp": 10.105999999999767,
+        "loadArtifactsContracts": 74.45595800000046,
+        "createConnect": 24.656207999999424,
+        "roles": 2.6227090000002136,
+        "migrationsIncludingVerify": 302.1372080000001,
+        "sessionArtifactsStore": 26.522624999999607,
+        "body": 753.0468330000003,
+        "cleanup": 10.724625000000742
+      },
+      "verifyMs": 54.16145800000049,
+      "verifyCalls": 1,
+      "totalMs": 1204.2737080000006
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source migration upgrades released v4 preserving creator corpus evidence and recorded history",
+      "prefix": 4,
+      "phases": {
+        "adminAndTemp": 6.0627910000002885,
+        "loadArtifactsContracts": 72.89116699999977,
+        "createConnect": 22.612875000000713,
+        "roles": 2.241874999999709,
+        "migrationsIncludingVerify": 212.89820800000052,
+        "sessionArtifactsStore": 17.959666999999172,
+        "body": 349.8122920000005,
+        "cleanup": 10.579916000000594
+      },
+      "verifyMs": 51.35420899999917,
+      "verifyCalls": 1,
+      "totalMs": 695.0624160000007
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source ingest and replay work without superuser and retention removes rows and resumes files with execute-only access",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 5.424750000000131,
+        "loadArtifactsContracts": 64.56374999999935,
+        "createConnect": 23.743625000000975,
+        "roles": 2.5802920000005543,
+        "migrationsIncludingVerify": 313.40387499999997,
+        "sessionArtifactsStore": 14.971540999998979,
+        "body": 159.40383400000064,
+        "cleanup": 13.54962499999965
+      },
+      "verifyMs": 64.47866600000089,
+      "verifyCalls": 1,
+      "totalMs": 597.6475829999999
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source retention re-applies identical row deletion after re-importing retained files into a fresh database",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.743416999999681,
+        "loadArtifactsContracts": 80.484375,
+        "createConnect": 26.496790999999575,
+        "roles": 2.4399590000011813,
+        "migrationsIncludingVerify": 314.8647499999988,
+        "sessionArtifactsStore": 13.775125000000116,
+        "body": 121.62916600000062,
+        "cleanup": 16.07037499999933
+      },
+      "verifyMs": 66.22137500000099,
+      "verifyCalls": 1,
+      "totalMs": 583.5103330000002
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source retention re-applies identical row deletion after re-importing retained files into a fresh database",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.049582999999984,
+        "loadArtifactsContracts": 81.51224999999977,
+        "createConnect": 27.143167000000176,
+        "roles": 2.3951250000009168,
+        "migrationsIncludingVerify": 335.8087909999995,
+        "sessionArtifactsStore": 13.809291999999914,
+        "body": 115.74712499999987,
+        "cleanup": 12.139750000000276
+      },
+      "verifyMs": 75.25783299999966,
+      "verifyCalls": 1,
+      "totalMs": 597.6091660000002
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV normalization plans verify raw rows and exact bridges in a read-only snapshot through a replay-only login",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.519083999999566,
+        "loadArtifactsContracts": 71.8211250000004,
+        "createConnect": 25.703958000000057,
+        "roles": 2.679167000000234,
+        "migrationsIncludingVerify": 321.41249999999854,
+        "sessionArtifactsStore": 18.963666000001467,
+        "body": 333.16320899999846,
+        "cleanup": 14.529666000000361
+      },
+      "verifyMs": 71.08474999999999,
+      "verifyCalls": 1,
+      "totalMs": 796.8092089999991
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV normalization scoped reads include reverse identity conflicts without importing unrelated correction chains",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.891875000001164,
+        "loadArtifactsContracts": 78.40216699999837,
+        "createConnect": 32.80295800000022,
+        "roles": 2.410250000000815,
+        "migrationsIncludingVerify": 321.0520830000005,
+        "sessionArtifactsStore": 16.186541999999463,
+        "body": 265.6353330000002,
+        "cleanup": 13.43958399999974
+      },
+      "verifyMs": 69.51283299999886,
+      "verifyCalls": 1,
+      "totalMs": 738.8240000000005
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV normalization refuses tampered raw files before proposing a canonical payload",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 5.888958999999886,
+        "loadArtifactsContracts": 73.56050000000141,
+        "createConnect": 27.86149999999907,
+        "roles": 2.5562079999999696,
+        "migrationsIncludingVerify": 307.98333300000013,
+        "sessionArtifactsStore": 18.431000000000495,
+        "body": 119.48862499999996,
+        "cleanup": 14.931749999999738
+      },
+      "verifyMs": 63.36212499999965,
+      "verifyCalls": 1,
+      "totalMs": 570.7172090000004
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV normalization scoped reads retain schedule alias conflicts outside the mapped canonical game",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.767750000000888,
+        "loadArtifactsContracts": 89.10095799999908,
+        "createConnect": 27.323582999999417,
+        "roles": 2.3595840000016324,
+        "migrationsIncludingVerify": 321.9275409999991,
+        "sessionArtifactsStore": 16.818333999999595,
+        "body": 222.19625000000087,
+        "cleanup": 19.674290999999357
+      },
+      "verifyMs": 66.21737500000017,
+      "verifyCalls": 1,
+      "totalMs": 708.2032909999998
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding recorder uses database time and execute-only writes while replay remains read-only research staging",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 12.849582999999257,
+        "loadArtifactsContracts": 91.63545900000099,
+        "createConnect": 30.246415999999954,
+        "roles": 2.7712499999997817,
+        "migrationsIncludingVerify": 354.17475000000013,
+        "sessionArtifactsStore": 19.441084000000046,
+        "body": 466.3785000000007,
+        "cleanup": 14.267915999998877
+      },
+      "verifyMs": 76.695291,
+      "verifyCalls": 1,
+      "totalMs": 991.7713750000003
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV bindings preserve numeric corrections, unchanged recaptures and player A to B to A canonical chains",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.350416999999652,
+        "loadArtifactsContracts": 83.91104199999972,
+        "createConnect": 29.369166000000405,
+        "roles": 2.8410839999996824,
+        "migrationsIncludingVerify": 329.26550000000134,
+        "sessionArtifactsStore": 17.24541599999975,
+        "body": 1058.5818340000005,
+        "cleanup": 15.869915999999648
+      },
+      "verifyMs": 76.43924999999945,
+      "verifyCalls": 1,
+      "totalMs": 1545.4571250000008
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV bindings withhold disappearing, refused and conflicting raw rows and allow evidenced reappearance",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.591249999997672,
+        "loadArtifactsContracts": 72.30683300000237,
+        "createConnect": 27.93424999999843,
+        "roles": 2.474624999998923,
+        "migrationsIncludingVerify": 305.83250000000044,
+        "sessionArtifactsStore": 17.456750000001193,
+        "body": 526.0848330000008,
+        "cleanup": 15.11095899999782
+      },
+      "verifyMs": 52.17374999999811,
+      "verifyCalls": 1,
+      "totalMs": 973.7992909999994
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding SQL rejects rehashed payload, row, dependency and raw identity forgeries and malformed plans",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.062583999999333,
+        "loadArtifactsContracts": 83.98729099999764,
+        "createConnect": 31.13275000000067,
+        "roles": 2.460000000002765,
+        "migrationsIncludingVerify": 309.4134589999994,
+        "sessionArtifactsStore": 17.823333000000275,
+        "body": 290.6777919999986,
+        "cleanup": 14.411166000001685
+      },
+      "verifyMs": 65.74858300000051,
+      "verifyCalls": 1,
+      "totalMs": 758.9714590000003
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding stale source or bridge evidence withholds replay and SQL refuses stale heads and proposals",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.747458999998344,
+        "loadArtifactsContracts": 75.03829100000075,
+        "createConnect": 29.018458999998984,
+        "roles": 2.803583000000799,
+        "migrationsIncludingVerify": 326.208458000001,
+        "sessionArtifactsStore": 18.56841699999859,
+        "body": 695.4833749999998,
+        "cleanup": 16.560750000000553
+      },
+      "verifyMs": 67.82524999999805,
+      "verifyCalls": 1,
+      "totalMs": 1170.4532089999993
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding hydration refuses altered associations and source bytes and current rights revocation blocks reads and retries",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 14.649332999997569,
+        "loadArtifactsContracts": 81.9283749999995,
+        "createConnect": 30.728542000000743,
+        "roles": 3.0863749999989523,
+        "migrationsIncludingVerify": 344.8958330000023,
+        "sessionArtifactsStore": 19.977500000000873,
+        "body": 250.72941699999865,
+        "cleanup": 14.724165999999968
+      },
+      "verifyMs": 58.123124999998254,
+      "verifyCalls": 1,
+      "totalMs": 760.7246249999989
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding retention removes entire cited raw lineages through execute-only access and preserves unrelated evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.905249999999796,
+        "loadArtifactsContracts": 87.81112500000017,
+        "createConnect": 27.86475000000064,
+        "roles": 2.5802909999983967,
+        "migrationsIncludingVerify": 318.786250000001,
+        "sessionArtifactsStore": 17.824000000000524,
+        "body": 464.7171249999992,
+        "cleanup": 13.453125
+      },
+      "verifyMs": 69.5770420000008,
+      "verifyCalls": 1,
+      "totalMs": 941.9494579999991
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding team statistics persist independently and cutoff-only changes do not mark a binding stale",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 5.863290999997844,
+        "loadArtifactsContracts": 75.53429200000028,
+        "createConnect": 27.464208000001236,
+        "roles": 2.2167499999995925,
+        "migrationsIncludingVerify": 308.90570899999875,
+        "sessionArtifactsStore": 16.48858300000211,
+        "body": 269.55833300000086,
+        "cleanup": 14.672083999997994
+      },
+      "verifyMs": 63.07100000000355,
+      "verifyCalls": 1,
+      "totalMs": 720.7097909999975
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding concurrent recorders serialize and exactly one expected-head proposal commits",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.088208000001032,
+        "loadArtifactsContracts": 84.54974999999831,
+        "createConnect": 30.341834000002564,
+        "roles": 2.438833000000159,
+        "migrationsIncludingVerify": 354.5190829999992,
+        "sessionArtifactsStore": 16.456834000000526,
+        "body": 407.8748749999977,
+        "cleanup": 13.889375000002474
+      },
+      "verifyMs": 60.19274999999834,
+      "verifyCalls": 1,
+      "totalMs": 919.1810829999995
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding unrecorded bridge conflicts withhold the current raw contribution without poisoning earlier cutoffs",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.130417000000307,
+        "loadArtifactsContracts": 77.36333300000115,
+        "createConnect": 27.055124999998952,
+        "roles": 2.46258300000045,
+        "migrationsIncludingVerify": 325.9014590000006,
+        "sessionArtifactsStore": 32.422749999997905,
+        "body": 474.5367499999993,
+        "cleanup": 11.504791000003024
+      },
+      "verifyMs": 68.55624999999782,
+      "verifyCalls": 1,
+      "totalMs": 960.380333000001
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding bridge retention removes ancestors and descendants and identical restored evidence re-applies its audit",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.155500000000757,
+        "loadArtifactsContracts": 73.14283299999806,
+        "createConnect": 25.44050000000061,
+        "roles": 2.3143750000017462,
+        "migrationsIncludingVerify": 309.04499999999825,
+        "sessionArtifactsStore": 15.045916999999463,
+        "body": 297.25645799999984,
+        "cleanup": 15.139500000001135
+      },
+      "verifyMs": 61.98074999999881,
+      "verifyCalls": 1,
+      "totalMs": 743.5456249999988
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding bridge retention removes ancestors and descendants and identical restored evidence re-applies its audit",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 10.30054200000086,
+        "loadArtifactsContracts": 81.23979099999997,
+        "createConnect": 28.79908400000204,
+        "roles": 2.51091599999927,
+        "migrationsIncludingVerify": 349.9310839999998,
+        "sessionArtifactsStore": 16.336208000000624,
+        "body": 282.1048329999976,
+        "cleanup": 16.38666700000249
+      },
+      "verifyMs": 64.9564999999966,
+      "verifyCalls": 1,
+      "totalMs": 787.6332080000029
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding migration upgrades v5 without changing released history and reruns are no-ops",
+      "prefix": 5,
+      "phases": {
+        "adminAndTemp": 8.738999999997759,
+        "loadArtifactsContracts": 84.82216700000208,
+        "createConnect": 29.486290999997436,
+        "roles": 2.7434170000015,
+        "migrationsIncludingVerify": 256.61599999999817,
+        "sessionArtifactsStore": 16.32983299999978,
+        "body": 355.77150000000256,
+        "cleanup": 12.434833999999682
+      },
+      "verifyMs": 64.36270800000057,
+      "verifyCalls": 1,
+      "totalMs": 766.945832999998
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding canonical guard refuses generated JSON under real source profiles and immutable bindings cannot be rewritten",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.520416999999725,
+        "loadArtifactsContracts": 68.20037500000035,
+        "createConnect": 26.257790999999997,
+        "roles": 2.430499999998574,
+        "migrationsIncludingVerify": 317.3316249999989,
+        "sessionArtifactsStore": 16.8226250000007,
+        "body": 224.13750000000073,
+        "cleanup": 14.87749999999869
+      },
+      "verifyMs": 61.01995800000077,
+      "verifyCalls": 1,
+      "totalMs": 676.5812919999989
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.88183299999946,
+        "loadArtifactsContracts": 71.79995800000324,
+        "createConnect": 26.2432919999992,
+        "roles": 2.6115829999980633,
+        "migrationsIncludingVerify": 318.0389170000017,
+        "sessionArtifactsStore": 16.475666999998793,
+        "body": 318.5541660000017,
+        "cleanup": 15.207749999997759
+      },
+      "verifyMs": 68.91666700000133,
+      "verifyCalls": 1,
+      "totalMs": 775.820125000002
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.95904100000189,
+        "loadArtifactsContracts": 86.62229200000002,
+        "createConnect": 26.93316699999923,
+        "roles": 2.4662910000006377,
+        "migrationsIncludingVerify": 333.69537499999933,
+        "sessionArtifactsStore": 16.83641699999862,
+        "body": 303.744708000002,
+        "cleanup": 12.040417000000161
+      },
+      "verifyMs": 56.5279580000024,
+      "verifyCalls": 1,
+      "totalMs": 791.3016250000001
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.59991699999955,
+        "loadArtifactsContracts": 76.02649999999994,
+        "createConnect": 27.137582999999722,
+        "roles": 2.779167000000598,
+        "migrationsIncludingVerify": 337.57987499999945,
+        "sessionArtifactsStore": 16.63420799999949,
+        "body": 367.18212499999936,
+        "cleanup": 13.84100000000035
+      },
+      "verifyMs": 67.72762500000317,
+      "verifyCalls": 1,
+      "totalMs": 848.7897080000002
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.766499999997905,
+        "loadArtifactsContracts": 85.2611250000009,
+        "createConnect": 27.495167000000947,
+        "roles": 2.577957999998034,
+        "migrationsIncludingVerify": 336.3374580000018,
+        "sessionArtifactsStore": 15.314125000000786,
+        "body": 369.3695000000007,
+        "cleanup": 12.946208999997907
+      },
+      "verifyMs": 69.6877080000013,
+      "verifyCalls": 1,
+      "totalMs": 858.0729169999977
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.207500000000437,
+        "loadArtifactsContracts": 73.15591700000004,
+        "createConnect": 22.825999999997293,
+        "roles": 2.457875000000058,
+        "migrationsIncludingVerify": 314.4965000000011,
+        "sessionArtifactsStore": 31.478125000001455,
+        "body": 370.73229100000026,
+        "cleanup": 14.07404200000019
+      },
+      "verifyMs": 63.610334000000876,
+      "verifyCalls": 1,
+      "totalMs": 836.4362079999992
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.422500000000582,
+        "loadArtifactsContracts": 83.11145899999974,
+        "createConnect": 26.13354099999924,
+        "roles": 2.6831249999995634,
+        "migrationsIncludingVerify": 322.6993340000008,
+        "sessionArtifactsStore": 16.179000000000087,
+        "body": 364.90058300000237,
+        "cleanup": 13.990207999999257
+      },
+      "verifyMs": 66.02041599999939,
+      "verifyCalls": 1,
+      "totalMs": 839.1256670000002
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.661207999997714,
+        "loadArtifactsContracts": 86.08195800000249,
+        "createConnect": 31.009291999998823,
+        "roles": 2.360333000000537,
+        "migrationsIncludingVerify": 351.0419589999983,
+        "sessionArtifactsStore": 15.827958000001672,
+        "body": 344.0556250000009,
+        "cleanup": 12.467666999997164
+      },
+      "verifyMs": 67.01258299999972,
+      "verifyCalls": 1,
+      "totalMs": 851.5121659999968
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.114292000005662,
+        "loadArtifactsContracts": 71.42904099999578,
+        "createConnect": 23.188249999999243,
+        "roles": 2.103584000004048,
+        "migrationsIncludingVerify": 351.81933299999946,
+        "sessionArtifactsStore": 16.11816700000054,
+        "body": 229.72691599999962,
+        "cleanup": 11.008249999998952
+      },
+      "verifyMs": 63.588292000000365,
+      "verifyCalls": 1,
+      "totalMs": 712.5097500000047
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 5.457458000004408,
+        "loadArtifactsContracts": 69.18133300000045,
+        "createConnect": 28.6630839999998,
+        "roles": 2.3147079999980633,
+        "migrationsIncludingVerify": 303.98108299999876,
+        "sessionArtifactsStore": 14.297167000004265,
+        "body": 292.234749999996,
+        "cleanup": 14.603167000001122
+      },
+      "verifyMs": 65.31995800000004,
+      "verifyCalls": 1,
+      "totalMs": 730.7414580000041
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.452917000002344,
+        "loadArtifactsContracts": 82.47649999999703,
+        "createConnect": 29.374916000000667,
+        "roles": 2.0148750000007567,
+        "migrationsIncludingVerify": 315.57354199999827,
+        "sessionArtifactsStore": 15.011624999999185,
+        "body": 296.2672920000041,
+        "cleanup": 15.515165999997407
+      },
+      "verifyMs": 72.10870900000009,
+      "verifyCalls": 1,
+      "totalMs": 765.695166999998
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.625625000000582,
+        "loadArtifactsContracts": 83.95420800000284,
+        "createConnect": 26.63095799999428,
+        "roles": 2.4282920000041486,
+        "migrationsIncludingVerify": 324.2884169999961,
+        "sessionArtifactsStore": 16.681166000002122,
+        "body": 293.51487500000076,
+        "cleanup": 14.468333999997412
+      },
+      "verifyMs": 68.11491699999897,
+      "verifyCalls": 1,
+      "totalMs": 770.6025829999999
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.057708000000275,
+        "loadArtifactsContracts": 72.61325000000215,
+        "createConnect": 28.36725000000297,
+        "roles": 2.5242919999946025,
+        "migrationsIncludingVerify": 312.80450000000565,
+        "sessionArtifactsStore": 17.572416999995767,
+        "body": 309.0484160000051,
+        "cleanup": 14.763958999996248
+      },
+      "verifyMs": 58.20291699999507,
+      "verifyCalls": 1,
+      "totalMs": 764.757958000002
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.94716700000572,
+        "loadArtifactsContracts": 84.48920799999905,
+        "createConnect": 26.601332999998704,
+        "roles": 2.2768749999959255,
+        "migrationsIncludingVerify": 327.0770000000048,
+        "sessionArtifactsStore": 16.283250000000407,
+        "body": 317.0250420000011,
+        "cleanup": 14.744791999997688
+      },
+      "verifyMs": 66.30487499999435,
+      "verifyCalls": 1,
+      "totalMs": 797.4542920000022
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.83954200000153,
+        "loadArtifactsContracts": 84.75437500000407,
+        "createConnect": 27.959999999999127,
+        "roles": 2.5522500000006403,
+        "migrationsIncludingVerify": 317.7414579999968,
+        "sessionArtifactsStore": 17.085417000002053,
+        "body": 352.8227909999987,
+        "cleanup": 14.947916999997688
+      },
+      "verifyMs": 64.2074999999968,
+      "verifyCalls": 1,
+      "totalMs": 826.7107500000056
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 10.002916999997979,
+        "loadArtifactsContracts": 86.59833300000173,
+        "createConnect": 28.476125000001048,
+        "roles": 2.6933330000028946,
+        "migrationsIncludingVerify": 329.09941699999763,
+        "sessionArtifactsStore": 19.470916999998735,
+        "body": 327.7306250000038,
+        "cleanup": 15.796791000000667
+      },
+      "verifyMs": 67.40166700000555,
+      "verifyCalls": 1,
+      "totalMs": 819.8757919999989
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings supersede usable context and recover without inventing numeric corrections or changing earlier cutoffs",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.002709000000323,
+        "loadArtifactsContracts": 86.1013329999987,
+        "createConnect": 27.319541999997455,
+        "roles": 2.9516660000008414,
+        "migrationsIncludingVerify": 413.6822500000053,
+        "sessionArtifactsStore": 16.145291999993788,
+        "body": 963.3790829999998,
+        "cleanup": 16.719667000004847
+      },
+      "verifyMs": 68.41462499999761,
+      "verifyCalls": 1,
+      "totalMs": 1535.3103340000016
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings verify every ambiguous capture file and allow evidenced conflict recovery",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.009624999998778,
+        "loadArtifactsContracts": 86.30208300000231,
+        "createConnect": 37.42166699999507,
+        "roles": 2.7701250000027358,
+        "migrationsIncludingVerify": 330.4623330000031,
+        "sessionArtifactsStore": 17.01054199999635,
+        "body": 427.3477500000008,
+        "cleanup": 14.818915999996534
+      },
+      "verifyMs": 66.33308299999771,
+      "verifyCalls": 1,
+      "totalMs": 924.1504999999961
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV capture-less unavailable bindings keep source rights and whole-lineage retention through execute-only ownership",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.998165999997582,
+        "loadArtifactsContracts": 84.75033400000393,
+        "createConnect": 29.555207999997947,
+        "roles": 2.565792000001238,
+        "migrationsIncludingVerify": 323.43187499999476,
+        "sessionArtifactsStore": 15.778958000002604,
+        "body": 210.02391699999862,
+        "cleanup": 13.690207999999984
+      },
+      "verifyMs": 67.39487499999814,
+      "verifyCalls": 1,
+      "totalMs": 686.802208000001
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable migration upgrades v6 preserving v1 positive and withheld plans, exact retries and recorded history",
+      "prefix": 6,
+      "phases": {
+        "adminAndTemp": 9.06841600000189,
+        "loadArtifactsContracts": 84.90204200000153,
+        "createConnect": 28.17649999999412,
+        "roles": 2.338625000003958,
+        "migrationsIncludingVerify": 268.0020829999994,
+        "sessionArtifactsStore": 16.89600000000064,
+        "body": 634.7508749999979,
+        "cleanup": 12.494500000000698
+      },
+      "verifyMs": 63.47816700000112,
+      "verifyCalls": 1,
+      "totalMs": 1056.6364160000012
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable migration upgrades v6 preserving v1 positive and withheld plans, exact retries and recorded history",
+      "prefix": 6,
+      "phases": {
+        "adminAndTemp": 6.0158749999973224,
+        "loadArtifactsContracts": 65.4210000000021,
+        "createConnect": 21.92545799999789,
+        "roles": 2.1695420000032755,
+        "migrationsIncludingVerify": 265.70762499999546,
+        "sessionArtifactsStore": 18.40691700000025,
+        "body": 467.3241249999992,
+        "cleanup": 13.415874999998778
+      },
+      "verifyMs": 52.57937499999389,
+      "verifyCalls": 1,
+      "totalMs": 860.3885420000006
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable retention re-applies pre-v7 legacy events with identical counts and digests after restoration",
+      "prefix": 6,
+      "phases": {
+        "adminAndTemp": 6.715667000004032,
+        "loadArtifactsContracts": 71.1650410000002,
+        "createConnect": 28.126416999999492,
+        "roles": 2.5192079999978887,
+        "migrationsIncludingVerify": 269.653542,
+        "sessionArtifactsStore": 11.006708000000799,
+        "body": 635.5743750000038,
+        "cleanup": 13.473041999997804
+      },
+      "verifyMs": 47.06754099999671,
+      "verifyCalls": 1,
+      "totalMs": 1038.236542000006
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable retention re-applies pre-v7 legacy events with identical counts and digests after restoration",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.598999999994703,
+        "loadArtifactsContracts": 75.49179200000071,
+        "createConnect": 27.290625000001455,
+        "roles": 2.249167000001762,
+        "migrationsIncludingVerify": 326.23983299999963,
+        "sessionArtifactsStore": 13.198374999999942,
+        "body": 578.7389170000024,
+        "cleanup": 13.890583000000333
+      },
+      "verifyMs": 66.53850000000239,
+      "verifyCalls": 1,
+      "totalMs": 1043.7062919999953
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable retention re-applies pre-v7 legacy events with identical counts and digests after restoration",
+      "prefix": 6,
+      "phases": {
+        "adminAndTemp": 8.471541999999317,
+        "loadArtifactsContracts": 74.06404099999781,
+        "createConnect": 26.653166999996756,
+        "roles": 2.414542000005895,
+        "migrationsIncludingVerify": 278.7324579999986,
+        "sessionArtifactsStore": 19.941832999997132,
+        "body": 600.8673750000016,
+        "cleanup": 13.648084000000381
+      },
+      "verifyMs": 65.67387500000041,
+      "verifyCalls": 1,
+      "totalMs": 1024.7998329999973
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable retention re-applies pre-v7 legacy events with identical counts and digests after restoration",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.862709000000905,
+        "loadArtifactsContracts": 83.19270799999504,
+        "createConnect": 26.184500000003027,
+        "roles": 2.1604579999984708,
+        "migrationsIncludingVerify": 357.15191700000287,
+        "sessionArtifactsStore": 15.939999999995052,
+        "body": 585.2300000000032,
+        "cleanup": 15.144791999999143
+      },
+      "verifyMs": 66.47158299999865,
+      "verifyCalls": 1,
+      "totalMs": 1093.869666999999
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.4930420000018785,
+        "loadArtifactsContracts": 68.85899999999674,
+        "createConnect": 22.194000000003143,
+        "roles": 2.182749999999942,
+        "migrationsIncludingVerify": 312.10258299999987,
+        "sessionArtifactsStore": 19.45549999999639,
+        "body": 226.1922080000004,
+        "cleanup": 14.131709000001138
+      },
+      "verifyMs": 65.0716670000038,
+      "verifyCalls": 1,
+      "totalMs": 671.6309170000022
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.745582999996259,
+        "loadArtifactsContracts": 71.7491250000021,
+        "createConnect": 26.638624999999593,
+        "roles": 2.1689580000020214,
+        "migrationsIncludingVerify": 314.51724999999715,
+        "sessionArtifactsStore": 16.503583999998227,
+        "body": 263.11987500000396,
+        "cleanup": 13.292624999994587
+      },
+      "verifyMs": 68.80208300000231,
+      "verifyCalls": 1,
+      "totalMs": 714.7408329999962
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.371916999996756,
+        "loadArtifactsContracts": 82.48870800000441,
+        "createConnect": 26.673374999998487,
+        "roles": 2.3942499999975553,
+        "migrationsIncludingVerify": 319.84850000000006,
+        "sessionArtifactsStore": 16.45483300000342,
+        "body": 234.98608399999648,
+        "cleanup": 13.864125000000058
+      },
+      "verifyMs": 70.54733300000225,
+      "verifyCalls": 1,
+      "totalMs": 705.1036249999961
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.054834000002302,
+        "loadArtifactsContracts": 74.88100000000122,
+        "createConnect": 27.823833000002196,
+        "roles": 2.506708000000799,
+        "migrationsIncludingVerify": 336.5957089999938,
+        "sessionArtifactsStore": 18.268500000005588,
+        "body": 241.14304099999572,
+        "cleanup": 13.294375000004948
+      },
+      "verifyMs": 67.4754580000008,
+      "verifyCalls": 1,
+      "totalMs": 722.5705420000013
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.071374999999534,
+        "loadArtifactsContracts": 75.39058300000033,
+        "createConnect": 28.431292000001122,
+        "roles": 2.684207999998762,
+        "migrationsIncludingVerify": 305.2531250000029,
+        "sessionArtifactsStore": 15.727624999999534,
+        "body": 262.39824999999837,
+        "cleanup": 14.503749999996217
+      },
+      "verifyMs": 62.545249999995576,
+      "verifyCalls": 1,
+      "totalMs": 711.4862910000011
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.74841600000218,
+        "loadArtifactsContracts": 92.7265419999967,
+        "createConnect": 31.474957999998878,
+        "roles": 2.3581669999985024,
+        "migrationsIncludingVerify": 328.3824170000007,
+        "sessionArtifactsStore": 17.284082999998645,
+        "body": 184.90550000000076,
+        "cleanup": 14.75704200000473
+      },
+      "verifyMs": 73.57187499999418,
+      "verifyCalls": 1,
+      "totalMs": 680.6432910000003
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 10.309708000000683,
+        "loadArtifactsContracts": 87.34479199999623,
+        "createConnect": 29.46062499999971,
+        "roles": 2.591208000005281,
+        "migrationsIncludingVerify": 323.5685000000012,
+        "sessionArtifactsStore": 16.678249999997206,
+        "body": 175.40137500000128,
+        "cleanup": 14.201791999999841
+      },
+      "verifyMs": 65.12604100000317,
+      "verifyCalls": 1,
+      "totalMs": 659.5640419999982
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV binding schedule reconciliation pins only a current exact selection and a new conflicting head can be recorded unavailable",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.355333999999857,
+        "loadArtifactsContracts": 87.6786659999998,
+        "createConnect": 28.032624999999825,
+        "roles": 2.4245840000003227,
+        "migrationsIncludingVerify": 373.3220000000001,
+        "sessionArtifactsStore": 16.1572079999969,
+        "body": 485.75291700000525,
+        "cleanup": 15.018665999996301
+      },
+      "verifyMs": 72.9278340000019,
+      "verifyCalls": 1,
+      "totalMs": 1016.7487089999995
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV canonical fact reads expand raw lineages before filtering and preserve read-only A to B to A provenance",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.221667000005255,
+        "loadArtifactsContracts": 90.24945799999841,
+        "createConnect": 28.20520899999974,
+        "roles": 2.2087499999979627,
+        "migrationsIncludingVerify": 320.1485410000023,
+        "sessionArtifactsStore": 20.512666999995417,
+        "body": 1027.1506670000017,
+        "cleanup": 15.686541000002762
+      },
+      "verifyMs": 67.28370799999539,
+      "verifyCalls": 1,
+      "totalMs": 1513.4069999999992
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV canonical fact reads discover an unrecorded destination and withhold both routes without stale numeric payloads",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.922333000002254,
+        "loadArtifactsContracts": 84.33170799999789,
+        "createConnect": 28.46941700000025,
+        "roles": 2.1838750000024447,
+        "migrationsIncludingVerify": 312.9782500000001,
+        "sessionArtifactsStore": 18.8469169999953,
+        "body": 527.9938750000001,
+        "cleanup": 15.661875000005239
+      },
+      "verifyMs": 56.5119579999955,
+      "verifyCalls": 1,
+      "totalMs": 998.4096659999996
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV canonical fact reads retain missing-row uncertainty and reappearance binds unchanged values to fresh provenance",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.796792000001005,
+        "loadArtifactsContracts": 79.42379200000141,
+        "createConnect": 28.510332999998354,
+        "roles": 2.481999999996333,
+        "migrationsIncludingVerify": 349.39337499999965,
+        "sessionArtifactsStore": 16.82887500000652,
+        "body": 867.1237919999985,
+        "cleanup": 16.478916000000027
+      },
+      "verifyMs": 57.91812500000378,
+      "verifyCalls": 1,
+      "totalMs": 1369.0399170000019
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV canonical fact reads check source and context rights before any provider file is opened",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.45291599999473,
+        "loadArtifactsContracts": 74.8934170000066,
+        "createConnect": 38.663832999998704,
+        "roles": 2.397292000001471,
+        "migrationsIncludingVerify": 318.50433299999713,
+        "sessionArtifactsStore": 17.44008400000166,
+        "body": 286.8683749999982,
+        "cleanup": 13.760708000001614
+      },
+      "verifyMs": 70.62787499999831,
+      "verifyCalls": 1,
+      "totalMs": 759.9861659999951
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV canonical fact reads check source and context rights before any provider file is opened",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.056125000002794,
+        "loadArtifactsContracts": 86.08837499999936,
+        "createConnect": 27.881499999995867,
+        "roles": 2.5782080000062706,
+        "migrationsIncludingVerify": 316.62983299999905,
+        "sessionArtifactsStore": 17.005541999998968,
+        "body": 200.37345800000185,
+        "cleanup": 15.529083999994327
+      },
+      "verifyMs": 64.71162500000355,
+      "verifyCalls": 1,
+      "totalMs": 674.1694580000039
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV canonical fact reads verify raw bytes even outside the requested destination and fail instead of truncating discovery",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.855250000000524,
+        "loadArtifactsContracts": 87.12599999999657,
+        "createConnect": 28.895708999996714,
+        "roles": 2.2776250000024447,
+        "migrationsIncludingVerify": 347.29358299999876,
+        "sessionArtifactsStore": 15.925875000000815,
+        "body": 296.268541999998,
+        "cleanup": 13.437000000005355
+      },
+      "verifyMs": 78.91575000000012,
+      "verifyCalls": 1,
+      "totalMs": 800.0814590000009
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV canonical fact reads keep player and team identities distinct and do not backdate canonical recording",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 5.826666999993904,
+        "loadArtifactsContracts": 76.78437500000291,
+        "createConnect": 29.907624999999825,
+        "roles": 2.3500419999982114,
+        "migrationsIncludingVerify": 335.0290410000016,
+        "sessionArtifactsStore": 16.02666699999827,
+        "body": 479.304667000004,
+        "cleanup": 13.312874999995984
+      },
+      "verifyMs": 69.14245900000242,
+      "verifyCalls": 1,
+      "totalMs": 958.5457919999972
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV canonical fact reads keep player and team identities distinct and do not backdate canonical recording",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.057874999998603,
+        "loadArtifactsContracts": 63.562874999995984,
+        "createConnect": 24.73845799999981,
+        "roles": 2.674417000001995,
+        "migrationsIncludingVerify": 324.984000000004,
+        "sessionArtifactsStore": 19.297374999994645,
+        "body": 464.3427920000031,
+        "cleanup": 15.15899999999965
+      },
+      "verifyMs": 67.37379099999816,
+      "verifyCalls": 1,
+      "totalMs": 920.822583000001
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV canonical fact reads preserve unresolved routing when no historical canonical destination exists",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.658250000000407,
+        "loadArtifactsContracts": 98.10816599999816,
+        "createConnect": 52.59137500000361,
+        "roles": 3.2261250000010477,
+        "migrationsIncludingVerify": 359.6925839999967,
+        "sessionArtifactsStore": 17.645582999997714,
+        "body": 408.3989170000059,
+        "cleanup": 12.672500000000582
+      },
+      "verifyMs": 79.1697920000006,
+      "verifyCalls": 1,
+      "totalMs": 961.0042910000047
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV consumer witnesses bind unchanged recaptures and post-window evidence through a replay-only login",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.472083000000566,
+        "loadArtifactsContracts": 79.7458340000012,
+        "createConnect": 24.360874999998487,
+        "roles": 2.153375000001688,
+        "migrationsIncludingVerify": 308.9422080000004,
+        "sessionArtifactsStore": 18.872999999999593,
+        "body": 611.0746250000011,
+        "cleanup": 11.911374999996042
+      },
+      "verifyMs": 59.42462499999965,
+      "verifyCalls": 1,
+      "totalMs": 1063.539042000004
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV consumer checks withhold stale routing and revoked access instead of reviving earlier selected values",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.436584000002767,
+        "loadArtifactsContracts": 74.4217079999944,
+        "createConnect": 21.211208000000624,
+        "roles": 2.082542000003741,
+        "migrationsIncludingVerify": 316.51279200000135,
+        "sessionArtifactsStore": 24.751707999996142,
+        "body": 417.6442079999979,
+        "cleanup": 15.015375000002678
+      },
+      "verifyMs": 64.94645799999853,
+      "verifyCalls": 1,
+      "totalMs": 878.0826250000027
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV SQL witnesses match verified player and team reads, missing scope and equivalent rights renewal",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.409166999990703,
+        "loadArtifactsContracts": 82.46012500001234,
+        "createConnect": 28.3782910000009,
+        "roles": 2.495167000000947,
+        "migrationsIncludingVerify": 319.3070829999924,
+        "sessionArtifactsStore": 16.98491699999431,
+        "body": 362.9119170000049,
+        "cleanup": 15.502707999999984
+      },
+      "verifyMs": 71.66095900000073,
+      "verifyCalls": 1,
+      "totalMs": 836.4578749999928
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV SQL witnesses match verified player and team reads, missing scope and equivalent rights renewal",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.38566699999501,
+        "loadArtifactsContracts": 90.80991599999834,
+        "createConnect": 27.72733400001016,
+        "roles": 2.4917909999931,
+        "migrationsIncludingVerify": 321.7449590000033,
+        "sessionArtifactsStore": 20.13300000000163,
+        "body": 368.55466599999636,
+        "cleanup": 15.412750000003143
+      },
+      "verifyMs": 66.55129099999613,
+      "verifyCalls": 1,
+      "totalMs": 856.2746670000051
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV SQL witness checker rejects rehashed omissions, fabricated heads and forged unavailable reasons",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.680916999990586,
+        "loadArtifactsContracts": 79.803917000012,
+        "createConnect": 32.79283299999952,
+        "roles": 3.0794999999925494,
+        "migrationsIncludingVerify": 357.97525000000314,
+        "sessionArtifactsStore": 18.8648749999993,
+        "body": 468.8304170000047,
+        "cleanup": 15.665374999996857
+      },
+      "verifyMs": 72.61675000000105,
+      "verifyCalls": 1,
+      "totalMs": 985.6994169999962
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV SQL current witness checks invalidate same-revision recaptures and refuse unchanged empty evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.794834000000264,
+        "loadArtifactsContracts": 92.37112500000512,
+        "createConnect": 26.967957999993814,
+        "roles": 2.48191700001189,
+        "migrationsIncludingVerify": 316.9718329999887,
+        "sessionArtifactsStore": 16.173292000006768,
+        "body": 606.8148329999967,
+        "cleanup": 15.822916999997688
+      },
+      "verifyMs": 60.048125000001164,
+      "verifyCalls": 1,
+      "totalMs": 1086.4260420000064
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV SQL witnesses expand unrecorded reroutes and unresolved identity before canonical filtering",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.396332999996957,
+        "loadArtifactsContracts": 85.00895899999887,
+        "createConnect": 30.499750000002678,
+        "roles": 2.643500000005588,
+        "migrationsIncludingVerify": 326.416790999996,
+        "sessionArtifactsStore": 15.724874999999884,
+        "body": 657.2669170000008,
+        "cleanup": 11.38575000000128
+      },
+      "verifyMs": 69.02570900000865,
+      "verifyCalls": 1,
+      "totalMs": 1137.3467079999973
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV SQL witness access uses database-clock rights and denies private kernels and unbounded requests",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.087166999990586,
+        "loadArtifactsContracts": 73.45037500000035,
+        "createConnect": 20.79254100000253,
+        "roles": 1.8545420000009472,
+        "migrationsIncludingVerify": 303.84041699999943,
+        "sessionArtifactsStore": 14.158957999999984,
+        "body": 355.4831669999985,
+        "cleanup": 16.067875000007916
+      },
+      "verifyMs": 62.718542000002344,
+      "verifyCalls": 1,
+      "totalMs": 792.7550419999898
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV SQL witness migration upgrades v7 preserving bindings and prior migration history",
+      "prefix": 7,
+      "phases": {
+        "adminAndTemp": 8.295292000009795,
+        "loadArtifactsContracts": 87.35437499999534,
+        "createConnect": 28.556916999994428,
+        "roles": 2.61083299999882,
+        "migrationsIncludingVerify": 280.5460000000021,
+        "sessionArtifactsStore": 19.12704200000735,
+        "body": 557.4861249999958,
+        "cleanup": 13.105791000009049
+      },
+      "verifyMs": 58.926084000006085,
+      "verifyCalls": 1,
+      "totalMs": 997.0849170000001
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV SQL witness mismatch fails closed and restores the read-only replay transaction",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.102666000006138,
+        "loadArtifactsContracts": 70.15108399999735,
+        "createConnect": 30.728707999995095,
+        "roles": 2.309958000012557,
+        "migrationsIncludingVerify": 315.966499999995,
+        "sessionArtifactsStore": 17.851416999998037,
+        "body": 345.70091699999466,
+        "cleanup": 12.32341599999927
+      },
+      "verifyMs": 65.13620799999626,
+      "verifyCalls": 1,
+      "totalMs": 801.140790999998
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV unavailable planning checks context rights before file hydration and revocation blocks saved conflicts and retries",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.414833000002545,
+        "loadArtifactsContracts": 84.25004199999967,
+        "createConnect": 27.640500000008615,
+        "roles": 2.1780829999916023,
+        "migrationsIncludingVerify": 325.45558300000266,
+        "sessionArtifactsStore": 16.422000000005937,
+        "body": 228.08945899999526,
+        "cleanup": 10.76670799999556
+      },
+      "verifyMs": 72.98087499999383,
+      "verifyCalls": 1,
+      "totalMs": 702.2212500000023
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decisions persist exact witnesses at database time with immutable history and idempotent retries",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 5.077874999988126,
+        "loadArtifactsContracts": 64.39549999999872,
+        "createConnect": 23.815207999999984,
+        "roles": 2.146375000011176,
+        "migrationsIncludingVerify": 296.01462499999616,
+        "sessionArtifactsStore": 16.136624999999185,
+        "body": 2727.3993340000015,
+        "cleanup": 15.547749999997905
+      },
+      "verifyMs": 50.21908300000359,
+      "verifyCalls": 1,
+      "totalMs": 3150.541624999998
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision recaptures invalidate current records without changing earlier replay or numerical revisions",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.72058300000208,
+        "loadArtifactsContracts": 79.81008300000394,
+        "createConnect": 26.665708999993512,
+        "roles": 2.5442909999983385,
+        "migrationsIncludingVerify": 319.4936250000028,
+        "sessionArtifactsStore": 23.03962500000489,
+        "body": 1872.737374999997,
+        "cleanup": 11.823417000006884
+      },
+      "verifyMs": 67.66254200000549,
+      "verifyCalls": 1,
+      "totalMs": 2344.8369999999995
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source participation combines native claims with positive usage and never infers absence from zero or blank statistics",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 5.591083999999682,
+        "loadArtifactsContracts": 69.5278330000001,
+        "createConnect": 23.555999999996857,
+        "roles": 2.4315829999977723,
+        "migrationsIncludingVerify": 315.28070899999875,
+        "sessionArtifactsStore": 20.92158300000301,
+        "body": 1434.9488330000022,
+        "cleanup": 15.500417000002926
+      },
+      "verifyMs": 62.06904200000281,
+      "verifyCalls": 1,
+      "totalMs": 1887.763083999991
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source participation combines native claims with positive usage and never infers absence from zero or blank statistics",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.59100000000035,
+        "loadArtifactsContracts": 84.44383299999754,
+        "createConnect": 29.15754200000083,
+        "roles": 2.2953750000015134,
+        "migrationsIncludingVerify": 324.87041599999066,
+        "sessionArtifactsStore": 18.24000000000524,
+        "body": 1414.4464169999992,
+        "cleanup": 13.185333000001265
+      },
+      "verifyMs": 63.42441699998744,
+      "verifyCalls": 1,
+      "totalMs": 1895.236832999988
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source participation combines native claims with positive usage and never infers absence from zero or blank statistics",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.401791000011144,
+        "loadArtifactsContracts": 91.28216699999757,
+        "createConnect": 31.005042000004323,
+        "roles": 2.6503329999977723,
+        "migrationsIncludingVerify": 347.03370800000266,
+        "sessionArtifactsStore": 17.135167000000365,
+        "body": 1411.4368329999998,
+        "cleanup": 13.077624999990803
+      },
+      "verifyMs": 67.84141699998872,
+      "verifyCalls": 1,
+      "totalMs": 1921.0475410000072
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decisions persist unavailable plans and recover without stale selections while missing facts remain insufficient",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.789208000001963,
+        "loadArtifactsContracts": 80.63095799999428,
+        "createConnect": 27.881584000002476,
+        "roles": 2.3535830000037095,
+        "migrationsIncludingVerify": 325.4894579999964,
+        "sessionArtifactsStore": 21.95479199998954,
+        "body": 3347.821375000014,
+        "cleanup": 16.26737499999581
+      },
+      "verifyMs": 63.544041000001016,
+      "verifyCalls": 1,
+      "totalMs": 3830.1960409999883
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision SQL recomputes rehashed outcomes, exact inputs, witness scope, selection and mode",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.191582999992534,
+        "loadArtifactsContracts": 84.5897920000134,
+        "createConnect": 38.96862499999406,
+        "roles": 2.4750000000058208,
+        "migrationsIncludingVerify": 322.86258299999463,
+        "sessionArtifactsStore": 20.565417000005255,
+        "body": 836.6645829999907,
+        "cleanup": 17.97070900000108
+      },
+      "verifyMs": 67.18008399999235,
+      "verifyCalls": 1,
+      "totalMs": 1332.294041999994
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision recorder and replay enforce actual non-superuser privileges and database-clock access",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.847792000000481,
+        "loadArtifactsContracts": 93.47741599999426,
+        "createConnect": 33.831042000005255,
+        "roles": 2.4496669999934966,
+        "migrationsIncludingVerify": 334.7863330000109,
+        "sessionArtifactsStore": 17.75266699999338,
+        "body": 883.7724160000071,
+        "cleanup": 14.143916999993962
+      },
+      "verifyMs": 74.02229100000113,
+      "verifyCalls": 1,
+      "totalMs": 1389.0881669999944
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision current source, historical context and native rights are checked before any file opens",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.306958999994094,
+        "loadArtifactsContracts": 84.88499999999476,
+        "createConnect": 30.347000000008848,
+        "roles": 2.5175000000017462,
+        "migrationsIncludingVerify": 324.28499999998894,
+        "sessionArtifactsStore": 17.04458300000988,
+        "body": 423.9854999999952,
+        "cleanup": 15.322207999997772
+      },
+      "verifyMs": 64.66412499999569,
+      "verifyCalls": 1,
+      "totalMs": 906.6997089999932
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision current source, historical context and native rights are checked before any file opens",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.748334000003524,
+        "loadArtifactsContracts": 87.9273749999993,
+        "createConnect": 29.493665999994846,
+        "roles": 2.3965420000022277,
+        "migrationsIncludingVerify": 322.1226670000033,
+        "sessionArtifactsStore": 18.587707999991835,
+        "body": 444.9412500000035,
+        "cleanup": 15.399667000005138
+      },
+      "verifyMs": 68.08179199999722,
+      "verifyCalls": 1,
+      "totalMs": 930.6241670000018
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision current source, historical context and native rights are checked before any file opens",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.847624999994878,
+        "loadArtifactsContracts": 87.8450840000005,
+        "createConnect": 28.709958000006736,
+        "roles": 2.5762919999979204,
+        "migrationsIncludingVerify": 326.4786250000034,
+        "sessionArtifactsStore": 14.900125000000116,
+        "body": 443.22429099999135,
+        "cleanup": 14.103250000000116
+      },
+      "verifyMs": 68.53941700000723,
+      "verifyCalls": 1,
+      "totalMs": 926.6921670000011
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision replay refuses corrupted source and native bytes, association omissions and SQL parity mismatches",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.871832999997423,
+        "loadArtifactsContracts": 79.54595800000243,
+        "createConnect": 28.509791999997105,
+        "roles": 2.719375000000582,
+        "migrationsIncludingVerify": 324.5662500000035,
+        "sessionArtifactsStore": 20.18370799999684,
+        "body": 1485.3242089999985,
+        "cleanup": 15.219333000000915
+      },
+      "verifyMs": 69.47445799999696,
+      "verifyCalls": 1,
+      "totalMs": 1963.9464159999916
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision concurrent recorders commit exactly one proposal for the expected head",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.07170899999619,
+        "loadArtifactsContracts": 77.96970800000418,
+        "createConnect": 26.522417000000132,
+        "roles": 2.3103330000012647,
+        "migrationsIncludingVerify": 318.7080419999984,
+        "sessionArtifactsStore": 16.618624999988242,
+        "body": 757.6051660000085,
+        "cleanup": 12.094209000002593
+      },
+      "verifyMs": 72.72808299999451,
+      "verifyCalls": 1,
+      "totalMs": 1219.9294589999918
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision retention removes cited source history and descendants with identical restored-backup audit",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.411875000005239,
+        "loadArtifactsContracts": 75.9597919999942,
+        "createConnect": 25.645333000007668,
+        "roles": 2.0382919999974547,
+        "migrationsIncludingVerify": 307.65154199999233,
+        "sessionArtifactsStore": 20.022916000001715,
+        "body": 558.9242920000106,
+        "cleanup": 12.601707999987411
+      },
+      "verifyMs": 66.8138340000005,
+      "verifyCalls": 1,
+      "totalMs": 1010.2610419999983
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision retention removes cited source history and descendants with identical restored-backup audit",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.831583999999566,
+        "loadArtifactsContracts": 67.35329100000672,
+        "createConnect": 25.435167000003275,
+        "roles": 2.2312499999970896,
+        "migrationsIncludingVerify": 301.45554199999606,
+        "sessionArtifactsStore": 16.907582999992883,
+        "body": 536.9902080000029,
+        "cleanup": 12.32050000000163
+      },
+      "verifyMs": 64.37812499998836,
+      "verifyCalls": 1,
+      "totalMs": 969.5311250000086
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision native retention deletes the entire affected lineage without reviving an earlier positive record",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 5.107583000004524,
+        "loadArtifactsContracts": 67.53504200000316,
+        "createConnect": 24.22508299999754,
+        "roles": 2.235791999992216,
+        "migrationsIncludingVerify": 311.33075000000827,
+        "sessionArtifactsStore": 19.263332999995328,
+        "body": 969.1524590000045,
+        "cleanup": 14.361833000002662
+      },
+      "verifyMs": 77.40529199999582,
+      "verifyCalls": 1,
+      "totalMs": 1413.2167920000065
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision retention conservatively removes capture-less scopes inside time-limited source deletions",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.025792000000365,
+        "loadArtifactsContracts": 79.90929100000358,
+        "createConnect": 22.950250000008964,
+        "roles": 2.211834000001545,
+        "migrationsIncludingVerify": 309.0828329999931,
+        "sessionArtifactsStore": 19.552708000002895,
+        "body": 156.9568339999969,
+        "cleanup": 14.10145800000464
+      },
+      "verifyMs": 63.94866599999659,
+      "verifyCalls": 1,
+      "totalMs": 611.7969580000063
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source decision migration upgrades v8 preserving recorded bindings and witnesses and reruns as a no-op",
+      "prefix": 8,
+      "phases": {
+        "adminAndTemp": 6.96279200000572,
+        "loadArtifactsContracts": 67.87937499998952,
+        "createConnect": 25.692500000004657,
+        "roles": 2.155624999999418,
+        "migrationsIncludingVerify": 274.58712500000547,
+        "sessionArtifactsStore": 14.648124999992433,
+        "body": 689.0327079999988,
+        "cleanup": 11.175875000000815
+      },
+      "verifyMs": 61.49687499999709,
+      "verifyCalls": 1,
+      "totalMs": 1092.1395000000048
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source reconciliation evaluates every bound provider and deterministic agreement also supports team facts",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 5.194833999994444,
+        "loadArtifactsContracts": 67.51966600000742,
+        "createConnect": 22.35662500000035,
+        "roles": 2.374333999992814,
+        "migrationsIncludingVerify": 325.1785830000008,
+        "sessionArtifactsStore": 20.771749999999884,
+        "body": 2296.8315830000065,
+        "cleanup": 15.098499999992782
+      },
+      "verifyMs": 67.98099999999977,
+      "verifyCalls": 1,
+      "totalMs": 2755.3347090000025
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV source reconciliation evaluates every bound provider and deterministic agreement also supports team facts",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.1904170000052545,
+        "loadArtifactsContracts": 71.60437499999534,
+        "createConnect": 20.551333000010345,
+        "roles": 1.7851249999948777,
+        "migrationsIncludingVerify": 303.1675419999956,
+        "sessionArtifactsStore": 11.05641600000672,
+        "body": 2112.016499999998,
+        "cleanup": 15.050333999999566
+      },
+      "verifyMs": 61.43450000000303,
+      "verifyCalls": 1,
+      "totalMs": 2542.4265830000077
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV QB consumers record explicit source manifests and final labels without ordinary stats observations",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.813290999998571,
+        "loadArtifactsContracts": 89.08091699999932,
+        "createConnect": 34.00920800000313,
+        "roles": 2.9030840000050375,
+        "migrationsIncludingVerify": 344.94266600000265,
+        "sessionArtifactsStore": 18.773499999995693,
+        "body": 3893.1587089999957,
+        "cleanup": 20.569415999998455
+      },
+      "verifyMs": 65.93612500000745,
+      "verifyCalls": 1,
+      "totalMs": 4411.258375000005
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV QB consumers preserve earlier cutoffs while recaptures withhold current decisions and labels",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.180458999995608,
+        "loadArtifactsContracts": 89.11033300000418,
+        "createConnect": 39.698583000004874,
+        "roles": 2.6124999999883585,
+        "migrationsIncludingVerify": 325.252833999999,
+        "sessionArtifactsStore": 19.603625000003376,
+        "body": 6890.569625000004,
+        "cleanup": 18.2730409999931
+      },
+      "verifyMs": 59.65929199999664,
+      "verifyCalls": 1,
+      "totalMs": 7393.326709000001
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV QB consumers preserve earlier unavailable replay after a later unrelated source deletion",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.7824170000094455,
+        "loadArtifactsContracts": 78.85216699999,
+        "createConnect": 31.353166000000783,
+        "roles": 2.3528340000048047,
+        "migrationsIncludingVerify": 321.9132499999978,
+        "sessionArtifactsStore": 17.652874999999767,
+        "body": 1451.4095830000006,
+        "cleanup": 15.578083000000333
+      },
+      "verifyMs": 68.21779199999582,
+      "verifyCalls": 1,
+      "totalMs": 1926.901084000012
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV QB final labels refuse pre-window captures and unresolved participation without invented zeros",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.970541000002413,
+        "loadArtifactsContracts": 83.94200000001001,
+        "createConnect": 38.465583999990486,
+        "roles": 2.5510829999984708,
+        "migrationsIncludingVerify": 338.20916700000816,
+        "sessionArtifactsStore": 13.307999999989988,
+        "body": 3462.703958000013,
+        "cleanup": 16.057416999989073
+      },
+      "verifyMs": 71.46779099998821,
+      "verifyCalls": 1,
+      "totalMs": 3963.214125000013
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV QB SQL refuses rehashed source manifests forged values identity and completion",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.857832999987295,
+        "loadArtifactsContracts": 93.05791700001282,
+        "createConnect": 31.56183299999975,
+        "roles": 2.9917079999868292,
+        "migrationsIncludingVerify": 344.83912500001315,
+        "sessionArtifactsStore": 21.390416999987792,
+        "body": 2716.809208000006,
+        "cleanup": 13.191917000003741
+      },
+      "verifyMs": 75.7410830000008,
+      "verifyCalls": 1,
+      "totalMs": 3232.7162499999977
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV QB consumers enforce use-specific rights before files for source context and native evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.878958000001148,
+        "loadArtifactsContracts": 86.92641699999513,
+        "createConnect": 28.530291000002762,
+        "roles": 2.521374999996624,
+        "migrationsIncludingVerify": 342.72387499999604,
+        "sessionArtifactsStore": 22.74083400001109,
+        "body": 1473.1423329999816,
+        "cleanup": 15.591417000017827
+      },
+      "verifyMs": 67.9002499999915,
+      "verifyCalls": 1,
+      "totalMs": 1979.062041000012
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV QB consumers enforce use-specific rights before files for source context and native evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.535915999993449,
+        "loadArtifactsContracts": 90.41141699999571,
+        "createConnect": 35.21883299999172,
+        "roles": 3.0631670000148006,
+        "migrationsIncludingVerify": 349.5746250000084,
+        "sessionArtifactsStore": 13.578957999998238,
+        "body": 1358.1451669999806,
+        "cleanup": 13.18879200000083
+      },
+      "verifyMs": 71.91870899999049,
+      "verifyCalls": 1,
+      "totalMs": 1872.72195799998
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV QB consumers enforce use-specific rights before files for source context and native evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.13566699999501,
+        "loadArtifactsContracts": 84.0956250000163,
+        "createConnect": 25.133124999993015,
+        "roles": 2.2003749999857973,
+        "migrationsIncludingVerify": 316.4357080000045,
+        "sessionArtifactsStore": 19.365542000014102,
+        "body": 1706.0457909999823,
+        "cleanup": 14.723959000024479
+      },
+      "verifyMs": 67.34854199999245,
+      "verifyCalls": 1,
+      "totalMs": 2176.143624999997
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV QB migration upgrades v9 preserving binding and decision history and is idempotent",
+      "prefix": 9,
+      "phases": {
+        "adminAndTemp": 8.613500000006752,
+        "loadArtifactsContracts": 84.37933299998986,
+        "createConnect": 29.235625000001164,
+        "roles": 2.7466669999994338,
+        "migrationsIncludingVerify": 311.61637500001234,
+        "sessionArtifactsStore": 17.654999999998836,
+        "body": 837.7829999999958,
+        "cleanup": 14.436291999998502
+      },
+      "verifyMs": 63.62929099999019,
+      "verifyCalls": 1,
+      "totalMs": 1306.474125000008
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV QB consumers operate through non-superuser execute-only recorders and replay refuses damaged bytes or links",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.684707999986131,
+        "loadArtifactsContracts": 72.84516699999222,
+        "createConnect": 26.71500000002561,
+        "roles": 2.714458000002196,
+        "migrationsIncludingVerify": 335.4270419999957,
+        "sessionArtifactsStore": 18.272457999992184,
+        "body": 3521.34604199999,
+        "cleanup": 14.514416000019992
+      },
+      "verifyMs": 61.628790999995545,
+      "verifyCalls": 1,
+      "totalMs": 3998.5266659999907
+    },
+    {
+      "file": "sourceClaims.test.ts",
+      "name": "CSV QB consumer retention removes features labels and complete label lineage through the retention-only login",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.182292000012239,
+        "loadArtifactsContracts": 72.26908299999195,
+        "createConnect": 28.216125000006286,
+        "roles": 2.3126249999913853,
+        "migrationsIncludingVerify": 341.82741699999315,
+        "sessionArtifactsStore": 23.513583000021754,
+        "body": 2802.8560419999994,
+        "cleanup": 19.833916000003228
+      },
+      "verifyMs": 77.26937500000349,
+      "verifyCalls": 1,
+      "totalMs": 3298.018833000009
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive PostgreSQL seeds exactly the application team identities, refuses others and publishes Rams replay inputs",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.352791999999909,
+        "loadArtifactsContracts": 71.94370800000002,
+        "createConnect": 43.561750000000075,
+        "roles": 3.1020839999999907,
+        "migrationsIncludingVerify": 363.967625,
+        "sessionArtifactsStore": 25.386999999999944,
+        "body": 489.8354999999999,
+        "cleanup": 14.849750000000085
+      },
+      "verifyMs": 66.02433300000007,
+      "verifyCalls": 1,
+      "totalMs": 1021.007667
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive PostgreSQL A/B replay preserves the earlier bundle and uses later corrections",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.308207999999922,
+        "loadArtifactsContracts": 77.40174999999999,
+        "createConnect": 28.75191700000005,
+        "roles": 2.514041000000134,
+        "migrationsIncludingVerify": 327.3205419999997,
+        "sessionArtifactsStore": 24.011083000000326,
+        "body": 754.8275839999997,
+        "cleanup": 15.142916000000241
+      },
+      "verifyMs": 67.44495800000004,
+      "verifyCalls": 1,
+      "totalMs": 1236.283958
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive scoped reads retain corrections that move evidence out of the indexed scope",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.132708000000093,
+        "loadArtifactsContracts": 88.17220899999984,
+        "createConnect": 32.21629100000018,
+        "roles": 2.5133340000002136,
+        "migrationsIncludingVerify": 350.03279099999963,
+        "sessionArtifactsStore": 22.78233399999999,
+        "body": 667.9113750000006,
+        "cleanup": 16.353915999999117
+      },
+      "verifyMs": 62.943083000000115,
+      "verifyCalls": 1,
+      "totalMs": 1187.1421249999999
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive persistence retains former-team membership gaps and ignores unrelated schedule dependencies",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.602167000000009,
+        "loadArtifactsContracts": 78.06333300000006,
+        "createConnect": 28.143750000000182,
+        "roles": 3.1496250000000146,
+        "migrationsIncludingVerify": 342.2741249999999,
+        "sessionArtifactsStore": 20.099624999999833,
+        "body": 521.7427079999998,
+        "cleanup": 11.802959000000556
+      },
+      "verifyMs": 64.2452089999997,
+      "verifyCalls": 1,
+      "totalMs": 1011.8879999999999
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive persistence retains former-team membership gaps and ignores unrelated schedule dependencies",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.263292000000547,
+        "loadArtifactsContracts": 72.64920799999982,
+        "createConnect": 22.105999999999767,
+        "roles": 2.096125000000029,
+        "migrationsIncludingVerify": 334.02991699999984,
+        "sessionArtifactsStore": 27.28924999999981,
+        "body": 683.1310000000003,
+        "cleanup": 14.744792000000416
+      },
+      "verifyMs": 82.02337499999976,
+      "verifyCalls": 1,
+      "totalMs": 1163.3293750000003
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive retries and unchanged recaptures preserve immutable revisions and their earliest provenance",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.921083000000181,
+        "loadArtifactsContracts": 69.53654199999983,
+        "createConnect": 23.841208000000734,
+        "roles": 2.0136249999995925,
+        "migrationsIncludingVerify": 323.9229580000001,
+        "sessionArtifactsStore": 22.24458400000003,
+        "body": 1408.497625,
+        "cleanup": 16.614415999999437
+      },
+      "verifyMs": 63.98974999999973,
+      "verifyCalls": 1,
+      "totalMs": 1873.5966250000001
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive publication is invisible until commit and concurrent retries publish one batch",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.889208000000508,
+        "loadArtifactsContracts": 75.75545799999963,
+        "createConnect": 32.58354200000031,
+        "roles": 2.352042000000438,
+        "migrationsIncludingVerify": 338.95604099999946,
+        "sessionArtifactsStore": 19.52416699999958,
+        "body": 642.3997920000002,
+        "cleanup": 14.992583000001105
+      },
+      "verifyMs": 76.00254200000018,
+      "verifyCalls": 1,
+      "totalMs": 1134.4912910000003
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive failed and partial publication quarantine diagnostics without exposing partial inputs",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.368915999999444,
+        "loadArtifactsContracts": 82.1192919999994,
+        "createConnect": 30.213917000000947,
+        "roles": 2.65154099999927,
+        "migrationsIncludingVerify": 353.25908399999935,
+        "sessionArtifactsStore": 19.976666000000478,
+        "body": 746.9587090000005,
+        "cleanup": 13.911207999999533
+      },
+      "verifyMs": 68.40341699999954,
+      "verifyCalls": 1,
+      "totalMs": 1257.4721249999984
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive publication rolls back conflicts and invalid correction lineage while retaining the earlier replay",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.362082999999984,
+        "loadArtifactsContracts": 71.976458000001,
+        "createConnect": 28.190499999998792,
+        "roles": 2.5576250000012806,
+        "migrationsIncludingVerify": 354.0231669999994,
+        "sessionArtifactsStore": 19.20874999999978,
+        "body": 946.4117920000008,
+        "cleanup": 18.53166599999895
+      },
+      "verifyMs": 74.22408300000097,
+      "verifyCalls": 1,
+      "totalMs": 1448.2834579999999
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive immutable rows, typed evidence and source-chain keys are enforced by PostgreSQL",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.738083000000188,
+        "loadArtifactsContracts": 75.33575000000019,
+        "createConnect": 35.04716699999881,
+        "roles": 2.5173330000015994,
+        "migrationsIncludingVerify": 335.0805419999997,
+        "sessionArtifactsStore": 23.05041700000038,
+        "body": 702.0648329999985,
+        "cleanup": 16.763458000001265
+      },
+      "verifyMs": 68.7250839999997,
+      "verifyCalls": 1,
+      "totalMs": 1197.6052500000005
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive PostgreSQL enforces rights knowledge time, harness-only synthetic evidence and per-provider chains",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.871000000001004,
+        "loadArtifactsContracts": 76.183583,
+        "createConnect": 27.420207999999548,
+        "roles": 2.7103750000005675,
+        "migrationsIncludingVerify": 318.76508399999875,
+        "sessionArtifactsStore": 18.650666000001365,
+        "body": 1063.3529589999998,
+        "cleanup": 17.79583300000013
+      },
+      "verifyMs": 65.39574999999968,
+      "verifyCalls": 1,
+      "totalMs": 1533.7584160000006
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive missing or tampered artifact bytes withhold replay without replacing stored evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.334667000000991,
+        "loadArtifactsContracts": 74.03499999999985,
+        "createConnect": 29.970166999999492,
+        "roles": 2.4246249999996508,
+        "migrationsIncludingVerify": 546.0312080000003,
+        "sessionArtifactsStore": 22.630083000000013,
+        "body": 744.4023749999997,
+        "cleanup": 32.97333400000025
+      },
+      "verifyMs": 133.87075000000004,
+      "verifyCalls": 1,
+      "totalMs": 1458.836709000001
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive indexed membership reads are player-scoped and read transactions remain read-only",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.486375000000407,
+        "loadArtifactsContracts": 83.07829200000015,
+        "createConnect": 46.82895799999824,
+        "roles": 3.155917000000045,
+        "migrationsIncludingVerify": 381.15008300000045,
+        "sessionArtifactsStore": 20.094958000001498,
+        "body": 527.630208999999,
+        "cleanup": 18.297624999999243
+      },
+      "verifyMs": 82.39754200000243,
+      "verifyCalls": 1,
+      "totalMs": 1088.729874999999
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive roles hold only their granted privileges and PUBLIC cannot execute predictive functions",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.511125000000902,
+        "loadArtifactsContracts": 71.60320899999715,
+        "createConnect": 29.25904100000116,
+        "roles": 2.435084000000643,
+        "migrationsIncludingVerify": 331.7747909999998,
+        "sessionArtifactsStore": 19.009624999998778,
+        "body": 470.6906250000029,
+        "cleanup": 15.100291999999172
+      },
+      "verifyMs": 69.61524999999892,
+      "verifyCalls": 1,
+      "totalMs": 946.4120000000003
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive trial, research-only, cross-profile and out-of-order rights cannot authorize publication or current use",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.314042000001791,
+        "loadArtifactsContracts": 82.71612499999901,
+        "createConnect": 28.99816700000156,
+        "roles": 2.7127909999981057,
+        "migrationsIncludingVerify": 333.3992920000019,
+        "sessionArtifactsStore": 17.328999999997905,
+        "body": 1267.7504169999993,
+        "cleanup": 21.23162500000035
+      },
+      "verifyMs": 65.69745800000237,
+      "verifyCalls": 1,
+      "totalMs": 1762.4616669999996
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive reconciliation decisions resolve only their exact provider heads and PostgreSQL refuses misstated evidence",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.9487909999988915,
+        "loadArtifactsContracts": 83.78691700000127,
+        "createConnect": 63.10758299999725,
+        "roles": 2.623042000002897,
+        "migrationsIncludingVerify": 337.0528329999979,
+        "sessionArtifactsStore": 18.236124999999447,
+        "body": 809.9805840000008,
+        "cleanup": 15.74841600000218
+      },
+      "verifyMs": 69.04354100000273,
+      "verifyCalls": 1,
+      "totalMs": 1337.491915999999
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive coverage-aware absences block later cutoffs only and PostgreSQL refuses unproven disappearance",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.300749999998516,
+        "loadArtifactsContracts": 85.20141700000022,
+        "createConnect": 34.70804099999805,
+        "roles": 3.0762500000018917,
+        "migrationsIncludingVerify": 536.0645839999997,
+        "sessionArtifactsStore": 15.342625000001135,
+        "body": 875.73675,
+        "cleanup": 15.633874999999534
+      },
+      "verifyMs": 79.89700000000084,
+      "verifyCalls": 1,
+      "totalMs": 1574.0667919999978
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive completion records must cite exactly the marker heads known at their decision time and state the policy outcome",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.437000000001717,
+        "loadArtifactsContracts": 65.99616699999751,
+        "createConnect": 26.65833300000304,
+        "roles": 2.562374999997701,
+        "migrationsIncludingVerify": 332.5515000000014,
+        "sessionArtifactsStore": 23.28295799999978,
+        "body": 824.4648339999985,
+        "cleanup": 12.155500000000757
+      },
+      "verifyMs": 72.33625000000029,
+      "verifyCalls": 1,
+      "totalMs": 1295.1117080000004
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive participation records and outcome labels enforce all nine binding checks in PostgreSQL",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 5.848291999998764,
+        "loadArtifactsContracts": 70.98141600000235,
+        "createConnect": 29.320166999998037,
+        "roles": 2.2838750000009895,
+        "migrationsIncludingVerify": 334.8398750000015,
+        "sessionArtifactsStore": 17.483666999996785,
+        "body": 648.663958000001,
+        "cleanup": 17.355374999999185
+      },
+      "verifyMs": 65.5777909999997,
+      "verifyCalls": 1,
+      "totalMs": 1126.7943330000016
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive feature runs are recorded after read-only computation with exact dependencies, digests and retention",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.322249999997439,
+        "loadArtifactsContracts": 76.67595799999981,
+        "createConnect": 27.667459000000235,
+        "roles": 2.7490410000027623,
+        "migrationsIncludingVerify": 362.28449999999793,
+        "sessionArtifactsStore": 20.185583999998926,
+        "body": 901.1550410000018,
+        "cleanup": 16.498374999999214
+      },
+      "verifyMs": 70.08412499999758,
+      "verifyCalls": 1,
+      "totalMs": 1415.545124999997
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive identity bridges refuse same-source ambiguity at write and keep corrections in their chain",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.326457999999548,
+        "loadArtifactsContracts": 74.76433399999951,
+        "createConnect": 26.324291000000812,
+        "roles": 2.5215420000022277,
+        "migrationsIncludingVerify": 319.9980419999956,
+        "sessionArtifactsStore": 19.283000000003085,
+        "body": 145.9696249999979,
+        "cleanup": 14.991957999998704
+      },
+      "verifyMs": 64.43745800000033,
+      "verifyCalls": 1,
+      "totalMs": 612.1863330000015
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive retention removes a source scope with chain descendants and derived rows, audits it and re-applies it to a restored backup",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.747208000000683,
+        "loadArtifactsContracts": 83.03679199999897,
+        "createConnect": 30.355583000004117,
+        "roles": 2.583958999995957,
+        "migrationsIncludingVerify": 344.81995800000004,
+        "sessionArtifactsStore": 19.763333000002604,
+        "body": 877.0447500000009,
+        "cleanup": 15.703833999999915
+      },
+      "verifyMs": 66.51783299999806,
+      "verifyCalls": 1,
+      "totalMs": 1382.065917
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive retention expires unpinned feature runs with digest-only audit and admits deletion only through the owner function",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 9.916207999995095,
+        "loadArtifactsContracts": 84.64708400000382,
+        "createConnect": 27.50054100000125,
+        "roles": 2.46233399999619,
+        "migrationsIncludingVerify": 346.76458300000377,
+        "sessionArtifactsStore": 20.37449999999808,
+        "body": 620.6269580000007,
+        "cleanup": 16.924958999996306
+      },
+      "verifyMs": 64.3605000000025,
+      "verifyCalls": 1,
+      "totalMs": 1129.2200000000012
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive snap evidence enforces counts and missingness and snap compatibility decisions cite the complete provider overlap",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.617208999996365,
+        "loadArtifactsContracts": 79.1337080000012,
+        "createConnect": 38.282624999999825,
+        "roles": 2.9482500000012806,
+        "migrationsIncludingVerify": 332.23154200000135,
+        "sessionArtifactsStore": 19.49437499999476,
+        "body": 656.187208000003,
+        "cleanup": 16.352958000003127
+      },
+      "verifyMs": 68.30987500000629,
+      "verifyCalls": 1,
+      "totalMs": 1153.2679169999974
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive blob cleanup and publication serialize on the blob digest in both orders and cleanup resumes after a failed removal",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.938707999994222,
+        "loadArtifactsContracts": 76.9946670000063,
+        "createConnect": 30.736207999994804,
+        "roles": 2.680791999999201,
+        "migrationsIncludingVerify": 351.6226250000036,
+        "sessionArtifactsStore": 20.408416999998735,
+        "body": 297.6936659999992,
+        "cleanup": 14.20666699999856
+      },
+      "verifyMs": 68.62641599999915,
+      "verifyCalls": 1,
+      "totalMs": 803.2874999999985
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive retention drains and resumes blob removals through an execute-only non-superuser login",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 8.900333000005048,
+        "loadArtifactsContracts": 87.41366699999344,
+        "createConnect": 27.617708000005223,
+        "roles": 2.470583999995142,
+        "migrationsIncludingVerify": 347.67204100000527,
+        "sessionArtifactsStore": 17.562749999997322,
+        "body": 1066.7171670000025,
+        "cleanup": 11.752042000000074
+      },
+      "verifyMs": 77.31833299999562,
+      "verifyCalls": 1,
+      "totalMs": 1570.1217079999988
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive rollback removes unpublished bytes and orphan recovery preserves committed blobs and journals",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.88604199999827,
+        "loadArtifactsContracts": 79.91812500000378,
+        "createConnect": 22.756415999996534,
+        "roles": 1.902709000001778,
+        "migrationsIncludingVerify": 307.9495410000018,
+        "sessionArtifactsStore": 18.07720899999549,
+        "body": 785.1985830000049,
+        "cleanup": 14.80491699999402
+      },
+      "verifyMs": 59.55066600000282,
+      "verifyCalls": 1,
+      "totalMs": 1237.5032920000012
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive blob reference identity preserves committed application/json and removes its unreferenced sibling",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.41345800000272,
+        "loadArtifactsContracts": 80.36754199999996,
+        "createConnect": 28.63641600000119,
+        "roles": 2.6617499999993015,
+        "migrationsIncludingVerify": 320.581041999998,
+        "sessionArtifactsStore": 16.631249999998545,
+        "body": 596.6179170000032,
+        "cleanup": 14.683040999996592
+      },
+      "verifyMs": 66.23050000000512,
+      "verifyCalls": 1,
+      "totalMs": 1066.6013749999984
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive blob reference identity preserves committed text/csv and removes its unreferenced sibling",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 6.553332999996201,
+        "loadArtifactsContracts": 73.26395800000319,
+        "createConnect": 28.94379199999821,
+        "roles": 2.4445829999967827,
+        "migrationsIncludingVerify": 322.92158400000335,
+        "sessionArtifactsStore": 20.548625000003085,
+        "body": 585.5619159999987,
+        "cleanup": 16.124666999996407
+      },
+      "verifyMs": 67.06841699999495,
+      "verifyCalls": 1,
+      "totalMs": 1056.372540999997
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive final labels bind exact raw identity and retaining their bridge removes later label versions",
+      "prefix": "latest",
+      "phases": {
+        "adminAndTemp": 7.120459000005212,
+        "loadArtifactsContracts": 75.23712499999965,
+        "createConnect": 28.755082999996375,
+        "roles": 2.3135830000028363,
+        "migrationsIncludingVerify": 322.6768749999974,
+        "sessionArtifactsStore": 15.045667000005778,
+        "body": 646.8919169999936,
+        "cleanup": 14.923249999999825
+      },
+      "verifyMs": 65.76908299999923,
+      "verifyCalls": 1,
+      "totalMs": 1112.9922090000036
+    }
+  ],
+  "finalRepeatRuns": [
+    {
+      "nodeRequiredCases": 75,
+      "leaseRequiredCases": 13,
+      "readinessRequiredCases": 4,
+      "predictiveRequiredCases": 111,
+      "corpusRequiredCases": 8,
+      "result": "verified",
+      "seconds": 59.54133625
+    },
+    {
+      "nodeRequiredCases": 75,
+      "leaseRequiredCases": 13,
+      "readinessRequiredCases": 4,
+      "predictiveRequiredCases": 111,
+      "corpusRequiredCases": 8,
+      "result": "verified",
+      "seconds": 58.354755916
+    },
+    {
+      "nodeRequiredCases": 75,
+      "leaseRequiredCases": 13,
+      "readinessRequiredCases": 4,
+      "predictiveRequiredCases": 111,
+      "corpusRequiredCases": 8,
+      "result": "verified",
+      "seconds": 58.920721791
+    }
+  ],
+  "namedVitestCases": [
+    {
+      "file": "bootstrap.test.ts",
+      "name": "bootstraps the full application schema twice on PostgreSQL 18",
+      "status": "passed"
+    },
+    {
+      "file": "corpus.test.ts",
+      "name": "corpus schema stores only bounded metadata and keeps owner, API and derived statuses separate",
+      "status": "passed"
+    },
+    {
+      "file": "corpus.test.ts",
+      "name": "corpus owner events, imports and gate registrations are append-only while API rows are replace-or-delete",
+      "status": "passed"
+    },
+    {
+      "file": "corpus.test.ts",
+      "name": "corpus importer role has only local projection privileges and PUBLIC/runtime roles have none",
+      "status": "passed"
+    },
+    {
+      "file": "corpusImport.test.ts",
+      "name": "corpus importer publishes one atomic snapshot, appends only owner tails and reruns as a no-op",
+      "status": "passed"
+    },
+    {
+      "file": "corpusImport.test.ts",
+      "name": "corpus importer verifies the connected local role before loading any private source",
+      "status": "passed"
+    },
+    {
+      "file": "corpusImport.test.ts",
+      "name": "corpus importer fails on lock contention and rolls back a later publication error without partial rows",
+      "status": "passed"
+    },
+    {
+      "file": "corpusImport.test.ts",
+      "name": "corpus readiness reads one consistent local projection and keeps coverage dimensions separate",
+      "status": "passed"
+    },
+    {
+      "file": "corpusImport.test.ts",
+      "name": "corpus API expiry removes complete stale snapshots while preserving permanent owner history",
+      "status": "passed"
+    },
+    {
+      "file": "lease.test.ts",
+      "name": "25 independent clients acquire exactly one cold-row lease",
+      "status": "passed"
+    },
+    {
+      "file": "lease.test.ts",
+      "name": "25 independent clients acquire exactly one stale-row lease",
+      "status": "passed"
+    },
+    {
+      "file": "lease.test.ts",
+      "name": "observes all 24 contenders blocked behind a held cold-row acquisition transaction",
+      "status": "passed"
+    },
+    {
+      "file": "lease.test.ts",
+      "name": "observes all 24 contenders blocked behind a held stale-row acquisition transaction",
+      "status": "passed"
+    },
+    {
+      "file": "lease.test.ts",
+      "name": "renewing an expired lease extends it and prevents competing takeover",
+      "status": "passed"
+    },
+    {
+      "file": "lease.test.ts",
+      "name": "25 independent clients produce exactly one takeover of a forced expired lease",
+      "status": "passed"
+    },
+    {
+      "file": "lease.test.ts",
+      "name": "characterization: an expired owner may renew before any takeover",
+      "status": "passed"
+    },
+    {
+      "file": "lease.test.ts",
+      "name": "characterization: an expired owner may publish before any takeover",
+      "status": "passed"
+    },
+    {
+      "file": "lease.test.ts",
+      "name": "a replaced owner cannot renew, write, or release the new owner's lease",
+      "status": "passed"
+    },
+    {
+      "file": "lease.test.ts",
+      "name": "an expired owner's write committed first makes all blocked takeovers fail",
+      "status": "passed"
+    },
+    {
+      "file": "lease.test.ts",
+      "name": "a takeover committed first makes the blocked former-owner write lose its lease",
+      "status": "passed"
+    },
+    {
+      "file": "orchestrator.test.ts",
+      "name": "25 database-backed consumers wait for one fetch and receive the same persisted payload",
+      "status": "passed"
+    },
+    {
+      "file": "readiness.test.ts",
+      "name": "database readiness reports missing ledger without creating one on authentic current schema",
+      "status": "passed"
+    },
+    {
+      "file": "readiness.test.ts",
+      "name": "database readiness accepts migrated history and valid ahead history while preserving rows",
+      "status": "passed"
+    },
+    {
+      "file": "readiness.test.ts",
+      "name": "database readiness refuses behind, corrupt and missing-table states without repair",
+      "status": "passed"
+    },
+    {
+      "file": "readiness.test.ts",
+      "name": "database readiness reads are bounded, enforced read-only and reject view substitutes",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive PostgreSQL seeds exactly the application team identities, refuses others and publishes Rams replay inputs",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive PostgreSQL A/B replay preserves the earlier bundle and uses later corrections",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive scoped reads retain corrections that move evidence out of the indexed scope",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive persistence retains former-team membership gaps and ignores unrelated schedule dependencies",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive retries and unchanged recaptures preserve immutable revisions and their earliest provenance",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive publication is invisible until commit and concurrent retries publish one batch",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive failed and partial publication quarantine diagnostics without exposing partial inputs",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive publication rolls back conflicts and invalid correction lineage while retaining the earlier replay",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive immutable rows, typed evidence and source-chain keys are enforced by PostgreSQL",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive PostgreSQL enforces rights knowledge time, harness-only synthetic evidence and per-provider chains",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive missing or tampered artifact bytes withhold replay without replacing stored evidence",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive indexed membership reads are player-scoped and read transactions remain read-only",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive archive restoration recreates the same cutoff bundles in fresh scratch databases",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive v2 upgrade preserves application rows and no-op migrations preserve the new history",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive evidence reset refuses databases recording the removed synthetic migrations without repair",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive roles hold only their granted privileges and PUBLIC cannot execute predictive functions",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive trial, research-only, cross-profile and out-of-order rights cannot authorize publication or current use",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive reconciliation decisions resolve only their exact provider heads and PostgreSQL refuses misstated evidence",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive coverage-aware absences block later cutoffs only and PostgreSQL refuses unproven disappearance",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive completion records must cite exactly the marker heads known at their decision time and state the policy outcome",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive participation records and outcome labels enforce all nine binding checks in PostgreSQL",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive feature runs are recorded after read-only computation with exact dependencies, digests and retention",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive identity bridges refuse same-source ambiguity at write and keep corrections in their chain",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive retention removes a source scope with chain descendants and derived rows, audits it and re-applies it to a restored backup",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive retention expires unpinned feature runs with digest-only audit and admits deletion only through the owner function",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive snap evidence enforces counts and missingness and snap compatibility decisions cite the complete provider overlap",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive blob cleanup and publication serialize on the blob digest in both orders and cleanup resumes after a failed removal",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive retention drains and resumes blob removals through an execute-only non-superuser login",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive rollback removes unpublished bytes and orphan recovery preserves committed blobs and journals",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive blob reference identity preserves committed application/json and removes its unreferenced sibling",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive blob reference identity preserves committed text/csv and removes its unreferenced sibling",
+      "status": "passed"
+    },
+    {
+      "file": "predictive.test.ts",
+      "name": "predictive final labels bind exact raw identity and retaining their bridge removes later label versions",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV QB consumers preserve earlier cutoffs while recaptures withhold current decisions and labels",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV source reconciliation evaluates every bound provider and deterministic agreement also supports team facts",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV unavailable retention re-applies pre-v7 legacy events with identical counts and digests after restoration",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV source decisions persist unavailable plans and recover without stale selections while missing facts remain insufficient",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV source decisions persist exact witnesses at database time with immutable history and idempotent retries",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV source decision recaptures invalidate current records without changing earlier replay or numerical revisions",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV QB consumers preserve earlier unavailable replay after a later unrelated source deletion",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV SQL witnesses match verified player and team reads, missing scope and equivalent rights renewal",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV canonical fact reads expand raw lineages before filtering and preserve read-only A to B to A provenance",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV source decision native retention deletes the entire affected lineage without reviving an earlier positive record",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV QB migration upgrades v9 preserving binding and decision history and is idempotent",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV source migration upgrades released v3 without changing existing evidence or its recorded checksum",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV source decision migration upgrades v8 preserving recorded bindings and witnesses and reruns as a no-op",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV SQL current witness checks invalidate same-revision recaptures and refuse unchanged empty evidence",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV binding schedule reconciliation pins only a current exact selection and a new conflicting head can be recorded unavailable",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV SQL witness checker rejects rehashed omissions, fabricated heads and forged unavailable reasons",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV binding retention removes entire cited raw lineages through execute-only access and preserves unrelated evidence",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV unavailable bindings verify every ambiguous capture file and allow evidenced conflict recovery",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV canonical fact reads verify raw bytes even outside the requested destination and fail instead of truncating discovery",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV binding migration upgrades v5 without changing released history and reruns are no-ops",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV binding SQL rejects rehashed payload, row, dependency and raw identity forgeries and malformed plans",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV normalization scoped reads retain schedule alias conflicts outside the mapped canonical game",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV capture-less unavailable bindings keep source rights and whole-lineage retention through execute-only ownership",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV binding canonical guard refuses generated JSON under real source profiles and immutable bindings cannot be rewritten",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV source decision retention conservatively removes capture-less scopes inside time-limited source deletions",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV normalization refuses tampered raw files before proposing a canonical payload",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike0.test.ts",
+      "name": "CSV source replay refuses tampered raw files and forged selected-row projections",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV QB consumers enforce use-specific rights before files for source context and native evidence",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV QB final labels refuse pre-window captures and unresolved participation without invented zeros",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV QB SQL refuses rehashed source manifests forged values identity and completion",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV source decision retention removes cited source history and descendants with identical restored-backup audit",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV source decision replay refuses corrupted source and native bytes, association omissions and SQL parity mismatches",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV canonical fact reads keep player and team identities distinct and do not backdate canonical recording",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV unavailable bindings supersede usable context and recover without inventing numeric corrections or changing earlier cutoffs",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV canonical fact reads check source and context rights before any provider file is opened",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV canonical fact reads retain missing-row uncertainty and reappearance binds unchanged values to fresh provenance",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV source decision concurrent recorders commit exactly one proposal for the expected head",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV SQL witnesses expand unrecorded reroutes and unresolved identity before canonical filtering",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV consumer witnesses bind unchanged recaptures and post-window evidence through a replay-only login",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV SQL witness migration upgrades v7 preserving bindings and prior migration history",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV bindings withhold disappearing, refused and conflicting raw rows and allow evidenced reappearance",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV canonical fact reads preserve unresolved routing when no historical canonical destination exists",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV binding concurrent recorders serialize and exactly one expected-head proposal commits",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV normalization plans verify raw rows and exact bridges in a read-only snapshot through a replay-only login",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "ordinary ingestion clock migration upgrades v10 without rewriting captures and reruns as a no-op",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV normalization scoped reads include reverse identity conflicts without importing unrelated correction chains",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV binding team statistics persist independently and cutoff-only changes do not mark a binding stale",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV source persistence stamps import time, is idempotent and preserves A/B cutoff replay",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "ordinary evidence stamps database ingestion time for application and direct SQL writers without backdating cutoff visibility",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV source replay exposes missing, refused and ambiguous rows without inventing zero",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike1.test.ts",
+      "name": "CSV source ingest and replay work without superuser and retention removes rows and resumes files with execute-only access",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV source participation combines native claims with positive usage and never infers absence from zero or blank statistics",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV QB consumers record explicit source manifests and final labels without ordinary stats observations",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV QB consumers operate through non-superuser execute-only recorders and replay refuses damaged bytes or links",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV QB consumer retention removes features labels and complete label lineage through the retention-only login",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV source decision current source, historical context and native rights are checked before any file opens",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV unavailable migration upgrades v6 preserving v1 positive and withheld plans, exact retries and recorded history",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV bindings preserve numeric corrections, unchanged recaptures and player A to B to A canonical chains",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV binding bridge retention removes ancestors and descendants and identical restored evidence re-applies its audit",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV source decision recorder and replay enforce actual non-superuser privileges and database-clock access",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV source decision SQL recomputes rehashed outcomes, exact inputs, witness scope, selection and mode",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV source retention re-applies identical row deletion after re-importing retained files into a fresh database",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV binding stale source or bridge evidence withholds replay and SQL refuses stale heads and proposals",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV source SQL enforces complete row ordinals, strict projection shape and the canonical binding boundary",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV canonical fact reads discover an unrecorded destination and withhold both routes without stale numeric payloads",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV binding recorder uses database time and execute-only writes while replay remains read-only research staging",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV binding unrecorded bridge conflicts withhold the current raw contribution without poisoning earlier cutoffs",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV consumer checks withhold stale routing and revoked access instead of reviving earlier selected values",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV SQL witness mismatch fails closed and restores the read-only replay transaction",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV SQL witness access uses database-clock rights and denies private kernels and unbounded requests",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV binding hydration refuses altered associations and source bytes and current rights revocation blocks reads and retries",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV unavailable planning checks context rights before file hydration and revocation blocks saved conflicts and retries",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV source migration upgrades released v4 preserving creator corpus evidence and recorded history",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV source publication rolls back files and refuses run conflicts and revoked current rights",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "ordinary synthetic capture times remain harness-only and cannot bypass production ingestion clocks",
+      "status": "passed"
+    },
+    {
+      "file": "sourceClaims.spike2.test.ts",
+      "name": "CSV source replay keeps equal-time conflicts ambiguous and late older imports cannot replace a newer snapshot",
+      "status": "passed"
+    }
+  ],
+  "limitations": [
+    "No optimized CI runs; local elapsed times do not establish CI acceptance.",
+    "Prototype templates are per-file/per-prefix, not a run-scoped incremental template builder; final setup work budget is not proven.",
+    "Prototype does not provide production-grade interruption/failure cleanup.",
+    "All named validators remain unchanged; case body hashes are separately recorded."
+  ]
+}
