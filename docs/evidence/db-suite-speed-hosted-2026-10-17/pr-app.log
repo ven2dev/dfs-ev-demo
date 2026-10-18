@@ -1,0 +1,421 @@
+App checks	Set up job	﻿2026-10-18T03:18:44.3208199Z Current runner version: '2.337.0'
+App checks	Set up job	2026-10-18T03:18:44.3229726Z ##[group]Runner Image Provisioner
+App checks	Set up job	2026-10-18T03:18:44.3230453Z Hosted Compute Agent
+App checks	Set up job	2026-10-18T03:18:44.3231008Z Version: 20261012.601
+App checks	Set up job	2026-10-18T03:18:44.3231592Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+App checks	Set up job	2026-10-18T03:18:44.3232226Z Build Date: 2026-10-12T17:48:21Z
+App checks	Set up job	2026-10-18T03:18:44.3232810Z Worker ID: {03d3ff00-d2da-4e8c-afc4-6cb8f1bd78ce}
+App checks	Set up job	2026-10-18T03:18:44.3233400Z Region: westus3
+App checks	Set up job	2026-10-18T03:18:44.3233895Z Cloud: Azure
+App checks	Set up job	2026-10-18T03:18:44.3234366Z ##[endgroup]
+App checks	Set up job	2026-10-18T03:18:44.3235417Z ##[group]Operating System
+App checks	Set up job	2026-10-18T03:18:44.3236003Z Ubuntu
+App checks	Set up job	2026-10-18T03:18:44.3236447Z 24.04.5
+App checks	Set up job	2026-10-18T03:18:44.3236899Z LTS
+App checks	Set up job	2026-10-18T03:18:44.3237403Z ##[endgroup]
+App checks	Set up job	2026-10-18T03:18:44.3238264Z ##[group]Runner Image
+App checks	Set up job	2026-10-18T03:18:44.3238840Z Image: ubuntu-24.04
+App checks	Set up job	2026-10-18T03:18:44.3239319Z Version: 20261012.334.1
+App checks	Set up job	2026-10-18T03:18:44.3240214Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261012.334/images/ubuntu/Ubuntu2404-Readme.md
+App checks	Set up job	2026-10-18T03:18:44.3241725Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261012.334
+App checks	Set up job	2026-10-18T03:18:44.3242582Z ##[endgroup]
+App checks	Set up job	2026-10-18T03:18:44.3243478Z ##[group]GITHUB_TOKEN Permissions
+App checks	Set up job	2026-10-18T03:18:44.3245122Z Contents: read
+App checks	Set up job	2026-10-18T03:18:44.3245622Z Metadata: read
+App checks	Set up job	2026-10-18T03:18:44.3246143Z ##[endgroup]
+App checks	Set up job	2026-10-18T03:18:44.3247995Z Secret source: Actions
+App checks	Set up job	2026-10-18T03:18:44.3248855Z Cache mode: write
+App checks	Set up job	2026-10-18T03:18:44.3249474Z Prepare workflow directory
+App checks	Set up job	2026-10-18T03:18:44.3524149Z Prepare all required actions
+App checks	Set up job	2026-10-18T03:18:44.3580296Z Getting action download info
+App checks	Set up job	2026-10-18T03:18:44.6649284Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+App checks	Set up job	2026-10-18T03:18:45.0548742Z Download action repository 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1' (SHA:949feb2413d6458794dcd2491c4babbbce0c15c1)
+App checks	Set up job	2026-10-18T03:18:45.8758390Z Download action repository 'actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6' (SHA:de7274f081f381c8f8158605e0321c36c376e2e6)
+App checks	Set up job	2026-10-18T03:18:46.9919710Z Download action repository 'actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9' (SHA:55cc8345863c7cc4c66a329aec7e433d2d1c52a9)
+App checks	Set up job	2026-10-18T03:18:47.2288059Z Complete job name: App checks
+App checks	Check out repository	﻿2026-10-18T03:18:47.2952697Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+App checks	Check out repository	2026-10-18T03:18:47.2953858Z with:
+App checks	Check out repository	2026-10-18T03:18:47.2954261Z   fetch-depth: 0
+App checks	Check out repository	2026-10-18T03:18:47.2954825Z   persist-credentials: false
+App checks	Check out repository	2026-10-18T03:18:47.2955309Z   repository: ven2dev/dfs-ev-demo
+App checks	Check out repository	2026-10-18T03:18:47.2959947Z   token: ***
+App checks	Check out repository	2026-10-18T03:18:47.2960417Z   ssh-strict: true
+App checks	Check out repository	2026-10-18T03:18:47.2960774Z   ssh-user: git
+App checks	Check out repository	2026-10-18T03:18:47.2961057Z   clean: true
+App checks	Check out repository	2026-10-18T03:18:47.2961420Z   sparse-checkout-cone-mode: true
+App checks	Check out repository	2026-10-18T03:18:47.2961768Z   fetch-tags: false
+App checks	Check out repository	2026-10-18T03:18:47.2962101Z   show-progress: true
+App checks	Check out repository	2026-10-18T03:18:47.3027037Z   lfs: false
+App checks	Check out repository	2026-10-18T03:18:47.3027293Z   submodules: false
+App checks	Check out repository	2026-10-18T03:18:47.3027715Z   set-safe-directory: true
+App checks	Check out repository	2026-10-18T03:18:47.3027969Z   allow-unsafe-pr-checkout: false
+App checks	Check out repository	2026-10-18T03:18:47.3030367Z ##[endgroup]
+App checks	Check out repository	2026-10-18T03:18:47.3927268Z Syncing repository: ven2dev/dfs-ev-demo
+App checks	Check out repository	2026-10-18T03:18:47.3929404Z ##[group]Getting Git version info
+App checks	Check out repository	2026-10-18T03:18:47.3930090Z Working directory is '/home/runner/work/dfs-ev-demo/dfs-ev-demo'
+App checks	Check out repository	2026-10-18T03:18:47.3930922Z [command]/usr/bin/git version
+App checks	Check out repository	2026-10-18T03:18:47.4384512Z git version 2.55.0
+App checks	Check out repository	2026-10-18T03:18:47.4401772Z ##[endgroup]
+App checks	Check out repository	2026-10-18T03:18:47.4418634Z Temporarily overriding HOME='/home/runner/work/_temp/cada552b-2fb6-4e45-8f86-efb0a2a4d2fa' before making global git config changes
+App checks	Check out repository	2026-10-18T03:18:47.4419884Z Adding repository directory to the temporary git global config as a safe directory
+App checks	Check out repository	2026-10-18T03:18:47.4424511Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dfs-ev-demo/dfs-ev-demo
+App checks	Check out repository	2026-10-18T03:18:47.4579714Z Deleting the contents of '/home/runner/work/dfs-ev-demo/dfs-ev-demo'
+App checks	Check out repository	2026-10-18T03:18:47.4602430Z ##[group]Determining repository object format
+App checks	Check out repository	2026-10-18T03:18:47.4603744Z ##[endgroup]
+App checks	Check out repository	2026-10-18T03:18:47.4604220Z ##[group]Initializing the repository
+App checks	Check out repository	2026-10-18T03:18:47.4604756Z [command]/usr/bin/git init /home/runner/work/dfs-ev-demo/dfs-ev-demo
+App checks	Check out repository	2026-10-18T03:18:47.4705425Z hint: Using 'master' as the name for the initial branch. This default branch name
+App checks	Check out repository	2026-10-18T03:18:47.4709132Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+App checks	Check out repository	2026-10-18T03:18:47.4709844Z hint: to use in all of your new repositories, which will suppress this warning,
+App checks	Check out repository	2026-10-18T03:18:47.4710397Z hint: call:
+App checks	Check out repository	2026-10-18T03:18:47.4710647Z hint:
+App checks	Check out repository	2026-10-18T03:18:47.4711045Z hint: 	git config --global init.defaultBranch <name>
+App checks	Check out repository	2026-10-18T03:18:47.4711437Z hint:
+App checks	Check out repository	2026-10-18T03:18:47.4711817Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+App checks	Check out repository	2026-10-18T03:18:47.4712453Z hint: 'development'. The just-created branch can be renamed via this command:
+App checks	Check out repository	2026-10-18T03:18:47.4712962Z hint:
+App checks	Check out repository	2026-10-18T03:18:47.4713212Z hint: 	git branch -m <name>
+App checks	Check out repository	2026-10-18T03:18:47.4713507Z hint:
+App checks	Check out repository	2026-10-18T03:18:47.4713937Z hint: Disable this message with "git config set advice.defaultBranchName false"
+App checks	Check out repository	2026-10-18T03:18:47.4714704Z Initialized empty Git repository in /home/runner/work/dfs-ev-demo/dfs-ev-demo/.git/
+App checks	Check out repository	2026-10-18T03:18:47.4718910Z [command]/usr/bin/git remote add origin https://github.com/ven2dev/dfs-ev-demo
+App checks	Check out repository	2026-10-18T03:18:47.4771447Z ##[endgroup]
+App checks	Check out repository	2026-10-18T03:18:47.4771993Z ##[group]Disabling automatic garbage collection
+App checks	Check out repository	2026-10-18T03:18:47.4775037Z [command]/usr/bin/git config --local gc.auto 0
+App checks	Check out repository	2026-10-18T03:18:47.4808764Z ##[endgroup]
+App checks	Check out repository	2026-10-18T03:18:47.4809627Z ##[group]Setting up auth
+App checks	Check out repository	2026-10-18T03:18:47.4810215Z Removing SSH command configuration
+App checks	Check out repository	2026-10-18T03:18:47.4814393Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+App checks	Check out repository	2026-10-18T03:18:47.4846752Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+App checks	Check out repository	2026-10-18T03:18:47.5154087Z Removing HTTP extra header
+App checks	Check out repository	2026-10-18T03:18:47.5158990Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+App checks	Check out repository	2026-10-18T03:18:47.5190400Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+App checks	Check out repository	2026-10-18T03:18:47.5386897Z Removing includeIf entries pointing to credentials config files
+App checks	Check out repository	2026-10-18T03:18:47.5387838Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+App checks	Check out repository	2026-10-18T03:18:47.5426859Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+App checks	Check out repository	2026-10-18T03:18:47.5635143Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-d0ef84c5-6e58-475c-82c1-2979f9f949d4.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+App checks	Check out repository	2026-10-18T03:18:47.5672196Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git.path /home/runner/work/_temp/git-credentials-d0ef84c5-6e58-475c-82c1-2979f9f949d4.config
+App checks	Check out repository	2026-10-18T03:18:47.5703610Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-d0ef84c5-6e58-475c-82c1-2979f9f949d4.config
+App checks	Check out repository	2026-10-18T03:18:47.6641471Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-d0ef84c5-6e58-475c-82c1-2979f9f949d4.config
+App checks	Check out repository	2026-10-18T03:18:47.6678349Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-d0ef84c5-6e58-475c-82c1-2979f9f949d4.config
+App checks	Check out repository	2026-10-18T03:18:47.6708095Z ##[endgroup]
+App checks	Check out repository	2026-10-18T03:18:47.6708520Z ##[group]Fetching the repository
+App checks	Check out repository	2026-10-18T03:18:47.6714216Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/* +c1fc1aacf1595a42ba3f9401d2a27a1ab67b707c:refs/remotes/pull/162/merge
+App checks	Check out repository	2026-10-18T03:18:48.9734445Z From https://github.com/ven2dev/dfs-ev-demo
+App checks	Check out repository	2026-10-18T03:18:48.9735115Z  * [new branch]      codex/dfs-153-hosted-spike               -> origin/codex/dfs-153-hosted-spike
+App checks	Check out repository	2026-10-18T03:18:48.9735739Z  * [new branch]      dependabot/npm_and_yarn/firebase-client-e9c377b87e -> origin/dependabot/npm_and_yarn/firebase-client-e9c377b87e
+App checks	Check out repository	2026-10-18T03:18:48.9736466Z  * [new branch]      dependabot/npm_and_yarn/firebase-tooling-2c738dcca1 -> origin/dependabot/npm_and_yarn/firebase-tooling-2c738dcca1
+App checks	Check out repository	2026-10-18T03:18:48.9737122Z  * [new branch]      dependabot/npm_and_yarn/next-3ff98d82af  -> origin/dependabot/npm_and_yarn/next-3ff98d82af
+App checks	Check out repository	2026-10-18T03:18:48.9738086Z  * [new branch]      feature/dfsEV-10-env-config-scaffolding  -> origin/feature/dfsEV-10-env-config-scaffolding
+App checks	Check out repository	2026-10-18T03:18:48.9738961Z  * [new branch]      feature/dfsEV-106-real-qb-slice          -> origin/feature/dfsEV-106-real-qb-slice
+App checks	Check out repository	2026-10-18T03:18:48.9739934Z  * [new branch]      feature/dfsEV-118-training-reads-retention -> origin/feature/dfsEV-118-training-reads-retention
+App checks	Check out repository	2026-10-18T03:18:48.9740850Z  * [new branch]      feature/dfsEV-140-ci-db-gating           -> origin/feature/dfsEV-140-ci-db-gating
+App checks	Check out repository	2026-10-18T03:18:48.9741675Z  * [new branch]      feature/dfsEV-140-conditional-ci         -> origin/feature/dfsEV-140-conditional-ci
+App checks	Check out repository	2026-10-18T03:18:48.9742531Z  * [new branch]      feature/dfsEV-16-mvp-vertical-slice      -> origin/feature/dfsEV-16-mvp-vertical-slice
+App checks	Check out repository	2026-10-18T03:18:48.9743225Z  * [new branch]      feature/dfsEV-18-optimistic-watch-rollback -> origin/feature/dfsEV-18-optimistic-watch-rollback
+App checks	Check out repository	2026-10-18T03:18:48.9743813Z  * [new branch]      feature/dfsEV-20-firebase-google-auth    -> origin/feature/dfsEV-20-firebase-google-auth
+App checks	Check out repository	2026-10-18T03:18:48.9744513Z  * [new branch]      feature/dfsEV-20-lazy-firebase-init      -> origin/feature/dfsEV-20-lazy-firebase-init
+App checks	Check out repository	2026-10-18T03:18:48.9745298Z  * [new branch]      feature/dfsEV-21-per-user-data-model     -> origin/feature/dfsEV-21-per-user-data-model
+App checks	Check out repository	2026-10-18T03:18:48.9746247Z  * [new branch]      feature/dfsEV-22-account-settings        -> origin/feature/dfsEV-22-account-settings
+App checks	Check out repository	2026-10-18T03:18:48.9747422Z  * [new branch]      feature/dfsEV-26-historical-player-stats -> origin/feature/dfsEV-26-historical-player-stats
+App checks	Check out repository	2026-10-18T03:18:48.9748617Z  * [new branch]      feature/dfsEV-27-full-slate-ingestion    -> origin/feature/dfsEV-27-full-slate-ingestion
+App checks	Check out repository	2026-10-18T03:18:48.9749352Z  * [new branch]      feature/dfsEV-28-shared-odds-weather-cache -> origin/feature/dfsEV-28-shared-odds-weather-cache
+App checks	Check out repository	2026-10-18T03:18:48.9749912Z  * [new branch]      feature/dfsEV-29-vitest-testing          -> origin/feature/dfsEV-29-vitest-testing
+App checks	Check out repository	2026-10-18T03:18:48.9750462Z  * [new branch]      feature/dfsEV-32-auto-player-crosswalk   -> origin/feature/dfsEV-32-auto-player-crosswalk
+App checks	Check out repository	2026-10-18T03:18:48.9751047Z  * [new branch]      feature/dfsEV-34-creator-submission-form -> origin/feature/dfsEV-34-creator-submission-form
+App checks	Check out repository	2026-10-18T03:18:48.9751624Z  * [new branch]      feature/dfsEV-39-consensus-devig         -> origin/feature/dfsEV-39-consensus-devig
+App checks	Check out repository	2026-10-18T03:18:48.9752145Z  * [new branch]      feature/dfsEV-41-odds-snapshots          -> origin/feature/dfsEV-41-odds-snapshots
+App checks	Check out repository	2026-10-18T03:18:48.9752689Z  * [new branch]      feature/dfsEV-5-scaffold-nextjs-tailwind -> origin/feature/dfsEV-5-scaffold-nextjs-tailwind
+App checks	Check out repository	2026-10-18T03:18:48.9753221Z  * [new branch]      feature/dfsEV-6-zustand-store            -> origin/feature/dfsEV-6-zustand-store
+App checks	Check out repository	2026-10-18T03:18:48.9753714Z  * [new branch]      feature/dfsEV-7-core-type-defs           -> origin/feature/dfsEV-7-core-type-defs
+App checks	Check out repository	2026-10-18T03:18:48.9754337Z  * [new branch]      feature/dfsEV-8-seed-mock-data           -> origin/feature/dfsEV-8-seed-mock-data
+App checks	Check out repository	2026-10-18T03:18:48.9755493Z  * [new branch]      fix/dfsEV-118-foundation-review          -> origin/fix/dfsEV-118-foundation-review
+App checks	Check out repository	2026-10-18T03:18:48.9756796Z  * [new branch]      main                                     -> origin/main
+App checks	Check out repository	2026-10-18T03:18:48.9757716Z  * [new branch]      spike/dfsEV-127-verify-on-write          -> origin/spike/dfsEV-127-verify-on-write
+App checks	Check out repository	2026-10-18T03:18:48.9758482Z  * [new ref]         c1fc1aacf1595a42ba3f9401d2a27a1ab67b707c -> pull/162/merge
+App checks	Check out repository	2026-10-18T03:18:48.9760142Z ##[endgroup]
+App checks	Check out repository	2026-10-18T03:18:48.9760657Z ##[group]Determining the checkout info
+App checks	Check out repository	2026-10-18T03:18:48.9761183Z ##[endgroup]
+App checks	Check out repository	2026-10-18T03:18:48.9761489Z [command]/usr/bin/git sparse-checkout disable
+App checks	Check out repository	2026-10-18T03:18:48.9801164Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+App checks	Check out repository	2026-10-18T03:18:48.9833402Z ##[group]Checking out the ref
+App checks	Check out repository	2026-10-18T03:18:48.9838461Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/162/merge
+App checks	Check out repository	2026-10-18T03:18:49.0257811Z Note: switching to 'refs/remotes/pull/162/merge'.
+App checks	Check out repository	2026-10-18T03:18:49.0258147Z 
+App checks	Check out repository	2026-10-18T03:18:49.0258328Z You are in 'detached HEAD' state. You can look around, make experimental
+App checks	Check out repository	2026-10-18T03:18:49.0258732Z changes and commit them, and you can discard any commits you make in this
+App checks	Check out repository	2026-10-18T03:18:49.0259130Z state without impacting any branches by switching back to a branch.
+App checks	Check out repository	2026-10-18T03:18:49.0259375Z 
+App checks	Check out repository	2026-10-18T03:18:49.0259534Z If you want to create a new branch to retain commits you create, you may
+App checks	Check out repository	2026-10-18T03:18:49.0259889Z do so (now or later) by using -c with the switch command. Example:
+App checks	Check out repository	2026-10-18T03:18:49.0260096Z 
+App checks	Check out repository	2026-10-18T03:18:49.0260191Z   git switch -c <new-branch-name>
+App checks	Check out repository	2026-10-18T03:18:49.0260343Z 
+App checks	Check out repository	2026-10-18T03:18:49.0260434Z Or undo this operation with:
+App checks	Check out repository	2026-10-18T03:18:49.0260574Z 
+App checks	Check out repository	2026-10-18T03:18:49.0260647Z   git switch -
+App checks	Check out repository	2026-10-18T03:18:49.0260759Z 
+App checks	Check out repository	2026-10-18T03:18:49.0260947Z Turn off this advice by setting config variable advice.detachedHead to false
+App checks	Check out repository	2026-10-18T03:18:49.0261217Z 
+App checks	Check out repository	2026-10-18T03:18:49.0261502Z HEAD is now at c1fc1aa Merge 36968fa9cbed9a59210d5b50c0f2aba5f362600a into 4e13c0f9770959096acd89ce6db284828b015cac
+App checks	Check out repository	2026-10-18T03:18:49.0273186Z ##[endgroup]
+App checks	Check out repository	2026-10-18T03:18:49.0318764Z [command]/usr/bin/git log -1 --format=%H
+App checks	Check out repository	2026-10-18T03:18:49.0344290Z c1fc1aacf1595a42ba3f9401d2a27a1ab67b707c
+App checks	Check out repository	2026-10-18T03:18:49.0355786Z ##[group]Removing auth
+App checks	Check out repository	2026-10-18T03:18:49.0356185Z Removing SSH command configuration
+App checks	Check out repository	2026-10-18T03:18:49.0356663Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+App checks	Check out repository	2026-10-18T03:18:49.0389109Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+App checks	Check out repository	2026-10-18T03:18:49.0585114Z Removing HTTP extra header
+App checks	Check out repository	2026-10-18T03:18:49.0589072Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+App checks	Check out repository	2026-10-18T03:18:49.0623162Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+App checks	Check out repository	2026-10-18T03:18:49.0822478Z Removing includeIf entries pointing to credentials config files
+App checks	Check out repository	2026-10-18T03:18:49.0825320Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+App checks	Check out repository	2026-10-18T03:18:49.0852449Z includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git.path
+App checks	Check out repository	2026-10-18T03:18:49.0852998Z includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git/worktrees/*.path
+App checks	Check out repository	2026-10-18T03:18:49.0853372Z includeif.gitdir:/github/workspace/.git.path
+App checks	Check out repository	2026-10-18T03:18:49.0853985Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+App checks	Check out repository	2026-10-18T03:18:49.0859817Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git.path
+App checks	Check out repository	2026-10-18T03:18:49.0882522Z /home/runner/work/_temp/git-credentials-d0ef84c5-6e58-475c-82c1-2979f9f949d4.config
+App checks	Check out repository	2026-10-18T03:18:49.0890487Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-d0ef84c5\-6e58\-475c\-82c1\-2979f9f949d4\.config
+App checks	Check out repository	2026-10-18T03:18:49.0922340Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git/worktrees/*.path
+App checks	Check out repository	2026-10-18T03:18:49.0945797Z /home/runner/work/_temp/git-credentials-d0ef84c5-6e58-475c-82c1-2979f9f949d4.config
+App checks	Check out repository	2026-10-18T03:18:49.0958260Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-d0ef84c5\-6e58\-475c\-82c1\-2979f9f949d4\.config
+App checks	Check out repository	2026-10-18T03:18:49.0989059Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+App checks	Check out repository	2026-10-18T03:18:49.1011024Z /github/runner_temp/git-credentials-d0ef84c5-6e58-475c-82c1-2979f9f949d4.config
+App checks	Check out repository	2026-10-18T03:18:49.1017358Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-d0ef84c5\-6e58\-475c\-82c1\-2979f9f949d4\.config
+App checks	Check out repository	2026-10-18T03:18:49.1052924Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+App checks	Check out repository	2026-10-18T03:18:49.1075374Z /github/runner_temp/git-credentials-d0ef84c5-6e58-475c-82c1-2979f9f949d4.config
+App checks	Check out repository	2026-10-18T03:18:49.1116203Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-d0ef84c5\-6e58\-475c\-82c1\-2979f9f949d4\.config
+App checks	Check out repository	2026-10-18T03:18:49.1165420Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+App checks	Check out repository	2026-10-18T03:18:49.1356701Z Removing credentials config '/home/runner/work/_temp/git-credentials-d0ef84c5-6e58-475c-82c1-2979f9f949d4.config'
+App checks	Check out repository	2026-10-18T03:18:49.1365919Z ##[endgroup]
+App checks	Set up Node.js	﻿2026-10-18T03:18:49.1587700Z ##[group]Run actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+App checks	Set up Node.js	2026-10-18T03:18:49.1588116Z with:
+App checks	Set up Node.js	2026-10-18T03:18:49.1588318Z   node-version-file: .nvmrc
+App checks	Set up Node.js	2026-10-18T03:18:49.1588542Z   cache: npm
+App checks	Set up Node.js	2026-10-18T03:18:49.1588729Z   check-latest: false
+App checks	Set up Node.js	2026-10-18T03:18:49.1591138Z   token: ***
+App checks	Set up Node.js	2026-10-18T03:18:49.1591344Z   package-manager-cache: true
+App checks	Set up Node.js	2026-10-18T03:18:49.1591571Z ##[endgroup]
+App checks	Set up Node.js	2026-10-18T03:18:49.2632018Z Node version file is not TOML file
+App checks	Set up Node.js	2026-10-18T03:18:49.2632853Z Resolved .nvmrc as 24
+App checks	Set up Node.js	2026-10-18T03:18:49.2676075Z Found in cache @ /opt/hostedtoolcache/node/24.21.0/x64
+App checks	Set up Node.js	2026-10-18T03:18:49.3529557Z ##[group]Environment details
+App checks	Set up Node.js	2026-10-18T03:18:49.6365938Z node: v24.21.0
+App checks	Set up Node.js	2026-10-18T03:18:49.6366322Z npm: 11.19.0
+App checks	Set up Node.js	2026-10-18T03:18:49.6366532Z yarn: 1.22.22
+App checks	Set up Node.js	2026-10-18T03:18:49.6367013Z ##[endgroup]
+App checks	Set up Node.js	2026-10-18T03:18:49.6381752Z [command]/opt/hostedtoolcache/node/24.21.0/x64/bin/npm config get cache
+App checks	Set up Node.js	2026-10-18T03:18:49.7403009Z /home/runner/.npm
+App checks	Set up Node.js	2026-10-18T03:18:49.9569042Z Cache hit for: node-cache-Linux-x64-npm-04f11ce15a7d2240a72206e9951f15dcc0200a6a05503182ca8b41b3f65342e3
+App checks	Set up Node.js	2026-10-18T03:18:51.1703729Z Received 37748736 of 259088439 (14.6%), 36.0 MBs/sec
+App checks	Set up Node.js	2026-10-18T03:18:52.1748852Z Received 247463936 of 259088439 (95.5%), 118.0 MBs/sec
+App checks	Set up Node.js	2026-10-18T03:18:52.3123762Z Received 259088439 of 259088439 (100.0%), 115.4 MBs/sec
+App checks	Set up Node.js	2026-10-18T03:18:52.3124533Z Cache Size: ~247 MB (259088439 B)
+App checks	Set up Node.js	2026-10-18T03:18:52.3216147Z [command]/usr/bin/tar -xf /home/runner/work/_temp/8c698d55-5ced-4d18-85ca-9021fcd8ef92/cache.tzst -P -C /home/runner/work/dfs-ev-demo/dfs-ev-demo --use-compress-program unzstd
+App checks	Set up Node.js	2026-10-18T03:18:52.7403285Z Cache restored successfully
+App checks	Set up Node.js	2026-10-18T03:18:52.7510141Z Cache restored from key: node-cache-Linux-x64-npm-04f11ce15a7d2240a72206e9951f15dcc0200a6a05503182ca8b41b3f65342e3
+App checks	Set up Java for Firebase emulators	﻿2026-10-18T03:18:52.7749151Z ##[group]Run actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7749503Z with:
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7749678Z   distribution: temurin
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7750027Z   java-version: 21
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7750204Z   java-package: jdk
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7750387Z   check-latest: false
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7750583Z   force-download: false
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7750768Z   set-default: true
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7750938Z   server-id: github
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7751130Z   mvn-repositories-include-central: true
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7751399Z   mvn-repositories-prioritize-central: true
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7751652Z   overwrite-settings: true
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7751854Z   cache-read-only: false
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7752051Z   job-status: success
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7754332Z   token: ***
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7754523Z   show-download-progress: false
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7754749Z   problem-matcher: true
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.7754971Z ##[endgroup]
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8420608Z ##[group]Installed distributions
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8658797Z Resolved Java 21.0.12+1 from tool-cache
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8659456Z Setting Java 21.0.12+1 as the default
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8659859Z 
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8660071Z Java configuration:
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8660440Z   Distribution: temurin
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8660777Z   Version: 21.0.12+1
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8661281Z   Path: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8661698Z 
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8662115Z ##[endgroup]
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8682074Z Creating settings.xml with server-id: github
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8687165Z Creating toolchains.xml for JDK version 21 from temurin
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8690663Z Writing to /home/runner/.m2/settings.xml
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8700094Z Writing to /home/runner/.m2/toolchains.xml
+App checks	Set up Java for Firebase emulators	2026-10-18T03:18:52.8706428Z Configured MAVEN_ARGS to include -ntp to suppress Maven transfer progress logs. Set 'show-download-progress: true' to keep the download progress output.
+App checks	Cache Firebase emulator binaries	﻿2026-10-18T03:18:52.9364958Z ##[group]Run actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9365292Z with:
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9365482Z   path: ~/.cache/firebase/emulators
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9365919Z   key: firebase-emulators-Linux-04f11ce15a7d2240a72206e9951f15dcc0200a6a05503182ca8b41b3f65342e3
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9366333Z   enableCrossOsArchive: false
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9366552Z   fail-on-cache-miss: false
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9366760Z   lookup-only: false
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9366945Z   save-always: false
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9367118Z env:
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9367370Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9368124Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9368462Z   MAVEN_ARGS: -ntp
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:52.9368649Z ##[endgroup]
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:53.2334905Z Cache hit for: firebase-emulators-Linux-04f11ce15a7d2240a72206e9951f15dcc0200a6a05503182ca8b41b3f65342e3
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:54.4668958Z Received 33554432 of 89821031 (37.4%), 32.0 MBs/sec
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:54.9282970Z Received 89821031 of 89821031 (100.0%), 58.6 MBs/sec
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:54.9298190Z Cache Size: ~86 MB (89821031 B)
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:54.9318835Z [command]/usr/bin/tar -xf /home/runner/work/_temp/175c4ecb-4c4f-4a3d-9054-f719e4a05394/cache.tzst -P -C /home/runner/work/dfs-ev-demo/dfs-ev-demo --use-compress-program unzstd
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:55.0948173Z Cache restored successfully
+App checks	Cache Firebase emulator binaries	2026-10-18T03:18:55.1055426Z Cache restored from key: firebase-emulators-Linux-04f11ce15a7d2240a72206e9951f15dcc0200a6a05503182ca8b41b3f65342e3
+App checks	Install dependencies	﻿2026-10-18T03:18:55.1201014Z ##[group]Run npm ci
+App checks	Install dependencies	2026-10-18T03:18:55.1201327Z ^[[36;1mnpm ci^[[0m
+App checks	Install dependencies	2026-10-18T03:18:55.1644110Z shell: /usr/bin/bash -e {0}
+App checks	Install dependencies	2026-10-18T03:18:55.1644413Z env:
+App checks	Install dependencies	2026-10-18T03:18:55.1644717Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+App checks	Install dependencies	2026-10-18T03:18:55.1645154Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+App checks	Install dependencies	2026-10-18T03:18:55.1645493Z   MAVEN_ARGS: -ntp
+App checks	Install dependencies	2026-10-18T03:18:55.1645697Z ##[endgroup]
+App checks	Install dependencies	2026-10-18T03:19:01.3571968Z npm warn deprecated tsconfck@3.1.6: unmaintained
+App checks	Install dependencies	2026-10-18T03:19:01.9681860Z npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+App checks	Install dependencies	2026-10-18T03:19:02.2114860Z npm warn deprecated json-ptr@3.1.1: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+App checks	Install dependencies	2026-10-18T03:19:02.8688014Z npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+App checks	Install dependencies	2026-10-18T03:19:08.6139664Z npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+App checks	Install dependencies	2026-10-18T03:19:14.5405913Z 
+App checks	Install dependencies	2026-10-18T03:19:14.5406776Z added 1148 packages, and audited 1149 packages in 19s
+App checks	Install dependencies	2026-10-18T03:19:14.5407167Z 
+App checks	Install dependencies	2026-10-18T03:19:14.5407384Z 258 packages are looking for funding
+App checks	Install dependencies	2026-10-18T03:19:14.5408072Z   run `npm fund` for details
+App checks	Install dependencies	2026-10-18T03:19:14.5797036Z 
+App checks	Install dependencies	2026-10-18T03:19:14.5797971Z 13 vulnerabilities (2 moderate, 11 high)
+App checks	Install dependencies	2026-10-18T03:19:14.5798271Z 
+App checks	Install dependencies	2026-10-18T03:19:14.5798546Z To address all issues (including breaking changes), run:
+App checks	Install dependencies	2026-10-18T03:19:14.5798985Z   npm audit fix --force
+App checks	Install dependencies	2026-10-18T03:19:14.5799161Z 
+App checks	Install dependencies	2026-10-18T03:19:14.5799304Z Run `npm audit` for details.
+App checks	Install dependencies	2026-10-18T03:19:14.5809771Z npm warn install-scripts 4 packages have install scripts not yet covered by allowScripts:
+App checks	Install dependencies	2026-10-18T03:19:14.5810539Z npm warn install-scripts   @firebase/util@1.15.3 (postinstall: node ./postinstall.js)
+App checks	Install dependencies	2026-10-18T03:19:14.5811131Z npm warn install-scripts   protobufjs@7.6.6 (postinstall: node scripts/postinstall)
+App checks	Install dependencies	2026-10-18T03:19:14.5812370Z npm warn install-scripts   re2@1.27.0 (install: install-from-cache --artifact build/Release/re2.node --host-var RE2_DOWNLOAD_MIRROR --skip-path-var RE2_DOWNLOAD_SKIP_PATH --skip-ver-var RE2_DOWNLOAD_SKIP_VER --force-build-var RE2_DOWNLOAD_FORCE_BUILD || node-gyp -j max rebuild)
+App checks	Install dependencies	2026-10-18T03:19:14.5813493Z npm warn install-scripts   unrs-resolver@1.12.2 (postinstall: node postinstall.js)
+App checks	Install dependencies	2026-10-18T03:19:14.5813889Z npm warn install-scripts
+App checks	Install dependencies	2026-10-18T03:19:14.5814386Z npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+App checks	Check changed files for whitespace errors	﻿2026-10-18T03:19:14.7124982Z ##[group]Run if [[ "$EVENT_NAME" == "pull_request" ]]; then
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7125554Z ^[[36;1mif [[ "$EVENT_NAME" == "pull_request" ]]; then^[[0m
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7126015Z ^[[36;1m  git diff --check "$BASE_SHA...$HEAD_SHA"^[[0m
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7126435Z ^[[36;1melif [[ "$BASE_SHA" =~ ^0+$ ]]; then^[[0m
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7126860Z ^[[36;1m  git diff-tree --check --root "$HEAD_SHA"^[[0m
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7127247Z ^[[36;1melse^[[0m
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7127625Z ^[[36;1m  git diff --check "$BASE_SHA" "$HEAD_SHA"^[[0m
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7127872Z ^[[36;1mfi^[[0m
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7188220Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7188553Z env:
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7188844Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7189284Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7189615Z   MAVEN_ARGS: -ntp
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7189823Z   EVENT_NAME: pull_request
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7190106Z   BASE_SHA: 4e13c0f9770959096acd89ce6db284828b015cac
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7190391Z   HEAD_SHA: 36968fa9cbed9a59210d5b50c0f2aba5f362600a
+App checks	Check changed files for whitespace errors	2026-10-18T03:19:14.7190651Z ##[endgroup]
+App checks	Check types	﻿2026-10-18T03:19:14.7351423Z ##[group]Run npm run typecheck
+App checks	Check types	2026-10-18T03:19:14.7351720Z ^[[36;1mnpm run typecheck^[[0m
+App checks	Check types	2026-10-18T03:19:14.7408135Z shell: /usr/bin/bash -e {0}
+App checks	Check types	2026-10-18T03:19:14.7408381Z env:
+App checks	Check types	2026-10-18T03:19:14.7408652Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+App checks	Check types	2026-10-18T03:19:14.7409063Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+App checks	Check types	2026-10-18T03:19:14.7409389Z   MAVEN_ARGS: -ntp
+App checks	Check types	2026-10-18T03:19:14.7409577Z ##[endgroup]
+App checks	Check types	2026-10-18T03:19:14.8275292Z 
+App checks	Check types	2026-10-18T03:19:14.8276019Z > dfs-ev-demo@0.1.0 typecheck
+App checks	Check types	2026-10-18T03:19:14.8276811Z > npm run db:readiness:check && next typegen && tsc --noEmit
+App checks	Check types	2026-10-18T03:19:14.8277040Z 
+App checks	Check types	2026-10-18T03:19:14.9112727Z 
+App checks	Check types	2026-10-18T03:19:14.9113592Z > dfs-ev-demo@0.1.0 db:readiness:check
+App checks	Check types	2026-10-18T03:19:14.9114312Z > node scripts/db-readiness-manifest.mjs check
+App checks	Check types	2026-10-18T03:19:14.9114650Z 
+App checks	Check types	2026-10-18T03:19:15.1522641Z Database readiness manifest verified.
+App checks	Check types	2026-10-18T03:19:15.4164179Z Generating route types...
+App checks	Check types	2026-10-18T03:19:15.4341383Z ✓ Types generated successfully
+App checks	Lint	﻿2026-10-18T03:19:21.3551262Z ##[group]Run npm run lint
+App checks	Lint	2026-10-18T03:19:21.3551703Z ^[[36;1mnpm run lint^[[0m
+App checks	Lint	2026-10-18T03:19:21.3613376Z shell: /usr/bin/bash -e {0}
+App checks	Lint	2026-10-18T03:19:21.3613780Z env:
+App checks	Lint	2026-10-18T03:19:21.3614250Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+App checks	Lint	2026-10-18T03:19:21.3614794Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+App checks	Lint	2026-10-18T03:19:21.3629765Z   MAVEN_ARGS: -ntp
+App checks	Lint	2026-10-18T03:19:21.3630022Z ##[endgroup]
+App checks	Lint	2026-10-18T03:19:21.4482602Z 
+App checks	Lint	2026-10-18T03:19:21.4483314Z > dfs-ev-demo@0.1.0 lint
+App checks	Lint	2026-10-18T03:19:21.4483758Z > eslint
+App checks	Lint	2026-10-18T03:19:21.4483929Z 
+App checks	Lint	2026-10-18T03:19:28.6251075Z 
+App checks	Lint	2026-10-18T03:19:28.6252115Z /home/runner/work/dfs-ev-demo/dfs-ev-demo/scripts/spike-concurrent.mjs
+App checks	Lint	2026-10-18T03:19:28.6283604Z ##[warning]  13:193  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+App checks	Lint	2026-10-18T03:19:28.6292328Z 
+App checks	Lint	2026-10-18T03:19:28.6292780Z /home/runner/work/dfs-ev-demo/dfs-ev-demo/scripts/test-db.mjs
+App checks	Lint	2026-10-18T03:19:28.6294041Z ##[warning]  39:16  warning  'runSuite' is defined but never used  @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6295087Z 
+App checks	Lint	2026-10-18T03:19:28.6295488Z /home/runner/work/dfs-ev-demo/dfs-ev-demo/tests/db/predictive.test.ts
+App checks	Lint	2026-10-18T03:19:28.6297658Z ##[error]  63:82  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+App checks	Lint	2026-10-18T03:19:28.6298730Z 
+App checks	Lint	2026-10-18T03:19:28.6299217Z /home/runner/work/dfs-ev-demo/dfs-ev-demo/tests/db/sourceClaims.spike0.test.ts
+App checks	Lint	2026-10-18T03:19:28.6300491Z ##[warning]   35:29   warning  'entityKey' is defined but never used                     @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6302335Z ##[warning]   41:10   warning  'ROUTING_FIELDS' is defined but never used                @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6304185Z ##[warning]   43:10   warning  'sourceNormalizationBasis' is defined but never used      @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6306023Z ##[warning]   45:10   warning  'SOURCE_NORMALIZATION_V1' is defined but never used       @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6308049Z ##[warning]   49:10   warning  'checkSourceWitness' is defined but never used            @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6310012Z ##[warning]   49:49   warning  'sourcePostWindowCapture' is defined but never used       @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6311965Z ##[warning]   49:74   warning  'sourceReconciliationEvidence' is defined but never used  @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6313961Z ##[warning]   49:104  warning  'sourceUsageEvidence' is defined but never used           @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6315878Z ##[warning]   53:10   warning  'sourceConsumerInputDigest' is defined but never used     @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6317918Z ##[warning]   57:10   warning  'prepareSourceClaims' is defined but never used           @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6319862Z ##[warning]   57:31   warning  'projectSourceClaim' is defined but never used            @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6321794Z ##[error]   79:82   error    Unexpected any. Specify a different type                  @typescript-eslint/no-explicit-any
+App checks	Lint	2026-10-18T03:19:28.6323668Z ##[warning]  171:7    warning  'rehashDecision' is assigned a value but never used       @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6325803Z ##[warning]  216:7    warning  'sqlConsumer' is assigned a value but never used          @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6326915Z 
+App checks	Lint	2026-10-18T03:19:28.6327348Z /home/runner/work/dfs-ev-demo/dfs-ev-demo/tests/db/sourceClaims.spike1.test.ts
+App checks	Lint	2026-10-18T03:19:28.6328710Z ##[warning]   11:19  warning  'readFile' is defined but never used                 @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6330514Z ##[warning]   39:10  warning  'reconcileFact' is defined but never used            @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6332504Z ##[warning]   45:10  warning  'SOURCE_NORMALIZATION_V1' is defined but never used  @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6334361Z ##[warning]   47:28  warning  'SOURCE_FACT_BOUNDS' is defined but never used       @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6336180Z ##[warning]   51:10  warning  'sourceDecisionBasis' is defined but never used      @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6338182Z ##[warning]   57:10  warning  'prepareSourceClaims' is defined but never used      @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6340026Z ##[warning]   57:31  warning  'projectSourceClaim' is defined but never used       @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6341881Z ##[warning]   63:10  warning  'passingYardsFixture' is defined but never used      @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6343683Z ##[warning]   65:80  warning  'PROFILE' is defined but never used                  @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6345466Z ##[error]   79:82  error    Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+App checks	Lint	2026-10-18T03:19:28.6347266Z ##[warning]  161:7   warning  'rehashWitness' is assigned a value but never used   @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6348693Z 
+App checks	Lint	2026-10-18T03:19:28.6349127Z /home/runner/work/dfs-ev-demo/dfs-ev-demo/tests/db/sourceClaims.spike2.test.ts
+App checks	Lint	2026-10-18T03:19:28.6350318Z ##[warning]   35:29  warning  'entityKey' is defined but never used                  @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6352149Z ##[warning]   39:10  warning  'reconcileFact' is defined but never used              @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6353952Z ##[warning]   41:10  warning  'ROUTING_FIELDS' is defined but never used             @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6355792Z ##[warning]   43:10  warning  'sourceNormalizationBasis' is defined but never used   @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6357789Z ##[warning]   47:28  warning  'SOURCE_FACT_BOUNDS' is defined but never used         @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6359668Z ##[warning]   51:10  warning  'sourceDecisionBasis' is defined but never used        @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6361541Z ##[warning]   53:10  warning  'sourceConsumerInputDigest' is defined but never used  @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6363363Z ##[warning]   65:80  warning  'PROFILE' is defined but never used                    @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6365166Z ##[error]   79:82  error    Unexpected any. Specify a different type               @typescript-eslint/no-explicit-any
+App checks	Lint	2026-10-18T03:19:28.6366999Z ##[warning]  216:7   warning  'sqlConsumer' is assigned a value but never used       @typescript-eslint/no-unused-vars
+App checks	Lint	2026-10-18T03:19:28.6368369Z 
+App checks	Lint	2026-10-18T03:19:28.6368901Z ✖ 38 problems (4 errors, 34 warnings)
+App checks	Lint	2026-10-18T03:19:28.6369182Z 
+App checks	Lint	2026-10-18T03:19:28.8554136Z ##[error]Process completed with exit code 1.
+App checks	Post Set up Java for Firebase emulators	﻿2026-10-18T03:19:28.8678976Z Post job cleanup.
+App checks	Post Check out repository	﻿2026-10-18T03:19:28.9458321Z Post job cleanup.
+App checks	Post Check out repository	2026-10-18T03:19:29.0218639Z [command]/usr/bin/git version
+App checks	Post Check out repository	2026-10-18T03:19:29.0257273Z git version 2.55.0
+App checks	Post Check out repository	2026-10-18T03:19:29.0290716Z Temporarily overriding HOME='/home/runner/work/_temp/a3fa401a-4742-411a-8a1c-32f608854480' before making global git config changes
+App checks	Post Check out repository	2026-10-18T03:19:29.0291716Z Adding repository directory to the temporary git global config as a safe directory
+App checks	Post Check out repository	2026-10-18T03:19:29.0295812Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dfs-ev-demo/dfs-ev-demo
+App checks	Post Check out repository	2026-10-18T03:19:29.0327886Z Removing SSH command configuration
+App checks	Post Check out repository	2026-10-18T03:19:29.0334112Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+App checks	Post Check out repository	2026-10-18T03:19:29.0366909Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+App checks	Post Check out repository	2026-10-18T03:19:29.0598603Z Removing HTTP extra header
+App checks	Post Check out repository	2026-10-18T03:19:29.0608658Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+App checks	Post Check out repository	2026-10-18T03:19:29.0650673Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+App checks	Post Check out repository	2026-10-18T03:19:29.0938758Z Removing includeIf entries pointing to credentials config files
+App checks	Post Check out repository	2026-10-18T03:19:29.0945716Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+App checks	Post Check out repository	2026-10-18T03:19:29.0999381Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+App checks	Complete job	﻿2026-10-18T03:19:29.1394518Z Cleaning up orphan processes

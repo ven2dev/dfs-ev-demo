@@ -1,0 +1,318 @@
+[
+  {
+    "name": "CSV binding bridge retention removes ancestors and descendants and identical restored evidence re-applies its audit",
+    "sha256": "a68ad3e727c88b4a99ed075f930f1ccbdff50bd10d7eed6d9ba7344ca253895d"
+  },
+  {
+    "name": "CSV binding canonical guard refuses generated JSON under real source profiles and immutable bindings cannot be rewritten",
+    "sha256": "082ff6f0504b4ead6ec7d090ac89a7db541747259221bafaf4080ad209e79fd3"
+  },
+  {
+    "name": "CSV binding concurrent recorders serialize and exactly one expected-head proposal commits",
+    "sha256": "5c32007c8235bf69dd02a93befdfd074852a4d76bb996638055ebd5440ba56dd"
+  },
+  {
+    "name": "CSV binding hydration refuses altered associations and source bytes and current rights revocation blocks reads and retries",
+    "sha256": "b48548e9c5cd3d7c09f290904c2ad8cf0d2700ec6daf985da29d4d46b76fe685"
+  },
+  {
+    "name": "CSV binding migration upgrades v5 without changing released history and reruns are no-ops",
+    "sha256": "27b256d9ee7603581b8be3fe2c5fffd9d1188fbf2606c2c81be0cb934798eccb"
+  },
+  {
+    "name": "CSV binding recorder uses database time and execute-only writes while replay remains read-only research staging",
+    "sha256": "fbf3eaa2dee985a678987a0dda9116241029b22550bafd8694dc22892a5cbbc5"
+  },
+  {
+    "name": "CSV binding retention removes entire cited raw lineages through execute-only access and preserves unrelated evidence",
+    "sha256": "f6a0c4070f4eaee23bdc39890a394b03903d885647204ac4f4ae81ad64329173"
+  },
+  {
+    "name": "CSV binding schedule reconciliation pins only a current exact selection and a new conflicting head can be recorded unavailable",
+    "sha256": "6b92f334e4fdc56b3ad034e1dea5fd74982931cc4db7f72666e01014651e810f"
+  },
+  {
+    "name": "CSV binding SQL rejects rehashed payload, row, dependency and raw identity forgeries and malformed plans",
+    "sha256": "94d6f1f0c0dc5cdeef96919ec383ce14d832d0f2f171215bde7b6f5d7b9e2a90"
+  },
+  {
+    "name": "CSV binding stale source or bridge evidence withholds replay and SQL refuses stale heads and proposals",
+    "sha256": "edd4458ebb6627a428ed54bc4ee13f62853e2018e016968b79b4cff8641752d3"
+  },
+  {
+    "name": "CSV binding team statistics persist independently and cutoff-only changes do not mark a binding stale",
+    "sha256": "5a2b60e6656541081179692bf46b9e4cc4d1b4a34a5cd4da6c30ac949eec30c0"
+  },
+  {
+    "name": "CSV binding unrecorded bridge conflicts withhold the current raw contribution without poisoning earlier cutoffs",
+    "sha256": "bb42ac64916fe412d306b99513337af21f1ba9d8fa3d1d63d4f976c27420edcc"
+  },
+  {
+    "name": "CSV bindings preserve numeric corrections, unchanged recaptures and player A to B to A canonical chains",
+    "sha256": "77af829016f1ccf39379dfffebf860da49241268fac788416756d92b6c3fc40a"
+  },
+  {
+    "name": "CSV bindings withhold disappearing, refused and conflicting raw rows and allow evidenced reappearance",
+    "sha256": "5f53475f5545da127c081c9dbe73f23308b80146ec270df5d0698486334f78f3"
+  },
+  {
+    "name": "CSV canonical fact reads check source and context rights before any provider file is opened",
+    "sha256": "c4a8801c7da8ab4b4bcceb1d0c4b59d220c913c18b9266f851f667906621147a"
+  },
+  {
+    "name": "CSV canonical fact reads discover an unrecorded destination and withhold both routes without stale numeric payloads",
+    "sha256": "a560934abec4953882dbea4396e8b28b8a10a455f3e89a173e8773c6b271cfec"
+  },
+  {
+    "name": "CSV canonical fact reads expand raw lineages before filtering and preserve read-only A to B to A provenance",
+    "sha256": "78478ef72c2efecabd0553c15e6b16bf59b2ff9ddcbd6ba4f387aeb45b57087b"
+  },
+  {
+    "name": "CSV canonical fact reads keep player and team identities distinct and do not backdate canonical recording",
+    "sha256": "9aaa670f74dbd24ec67238d70f6603e78987b86b07466198403b492331688083"
+  },
+  {
+    "name": "CSV canonical fact reads preserve unresolved routing when no historical canonical destination exists",
+    "sha256": "42c3a4395ae054b9c8dcafb2619e82a1f3a53be71d27af54ac990a1f0cbf9814"
+  },
+  {
+    "name": "CSV canonical fact reads retain missing-row uncertainty and reappearance binds unchanged values to fresh provenance",
+    "sha256": "d9308bfccdbd9cd97f5ab2dc305cd676903a0a092dafa7729c670443bf9ba264"
+  },
+  {
+    "name": "CSV canonical fact reads verify raw bytes even outside the requested destination and fail instead of truncating discovery",
+    "sha256": "5ad58f171e6731bf46a1c28ef27ed4b26a56537e2d98de47e666b10f8b1e2432"
+  },
+  {
+    "name": "CSV capture-less unavailable bindings keep source rights and whole-lineage retention through execute-only ownership",
+    "sha256": "4acc1ed9745a6e0c30bf57f84c5e6e4787828ff89f8ab73e9b042d095cc01403"
+  },
+  {
+    "name": "CSV consumer checks withhold stale routing and revoked access instead of reviving earlier selected values",
+    "sha256": "9db95ea0b1ad3a53b675c7a06e212547d4bac9aa1d32025fff97ffcd31c590a5"
+  },
+  {
+    "name": "CSV consumer witnesses bind unchanged recaptures and post-window evidence through a replay-only login",
+    "sha256": "68837b31ba1825ea4016474f0c0198a72d5806f3e972d33dba666b4add699b92"
+  },
+  {
+    "name": "CSV normalization plans verify raw rows and exact bridges in a read-only snapshot through a replay-only login",
+    "sha256": "d94a4046b776685a349f9e6013c865715c794b4fe7013552b83f83ad589c48fa"
+  },
+  {
+    "name": "CSV normalization refuses tampered raw files before proposing a canonical payload",
+    "sha256": "1072e79d956b391bc4f8c0086fbf6208e0fb2ba86a1884ca5f82fbfef3a16357"
+  },
+  {
+    "name": "CSV normalization scoped reads include reverse identity conflicts without importing unrelated correction chains",
+    "sha256": "e335bdf4477951d6a75ea954ef0e0ad5547f0b9c3b2d8bdf7e1f1df2f98d3a2f"
+  },
+  {
+    "name": "CSV normalization scoped reads retain schedule alias conflicts outside the mapped canonical game",
+    "sha256": "e0bd7d4fecc5c03f624ceb458eca82f65864f727f7a4fb502fbfcdbcbc34a6e9"
+  },
+  {
+    "name": "CSV QB consumer retention removes features labels and complete label lineage through the retention-only login",
+    "sha256": "3a9c8dec80a8aa9e0a2b282ca993f3d3f513b29246739b7cda58a999042f5e2b"
+  },
+  {
+    "name": "CSV QB consumers enforce use-specific rights before files for source context and native evidence",
+    "sha256": "c813299d6848920593b0719caa68a091cba99c4a73032a21960c637560c3e5f4"
+  },
+  {
+    "name": "CSV QB consumers operate through non-superuser execute-only recorders and replay refuses damaged bytes or links",
+    "sha256": "8aa0dabfe4187b20894b9ac65cdbe6fbcf74fe47dd8d32f497cbd883ee600a31"
+  },
+  {
+    "name": "CSV QB consumers preserve earlier cutoffs while recaptures withhold current decisions and labels",
+    "sha256": "1225acb354973311e2db9bc0c9eb15b9bcedc87bef26c169faa518ad29131637"
+  },
+  {
+    "name": "CSV QB consumers preserve earlier unavailable replay after a later unrelated source deletion",
+    "sha256": "0e8b9bcb6e465028cfeeeec03b2c7cca02a2494d6a260fcc18df6bf6e89e024c"
+  },
+  {
+    "name": "CSV QB consumers record explicit source manifests and final labels without ordinary stats observations",
+    "sha256": "c65914e0cd065e09796fc48336c313ee28e2d722887a8ae9f74cd7f1f2a6a2a4"
+  },
+  {
+    "name": "CSV QB final labels refuse pre-window captures and unresolved participation without invented zeros",
+    "sha256": "c05639b555ba39ec46c14efa2e3bebd8007d19735cdf271232b046d1280bb08c"
+  },
+  {
+    "name": "CSV QB migration upgrades v9 preserving binding and decision history and is idempotent",
+    "sha256": "5ac6ce60179efbcf793ee00c24f38609ad527b1a3adadbd15046ab1f42df1d0f"
+  },
+  {
+    "name": "CSV QB SQL refuses rehashed source manifests forged values identity and completion",
+    "sha256": "f44445d8d0682dbb8de7ba00a88960d698b82fc9609dfd8fe02b7746fe262071"
+  },
+  {
+    "name": "CSV source decision concurrent recorders commit exactly one proposal for the expected head",
+    "sha256": "dc523e0b5c5c7293d505b51f8b97d40788f7081d76709fd87fc902d49a8e5212"
+  },
+  {
+    "name": "CSV source decision current source, historical context and native rights are checked before any file opens",
+    "sha256": "caffd157d5c7b19942a880eeae42f779f526c9dab335c88e9e295cff374a970f"
+  },
+  {
+    "name": "CSV source decision migration upgrades v8 preserving recorded bindings and witnesses and reruns as a no-op",
+    "sha256": "24b669cacf4c872e56ef2343af3fd5275e7e6eb3b2d0a768dea75e372e2c1d9f"
+  },
+  {
+    "name": "CSV source decision native retention deletes the entire affected lineage without reviving an earlier positive record",
+    "sha256": "d5456d327d329d7cf2d9a93e9773c4fec8f59e0c81dc48135f6c5afac1486dde"
+  },
+  {
+    "name": "CSV source decision recaptures invalidate current records without changing earlier replay or numerical revisions",
+    "sha256": "1ab37327efedc07613e14e18c0f290d706fe0bc52ee06e5e173c52c86594a7c2"
+  },
+  {
+    "name": "CSV source decision recorder and replay enforce actual non-superuser privileges and database-clock access",
+    "sha256": "5a0c30aff5c1179629f3a1c154056cc2e993ee124edfa33be50edd22f556db5c"
+  },
+  {
+    "name": "CSV source decision replay refuses corrupted source and native bytes, association omissions and SQL parity mismatches",
+    "sha256": "7b52f1afc00b28fe3e0ee08844dcd14c31656daadfe1fac66929ffa8f5e47921"
+  },
+  {
+    "name": "CSV source decision retention conservatively removes capture-less scopes inside time-limited source deletions",
+    "sha256": "9bb8c3dc94d21bd99251f880333cfeb03f50b397dc8b91af9f4067fde40d51a7"
+  },
+  {
+    "name": "CSV source decision retention removes cited source history and descendants with identical restored-backup audit",
+    "sha256": "814179e65fab8138f3167dec93128231f969731849817645811935ac39b596fe"
+  },
+  {
+    "name": "CSV source decision SQL recomputes rehashed outcomes, exact inputs, witness scope, selection and mode",
+    "sha256": "0cf9f3a3fdb8e8d686139f6264fcd32b4eb65c8abc33c21db1ef25f8e6d470f6"
+  },
+  {
+    "name": "CSV source decisions persist exact witnesses at database time with immutable history and idempotent retries",
+    "sha256": "00197a2540b0680fc315ec9e55eb9a7d13482fae27a4d3624332013c8f1a0831"
+  },
+  {
+    "name": "CSV source decisions persist unavailable plans and recover without stale selections while missing facts remain insufficient",
+    "sha256": "f2e907b46c45d07e0a86201f47cab147834ed4f737350eed01301273c4ec46ea"
+  },
+  {
+    "name": "CSV source ingest and replay work without superuser and retention removes rows and resumes files with execute-only access",
+    "sha256": "164cb31b2af429ba1f6d34fcb3e9085a1769c218d0df8f44401fe9d058105028"
+  },
+  {
+    "name": "CSV source migration upgrades released v3 without changing existing evidence or its recorded checksum",
+    "sha256": "ab6cf933df765cd0003aa860cf7acbddee3c44752421889cb09453a83b219b28"
+  },
+  {
+    "name": "CSV source migration upgrades released v4 preserving creator corpus evidence and recorded history",
+    "sha256": "98a454d9e3267a3cbd472a17e38ab82f3d4ec785391a8e92b0b99ce1d7fe9fa8"
+  },
+  {
+    "name": "CSV source participation combines native claims with positive usage and never infers absence from zero or blank statistics",
+    "sha256": "4b3a7b87485405742ccac043eefc37e3bff165e93748587b4b6fc4893bfdad28"
+  },
+  {
+    "name": "CSV source persistence stamps import time, is idempotent and preserves A/B cutoff replay",
+    "sha256": "0fcdefbe3195883862c25c0ace9aa8b7d9e312ca1c80e5b6d8d32141c7242e44"
+  },
+  {
+    "name": "CSV source publication rolls back files and refuses run conflicts and revoked current rights",
+    "sha256": "29c830472fd9fa5fae97f6e4e39cd564353357bb06972de50ef67e5b8737ea96"
+  },
+  {
+    "name": "CSV source reconciliation evaluates every bound provider and deterministic agreement also supports team facts",
+    "sha256": "c883ee67575189c9e303e23fca9adcb72e14e14f36bf4b5f0095ded770146f86"
+  },
+  {
+    "name": "CSV source replay exposes missing, refused and ambiguous rows without inventing zero",
+    "sha256": "36802c1281c0d02e6fa58ea9e36f48bf09e4991eed1bdec6457078a196e8be8c"
+  },
+  {
+    "name": "CSV source replay keeps equal-time conflicts ambiguous and late older imports cannot replace a newer snapshot",
+    "sha256": "cc0df7630362dc886eaffa3fbc797786959e30a54dfa0d3c0b3b8d380ac8cb42"
+  },
+  {
+    "name": "CSV source replay refuses tampered raw files and forged selected-row projections",
+    "sha256": "f44d1cef5b3127bc7e50a948a673093f72924307b2ff1317b0ee9994a814ab28"
+  },
+  {
+    "name": "CSV source retention re-applies identical row deletion after re-importing retained files into a fresh database",
+    "sha256": "c4670e6955c6430e48b25da18cb247aa772eb90308e9d3e61d525d3100ed6bd9"
+  },
+  {
+    "name": "CSV source SQL enforces complete row ordinals, strict projection shape and the canonical binding boundary",
+    "sha256": "28462c87757e5585606c6e9b88f1e21389e19a1b5e94632ce98be022607fe85e"
+  },
+  {
+    "name": "CSV SQL current witness checks invalidate same-revision recaptures and refuse unchanged empty evidence",
+    "sha256": "b383ea7e3888cd75743ef67ea17bcd1f9881b3397b7979390e00080ef7962781"
+  },
+  {
+    "name": "CSV SQL witness access uses database-clock rights and denies private kernels and unbounded requests",
+    "sha256": "faba48f73783f03d32d6f19625d7d4fe80bfab9e088f8ec4c69458cbaa5850a8"
+  },
+  {
+    "name": "CSV SQL witness checker rejects rehashed omissions, fabricated heads and forged unavailable reasons",
+    "sha256": "32cd8f1b9bd62897b9368f3df8580e871a542446417862a6976497d830b4d1a5"
+  },
+  {
+    "name": "CSV SQL witness migration upgrades v7 preserving bindings and prior migration history",
+    "sha256": "407f2d1ce4ddeddb4409e902b1e1d741f63d5d2e6a09c73a93f4d0189bbe17b0"
+  },
+  {
+    "name": "CSV SQL witness mismatch fails closed and restores the read-only replay transaction",
+    "sha256": "a3592fd0356da1dc43f1131bd72121d491d9b9fc51fdbbac4ec569484bb8f8c7"
+  },
+  {
+    "name": "CSV SQL witnesses expand unrecorded reroutes and unresolved identity before canonical filtering",
+    "sha256": "f391ae465c8448d2ae22cb8f677edb1b595d16db7a2a0d81c5a34005fbecec3f"
+  },
+  {
+    "name": "CSV SQL witnesses match verified player and team reads, missing scope and equivalent rights renewal",
+    "sha256": "4be7c3a0dd6d1a8f650ed503e0b71b8ea7ece172a4f87d208f105b8cbf02443b"
+  },
+  {
+    "name": "CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence",
+    "sha256": "eaf51e30abee246ec6f081d6bfd8d61a78e84d14e7af0fd58b42d7dca59fb4ac"
+  },
+  {
+    "name": "CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries",
+    "sha256": "962544ba23a1b0a6c47d21becfeb728e9a507ec6a8555b26cdf788e5a8122bf2"
+  },
+  {
+    "name": "CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts",
+    "sha256": "f8e2e60181570da1eea8fe03e6fedb1c7d65f238a2f1b222685b957ef3d87856"
+  },
+  {
+    "name": "CSV unavailable bindings supersede usable context and recover without inventing numeric corrections or changing earlier cutoffs",
+    "sha256": "fb2d4d131049b18cd3d33ed38327c6d17a2ce862fbf9a2129328923aad02dc56"
+  },
+  {
+    "name": "CSV unavailable bindings verify every ambiguous capture file and allow evidenced conflict recovery",
+    "sha256": "15ddfc6ac44e0070c90fe4dc5a4e16205a1ead3d0100e935a30261f2a4f8d96c"
+  },
+  {
+    "name": "CSV unavailable migration upgrades v6 preserving v1 positive and withheld plans, exact retries and recorded history",
+    "sha256": "a3fbc14920b44bcd568fd3b7ad16635a58135df910e2c86ed0caf99d097a2bba"
+  },
+  {
+    "name": "CSV unavailable planning checks context rights before file hydration and revocation blocks saved conflicts and retries",
+    "sha256": "df29789d98cc98391537b6490b3b9a582d2a60d8d9db68be91f2133acb8aef00"
+  },
+  {
+    "name": "CSV unavailable retention re-applies pre-v7 legacy events with identical counts and digests after restoration",
+    "sha256": "6f68b53e5dfe2b8d84b55464e5a12249da3fb1c10d40b9a625f3fb73279e0aea"
+  },
+  {
+    "name": "ordinary evidence stamps database ingestion time for application and direct SQL writers without backdating cutoff visibility",
+    "sha256": "a946d5f47f37782708370b8cb0ce253ac4bc4c238ee02b2ddea88a280daef180"
+  },
+  {
+    "name": "ordinary ingestion clock migration upgrades v10 without rewriting captures and reruns as a no-op",
+    "sha256": "34d9bf942a209632231119a6e43af1afc43c7349b4b39f01c7ad2fdc3720ef25"
+  },
+  {
+    "name": "ordinary synthetic capture times remain harness-only and cannot bypass production ingestion clocks",
+    "sha256": "6c4812616047861f7c9045202caa296ca7637ed86799b35a9c52b346466affdd"
+  }
+]

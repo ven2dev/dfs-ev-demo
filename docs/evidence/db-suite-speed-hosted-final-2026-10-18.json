@@ -1,0 +1,344 @@
+{
+  "issue": 153,
+  "pr": "https://github.com/ven2dev/dfs-ev-demo/pull/175",
+  "head": "9a220e7bc388c07b07e822043e06c15e4d965563",
+  "runId": 39124698497,
+  "method": "Three consecutive complete CI workflow attempts on the same pushed head; no intervening push. Full DB job includes checkout, install, guards, recovery step, suite and teardown.",
+  "recordedAtUtc": "2026-10-18T11:59:04.021018+00:00",
+  "runs": [
+    {
+      "attempt": 1,
+      "runUrl": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/39124698497/attempts/1",
+      "dbJobUrl": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/39124698497/job/117667257609",
+      "dbJobSeconds": 162.0,
+      "dbJobConclusion": "success",
+      "recoveryStepSeconds": 20.0,
+      "steps": [
+        {
+          "name": "Set up job",
+          "seconds": 1.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out repository",
+          "seconds": 2.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up Node.js",
+          "seconds": 3.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Install dependencies",
+          "seconds": 22.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Check database target, bootstrap and report guards",
+          "seconds": 1.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify startup recovery and failure cleanup",
+          "seconds": 20.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify migration artifacts, catalog contracts and PostgreSQL behavior",
+          "seconds": 109.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Remove disposable PostgreSQL",
+          "seconds": 1.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Set up Node.js",
+          "seconds": 0.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out repository",
+          "seconds": 0.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "seconds": 0.0,
+          "conclusion": "success"
+        }
+      ],
+      "requiredCaseReports": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ],
+      "allocation": {
+        "availableCPUs": 4,
+        "nodeWorkers": 1,
+        "scratchWorkers": 3,
+        "overlap": true
+      },
+      "templateSetup": {
+        "migrationVersions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "templateCount": 11,
+        "catalogVerifications": 11
+      },
+      "dbLogSha256": "8e31e9b2f790b13eff01317cf57a66d7c57f43acef25a644f8267e2e256268ec"
+    },
+    {
+      "attempt": 2,
+      "runUrl": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/39124698497/attempts/2",
+      "dbJobUrl": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/39124698497/job/117667934304",
+      "dbJobSeconds": 193.0,
+      "dbJobConclusion": "success",
+      "recoveryStepSeconds": 14.0,
+      "steps": [
+        {
+          "name": "Set up job",
+          "seconds": 2.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out repository",
+          "seconds": 1.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up Node.js",
+          "seconds": 4.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Install dependencies",
+          "seconds": 28.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Check database target, bootstrap and report guards",
+          "seconds": 2.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify startup recovery and failure cleanup",
+          "seconds": 14.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify migration artifacts, catalog contracts and PostgreSQL behavior",
+          "seconds": 138.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Remove disposable PostgreSQL",
+          "seconds": 0.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Set up Node.js",
+          "seconds": 0.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out repository",
+          "seconds": 0.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "seconds": 0.0,
+          "conclusion": "success"
+        }
+      ],
+      "requiredCaseReports": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ],
+      "allocation": {
+        "availableCPUs": 4,
+        "nodeWorkers": 1,
+        "scratchWorkers": 3,
+        "overlap": true
+      },
+      "templateSetup": {
+        "migrationVersions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "templateCount": 11,
+        "catalogVerifications": 11
+      },
+      "dbLogSha256": "9dbf8d32cb1f32a8035cd8d2d79382a8139c41f200b2eb819c0a78fb8dd15dfe"
+    },
+    {
+      "attempt": 3,
+      "runUrl": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/39124698497/attempts/3",
+      "dbJobUrl": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/39124698497/job/117668644296",
+      "dbJobSeconds": 139.0,
+      "dbJobConclusion": "success",
+      "recoveryStepSeconds": 18.0,
+      "steps": [
+        {
+          "name": "Set up job",
+          "seconds": 2.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out repository",
+          "seconds": 1.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up Node.js",
+          "seconds": 4.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Install dependencies",
+          "seconds": 18.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Check database target, bootstrap and report guards",
+          "seconds": 2.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify startup recovery and failure cleanup",
+          "seconds": 18.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify migration artifacts, catalog contracts and PostgreSQL behavior",
+          "seconds": 91.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Remove disposable PostgreSQL",
+          "seconds": 0.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Set up Node.js",
+          "seconds": 0.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out repository",
+          "seconds": 1.0,
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "seconds": 0.0,
+          "conclusion": "success"
+        }
+      ],
+      "requiredCaseReports": [
+        {
+          "nodeRequiredCases": 75,
+          "leaseRequiredCases": 13,
+          "readinessRequiredCases": 4,
+          "predictiveRequiredCases": 111,
+          "corpusRequiredCases": 8,
+          "result": "verified"
+        }
+      ],
+      "allocation": {
+        "availableCPUs": 4,
+        "nodeWorkers": 1,
+        "scratchWorkers": 3,
+        "overlap": true
+      },
+      "templateSetup": {
+        "migrationVersions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "templateCount": 11,
+        "catalogVerifications": 11
+      },
+      "dbLogSha256": "06882a0d241c6e124ae58addc4b06ffd62c55953fa2fe857c6e1f4de8dfbff63"
+    }
+  ],
+  "acceptance": {
+    "targetMedianSeconds": 150,
+    "targetMaximumSeconds": 180,
+    "actualMedianSeconds": 162.0,
+    "actualMaximumSeconds": 193.0,
+    "medianPass": false,
+    "ceilingPass": false,
+    "result": "NOT MET"
+  },
+  "correctness": "All required cases passed in all three runs; final CI and App checks succeeded. No skipping, body weakening or required-case contract changes.",
+  "recoveryStep": {
+    "seconds": [
+      20.0,
+      14.0,
+      18.0
+    ],
+    "decision": "Propose retaining these checks in a required parallel validation job. Await owner approval before implementation.",
+    "caveat": "Subtracting this step is not a new benchmark: moving it also removes Docker-image warming from the DB job. Three fresh runs are required after any change."
+  },
+  "proposal": {
+    "pattern": "Separate independent harness validation from the timed integration suite; leave all integration cases in one job.",
+    "alternatives": [
+      "Keep serial recovery step: observed median 162 s and max 193 s miss acceptance.",
+      "Move recovery into App: reuses installation but adds time to the existing PR critical path.",
+      "Remove recovery checks: rejected; loses startup and failure-cleanup regression coverage."
+    ],
+    "scope": [
+      "Move lifecycle/startup validation to a required parallel DB harness recovery job with the same pinned checkout/Node setup, install and always teardown.",
+      "Include it in the CI aggregator and update its contract tests so failure cannot be bypassed.",
+      "Keep the DB integration suite and every case in its existing single job; no suite sharding.",
+      "Validate locally, stop for commit approval, obtain fresh push consent, then repeat three complete hosted runs."
+    ],
+    "implementationCapMinutes": 30
+  },
+  "largeArtifacts": "Raw hosted logs remain outside Git at /tmp/dfs153-hosted-final; Actions run/job links above are the remote evidence. No prototype patch or tarball added to Git.",
+  "pushesThisPhase": 1,
+  "merged": false
+}

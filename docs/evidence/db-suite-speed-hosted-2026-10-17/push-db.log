@@ -1,0 +1,613 @@
+DB integration	Set up job	﻿2026-10-18T03:18:25.5374423Z Current runner version: '2.337.0'
+DB integration	Set up job	2026-10-18T03:18:25.5400085Z ##[group]Runner Image Provisioner
+DB integration	Set up job	2026-10-18T03:18:25.5401058Z Hosted Compute Agent
+DB integration	Set up job	2026-10-18T03:18:25.5401644Z Version: 20261012.601
+DB integration	Set up job	2026-10-18T03:18:25.5402217Z Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+DB integration	Set up job	2026-10-18T03:18:25.5402999Z Build Date: 2026-10-12T17:48:21Z
+DB integration	Set up job	2026-10-18T03:18:25.5403609Z Worker ID: {d219926d-6906-401c-83c3-203e21ab4bae}
+DB integration	Set up job	2026-10-18T03:18:25.5404322Z Region: westus3
+DB integration	Set up job	2026-10-18T03:18:25.5404843Z Cloud: Azure
+DB integration	Set up job	2026-10-18T03:18:25.5405348Z ##[endgroup]
+DB integration	Set up job	2026-10-18T03:18:25.5406892Z ##[group]Operating System
+DB integration	Set up job	2026-10-18T03:18:25.5407468Z Ubuntu
+DB integration	Set up job	2026-10-18T03:18:25.5408191Z 24.04.5
+DB integration	Set up job	2026-10-18T03:18:25.5408757Z LTS
+DB integration	Set up job	2026-10-18T03:18:25.5409224Z ##[endgroup]
+DB integration	Set up job	2026-10-18T03:18:25.5410106Z ##[group]Runner Image
+DB integration	Set up job	2026-10-18T03:18:25.5410682Z Image: ubuntu-24.04
+DB integration	Set up job	2026-10-18T03:18:25.5411215Z Version: 20261012.334.1
+DB integration	Set up job	2026-10-18T03:18:25.5412199Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261012.334/images/ubuntu/Ubuntu2404-Readme.md
+DB integration	Set up job	2026-10-18T03:18:25.5413806Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261012.334
+DB integration	Set up job	2026-10-18T03:18:25.5414685Z ##[endgroup]
+DB integration	Set up job	2026-10-18T03:18:25.5415745Z ##[group]GITHUB_TOKEN Permissions
+DB integration	Set up job	2026-10-18T03:18:25.5417910Z Contents: read
+DB integration	Set up job	2026-10-18T03:18:25.5418794Z Metadata: read
+DB integration	Set up job	2026-10-18T03:18:25.5419311Z ##[endgroup]
+DB integration	Set up job	2026-10-18T03:18:25.5421434Z Secret source: Actions
+DB integration	Set up job	2026-10-18T03:18:25.5422338Z Cache mode: write
+DB integration	Set up job	2026-10-18T03:18:25.5422966Z Prepare workflow directory
+DB integration	Set up job	2026-10-18T03:18:25.5809228Z Prepare all required actions
+DB integration	Set up job	2026-10-18T03:18:25.5857170Z Getting action download info
+DB integration	Set up job	2026-10-18T03:18:25.8781215Z Download action repository 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+DB integration	Set up job	2026-10-18T03:18:26.2424279Z Download action repository 'actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1' (SHA:949feb2413d6458794dcd2491c4babbbce0c15c1)
+DB integration	Set up job	2026-10-18T03:18:27.3246328Z Complete job name: DB integration
+DB integration	Check out repository	﻿2026-10-18T03:18:27.3998622Z ##[group]Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+DB integration	Check out repository	2026-10-18T03:18:27.3999965Z with:
+DB integration	Check out repository	2026-10-18T03:18:27.4000648Z   persist-credentials: false
+DB integration	Check out repository	2026-10-18T03:18:27.4001340Z   repository: ven2dev/dfs-ev-demo
+DB integration	Check out repository	2026-10-18T03:18:27.4005608Z   token: ***
+DB integration	Check out repository	2026-10-18T03:18:27.4006223Z   ssh-strict: true
+DB integration	Check out repository	2026-10-18T03:18:27.4006804Z   ssh-user: git
+DB integration	Check out repository	2026-10-18T03:18:27.4007400Z   clean: true
+DB integration	Check out repository	2026-10-18T03:18:27.4008130Z   sparse-checkout-cone-mode: true
+DB integration	Check out repository	2026-10-18T03:18:27.4008787Z   fetch-depth: 1
+DB integration	Check out repository	2026-10-18T03:18:27.4009447Z   fetch-tags: false
+DB integration	Check out repository	2026-10-18T03:18:27.4010031Z   show-progress: true
+DB integration	Check out repository	2026-10-18T03:18:27.4010646Z   lfs: false
+DB integration	Check out repository	2026-10-18T03:18:27.4011199Z   submodules: false
+DB integration	Check out repository	2026-10-18T03:18:27.4011803Z   set-safe-directory: true
+DB integration	Check out repository	2026-10-18T03:18:27.4012507Z   allow-unsafe-pr-checkout: false
+DB integration	Check out repository	2026-10-18T03:18:27.4013485Z env:
+DB integration	Check out repository	2026-10-18T03:18:27.4014166Z   SPIKE_PROFILE_PATH: /tmp/dfs153-hosted-profile.jsonl
+DB integration	Check out repository	2026-10-18T03:18:27.4015083Z   SPIKE_TEMPLATE_PATH: /tmp/dfs153-hosted-templates.jsonl
+DB integration	Check out repository	2026-10-18T03:18:27.4016019Z ##[endgroup]
+DB integration	Check out repository	2026-10-18T03:18:27.5154701Z Syncing repository: ven2dev/dfs-ev-demo
+DB integration	Check out repository	2026-10-18T03:18:27.5158193Z ##[group]Getting Git version info
+DB integration	Check out repository	2026-10-18T03:18:27.5159894Z Working directory is '/home/runner/work/dfs-ev-demo/dfs-ev-demo'
+DB integration	Check out repository	2026-10-18T03:18:27.5162237Z [command]/usr/bin/git version
+DB integration	Check out repository	2026-10-18T03:18:27.6225744Z git version 2.55.0
+DB integration	Check out repository	2026-10-18T03:18:27.6249561Z ##[endgroup]
+DB integration	Check out repository	2026-10-18T03:18:27.6257854Z Temporarily overriding HOME='/home/runner/work/_temp/5440b1d8-c86e-4f36-b148-1d728bdbf607' before making global git config changes
+DB integration	Check out repository	2026-10-18T03:18:27.6261568Z Adding repository directory to the temporary git global config as a safe directory
+DB integration	Check out repository	2026-10-18T03:18:27.6264613Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dfs-ev-demo/dfs-ev-demo
+DB integration	Check out repository	2026-10-18T03:18:27.6504679Z Deleting the contents of '/home/runner/work/dfs-ev-demo/dfs-ev-demo'
+DB integration	Check out repository	2026-10-18T03:18:27.6508377Z ##[group]Determining repository object format
+DB integration	Check out repository	2026-10-18T03:18:27.6510015Z ##[endgroup]
+DB integration	Check out repository	2026-10-18T03:18:27.6510843Z ##[group]Initializing the repository
+DB integration	Check out repository	2026-10-18T03:18:27.6514470Z [command]/usr/bin/git init /home/runner/work/dfs-ev-demo/dfs-ev-demo
+DB integration	Check out repository	2026-10-18T03:18:27.7040487Z hint: Using 'master' as the name for the initial branch. This default branch name
+DB integration	Check out repository	2026-10-18T03:18:27.7041769Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+DB integration	Check out repository	2026-10-18T03:18:27.7043301Z hint: to use in all of your new repositories, which will suppress this warning,
+DB integration	Check out repository	2026-10-18T03:18:27.7044927Z hint: call:
+DB integration	Check out repository	2026-10-18T03:18:27.7045970Z hint:
+DB integration	Check out repository	2026-10-18T03:18:27.7047209Z hint: 	git config --global init.defaultBranch <name>
+DB integration	Check out repository	2026-10-18T03:18:27.7048683Z hint:
+DB integration	Check out repository	2026-10-18T03:18:27.7049963Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+DB integration	Check out repository	2026-10-18T03:18:27.7052011Z hint: 'development'. The just-created branch can be renamed via this command:
+DB integration	Check out repository	2026-10-18T03:18:27.7053647Z hint:
+DB integration	Check out repository	2026-10-18T03:18:27.7054591Z hint: 	git branch -m <name>
+DB integration	Check out repository	2026-10-18T03:18:27.7055773Z hint:
+DB integration	Check out repository	2026-10-18T03:18:27.7057135Z hint: Disable this message with "git config set advice.defaultBranchName false"
+DB integration	Check out repository	2026-10-18T03:18:27.7059465Z Initialized empty Git repository in /home/runner/work/dfs-ev-demo/dfs-ev-demo/.git/
+DB integration	Check out repository	2026-10-18T03:18:27.7063073Z [command]/usr/bin/git remote add origin https://github.com/ven2dev/dfs-ev-demo
+DB integration	Check out repository	2026-10-18T03:18:27.7333334Z ##[endgroup]
+DB integration	Check out repository	2026-10-18T03:18:27.7335096Z ##[group]Disabling automatic garbage collection
+DB integration	Check out repository	2026-10-18T03:18:27.7337107Z [command]/usr/bin/git config --local gc.auto 0
+DB integration	Check out repository	2026-10-18T03:18:27.7367950Z ##[endgroup]
+DB integration	Check out repository	2026-10-18T03:18:27.7370091Z ##[group]Setting up auth
+DB integration	Check out repository	2026-10-18T03:18:27.7371307Z Removing SSH command configuration
+DB integration	Check out repository	2026-10-18T03:18:27.7373564Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+DB integration	Check out repository	2026-10-18T03:18:27.7408913Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+DB integration	Check out repository	2026-10-18T03:18:27.9087559Z Removing HTTP extra header
+DB integration	Check out repository	2026-10-18T03:18:27.9095461Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+DB integration	Check out repository	2026-10-18T03:18:27.9125171Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+DB integration	Check out repository	2026-10-18T03:18:27.9294585Z Removing includeIf entries pointing to credentials config files
+DB integration	Check out repository	2026-10-18T03:18:27.9299163Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+DB integration	Check out repository	2026-10-18T03:18:27.9326584Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+DB integration	Check out repository	2026-10-18T03:18:27.9507313Z [command]/usr/bin/git config --file /home/runner/work/_temp/git-credentials-3e3f460c-f529-4f1f-acb0-1c44d2e8b8c2.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+DB integration	Check out repository	2026-10-18T03:18:27.9538574Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git.path /home/runner/work/_temp/git-credentials-3e3f460c-f529-4f1f-acb0-1c44d2e8b8c2.config
+DB integration	Check out repository	2026-10-18T03:18:27.9564563Z [command]/usr/bin/git config --local includeIf.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git/worktrees/*.path /home/runner/work/_temp/git-credentials-3e3f460c-f529-4f1f-acb0-1c44d2e8b8c2.config
+DB integration	Check out repository	2026-10-18T03:18:27.9595780Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-3e3f460c-f529-4f1f-acb0-1c44d2e8b8c2.config
+DB integration	Check out repository	2026-10-18T03:18:27.9622311Z [command]/usr/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-3e3f460c-f529-4f1f-acb0-1c44d2e8b8c2.config
+DB integration	Check out repository	2026-10-18T03:18:27.9645604Z ##[endgroup]
+DB integration	Check out repository	2026-10-18T03:18:27.9646463Z ##[group]Fetching the repository
+DB integration	Check out repository	2026-10-18T03:18:27.9652801Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +36968fa9cbed9a59210d5b50c0f2aba5f362600a:refs/remotes/origin/codex/dfs-153-hosted-spike
+DB integration	Check out repository	2026-10-18T03:18:29.0837639Z From https://github.com/ven2dev/dfs-ev-demo
+DB integration	Check out repository	2026-10-18T03:18:29.0839219Z  * [new ref]         36968fa9cbed9a59210d5b50c0f2aba5f362600a -> origin/codex/dfs-153-hosted-spike
+DB integration	Check out repository	2026-10-18T03:18:29.0847558Z [command]/usr/bin/git branch --list --remote origin/codex/dfs-153-hosted-spike
+DB integration	Check out repository	2026-10-18T03:18:29.0870836Z   origin/codex/dfs-153-hosted-spike
+DB integration	Check out repository	2026-10-18T03:18:29.0878686Z [command]/usr/bin/git rev-parse refs/remotes/origin/codex/dfs-153-hosted-spike
+DB integration	Check out repository	2026-10-18T03:18:29.0899192Z 36968fa9cbed9a59210d5b50c0f2aba5f362600a
+DB integration	Check out repository	2026-10-18T03:18:29.0902028Z ##[endgroup]
+DB integration	Check out repository	2026-10-18T03:18:29.0902535Z ##[group]Determining the checkout info
+DB integration	Check out repository	2026-10-18T03:18:29.0903198Z ##[endgroup]
+DB integration	Check out repository	2026-10-18T03:18:29.0906818Z [command]/usr/bin/git sparse-checkout disable
+DB integration	Check out repository	2026-10-18T03:18:29.1077095Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+DB integration	Check out repository	2026-10-18T03:18:29.1104164Z ##[group]Checking out the ref
+DB integration	Check out repository	2026-10-18T03:18:29.1107818Z [command]/usr/bin/git checkout --progress --force -B codex/dfs-153-hosted-spike refs/remotes/origin/codex/dfs-153-hosted-spike
+DB integration	Check out repository	2026-10-18T03:18:29.1500267Z Switched to a new branch 'codex/dfs-153-hosted-spike'
+DB integration	Check out repository	2026-10-18T03:18:29.1503021Z branch 'codex/dfs-153-hosted-spike' set up to track 'origin/codex/dfs-153-hosted-spike'.
+DB integration	Check out repository	2026-10-18T03:18:29.1511494Z ##[endgroup]
+DB integration	Check out repository	2026-10-18T03:18:29.1553815Z [command]/usr/bin/git log -1 --format=%H
+DB integration	Check out repository	2026-10-18T03:18:29.1575707Z 36968fa9cbed9a59210d5b50c0f2aba5f362600a
+DB integration	Check out repository	2026-10-18T03:18:29.1583278Z ##[group]Removing auth
+DB integration	Check out repository	2026-10-18T03:18:29.1583931Z Removing SSH command configuration
+DB integration	Check out repository	2026-10-18T03:18:29.1587581Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+DB integration	Check out repository	2026-10-18T03:18:29.1615028Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+DB integration	Check out repository	2026-10-18T03:18:29.1790517Z Removing HTTP extra header
+DB integration	Check out repository	2026-10-18T03:18:29.1794127Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+DB integration	Check out repository	2026-10-18T03:18:29.1821547Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+DB integration	Check out repository	2026-10-18T03:18:29.1990334Z Removing includeIf entries pointing to credentials config files
+DB integration	Check out repository	2026-10-18T03:18:29.1993688Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+DB integration	Check out repository	2026-10-18T03:18:29.2017751Z includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git.path
+DB integration	Check out repository	2026-10-18T03:18:29.2019032Z includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git/worktrees/*.path
+DB integration	Check out repository	2026-10-18T03:18:29.2019851Z includeif.gitdir:/github/workspace/.git.path
+DB integration	Check out repository	2026-10-18T03:18:29.2020639Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+DB integration	Check out repository	2026-10-18T03:18:29.2026393Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git.path
+DB integration	Check out repository	2026-10-18T03:18:29.2046020Z /home/runner/work/_temp/git-credentials-3e3f460c-f529-4f1f-acb0-1c44d2e8b8c2.config
+DB integration	Check out repository	2026-10-18T03:18:29.2053551Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git.path \/home\/runner\/work\/_temp\/git\-credentials\-3e3f460c\-f529\-4f1f\-acb0\-1c44d2e8b8c2\.config
+DB integration	Check out repository	2026-10-18T03:18:29.2087030Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git/worktrees/*.path
+DB integration	Check out repository	2026-10-18T03:18:29.2109198Z /home/runner/work/_temp/git-credentials-3e3f460c-f529-4f1f-acb0-1c44d2e8b8c2.config
+DB integration	Check out repository	2026-10-18T03:18:29.2117516Z [command]/usr/bin/git config --local --unset includeif.gitdir:/home/runner/work/dfs-ev-demo/dfs-ev-demo/.git/worktrees/*.path \/home\/runner\/work\/_temp\/git\-credentials\-3e3f460c\-f529\-4f1f\-acb0\-1c44d2e8b8c2\.config
+DB integration	Check out repository	2026-10-18T03:18:29.2143684Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+DB integration	Check out repository	2026-10-18T03:18:29.2165722Z /github/runner_temp/git-credentials-3e3f460c-f529-4f1f-acb0-1c44d2e8b8c2.config
+DB integration	Check out repository	2026-10-18T03:18:29.2180988Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path \/github\/runner_temp\/git\-credentials\-3e3f460c\-f529\-4f1f\-acb0\-1c44d2e8b8c2\.config
+DB integration	Check out repository	2026-10-18T03:18:29.2229965Z [command]/usr/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+DB integration	Check out repository	2026-10-18T03:18:29.2265652Z /github/runner_temp/git-credentials-3e3f460c-f529-4f1f-acb0-1c44d2e8b8c2.config
+DB integration	Check out repository	2026-10-18T03:18:29.2271264Z [command]/usr/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-3e3f460c\-f529\-4f1f\-acb0\-1c44d2e8b8c2\.config
+DB integration	Check out repository	2026-10-18T03:18:29.2301113Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+DB integration	Check out repository	2026-10-18T03:18:29.2472573Z Removing credentials config '/home/runner/work/_temp/git-credentials-3e3f460c-f529-4f1f-acb0-1c44d2e8b8c2.config'
+DB integration	Check out repository	2026-10-18T03:18:29.2482145Z ##[endgroup]
+DB integration	Set up Node.js	﻿2026-10-18T03:18:29.2712288Z ##[group]Run actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+DB integration	Set up Node.js	2026-10-18T03:18:29.2712767Z with:
+DB integration	Set up Node.js	2026-10-18T03:18:29.2713034Z   node-version-file: .nvmrc
+DB integration	Set up Node.js	2026-10-18T03:18:29.2713326Z   cache: npm
+DB integration	Set up Node.js	2026-10-18T03:18:29.2713583Z   check-latest: false
+DB integration	Set up Node.js	2026-10-18T03:18:29.2716199Z   token: ***
+DB integration	Set up Node.js	2026-10-18T03:18:29.2716483Z   package-manager-cache: true
+DB integration	Set up Node.js	2026-10-18T03:18:29.2716777Z env:
+DB integration	Set up Node.js	2026-10-18T03:18:29.2717084Z   SPIKE_PROFILE_PATH: /tmp/dfs153-hosted-profile.jsonl
+DB integration	Set up Node.js	2026-10-18T03:18:29.2717527Z   SPIKE_TEMPLATE_PATH: /tmp/dfs153-hosted-templates.jsonl
+DB integration	Set up Node.js	2026-10-18T03:18:29.2717916Z ##[endgroup]
+DB integration	Set up Node.js	2026-10-18T03:18:29.3941504Z Node version file is not TOML file
+DB integration	Set up Node.js	2026-10-18T03:18:29.3942923Z Resolved .nvmrc as 24
+DB integration	Set up Node.js	2026-10-18T03:18:29.4198768Z Found in cache @ /opt/hostedtoolcache/node/24.21.0/x64
+DB integration	Set up Node.js	2026-10-18T03:18:30.1587200Z ##[group]Environment details
+DB integration	Set up Node.js	2026-10-18T03:18:31.7741316Z node: v24.21.0
+DB integration	Set up Node.js	2026-10-18T03:18:31.7741929Z npm: 11.19.0
+DB integration	Set up Node.js	2026-10-18T03:18:31.7742301Z yarn: 1.22.22
+DB integration	Set up Node.js	2026-10-18T03:18:31.7743092Z ##[endgroup]
+DB integration	Set up Node.js	2026-10-18T03:18:31.7762049Z [command]/opt/hostedtoolcache/node/24.21.0/x64/bin/npm config get cache
+DB integration	Set up Node.js	2026-10-18T03:18:32.0505323Z /home/runner/.npm
+DB integration	Set up Node.js	2026-10-18T03:18:32.2947972Z Cache hit for: node-cache-Linux-x64-npm-04f11ce15a7d2240a72206e9951f15dcc0200a6a05503182ca8b41b3f65342e3
+DB integration	Set up Node.js	2026-10-18T03:18:33.5276027Z Received 33554432 of 259088439 (13.0%), 32.0 MBs/sec
+DB integration	Set up Node.js	2026-10-18T03:18:34.5274401Z Received 201326592 of 259088439 (77.7%), 96.0 MBs/sec
+DB integration	Set up Node.js	2026-10-18T03:18:34.8658455Z Received 259088439 of 259088439 (100.0%), 105.7 MBs/sec
+DB integration	Set up Node.js	2026-10-18T03:18:34.8721935Z Cache Size: ~247 MB (259088439 B)
+DB integration	Set up Node.js	2026-10-18T03:18:34.8780895Z [command]/usr/bin/tar -xf /home/runner/work/_temp/f721f3b5-f677-490a-94a0-384cceac379d/cache.tzst -P -C /home/runner/work/dfs-ev-demo/dfs-ev-demo --use-compress-program unzstd
+DB integration	Set up Node.js	2026-10-18T03:18:35.2085197Z Cache restored successfully
+DB integration	Set up Node.js	2026-10-18T03:18:35.2183118Z Cache restored from key: node-cache-Linux-x64-npm-04f11ce15a7d2240a72206e9951f15dcc0200a6a05503182ca8b41b3f65342e3
+DB integration	Install dependencies	﻿2026-10-18T03:18:35.2311787Z ##[group]Run npm ci
+DB integration	Install dependencies	2026-10-18T03:18:35.2312087Z ^[[36;1mnpm ci^[[0m
+DB integration	Install dependencies	2026-10-18T03:18:35.3277740Z shell: /usr/bin/bash -e {0}
+DB integration	Install dependencies	2026-10-18T03:18:35.3278321Z env:
+DB integration	Install dependencies	2026-10-18T03:18:35.3278692Z   SPIKE_PROFILE_PATH: /tmp/dfs153-hosted-profile.jsonl
+DB integration	Install dependencies	2026-10-18T03:18:35.3279148Z   SPIKE_TEMPLATE_PATH: /tmp/dfs153-hosted-templates.jsonl
+DB integration	Install dependencies	2026-10-18T03:18:35.3279527Z ##[endgroup]
+DB integration	Install dependencies	2026-10-18T03:18:43.4664588Z npm warn deprecated tsconfck@3.1.6: unmaintained
+DB integration	Install dependencies	2026-10-18T03:18:44.0000383Z npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+DB integration	Install dependencies	2026-10-18T03:18:44.4013530Z npm warn deprecated json-ptr@3.1.1: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+DB integration	Install dependencies	2026-10-18T03:18:45.1219325Z npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+DB integration	Install dependencies	2026-10-18T03:18:51.3409458Z npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+DB integration	Install dependencies	2026-10-18T03:18:57.5823021Z 
+DB integration	Install dependencies	2026-10-18T03:18:57.5823846Z added 1148 packages, and audited 1149 packages in 22s
+DB integration	Install dependencies	2026-10-18T03:18:57.5829734Z 
+DB integration	Install dependencies	2026-10-18T03:18:57.5830478Z 258 packages are looking for funding
+DB integration	Install dependencies	2026-10-18T03:18:57.5831054Z   run `npm fund` for details
+DB integration	Install dependencies	2026-10-18T03:18:57.6293888Z 
+DB integration	Install dependencies	2026-10-18T03:18:57.6294870Z 13 vulnerabilities (2 moderate, 11 high)
+DB integration	Install dependencies	2026-10-18T03:18:57.6295232Z 
+DB integration	Install dependencies	2026-10-18T03:18:57.6295469Z To address all issues (including breaking changes), run:
+DB integration	Install dependencies	2026-10-18T03:18:57.6295972Z   npm audit fix --force
+DB integration	Install dependencies	2026-10-18T03:18:57.6296208Z 
+DB integration	Install dependencies	2026-10-18T03:18:57.6296372Z Run `npm audit` for details.
+DB integration	Install dependencies	2026-10-18T03:18:57.6310209Z npm warn install-scripts 4 packages have install scripts not yet covered by allowScripts:
+DB integration	Install dependencies	2026-10-18T03:18:57.6311570Z npm warn install-scripts   @firebase/util@1.15.3 (postinstall: node ./postinstall.js)
+DB integration	Install dependencies	2026-10-18T03:18:57.6312818Z npm warn install-scripts   protobufjs@7.6.6 (postinstall: node scripts/postinstall)
+DB integration	Install dependencies	2026-10-18T03:18:57.6315463Z npm warn install-scripts   re2@1.27.0 (install: install-from-cache --artifact build/Release/re2.node --host-var RE2_DOWNLOAD_MIRROR --skip-path-var RE2_DOWNLOAD_SKIP_PATH --skip-ver-var RE2_DOWNLOAD_SKIP_VER --force-build-var RE2_DOWNLOAD_FORCE_BUILD || node-gyp -j max rebuild)
+DB integration	Install dependencies	2026-10-18T03:18:57.6317920Z npm warn install-scripts   unrs-resolver@1.12.2 (postinstall: node postinstall.js)
+DB integration	Install dependencies	2026-10-18T03:18:57.6318780Z npm warn install-scripts
+DB integration	Install dependencies	2026-10-18T03:18:57.6319701Z npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+DB integration	Check database target, bootstrap and report guards	﻿2026-10-18T03:18:57.7077571Z ##[group]Run npm run test:db:guard
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:57.7077896Z ^[[36;1mnpm run test:db:guard^[[0m
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:57.7123082Z shell: /usr/bin/bash -e {0}
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:57.7123361Z env:
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:57.7123740Z   SPIKE_PROFILE_PATH: /tmp/dfs153-hosted-profile.jsonl
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:57.7124132Z   SPIKE_TEMPLATE_PATH: /tmp/dfs153-hosted-templates.jsonl
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:57.7124451Z ##[endgroup]
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:57.8030680Z 
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:57.8031472Z > dfs-ev-demo@0.1.0 test:db:guard
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:57.8032715Z > node --test tests/db/target.check.mjs tests/db/bootstrap-unit.check.mjs tests/db/report-unit.check.mjs tests/db/readiness-manifest-unit.check.mjs
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:57.8033594Z 
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:57.9499777Z ✔ primary migration bootstrap refuses unsafe targets and remote credentials before database access (2.056948ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:58.2753848Z ✔ readiness generation binds the explicit minimum to validated migration and table contracts (259.360714ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0201750Z ✔ readiness artifact checks reject missing or stale runtime manifests without rewriting them (744.950674ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0387525Z ✔ Node DB report requires each named case in its original file and a complete successful summary (183.542348ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0389358Z ✔ Vitest DB report requires the readiness cases independently of the existing 13 lease cases (1.560353ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0391107Z ✔ Vitest DB report requires every predictive persistence case independently of lease and readiness cases (54.796181ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0392647Z ✔ Vitest DB report requires every corpus schema case independently of the other DB suites (1.168397ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0394130Z ✔ actual Node reports refuse zero, filtered, missing, skipped, todo and failed cases (595.481165ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0395699Z ✔ Vitest DB report preserves all required lease cases and refuses missing, skipped, todo or failed results (0.987429ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0397023Z ✔ accepts only explicit loopback test connections (1.501129ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0398920Z ✔ rejects missing, external, production, ambiguous, and overridden targets without exposing the URL (1.547181ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0400183Z ✔ rejects application credentials and ambient pg configuration (0.557616ms)
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0400832Z ℹ tests 12
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0401190Z ℹ suites 0
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0401567Z ℹ pass 12
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0401901Z ℹ fail 0
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0402258Z ℹ cancelled 0
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0402634Z ℹ skipped 0
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0402994Z ℹ todo 0
+DB integration	Check database target, bootstrap and report guards	2026-10-18T03:18:59.0403406Z ℹ duration_ms 1204.522954
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	﻿2026-10-18T03:18:59.0523974Z ##[group]Run npm run test:db:local
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:18:59.0524316Z ^[[36;1mnpm run test:db:local^[[0m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:18:59.0524612Z ^[[36;1mcat "$SPIKE_PROFILE_PATH.runs.jsonl"^[[0m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:18:59.0560656Z shell: /usr/bin/bash -e {0}
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:18:59.0560925Z env:
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:18:59.0561195Z   SPIKE_PROFILE_PATH: /tmp/dfs153-hosted-profile.jsonl
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:18:59.0561600Z   SPIKE_TEMPLATE_PATH: /tmp/dfs153-hosted-templates.jsonl
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:18:59.0561917Z ##[endgroup]
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:18:59.1475034Z 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:18:59.1475709Z > dfs-ev-demo@0.1.0 test:db:local
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:18:59.1476383Z > node scripts/test-db.mjs local
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:18:59.1476695Z 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:02.1648246Z  postgres Pulling 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0274007Z  e2de96513ba9 Already exists 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0299791Z  976cd45ecd0f Pulling fs layer 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0300664Z  d8f47ca787e9 Pulling fs layer 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0301607Z  30b4807a96db Pulling fs layer 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0302199Z  23ebd6772525 Pulling fs layer 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0302564Z  e5545be08ab6 Pulling fs layer 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0302997Z  a7fe94998417 Pulling fs layer 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0303477Z  176ab66edd39 Pulling fs layer 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0303939Z  5ef7ae0adbc8 Pulling fs layer 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0304421Z  23ebd6772525 Waiting 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0304787Z  e5545be08ab6 Waiting 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0305033Z  a7fe94998417 Waiting 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0305332Z  176ab66edd39 Waiting 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.0305643Z  5ef7ae0adbc8 Waiting 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.1984738Z  d8f47ca787e9 Downloading [>                                                  ]  15.79kB/901.4kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.2003589Z  30b4807a96db Downloading [==================================================>]     116B/116B
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.2004388Z  30b4807a96db Verifying Checksum 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.2004845Z  30b4807a96db Download complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.2005517Z  976cd45ecd0f Downloading [==================================================>]     968B/968B
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.2009349Z  976cd45ecd0f Verifying Checksum 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.2009873Z  976cd45ecd0f Download complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.2010789Z  976cd45ecd0f Extracting [==================================================>]     968B/968B
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.2040750Z  d8f47ca787e9 Verifying Checksum 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.2041285Z  d8f47ca787e9 Download complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.2054493Z  976cd45ecd0f Extracting [==================================================>]     968B/968B
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.3703701Z  e5545be08ab6 Downloading [=========>                                         ]  3.501kB/19.01kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.3706222Z  e5545be08ab6 Downloading [==================================================>]  19.01kB/19.01kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.3707039Z  e5545be08ab6 Verifying Checksum 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.3707578Z  e5545be08ab6 Download complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.3746918Z  a7fe94998417 Download complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.3822682Z  23ebd6772525 Downloading [>                                                  ]  537.5kB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.4829401Z  23ebd6772525 Downloading [==================>                                ]  43.03MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.5388725Z  176ab66edd39 Downloading [============================>                      ]  3.502kB/6.109kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.5389826Z  176ab66edd39 Downloading [==================================================>]  6.109kB/6.109kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.5390684Z  176ab66edd39 Verifying Checksum 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.5391136Z  176ab66edd39 Download complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.5429253Z  5ef7ae0adbc8 Downloading [==================================================>]     183B/183B
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.5429875Z  5ef7ae0adbc8 Verifying Checksum 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.5432612Z  5ef7ae0adbc8 Download complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.5835549Z  23ebd6772525 Downloading [=====================================>             ]  86.47MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.6486614Z  23ebd6772525 Verifying Checksum 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:03.6487052Z  23ebd6772525 Download complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.2275314Z  976cd45ecd0f Pull complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.2285949Z  d8f47ca787e9 Extracting [=>                                                 ]  32.77kB/901.4kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.2735381Z  d8f47ca787e9 Extracting [==================================================>]  901.4kB/901.4kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.2736781Z  d8f47ca787e9 Extracting [==================================================>]  901.4kB/901.4kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.5224315Z  d8f47ca787e9 Pull complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.5232703Z  30b4807a96db Extracting [==================================================>]     116B/116B
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.5236379Z  30b4807a96db Extracting [==================================================>]     116B/116B
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.5291933Z  30b4807a96db Pull complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.5397755Z  23ebd6772525 Extracting [>                                                  ]  557.1kB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.6457013Z  23ebd6772525 Extracting [==>                                                ]  6.128MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.7503444Z  23ebd6772525 Extracting [======>                                            ]   15.6MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.8540220Z  23ebd6772525 Extracting [==========>                                        ]  25.07MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:04.9598213Z  23ebd6772525 Extracting [==============>                                    ]  34.54MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:05.0658850Z  23ebd6772525 Extracting [===================>                               ]  44.01MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:05.1721025Z  23ebd6772525 Extracting [=======================>                           ]  53.48MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:05.2732312Z  23ebd6772525 Extracting [=========================>                         ]  59.05MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:05.3767935Z  23ebd6772525 Extracting [============================>                      ]  66.85MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:05.4773883Z  23ebd6772525 Extracting [================================>                  ]  75.76MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:05.5987790Z  23ebd6772525 Extracting [====================================>              ]  83.56MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:05.7121105Z  23ebd6772525 Extracting [====================================>              ]  84.67MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:05.8124348Z  23ebd6772525 Extracting [======================================>            ]  88.01MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:05.9161395Z  23ebd6772525 Extracting [========================================>          ]  93.59MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.0199788Z  23ebd6772525 Extracting [===========================================>       ]  99.71MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.1228937Z  23ebd6772525 Extracting [=============================================>     ]  104.2MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.2249043Z  23ebd6772525 Extracting [=================================================> ]  114.2MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.2528769Z  23ebd6772525 Extracting [==================================================>]  115.3MB/115.3MB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.7662804Z  23ebd6772525 Pull complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.7672516Z  e5545be08ab6 Extracting [==================================================>]  19.01kB/19.01kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.7680121Z  e5545be08ab6 Extracting [==================================================>]  19.01kB/19.01kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.7754985Z  e5545be08ab6 Pull complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.7763648Z  a7fe94998417 Extracting [==================================================>]     128B/128B
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.7766697Z  a7fe94998417 Extracting [==================================================>]     128B/128B
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8075405Z  a7fe94998417 Pull complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8084574Z  176ab66edd39 Extracting [==================================================>]  6.109kB/6.109kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8093609Z  176ab66edd39 Extracting [==================================================>]  6.109kB/6.109kB
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8163067Z  176ab66edd39 Pull complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8171193Z  5ef7ae0adbc8 Extracting [==================================================>]     183B/183B
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8175056Z  5ef7ae0adbc8 Extracting [==================================================>]     183B/183B
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8234918Z  5ef7ae0adbc8 Pull complete 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8275999Z  postgres Pulled 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8334758Z  Network dfs-ev-demo-test_default  Creating
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8621333Z  Network dfs-ev-demo-test_default  Created
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8629743Z  Container dfs-ev-demo-test-postgres-1  Creating
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8787900Z  Container dfs-ev-demo-test-postgres-1  Created
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:06.8794988Z  Container dfs-ev-demo-test-postgres-1  Starting
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:07.5649700Z  Container dfs-ev-demo-test-postgres-1  Started
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:07.5650168Z  Container dfs-ev-demo-test-postgres-1  Waiting
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.0666231Z  Container dfs-ev-demo-test-postgres-1  Healthy
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.1477768Z {"hostedSpike":true,"availableCPUs":4,"nodeWorkers":1,"scratchWorkers":3}
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.2779490Z Migration artifacts verified.
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.5503632Z Database readiness manifest verified.
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.7596182Z ✔ primary migration bootstrap refuses unsafe targets and remote credentials before database access (3.144238ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.8964825Z ✔ catalog requires explicit credentials, environment and matching expected target (3.828209ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.8971925Z ✔ catalog rejects pooled, non-Neon and URL overrides without reflecting credentials (1.56693ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.8973435Z ✔ catalog test mode retains the existing strict disposable guard (0.760304ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.8999831Z ✔ catalog fingerprint canonicalizes object keys without discarding semantic differences (0.548063ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.9636279Z 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.9650407Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv5.0.3 ^[[39m^[[90m/home/runner/work/dfs-ev-demo/dfs-ev-demo^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:10.9651303Z 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:11.0240058Z ✔ snapshot destinations must be outside the repo, including symlinked parents (16.858841ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:11.0269006Z ✔ CLI refuses malformed configuration without printing parser errors or URL values (111.251393ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:11.0296464Z ✔ catalog comparison reports every missing, unexpected and changed definition (3.557372ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:11.3936146Z ✔ empty export creates neither application objects nor migration ledger (146.07857ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:11.7190505Z ✔ exports authentic eight-table pre-41 and seventeen-table current candidates (322.418408ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:12.8090712Z ✔ exports preserve synthetic rows and exclude row values and sequence progress (1090.768859ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:12.9300834Z ✔ database enforces read-only export and failed exports roll back their session (123.132235ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:13.0491822Z ✔ catalog refuses an unexpected connected database before catalog access (117.706766ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:13.4471024Z ✔ collector refuses noncanonical and shadow search paths before inventory without changing transaction boundaries (395.164662ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:13.6466399Z ✔ extension inventory covers members by exact dependency ownership and retains unrelated objects (202.792132ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:14.6667392Z ✔ contracts bind every immutable prefix, ledger DDL and inventory query and omit environment metadata (479.806832ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:16.1445148Z ✔ contract drift check reports all changed, missing and unexpected artifacts without writing (513.683526ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:16.1461376Z ✔ contract CLI refuses missing or remote targets and unsupported options without connecting or leaking values (968.265754ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:16.1469767Z ✔ regeneration refuses catalog classes that lack complete definition coverage (0.673102ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:17.3185774Z ✔ both generated contracts match independent historical fixtures without a ledger (939.090374ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:19.0207537Z ✔ full verifier reports every real column, key, check, FK, index, sequence and unexpected-object mismatch without repair (1701.033185ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:20.7811428Z ✔ unenforced foreign keys and disabled internal enforcement triggers are detected independently of validation (1754.910663ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:22.1556381Z ✔ a naturally failed concurrent unique-index build exposes invalidity to the verifier (1379.707294ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:23.2896478Z ✔ failed upgrade verification preserves the committed baseline, seeded rows and original ledger (1134.593835ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:25.7272800Z ✔ extra ledger objects and removed ledger constraints fail even when ledger rows remain valid (2438.742046ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:43.7614964Z ✔ fresh scratch databases reproduce contracts while ignoring owner roles, OIDs and sequence progress (18032.25273ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:44.0279223Z ✔ contract generation refuses unsupported managed objects and cleans up its scratch databases (267.237829ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:55.2664965Z ✔ an extension can be explicitly contracted without its members hiding application drift (11238.748691ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:55.5793700Z ✔ candidate artifacts preserve the authentic historical boundary and all schema comments (117.834597ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:55.5924213Z ✔ manifest rejects edited bytes, missing files, extra fields and unsupported runner versions (11.691042ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:55.6100450Z ✔ migration files refuse gaps, down files, CRLF, empty content and symlinked SQL (15.46888ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:55.6102154Z ✔ SQL cannot end the runner transaction even behind comments and quoted statements (2.055718ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:55.9671366Z ✔ ledger validation refuses holes, checksum mismatches, empty history and unknown provenance (34.306798ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:55.9702900Z ✔ manual status requires explicit matching targets and up requires approval before any connection (324.855355ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:55.9783800Z ✔ manifest generation never rewrites known migration checksums (13.127484ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:58.3642539Z ✔ empty installation matches the authentic current catalog and reruns preserve ledger and relational rows (2129.046361ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:58.6060131Z ✔ read-only status creates no ledger and unversioned application schemas cannot be adopted (240.807924ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:59.8790702Z ✔ recorded baseline upgrades preserve seeded relationships and working sequence defaults (1274.395014ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:19:59.9606774Z ✔ PostgreSQL rejects writes inside status and failed status restores the session (80.53895ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:00.0716248Z ✔ second migration invalid SQL rolls back the successful first file and its ledger insert (110.514117ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:01.8678566Z ✔ deep catalog mismatch rolls back all application DDL and ledger writes without an inner commit (1796.574897ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0173040Z  ^[[32m✓^[[39m tests/db/predictive.test.ts ^[[2m(^[[22m^[[2m32 tests^[[22m^[[2m)^[[22m^[[33m 50063^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0203238Z    ^[[33m^[[2m✓^[[22m^[[39m predictive PostgreSQL seeds exactly the application team identities, refuses others and publishes Rams replay inputs^[[33m 2576^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0238627Z    ^[[33m^[[2m✓^[[22m^[[39m predictive PostgreSQL A/B replay preserves the earlier bundle and uses later corrections^[[33m 1542^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0240897Z    ^[[33m^[[2m✓^[[22m^[[39m predictive scoped reads retain corrections that move evidence out of the indexed scope^[[33m 1467^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0243172Z    ^[[33m^[[2m✓^[[22m^[[39m predictive persistence retains former-team membership gaps and ignores unrelated schedule dependencies^[[33m 2446^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0246128Z    ^[[33m^[[2m✓^[[22m^[[39m predictive retries and unchanged recaptures preserve immutable revisions and their earliest provenance^[[33m 2184^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0248501Z    ^[[33m^[[2m✓^[[22m^[[39m predictive publication is invisible until commit and concurrent retries publish one batch^[[33m 1044^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0251171Z    ^[[33m^[[2m✓^[[22m^[[39m predictive failed and partial publication quarantine diagnostics without exposing partial inputs^[[33m 1149^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0254673Z    ^[[33m^[[2m✓^[[22m^[[39m predictive publication rolls back conflicts and invalid correction lineage while retaining the earlier replay^[[33m 1377^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0258754Z    ^[[33m^[[2m✓^[[22m^[[39m predictive immutable rows, typed evidence and source-chain keys are enforced by PostgreSQL^[[33m 1118^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0261846Z    ^[[33m^[[2m✓^[[22m^[[39m predictive PostgreSQL enforces rights knowledge time, harness-only synthetic evidence and per-provider chains^[[33m 1479^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0264687Z    ^[[33m^[[2m✓^[[22m^[[39m predictive missing or tampered artifact bytes withhold replay without replacing stored evidence^[[33m 1225^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0267516Z    ^[[33m^[[2m✓^[[22m^[[39m predictive indexed membership reads are player-scoped and read transactions remain read-only^[[33m 1072^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0270535Z    ^[[33m^[[2m✓^[[22m^[[39m predictive archive restoration recreates the same cutoff bundles in fresh scratch databases^[[33m 8597^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0294670Z    ^[[33m^[[2m✓^[[22m^[[39m predictive v2 upgrade preserves application rows and no-op migrations preserve the new history^[[33m 1445^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0297684Z    ^[[33m^[[2m✓^[[22m^[[39m predictive evidence reset refuses databases recording the removed synthetic migrations without repair^[[33m 505^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0299975Z    ^[[33m^[[2m✓^[[22m^[[39m predictive roles hold only their granted privileges and PUBLIC cannot execute predictive functions^[[33m 1001^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0302612Z    ^[[33m^[[2m✓^[[22m^[[39m predictive trial, research-only, cross-profile and out-of-order rights cannot authorize publication or current use^[[33m 1445^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0305254Z    ^[[33m^[[2m✓^[[22m^[[39m predictive reconciliation decisions resolve only their exact provider heads and PostgreSQL refuses misstated evidence^[[33m 1387^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0307738Z    ^[[33m^[[2m✓^[[22m^[[39m predictive coverage-aware absences block later cutoffs only and PostgreSQL refuses unproven disappearance^[[33m 1537^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0310109Z    ^[[33m^[[2m✓^[[22m^[[39m predictive completion records must cite exactly the marker heads known at their decision time and state the policy outcome^[[33m 1239^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0312393Z    ^[[33m^[[2m✓^[[22m^[[39m predictive participation records and outcome labels enforce all nine binding checks in PostgreSQL^[[33m 1162^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0314615Z    ^[[33m^[[2m✓^[[22m^[[39m predictive feature runs are recorded after read-only computation with exact dependencies, digests and retention^[[33m 1655^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0316929Z    ^[[33m^[[2m✓^[[22m^[[39m predictive identity bridges refuse same-source ambiguity at write and keep corrections in their chain^[[33m 360^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0319480Z    ^[[33m^[[2m✓^[[22m^[[39m predictive retention removes a source scope with chain descendants and derived rows, audits it and re-applies it to a restored backup^[[33m 1503^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0322136Z    ^[[33m^[[2m✓^[[22m^[[39m predictive retention expires unpinned feature runs with digest-only audit and admits deletion only through the owner function^[[33m 1117^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0324796Z    ^[[33m^[[2m✓^[[22m^[[39m predictive snap evidence enforces counts and missingness and snap compatibility decisions cite the complete provider overlap^[[33m 1130^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0439091Z    ^[[33m^[[2m✓^[[22m^[[39m predictive blob cleanup and publication serialize on the blob digest in both orders and cleanup resumes after a failed removal^[[33m 603^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0463887Z    ^[[33m^[[2m✓^[[22m^[[39m predictive retention drains and resumes blob removals through an execute-only non-superuser login^[[33m 1931^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0466576Z    ^[[33m^[[2m✓^[[22m^[[39m predictive rollback removes unpublished bytes and orphan recovery preserves committed blobs and journals^[[33m 1247^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0469465Z    ^[[33m^[[2m✓^[[22m^[[39m predictive blob reference identity preserves committed application/json and removes its unreferenced sibling^[[33m 1111^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0472435Z    ^[[33m^[[2m✓^[[22m^[[39m predictive blob reference identity preserves committed text/csv and removes its unreferenced sibling^[[33m 1089^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:02.0475018Z    ^[[33m^[[2m✓^[[22m^[[39m predictive final labels bind exact raw identity and retaining their bridge removes later label versions^[[33m 1281^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:03.1414261Z ✔ held transaction lock fails promptly and concurrent runners cannot double-apply (1272.170845ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:08.0678468Z ✔ empty, partial, hole, checksum and unknown-runner ledgers fail without repair (4926.643499ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:08.1245200Z ✔ scratch target guards refuse primary, external, overridden and released database names (56.654449ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:09.7781235Z ✔ planning context freezes validated source and refuses edited bytes, contracts and forged contexts (487.551325ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:09.7800951Z ✔ fingerprints bind facts while remaining independent of object key order and their own stored value (0.741595ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:09.7823080Z ✔ plan requires private output, explicit matching target and read-only command options (162.418953ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:09.7831628Z ✔ up cannot bypass fingerprint approval, scratch registration or pending owner evidence (459.910957ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:12.4111447Z ✔ read-only plans are deterministic, create no ledger and fresh approvals install then no-op (2383.181923ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:12.9367587Z ✔ verified seeded current adoption changes only ledger metadata and never replays application SQL (522.54267ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:14.0260736Z ✔ verified seeded pre-41 adoption records its baseline and executes additions while preserving rows and sequences (1091.772257ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:14.4905294Z ✔ approved recorded-baseline upgrades preserve existing ledger rows and execute only the pending file (465.868353ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:14.8320319Z ✔ ambiguous unversioned catalogs never guess the latest version or adopt (338.499161ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:15.2094982Z ✔ partial or mismatched unversioned schemas expose every candidate difference and refuse approved adoption without repair (378.390404ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:17.1920304Z ✔ schema, history, source checksums and target changes invalidate approval before any mutation (1981.980085ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:17.5294095Z ✔ invalid SQL after verified baseline adoption rolls back ledger creation and preserves the authentic schema (339.121226ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:18.7146617Z ✔ failed final verification rolls back adoption and upgrade with nothing leaked to a second connection (1184.138981ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6852283Z  ^[[32m✓^[[39m tests/db/sourceClaims.spike2.test.ts ^[[2m(^[[22m^[[2m26 tests^[[22m^[[2m)^[[22m^[[33m 70787^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6854748Z    ^[[33m^[[2m✓^[[22m^[[39m CSV unavailable bindings persist forward and reverse identity conflicts and schedule ambiguity with all conflicting evidence^[[33m 7460^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6857731Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source participation combines native claims with positive usage and never infers absence from zero or blank statistics^[[33m 10071^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6860392Z    ^[[33m^[[2m✓^[[22m^[[39m CSV QB consumers record explicit source manifests and final labels without ordinary stats observations^[[33m 9814^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6867460Z    ^[[33m^[[2m✓^[[22m^[[39m CSV QB consumers operate through non-superuser execute-only recorders and replay refuses damaged bytes or links^[[33m 9033^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6869979Z    ^[[33m^[[2m✓^[[22m^[[39m CSV QB consumer retention removes features labels and complete label lineage through the retention-only login^[[33m 6440^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6872221Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decision current source, historical context and native rights are checked before any file opens^[[33m 3437^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6875501Z    ^[[33m^[[2m✓^[[22m^[[39m CSV unavailable migration upgrades v6 preserving v1 positive and withheld plans, exact retries and recorded history^[[33m 3622^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6878737Z    ^[[33m^[[2m✓^[[22m^[[39m CSV bindings preserve numeric corrections, unchanged recaptures and player A to B to A canonical chains^[[33m 2040^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6880932Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding bridge retention removes ancestors and descendants and identical restored evidence re-applies its audit^[[33m 1533^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6883354Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decision recorder and replay enforce actual non-superuser privileges and database-clock access^[[33m 2093^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6885537Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decision SQL recomputes rehashed outcomes, exact inputs, witness scope, selection and mode^[[33m 2401^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6888586Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source retention re-applies identical row deletion after re-importing retained files into a fresh database^[[33m 643^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6890896Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding stale source or bridge evidence withholds replay and SQL refuses stale heads and proposals^[[33m 1478^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6893180Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source SQL enforces complete row ordinals, strict projection shape and the canonical binding boundary^[[33m 914^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6895854Z    ^[[33m^[[2m✓^[[22m^[[39m CSV canonical fact reads discover an unrecorded destination and withhold both routes without stale numeric payloads^[[33m 1254^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6898254Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding recorder uses database time and execute-only writes while replay remains read-only research staging^[[33m 869^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6900420Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding unrecorded bridge conflicts withhold the current raw contribution without poisoning earlier cutoffs^[[33m 1015^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6902421Z    ^[[33m^[[2m✓^[[22m^[[39m CSV consumer checks withhold stale routing and revoked access instead of reviving earlier selected values^[[33m 1027^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6904187Z    ^[[33m^[[2m✓^[[22m^[[39m CSV SQL witness mismatch fails closed and restores the read-only replay transaction^[[33m 801^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6906039Z    ^[[33m^[[2m✓^[[22m^[[39m CSV SQL witness access uses database-clock rights and denies private kernels and unbounded requests^[[33m 883^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6908732Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding hydration refuses altered associations and source bytes and current rights revocation blocks reads and retries^[[33m 524^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6911080Z    ^[[33m^[[2m✓^[[22m^[[39m CSV unavailable planning checks context rights before file hydration and revocation blocks saved conflicts and retries^[[33m 685^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6913617Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source migration upgrades released v4 preserving creator corpus evidence and recorded history^[[33m 1798^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:22.6916043Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source replay keeps equal-time conflicts ambiguous and late older imports cannot replace a newer snapshot^[[33m 351^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:24.5735374Z ✔ pre-existing empty, partial, hole, checksum and unknown-runner ledgers are refused rather than adopted (5859.683747ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:25.7363680Z ✔ valid ledger rows with catalog drift produce a readable non-executable plan (1160.380875ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:28.3459115Z ✔ incomplete or rewritten ledger results cannot commit after otherwise valid migration SQL (2612.122582ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:28.3801674Z ✔ plan is enforced read-only and restores the session after a PostgreSQL write refusal (34.334884ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:29.5010657Z ✔ up takes the lock before reading history and concurrent adoption cannot double-apply (1120.075774ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:29.5893776Z ✔ missing approval and unregistered, primary or remote mutation targets fail before a transaction (88.155094ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.0983901Z ✔ owner plan CLI writes a private exclusive artifact outside Git without changing the shared database (1508.413627ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.5846849Z ✔ readiness generation binds the explicit minimum to validated migration and table contracts (306.416181ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8527660Z  ^[[32m✓^[[39m tests/db/sourceClaims.spike0.test.ts ^[[2m(^[[22m^[[2m27 tests^[[22m^[[2m)^[[22m^[[33m 79955^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8530081Z    ^[[33m^[[2m✓^[[22m^[[39m CSV QB consumers preserve earlier cutoffs while recaptures withhold current decisions and labels^[[33m 18351^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8532747Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source reconciliation evaluates every bound provider and deterministic agreement also supports team facts^[[33m 10701^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8535279Z    ^[[33m^[[2m✓^[[22m^[[39m CSV unavailable retention re-applies pre-v7 legacy events with identical counts and digests after restoration^[[33m 5341^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8537770Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decisions persist unavailable plans and recover without stale selections while missing facts remain insufficient^[[33m 7538^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8540442Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decisions persist exact witnesses at database time with immutable history and idempotent retries^[[33m 6467^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8543017Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decision recaptures invalidate current records without changing earlier replay or numerical revisions^[[33m 4048^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8545446Z    ^[[33m^[[2m✓^[[22m^[[39m CSV QB consumers preserve earlier unavailable replay after a later unrelated source deletion^[[33m 3847^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8547737Z    ^[[33m^[[2m✓^[[22m^[[39m CSV SQL witnesses match verified player and team reads, missing scope and equivalent rights renewal^[[33m 1977^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8550121Z    ^[[33m^[[2m✓^[[22m^[[39m CSV canonical fact reads expand raw lineages before filtering and preserve read-only A to B to A provenance^[[33m 2223^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8552373Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decision native retention deletes the entire affected lineage without reviving an earlier positive record^[[33m 2463^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8579913Z    ^[[33m^[[2m✓^[[22m^[[39m CSV QB migration upgrades v9 preserving binding and decision history and is idempotent^[[33m 2831^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8581979Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source migration upgrades released v3 without changing existing evidence or its recorded checksum^[[33m 2504^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8584175Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decision migration upgrades v8 preserving recorded bindings and witnesses and reruns as a no-op^[[33m 2658^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8586407Z    ^[[33m^[[2m✓^[[22m^[[39m CSV SQL current witness checks invalidate same-revision recaptures and refuse unchanged empty evidence^[[33m 1388^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8588836Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding schedule reconciliation pins only a current exact selection and a new conflicting head can be recorded unavailable^[[33m 658^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8590987Z    ^[[33m^[[2m✓^[[22m^[[39m CSV SQL witness checker rejects rehashed omissions, fabricated heads and forged unavailable reasons^[[33m 1009^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8593086Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding retention removes entire cited raw lineages through execute-only access and preserves unrelated evidence^[[33m 761^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8595630Z    ^[[33m^[[2m✓^[[22m^[[39m CSV unavailable bindings verify every ambiguous capture file and allow evidenced conflict recovery^[[33m 706^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8597872Z    ^[[33m^[[2m✓^[[22m^[[39m CSV canonical fact reads verify raw bytes even outside the requested destination and fail instead of truncating discovery^[[33m 520^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8610711Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding migration upgrades v5 without changing released history and reruns are no-ops^[[33m 1363^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8613217Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding SQL rejects rehashed payload, row, dependency and raw identity forgeries and malformed plans^[[33m 500^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8615298Z    ^[[33m^[[2m✓^[[22m^[[39m CSV normalization scoped reads retain schedule alias conflicts outside the mapped canonical game^[[33m 423^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8617615Z    ^[[33m^[[2m✓^[[22m^[[39m CSV capture-less unavailable bindings keep source rights and whole-lineage retention through execute-only ownership^[[33m 439^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8620073Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding canonical guard refuses generated JSON under real source profiles and immutable bindings cannot be rewritten^[[33m 400^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:31.8622347Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decision retention conservatively removes capture-less scopes inside time-limited source deletions^[[33m 424^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:32.4857055Z ✔ readiness artifact checks reject missing or stale runtime manifests without rewriting them (901.498817ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:32.7084475Z ✔ Node DB report requires each named case in its original file and a complete successful summary (115.05956ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:32.7086755Z ✔ Vitest DB report requires the readiness cases independently of the existing 13 lease cases (1.050628ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:32.7095224Z ✔ Vitest DB report requires every predictive persistence case independently of lease and readiness cases (32.179183ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:32.7097206Z ✔ Vitest DB report requires every corpus schema case independently of the other DB suites (0.763506ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.3434467Z ✔ actual Node reports refuse zero, filtered, missing, skipped, todo and failed cases (635.316907ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.3436523Z ✔ Vitest DB report preserves all required lease cases and refuses missing, skipped, todo or failed results (0.988259ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.4536852Z ✔ accepts only explicit loopback test connections (1.848369ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.4554251Z ✔ rejects missing, external, production, ambiguous, and overridden targets without exposing the URL (1.370686ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.4570463Z ✔ rejects application credentials and ambient pg configuration (0.597287ms)
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.4725334Z ℹ tests 75
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.4739751Z ℹ suites 0
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.4753549Z ℹ pass 75
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.4755958Z ℹ fail 0
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.4756686Z ℹ cancelled 0
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.4757255Z ℹ skipped 0
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.4757935Z ℹ todo 0
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:33.4758977Z ℹ duration_ms 82881.488077
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:38.4409559Z {"contracts":12,"postgresMajor":18,"result":"verified","scratchRemoved":true}
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:38.8257712Z 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:38.8262862Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv5.0.3 ^[[39m^[[90m/home/runner/work/dfs-ev-demo/dfs-ev-demo^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:38.8263819Z 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:44.5811038Z  ^[[32m✓^[[39m tests/db/corpusImport.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[33m 5289^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:44.5812900Z    ^[[33m^[[2m✓^[[22m^[[39m corpus importer publishes one atomic snapshot, appends only owner tails and reruns as a no-op^[[33m 923^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:44.5814581Z    ^[[33m^[[2m✓^[[22m^[[39m corpus importer verifies the connected local role before loading any private source^[[33m 799^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:44.5816355Z    ^[[33m^[[2m✓^[[22m^[[39m corpus importer fails on lock contention and rolls back a later publication error without partial rows^[[33m 868^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:44.5818801Z    ^[[33m^[[2m✓^[[22m^[[39m corpus readiness reads one consistent local projection and keeps coverage dimensions separate^[[33m 833^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:44.5820525Z    ^[[33m^[[2m✓^[[22m^[[39m corpus API expiry removes complete stale snapshots while preserving permanent owner history^[[33m 832^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:47.9057253Z  ^[[32m✓^[[39m tests/db/corpus.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[33m 3160^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:47.9059210Z    ^[[33m^[[2m✓^[[22m^[[39m corpus schema stores only bounded metadata and keeps owner, API and derived statuses separate^[[33m 886^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:47.9061790Z    ^[[33m^[[2m✓^[[22m^[[39m corpus owner events, imports and gate registrations are append-only while API rows are replace-or-delete^[[33m 793^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:47.9063908Z    ^[[33m^[[2m✓^[[22m^[[39m corpus importer role has only local projection privileges and PUBLIC/runtime roles have none^[[33m 829^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:49.6644849Z  ^[[32m✓^[[39m tests/db/lease.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[33m 1564^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.3921896Z  ^[[32m✓^[[39m tests/db/readiness.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[33m 3528^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.3923362Z    ^[[33m^[[2m✓^[[22m^[[39m database readiness accepts migrated history and valid ahead history while preserving rows^[[33m 833^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.3925673Z    ^[[33m^[[2m✓^[[22m^[[39m database readiness refuses behind, corrupt and missing-table states without repair^[[33m 1042^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.3934481Z    ^[[33m^[[2m✓^[[22m^[[39m database readiness reads are bounded, enforced read-only and reject view substitutes^[[33m 773^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7679710Z  ^[[32m✓^[[39m tests/db/sourceClaims.spike1.test.ts ^[[2m(^[[22m^[[2m26 tests^[[22m^[[2m)^[[22m^[[33m 51388^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7682334Z    ^[[33m^[[2m✓^[[22m^[[39m CSV QB consumers enforce use-specific rights before files for source context and native evidence^[[33m 12614^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7689792Z    ^[[33m^[[2m✓^[[22m^[[39m CSV unavailable bindings persist missing context with exact prefix evidence and refuse rehashed reason or rights forgeries^[[33m 5518^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7692003Z    ^[[33m^[[2m✓^[[22m^[[39m CSV unavailable bindings retain absence heads and distinguish out-of-window identity evidence from conflicts^[[33m 3426^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7719721Z    ^[[33m^[[2m✓^[[22m^[[39m CSV QB final labels refuse pre-window captures and unresolved participation without invented zeros^[[33m 6493^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7721593Z    ^[[33m^[[2m✓^[[22m^[[39m CSV QB SQL refuses rehashed source manifests forged values identity and completion^[[33m 5174^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7723550Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decision retention removes cited source history and descendants with identical restored-backup audit^[[33m 1760^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7725772Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decision replay refuses corrupted source and native bytes, association omissions and SQL parity mismatches^[[33m 2316^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7727900Z    ^[[33m^[[2m✓^[[22m^[[39m CSV canonical fact reads keep player and team identities distinct and do not backdate canonical recording^[[33m 1295^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7729919Z    ^[[33m^[[2m✓^[[22m^[[39m CSV unavailable bindings supersede usable context and recover without inventing numeric corrections or changing earlier cutoffs^[[33m 1107^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7731686Z    ^[[33m^[[2m✓^[[22m^[[39m CSV canonical fact reads check source and context rights before any provider file is opened^[[33m 649^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7733347Z    ^[[33m^[[2m✓^[[22m^[[39m CSV canonical fact reads retain missing-row uncertainty and reappearance binds unchanged values to fresh provenance^[[33m 1007^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7735585Z    ^[[33m^[[2m✓^[[22m^[[39m CSV source decision concurrent recorders commit exactly one proposal for the expected head^[[33m 1182^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7737396Z    ^[[33m^[[2m✓^[[22m^[[39m CSV SQL witnesses expand unrecorded reroutes and unresolved identity before canonical filtering^[[33m 1076^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7739519Z    ^[[33m^[[2m✓^[[22m^[[39m CSV consumer witnesses bind unchanged recaptures and post-window evidence through a replay-only login^[[33m 967^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7741387Z    ^[[33m^[[2m✓^[[22m^[[39m CSV SQL witness migration upgrades v7 preserving bindings and prior migration history^[[33m 1567^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7743599Z    ^[[33m^[[2m✓^[[22m^[[39m CSV bindings withhold disappearing, refused and conflicting raw rows and allow evidenced reappearance^[[33m 1036^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7745521Z    ^[[33m^[[2m✓^[[22m^[[39m CSV canonical fact reads preserve unresolved routing when no historical canonical destination exists^[[33m 560^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7769601Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding concurrent recorders serialize and exactly one expected-head proposal commits^[[33m 577^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7771413Z    ^[[33m^[[2m✓^[[22m^[[39m CSV normalization plans verify raw rows and exact bridges in a read-only snapshot through a replay-only login^[[33m 396^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7773203Z    ^[[33m^[[2m✓^[[22m^[[39m ordinary ingestion clock migration upgrades v10 without rewriting captures and reruns as a no-op^[[33m 1174^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7775283Z    ^[[33m^[[2m✓^[[22m^[[39m CSV normalization scoped reads include reverse identity conflicts without importing unrelated correction chains^[[33m 328^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7777355Z    ^[[33m^[[2m✓^[[22m^[[39m CSV binding team statistics persist independently and cutoff-only changes do not mark a binding stale^[[33m 323^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7778400Z 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7778920Z ^[[2m Test Files ^[[22m ^[[1m^[[32m4 passed^[[39m^[[22m^[[90m (4)^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7779840Z ^[[2m      Tests ^[[22m ^[[1m^[[32m111 passed^[[39m^[[22m^[[90m (111)^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7780525Z ^[[2m   Start at ^[[22m 03:19:10
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7781153Z ^[[2m   Duration ^[[22m 102.80s^[[2m (tests 99%, transform 1%)^[[22m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7781395Z 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:53.7795089Z JSON report written to /tmp/dfs153-lanes-nBINNI/parallel.json
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:54.6170378Z  ^[[32m✓^[[39m tests/db/bootstrap.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[33m 1058^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:54.6171258Z    ^[[33m^[[2m✓^[[22m^[[39m bootstraps the full application schema twice on PostgreSQL 18^[[33m 484^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.4495607Z  ^[[32m✓^[[39m tests/db/orchestrator.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[33m 689^[[2mms^[[22m^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.4519143Z 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.4523517Z ^[[2m Test Files ^[[22m ^[[1m^[[32m6 passed^[[39m^[[22m^[[90m (6)^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.4524493Z ^[[2m      Tests ^[[22m ^[[1m^[[32m25 passed^[[39m^[[22m^[[90m (25)^[[39m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.4525236Z ^[[2m   Start at ^[[22m 03:20:38
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.4528811Z ^[[2m   Duration ^[[22m 16.61s^[[2m (tests 96%, transform 2%, setup 1%)^[[22m
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.4540231Z 
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.4552532Z JSON report written to /tmp/dfs153-lanes-nBINNI/serial.json
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.4824143Z {"nodeRequiredCases":75,"leaseRequiredCases":13,"readinessRequiredCases":4,"predictiveRequiredCases":111,"corpusRequiredCases":8,"result":"verified"}
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.5639307Z  Container dfs-ev-demo-test-postgres-1  Stopping
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.7289667Z  Container dfs-ev-demo-test-postgres-1  Stopped
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.7290380Z  Container dfs-ev-demo-test-postgres-1  Removing
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.7332712Z  Container dfs-ev-demo-test-postgres-1  Removed
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.7340107Z  Network dfs-ev-demo-test_default  Removing
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.8212073Z  Network dfs-ev-demo-test_default  Removed
+DB integration	Verify migration artifacts, catalog contracts and PostgreSQL behavior	2026-10-18T03:20:55.8345115Z {"nodeRequiredCases":75,"leaseRequiredCases":13,"readinessRequiredCases":4,"predictiveRequiredCases":111,"corpusRequiredCases":8,"result":"verified","seconds":105.33596746}
+DB integration	Remove disposable PostgreSQL	﻿2026-10-18T03:20:55.8385895Z ##[group]Run npm run test:db:down
+DB integration	Remove disposable PostgreSQL	2026-10-18T03:20:55.8386208Z ^[[36;1mnpm run test:db:down^[[0m
+DB integration	Remove disposable PostgreSQL	2026-10-18T03:20:55.8422156Z shell: /usr/bin/bash -e {0}
+DB integration	Remove disposable PostgreSQL	2026-10-18T03:20:55.8422435Z env:
+DB integration	Remove disposable PostgreSQL	2026-10-18T03:20:55.8422720Z   SPIKE_PROFILE_PATH: /tmp/dfs153-hosted-profile.jsonl
+DB integration	Remove disposable PostgreSQL	2026-10-18T03:20:55.8423110Z   SPIKE_TEMPLATE_PATH: /tmp/dfs153-hosted-templates.jsonl
+DB integration	Remove disposable PostgreSQL	2026-10-18T03:20:55.8423424Z ##[endgroup]
+DB integration	Remove disposable PostgreSQL	2026-10-18T03:20:55.9337197Z 
+DB integration	Remove disposable PostgreSQL	2026-10-18T03:20:55.9337929Z > dfs-ev-demo@0.1.0 test:db:down
+DB integration	Remove disposable PostgreSQL	2026-10-18T03:20:55.9338781Z > node scripts/test-db.mjs down
+DB integration	Remove disposable PostgreSQL	2026-10-18T03:20:55.9339079Z 
+DB integration	Post Set up Node.js	﻿2026-10-18T03:20:56.1161050Z Post job cleanup.
+DB integration	Post Set up Node.js	2026-10-18T03:20:56.2234035Z Cache hit occurred on the primary key node-cache-Linux-x64-npm-04f11ce15a7d2240a72206e9951f15dcc0200a6a05503182ca8b41b3f65342e3, not saving cache.
+DB integration	Post Check out repository	﻿2026-10-18T03:20:56.2367082Z Post job cleanup.
+DB integration	Post Check out repository	2026-10-18T03:20:56.3154720Z [command]/usr/bin/git version
+DB integration	Post Check out repository	2026-10-18T03:20:56.3194131Z git version 2.55.0
+DB integration	Post Check out repository	2026-10-18T03:20:56.3241525Z Temporarily overriding HOME='/home/runner/work/_temp/72b27108-b63b-49a5-b467-331011de7298' before making global git config changes
+DB integration	Post Check out repository	2026-10-18T03:20:56.3243030Z Adding repository directory to the temporary git global config as a safe directory
+DB integration	Post Check out repository	2026-10-18T03:20:56.3247646Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/dfs-ev-demo/dfs-ev-demo
+DB integration	Post Check out repository	2026-10-18T03:20:56.3277604Z Removing SSH command configuration
+DB integration	Post Check out repository	2026-10-18T03:20:56.3284881Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+DB integration	Post Check out repository	2026-10-18T03:20:56.3316575Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+DB integration	Post Check out repository	2026-10-18T03:20:56.3519858Z Removing HTTP extra header
+DB integration	Post Check out repository	2026-10-18T03:20:56.3525883Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+DB integration	Post Check out repository	2026-10-18T03:20:56.3562066Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+DB integration	Post Check out repository	2026-10-18T03:20:56.3775148Z Removing includeIf entries pointing to credentials config files
+DB integration	Post Check out repository	2026-10-18T03:20:56.3784728Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+DB integration	Post Check out repository	2026-10-18T03:20:56.3816049Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+DB integration	Complete job	﻿2026-10-18T03:20:56.4186260Z Cleaning up orphan processes
