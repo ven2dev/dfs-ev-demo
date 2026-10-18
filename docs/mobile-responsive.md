@@ -70,3 +70,10 @@ After owner merges #136, repeat triage/roadmap approval for #104 on feature/dfsE
 - Fixture watched prop checked at 360, 375, 390, 430, 768 and 1440 px: no clipped stage items, exactly one current stage, document scroll width equals viewport width at every size.
 - Screenshots: [phone](screenshots/136/stepper-phone-375.jpg), [desktop](screenshots/136/stepper-desktop-1440.jpg).
 - Four existing page tests passed, including last-valid stale values and fixture/sample provenance; TypeScript, changed-file ESLint and whitespace checks passed. Sample-window buttons and numeric layout remain for the matchup/tracker iteration.
+
+## Matchup/tracker iteration evidence
+
+- Phone section padding reduced to 16 px; long copy wraps. Numeric rows use a flexible label column and a nonwrapping numeric column. Sample-window buttons expose their pressed state and, with the secondary Watch button, measure at least 44x44 px.
+- Fixture primary analysis and secondary tracker checked at 360, 375, 390, 430, 768 and 1440 px: document scroll width equals viewport width; no numeric grid overflow; sample-window/secondary controls are 44 px tall at every size.
+- Screenshots: [phone matchup](screenshots/136/matchup-phone-375.jpg), [phone tracker](screenshots/136/tracker-phone-375.jpg), [desktop tracker](screenshots/136/tracker-desktop-1440.jpg).
+- Existing tests cover preserved last-valid stale/failed values, observation time, original sample count and fixture/sample labels. Rendering and freshness logic unchanged; muted evidence copy contrast improved for light mode.

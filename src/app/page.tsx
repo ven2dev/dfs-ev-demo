@@ -195,7 +195,7 @@ export default function Home() {
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="underline"
+          className="inline-flex min-h-11 min-w-11 items-center underline"
         >
           Reload
         </button>
@@ -210,14 +210,14 @@ export default function Home() {
       <SlateBrowser />
 
       {!primaryWatch && (
-        <section className="rounded-lg border border-zinc-200 p-6 text-sm text-zinc-500 dark:border-zinc-800">
+        <section className="min-w-0 break-words rounded-lg border border-zinc-200 p-4 sm:p-6 text-sm text-zinc-500 dark:border-zinc-800">
           Select a game and a prop above, then click <strong>Watch</strong> to start
           tracking its EV here.
         </section>
       )}
 
       {primaryWatch && (
-        <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+        <section className="min-w-0 break-words rounded-lg border border-zinc-200 p-4 sm:p-6 dark:border-zinc-800">
           {provenance.isFixture && (
             <p className="mb-4 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100">
               Preview fixture data — teams, players, odds, weather, and history are
@@ -233,12 +233,14 @@ export default function Home() {
             {provenance.line})
           </p>
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             {([3, 5, 7] as const).map((window) => (
               <button
                 key={window}
+                type="button"
+                aria-pressed={matchupConfig.sampleWindow === window}
                 onClick={() => handleSampleWindowChange(window)}
-                className={`rounded px-3 py-1 text-sm ${
+                className={`min-h-11 min-w-11 rounded px-3 py-2 text-sm ${
                   matchupConfig.sampleWindow === window
                     ? "bg-black text-white dark:bg-white dark:text-black"
                     : "bg-zinc-100 dark:bg-zinc-900"
@@ -286,16 +288,16 @@ export default function Home() {
               <p className="text-xs text-zinc-600 dark:text-zinc-400">
                 Weather and coverage adjustments are illustrative, not calibrated.
               </p>
-              <div className="flex justify-between text-sm">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm">
                 <span>{provenance.environment}</span>
-                <span>{(watched.stages.afterEnvironment * 100).toFixed(1)}%</span>
+                <span className="whitespace-nowrap tabular-nums">{(watched.stages.afterEnvironment * 100).toFixed(1)}%</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm">
                 <span>
                   Illustrative adjusted estimate{" "}
                   <em className="text-zinc-600 dark:text-zinc-400">(includes sample coverage data)</em>
                 </span>
-                <span>{(watched.stages.afterCoverage * 100).toFixed(1)}%</span>
+                <span className="whitespace-nowrap tabular-nums">{(watched.stages.afterCoverage * 100).toFixed(1)}%</span>
               </div>
               {watched.marketConsensus && watched.line !== undefined && (
                 <MarketConsensusSummary
@@ -305,14 +307,14 @@ export default function Home() {
                   consensus={watched.marketConsensus}
                 />
               )}
-              <div className="flex justify-between border-t border-zinc-200 pt-3 text-sm font-medium dark:border-zinc-800">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-t border-zinc-200 pt-3 text-sm font-medium dark:border-zinc-800">
                 <span>
                   Illustrative edge vs. same-line market consensus{" "}
                   <em className="font-normal">(includes sample coverage data)</em>
                 </span>
                 <span
                   className={
-                    watched.evScore.edge > 0 ? "text-green-600" : "text-red-600"
+                    `whitespace-nowrap tabular-nums ${watched.evScore.edge > 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`
                   }
                 >
                   {(watched.evScore.edge * 100).toFixed(1)}%
@@ -325,7 +327,7 @@ export default function Home() {
             <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
               Average · {watched.sampleSize === undefined ? "sample size unavailable" : `n = ${watched.sampleSize} games`}:{" "}
               {watched.recentStatAverage.toFixed(1)} {primaryWatch.propType.toLowerCase()}{" "}
-              <em className="text-zinc-400">
+              <em className="text-zinc-600 dark:text-zinc-400">
                 ({provenance.history})
               </em>
             </p>
@@ -346,7 +348,7 @@ export default function Home() {
                 ]) * 100
               ).toFixed(1)}%{" "}
               joint hit probability{" "}
-              <em className="text-zinc-400">
+              <em className="text-zinc-600 dark:text-zinc-400">
                 (illustrative, uncalibrated estimate using the adjusted recent hit rate;
                 includes sample coverage data and assumes independent picks)
               </em>
@@ -355,15 +357,15 @@ export default function Home() {
         </section>
       )}
 
-      <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+      <section className="min-w-0 break-words rounded-lg border border-zinc-200 p-4 sm:p-6 dark:border-zinc-800">
         <h2 className="text-lg font-medium">EV Tracker</h2>
         {watched?.stages && watched.evScore && primaryWatch ? (
           <div className="mt-4">
-            <div className="flex justify-between text-sm">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm">
               <span>
                 {primaryWatch.playerName} — illustrative edge (includes sample coverage data)
               </span>
-              <span>{(watched.evScore.edge * 100).toFixed(1)}%</span>
+              <span className="whitespace-nowrap tabular-nums">{(watched.evScore.edge * 100).toFixed(1)}%</span>
             </div>
             <ResultFreshness
               snapshot={watched}
@@ -374,7 +376,7 @@ export default function Home() {
             <div className="mt-2">
               <Sparkline values={watched.evHistory.map((h) => h.evScore)} />
             </div>
-            <p className="mt-1 text-xs text-zinc-400">
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
               {watched.evHistory.length} {provenance.ticks}
             </p>
           </div>
@@ -386,19 +388,19 @@ export default function Home() {
 
         {secondaryWatch && (
           <div className="mt-6 border-t border-zinc-200 pt-4 dark:border-zinc-800">
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
                 <p className="text-sm">
                   {secondaryWatch.playerName} — {secondaryWatch.propType}
                 </p>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
                   Watch changes appear immediately and revert if saving fails.
                 </p>
               </div>
               <button
                 onClick={handleWatchToggle}
                 disabled={watchPending}
-                className={`rounded px-3 py-1 text-sm disabled:opacity-50 ${
+                className={`min-h-11 min-w-11 rounded px-3 py-2 text-sm disabled:opacity-50 ${
                   isWatchingSecond
                     ? "bg-zinc-100 dark:bg-zinc-900"
                     : "bg-black text-white dark:bg-white dark:text-black"
@@ -416,7 +418,7 @@ export default function Home() {
               // storing this as a one-time "you clicked while signed out"
               // message left it stuck on screen after actually signing
               // in, since nothing re-ran to clear it until the next click.
-              <p className="mt-2 text-xs text-zinc-400">Sign in to watch this prop.</p>
+              <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">Sign in to watch this prop.</p>
             ) : (
               watchError && <p className="mt-2 text-xs text-red-600">{watchError}</p>
             )}
