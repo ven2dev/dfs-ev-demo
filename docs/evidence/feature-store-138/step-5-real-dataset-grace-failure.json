@@ -1,0 +1,17 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-5-real-dataset-grace-failure.json",
+  "status": "superseded before owner review corrections",
+  "verdict": "fail",
+  "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ [\n+   'datasets/48f5e94014ca0d2a49978406adb40b7d7d3053311f75de8ff379a7fb79313567',\n+   'raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b'\n+ ]\n- []\n",
+  "diagnostics": {"path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/step-5-diagnostics/pre-review/step-5-real-dataset-grace-failure.json","sha256": "151227a431a5fa85c87b3565bc638133e32b190f496debf868913f341f1ca7ff","byteSize": 1018884},
+  "trials": [
+    {"trial": 1,"mode": "cold","measuredMs": 871.0417920000036,"verdict": "pass","error": null},
+    {"trial": 1,"mode": "warm","measuredMs": 633.5006250000006,"verdict": "pass","error": null},
+    {"trial": 2,"mode": "cold","measuredMs": 764.958083000005,"verdict": "pass","error": null},
+    {"trial": 2,"mode": "warm","measuredMs": 610.505999999994,"verdict": "pass","error": null},
+    {"trial": 3,"mode": "cold","measuredMs": 826.5820420000018,"verdict": "pass","error": null},
+    {"trial": 3,"mode": "warm","measuredMs": 769.5245829999985,"verdict": "pass","error": null}
+  ],
+  "recordedContext": {"issue": 138,"step": 5}
+}

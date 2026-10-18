@@ -1,0 +1,18 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-4-plan-probe-timing-failure.json",
+  "codeHashesReceipt": {"files": 3,"sha256": "46389273abf554639a6052853fbf93e607a709fbd068c870644f7575a55b7e67","encoding": "sorted-key compact JSON; complete map in original archive"},
+  "verdict": "fail",
+  "probes": [
+    {"name": "SQL excludes target, equal-cutoff and future events in BOTH evidence modes","verdict": "pass","details": {"sameGameLeaks": 0,"equalCutoffIncluded": false,"futureIncluded": false,"statements": 8,"sample": 16}},
+    {"name": "missing participation is an unavailable NULL label, and zero is preserved when qualified","verdict": "pass","details": {"missingValue": null,"qualifiedZero": 0}},
+    {"name": "synthetic corrections preserve old labels and never put the corrected target outcome into its features","verdict": "pass","details": {"synthetic": true,"oldLabel": 9999,"correctedLabel": 350,"reconstructionPriorCorrection": 700,"strictPriorValue": 118,"eventMembershipEqual": true}},
+    {"name": "ambiguous stats give an unavailable label while the earlier valid value stays visibly stale","verdict": "pass","details": {"unavailableValue": null,"displayed": 350,"stale": true,"superseded": true}},
+    {"name": "equal-time source rivals stay ambiguous and an unavailable feature preserves its last valid history","verdict": "pass","details": {"equalTimeLabel": null,"preservedFeatureSample": 16,"stale": true,"superseded": true}},
+    {"name": "only pipeline writes derived rows, timestamps are DB clocks and lineage is snapshot level","verdict": "pass","details": {"snapshotLinks": 272,"badClock": 0,"nonPipelineMutationRefusals": 13}},
+    {"name": "feature SQL statement count stays constant from 2 to 65 QBs","verdict": "pass","details": {"smallExamples": 8,"largeExamples": 260,"smallQueries": 8,"largeQueries": 8}},
+    {"name": "history and gap aggregates execute once for the complete cohort","verdict": "fail","details": "error: canceling statement due to statement timeout"},
+    {"name": "derived publication rollback leaves no partial outputs or lineage","verdict": "pass","details": {"partialLabels": 0,"failedJob": 1}}
+  ],
+  "recordedContext": {"schemaVersion": 1,"issue": 138,"step": 4,"recordedAt": "2026-10-17T17:31:23.783Z","fixture": "synthetic-only; includes owner-admin historical clock setup and fabricated corrections"}
+}

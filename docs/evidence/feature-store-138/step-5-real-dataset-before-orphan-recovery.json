@@ -1,0 +1,17 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-5-real-dataset-before-orphan-recovery.json",
+  "status": "superseded before owner review corrections",
+  "verdict": "step-5-local-dataset-rights-deletion-pass",
+  "error": null,
+  "diagnostics": {"path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/step-5-diagnostics/pre-review/step-5-real-dataset-before-orphan-recovery.json","sha256": "7fce473bb5cdc0330cd5299d36f80810337e76fd2f62c0a88e4c7e705e6bd23d","byteSize": 1030090},
+  "trials": [
+    {"trial": 1,"mode": "cold","measuredMs": 746.5070419999975,"verdict": "pass","error": null},
+    {"trial": 1,"mode": "warm","measuredMs": 624.1108749999985,"verdict": "pass","error": null},
+    {"trial": 2,"mode": "cold","measuredMs": 727.4352079999953,"verdict": "pass","error": null},
+    {"trial": 2,"mode": "warm","measuredMs": 597.2546660000007,"verdict": "pass","error": null},
+    {"trial": 3,"mode": "cold","measuredMs": 777.2867079999996,"verdict": "pass","error": null},
+    {"trial": 3,"mode": "warm","measuredMs": 607.5304170000018,"verdict": "pass","error": null}
+  ],
+  "recordedContext": {"issue": 138,"step": 5}
+}

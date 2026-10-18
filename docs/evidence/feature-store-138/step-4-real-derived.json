@@ -1,0 +1,58 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-4-real-derived.json",
+  "codeHashesReceipt": {"files": 9,"sha256": "af69f6bc169dd08766b612c18433ae885aae4581cc7e89ac087726840a20d7f6","encoding": "sorted-key compact JSON; complete map in original archive"},
+  "fixtureStorage": {"postgresTmpfsBytes": 2147483648,"composeOverride": "compose.feature-store-spike.yml","retainedTrialOutputs": true,"earlier512MiBFailure": "step-4-real-derived-storage-failure.json"},
+  "evaluationRun": false,
+  "setup": "ObjectStore reads exact pinned raw bytes for re-normalization; this is not an ingestion/network benchmark",
+  "cacheState": "cold trials use fresh Node processes and restricted DB connections; warm trials reuse a connection; no app cache or job-output reuse; OS/DB buffers not flushed; no claim of cold disk caches",
+  "trials": [
+    {"season": 2025,"trialMode": "cold","trial": 1,"status": "succeeded","checkpoint": "2026-10-17 17:45:57.492602+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3447.695875,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3555.726499999997,"processId": 21308,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9","storageObservation": {"database_bytes": "55910927","temp_bytes": "194856911","temp_files": 26}},
+    {"season": 2025,"trialMode": "warm","trial": 1,"status": "succeeded","checkpoint": "2026-10-17 17:46:01.017659+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3393.773000000001,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3394.0227080000004,"processId": 17119,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9","storageObservation": {"database_bytes": "65430031","temp_bytes": "389713822","temp_files": 52}},
+    {"season": 2025,"trialMode": "cold","trial": 2,"status": "succeeded","checkpoint": "2026-10-17 17:46:04.569935+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3410.188458,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3513.12875,"processId": 21369,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9","storageObservation": {"database_bytes": "74331839","temp_bytes": "584570733","temp_files": 78}},
+    {"season": 2025,"trialMode": "warm","trial": 2,"status": "succeeded","checkpoint": "2026-10-17 17:46:08.062436+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3407.297166999997,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3407.3307079999977,"processId": 17119,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9","storageObservation": {"database_bytes": "84522687","temp_bytes": "779427644","temp_files": 104}},
+    {"season": 2025,"trialMode": "cold","trial": 3,"status": "succeeded","checkpoint": "2026-10-17 17:46:11.641894+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3426.5129580000003,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3526.3197500000024,"processId": 21426,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9","storageObservation": {"database_bytes": "93058751","temp_bytes": "974284555","temp_files": 130}},
+    {"season": 2025,"trialMode": "warm","trial": 3,"status": "succeeded","checkpoint": "2026-10-17 17:46:15.14915+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3387.808208000002,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3387.8487499999974,"processId": 17119,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9","storageObservation": {"database_bytes": "102184639","temp_bytes": "1169141466","temp_files": 156}},
+    {"season": 2025,"trialMode": "warm","trial": 4,"status": "succeeded","checkpoint": "2026-10-17 17:46:38.957542+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3488.1255410000012,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3488.151708999998,"processId": 17119,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9","storageObservation": {"database_bytes": "181180095","temp_bytes": "2056775073","temp_files": 278}},
+    {"season": 2025,"trialMode": "warm","trial": 5,"status": "succeeded","checkpoint": "2026-10-17 17:46:42.552497+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3576.5096669999984,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3576.5437080000047,"processId": 17119,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9","storageObservation": {"database_bytes": "190273215","temp_bytes": "2251631984","temp_files": 304}},
+    {"season": 2025,"trialMode": "warm","trial": 6,"status": "succeeded","checkpoint": "2026-10-17 17:46:46.175455+00","counts": {"rows": 1948,"usable": 1536,"unavailable": 412,"max_sample": 16},"elapsedMs": 3444.09375,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"measuredMs": 3444.1217500000057,"processId": 17119,"queries": 8,"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9","storageObservation": {"database_bytes": "199988927","temp_bytes": "2446488895","temp_files": 330}}
+  ],
+  "qualification": [
+    {"kind": "features","season": 2021,"status": "succeeded","checkpoint": "2026-10-17 17:46:18.599296+00","counts": {"rows": 1916,"usable": 780,"unavailable": 1136,"max_sample": 16},"elapsedMs": 2821.1324590000004,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"queries": 8},
+    {"kind": "features","season": 2022,"status": "succeeded","checkpoint": "2026-10-17 17:46:21.420096+00","counts": {"rows": 1838,"usable": 1204,"unavailable": 634,"max_sample": 16},"elapsedMs": 3067.5744579999955,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"queries": 8},
+    {"kind": "features","season": 2023,"status": "succeeded","checkpoint": "2026-10-17 17:46:24.488698+00","counts": {"rows": 1812,"usable": 1380,"unavailable": 432,"max_sample": 16},"elapsedMs": 3201.088416999999,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"queries": 8},
+    {"kind": "features","season": 2024,"status": "succeeded","checkpoint": "2026-10-17 17:46:27.693468+00","counts": {"rows": 1867,"usable": 1482,"unavailable": 385,"max_sample": 16},"elapsedMs": 3264.403624999999,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"queries": 8},
+    {"kind": "labels","season": 2021,"status": "succeeded","checkpoint": "2026-10-17 17:46:30.958391+00","counts": {"rows": 1916,"usable": 655,"unavailable": 1261,"max_sample": 0},"elapsedMs": 1618.5012080000015,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"queries": 8},
+    {"kind": "labels","season": 2022,"status": "succeeded","checkpoint": "2026-10-17 17:46:32.58065+00","counts": {"rows": 1838,"usable": 633,"unavailable": 1205,"max_sample": 0},"elapsedMs": 1524.0671250000014,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"queries": 8},
+    {"kind": "labels","season": 2023,"status": "succeeded","checkpoint": "2026-10-17 17:46:34.108424+00","counts": {"rows": 1812,"usable": 663,"unavailable": 1149,"max_sample": 0},"elapsedMs": 1563.3727500000023,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"queries": 8},
+    {"kind": "labels","season": 2024,"status": "succeeded","checkpoint": "2026-10-17 17:46:35.673751+00","counts": {"rows": 1867,"usable": 664,"unavailable": 1203,"max_sample": 0},"elapsedMs": 1596.2177500000034,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"queries": 8},
+    {"kind": "labels","season": 2025,"status": "succeeded","checkpoint": "2026-10-17 17:46:37.270726+00","counts": {"rows": 1948,"usable": 663,"unavailable": 1285,"max_sample": 0},"elapsedMs": 1685.6284580000065,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0},"queries": 8}
+  ],
+  "verdict": "step-4-real-correctness-and-season-feature-target-pass",
+  "strictComparison": {"status": "succeeded","checkpoint": "2026-10-17 17:46:49.702137+00","counts": {"rows": 1948,"usable": 0,"unavailable": 1948,"max_sample": 0},"elapsedMs": 1854.498040999999,"work": {"materializations": 1,"perExampleQueries": 0,"sourceByteReads": 0}},
+  "coverage": [
+    {"season": 2021,"candidates": 1916,"usable_features": 780,"usable_labels": 655,"usable_both": 507,"sample_2_4": 337,"sample_5_8": 215,"sample_9_16": 228},
+    {"season": 2022,"candidates": 1838,"usable_features": 1204,"usable_labels": 633,"usable_both": 595,"sample_2_4": 291,"sample_5_8": 279,"sample_9_16": 634},
+    {"season": 2023,"candidates": 1812,"usable_features": 1380,"usable_labels": 663,"usable_both": 632,"sample_2_4": 212,"sample_5_8": 345,"sample_9_16": 823},
+    {"season": 2024,"candidates": 1867,"usable_features": 1482,"usable_labels": 664,"usable_both": 644,"sample_2_4": 124,"sample_5_8": 243,"sample_9_16": 1115},
+    {"season": 2025,"candidates": 1948,"usable_features": 1536,"usable_labels": 663,"usable_both": 633,"sample_2_4": 135,"sample_5_8": 152,"sample_9_16": 1249}
+  ],
+  "labelRefusalReasons": [
+    {"reason": "positive-offense-participation-missing","n": 5962},
+    {"reason": "stats-missing","n": 6102}
+  ],
+  "eventTimeLeaks": 0,
+  "lineage": {"feature_snapshot_links": 430608,"label_snapshot_links": 150096},
+  "repeatedOutputParity": true,
+  "featureTargetVerdict": "pass",
+  "peakRssBytes": 570867712,
+  "archivedDetails": [
+    "inputs",
+    "plainContextPlan",
+    "snapshots",
+    "jobs",
+    "sourceLineageByJob",
+    "sampleOutputs"
+  ],
+  "recordedContext": {"schemaVersion": 1,"issue": 138,"step": 4,"recordedAt": "2026-10-17T17:45:39.784Z","code": {"gitSha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65","contentSha256": "2cab08ee6bdba08e3421af305a103793951a516239b7f33c9e11b47b28baaddb"},"sourceManifestSha256": "63517d4e667af249a6c8c3a4b6ea8cd72550d1afb578182510629d68ec710c38","runtime": "v24.18.1","machine": {"arch": "arm64","platform": "darwin","cpus": 12,"totalMemoryBytes": 19327352832},"fixture": "exact step-3 wire objects; all five seasons normalized in a fresh scratch DB; no synthetic corrections","evidenceMode": "retrospective-reconstruction-v1","flags": ["historical-availability-unverified"],"database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"}
+}

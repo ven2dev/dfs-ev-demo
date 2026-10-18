@@ -1,0 +1,16 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-4-integration-initial.json",
+  "codeHashesReceipt": {"files": 3,"sha256": "9a743e69d9a50b5447872721c012a90d25bf348ebef291cca22ea3cb253546e0","encoding": "sorted-key compact JSON; complete map in original archive"},
+  "verdict": "pass",
+  "probes": [
+    {"name": "SQL excludes target, equal-cutoff and future events in BOTH evidence modes","verdict": "pass","details": {"sameGameLeaks": 0,"equalCutoffIncluded": false,"futureIncluded": false,"statements": 7,"sample": 16}},
+    {"name": "missing participation is an unavailable NULL label, and zero is preserved when qualified","verdict": "pass","details": {"missingValue": null,"qualifiedZero": 0}},
+    {"name": "synthetic corrections preserve old labels and never put the corrected target outcome into its features","verdict": "pass","details": {"synthetic": true,"oldLabel": 9999,"correctedLabel": 350,"reconstructionPriorCorrection": 700,"strictPriorValue": 118,"eventMembershipEqual": true}},
+    {"name": "ambiguous stats give an unavailable label while the earlier valid value stays visibly stale","verdict": "pass","details": {"unavailableValue": null,"displayed": 350,"stale": true,"superseded": true}},
+    {"name": "only pipeline writes derived rows, timestamps are DB clocks and lineage is snapshot level","verdict": "pass","details": {"snapshotLinks": 144,"badClock": 0,"nonPipelineMutationRefusals": 13}},
+    {"name": "feature SQL statement count stays constant from 2 to 65 QBs","verdict": "pass","details": {"smallExamples": 8,"largeExamples": 260,"smallQueries": 7,"largeQueries": 7}},
+    {"name": "derived publication rollback leaves no partial outputs or lineage","verdict": "pass","details": {"partialLabels": 0,"failedJob": 1}}
+  ],
+  "recordedContext": {"schemaVersion": 1,"issue": 138,"step": 4,"recordedAt": "2026-10-17T15:55:00.139Z","fixture": "synthetic-only; includes owner-admin historical clock setup and fabricated corrections"}
+}

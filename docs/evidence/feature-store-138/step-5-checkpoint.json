@@ -1,0 +1,52 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-5-checkpoint.json",
+  "status": "uncommitted; stop for owner review; no push authorized",
+  "verdict": "step-5-local-pass; full issue acceptance incomplete",
+  "reviewCorrections": {"seasonScopedLineage": "pass","oldSeasonsSurviveWithoutRecompute": "pass","uploadBeforeTransactionAndHeadUnderAddressLock": "pass","naturalKeyValueHash": "pass","compactReceiptsOnly": "pass","producerEndStatistics": "pass"},
+  "datasetTarget": {"limitMs": 21000,"deadlineMs": 30000,"coldMs": [851.7485830000005,600.8911660000012,628.1900830000013],"warmMs": [519.1606669999965,463.9300000000003,458.61095800000476],"rows": 2504,"fileBytes": 3527908,"fileSha256": "9db8868df7d807b43ba9514b63762455bbd29ca7300d824e11cf16cff075dc05","contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d","fileHashParity": true,"contentHashParity": true,"verdict": "pass","coldDefinition": "fresh Node process, restricted connection, ObjectStore open and full build; disk/DB caches not flushed","measurement": "alternating absolute trials; no relative optimization claim"},
+  "workBudgets": {"ingestionStatements": 12,"derivedStatements": 8,"datasetBuildStatements": 8,"datasetReadStatements": 3,"batchedRightsQueriesPerBuildOrRead": 2,"perRowQueries": 0},
+  "deletion": {"sourceName": "stats_player_week_2025.csv.gz","eventId": "d970f48e-f457-4af4-9ca6-f303491c6949","featureIds": {"count": 1948,"sha256": "8c14983b770d3cc14ee19818f565256b744d870c4bea4c2c5d44163e72632ef4"},"labelIds": {"count": 1948,"sha256": "75be6d52e4b2d0bae861ce306609523ee1096846298171f363e3c9be8aad9ddc"},"datasetIds": {"count": 6,"sha256": "57649c8949f0a11b9fa657d263c90d721f80253e7427c07cb258473ae710083b"},"exactClosureVerified": true,"seasonScopedLineage": true,"invalidatedCounts": {"features": 1948,"labels": 1948,"datasets": 6}},
+  "survivalWithoutRecompute": {"before": {"features": 5517,"labels": 5517,"sha256": "ed25fcad5e5478db4debffd9937ad6b2539aeee284e23f43abf27511f6c567f3"},"after": {"features": 5517,"labels": 5517,"sha256": "ed25fcad5e5478db4debffd9937ad6b2539aeee284e23f43abf27511f6c567f3"},"identical": true,"seasons": [2022,2023,2024],"jobsRerun": 0},
+  "recomputedSeasons": [
+    2025
+  ],
+  "survivingDatasetRows": 1871,
+  "grace": {"defaultSeconds": 300,"testSeconds": 1,"mandatoryCleanupResumable": true,"failedDeletedAddressUploadRequeued": true},
+  "coverage": [
+    {"season": 2022,"rows": 595,"strata": {"2-4": 62,"5-8": 67,"9-16": 466}},
+    {"season": 2023,"rows": 632,"strata": {"2-4": 50,"5-8": 81,"9-16": 501}},
+    {"season": 2024,"rows": 644,"strata": {"2-4": 25,"5-8": 51,"9-16": 568}},
+    {"season": 2025,"rows": 633,"strata": {"2-4": 39,"5-8": 34,"9-16": 560}}
+  ],
+  "eventTimeLeaks": 0,
+  "exclusions": {"warm-up-only": 1916,"label-unavailable": 3098,"feature-unavailable": 1863},
+  "qualification": {"historicalAvailability": "unverified","mode": "retrospective-reconstruction-v1","evaluationRun": false,"populationCompletenessClaim": false},
+  "validation": {"postgresqlProbes": 40,"unitTests": 15,"typecheck": "pass","eslint": "pass","whitespace": "pass","proposalRollbackAndNonPipelinePermissions": "pass","frozenMigrationsUnchanged": {"db/migrations/0010_predictive_source_consumers.sql": "813ca0e75d014bc5e38c9d454c481a479890f1c43e16128400442da6ad57ee35","db/migrations/0008_predictive_source_witnesses.sql": "ea824b2f2b943feafc576ed0cb7130f0f78ea37376859995f7a1fa0b2e139cfb","db/migrations/0003_predictive_evidence.sql": "ec72796bc69169e8a8a487c2dfd2240c86a4dc94c4ab74b29e4c05c83df9e695","db/migrations/0001_pre_41_baseline.sql": "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98","db/migrations/0009_predictive_source_decisions.sql": "f861c1afd210c65886628581b78a1f135bb950f6b5e5d00989d065930a49ea31","db/migrations/0002_market_observation_history.sql": "df35a458b5d6e3f26cbbdd84d8cfa65244e865dd6963b6f0e1f8f5f0e8dd7297","db/migrations/0007_predictive_unavailable_bindings.sql": "fc10fe50cb8913c2c755db8ff15c0aa3d40e49b5a92d2471fff86c89c4409679","db/migrations/0006_predictive_source_bindings.sql": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19","db/migrations/0005_predictive_source_claims.sql": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a","db/migrations/0011_predictive_capture_ingestion_clock.sql": "3908fa33bcb79301a870dca9a6c18dddacf755580a303025610d20bb20716d67","db/migrations/0004_creator_corpus_projection.sql": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba"},"generatedArtifactsUnchanged": true},
+  "targets": [
+    {"name": "ingestion <=42 s headroom","verdict": "pending repeated network cold/warm gate"},
+    {"name": "features <=84 s headroom","verdict": "historical step-4 repeated pass; revised integrated setup measured, not a new repeated season matrix"},
+    {"name": "dataset <=21 s headroom","verdict": "pass"},
+    {"name": "prediction p95 <=210 ms headroom","verdict": "not measured"}
+  ],
+  "failuresRetained": [
+    "step-5-real-dataset-initial.json",
+    "step-5-real-dataset-cardinality-failure.json",
+    "step-5-real-dataset-grace-failure.json",
+    "step-5-real-dataset-review-statistics-failure.json"
+  ],
+  "next": "stop for review; no commit/push or step 6",
+  "gcs": "not run; owner Blaze/budget/dedicated pipeline-account decision required",
+  "remaining": [
+    "scoring/predictions",
+    "remaining repeated capacity targets",
+    "scheduled recompute/integrity audit and operations",
+    "main integration and independent review",
+    "upstream schedule license and external configuration qualification"
+  ],
+  "ownerDisposition": {"commitApproved": true,"pushApproved": false,"next": "prepare step-6 plan; stop for review before implementation","acceptedLineageGranularity": "season-scoped snapshot dependencies; earlier-season deletion may invalidate later features conservatively","gcsCarryForward": {"sha256": "custom upload metadata; compare with size on head","putIfAbsent": "ifGenerationMatch=0","liveTest": "still gated on owner Blaze/budget/dedicated service-account decision"}},
+  "archivedDetails": [
+    "evidence"
+  ],
+  "recordedContext": {"issue": 138,"step": 5,"recordedAt": "2026-10-18T03:02:01.932110+00:00","baseCommit": "d07f42c776797bc5c808ba8faaefe55870a71221"}
+}

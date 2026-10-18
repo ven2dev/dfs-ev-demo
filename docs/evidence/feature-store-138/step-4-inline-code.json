@@ -1,0 +1,16 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-4-inline-code.json",
+  "purpose": "retained inlining-only failure; not an accepted candidate",
+  "files": {
+    "src/lib/featureStore/derived.ts": {"sha256": "601b799a901c4b1ab964c23230a996ae07d6e6d212bd79bb98b098a34e946b67","bytes": 11387},
+    "db/proposals/138_feature_store.sql": {"sha256": "1f6f3caab3ad1795df0720ce4568d2335432d46dba0344ed92ff29c982548076","bytes": 23338},
+    "scripts/feature-store/harness.ts": {"sha256": "55ba2f3028be47abf7c52cf465b8b9592e8aa32d33b808e3f704a3e96bbd1519","bytes": 3307},
+    "scripts/feature-store/derived-spike.ts": {"sha256": "c74856b3c28d5ca0c142140f8ba77d2e747f418971260983937ea0b5d57bdec8","bytes": 9501},
+    "src/lib/featureStore/ingest.ts": {"sha256": "11d1bf28eb57dd95c2fb18346534ef3ce718cbf266565b485da6e844547cad09","contentAtCommit": "b9b6f811f733295748f30b75408c7cf4d6ebbd65"},
+    "src/lib/featureStore/normalize.ts": {"sha256": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc","contentAtCommit": "b9b6f811f733295748f30b75408c7cf4d6ebbd65"},
+    "src/lib/featureStore/source.ts": {"sha256": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7","contentAtCommit": "b9b6f811f733295748f30b75408c7cf4d6ebbd65"},
+    "package-lock.json": {"sha256": "f93f6fe9bcc5e4347ea923542004efe6c1182af76d80e1e9fdafbf18f7e96570","contentAtCommit": "b9b6f811f733295748f30b75408c7cf4d6ebbd65"}
+  },
+  "recordedContext": {"issue": 138,"step": 4}
+}
