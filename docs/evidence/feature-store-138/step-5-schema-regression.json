@@ -1,0 +1,19 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-5-schema-regression.json",
+  "proposalSha256": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+  "codeHashesReceipt": {"files": 5,"sha256": "ce01043ed21b245a7603da5bb2d5ea217b5f95c9e61d6cf9b7ad9f48eb573b2b","encoding": "sorted-key compact JSON; complete map in original archive"},
+  "workload": "synthetic role/clock/identity probes on main + proposal; no real-source evaluation or capacity claim",
+  "verdict": "pass",
+  "probes": [
+    {"probe": "proposal application rolls back cleanly and leaves main unchanged","verdict": "pass","details": {"orderedMigrations": 11,"proposalSha256": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf","server": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"}},
+    {"probe": "real non-pipeline login cannot forge, overwrite, delete or escalate","verdict": "pass","details": {"authenticatedNonSuperuser": true,"derivedTables": ["norm_schedule","norm_player_game_stats","norm_identity","norm_participation"],"mutationRefusals": 79}},
+    {"probe": "pipeline inserts use DB knowledge clocks and cannot later be backdated","verdict": "pass","details": {"profile": true,"job": true,"snapshot": true}},
+    {"probe": "backdated valid-time rights do not enter an earlier knowledge-time answer","verdict": "pass","details": {"earlierAnswerCount": 0,"currentDecisionCount": 1}},
+    {"probe": "only pipeline logins publish normalized values and normalized rows are immutable","verdict": "pass","details": {"publishedFamilies": 4,"readerCanSelect": true,"pipelineUpdateDeleteRefusals": 8}},
+    {"probe": "concurrent idempotent jobs have one executor and distinct policies remain distinct","verdict": "pass","details": {"concurrentExecutors": 1,"successfulRetryRecomputed": false,"changedPolicyCreated": true}},
+    {"probe": "job completion is DB-stamped and terminal jobs cannot be rewritten","verdict": "pass","details": {"callerCompletionTimeIgnored": true,"terminalMutationRefused": true}},
+    {"probe": "proposal leaves main catalog and frozen migration hashes unchanged","verdict": "pass","details": {"mainCatalogVerified": true,"orderedMigrations": 11}}
+  ],
+  "recordedContext": {"schemaVersion": 1,"issue": 138,"step": 2,"recordedAt": "2026-10-18T03:00:48.365Z","runtime": "v24.18.1"}
+}

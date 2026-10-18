@@ -1,0 +1,19 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-4-query-profile.json",
+  "codeHashesReceipt": {"files": 8,"sha256": "72e04df0a3f6e8044406d6317d2ebedbb21dffef6c596ebfc8f533412253a431","encoding": "sorted-key compact JSON; complete map in original archive"},
+  "evaluationRun": false,
+  "setup": "ObjectStore reads exact pinned raw bytes for re-normalization; this is not an ingestion/network benchmark",
+  "cacheState": "cold trials use fresh restricted DB connections; warm trials reuse a connection; no app cache or job-output reuse; OS/DB buffers not flushed; one Node process",
+  "trials": [],
+  "qualification": [],
+  "verdict": "diagnostic-complete-not-a-capacity-gate",
+  "analyzedContextMs": 2609.0732500000013,
+  "archivedDetails": [
+    "inputs",
+    "plainContextPlan",
+    "fullMaterializationPlan",
+    "analyzedContextPlan"
+  ],
+  "recordedContext": {"schemaVersion": 1,"issue": 138,"step": 4,"recordedAt": "2026-10-17T17:25:15.897Z","code": {"gitSha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65","contentSha256": "9ad82d82a6f0f72c27a53e2fc250c45c4e59d7726913a53e989947274ce7388b"},"sourceManifestSha256": "63517d4e667af249a6c8c3a4b6ea8cd72550d1afb578182510629d68ec710c38","runtime": "v24.18.1","machine": {"arch": "arm64","platform": "darwin","cpus": 12,"totalMemoryBytes": 19327352832},"fixture": "exact step-3 wire objects; all five seasons normalized in a fresh scratch DB; no synthetic corrections","evidenceMode": "retrospective-reconstruction-v1","flags": ["historical-availability-unverified"],"database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"}
+}

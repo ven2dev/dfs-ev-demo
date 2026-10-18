@@ -1,0 +1,17 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-4-ingestion-regression.json",
+  "workload": "synthetic ingestion/as-of probes",
+  "probes": [
+    {"name": "trusted pipeline ingests atomically and retry does not republish","verdict": "pass"},
+    {"name": "strict cutoff is inclusive for both clocks and refuses either future clock","verdict": "pass"},
+    {"name": "reconstruction keeps its warning and never admits knowledge after its checkpoint","verdict": "pass"},
+    {"name": "corrupt download never replaces a valid snapshot or stores refused bytes","verdict": "pass"},
+    {"name": "later correction changes current selection but not the earlier checkpoint","verdict": "pass"},
+    {"name": "equal-time rivals are ambiguous and unknown normalizer versions are excluded","verdict": "pass"},
+    {"name": "failed publication rolls back normalized/snapshot rows and records a failed job","verdict": "pass"},
+    {"name": "SQL work stays fixed when normalized row count increases","verdict": "pass"}
+  ],
+  "verdict": "pass",
+  "recordedContext": {"issue": 138,"step": 3}
+}

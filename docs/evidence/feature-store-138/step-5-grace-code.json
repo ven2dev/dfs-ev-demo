@@ -1,0 +1,9 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-5-grace-code.json",
+  "status": "superseded before owner review corrections",
+  "verdict": "diagnostic",
+  "error": null,
+  "diagnostics": {"path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/step-5-diagnostics/pre-review/step-5-grace-code.json","sha256": "fa826f5e1478f77a11c470d0d4eeb8cba98267c6b9875eb3b58965ec4e6dffe2","byteSize": 24478},
+  "recordedContext": {"issue": 138,"step": 5}
+}

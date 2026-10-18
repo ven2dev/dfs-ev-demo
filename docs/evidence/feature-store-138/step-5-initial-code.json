@@ -1,0 +1,9 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-5-initial-code.json",
+  "status": "superseded before owner review corrections",
+  "verdict": "diagnostic",
+  "error": null,
+  "diagnostics": {"path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/step-5-diagnostics/pre-review/step-5-initial-code.json","sha256": "4fd23b9a538c285dcd4002cab7264cae7caa20594b9b6987097a47131e6d0e83","byteSize": 35522},
+  "recordedContext": {"issue": 138,"step": 5}
+}

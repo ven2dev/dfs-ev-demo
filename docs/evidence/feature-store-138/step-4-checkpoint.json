@@ -1,0 +1,53 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-4-checkpoint.json",
+  "implementation": "step 4 uncommitted; owner review/commit approval pending; no push",
+  "verdict": "pass for step-4 correctness and local one-season feature target; full #138 acceptance incomplete",
+  "stopBeforeStep5": true,
+  "remoteMainObserved": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+  "mainIntegration": "pending; no newer-main integrated validation claimed",
+  "pattern": "trusted typed set-based ELT; one cohort materialization; immutable outputs; snapshot lineage",
+  "scope": "no JSON-union per-example reads, no source-byte reads in derived jobs, no reader table locks, no cache",
+  "codeIdentity": {"gitSha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65","contentSha256": "2cab08ee6bdba08e3421af305a103793951a516239b7f33c9e11b47b28baaddb"},
+  "benchmarkCodeHashesReceipt": {"files": 9,"sha256": "af69f6bc169dd08766b612c18433ae885aae4581cc7e89ac087726840a20d7f6","encoding": "sorted-key compact JSON; complete map in original archive"},
+  "validationCodeHashesReceipt": {"files": 13,"sha256": "cf2763e2252832f55d44c0851edcd99c9736ea38e91cde5012fee49eee24f179","encoding": "sorted-key compact JSON; complete map in original archive"},
+  "checks": {"derivedPostgresql": {"verdict": "pass","probes": 9,"parentTests": 1},"ingestionPostgresql": {"verdict": "pass","probes": 8,"parentTests": 1},"schemaPostgresql": {"verdict": "pass","probes": 8,"parentTests": 1},"focusedUnit": {"verdict": "pass","tests": 15},"typecheck": {"verdict": "pass","exitCode": 0},"lint": {"verdict": "pass","exitCode": 0},"whitespace": {"verdict": "pass","scope": "tracked and untracked changed text"},"documentationLinks": {"verdict": "pass","path": "docs/feature-store-spike.md"},"frozenMigrations": {"verdict": "pass","count": 11,"hashes": {"db/migrations/0001_pre_41_baseline.sql": "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98","db/migrations/0002_market_observation_history.sql": "df35a458b5d6e3f26cbbdd84d8cfa65244e865dd6963b6f0e1f8f5f0e8dd7297","db/migrations/0003_predictive_evidence.sql": "ec72796bc69169e8a8a487c2dfd2240c86a4dc94c4ab74b29e4c05c83df9e695","db/migrations/0004_creator_corpus_projection.sql": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba","db/migrations/0005_predictive_source_claims.sql": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a","db/migrations/0006_predictive_source_bindings.sql": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19","db/migrations/0007_predictive_unavailable_bindings.sql": "fc10fe50cb8913c2c755db8ff15c0aa3d40e49b5a92d2471fff86c89c4409679","db/migrations/0008_predictive_source_witnesses.sql": "ea824b2f2b943feafc576ed0cb7130f0f78ea37376859995f7a1fa0b2e139cfb","db/migrations/0009_predictive_source_decisions.sql": "f861c1afd210c65886628581b78a1f135bb950f6b5e5d00989d065930a49ea31","db/migrations/0010_predictive_source_consumers.sql": "813ca0e75d014bc5e38c9d454c481a479890f1c43e16128400442da6ad57ee35","db/migrations/0011_predictive_capture_ingestion_clock.sql": "3908fa33bcb79301a870dca9a6c18dddacf755580a303025610d20bb20716d67"}},"evidenceHashMatch": {"verdict": "pass","scope": "benchmark/validation implementation hashes plus source manifest and step-3 wire parity"}},
+  "deterministicWork": {"ingestionStatements": 10,"derivedStatements": 8,"testedExampleCounts": [8,260],"contextQueriesPerJob": 1,"perExampleQueries": 0,"derivedSourceByteReads": 0,"historyAggregateExecutions": 1,"gapAggregateExecutions": 1,"rightsDeliveryBudget": "pending step 5: one batched authorization plus one batched pre-delivery query"},
+  "featureTarget": {"fixtureSeason": 2025,"examples": 1948,"coldTrials": 3,"warmTrials": 6,"coldBoundary": "fresh Node process + restricted DB connection + complete job; includes startup","warmBoundary": "same Node process/restricted connection, full recomputation; last three after all-season jobs","osDatabaseCaches": "not flushed; no cold-disk claim","coldMs": [3513.12875,3555.726499999997],"warmMs": [3387.8487499999974,3576.5437080000047],"deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9","comparison": "absolute target only; no relative speedup claim or ABBA comparison verdict"},
+  "capacityTargets": [
+    {"operation": "ingest one season file","deadlineMs": 60000,"headroomLimitMs": 42000,"verdict": "pending-repeated-network-cold-warm-trials"},
+    {"operation": "one-season feature job","deadlineMs": 120000,"headroomLimitMs": 84000,"verdict": "pass","fixture": "2025 full roster candidate season; three fresh-process cold plus six warm"},
+    {"operation": "five-season dataset build","deadlineMs": 30000,"headroomLimitMs": 21000,"verdict": "not-measured"},
+    {"operation": "prediction p95","deadlineMs": 300,"headroomLimitMs": 210,"verdict": "not-measured"}
+  ],
+  "realQualification": {"evidenceMode": "retrospective-reconstruction-v1","flags": ["historical-availability-unverified"],"coverageBySeason": [{"season": 2021,"candidates": 1916,"usable_features": 780,"usable_labels": 655,"usable_both": 507,"sample_2_4": 337,"sample_5_8": 215,"sample_9_16": 228},{"season": 2022,"candidates": 1838,"usable_features": 1204,"usable_labels": 633,"usable_both": 595,"sample_2_4": 291,"sample_5_8": 279,"sample_9_16": 634},{"season": 2023,"candidates": 1812,"usable_features": 1380,"usable_labels": 663,"usable_both": 632,"sample_2_4": 212,"sample_5_8": 345,"sample_9_16": 823},{"season": 2024,"candidates": 1867,"usable_features": 1482,"usable_labels": 664,"usable_both": 644,"sample_2_4": 124,"sample_5_8": 243,"sample_9_16": 1115},{"season": 2025,"candidates": 1948,"usable_features": 1536,"usable_labels": 663,"usable_both": 633,"sample_2_4": 135,"sample_5_8": 152,"sample_9_16": 1249}],"totals": {"candidates": 9381,"usable_features": 6382,"usable_labels": 3278,"usable_both": 3011},"evaluationSeasonUsablePairs": 2504,"strict2025": {"rows": 1948,"usable": 0,"unavailable": 1948,"max_sample": 0},"eventTimeLeaks": 0,"lineage": {"feature_snapshot_links": 430608,"label_snapshot_links": 150096},"corrections": "real fixture contains no fabricated changes; correction scenario confined to synthetic PostgreSQL probes","persistentDatabaseOutputs": false,"durableArtifacts": "source/job/lineage receipts, three stratified audit examples and hashes; scratch databases dropped","evaluationRun": false,"datasetModelPredictionProduced": false},
+  "resourceBoundary": {"postgresTmpfsBytes": 2147483648,"override": "compose.feature-store-spike.yml","mainDefaultTmpfsBytes": 536870912,"initialStorageFailureRetained": true,"lastTrialDatabaseBytes": 199988927,"cumulativeTemporaryWriteBytes": 2446488895,"temporaryWriteMeaning": "cumulative writes, not simultaneous disk occupancy","nodePeakRssBytes": 570867712,"dockerMemoryBytes": 8319238144,"dockerCpus": 12,"hostedCapacity": "not demonstrated"},
+  "fullCorrectnessProbes": {"pipelineOnlyWrites": "pass for normalized/features/labels and snapshot lineage; future datasets/models pending","knowledgeClocks": "pass; actual clocks never backdated in real data; owner-only historical clocks synthetic","eventTimeNoLookAhead": "pass in SQL in both modes; own-game/equal-cutoff/future exclusion; real output leak count zero","unavailableLabels": "pass for missing participation, ambiguous stats and equal-time rivals; NULL, never fabricated zero","qualifiedZero": "pass","syntheticCorrectionAndLastValid": "pass; 9999 to 350 then ambiguity; history as-of preserved; stale/superseded flags for label and feature","corruptDownload": "step-3 ingestion regression pass","legalDeletionAndInvalidation": "not implemented; step 5"},
+  "failedAttempts": [
+    "initial timeout matrix invalid: client timeout left backend running, later trials overlapped; retained and stopped",
+    "real 84s SQL ceiling miss after transport alignment; retained",
+    "initial calls passed but later season timed out; six-call evidence alone rejected",
+    "inlining alone failed; isolated profiling identified repeated cohort aggregates",
+    "512 MiB disposable filesystem filled after retained versions; explicit 2 GiB fixture measured",
+    "timed EXPLAIN loop-count probe exceeded default harness timeout; per-node timing disabled, existing job ceiling used",
+    "connection-cold matrix superseded by exact fresh-process boundary; retained"
+  ],
+  "remaining": [
+    "step 5 datasets, rights authorization/delivery, mandatory deletion/invalidation, orphan/temp cleanup and audit",
+    "step 6 walk-forward scoring and local predictions",
+    "step 7 remaining repeated capacity gates and complete work budgets",
+    "step 8 external confirmations and final acceptance audit",
+    "main integration before final PR"
+  ],
+  "externalAndSourceRisks": [
+    "historical availability unverified; strict historical usable output absent",
+    "2025 Wilson participation evidence gap remains unavailable",
+    "schedule upstream license chain unresolved beyond release declaration; no commercial-clearance claim",
+    "GCS blocked until owner approves Blaze, budget and dedicated pipeline account; app admin key forbidden",
+    "Neon timeout/configuration not confirmed; no hosted DB access"
+  ],
+  "archivedDetails": [
+    "evidence"
+  ],
+  "recordedContext": {"schemaVersion": 1,"issue": 138,"step": 4,"recordedAt": "2026-10-17T20:03:35.917575+00:00","baseCommit": "b9b6f811f733295748f30b75408c7cf4d6ebbd65","branch": "feature/dfsEV-138-feature-store-spike","step3Commit": "b9b6f81"}
+}

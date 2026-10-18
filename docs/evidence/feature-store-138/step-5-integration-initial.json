@@ -1,0 +1,9 @@
+{
+  "receiptSchema": "fs138-evidence-receipt-v1",
+  "archiveKey": "step-5-integration-initial.json",
+  "status": "superseded before owner review corrections",
+  "verdict": "pass",
+  "error": null,
+  "diagnostics": {"path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/step-5-diagnostics/pre-review/step-5-integration-initial.json","sha256": "728b9bccdc3ce0dad8af3ffc9db993174daf31d22b03524c29e8cbac63b538de","byteSize": 6766},
+  "recordedContext": {"issue": 138,"step": 5}
+}
