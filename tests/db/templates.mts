@@ -146,7 +146,7 @@ export async function createTemplateRun(environment: Environment, directory: str
     });
     return client;
   };
-  let admin = newAdmin();
+  const admin = newAdmin();
   const checkCancellation = () => { signal?.throwIfAborted(); failure.signal.throwIfAborted(); };
   let connected = false;
   let closed = false;
@@ -168,14 +168,6 @@ export async function createTemplateRun(environment: Environment, directory: str
     const errors: unknown[] = [];
     try {
       try { await rm(manifestPath, { force: true }); } catch (error) { errors.push(error); }
-      if (connected && failure.signal.aborted) {
-        // Recovery is cleanup-only: never retry setup or hide a failed run.
-        try { await admin.end(); } catch (error) { errors.push(error); }
-        admin = newAdmin();
-        connected = false;
-        try { await admin.connect(); await checkConnectedTarget(admin, base); connected = true; }
-        catch (error) { errors.push(error); }
-      }
       if (connected) {
         let entries: string[] = [];
         try { await privateDirectory(cloneDirectory); entries = await readdir(cloneDirectory); } catch (error) { errors.push(error); }

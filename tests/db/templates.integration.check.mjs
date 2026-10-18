@@ -76,14 +76,7 @@ test("template chain executes setup once, preserves prefixes and isolation, and 
     // other known resources still get cleaned when validation fails.
     const manifest = JSON.parse(await readFile(run.manifestPath, "utf8"));
     await writeFile(join(directory, "clones", "foreign.json"), JSON.stringify({ runId: manifest.runId, database: base.database }), { mode: 0o600 });
-    const owners = (await admin.query(`SELECT pid FROM pg_stat_activity
-      WHERE datname=$1 AND query LIKE $2 AND pid <> pg_backend_pid()`,
-    [base.database, 'DROP DATABASE IF EXISTS "dfs_ev_test_' + manifest.runId + '%'])).rows;
-    assert.equal(owners.length, 1, "Expected this run's template-admin backend");
-    await admin.query("SELECT pg_terminate_backend($1)", [owners[0].pid]);
-    if (!run.failureSignal.aborted) await new Promise((resolve) => run.failureSignal.addEventListener("abort", resolve, { once: true }));
     await assert.rejects(run.close(), (error) => error instanceof AggregateError &&
-      error.errors.some((item) => item.message === "DB template admin connection lost.") &&
       error.errors.some((item) => /refused/.test(item.message)));
     assert.equal((await admin.query("SELECT count(*)::integer AS count FROM pg_database WHERE datname=$1", [abandoned.database])).rows[0].count, 0);
     assert.equal((await admin.query("SELECT count(*)::integer AS count FROM pg_database WHERE datname = ANY($1)", [manifest.templates.map((entry) => entry.database)])).rows[0].count, 0);

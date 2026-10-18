@@ -1,3 +1,4 @@
+import { startDatabaseTestRun } from "../tests/db/startup.mts";
 import { createTemplateRun } from "../tests/db/templates.mts";
 import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
@@ -19,6 +20,7 @@ const composeArgs = [
 const stop = new AbortController();
 let activeChild;
 let interrupted;
+const lostLock = () => { stop.abort(); activeChild?.kill("SIGTERM"); };
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, () => {
     interrupted = signal;
@@ -42,9 +44,10 @@ function run(command, args, environment = process.env, signal) {
   });
 }
 
-async function runSuite(environment, filters) {
+async function runSuite(environment, filters, leaseSignal) {
   assertNoApplicationCredentials(environment);
   parseTestDatabaseUrl(environment.TEST_DATABASE_URL);
+  leaseSignal.throwIfAborted();
   const reportDir = await mkdtemp(join(tmpdir(), "dfs-ev-db-test-"));
   let templates;
   try {
@@ -76,7 +79,7 @@ async function runSuite(environment, filters) {
       fileURLToPath(new URL("../node_modules/vitest/vitest.mjs", import.meta.url)),
       "run", "--config", "vitest.db.config.mts", "--reporter=default",
       "--reporter=json", "--outputFile.json=" + reportPath, ...filters,
-    ], templateEnvironment, templates.failureSignal);
+    ], templateEnvironment, AbortSignal.any([templates.failureSignal, leaseSignal]));
     if (code !== 0 || interrupted) return code || 1;
     const report = JSON.parse(await readFile(reportPath, "utf8"));
     const leaseRequiredCases = validateLeaseDbReport(report);
@@ -84,6 +87,7 @@ async function runSuite(environment, filters) {
     const predictiveRequiredCases = validatePredictiveDbReport(report);
     const corpusRequiredCases = validateCorpusDbReport(report);
     console.log(JSON.stringify({ nodeRequiredCases, leaseRequiredCases, readinessRequiredCases, predictiveRequiredCases, corpusRequiredCases, result: "verified" }));
+    leaseSignal.throwIfAborted();
     return 0;
   } finally {
     await templates?.close();
@@ -95,7 +99,12 @@ async function main() {
   const [mode, ...filters] = process.argv.slice(2);
   if (mode === "down") return run("docker", [...composeArgs, "down", "--volumes", "--remove-orphans"]);
   assertNoApplicationCredentials(process.env);
-  if (mode === "run") return runSuite(process.env, filters);
+  if (mode === "run") {
+    const lease = await startDatabaseTestRun(process.env);
+    lease.failureSignal.addEventListener("abort", lostLock, { once: true });
+    try { return await runSuite(process.env, filters, lease.failureSignal); }
+    finally { await lease.close(); }
+  }
   if (mode !== "local" && mode !== "repeat") throw new Error("Expected DB test mode: run, local, repeat, or down.");
   const repetitions = mode === "repeat" ? Number(filters.shift() ?? 20) : 1;
   if (!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 100 || (mode === "repeat" && filters.length)) {
@@ -108,18 +117,30 @@ async function main() {
     throw new Error("test:db:local uses its fixed disposable database; use test:db for another validated loopback target.");
   }
   let result = 1;
+  let lease;
   try {
     const started = await run("docker", [...composeArgs, "up", "-d", "--wait", "--wait-timeout", "60"]);
     if (started === 0 && !interrupted) {
+      lease = await startDatabaseTestRun({ ...process.env, TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL });
+      lease.failureSignal.addEventListener("abort", lostLock, { once: true });
       for (let index = 0; index < repetitions && !interrupted; index++) {
         if (mode === "repeat") console.log(`DB suite repetition ${index + 1}/${repetitions}`);
-        result = await runSuite({ ...process.env, TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL }, filters);
+        result = await runSuite({ ...process.env, TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL }, filters, lease.failureSignal);
         if (result !== 0) break;
       }
     }
   } finally {
-    const cleaned = await run("docker", [...composeArgs, "down", "--volumes", "--remove-orphans"]);
-    if (cleaned !== 0) result = 1;
+    // A refused contender must not tear down the service used by the lock holder.
+    if (lease) {
+      lease.failureSignal.removeEventListener("abort", lostLock);
+      try {
+        // Losing the session also loses authority to remove the shared service.
+        if (!lease.failureSignal.aborted) {
+          const cleaned = await run("docker", [...composeArgs, "down", "--volumes", "--remove-orphans"]);
+          if (cleaned !== 0) result = 1;
+        } else result = 1;
+      } finally { await lease.close(); }
+    }
   }
   return result;
 }

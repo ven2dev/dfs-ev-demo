@@ -24,8 +24,11 @@ npm run test:db:local
 runs migration/reference/readiness artifact checks, all mandatory Node database
 checks, an independent catalog-contract drift check and the lease/readiness/
 predictive suite. It removes the
-service and its network even
-if startup or tests fail. It preserves failure exit codes. SIGINT/SIGTERM also
+service and its network after tests, including failures, while it holds the
+target lock. A refused contender or a run that loses its lock leaves the shared
+service in place so it cannot tear down another run. Startup failures before
+lock acquisition can also leave resources for explicit teardown. It preserves
+failure exit codes. SIGINT/SIGTERM also
 request cleanup; a forced kill or machine shutdown can prevent cleanup. To
 remove any resources left by an interrupted run:
 
@@ -88,7 +91,10 @@ remain deliberate; see the [dependency review guide](dependency-updates.md).
 ## Suite contract
 
 Ordinary migrated fixtures clone sealed, run-scoped migration-prefix templates;
-explicit migration proofs keep empty scratch databases. The parent verifies each
+explicit migration proofs keep empty scratch databases. A session advisory lock
+refuses concurrent runs; startup sweeps all leftover `dfs_ev_test_` databases
+and logs the count. Teardown is best-effort; the next run recovers leftovers
+after process termination or connection loss. The parent verifies each
 prefix once, owns interrupted-clone cleanup, and removes the chain after each
 run. See [the #153 design and validation](database-suite-speed.md).
 

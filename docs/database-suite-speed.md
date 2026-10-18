@@ -10,7 +10,8 @@ behavior they assert. No application schema or ordered migration is changed.
 **Pattern:** migrate once into a run-owned builder, take quiescent snapshots of
 verified prefixes, seal them against connections, and clone isolated databases
 from those snapshots. The parent owns the snapshots and the private resource
-registry. This is the template-database integration-fixture pattern approved on
+registry. A target-wide session advisory lock serializes suite invocations, and
+a startup sweep reclaims abandoned fixture databases before any test starts. This is the template-database integration-fixture pattern approved on
 [#153](https://github.com/ven2dev/dfs-ev-demo/issues/153).
 
 **Alternatives:**
@@ -47,8 +48,11 @@ migration, bootstrap and end-to-end persistence proof operations remain under
 test and are excluded from that setup budget. New factory regressions exercise
 the factory itself separately from preparation of the integration fixtures.
 
-**Requirement reasons:** registered random run-owned names prevent touching the
-primary or unrelated databases; strict loopback/throwaway credential guards
+**Requirement reasons:** a session advisory lock prevents concurrent sweeps
+from deleting active fixtures; the startup sweep reclaims leftovers even after
+SIGKILL or runner termination; literal `dfs_ev_test_` prefix matching and strict
+target checks protect the primary and unrelated databases; registered random
+run-owned names constrain ordinary teardown; strict loopback/throwaway credential guards
 prevent application/hosted access; frozen inputs and source-bound manifests
 reject stale fixtures; sealed, disconnected snapshots prevent test mutations of
 a shared source; fresh clones prevent cross-test state leakage; historical
@@ -81,6 +85,25 @@ permissions and non-symlink files before resolving an opaque template reference.
 The scratch harness confirms the source's owner, marker and sealed state before
 cloning it. A plausible database name alone cannot grant template access.
 
+Before running any Node, catalog, factory or Vitest checks, the suite opens a
+guarded admin session and takes `pg_try_advisory_lock` using namespace 153045
+and the primary database OID. A refused acquisition fails immediately with
+“another DB test run is active on this target”. The session remains open across
+all children and all repeat-mode repetitions. While holding it, startup drops
+every database whose name has the literal `dfs_ev_test_` prefix with FORCE,
+including sealed snapshots and connected abandoned clones, and logs
+`staleDatabasesSwept`. Names are identifier-escaped; `dfs_ev_test` is excluded.
+A refused local contender leaves the shared Compose service running. A lost
+lock connection stops the active child and fails the run.
+
+This is startup reconciliation under an exclusive session lease. Teardown-only
+recovery cannot cover SIGKILL or runner termination; age/TTL-based sweeping
+could mistake a slow active suite for stale work. The session lock, released by
+PostgreSQL on connection loss, establishes when a startup sweep is safe without
+adding teardown retries or parent ownership of factory-test databases. All
+entry points that use this target need to honor the same lease; other manual
+users of the fixed Compose service still require coordination.
+
 A private clone registration is written before CREATE so that an interrupted
 child remains discoverable even when it did not receive CREATE's response.
 Successful fixture cleanup removes its registration. Parent cleanup invalidates
@@ -89,9 +112,10 @@ and closes its admin connection. An invalid registration cannot grant cleanup
 rights over the primary database; other known resources are still cleaned and
 the error is surfaced. SIGINT/SIGTERM cancels a partial build and waits for the
 sequential child to stop before parent cleanup. An idle admin connection loss
-also stops the child; cleanup reconnects through the same guarded target and
-still fails the run rather than retrying setup. Forced process/machine death
-still needs the existing disposable-service teardown.
+also stops the child and fails the run. Teardown remains best-effort with no
+reconnection or retry; any leftover databases are swept by the next run. Forced
+process/machine death is covered by that next-run sweep or disposable-service
+teardown.
 
 `withMigratedDatabase` supplies the source-claims, predictive, corpus and
 migrated-readiness fixtures. Authentic unversioned/behind readiness fixtures
@@ -122,6 +146,19 @@ changed. There are no profiling `any` annotations or lint suppressions.
   regressions, repeat mode, lint/typecheck/application tests and an actual
   SIGTERM test with an active clone. Local serial-A times are not the final
   hosted target proof.
+
+The startup regression command is `TEST_DATABASE_URL=<public loopback URL>
+npm run test:db:startup` against the already-running disposable service, before
+starting a suite. It proves stale sealed/connected fixtures are removed on the
+next run, other databases survive, and a real concurrent runner is refused
+without sweeping or executing tests.
+
+The owner accepted two Step-A review findings concerning interrupted factory
+subprocesses and admin loss during cleanup. The follow-up uses startup
+reconciliation rather than expanding teardown: [startup-sweep validation](evidence/db-suite-speed-startup-sweep-2026-10-17.json).
+The admin-loss regression moved to the startup tests and now proves that failed
+teardown leaves snapshots that the next startup removes. The existing factory
+regression still proves normal abandoned-clone and malformed-registry cleanup.
 
 ## Approval checkpoints
 
