@@ -1,0 +1,165 @@
+{
+  "issue": 185,
+  "baselineCommit": "85c14183db872b7479279a2cee421826709bf7a8",
+  "verdict": "local-pass-hosted-ci-pending",
+  "boundary": {
+    "host": "Darwin-arm64",
+    "node": "v24.18.1",
+    "compose": "compose.test.yml only; no spike override",
+    "postgresImage": "postgres:18.6-alpine3.24@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873",
+    "dataTmpfsBytes": 536870912,
+    "sharedMemoryBytes": 134217728,
+    "containerMemoryLimitBytes": 0,
+    "resourceMeaning": "512 MiB limits the PostgreSQL data tmpfs, not total container RAM",
+    "fixtureChanges": false,
+    "execution": "serial feature-store files; fresh standard container per run; unflushed host caches",
+    "hostedWrites": false,
+    "toolVersions": {
+      "next": "16.4.2",
+      "vitest": "5.0.5",
+      "jsdom": "30.1.3",
+      "firebase-tools": "15.34.0"
+    }
+  },
+  "standardFixtureProof": {
+    "name": "standard-suite",
+    "exitCode": 0,
+    "elapsedSeconds": 49.838,
+    "logSha256": "76f141bfbafb61da29f1d76a815b60c35d6be69dd9afc98f32962af55e69077b",
+    "counts": {
+      "tests": 77,
+      "failed": 0,
+      "passed": 77,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "topLevel": 7,
+      "suites": 0
+    },
+    "files": [
+      "tests/feature-store/datasets.check.mts",
+      "tests/feature-store/derived.check.mts",
+      "tests/feature-store/empirical-adapter.check.mts",
+      "tests/feature-store/ingest.check.mts",
+      "tests/feature-store/removal-queue.check.mts",
+      "tests/feature-store/rights.check.mts",
+      "tests/feature-store/schema.check.mts"
+    ],
+    "reportSha256": "3bbeb4b49d2d6af58004c7a5f8c1780d28c247e5b3d31334ace84cf46358e2b9"
+  },
+  "combinedJobSequence": {
+    "stages": [
+      {
+        "name": "ci-gate",
+        "exitCode": 0,
+        "elapsedSeconds": 0.417,
+        "logSha256": "aeb195579e29fb23fe2ba2580f6308d9202fa857eea05bf3721445a44cb8da12"
+      },
+      {
+        "name": "db-guard",
+        "exitCode": 0,
+        "elapsedSeconds": 0.896,
+        "logSha256": "e5850117fab9bc2d93dbdd24f80718892c0b60ff7a8bbea67575ccdfb7cacfaf"
+      },
+      {
+        "name": "db-lifecycle",
+        "exitCode": 0,
+        "elapsedSeconds": 5.542,
+        "logSha256": "bbc6732837b54f069b20ee17e38ade758ec28013903ddaf0b06631d23d450573"
+      },
+      {
+        "name": "db-local",
+        "exitCode": 0,
+        "elapsedSeconds": 70.775,
+        "logSha256": "85bb70f337b400e330964dca6854aa6d0b2ad55c7092628f70ca5e7712086079"
+      },
+      {
+        "name": "feature-ci-step",
+        "exitCode": 0,
+        "elapsedSeconds": 58.523,
+        "logSha256": "61433a98b9c74b92b27d209ba859bcff14a78dd3b0e199a61980c7f15ed77c2b"
+      },
+      {
+        "name": "db-cleanup",
+        "exitCode": 0,
+        "elapsedSeconds": 0.665,
+        "logSha256": "fec338d2cb94c25f54ae25d46f49268009cc0e5573424e2e53708cb16ebcd84e"
+      }
+    ],
+    "elapsedSeconds": 136.818,
+    "currentHostedJobDeadlineSeconds": 600,
+    "timingLimit": "local supporting evidence only; excludes dependency installation and hosted runner setup",
+    "databaseRequiredCases": {
+      "nodeRequiredCases": 75,
+      "leaseRequiredCases": 13,
+      "readinessRequiredCases": 4,
+      "predictiveRequiredCases": 112,
+      "corpusRequiredCases": 8,
+      "result": "verified"
+    },
+    "featureStoreTests": {
+      "tests": 77,
+      "passed": 77,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "todo": 0
+    },
+    "baselineCommit": "62daa3caf7d27322fc3b4b3b156e0ff2ab056339",
+    "status": "historical combined run before main merge; not rerun at the new baseline"
+  },
+  "invariants": {
+    "frozenMigrationCount": 11,
+    "frozenMigrationCatalogSchemaReadinessUnchanged": true,
+    "retainedArtifactCount": 27,
+    "retainedArtifactsSha256": "d62275efa026caae2a26ba6f5c0c79c0e5d44b11af7a52a9f8a4ce73f2622eb1",
+    "featureStoreSourcesAndFixturesSha256": "685a0447dc1c282bb58297eace7a71f06c8ac5ac09b34a100832a403fa029b52"
+  },
+  "checks": {
+    "ciGateCasesPassed": 4,
+    "databaseGuardCasesPassed": 21,
+    "lifecycleCasesPassed": 1,
+    "changedJavascriptLint": "pass",
+    "gitDiffCheck": "pass",
+    "disposableDatabaseCleanup": "pass",
+    "databaseGuardAndLifecycleBaselineCommit": "62daa3caf7d27322fc3b4b3b156e0ff2ab056339",
+    "ciGateLintAndCleanupBaselineCommit": "85c14183db872b7479279a2cee421826709bf7a8"
+  },
+  "codeSha256": {
+    ".github/workflows/ci.yml": "4f5659f7c175efb1c65dd6239076ae6c79db442091db541e21337e6587c5ea90",
+    "tests/ciGate.check.mjs": "267876f55d2d0b52599490197c1743584f6aefca7ee73e5d4c09866e401a0b07",
+    "compose.test.yml": "57a19ced9e5892293f353b95456ea4e07544d467d5843634f508773496b4418e",
+    "package.json": "194905ba0f1f0df65cd4be462501b51977abfa9df31fc37473cfabdd2cb5bd18",
+    "package-lock.json": "b21d3ab1bd41d721876d660612f8cee71119ca5d9c40a61ba97d357fc01accbd"
+  },
+  "logPolicy": "full logs remain outside git under /private/tmp; only this receipt is committed",
+  "integration": {
+    "method": "merge-only",
+    "previousBranchCommit": "8be53716258eec251b5486426b5c4e8b772e89d2",
+    "mergedMainCommit": "85c14183db872b7479279a2cee421826709bf7a8",
+    "previousReceiptCommit": "8be53716258eec251b5486426b5c4e8b772e89d2",
+    "dependencyRefresh": "npm ci from merged package-lock.json"
+  },
+  "refreshedChecks": {
+    "baselineCommit": "85c14183db872b7479279a2cee421826709bf7a8",
+    "ciGate": {
+      "name": "ci-gate",
+      "exitCode": 0,
+      "elapsedSeconds": 0.232,
+      "logSha256": "a2e3a29344c53941817a340b76d009b5c7b45f88a7a4aa62316e9e8eb0ee33f7"
+    },
+    "changedJavascriptLint": {
+      "name": "changed-javascript-lint",
+      "exitCode": 0,
+      "elapsedSeconds": 1.426,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cleanup": {
+      "name": "standard-cleanup",
+      "exitCode": 0,
+      "elapsedSeconds": 0.526,
+      "logSha256": "fec338d2cb94c25f54ae25d46f49268009cc0e5573424e2e53708cb16ebcd84e"
+    },
+    "resourceLogSha256": "b085108f8d1a8934332b6eb41da817189c94da96d4d0a10ef990c401bcc6424f"
+  }
+}

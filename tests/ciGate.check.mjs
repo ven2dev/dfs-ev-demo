@@ -58,3 +58,19 @@ test("missing or unexpected upstream results also fail the gate", () => {
     assert.equal(runGate("success", state).status, 1);
   }
 });
+
+test("feature-store PostgreSQL coverage runs sequentially on the standard fixture and cannot bypass the DB gate", () => {
+  const db = workflow.match(/^  db:\n((?:\n| {4}[^\n]*\n)+)/m)?.[1];
+  assert.ok(db, "Expected the DB integration job block.");
+  const feature = db.match(/^      - name: Verify feature-store PostgreSQL behavior on standard fixture\n((?: {8}[^\n]*\n)+)/m)?.[1];
+  assert.ok(feature, "Expected an explicit feature-store PostgreSQL step.");
+  assert.match(feature, /^        shell: bash$/m);
+  assert.match(feature, /^          TEST_DATABASE_URL: postgresql:\/\/dfs_ev_test:dfs_ev_test@127\.0\.0\.1:54329\/dfs_ev_test$/m);
+  assert.match(feature, /^        run: \|\n          docker compose --env-file \/dev\/null --project-name dfs-ev-demo-test -f compose\.test\.yml up -d --wait --wait-timeout 60\n          npm run test:feature-store:db\n$/m);
+  assert.doesNotMatch(feature, /(?:continue-on-error:|if:|compose\.feature-store-spike)/);
+  assert.doesNotMatch(db, /^    (?:continue-on-error:|if:)/m);
+  assert.match(db, /^    timeout-minutes: 10$/m);
+  assert.ok(db.indexOf("run: npm run test:db:local") < db.indexOf(feature));
+  assert.ok(db.indexOf(feature) < db.indexOf("- name: Remove disposable PostgreSQL"));
+  assert.match(db, /- name: Remove disposable PostgreSQL\n        if: \$\{\{ always\(\) \}\}\n        timeout-minutes: 2\n        run: npm run test:db:down/);
+});
