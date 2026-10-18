@@ -1,0 +1,3934 @@
+{
+  "schemaVersion": 1,
+  "issue": 138,
+  "step": 4,
+  "recordedAt": "2026-10-17T17:45:39.784Z",
+  "code": {
+    "gitSha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+    "contentSha256": "2cab08ee6bdba08e3421af305a103793951a516239b7f33c9e11b47b28baaddb"
+  },
+  "codeHashes": {
+    "src/lib/featureStore/derived.ts": "e6b7a56522f71ec80a191101b2a6ed0ceabafd222b7ef4f35abd822f8eb27b34",
+    "db/proposals/138_feature_store.sql": "1f6f3caab3ad1795df0720ce4568d2335432d46dba0344ed92ff29c982548076",
+    "scripts/feature-store/harness.ts": "117de42e8a0e2f756b2dcd2fe12c8dde90a1066ed942ee8b04c195cb67d1bf80",
+    "scripts/feature-store/derived-spike.ts": "c1319ffc1f75f03fab2082437a747d3c374206561d61efa04c6db4d9f1b8469d",
+    "scripts/feature-store/derived-cold.ts": "0495f0014796bc2ea08bce3da23fa9b289a49a391c9b46f3362e94ced86840eb",
+    "src/lib/featureStore/ingest.ts": "11d1bf28eb57dd95c2fb18346534ef3ce718cbf266565b485da6e844547cad09",
+    "src/lib/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "src/lib/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7",
+    "package-lock.json": "f93f6fe9bcc5e4347ea923542004efe6c1182af76d80e1e9fdafbf18f7e96570"
+  },
+  "sourceManifestSha256": "63517d4e667af249a6c8c3a4b6ea8cd72550d1afb578182510629d68ec710c38",
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin",
+    "cpus": 12,
+    "totalMemoryBytes": 19327352832
+  },
+  "fixtureStorage": {
+    "postgresTmpfsBytes": 2147483648,
+    "composeOverride": "compose.feature-store-spike.yml",
+    "retainedTrialOutputs": true,
+    "earlier512MiBFailure": "step-4-real-derived-storage-failure.json"
+  },
+  "fixture": "exact step-3 wire objects; all five seasons normalized in a fresh scratch DB; no synthetic corrections",
+  "evidenceMode": "retrospective-reconstruction-v1",
+  "flags": [
+    "historical-availability-unverified"
+  ],
+  "evaluationRun": false,
+  "setup": "ObjectStore reads exact pinned raw bytes for re-normalization; this is not an ingestion/network benchmark",
+  "cacheState": "cold trials use fresh Node processes and restricted DB connections; warm trials reuse a connection; no app cache or job-output reuse; OS/DB buffers not flushed; no claim of cold disk caches",
+  "trials": [
+    {
+      "season": 2025,
+      "trialMode": "cold",
+      "trial": 1,
+      "status": "succeeded",
+      "jobId": "bb552d93-755a-4d83-98b7-b76a5bd445d1",
+      "checkpoint": "2026-10-17 17:45:57.492602+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3447.695875,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3555.726499999997,
+      "processId": 21308,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9",
+      "storageObservation": {
+        "database_bytes": "55910927",
+        "temp_bytes": "194856911",
+        "temp_files": 26
+      }
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 1,
+      "status": "succeeded",
+      "jobId": "b38e55ed-b69b-4b1d-b9ae-3150f256d426",
+      "checkpoint": "2026-10-17 17:46:01.017659+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3393.773000000001,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3394.0227080000004,
+      "processId": 17119,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9",
+      "storageObservation": {
+        "database_bytes": "65430031",
+        "temp_bytes": "389713822",
+        "temp_files": 52
+      }
+    },
+    {
+      "season": 2025,
+      "trialMode": "cold",
+      "trial": 2,
+      "status": "succeeded",
+      "jobId": "9db7af12-6552-4560-b54c-fb6a1274f551",
+      "checkpoint": "2026-10-17 17:46:04.569935+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3410.188458,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3513.12875,
+      "processId": 21369,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9",
+      "storageObservation": {
+        "database_bytes": "74331839",
+        "temp_bytes": "584570733",
+        "temp_files": 78
+      }
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 2,
+      "status": "succeeded",
+      "jobId": "e72f08b3-51e5-4ec4-a960-82b7f285b20b",
+      "checkpoint": "2026-10-17 17:46:08.062436+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3407.297166999997,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3407.3307079999977,
+      "processId": 17119,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9",
+      "storageObservation": {
+        "database_bytes": "84522687",
+        "temp_bytes": "779427644",
+        "temp_files": 104
+      }
+    },
+    {
+      "season": 2025,
+      "trialMode": "cold",
+      "trial": 3,
+      "status": "succeeded",
+      "jobId": "223eefa7-2c54-46b1-a0fd-4ef57b49249a",
+      "checkpoint": "2026-10-17 17:46:11.641894+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3426.5129580000003,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3526.3197500000024,
+      "processId": 21426,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9",
+      "storageObservation": {
+        "database_bytes": "93058751",
+        "temp_bytes": "974284555",
+        "temp_files": 130
+      }
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 3,
+      "status": "succeeded",
+      "jobId": "dc1b8b1a-63b8-44ce-8561-65b9743913d4",
+      "checkpoint": "2026-10-17 17:46:15.14915+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3387.808208000002,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3387.8487499999974,
+      "processId": 17119,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9",
+      "storageObservation": {
+        "database_bytes": "102184639",
+        "temp_bytes": "1169141466",
+        "temp_files": 156
+      }
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 4,
+      "status": "succeeded",
+      "jobId": "290206d9-94f3-4b32-acad-384a110ad341",
+      "checkpoint": "2026-10-17 17:46:38.957542+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3488.1255410000012,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3488.151708999998,
+      "processId": 17119,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9",
+      "storageObservation": {
+        "database_bytes": "181180095",
+        "temp_bytes": "2056775073",
+        "temp_files": 278
+      }
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 5,
+      "status": "succeeded",
+      "jobId": "fa00d5c4-114d-451c-a0cf-6bcfb7a67b84",
+      "checkpoint": "2026-10-17 17:46:42.552497+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3576.5096669999984,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3576.5437080000047,
+      "processId": 17119,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9",
+      "storageObservation": {
+        "database_bytes": "190273215",
+        "temp_bytes": "2251631984",
+        "temp_files": 304
+      }
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 6,
+      "status": "succeeded",
+      "jobId": "f59908d4-d0d4-4c04-a1ca-72caadff5b1d",
+      "checkpoint": "2026-10-17 17:46:46.175455+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3444.09375,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3444.1217500000057,
+      "processId": 17119,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9",
+      "storageObservation": {
+        "database_bytes": "199988927",
+        "temp_bytes": "2446488895",
+        "temp_files": 330
+      }
+    }
+  ],
+  "qualification": [
+    {
+      "kind": "features",
+      "season": 2021,
+      "status": "succeeded",
+      "jobId": "28dbe3f0-85f3-4ef4-b097-6f899fdc3e4c",
+      "checkpoint": "2026-10-17 17:46:18.599296+00",
+      "counts": {
+        "rows": 1916,
+        "usable": 780,
+        "unavailable": 1136,
+        "max_sample": 16
+      },
+      "elapsedMs": 2821.1324590000004,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "features",
+      "season": 2022,
+      "status": "succeeded",
+      "jobId": "d9e10027-661b-4672-9c82-8e8602e4b68e",
+      "checkpoint": "2026-10-17 17:46:21.420096+00",
+      "counts": {
+        "rows": 1838,
+        "usable": 1204,
+        "unavailable": 634,
+        "max_sample": 16
+      },
+      "elapsedMs": 3067.5744579999955,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "features",
+      "season": 2023,
+      "status": "succeeded",
+      "jobId": "98b2b68d-4d8f-4ff5-84bb-9fd0855db70e",
+      "checkpoint": "2026-10-17 17:46:24.488698+00",
+      "counts": {
+        "rows": 1812,
+        "usable": 1380,
+        "unavailable": 432,
+        "max_sample": 16
+      },
+      "elapsedMs": 3201.088416999999,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "features",
+      "season": 2024,
+      "status": "succeeded",
+      "jobId": "00835cf8-7985-4ec1-a75d-0145fe4536c3",
+      "checkpoint": "2026-10-17 17:46:27.693468+00",
+      "counts": {
+        "rows": 1867,
+        "usable": 1482,
+        "unavailable": 385,
+        "max_sample": 16
+      },
+      "elapsedMs": 3264.403624999999,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "labels",
+      "season": 2021,
+      "status": "succeeded",
+      "jobId": "ddb695c5-8c9e-4247-8fc4-3ca0bbceee2f",
+      "checkpoint": "2026-10-17 17:46:30.958391+00",
+      "counts": {
+        "rows": 1916,
+        "usable": 655,
+        "unavailable": 1261,
+        "max_sample": 0
+      },
+      "elapsedMs": 1618.5012080000015,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "labels",
+      "season": 2022,
+      "status": "succeeded",
+      "jobId": "7dd55f35-2dc4-47a0-a498-d5209adfa7cf",
+      "checkpoint": "2026-10-17 17:46:32.58065+00",
+      "counts": {
+        "rows": 1838,
+        "usable": 633,
+        "unavailable": 1205,
+        "max_sample": 0
+      },
+      "elapsedMs": 1524.0671250000014,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "labels",
+      "season": 2023,
+      "status": "succeeded",
+      "jobId": "8426d619-33ef-4e4c-8e2a-55e8f8654131",
+      "checkpoint": "2026-10-17 17:46:34.108424+00",
+      "counts": {
+        "rows": 1812,
+        "usable": 663,
+        "unavailable": 1149,
+        "max_sample": 0
+      },
+      "elapsedMs": 1563.3727500000023,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "labels",
+      "season": 2024,
+      "status": "succeeded",
+      "jobId": "f1cd0088-5735-48ad-af8c-bd16eaa43a12",
+      "checkpoint": "2026-10-17 17:46:35.673751+00",
+      "counts": {
+        "rows": 1867,
+        "usable": 664,
+        "unavailable": 1203,
+        "max_sample": 0
+      },
+      "elapsedMs": 1596.2177500000034,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "labels",
+      "season": 2025,
+      "status": "succeeded",
+      "jobId": "774da94f-71f7-4208-aa26-354d228274e3",
+      "checkpoint": "2026-10-17 17:46:37.270726+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 663,
+        "unavailable": 1285,
+        "max_sample": 0
+      },
+      "elapsedMs": 1685.6284580000065,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    }
+  ],
+  "verdict": "step-4-real-correctness-and-season-feature-target-pass",
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "inputs": [
+    {
+      "name": "games.csv.gz",
+      "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+      "normalizedRows": 1359
+    },
+    {
+      "name": "pbp_participation_2021.csv",
+      "sha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+      "normalizedRows": 18309
+    },
+    {
+      "name": "pbp_participation_2022.csv",
+      "sha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+      "normalizedRows": 18193
+    },
+    {
+      "name": "pbp_participation_2023.csv",
+      "sha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+      "normalizedRows": 17670
+    },
+    {
+      "name": "pbp_participation_2024.csv",
+      "sha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+      "normalizedRows": 17564
+    },
+    {
+      "name": "pbp_participation_2025.csv",
+      "sha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+      "normalizedRows": 17707
+    },
+    {
+      "name": "roster_weekly_2021.csv",
+      "sha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+      "normalizedRows": 1916
+    },
+    {
+      "name": "roster_weekly_2022.csv",
+      "sha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+      "normalizedRows": 1844
+    },
+    {
+      "name": "roster_weekly_2023.csv",
+      "sha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+      "normalizedRows": 1812
+    },
+    {
+      "name": "roster_weekly_2024.csv.gz",
+      "sha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+      "normalizedRows": 1867
+    },
+    {
+      "name": "roster_weekly_2025.csv.gz",
+      "sha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+      "normalizedRows": 1948
+    },
+    {
+      "name": "stats_player_week_2021.csv.gz",
+      "sha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+      "normalizedRows": 655
+    },
+    {
+      "name": "stats_player_week_2022.csv.gz",
+      "sha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+      "normalizedRows": 633
+    },
+    {
+      "name": "stats_player_week_2023.csv.gz",
+      "sha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+      "normalizedRows": 663
+    },
+    {
+      "name": "stats_player_week_2024.csv.gz",
+      "sha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+      "normalizedRows": 664
+    },
+    {
+      "name": "stats_player_week_2025.csv.gz",
+      "sha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+      "normalizedRows": 664
+    }
+  ],
+  "plainContextPlan": [
+    {
+      "QUERY PLAN": [
+        {
+          "Plan": {
+            "Node Type": "Hash Join",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Join Type": "Left",
+            "Startup Cost": 2713.45,
+            "Total Cost": 2718.29,
+            "Plan Rows": 48,
+            "Plan Width": 192,
+            "Disabled": false,
+            "Inner Unique": false,
+            "Hash Cond": "((r.player_id = p.player_id) AND (r.game_id = p.game_id) AND (r.context_game_id = p.context_game_id))",
+            "Plans": [
+              {
+                "Node Type": "Hash Join",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE snapshots",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Inner",
+                "Startup Cost": 2.3,
+                "Total Cost": 3.61,
+                "Plan Rows": 5,
+                "Plan Width": 657,
+                "Disabled": false,
+                "Inner Unique": false,
+                "Hash Cond": "(j.job_id = s.job_id)",
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "job_runs",
+                    "Alias": "j",
+                    "Startup Cost": 0,
+                    "Total Cost": 1.2,
+                    "Plan Rows": 16,
+                    "Plan Width": 16,
+                    "Disabled": false,
+                    "Filter": "(status = 'succeeded'::text)"
+                  },
+                  {
+                    "Node Type": "Hash",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 2.24,
+                    "Total Cost": 2.24,
+                    "Plan Rows": 5,
+                    "Plan Width": 657,
+                    "Disabled": false,
+                    "Plans": [
+                      {
+                        "Node Type": "Seq Scan",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Relation Name": "source_snapshots",
+                        "Alias": "s",
+                        "Startup Cost": 0,
+                        "Total Cost": 2.24,
+                        "Plan Rows": 5,
+                        "Plan Width": 657,
+                        "Disabled": false,
+                        "Filter": "(ingested_at <= clock_timestamp())"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Unique",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE discovery_schedule",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 133.59,
+                "Total Cost": 228.69,
+                "Plan Rows": 1359,
+                "Plan Width": 145,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "Incremental Sort",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 133.59,
+                    "Total Cost": 225.29,
+                    "Plan Rows": 1359,
+                    "Plan Width": 145,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "n.game_id",
+                      "s_1.available_at DESC",
+                      "s_1.ingested_at DESC",
+                      "n.snapshot_id"
+                    ],
+                    "Presorted Key": [
+                      "n.game_id"
+                    ],
+                    "Plans": [
+                      {
+                        "Node Type": "WindowAgg",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 133.56,
+                        "Total Cost": 164.14,
+                        "Plan Rows": 1359,
+                        "Plan Width": 145,
+                        "Disabled": false,
+                        "Window": "w1 AS (PARTITION BY n.game_id, s_1.available_at, s_1.ingested_at)",
+                        "Plans": [
+                          {
+                            "Node Type": "Sort",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 133.56,
+                            "Total Cost": 136.96,
+                            "Plan Rows": 1359,
+                            "Plan Width": 137,
+                            "Disabled": false,
+                            "Sort Key": [
+                              "n.game_id",
+                              "s_1.available_at",
+                              "s_1.ingested_at"
+                            ],
+                            "Plans": [
+                              {
+                                "Node Type": "Hash Join",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Join Type": "Inner",
+                                "Startup Cost": 0.16,
+                                "Total Cost": 62.84,
+                                "Plan Rows": 1359,
+                                "Plan Width": 137,
+                                "Disabled": false,
+                                "Inner Unique": false,
+                                "Hash Cond": "(n.snapshot_id = s_1.snapshot_id)",
+                                "Plans": [
+                                  {
+                                    "Node Type": "Seq Scan",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Relation Name": "norm_schedule",
+                                    "Alias": "n",
+                                    "Startup Cost": 0,
+                                    "Total Cost": 43.99,
+                                    "Plan Rows": 1359,
+                                    "Plan Width": 121,
+                                    "Disabled": false,
+                                    "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                  },
+                                  {
+                                    "Node Type": "Hash",
+                                    "Parent Relationship": "Inner",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Startup Cost": 0.1,
+                                    "Total Cost": 0.1,
+                                    "Plan Rows": 5,
+                                    "Plan Width": 32,
+                                    "Disabled": false,
+                                    "Plans": [
+                                      {
+                                        "Node Type": "CTE Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "CTE Name": "snapshots",
+                                        "Alias": "s_1",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 0.1,
+                                        "Plan Rows": 5,
+                                        "Plan Width": 32,
+                                        "Disabled": false
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Unique",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE population",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 1655.39,
+                "Total Cost": 1713.98,
+                "Plan Rows": 1360,
+                "Plan Width": 64,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "Merge Append",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 1655.39,
+                    "Total Cost": 1707.18,
+                    "Plan Rows": 1360,
+                    "Plan Width": 64,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "n_1.player_id",
+                      "s_2.game_id"
+                    ],
+                    "Subplans Removed": 0,
+                    "Plans": [
+                      {
+                        "Node Type": "Sort",
+                        "Parent Relationship": "Member",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 1320.67,
+                        "Total Cost": 1320.67,
+                        "Plan Rows": 1,
+                        "Plan Width": 43,
+                        "Disabled": false,
+                        "Sort Key": [
+                          "n_1.player_id",
+                          "s_2.game_id"
+                        ],
+                        "Plans": [
+                          {
+                            "Node Type": "Merge Join",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Join Type": "Inner",
+                            "Startup Cost": 1302.94,
+                            "Total Cost": 1320.66,
+                            "Plan Rows": 1,
+                            "Plan Width": 43,
+                            "Disabled": false,
+                            "Inner Unique": false,
+                            "Merge Cond": "((n_1.season = s_2.season) AND (n_1.week = s_2.week))",
+                            "Join Filter": "((n_1.team = s_2.home_team) OR (n_1.team = s_2.away_team))",
+                            "Plans": [
+                              {
+                                "Node Type": "Sort",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Startup Cost": 1205.04,
+                                "Total Cost": 1207.38,
+                                "Plan Rows": 939,
+                                "Plan Width": 22,
+                                "Disabled": false,
+                                "Sort Key": [
+                                  "n_1.season",
+                                  "n_1.week"
+                                ],
+                                "Plans": [
+                                  {
+                                    "Node Type": "Subquery Scan",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Alias": "n_1",
+                                    "Startup Cost": 1031.95,
+                                    "Total Cost": 1158.67,
+                                    "Plan Rows": 939,
+                                    "Plan Width": 22,
+                                    "Disabled": false,
+                                    "Plans": [
+                                      {
+                                        "Node Type": "Unique",
+                                        "Parent Relationship": "Subquery",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Startup Cost": 1031.95,
+                                        "Total Cost": 1149.28,
+                                        "Plan Rows": 939,
+                                        "Plan Width": 230,
+                                        "Disabled": false,
+                                        "Plans": [
+                                          {
+                                            "Node Type": "Sort",
+                                            "Parent Relationship": "Outer",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "Startup Cost": 1031.95,
+                                            "Total Cost": 1055.41,
+                                            "Plan Rows": 9387,
+                                            "Plan Width": 230,
+                                            "Disabled": false,
+                                            "Sort Key": [
+                                              "n_2.player_id",
+                                              "n_2.season",
+                                              "n_2.week",
+                                              "n_2.team",
+                                              "s_3.available_at DESC",
+                                              "s_3.ingested_at DESC",
+                                              "n_2.snapshot_id"
+                                            ],
+                                            "Plans": [
+                                              {
+                                                "Node Type": "Hash Join",
+                                                "Parent Relationship": "Outer",
+                                                "Parallel Aware": false,
+                                                "Async Capable": false,
+                                                "Join Type": "Inner",
+                                                "Startup Cost": 0.16,
+                                                "Total Cost": 412.57,
+                                                "Plan Rows": 9387,
+                                                "Plan Width": 230,
+                                                "Disabled": false,
+                                                "Inner Unique": false,
+                                                "Hash Cond": "(n_2.snapshot_id = s_3.snapshot_id)",
+                                                "Plans": [
+                                                  {
+                                                    "Node Type": "Seq Scan",
+                                                    "Parent Relationship": "Outer",
+                                                    "Parallel Aware": false,
+                                                    "Async Capable": false,
+                                                    "Relation Name": "norm_identity",
+                                                    "Alias": "n_2",
+                                                    "Startup Cost": 0,
+                                                    "Total Cost": 283.34,
+                                                    "Plan Rows": 9387,
+                                                    "Plan Width": 38,
+                                                    "Disabled": false,
+                                                    "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                                  },
+                                                  {
+                                                    "Node Type": "Hash",
+                                                    "Parent Relationship": "Inner",
+                                                    "Parallel Aware": false,
+                                                    "Async Capable": false,
+                                                    "Startup Cost": 0.1,
+                                                    "Total Cost": 0.1,
+                                                    "Plan Rows": 5,
+                                                    "Plan Width": 32,
+                                                    "Disabled": false,
+                                                    "Plans": [
+                                                      {
+                                                        "Node Type": "CTE Scan",
+                                                        "Parent Relationship": "Outer",
+                                                        "Parallel Aware": false,
+                                                        "Async Capable": false,
+                                                        "CTE Name": "snapshots",
+                                                        "Alias": "s_3",
+                                                        "Startup Cost": 0,
+                                                        "Total Cost": 0.1,
+                                                        "Plan Rows": 5,
+                                                        "Plan Width": 32,
+                                                        "Disabled": false
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "Node Type": "Sort",
+                                "Parent Relationship": "Inner",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Startup Cost": 97.9,
+                                "Total Cost": 101.3,
+                                "Plan Rows": 1359,
+                                "Plan Width": 104,
+                                "Disabled": false,
+                                "Sort Key": [
+                                  "s_2.season",
+                                  "s_2.week"
+                                ],
+                                "Plans": [
+                                  {
+                                    "Node Type": "CTE Scan",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "CTE Name": "discovery_schedule",
+                                    "Alias": "s_2",
+                                    "Startup Cost": 0,
+                                    "Total Cost": 27.18,
+                                    "Plan Rows": 1359,
+                                    "Plan Width": 104,
+                                    "Disabled": false
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "Node Type": "Subquery Scan",
+                        "Parent Relationship": "Member",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Alias": "discovery_stats",
+                        "Startup Cost": 334.71,
+                        "Total Cost": 372.9,
+                        "Plan Rows": 1359,
+                        "Plan Width": 26,
+                        "Disabled": false,
+                        "Plans": [
+                          {
+                            "Node Type": "Unique",
+                            "Parent Relationship": "Subquery",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 334.71,
+                            "Total Cost": 359.31,
+                            "Plan Rows": 1359,
+                            "Plan Width": 210,
+                            "Disabled": false,
+                            "Plans": [
+                              {
+                                "Node Type": "Sort",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Startup Cost": 334.71,
+                                "Total Cost": 342.91,
+                                "Plan Rows": 3279,
+                                "Plan Width": 210,
+                                "Disabled": false,
+                                "Sort Key": [
+                                  "n_3.player_id",
+                                  "n_3.game_id",
+                                  "s_4.available_at DESC",
+                                  "s_4.ingested_at DESC",
+                                  "n_3.snapshot_id"
+                                ],
+                                "Plans": [
+                                  {
+                                    "Node Type": "Hash Join",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Join Type": "Inner",
+                                    "Startup Cost": 0.16,
+                                    "Total Cost": 143.24,
+                                    "Plan Rows": 3279,
+                                    "Plan Width": 210,
+                                    "Disabled": false,
+                                    "Inner Unique": false,
+                                    "Hash Cond": "(n_3.snapshot_id = s_4.snapshot_id)",
+                                    "Plans": [
+                                      {
+                                        "Node Type": "Seq Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Relation Name": "norm_player_game_stats",
+                                        "Alias": "n_3",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 97.99,
+                                        "Plan Rows": 3279,
+                                        "Plan Width": 42,
+                                        "Disabled": false,
+                                        "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                      },
+                                      {
+                                        "Node Type": "Hash",
+                                        "Parent Relationship": "Inner",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Startup Cost": 0.1,
+                                        "Total Cost": 0.1,
+                                        "Plan Rows": 5,
+                                        "Plan Width": 32,
+                                        "Disabled": false,
+                                        "Plans": [
+                                          {
+                                            "Node Type": "CTE Scan",
+                                            "Parent Relationship": "Outer",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "CTE Name": "snapshots",
+                                            "Alias": "s_4",
+                                            "Startup Cost": 0,
+                                            "Total Cost": 0.1,
+                                            "Plan Rows": 5,
+                                            "Plan Width": 32,
+                                            "Disabled": false
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Hash Join",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE targets",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Left",
+                "Startup Cost": 44.17,
+                "Total Cost": 103.74,
+                "Plan Rows": 7,
+                "Plan Width": 84,
+                "Disabled": false,
+                "Inner Unique": false,
+                "Hash Cond": "(p_1.game_id = s_5.game_id)",
+                "Filter": "(COALESCE(s_5.season, (\"substring\"(p_1.game_id, '^([0-9]{4})_'::text))::integer) = 2025)",
+                "Plans": [
+                  {
+                    "Node Type": "CTE Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "CTE Name": "population",
+                    "Alias": "p_1",
+                    "Startup Cost": 0,
+                    "Total Cost": 27.2,
+                    "Plan Rows": 1360,
+                    "Plan Width": 64,
+                    "Disabled": false
+                  },
+                  {
+                    "Node Type": "Hash",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 27.18,
+                    "Total Cost": 27.18,
+                    "Plan Rows": 1359,
+                    "Plan Width": 52,
+                    "Disabled": false,
+                    "Plans": [
+                      {
+                        "Node Type": "CTE Scan",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "CTE Name": "discovery_schedule",
+                        "Alias": "s_5",
+                        "Startup Cost": 0,
+                        "Total Cost": 27.18,
+                        "Plan Rows": 1359,
+                        "Plan Width": 52,
+                        "Disabled": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Merge Join",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE requests",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Right",
+                "Startup Cost": 32.9,
+                "Total Cost": 64.2,
+                "Plan Rows": 48,
+                "Plan Width": 132,
+                "Disabled": false,
+                "Inner Unique": false,
+                "Merge Cond": "(d.game_id = h.game_id)",
+                "Plans": [
+                  {
+                    "Node Type": "CTE Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "CTE Name": "discovery_schedule",
+                    "Alias": "d",
+                    "Startup Cost": 0,
+                    "Total Cost": 27.18,
+                    "Plan Rows": 1359,
+                    "Plan Width": 40,
+                    "Disabled": false
+                  },
+                  {
+                    "Node Type": "Sort",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 32.9,
+                    "Total Cost": 33.02,
+                    "Plan Rows": 48,
+                    "Plan Width": 116,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "h.game_id"
+                    ],
+                    "Plans": [
+                      {
+                        "Node Type": "Merge Join",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Join Type": "Inner",
+                        "Startup Cost": 0.24,
+                        "Total Cost": 31.56,
+                        "Plan Rows": 48,
+                        "Plan Width": 116,
+                        "Disabled": false,
+                        "Inner Unique": false,
+                        "Merge Cond": "(h.player_id = t.player_id)",
+                        "Plans": [
+                          {
+                            "Node Type": "CTE Scan",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "CTE Name": "population",
+                            "Alias": "h",
+                            "Startup Cost": 0,
+                            "Total Cost": 27.2,
+                            "Plan Rows": 1360,
+                            "Plan Width": 64,
+                            "Disabled": false
+                          },
+                          {
+                            "Node Type": "Sort",
+                            "Parent Relationship": "Inner",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 0.24,
+                            "Total Cost": 0.26,
+                            "Plan Rows": 7,
+                            "Plan Width": 84,
+                            "Disabled": false,
+                            "Sort Key": [
+                              "t.player_id"
+                            ],
+                            "Plans": [
+                              {
+                                "Node Type": "CTE Scan",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "CTE Name": "targets",
+                                "Alias": "t",
+                                "Startup Cost": 0,
+                                "Total Cost": 0.14,
+                                "Plan Rows": 7,
+                                "Plan Width": 84,
+                                "Disabled": false
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Unique",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE schedules",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 53.33,
+                "Total Cost": 57.49,
+                "Plan Rows": 48,
+                "Plan Width": 161,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "Incremental Sort",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 53.33,
+                    "Total Cost": 57.13,
+                    "Plan Rows": 48,
+                    "Plan Width": 161,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "r_1.player_id",
+                      "r_1.game_id",
+                      "r_1.context_game_id",
+                      "s_6.available_at DESC",
+                      "s_6.ingested_at DESC",
+                      "n_4.snapshot_id"
+                    ],
+                    "Presorted Key": [
+                      "r_1.player_id",
+                      "r_1.game_id",
+                      "r_1.context_game_id"
+                    ],
+                    "Plans": [
+                      {
+                        "Node Type": "WindowAgg",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 53.29,
+                        "Total Cost": 54.97,
+                        "Plan Rows": 48,
+                        "Plan Width": 161,
+                        "Disabled": false,
+                        "Window": "w1 AS (PARTITION BY r_1.player_id, r_1.game_id, r_1.context_game_id, s_6.available_at, s_6.ingested_at)",
+                        "Plans": [
+                          {
+                            "Node Type": "Sort",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 53.29,
+                            "Total Cost": 53.41,
+                            "Plan Rows": 48,
+                            "Plan Width": 169,
+                            "Disabled": false,
+                            "Sort Key": [
+                              "r_1.player_id",
+                              "r_1.game_id",
+                              "r_1.context_game_id",
+                              "s_6.available_at",
+                              "s_6.ingested_at"
+                            ],
+                            "Plans": [
+                              {
+                                "Node Type": "Hash Join",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Join Type": "Inner",
+                                "Startup Cost": 1.72,
+                                "Total Cost": 51.95,
+                                "Plan Rows": 48,
+                                "Plan Width": 169,
+                                "Disabled": false,
+                                "Inner Unique": false,
+                                "Hash Cond": "(n_4.snapshot_id = s_6.snapshot_id)",
+                                "Plans": [
+                                  {
+                                    "Node Type": "Hash Join",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Join Type": "Inner",
+                                    "Startup Cost": 1.56,
+                                    "Total Cost": 51.12,
+                                    "Plan Rows": 48,
+                                    "Plan Width": 153,
+                                    "Disabled": false,
+                                    "Inner Unique": false,
+                                    "Hash Cond": "(n_4.game_id = r_1.context_game_id)",
+                                    "Plans": [
+                                      {
+                                        "Node Type": "Seq Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Relation Name": "norm_schedule",
+                                        "Alias": "n_4",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 43.99,
+                                        "Plan Rows": 1359,
+                                        "Plan Width": 72,
+                                        "Disabled": false,
+                                        "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                      },
+                                      {
+                                        "Node Type": "Hash",
+                                        "Parent Relationship": "Inner",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Startup Cost": 0.96,
+                                        "Total Cost": 0.96,
+                                        "Plan Rows": 48,
+                                        "Plan Width": 96,
+                                        "Disabled": false,
+                                        "Plans": [
+                                          {
+                                            "Node Type": "CTE Scan",
+                                            "Parent Relationship": "Outer",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "CTE Name": "requests",
+                                            "Alias": "r_1",
+                                            "Startup Cost": 0,
+                                            "Total Cost": 0.96,
+                                            "Plan Rows": 48,
+                                            "Plan Width": 96,
+                                            "Disabled": false
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "Node Type": "Hash",
+                                    "Parent Relationship": "Inner",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Startup Cost": 0.1,
+                                    "Total Cost": 0.1,
+                                    "Plan Rows": 5,
+                                    "Plan Width": 32,
+                                    "Disabled": false,
+                                    "Plans": [
+                                      {
+                                        "Node Type": "CTE Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "CTE Name": "snapshots",
+                                        "Alias": "s_6",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 0.1,
+                                        "Plan Rows": 5,
+                                        "Plan Width": 32,
+                                        "Disabled": false
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Unique",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE stats",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 124.47,
+                "Total Cost": 124.58,
+                "Plan Rows": 1,
+                "Plan Width": 145,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "Incremental Sort",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 124.47,
+                    "Total Cost": 124.57,
+                    "Plan Rows": 2,
+                    "Plan Width": 145,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "r_2.player_id",
+                      "r_2.game_id",
+                      "r_2.context_game_id",
+                      "s_7.available_at DESC",
+                      "s_7.ingested_at DESC",
+                      "n_5.snapshot_id"
+                    ],
+                    "Presorted Key": [
+                      "r_2.player_id",
+                      "r_2.game_id",
+                      "r_2.context_game_id"
+                    ],
+                    "Plans": [
+                      {
+                        "Node Type": "WindowAgg",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 124.44,
+                        "Total Cost": 124.48,
+                        "Plan Rows": 1,
+                        "Plan Width": 145,
+                        "Disabled": false,
+                        "Window": "w1 AS (PARTITION BY r_2.player_id, r_2.game_id, r_2.context_game_id, s_7.available_at, s_7.ingested_at)",
+                        "Plans": [
+                          {
+                            "Node Type": "Sort",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 124.44,
+                            "Total Cost": 124.45,
+                            "Plan Rows": 1,
+                            "Plan Width": 142,
+                            "Disabled": false,
+                            "Sort Key": [
+                              "r_2.player_id",
+                              "r_2.game_id",
+                              "r_2.context_game_id",
+                              "s_7.available_at",
+                              "s_7.ingested_at"
+                            ],
+                            "Plans": [
+                              {
+                                "Node Type": "Nested Loop",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Join Type": "Inner",
+                                "Startup Cost": 1.68,
+                                "Total Cost": 124.43,
+                                "Plan Rows": 1,
+                                "Plan Width": 142,
+                                "Disabled": false,
+                                "Inner Unique": false,
+                                "Join Filter": "(n_5.snapshot_id = s_7.snapshot_id)",
+                                "Plans": [
+                                  {
+                                    "Node Type": "Hash Join",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Join Type": "Inner",
+                                    "Startup Cost": 1.68,
+                                    "Total Cost": 124.27,
+                                    "Plan Rows": 1,
+                                    "Plan Width": 126,
+                                    "Disabled": false,
+                                    "Inner Unique": false,
+                                    "Hash Cond": "((n_5.player_id = r_2.player_id) AND (n_5.game_id = r_2.context_game_id))",
+                                    "Plans": [
+                                      {
+                                        "Node Type": "Seq Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Relation Name": "norm_player_game_stats",
+                                        "Alias": "n_5",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 97.99,
+                                        "Plan Rows": 3279,
+                                        "Plan Width": 56,
+                                        "Disabled": false,
+                                        "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                      },
+                                      {
+                                        "Node Type": "Hash",
+                                        "Parent Relationship": "Inner",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Startup Cost": 0.96,
+                                        "Total Cost": 0.96,
+                                        "Plan Rows": 48,
+                                        "Plan Width": 96,
+                                        "Disabled": false,
+                                        "Plans": [
+                                          {
+                                            "Node Type": "CTE Scan",
+                                            "Parent Relationship": "Outer",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "CTE Name": "requests",
+                                            "Alias": "r_2",
+                                            "Startup Cost": 0,
+                                            "Total Cost": 0.96,
+                                            "Plan Rows": 48,
+                                            "Plan Width": 96,
+                                            "Disabled": false
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "Node Type": "CTE Scan",
+                                    "Parent Relationship": "Inner",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "CTE Name": "snapshots",
+                                    "Alias": "s_7",
+                                    "Startup Cost": 0,
+                                    "Total Cost": 0.1,
+                                    "Plan Rows": 5,
+                                    "Plan Width": 32,
+                                    "Disabled": false
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Aggregate",
+                "Strategy": "Sorted",
+                "Partial Mode": "Simple",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE identities",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 12.22,
+                "Total Cost": 12.38,
+                "Plan Rows": 1,
+                "Plan Width": 162,
+                "Disabled": false,
+                "Group Key": [
+                  "r_3.player_id",
+                  "r_3.game_id",
+                  "r_3.context_game_id"
+                ],
+                "Plans": [
+                  {
+                    "Node Type": "Unique",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 12.22,
+                    "Total Cost": 12.33,
+                    "Plan Rows": 1,
+                    "Plan Width": 149,
+                    "Disabled": false,
+                    "Plans": [
+                      {
+                        "Node Type": "Incremental Sort",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 12.22,
+                        "Total Cost": 12.31,
+                        "Plan Rows": 2,
+                        "Plan Width": 149,
+                        "Disabled": false,
+                        "Sort Key": [
+                          "r_3.player_id",
+                          "r_3.game_id",
+                          "r_3.context_game_id",
+                          "n_6.team",
+                          "s_8.available_at DESC",
+                          "s_8.ingested_at DESC",
+                          "n_6.snapshot_id"
+                        ],
+                        "Presorted Key": [
+                          "r_3.player_id",
+                          "r_3.game_id",
+                          "r_3.context_game_id",
+                          "n_6.team"
+                        ],
+                        "Plans": [
+                          {
+                            "Node Type": "WindowAgg",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 12.19,
+                            "Total Cost": 12.22,
+                            "Plan Rows": 1,
+                            "Plan Width": 149,
+                            "Disabled": false,
+                            "Window": "w1 AS (PARTITION BY r_3.player_id, r_3.game_id, r_3.context_game_id, n_6.team, s_8.available_at, s_8.ingested_at)",
+                            "Plans": [
+                              {
+                                "Node Type": "Sort",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Startup Cost": 12.19,
+                                "Total Cost": 12.2,
+                                "Plan Rows": 1,
+                                "Plan Width": 141,
+                                "Disabled": false,
+                                "Sort Key": [
+                                  "r_3.player_id",
+                                  "r_3.game_id",
+                                  "r_3.context_game_id",
+                                  "n_6.team",
+                                  "s_8.available_at",
+                                  "s_8.ingested_at"
+                                ],
+                                "Plans": [
+                                  {
+                                    "Node Type": "Nested Loop",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Join Type": "Inner",
+                                    "Startup Cost": 2.08,
+                                    "Total Cost": 12.18,
+                                    "Plan Rows": 1,
+                                    "Plan Width": 141,
+                                    "Disabled": false,
+                                    "Inner Unique": false,
+                                    "Join Filter": "(n_6.snapshot_id = s_8.snapshot_id)",
+                                    "Plans": [
+                                      {
+                                        "Node Type": "Nested Loop",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Join Type": "Inner",
+                                        "Startup Cost": 2.08,
+                                        "Total Cost": 12.02,
+                                        "Plan Rows": 1,
+                                        "Plan Width": 125,
+                                        "Disabled": false,
+                                        "Inner Unique": false,
+                                        "Join Filter": "(n_6.player_id = r_3.player_id)",
+                                        "Plans": [
+                                          {
+                                            "Node Type": "Hash Join",
+                                            "Parent Relationship": "Outer",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "Join Type": "Inner",
+                                            "Startup Cost": 1.8,
+                                            "Total Cost": 3.31,
+                                            "Plan Rows": 1,
+                                            "Plan Width": 200,
+                                            "Disabled": false,
+                                            "Inner Unique": false,
+                                            "Hash Cond": "((r_3.player_id = g_1.player_id) AND (r_3.game_id = g_1.game_id) AND (r_3.context_game_id = g_1.context_game_id))",
+                                            "Plans": [
+                                              {
+                                                "Node Type": "CTE Scan",
+                                                "Parent Relationship": "Outer",
+                                                "Parallel Aware": false,
+                                                "Async Capable": false,
+                                                "CTE Name": "requests",
+                                                "Alias": "r_3",
+                                                "Startup Cost": 0,
+                                                "Total Cost": 0.96,
+                                                "Plan Rows": 48,
+                                                "Plan Width": 96,
+                                                "Disabled": false
+                                              },
+                                              {
+                                                "Node Type": "Hash",
+                                                "Parent Relationship": "Inner",
+                                                "Parallel Aware": false,
+                                                "Async Capable": false,
+                                                "Startup Cost": 0.96,
+                                                "Total Cost": 0.96,
+                                                "Plan Rows": 48,
+                                                "Plan Width": 168,
+                                                "Disabled": false,
+                                                "Plans": [
+                                                  {
+                                                    "Node Type": "CTE Scan",
+                                                    "Parent Relationship": "Outer",
+                                                    "Parallel Aware": false,
+                                                    "Async Capable": false,
+                                                    "CTE Name": "schedules",
+                                                    "Alias": "g_1",
+                                                    "Startup Cost": 0,
+                                                    "Total Cost": 0.96,
+                                                    "Plan Rows": 48,
+                                                    "Plan Width": 168,
+                                                    "Disabled": false
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "Node Type": "Index Scan",
+                                            "Parent Relationship": "Inner",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "Scan Direction": "Forward",
+                                            "Index Name": "identity_player_week",
+                                            "Relation Name": "norm_identity",
+                                            "Alias": "n_6",
+                                            "Startup Cost": 0.29,
+                                            "Total Cost": 8.7,
+                                            "Plan Rows": 1,
+                                            "Plan Width": 48,
+                                            "Disabled": false,
+                                            "Index Cond": "((player_id = g_1.player_id) AND (season = g_1.season) AND (week = g_1.week) AND (team = ANY (ARRAY[g_1.home_team, g_1.away_team])))",
+                                            "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "Node Type": "CTE Scan",
+                                        "Parent Relationship": "Inner",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "CTE Name": "snapshots",
+                                        "Alias": "s_8",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 0.1,
+                                        "Plan Rows": 5,
+                                        "Plan Width": 32,
+                                        "Disabled": false
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Unique",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE participation",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 402.76,
+                "Total Cost": 402.87,
+                "Plan Rows": 1,
+                "Plan Width": 138,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "Incremental Sort",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 402.76,
+                    "Total Cost": 402.86,
+                    "Plan Rows": 2,
+                    "Plan Width": 138,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "r_4.player_id",
+                      "r_4.game_id",
+                      "r_4.context_game_id",
+                      "s_9.available_at DESC",
+                      "s_9.ingested_at DESC",
+                      "n_7.snapshot_id"
+                    ],
+                    "Presorted Key": [
+                      "r_4.player_id",
+                      "r_4.game_id",
+                      "r_4.context_game_id"
+                    ],
+                    "Plans": [
+                      {
+                        "Node Type": "WindowAgg",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 402.73,
+                        "Total Cost": 402.77,
+                        "Plan Rows": 1,
+                        "Plan Width": 138,
+                        "Disabled": false,
+                        "Window": "w1 AS (PARTITION BY r_4.player_id, r_4.game_id, r_4.context_game_id, s_9.available_at, s_9.ingested_at)",
+                        "Plans": [
+                          {
+                            "Node Type": "Sort",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 402.73,
+                            "Total Cost": 402.74,
+                            "Plan Rows": 1,
+                            "Plan Width": 139,
+                            "Disabled": false,
+                            "Sort Key": [
+                              "r_4.player_id",
+                              "r_4.game_id",
+                              "r_4.context_game_id",
+                              "s_9.available_at",
+                              "s_9.ingested_at"
+                            ],
+                            "Plans": [
+                              {
+                                "Node Type": "Nested Loop",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Join Type": "Inner",
+                                "Startup Cost": 0.42,
+                                "Total Cost": 402.72,
+                                "Plan Rows": 1,
+                                "Plan Width": 139,
+                                "Disabled": false,
+                                "Inner Unique": false,
+                                "Join Filter": "(n_7.snapshot_id = s_9.snapshot_id)",
+                                "Plans": [
+                                  {
+                                    "Node Type": "Nested Loop",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Join Type": "Inner",
+                                    "Startup Cost": 0.42,
+                                    "Total Cost": 402.56,
+                                    "Plan Rows": 1,
+                                    "Plan Width": 123,
+                                    "Disabled": false,
+                                    "Inner Unique": false,
+                                    "Plans": [
+                                      {
+                                        "Node Type": "CTE Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "CTE Name": "requests",
+                                        "Alias": "r_4",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 0.96,
+                                        "Plan Rows": 48,
+                                        "Plan Width": 96,
+                                        "Disabled": false
+                                      },
+                                      {
+                                        "Node Type": "Index Scan",
+                                        "Parent Relationship": "Inner",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Scan Direction": "Forward",
+                                        "Index Name": "participation_player_game",
+                                        "Relation Name": "norm_participation",
+                                        "Alias": "n_7",
+                                        "Startup Cost": 0.42,
+                                        "Total Cost": 8.36,
+                                        "Plan Rows": 1,
+                                        "Plan Width": 53,
+                                        "Disabled": false,
+                                        "Index Cond": "((player_id = r_4.player_id) AND (game_id = r_4.context_game_id))",
+                                        "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "Node Type": "CTE Scan",
+                                    "Parent Relationship": "Inner",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "CTE Name": "snapshots",
+                                    "Alias": "s_9",
+                                    "Startup Cost": 0,
+                                    "Total Cost": 0.1,
+                                    "Plan Rows": 5,
+                                    "Plan Width": 32,
+                                    "Disabled": false
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Hash Join",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Left",
+                "Startup Cost": 1.88,
+                "Total Cost": 4.48,
+                "Plan Rows": 48,
+                "Plan Width": 319,
+                "Disabled": false,
+                "Inner Unique": false,
+                "Hash Cond": "((r.player_id = i.player_id) AND (r.game_id = i.game_id) AND (r.context_game_id = i.context_game_id))",
+                "Plans": [
+                  {
+                    "Node Type": "Hash Join",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Join Type": "Left",
+                    "Startup Cost": 1.84,
+                    "Total Cost": 3.9,
+                    "Plan Rows": 48,
+                    "Plan Width": 253,
+                    "Disabled": false,
+                    "Inner Unique": false,
+                    "Hash Cond": "((r.player_id = st.player_id) AND (r.game_id = st.game_id) AND (r.context_game_id = st.context_game_id))",
+                    "Plans": [
+                      {
+                        "Node Type": "Hash Join",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Join Type": "Left",
+                        "Startup Cost": 1.8,
+                        "Total Cost": 3.31,
+                        "Plan Rows": 48,
+                        "Plan Width": 207,
+                        "Disabled": false,
+                        "Inner Unique": false,
+                        "Hash Cond": "((r.player_id = g.player_id) AND (r.game_id = g.game_id) AND (r.context_game_id = g.context_game_id))",
+                        "Plans": [
+                          {
+                            "Node Type": "CTE Scan",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "CTE Name": "requests",
+                            "Alias": "r",
+                            "Startup Cost": 0,
+                            "Total Cost": 0.96,
+                            "Plan Rows": 48,
+                            "Plan Width": 124,
+                            "Disabled": false
+                          },
+                          {
+                            "Node Type": "Hash",
+                            "Parent Relationship": "Inner",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 0.96,
+                            "Total Cost": 0.96,
+                            "Plan Rows": 48,
+                            "Plan Width": 179,
+                            "Disabled": false,
+                            "Plans": [
+                              {
+                                "Node Type": "CTE Scan",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "CTE Name": "schedules",
+                                "Alias": "g",
+                                "Startup Cost": 0,
+                                "Total Cost": 0.96,
+                                "Plan Rows": 48,
+                                "Plan Width": 179,
+                                "Disabled": false
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "Node Type": "Hash",
+                        "Parent Relationship": "Inner",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 0.02,
+                        "Total Cost": 0.02,
+                        "Plan Rows": 1,
+                        "Plan Width": 142,
+                        "Disabled": false,
+                        "Plans": [
+                          {
+                            "Node Type": "CTE Scan",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "CTE Name": "stats",
+                            "Alias": "st",
+                            "Startup Cost": 0,
+                            "Total Cost": 0.02,
+                            "Plan Rows": 1,
+                            "Plan Width": 142,
+                            "Disabled": false
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Node Type": "Hash",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 0.02,
+                    "Total Cost": 0.02,
+                    "Plan Rows": 1,
+                    "Plan Width": 162,
+                    "Disabled": false,
+                    "Plans": [
+                      {
+                        "Node Type": "CTE Scan",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "CTE Name": "identities",
+                        "Alias": "i",
+                        "Startup Cost": 0,
+                        "Total Cost": 0.02,
+                        "Plan Rows": 1,
+                        "Plan Width": 162,
+                        "Disabled": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Hash",
+                "Parent Relationship": "Inner",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 0.02,
+                "Total Cost": 0.02,
+                "Plan Rows": 1,
+                "Plan Width": 106,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "CTE Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "CTE Name": "participation",
+                    "Alias": "p",
+                    "Startup Cost": 0,
+                    "Total Cost": 0.02,
+                    "Plan Rows": 1,
+                    "Plan Width": 106,
+                    "Disabled": false
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "strictComparison": {
+    "status": "succeeded",
+    "jobId": "c7afe09b-1005-4c30-88b3-694644819aa8",
+    "checkpoint": "2026-10-17 17:46:49.702137+00",
+    "counts": {
+      "rows": 1948,
+      "usable": 0,
+      "unavailable": 1948,
+      "max_sample": 0
+    },
+    "elapsedMs": 1854.498040999999,
+    "work": {
+      "materializations": 1,
+      "perExampleQueries": 0,
+      "sourceByteReads": 0
+    }
+  },
+  "coverage": [
+    {
+      "season": 2021,
+      "candidates": 1916,
+      "usable_features": 780,
+      "usable_labels": 655,
+      "usable_both": 507,
+      "sample_2_4": 337,
+      "sample_5_8": 215,
+      "sample_9_16": 228
+    },
+    {
+      "season": 2022,
+      "candidates": 1838,
+      "usable_features": 1204,
+      "usable_labels": 633,
+      "usable_both": 595,
+      "sample_2_4": 291,
+      "sample_5_8": 279,
+      "sample_9_16": 634
+    },
+    {
+      "season": 2023,
+      "candidates": 1812,
+      "usable_features": 1380,
+      "usable_labels": 663,
+      "usable_both": 632,
+      "sample_2_4": 212,
+      "sample_5_8": 345,
+      "sample_9_16": 823
+    },
+    {
+      "season": 2024,
+      "candidates": 1867,
+      "usable_features": 1482,
+      "usable_labels": 664,
+      "usable_both": 644,
+      "sample_2_4": 124,
+      "sample_5_8": 243,
+      "sample_9_16": 1115
+    },
+    {
+      "season": 2025,
+      "candidates": 1948,
+      "usable_features": 1536,
+      "usable_labels": 663,
+      "usable_both": 633,
+      "sample_2_4": 135,
+      "sample_5_8": 152,
+      "sample_9_16": 1249
+    }
+  ],
+  "labelRefusalReasons": [
+    {
+      "reason": "positive-offense-participation-missing",
+      "n": 5962
+    },
+    {
+      "reason": "stats-missing",
+      "n": 6102
+    }
+  ],
+  "eventTimeLeaks": 0,
+  "snapshots": [
+    {
+      "snapshot_id": "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+      "profile_id": "nflverse.weekly_rosters.2021.v1",
+      "sha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+      "byte_size": "15242660",
+      "object_key": "raw/88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+      "media_type": "text/csv",
+      "decoded_sha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+      "header_sha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+      "row_count": 46696,
+      "captured_at": "2026-10-17 17:45:50.638+00",
+      "available_at": "2023-09-13 01:10:08+00",
+      "ingested_at": "2026-10-17 17:45:51.28377+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+      "profile_id": "nflverse.pbp_participation.2025.v1",
+      "sha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+      "byte_size": "49094943",
+      "object_key": "raw/59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+      "media_type": "text/csv",
+      "decoded_sha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+      "header_sha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+      "row_count": 45184,
+      "captured_at": "2026-10-17 17:45:48.523+00",
+      "available_at": "2026-02-10 18:54:08+00",
+      "ingested_at": "2026-10-17 17:45:50.149684+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "19f8c981-6102-4837-9bbc-d416e7e05419",
+      "profile_id": "nflverse.weekly_rosters.2025.v1",
+      "sha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+      "byte_size": "708144",
+      "object_key": "raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+      "media_type": "application/gzip",
+      "decoded_sha256": "c2f7a1ffebe06058400af1989d1cd2900cc5c9659f084623708a06d4e28de35b",
+      "header_sha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+      "row_count": 46849,
+      "captured_at": "2026-10-17 17:45:53.388+00",
+      "available_at": "2026-03-14 07:33:06+00",
+      "ingested_at": "2026-10-17 17:45:54.003868+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "243aa2f1-cadb-4367-8897-62187feeb5e7",
+      "profile_id": "nflverse.weekly_rosters.2022.v1",
+      "sha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+      "byte_size": "14790824",
+      "object_key": "raw/bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+      "media_type": "text/csv",
+      "decoded_sha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+      "header_sha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+      "row_count": 46163,
+      "captured_at": "2026-10-17 17:45:51.348+00",
+      "available_at": "2023-09-13 01:15:42+00",
+      "ingested_at": "2026-10-17 17:45:51.969434+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+      "profile_id": "nflverse.pbp_participation.2022.v1",
+      "sha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+      "byte_size": "22245804",
+      "object_key": "raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+      "media_type": "text/csv",
+      "decoded_sha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+      "header_sha256": "84bf2347f6d70d204ddb241c6607197eac0c9c60448cb70ec99e2f1a01ea0642",
+      "row_count": 50150,
+      "captured_at": "2026-10-17 17:45:42.487+00",
+      "available_at": "2023-12-19 06:34:53+00",
+      "ingested_at": "2026-10-17 17:45:43.427146+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+      "profile_id": "nflverse.stats_player.2022.v1",
+      "sha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+      "byte_size": "1241515",
+      "object_key": "raw/0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+      "media_type": "application/gzip",
+      "decoded_sha256": "ad426c3fe5bf1cc30c3f137fdfe96d054e19d400879ee4413129da49fa7b54be",
+      "header_sha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+      "row_count": 18831,
+      "captured_at": "2026-10-17 17:45:54.688+00",
+      "available_at": "2026-08-13 16:48:13+00",
+      "ingested_at": "2026-10-17 17:45:55.248086+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+      "profile_id": "nflverse.stats_player.2023.v1",
+      "sha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+      "byte_size": "1237909",
+      "object_key": "raw/6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+      "media_type": "application/gzip",
+      "decoded_sha256": "f19cb71a5de0dce7fd09376026237c9ee9d5a93fe13815a2ea3ec2d37204cb17",
+      "header_sha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+      "row_count": 18643,
+      "captured_at": "2026-10-17 17:45:55.281+00",
+      "available_at": "2026-08-13 16:48:36+00",
+      "ingested_at": "2026-10-17 17:45:55.903419+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "77c7610a-ca1c-4e65-8250-406e419a3924",
+      "profile_id": "nflverse.stats_player.2024.v1",
+      "sha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+      "byte_size": "1244175",
+      "object_key": "raw/61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+      "media_type": "application/gzip",
+      "decoded_sha256": "3ddc45a84f759aa348ce465ae001752c530575455717657cdfe1f8abfcdb4759",
+      "header_sha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+      "row_count": 18983,
+      "captured_at": "2026-10-17 17:45:55.935+00",
+      "available_at": "2026-08-13 16:49:10+00",
+      "ingested_at": "2026-10-17 17:45:56.498986+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+      "profile_id": "nflverse.stats_player.2021.v1",
+      "sha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+      "byte_size": "1254611",
+      "object_key": "raw/1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+      "media_type": "application/gzip",
+      "decoded_sha256": "41915fb49238902ad1f129ebf0405b11a1e710454ae0fe8f7b3e4f9145875f48",
+      "header_sha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+      "row_count": 18969,
+      "captured_at": "2026-10-17 17:45:54.072+00",
+      "available_at": "2026-08-13 16:48:00+00",
+      "ingested_at": "2026-10-17 17:45:54.653608+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "90930120-c5b8-4884-8bb4-727488eb82db",
+      "profile_id": "nflverse.stats_player.2025.v1",
+      "sha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+      "byte_size": "1262421",
+      "object_key": "raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+      "media_type": "application/gzip",
+      "decoded_sha256": "e5e0615b3d96a3eaebfaee91e55afb4a4e7fe0caf057454177bcd7d6ad4bcfc2",
+      "header_sha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+      "row_count": 19422,
+      "captured_at": "2026-10-17 17:45:56.531+00",
+      "available_at": "2026-08-13 16:51:22+00",
+      "ingested_at": "2026-10-17 17:45:57.112286+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "ab4518a2-336a-4066-8146-b0118e59e670",
+      "profile_id": "nflverse.schedules.all.v1",
+      "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+      "byte_size": "515250",
+      "object_key": "raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+      "media_type": "application/gzip",
+      "decoded_sha256": "ac9f51116270f6dbe67aa842092801862a702a0764104ea79275a7e940bcd616",
+      "header_sha256": "6cdacf455895ebf361cdd8162b5655acfbfbc5598de01e47effb801282fdb779",
+      "row_count": 7548,
+      "captured_at": "2026-10-17 17:45:40.599+00",
+      "available_at": "2026-10-17 12:16:34+00",
+      "ingested_at": "2026-10-17 17:45:40.77122+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+      "profile_id": "nflverse.pbp_participation.2023.v1",
+      "sha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+      "byte_size": "49967956",
+      "object_key": "raw/ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+      "media_type": "text/csv",
+      "decoded_sha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+      "header_sha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+      "row_count": 46168,
+      "captured_at": "2026-10-17 17:45:44.183+00",
+      "available_at": "2025-09-04 10:25:30+00",
+      "ingested_at": "2026-10-17 17:45:45.834287+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+      "profile_id": "nflverse.pbp_participation.2021.v1",
+      "sha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+      "byte_size": "22498246",
+      "object_key": "raw/b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+      "media_type": "text/csv",
+      "decoded_sha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+      "header_sha256": "84bf2347f6d70d204ddb241c6607197eac0c9c60448cb70ec99e2f1a01ea0642",
+      "row_count": 50714,
+      "captured_at": "2026-10-17 17:45:40.855+00",
+      "available_at": "2023-12-19 06:27:12+00",
+      "ingested_at": "2026-10-17 17:45:41.882622+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+      "profile_id": "nflverse.weekly_rosters.2024.v1",
+      "sha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+      "byte_size": "699786",
+      "object_key": "raw/330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+      "media_type": "application/gzip",
+      "decoded_sha256": "074ecaeb9325de943c11f7bbc941425626985090ef8386f90cd837fa5cb5d4b3",
+      "header_sha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+      "row_count": 46579,
+      "captured_at": "2026-10-17 17:45:52.733+00",
+      "available_at": "2025-03-14 07:16:06+00",
+      "ingested_at": "2026-10-17 17:45:53.330705+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "df8949ca-a169-4a68-a153-72f9e4562229",
+      "profile_id": "nflverse.pbp_participation.2024.v1",
+      "sha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+      "byte_size": "49688308",
+      "object_key": "raw/b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+      "media_type": "text/csv",
+      "decoded_sha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+      "header_sha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+      "row_count": 45919,
+      "captured_at": "2026-10-17 17:45:46.391+00",
+      "available_at": "2025-09-04 10:24:49+00",
+      "ingested_at": "2026-10-17 17:45:48.02865+00",
+      "evidence_basis": "retrospective"
+    },
+    {
+      "snapshot_id": "e60603ad-3197-423f-9dbf-0a6d07d04003",
+      "profile_id": "nflverse.weekly_rosters.2023.v1",
+      "sha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+      "byte_size": "14612235",
+      "object_key": "raw/1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+      "media_type": "text/csv",
+      "decoded_sha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+      "header_sha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+      "row_count": 45655,
+      "captured_at": "2026-10-17 17:45:52.05+00",
+      "available_at": "2024-03-14 07:17:48+00",
+      "ingested_at": "2026-10-17 17:45:52.668983+00",
+      "evidence_basis": "retrospective"
+    }
+  ],
+  "jobs": [
+    {
+      "job_id": "b30d69f4-62f3-44fb-affe-e395faf9cc8d",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "fdb63114ab100ac2308c2bdb9a4077e97902f266127e29a20117b723563eee4a",
+      "input_set_sha256": "9ed0972a76ae5ebf0533503c7f092ce940b23d6719015e8c2da80f39761ead01",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 7548,
+        "wireBytes": 515250,
+        "decodedBytes": 2185203,
+        "normalizedRows": 1359
+      },
+      "recorded_at": "2026-10-17 17:45:40.764996+00",
+      "finished_at": "2026-10-17 17:45:40.819543+00"
+    },
+    {
+      "job_id": "95e0b846-dae9-41e4-92b3-869416631eb4",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "0f57e11a8fa142b9d6ff891e961a3681d8133fc407e877abf9867f588c84be16",
+      "input_set_sha256": "f3e95114a73f8a1cba64b4c98c8dc77147ed7949564678900e2bf2ba38c65148",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 50714,
+        "wireBytes": 22498246,
+        "decodedBytes": 22498246,
+        "normalizedRows": 18309
+      },
+      "recorded_at": "2026-10-17 17:45:41.873794+00",
+      "finished_at": "2026-10-17 17:45:42.435872+00"
+    },
+    {
+      "job_id": "53d2a4a8-d711-4d78-ad2e-e4ccd4c7379e",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "f9ce8b791108cff56dfc5af7e71d3980a9d668f2bd5e943664166bd57290fdea",
+      "input_set_sha256": "15f76c54caf4d82e57f1a3a5623acccc655a7bc066357605c8d341be5bc86a0f",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 50150,
+        "wireBytes": 22245804,
+        "decodedBytes": 22245804,
+        "normalizedRows": 18193
+      },
+      "recorded_at": "2026-10-17 17:45:43.420765+00",
+      "finished_at": "2026-10-17 17:45:44.077134+00"
+    },
+    {
+      "job_id": "873e2e6a-14c0-40d8-865d-945ddfeb020d",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "002d504233426d97061bae1315a9835c112ece9795cfedf4aeb9b7ddbc8dd4cf",
+      "input_set_sha256": "e463c41a116095b7414686abd6abd52ba16a2f8c01b762424ec03b4fa6e84f3c",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 46168,
+        "wireBytes": 49967956,
+        "decodedBytes": 49967956,
+        "normalizedRows": 17670
+      },
+      "recorded_at": "2026-10-17 17:45:45.827408+00",
+      "finished_at": "2026-10-17 17:45:46.327992+00"
+    },
+    {
+      "job_id": "382da304-d2f3-4aa6-923b-e32bf178e025",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "6aff3a761ca4d326bfd12e0e1afd51bf65856e9966c722dbc7cf421bdf73a41e",
+      "input_set_sha256": "ca5b78178caadd18a1f5b8f97550c7d22df01036c7c45c3a74ce6719170cf6ff",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 45919,
+        "wireBytes": 49688308,
+        "decodedBytes": 49688308,
+        "normalizedRows": 17564
+      },
+      "recorded_at": "2026-10-17 17:45:48.021932+00",
+      "finished_at": "2026-10-17 17:45:48.479219+00"
+    },
+    {
+      "job_id": "9df21d82-5732-4389-982c-4fddc410f859",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "c5798102f05d3b18f35bc750d3af8aadc7b92a812cab544493bc257aacce5af9",
+      "input_set_sha256": "17e7ab1e978e611fab3344b42434a671334fade6790d1747575f2298b23415d5",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 45184,
+        "wireBytes": 49094943,
+        "decodedBytes": 49094943,
+        "normalizedRows": 17707
+      },
+      "recorded_at": "2026-10-17 17:45:50.14127+00",
+      "finished_at": "2026-10-17 17:45:50.621582+00"
+    },
+    {
+      "job_id": "389a01eb-8aa9-44be-bc6a-89353247a2c1",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "ec8b00d3857df001358a92e559a2cf29b08e86c9b51014d9fdeee9da5a36f824",
+      "input_set_sha256": "0525ee523e6c36781499114e814afdd3878955181330be62242ef7f558d1e91b",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 46696,
+        "wireBytes": 15242660,
+        "decodedBytes": 15242660,
+        "normalizedRows": 1916
+      },
+      "recorded_at": "2026-10-17 17:45:51.279651+00",
+      "finished_at": "2026-10-17 17:45:51.334814+00"
+    },
+    {
+      "job_id": "f35d3352-37d5-460d-8570-35772a66e74a",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "33f6fe04c62d840f415b916f6edf810c4456569de6727973b7308daf6ac63561",
+      "input_set_sha256": "6dddb14898025033a97b627aa6a730f65dd35fb6141f77766e77d9338332c45e",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 46163,
+        "wireBytes": 14790824,
+        "decodedBytes": 14790824,
+        "normalizedRows": 1844
+      },
+      "recorded_at": "2026-10-17 17:45:51.962517+00",
+      "finished_at": "2026-10-17 17:45:52.037007+00"
+    },
+    {
+      "job_id": "607d5642-1dd4-4d1b-a91d-905266d16d8c",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "8bc4bb1550af95bf807738a75b1e75129ac2b969ebc193fa40a5cddd2ac5a396",
+      "input_set_sha256": "a6fd8f3794a602bf49bc7aa965ddc613ccec9a4ae3407b4a3ae38526ed8eb709",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 45655,
+        "wireBytes": 14612235,
+        "decodedBytes": 14612235,
+        "normalizedRows": 1812
+      },
+      "recorded_at": "2026-10-17 17:45:52.66192+00",
+      "finished_at": "2026-10-17 17:45:52.729516+00"
+    },
+    {
+      "job_id": "ff3a76a7-11aa-4d98-ad94-ebb6891d088f",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "3cd70f83a663be564e6e15d5ba48b505566d6ee8d452de0407ef53d7208f5bed",
+      "input_set_sha256": "e658703bd4acfbdadce503057d29fcb21b817fed9e9340ad1ab5d4498cf95eba",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 46579,
+        "wireBytes": 699786,
+        "decodedBytes": 14926918,
+        "normalizedRows": 1867
+      },
+      "recorded_at": "2026-10-17 17:45:53.326122+00",
+      "finished_at": "2026-10-17 17:45:53.385404+00"
+    },
+    {
+      "job_id": "ae0b43b2-3f5a-4eb7-9c68-295545b03825",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "5fec311d4dd6528d66f95ce24a55fdd1ea6f8a9000416bcc60d6e82bcfa7872e",
+      "input_set_sha256": "f1a9b4eb215a4d81a3a876d3ec0c7e1da5a9b85c9e633f514a91d7fb1c65a41f",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 46849,
+        "wireBytes": 708144,
+        "decodedBytes": 15385661,
+        "normalizedRows": 1948
+      },
+      "recorded_at": "2026-10-17 17:45:53.998533+00",
+      "finished_at": "2026-10-17 17:45:54.068921+00"
+    },
+    {
+      "job_id": "99196d15-9451-4768-b896-b7cc3071c93d",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "5913d71afe3b20b8c86533a716ca89dde9f5b4dcf977860500c88d6a1ce5ea86",
+      "input_set_sha256": "6993d1297b243e681522d50ad58df486e3fa45d6553bdaa918d63dfe7503ce99",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 18969,
+        "wireBytes": 1254611,
+        "decodedBytes": 8477784,
+        "normalizedRows": 655
+      },
+      "recorded_at": "2026-10-17 17:45:54.646995+00",
+      "finished_at": "2026-10-17 17:45:54.685718+00"
+    },
+    {
+      "job_id": "9c96e4e2-186c-498e-abb1-6a0d1c12b847",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "cc8907e68c4f7532076d70d1106d9c23b5e3d11024cfe49ec7f3722f8e031a8a",
+      "input_set_sha256": "bd2cb50d287952291690bb16c42dd829d68fce4777ac8cf14593a7c6c7433152",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 18831,
+        "wireBytes": 1241515,
+        "decodedBytes": 8408729,
+        "normalizedRows": 633
+      },
+      "recorded_at": "2026-10-17 17:45:55.241069+00",
+      "finished_at": "2026-10-17 17:45:55.278228+00"
+    },
+    {
+      "job_id": "e892f6d7-c607-43a1-aac2-6ffa31e2b96e",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "5539a5d8149996d15165672e1f2b8eaa04e30ce29e6a21d98518c50904c8aa58",
+      "input_set_sha256": "35dd8c9aefd462ce4b075311c90f808718af5db5097bf354606da16c0f65dfc1",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 18643,
+        "wireBytes": 1237909,
+        "decodedBytes": 8332874,
+        "normalizedRows": 663
+      },
+      "recorded_at": "2026-10-17 17:45:55.898232+00",
+      "finished_at": "2026-10-17 17:45:55.931933+00"
+    },
+    {
+      "job_id": "baec63ab-07c8-4491-8788-354c52f8cd9c",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "cd76ff34e444f57f6ce0e509ab438f868c049bc4ffe9d9a8dc6dcc03660a8afd",
+      "input_set_sha256": "b544535633954e508b95c0e8b976d48e9235c8df50cff1994664c618486b34f3",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 18983,
+        "wireBytes": 1244175,
+        "decodedBytes": 8470040,
+        "normalizedRows": 664
+      },
+      "recorded_at": "2026-10-17 17:45:56.494601+00",
+      "finished_at": "2026-10-17 17:45:56.522276+00"
+    },
+    {
+      "job_id": "be1476de-2b05-4a64-b171-eebca3d08a1d",
+      "kind": "ingest",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "5845bf3c62d8c609a3583f5439ab93b2c2294fa0e74f572471d45c4e94d68837",
+      "input_set_sha256": "157cced0f5e17eb1d020e6d5a6fc43e7e186ca7d8cae52cc02c8db0986b62773",
+      "status": "succeeded",
+      "counts": {
+        "rawRows": 19422,
+        "wireBytes": 1262421,
+        "decodedBytes": 8656387,
+        "normalizedRows": 664
+      },
+      "recorded_at": "2026-10-17 17:45:57.10664+00",
+      "finished_at": "2026-10-17 17:45:57.140384+00"
+    },
+    {
+      "job_id": "bb552d93-755a-4d83-98b7-b76a5bd445d1",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "d1498c365a3762548d09305ee32339b9a13c7ff96617561dd54056a0702bd9e6",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "max_sample": 16,
+        "unavailable": 412
+      },
+      "recorded_at": "2026-10-17 17:45:57.495119+00",
+      "finished_at": "2026-10-17 17:46:00.820571+00"
+    },
+    {
+      "job_id": "b38e55ed-b69b-4b1d-b9ae-3150f256d426",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "342c5b6cb2cb1f2e48d58e8aa9afbb2c88babdf4bfa258e52aebd61124284102",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "max_sample": 16,
+        "unavailable": 412
+      },
+      "recorded_at": "2026-10-17 17:46:01.018564+00",
+      "finished_at": "2026-10-17 17:46:04.299346+00"
+    },
+    {
+      "job_id": "9db7af12-6552-4560-b54c-fb6a1274f551",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "90052b7874a1f417e6b197b516bbae1e3520323837c57587e996bd82bdeb04fa",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "max_sample": 16,
+        "unavailable": 412
+      },
+      "recorded_at": "2026-10-17 17:46:04.571986+00",
+      "finished_at": "2026-10-17 17:46:07.867392+00"
+    },
+    {
+      "job_id": "e72f08b3-51e5-4ec4-a960-82b7f285b20b",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "d68b648659ed165c9b08b4333c04e8c6cb58984698321adbe952736c467ef814",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "max_sample": 16,
+        "unavailable": 412
+      },
+      "recorded_at": "2026-10-17 17:46:08.063526+00",
+      "finished_at": "2026-10-17 17:46:11.361425+00"
+    },
+    {
+      "job_id": "223eefa7-2c54-46b1-a0fd-4ef57b49249a",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "c9d39fcd730e217cfd55b5c4c7d025370e586bf9c85b57a0286687df79cc9882",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "max_sample": 16,
+        "unavailable": 412
+      },
+      "recorded_at": "2026-10-17 17:46:11.644035+00",
+      "finished_at": "2026-10-17 17:46:14.952577+00"
+    },
+    {
+      "job_id": "dc1b8b1a-63b8-44ce-8561-65b9743913d4",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "b88adbabd96304639d3656426b6060d26497058522a6195f2571a39ab5c5b706",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "max_sample": 16,
+        "unavailable": 412
+      },
+      "recorded_at": "2026-10-17 17:46:15.150091+00",
+      "finished_at": "2026-10-17 17:46:18.417855+00"
+    },
+    {
+      "job_id": "28dbe3f0-85f3-4ef4-b097-6f899fdc3e4c",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "1e9c414ea6bd95ff4d4a380531fcda05d26f7320e77da48a07927f54ee706253",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1916,
+        "usable": 780,
+        "max_sample": 16,
+        "unavailable": 1136
+      },
+      "recorded_at": "2026-10-17 17:46:18.600737+00",
+      "finished_at": "2026-10-17 17:46:21.31275+00"
+    },
+    {
+      "job_id": "d9e10027-661b-4672-9c82-8e8602e4b68e",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "6a55f87944b05bea5cbb96170f810b70bfe6c4c3a1fc21cf76db5a7335203009",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1838,
+        "usable": 1204,
+        "max_sample": 16,
+        "unavailable": 634
+      },
+      "recorded_at": "2026-10-17 17:46:21.42145+00",
+      "finished_at": "2026-10-17 17:46:24.382627+00"
+    },
+    {
+      "job_id": "98b2b68d-4d8f-4ff5-84bb-9fd0855db70e",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "cc15447c8018d02c4c60b1317ede4b4e13f7b01c731dad349d364d86fc4ccd12",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1812,
+        "usable": 1380,
+        "max_sample": 16,
+        "unavailable": 432
+      },
+      "recorded_at": "2026-10-17 17:46:24.489992+00",
+      "finished_at": "2026-10-17 17:46:27.584761+00"
+    },
+    {
+      "job_id": "00835cf8-7985-4ec1-a75d-0145fe4536c3",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "4c45e067b8966976f2df40a16870543f029f717c32ec953617f68d1af704ce69",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1867,
+        "usable": 1482,
+        "max_sample": 16,
+        "unavailable": 385
+      },
+      "recorded_at": "2026-10-17 17:46:27.694881+00",
+      "finished_at": "2026-10-17 17:46:30.851878+00"
+    },
+    {
+      "job_id": "ddb695c5-8c9e-4247-8fc4-3ca0bbceee2f",
+      "kind": "labels",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "3317fa7e0401f7c4874b14c1c2c4c1b8f7fa0fd2e50cf31e9b985c978e84aa7a",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1916,
+        "usable": 655,
+        "max_sample": 0,
+        "unavailable": 1261
+      },
+      "recorded_at": "2026-10-17 17:46:30.959609+00",
+      "finished_at": "2026-10-17 17:46:32.473128+00"
+    },
+    {
+      "job_id": "7dd55f35-2dc4-47a0-a498-d5209adfa7cf",
+      "kind": "labels",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "fc3df6119fe5acc0c31a37dfa4d45a7064c0a29d5d118851cd48e48b47dc30ad",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1838,
+        "usable": 633,
+        "max_sample": 0,
+        "unavailable": 1205
+      },
+      "recorded_at": "2026-10-17 17:46:32.581767+00",
+      "finished_at": "2026-10-17 17:46:33.9995+00"
+    },
+    {
+      "job_id": "8426d619-33ef-4e4c-8e2a-55e8f8654131",
+      "kind": "labels",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "4685e19b29f565029530f8006991cf96d91743570f1132552cae97345c66417f",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1812,
+        "usable": 663,
+        "max_sample": 0,
+        "unavailable": 1149
+      },
+      "recorded_at": "2026-10-17 17:46:34.110173+00",
+      "finished_at": "2026-10-17 17:46:35.566405+00"
+    },
+    {
+      "job_id": "f1cd0088-5735-48ad-af8c-bd16eaa43a12",
+      "kind": "labels",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "5ac90a4d32739b8dd4a0f283135ca7329d454e3c8d6fdb26963f2de75fa42b00",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1867,
+        "usable": 664,
+        "max_sample": 0,
+        "unavailable": 1203
+      },
+      "recorded_at": "2026-10-17 17:46:35.674674+00",
+      "finished_at": "2026-10-17 17:46:37.165813+00"
+    },
+    {
+      "job_id": "774da94f-71f7-4208-aa26-354d228274e3",
+      "kind": "labels",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "82de18007a8dc806fbe25fb7e4e244761e79a12c4a547dcdfdbdc318a91cc5e7",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1948,
+        "usable": 663,
+        "max_sample": 0,
+        "unavailable": 1285
+      },
+      "recorded_at": "2026-10-17 17:46:37.271974+00",
+      "finished_at": "2026-10-17 17:46:38.852033+00"
+    },
+    {
+      "job_id": "290206d9-94f3-4b32-acad-384a110ad341",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "06d89476887e57a32cacc23750202102f65c5793e82877aa1ef6ef96c53830a3",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "max_sample": 16,
+        "unavailable": 412
+      },
+      "recorded_at": "2026-10-17 17:46:38.95855+00",
+      "finished_at": "2026-10-17 17:46:42.341757+00"
+    },
+    {
+      "job_id": "fa00d5c4-114d-451c-a0cf-6bcfb7a67b84",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "1f454f329f7ca8d510afea7d6a73a479d76b8ddc2d435728910c7f2c3db0256b",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "max_sample": 16,
+        "unavailable": 412
+      },
+      "recorded_at": "2026-10-17 17:46:42.55395+00",
+      "finished_at": "2026-10-17 17:46:46.000131+00"
+    },
+    {
+      "job_id": "f59908d4-d0d4-4c04-a1ca-72caadff5b1d",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "a1e4e93d310a3953a153973050cfbf8972344e8865ccc173297aaf0d33dfd83a",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "max_sample": 16,
+        "unavailable": 412
+      },
+      "recorded_at": "2026-10-17 17:46:46.176447+00",
+      "finished_at": "2026-10-17 17:46:49.513805+00"
+    },
+    {
+      "job_id": "c7afe09b-1005-4c30-88b3-694644819aa8",
+      "kind": "features",
+      "code_sha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+      "policy_sha256": "e04b76a8a8e949b148c79db94e4eb10d612f0056a7422fafa6b9107363d0a08f",
+      "input_set_sha256": "32ffcc47082059f8036a7ffe0db223ac9aa16c106c37b57bca5e08b968d44701",
+      "status": "succeeded",
+      "counts": {
+        "rows": 1948,
+        "usable": 0,
+        "max_sample": 0,
+        "unavailable": 1948
+      },
+      "recorded_at": "2026-10-17 17:46:49.703028+00",
+      "finished_at": "2026-10-17 17:46:51.447181+00"
+    }
+  ],
+  "sourceLineageByJob": [
+    {
+      "job_id": "00835cf8-7985-4ec1-a75d-0145fe4536c3",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "223eefa7-2c54-46b1-a0fd-4ef57b49249a",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "28dbe3f0-85f3-4ef4-b097-6f899fdc3e4c",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "290206d9-94f3-4b32-acad-384a110ad341",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "382da304-d2f3-4aa6-923b-e32bf178e025",
+      "snapshot_ids": [
+        "df8949ca-a169-4a68-a153-72f9e4562229"
+      ]
+    },
+    {
+      "job_id": "389a01eb-8aa9-44be-bc6a-89353247a2c1",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20"
+      ]
+    },
+    {
+      "job_id": "53d2a4a8-d711-4d78-ad2e-e4ccd4c7379e",
+      "snapshot_ids": [
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce"
+      ]
+    },
+    {
+      "job_id": "607d5642-1dd4-4d1b-a91d-905266d16d8c",
+      "snapshot_ids": [
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "774da94f-71f7-4208-aa26-354d228274e3",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "7dd55f35-2dc4-47a0-a498-d5209adfa7cf",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "8426d619-33ef-4e4c-8e2a-55e8f8654131",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "873e2e6a-14c0-40d8-865d-945ddfeb020d",
+      "snapshot_ids": [
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88"
+      ]
+    },
+    {
+      "job_id": "95e0b846-dae9-41e4-92b3-869416631eb4",
+      "snapshot_ids": [
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6"
+      ]
+    },
+    {
+      "job_id": "98b2b68d-4d8f-4ff5-84bb-9fd0855db70e",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "99196d15-9451-4768-b896-b7cc3071c93d",
+      "snapshot_ids": [
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be"
+      ]
+    },
+    {
+      "job_id": "9c96e4e2-186c-498e-abb1-6a0d1c12b847",
+      "snapshot_ids": [
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac"
+      ]
+    },
+    {
+      "job_id": "9db7af12-6552-4560-b54c-fb6a1274f551",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "9df21d82-5732-4389-982c-4fddc410f859",
+      "snapshot_ids": [
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9"
+      ]
+    },
+    {
+      "job_id": "ae0b43b2-3f5a-4eb7-9c68-295545b03825",
+      "snapshot_ids": [
+        "19f8c981-6102-4837-9bbc-d416e7e05419"
+      ]
+    },
+    {
+      "job_id": "b30d69f4-62f3-44fb-affe-e395faf9cc8d",
+      "snapshot_ids": [
+        "ab4518a2-336a-4066-8146-b0118e59e670"
+      ]
+    },
+    {
+      "job_id": "b38e55ed-b69b-4b1d-b9ae-3150f256d426",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "baec63ab-07c8-4491-8788-354c52f8cd9c",
+      "snapshot_ids": [
+        "77c7610a-ca1c-4e65-8250-406e419a3924"
+      ]
+    },
+    {
+      "job_id": "bb552d93-755a-4d83-98b7-b76a5bd445d1",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "be1476de-2b05-4a64-b171-eebca3d08a1d",
+      "snapshot_ids": [
+        "90930120-c5b8-4884-8bb4-727488eb82db"
+      ]
+    },
+    {
+      "job_id": "c7afe09b-1005-4c30-88b3-694644819aa8",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "d9e10027-661b-4672-9c82-8e8602e4b68e",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "dc1b8b1a-63b8-44ce-8561-65b9743913d4",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "ddb695c5-8c9e-4247-8fc4-3ca0bbceee2f",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "e72f08b3-51e5-4ec4-a960-82b7f285b20b",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "e892f6d7-c607-43a1-aac2-6ffa31e2b96e",
+      "snapshot_ids": [
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862"
+      ]
+    },
+    {
+      "job_id": "f1cd0088-5735-48ad-af8c-bd16eaa43a12",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "f35d3352-37d5-460d-8570-35772a66e74a",
+      "snapshot_ids": [
+        "243aa2f1-cadb-4367-8897-62187feeb5e7"
+      ]
+    },
+    {
+      "job_id": "f59908d4-d0d4-4c04-a1ca-72caadff5b1d",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "fa00d5c4-114d-451c-a0cf-6bcfb7a67b84",
+      "snapshot_ids": [
+        "04a41f6e-2f21-45f3-984d-45bc30e62f20",
+        "0edacf46-fc7d-4818-bf72-58e28cd966b9",
+        "19f8c981-6102-4837-9bbc-d416e7e05419",
+        "243aa2f1-cadb-4367-8897-62187feeb5e7",
+        "38cdbe6a-686e-4f1d-90d6-ddd8597046ce",
+        "4c22a00b-3b65-48de-bc75-006ca93a6fac",
+        "635e7ff8-cb34-4acc-bf87-b31ae1006862",
+        "77c7610a-ca1c-4e65-8250-406e419a3924",
+        "89f95d8d-4f2d-4ad2-a884-b0e89041c8be",
+        "90930120-c5b8-4884-8bb4-727488eb82db",
+        "ab4518a2-336a-4066-8146-b0118e59e670",
+        "c9686d8b-8da9-4cea-ba20-1f0c0da2cd88",
+        "d9cc3bc2-2389-490b-bc9f-3cc6f6c416b6",
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39",
+        "df8949ca-a169-4a68-a153-72f9e4562229",
+        "e60603ad-3197-423f-9dbf-0a6d07d04003"
+      ]
+    },
+    {
+      "job_id": "ff3a76a7-11aa-4d98-ad94-ebb6891d088f",
+      "snapshot_ids": [
+        "dcbbbb15-4632-4acc-8f01-9c3ba5914c39"
+      ]
+    }
+  ],
+  "sampleOutputs": [
+    {
+      "feature_id": "073295fa-b579-437d-9012-d1ee264c94d1",
+      "feature_job_id": "d9e10027-661b-4672-9c82-8e8602e4b68e",
+      "label_id": "c2b2ffec-e1c8-41ad-b0c1-4faa7d86ddd5",
+      "label_job_id": "7dd55f35-2dc4-47a0-a498-d5209adfa7cf",
+      "player_id": "00-0026158",
+      "game_id": "2022_01_BAL_NYJ",
+      "season": 2022,
+      "cutoff": "2022-09-11 16:00:00+00",
+      "checkpoint": "2026-10-17 17:46:21.420096+00",
+      "computed_at": "2026-10-17 17:46:23.648913+00",
+      "label_cutoff": "2026-10-17 17:46:32.58065+00",
+      "known_at": "2026-10-17 17:46:32.864388+00",
+      "sample_size": 2,
+      "history": [
+        {
+          "yards": 291,
+          "gameId": "2021_11_MIA_NYJ",
+          "kickoff": "2021-11-21T18:00:00+00:00"
+        },
+        {
+          "yards": 47,
+          "gameId": "2021_10_BUF_NYJ",
+          "kickoff": "2021-11-14T18:00:00+00:00"
+        }
+      ],
+      "history_gaps": [
+        {
+          "gameId": "2021_01_PHI_ATL",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_02_SF_PHI",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_03_PHI_DAL",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_04_KC_PHI",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_05_PHI_CAR",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_06_TB_PHI",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_07_PHI_LV",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_08_CIN_NYJ",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_09_NYJ_IND",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_12_NYJ_HOU",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_13_PHI_NYJ",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_14_NO_NYJ",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_15_NYJ_MIA",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_16_JAX_NYJ",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_17_TB_NYJ",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_18_NYJ_BUF",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        }
+      ],
+      "flags": [
+        "historical-availability-unverified"
+      ],
+      "label_value": 309,
+      "sample_stratum": "2-4",
+      "ordinal": "1"
+    },
+    {
+      "feature_id": "444ce854-1f92-46c4-80f4-19eed6cd0ec7",
+      "feature_job_id": "d9e10027-661b-4672-9c82-8e8602e4b68e",
+      "label_id": "186d4ced-d80c-4dcd-91da-8fed4a01e4ca",
+      "label_job_id": "7dd55f35-2dc4-47a0-a498-d5209adfa7cf",
+      "player_id": "00-0036264",
+      "game_id": "2022_01_GB_MIN",
+      "season": 2022,
+      "cutoff": "2022-09-11 19:25:00+00",
+      "checkpoint": "2026-10-17 17:46:21.420096+00",
+      "computed_at": "2026-10-17 17:46:23.834813+00",
+      "label_cutoff": "2026-10-17 17:46:32.58065+00",
+      "known_at": "2026-10-17 17:46:32.874939+00",
+      "sample_size": 6,
+      "history": [
+        {
+          "yards": 134,
+          "gameId": "2021_18_GB_DET",
+          "kickoff": "2022-01-09T18:00:00+00:00"
+        },
+        {
+          "yards": 19,
+          "gameId": "2021_17_MIN_GB",
+          "kickoff": "2022-01-03T01:20:00+00:00"
+        },
+        {
+          "yards": 0,
+          "gameId": "2021_11_GB_MIN",
+          "kickoff": "2021-11-21T18:00:00+00:00"
+        },
+        {
+          "yards": 190,
+          "gameId": "2021_09_GB_KC",
+          "kickoff": "2021-11-07T21:25:00+00:00"
+        },
+        {
+          "yards": 0,
+          "gameId": "2021_02_DET_GB",
+          "kickoff": "2021-09-21T00:15:00+00:00"
+        },
+        {
+          "yards": 68,
+          "gameId": "2021_01_GB_NO",
+          "kickoff": "2021-09-12T20:25:00+00:00"
+        }
+      ],
+      "history_gaps": [
+        {
+          "gameId": "2021_03_GB_SF",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_04_PIT_GB",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_05_GB_CIN",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_06_GB_CHI",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_07_WAS_GB",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_08_GB_ARI",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_10_SEA_GB",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_12_LA_GB",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_14_CHI_GB",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_15_GB_BAL",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_16_CLE_GB",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        }
+      ],
+      "flags": [
+        "historical-availability-unverified"
+      ],
+      "label_value": 65,
+      "sample_stratum": "5-8",
+      "ordinal": "1"
+    },
+    {
+      "feature_id": "35634ac6-a1dd-4e91-af3a-b05d046220eb",
+      "feature_job_id": "d9e10027-661b-4672-9c82-8e8602e4b68e",
+      "label_id": "50dfa12d-f29f-4a3a-a0d4-d709722edf6b",
+      "label_job_id": "7dd55f35-2dc4-47a0-a498-d5209adfa7cf",
+      "player_id": "00-0034796",
+      "game_id": "2022_01_BAL_NYJ",
+      "season": 2022,
+      "cutoff": "2022-09-11 16:00:00+00",
+      "checkpoint": "2026-10-17 17:46:21.420096+00",
+      "computed_at": "2026-10-17 17:46:23.776252+00",
+      "label_cutoff": "2026-10-17 17:46:32.58065+00",
+      "known_at": "2026-10-17 17:46:32.864174+00",
+      "sample_size": 12,
+      "history": [
+        {
+          "yards": 17,
+          "gameId": "2021_14_BAL_CLE",
+          "kickoff": "2021-12-12T18:00:00+00:00"
+        },
+        {
+          "yards": 253,
+          "gameId": "2021_13_BAL_PIT",
+          "kickoff": "2021-12-05T21:25:00+00:00"
+        },
+        {
+          "yards": 165,
+          "gameId": "2021_12_CLE_BAL",
+          "kickoff": "2021-11-29T01:20:00+00:00"
+        },
+        {
+          "yards": 238,
+          "gameId": "2021_10_BAL_MIA",
+          "kickoff": "2021-11-12T01:20:00+00:00"
+        },
+        {
+          "yards": 266,
+          "gameId": "2021_09_MIN_BAL",
+          "kickoff": "2021-11-07T18:00:00+00:00"
+        },
+        {
+          "yards": 257,
+          "gameId": "2021_07_CIN_BAL",
+          "kickoff": "2021-10-24T17:00:00+00:00"
+        },
+        {
+          "yards": 167,
+          "gameId": "2021_06_LAC_BAL",
+          "kickoff": "2021-10-17T17:00:00+00:00"
+        },
+        {
+          "yards": 442,
+          "gameId": "2021_05_IND_BAL",
+          "kickoff": "2021-10-12T00:15:00+00:00"
+        },
+        {
+          "yards": 316,
+          "gameId": "2021_04_BAL_DEN",
+          "kickoff": "2021-10-03T20:25:00+00:00"
+        },
+        {
+          "yards": 287,
+          "gameId": "2021_03_BAL_DET",
+          "kickoff": "2021-09-26T17:00:00+00:00"
+        },
+        {
+          "yards": 239,
+          "gameId": "2021_02_KC_BAL",
+          "kickoff": "2021-09-20T00:20:00+00:00"
+        },
+        {
+          "yards": 235,
+          "gameId": "2021_01_BAL_LV",
+          "kickoff": "2021-09-14T00:15:00+00:00"
+        }
+      ],
+      "history_gaps": [
+        {
+          "gameId": "2021_11_BAL_CHI",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_15_GB_BAL",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_16_BAL_CIN",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_17_LA_BAL",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        },
+        {
+          "gameId": "2021_18_PIT_BAL",
+          "reasons": [
+            "stats-missing",
+            "positive-offense-participation-missing"
+          ]
+        }
+      ],
+      "flags": [
+        "historical-availability-unverified"
+      ],
+      "label_value": 213,
+      "sample_stratum": "9-16",
+      "ordinal": "1"
+    }
+  ],
+  "lineage": {
+    "feature_snapshot_links": 430608,
+    "label_snapshot_links": 150096,
+    "snapshots": 16
+  },
+  "repeatedOutputParity": true,
+  "featureTargetVerdict": "pass",
+  "peakRssBytes": 570867712
+}

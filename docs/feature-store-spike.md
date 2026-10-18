@@ -102,9 +102,10 @@ Step 1 was committed with owner approval at `6aa7953`: [sources](feature-store-s
 [scoring preregistration](feature-store-spike-preregistration.md). The preregistration
 therefore precedes evaluation. Vernon approved the step 2 commit on 2026-10-17;
 see the historical implementation checkpoint below. Step 2 was committed at
-`13ac8ce`. Step 3 implementation and evidence are ready for owner review, but
-remain uncommitted. Real-source ingestion qualification has run; no evaluation
-or complete capacity gate has run. Pushing needs fresh owner consent;
+`13ac8ce`. Step 3 was approved and committed at `b9b6f81`. Step 4
+implementation and evidence are ready for owner review and remain uncommitted.
+Real-source ingestion and feature/label qualification have run; evaluation has
+not run and the full spike capacity gate remains incomplete. Pushing needs fresh owner consent;
 owner-run Codex review remains required.
 
 GCS live tests pause for owner confirmation of Blaze, budget and a dedicated
@@ -187,10 +188,10 @@ no other worktree or branch has been changed here.
 
 ## Step 3 owner checkpoint
 
-Status: implementation and qualification complete on the step-2 base, pending
-owner review and commit approval. Stop here before step 4 for the approved
-progress/risk checkpoint. No evaluation has run and no feature, label, dataset,
-model or app prediction has been produced.
+Historical checkpoint: owner approved this step, committed as `b9b6f81`. At
+that checkpoint no evaluation, feature, label, dataset, model or app prediction
+had been produced. The step-3 receipts below remain unchanged. Step 4 results
+appear after its design basis.
 
 ### Design basis and implementation
 
@@ -341,3 +342,234 @@ also pending. Nothing uses the app Firebase admin key or a hosted database.
 Latest observed `origin/main` is `12290d8`; this branch is three commits ahead
 and twelve behind. Integration is pending before the final combined checkpoint.
 Only proposal SQL changed; ordered migrations and other worktrees are untouched.
+
+## Step 4 design basis (approved requirements)
+
+**Pattern:** set-based, typed ELT with windowed bitemporal snapshot selection,
+append-only feature/label versions and snapshot-level lineage. One context query
+handles a season, rather than calling a function for each example. Features use
+at most 16 qualified prior REG outcomes, minimum two, with cutoff one hour before
+kickoff. Labels are materialized separately at their pinned label checkpoint.
+
+**Alternatives:** per-example `readNormalizedAsOf` repeats the 103k-row JSON union
+scan; per-example TypeScript fetches make SQL work grow with the cohort. Both
+are rejected. A shared label/feature payload risks target leakage; the two output
+tables and materialization queries keep outcome values out of feature payloads.
+
+**Targets:** season feature job ≤120 seconds with ≥30% headroom (≤84 seconds),
+constant statement count as examples grow. Repeated cold/warm trials will cover
+real seasons; no idempotent no-op counts as a recomputation trial.
+
+**Requirement reasons:** SQL excludes the target game and every game with kickoff
+at/after cutoff in both modes to prevent outcome leakage. Only snapshot eligibility
+differs between modes. Missing/ambiguous participation, identity, completion or
+stats produce explicit unavailable labels to prevent fabricated zero outcomes.
+Snapshot-level lineage avoids a row-granular evidence graph. Synthetic correction
+fixtures are identified separately so they cannot masquerade as observed changes.
+DB clocks stamp computed/known time; append-only values preserve prior checkpoints.
+
+**Assumptions:** trusted pipeline code, disposable local PostgreSQL, pinned source
+checkpoint and normalizer version, owner-approved historical reconstruction. A
+checkpoint-based candidate inventory can enumerate a strictly unavailable case;
+that is coverage accounting, not evidence of its historical availability. Lineage
+initially cites the pinned job snapshot set for each output, conservatively
+invalidating the job's outputs if a contributing source is deleted. This is bounded
+at 16 source snapshots for this fixture and is not a row-closure system.
+
+## Step 4 owner checkpoint
+
+Status: ready for owner review; implementation is uncommitted on `b9b6f81`.
+Nothing pushed. Stop before step 5. All SQL remains mutable in `db/proposals/`;
+main's 0001–0011 and generated schema/catalog contracts are unchanged.
+
+### Implementation and temporal guarantees
+
+One typed, set-based SQL statement materializes every example in a season. No
+feature job calls `readNormalizedAsOf`, scans the JSON union, reads ObjectStore
+bytes or issues queries per example. A shared SQL context function is SECURITY
+INVOKER with qualified relations and inlinable; it selects snapshot heads over
+typed `norm_*` tables. Window counts preserve equal-time ambiguity. `DISTINCT ON`
+chooses an internal representative only alongside the tie count; ties refuse
+usable output. Cohort histories and gap aggregates are MATERIALIZED once inside
+the statement, preventing the planner from executing them again for each target.
+
+Features and labels each use **eight statements** on a successful new job:
+bulk-load `ANALYZE`, pinned input/checkpoint selection, job claim, BEGIN, local
+timeout, one materialization including lineage, job completion and COMMIT. The
+ingestion budget remains ten. ANALYZE is standard statistics maintenance;
+pipeline MAINTAIN permission does not allow changing source/derived values.
+
+The feature statement explicitly requires both `context_game_id <> game_id`
+and `context_kickoff < cutoff`, before selecting at most 16 prior eligible REG
+games. This is identical in strict and reconstruction modes. Only snapshot
+eligibility changes. At least two qualified prior outcomes are needed; uncovered
+prior candidates remain in `history_gaps`. Tied history kickoff ordering refuses
+the affected feature. Target identity/schedule ambiguity refuses the target.
+The target's yards are absent from its feature payload, and the feature job
+never queries `outcome_labels`.
+
+Labels use a separate materialization with explicit schedule, completion, stats,
+identity/team and positive-offense-participation checks. Unknown or ambiguous
+evidence produces `state=unavailable`, `value=NULL` and reasons. Qualified zero
+yards remains zero. The DB stamps `computed_at`/`known_at`; pipeline grants are
+INSERT-only for values and lineage. Actual restricted non-pipeline logins cannot
+forge or mutate them.
+
+Each output cites the pinned job snapshot set: 16 snapshots in the real fixture.
+This is conservative snapshot-level dependency accounting. A later deletion may
+invalidate more of a job than the exact contributing rows; step 5 must implement
+that governance behavior. No row-level evidence graph or reader lock was added.
+
+Corrections append rows with `supersedes_id`; existing values remain immutable.
+Internal display helpers select the newest visible usable value. If the head is
+unavailable, they retain that value with `stale=true`, `superseded=true` and
+`last valid value; newer result unavailable`. These are local correctness
+fixtures, not an end-user authorization/delivery API. Step 5 rights and mandatory
+deletion take precedence over displaying retained values.
+
+### Real output and repeated feature target
+
+The exact step-3 ObjectStore bytes were verified and re-normalized into a fresh
+scratch database. This setup is separate from feature timing and is not another
+network-ingestion benchmark. No synthetic correction was applied to real sources.
+The report pins source hashes, snapshot clocks/IDs, all job identities, snapshot
+lineage and three representative audit examples (sample strata 2–4, 5–8, 9–16).
+All reconstructed records carry `historical-availability-unverified`.
+
+| Season | Candidates | Usable features | Usable labels | Usable pair |
+|---|---:|---:|---:|---:|
+| 2021 warm-up | 1,916 | 780 | 655 | 507 |
+| 2022 | 1,838 | 1,204 | 633 | 595 |
+| 2023 | 1,812 | 1,380 | 663 | 632 |
+| 2024 | 1,867 | 1,482 | 664 | 644 |
+| 2025 | 1,948 | 1,536 | 663 | 633 |
+
+Totals: 9,381 candidate player-games, 6,382 usable features and 3,278 usable labels.
+There are 3,011 usable pairs including warm-up; the 2022–2025 evaluation population
+currently has 2,504 usable pairs. No scoring or evaluation has run. Candidate
+inventory includes roster QBs with no outcome evidence; its unavailable labels
+are intentional. Counts and reason frequencies remain in the report. Wilson's
+2025 Week 1 participation gap remains unavailable; no zero was invented.
+
+Strict mode generated 1,948 unavailable 2025 features and zero usable features,
+as expected from today's ingestion clocks. The real-data SQL leakage check
+returns zero target-game or kickoff-at/after-cutoff history entries across all
+materialized feature versions. Reconstruction does not establish observed
+historical availability or a prospective product.
+
+The largest candidate season (2025, 1,948 examples) was recomputed in three
+fresh-process cold trials and six warm trials. Cold and initial warm trials
+alternate; the final three warm trials follow all other season feature/label
+jobs to exercise sustained connection reuse. Cold time includes Node startup
+and restricted connection establishment; no database/OS disk-cache flush is
+claimed. Every call executes a new job, not an idempotent no-op.
+
+- Cold: **3.513–3.556 seconds**.
+- Warm: **3.388–3.577 seconds**, including sustained warm calls.
+- All nine use eight statements and produce content digest
+  `315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9`.
+- Verdict: **pass** for the one-season feature target, ≤120 seconds and ≤84
+  seconds with required headroom, on this local fixture.
+- Other seasons' feature qualification took 2.821–3.264 seconds; labels took
+  1.524–1.686 seconds. These are qualification observations, not separate
+  repeated-capacity claims.
+
+The repeated append-only matrix exceeded main's 512 MiB disposable filesystem.
+The passing fixture explicitly uses [a 2 GiB spike-only override](../compose.feature-store-spike.yml),
+on Docker with 8,319,238,144 bytes of memory and 12 CPUs. Final trial database
+size is about 200 MB, plus PostgreSQL cluster/WAL/temp overhead. Cumulative
+`temp_bytes` counts bytes written over the run (about 2.45 GB), not simultaneous
+disk usage. Peak Node RSS is 570,867,712 bytes (about 544 MiB). These measurements
+are local capacity evidence, not demonstrated Neon/GCS readiness.
+
+### Failed attempts and diagnosis
+
+Failures remain visible; no speedup ratio or optimization-comparison acceptance
+claim is made. Only the final absolute cold/warm target is accepted. An ABBA
+comparison would be needed for a comparative performance claim.
+
+1. The initial client timeout was 20 seconds while the SQL ceiling was 84
+   seconds. Timed-out backend work continued; attempted rollbacks timed out and
+   later calls overlapped. That matrix is invalid for latency comparison. The
+   affected scratch queries were cancelled, execution disabled there and the DB
+   dropped. Transport now allows 90 seconds around the unchanged 84-second SQL
+   ceiling. An interrupted connection is flagged for replacement and receives
+   no further query; a unit probe enforces that contract.
+2. Corrected timeout handling exposed a real 84-second SQL-ceiling miss. The
+   plan estimated single rows and chose nested loops. Typed tie-aware head
+   selection plus ANALYZE corrected some of that, but passing initial calls did
+   not establish sustained readiness; later calls still timed out.
+3. Inlining alone also failed. Isolated profiling found the context SELECT took
+   about 2.6 seconds, while the final plan nested history/gap aggregation below
+   target joins. Materializing those cohort aggregates once fixed repeated work.
+   The actual-plan regression now requires one execution of each aggregate.
+4. The 512 MiB fixture ran out of filesystem space after retaining many full
+   versions. The explicit 2 GiB fixture completes the same sustained workload.
+5. The first `EXPLAIN ANALYZE` loop-count probe exceeded its 15-second harness
+   default. Per-node clocks were disabled; the deterministic probe now uses the
+   same 84-second statement/90-second transport ceilings as the job. No CI
+   assertion depends on elapsed time. The first failure is retained.
+6. A connection-cold matrix passed, then was explicitly superseded because the
+   approved cold contract requires a fresh process. The final artifact includes
+   distinct process IDs and the startup boundary.
+
+### Correctness evidence and reproduction
+
+Nine new PostgreSQL probes cover both-mode event filtering and target exclusion,
+missing/zero labels, clearly synthetic corrections and historical replay,
+ambiguous/superseded/stale output, equal-time rivals, pipeline permissions/clocks,
+constant work from 8 to 260 examples, actual aggregate execution counts and
+publication rollback. The eight existing ingestion/as-of and eight schema probes
+also run against the completed proposal. Fifteen focused unit tests, typecheck
+and changed-file lint form the remaining focused checkpoint. See the final
+validation receipt for exact results and source hashes.
+
+- [Checkpoint verdicts and hashes](evidence/feature-store-138/step-4-checkpoint.json)
+- [Final real cold/warm evidence](evidence/feature-store-138/step-4-real-derived.json)
+- [Final focused validation](evidence/feature-store-138/step-4-validation.json)
+- [Derived PostgreSQL probes](evidence/feature-store-138/step-4-integration.json)
+- [Ingestion regressions](evidence/feature-store-138/step-4-ingestion-regression.json)
+- [Schema/permission regressions](evidence/feature-store-138/step-4-schema-regression.json)
+- [Unit tests](evidence/feature-store-138/step-4-unit-tests.json)
+- [Isolated SQL plan profile](evidence/feature-store-138/step-4-query-profile.json)
+- [Initial invalid timeout matrix](evidence/feature-store-138/step-4-real-derived-initial.json)
+- [SQL-ceiling miss](evidence/feature-store-138/step-4-real-derived-plan-timeout.json)
+- [Sustained-plan failure](evidence/feature-store-138/step-4-real-derived-warm-plan-failure.json)
+- [Inlining-only failure](evidence/feature-store-138/step-4-real-derived-inline-failure.json)
+- [512 MiB fixture failure](evidence/feature-store-138/step-4-real-derived-storage-failure.json)
+- [Superseded connection-cold run](evidence/feature-store-138/step-4-real-derived-connection-cold.json)
+- [Initial timed plan-count probe](evidence/feature-store-138/step-4-plan-probe-timing-failure.json)
+
+Reproduce with Node 24, locked dependencies and only the disposable
+`TEST_DATABASE_URL` from step 2. No `.env` or application credentials are loaded.
+
+```sh
+docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml -f compose.feature-store-spike.yml up -d --wait
+npm run test:feature-store:db
+npm run feature-store:derived:spike
+docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml -f compose.feature-store-spike.yml down --volumes
+```
+
+The proposal/harness applies main and proposal SQL only in registered scratch
+databases. Raw bytes remain in the private ObjectStore directory from step 3;
+the scratch DB is dropped after each proof. Durable receipts and audit examples
+are retained, while full ephemeral DB outputs are reproducible from pinned bytes
+and code. The correction fixture changes 9999 to 350, then introduces ambiguity;
+these are fabricated test values, not an observed nflverse correction.
+
+### Remaining acceptance boundary
+
+| Target | Step-4 verdict |
+|---|---|
+| Ingest ≤60 s, ≤42 s headroom | Qualification passes; required repeated network cold/warm trials still pending |
+| Season features ≤120 s, ≤84 s headroom | Pass on the 2025 full-season fixture, three fresh-process cold and six warm trials |
+| Five-season dataset ≤30 s, ≤21 s headroom | Not measured; step 5 pending |
+| Prediction p95 ≤300 ms, ≤210 ms headroom | Not measured; step 6 pending |
+
+Rights authorization/delivery, mandatory deletion/invalidation, orphan/temp
+cleanup, datasets and recompute audit remain step 5. No user-facing prediction
+or statistical quality claim is made. Schedule license-chain qualification,
+historical availability, the participation gap, main integration and external
+GCS/Blaze/dedicated-account plus Neon checks remain as recorded at step 3.
+No held legacy branches or hosted databases were changed. Stop for owner review
+before further implementation, keeping the approved about-one-week timebox.

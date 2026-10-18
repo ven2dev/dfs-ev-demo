@@ -1,0 +1,6 @@
+# Opt-in #138 benchmark only. Keeps main's standard disposable fixture unchanged.
+# Repeated append-only runs retain several versions and need more than 512 MiB.
+services:
+  postgres:
+    tmpfs: !override
+      - /var/lib/postgresql:rw,size=2g

@@ -1,0 +1,2023 @@
+{
+  "schemaVersion": 1,
+  "issue": 138,
+  "step": 4,
+  "recordedAt": "2026-10-17T17:34:06.599Z",
+  "code": {
+    "gitSha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+    "contentSha256": "a075acfb0bd2db66e0e0c9348d9a510db70d5970401eb2840f8d47f59902651b"
+  },
+  "codeHashes": {
+    "src/lib/featureStore/derived.ts": "e6b7a56522f71ec80a191101b2a6ed0ceabafd222b7ef4f35abd822f8eb27b34",
+    "db/proposals/138_feature_store.sql": "1f6f3caab3ad1795df0720ce4568d2335432d46dba0344ed92ff29c982548076",
+    "scripts/feature-store/harness.ts": "55ba2f3028be47abf7c52cf465b8b9592e8aa32d33b808e3f704a3e96bbd1519",
+    "scripts/feature-store/derived-spike.ts": "c74856b3c28d5ca0c142140f8ba77d2e747f418971260983937ea0b5d57bdec8",
+    "src/lib/featureStore/ingest.ts": "11d1bf28eb57dd95c2fb18346534ef3ce718cbf266565b485da6e844547cad09",
+    "src/lib/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "src/lib/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7",
+    "package-lock.json": "f93f6fe9bcc5e4347ea923542004efe6c1182af76d80e1e9fdafbf18f7e96570"
+  },
+  "sourceManifestSha256": "63517d4e667af249a6c8c3a4b6ea8cd72550d1afb578182510629d68ec710c38",
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin",
+    "cpus": 12,
+    "totalMemoryBytes": 19327352832
+  },
+  "fixture": "exact step-3 wire objects; all five seasons normalized in a fresh scratch DB; no synthetic corrections",
+  "evidenceMode": "retrospective-reconstruction-v1",
+  "flags": [
+    "historical-availability-unverified"
+  ],
+  "evaluationRun": false,
+  "setup": "ObjectStore reads exact pinned raw bytes for re-normalization; this is not an ingestion/network benchmark",
+  "cacheState": "cold trials use fresh restricted DB connections; warm trials reuse a connection; no app cache or job-output reuse; OS/DB buffers not flushed; one Node process",
+  "trials": [
+    {
+      "season": 2025,
+      "trialMode": "cold",
+      "trial": 1,
+      "status": "succeeded",
+      "jobId": "e50df733-7add-4786-b78a-2e645efc445d",
+      "checkpoint": "2026-10-17 17:34:23.694864+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3466.0803330000017,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3466.215833000002,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 1,
+      "status": "succeeded",
+      "jobId": "48066aa8-b5ad-49da-b7bf-888ef0c652f0",
+      "checkpoint": "2026-10-17 17:34:27.233201+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3414.5258329999997,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3414.541583000002,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"
+    },
+    {
+      "season": 2025,
+      "trialMode": "cold",
+      "trial": 2,
+      "status": "succeeded",
+      "jobId": "0bb278cd-02f3-4425-91ba-cd711e87df79",
+      "checkpoint": "2026-10-17 17:34:30.739254+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3396.675416000002,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3396.696750000003,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 2,
+      "status": "succeeded",
+      "jobId": "9483e5f9-a50b-4003-8e4f-46105e87102e",
+      "checkpoint": "2026-10-17 17:34:34.191778+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3434.2269579999993,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3434.2392499999987,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"
+    },
+    {
+      "season": 2025,
+      "trialMode": "cold",
+      "trial": 3,
+      "status": "succeeded",
+      "jobId": "7adced06-f8e4-457f-af90-94d33e4f5f38",
+      "checkpoint": "2026-10-17 17:34:37.72452+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3497.9410419999986,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3497.949083999996,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 3,
+      "status": "succeeded",
+      "jobId": "b88c3eb9-2a31-4be9-a51b-6324d8244f3a",
+      "checkpoint": "2026-10-17 17:34:41.286037+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 1536,
+        "unavailable": 412,
+        "max_sample": 16
+      },
+      "elapsedMs": 3413.472833,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "measuredMs": 3413.488000000005,
+      "queries": 8,
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9"
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 4,
+      "status": "failed",
+      "error": "error: could not write to file \"base/pgsql_tmp/pgsql_tmp37214.185\": No space left on device",
+      "measuredMs": 807.5314590000053,
+      "queries": 8,
+      "verdict": "fail"
+    }
+  ],
+  "qualification": [
+    {
+      "kind": "features",
+      "season": 2021,
+      "status": "succeeded",
+      "jobId": "fd13a5bb-bb68-45fc-8c97-595bec61f4b2",
+      "checkpoint": "2026-10-17 17:34:44.782436+00",
+      "counts": {
+        "rows": 1916,
+        "usable": 780,
+        "unavailable": 1136,
+        "max_sample": 16
+      },
+      "elapsedMs": 2869.9577080000017,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "features",
+      "season": 2022,
+      "status": "succeeded",
+      "jobId": "e87575d4-1401-41ee-bdfb-7add2964be3c",
+      "checkpoint": "2026-10-17 17:34:47.647039+00",
+      "counts": {
+        "rows": 1838,
+        "usable": 1204,
+        "unavailable": 634,
+        "max_sample": 16
+      },
+      "elapsedMs": 3069.3207079999993,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "features",
+      "season": 2023,
+      "status": "succeeded",
+      "jobId": "76fc97b6-5582-4b1c-b9ad-119fb4b346a5",
+      "checkpoint": "2026-10-17 17:34:50.715647+00",
+      "counts": {
+        "rows": 1812,
+        "usable": 1380,
+        "unavailable": 432,
+        "max_sample": 16
+      },
+      "elapsedMs": 3186.9295000000056,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "features",
+      "season": 2024,
+      "status": "succeeded",
+      "jobId": "1389bdde-07c4-45c6-913c-35e899cce992",
+      "checkpoint": "2026-10-17 17:34:53.906289+00",
+      "counts": {
+        "rows": 1867,
+        "usable": 1482,
+        "unavailable": 385,
+        "max_sample": 16
+      },
+      "elapsedMs": 3334.1722919999957,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "labels",
+      "season": 2021,
+      "status": "succeeded",
+      "jobId": "7753de42-286e-46c5-8cf5-1fdf93d9d975",
+      "checkpoint": "2026-10-17 17:34:57.240671+00",
+      "counts": {
+        "rows": 1916,
+        "usable": 655,
+        "unavailable": 1261,
+        "max_sample": 0
+      },
+      "elapsedMs": 1635.3270829999965,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "labels",
+      "season": 2022,
+      "status": "succeeded",
+      "jobId": "42b3163c-989f-46f3-b86f-992261e36ec0",
+      "checkpoint": "2026-10-17 17:34:58.8779+00",
+      "counts": {
+        "rows": 1838,
+        "usable": 633,
+        "unavailable": 1205,
+        "max_sample": 0
+      },
+      "elapsedMs": 1559.5035830000052,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "labels",
+      "season": 2023,
+      "status": "succeeded",
+      "jobId": "6c1c9db0-bd21-44de-8469-9fc975b0d72f",
+      "checkpoint": "2026-10-17 17:35:00.437615+00",
+      "counts": {
+        "rows": 1812,
+        "usable": 663,
+        "unavailable": 1149,
+        "max_sample": 0
+      },
+      "elapsedMs": 1513.0192909999969,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "labels",
+      "season": 2024,
+      "status": "succeeded",
+      "jobId": "3ab30c4d-7db5-4171-a6ea-1a672cabac9b",
+      "checkpoint": "2026-10-17 17:35:01.951283+00",
+      "counts": {
+        "rows": 1867,
+        "usable": 664,
+        "unavailable": 1203,
+        "max_sample": 0
+      },
+      "elapsedMs": 1594.0579579999976,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    },
+    {
+      "kind": "labels",
+      "season": 2025,
+      "status": "succeeded",
+      "jobId": "ae8e56aa-29d9-4b98-b008-380f84809070",
+      "checkpoint": "2026-10-17 17:35:03.549261+00",
+      "counts": {
+        "rows": 1948,
+        "usable": 663,
+        "unavailable": 1285,
+        "max_sample": 0
+      },
+      "elapsedMs": 1681.5309160000033,
+      "work": {
+        "materializations": 1,
+        "perExampleQueries": 0,
+        "sourceByteReads": 0
+      },
+      "queries": 8
+    }
+  ],
+  "verdict": "failed",
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "inputs": [
+    {
+      "name": "games.csv.gz",
+      "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+      "normalizedRows": 1359
+    },
+    {
+      "name": "pbp_participation_2021.csv",
+      "sha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+      "normalizedRows": 18309
+    },
+    {
+      "name": "pbp_participation_2022.csv",
+      "sha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+      "normalizedRows": 18193
+    },
+    {
+      "name": "pbp_participation_2023.csv",
+      "sha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+      "normalizedRows": 17670
+    },
+    {
+      "name": "pbp_participation_2024.csv",
+      "sha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+      "normalizedRows": 17564
+    },
+    {
+      "name": "pbp_participation_2025.csv",
+      "sha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+      "normalizedRows": 17707
+    },
+    {
+      "name": "roster_weekly_2021.csv",
+      "sha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+      "normalizedRows": 1916
+    },
+    {
+      "name": "roster_weekly_2022.csv",
+      "sha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+      "normalizedRows": 1844
+    },
+    {
+      "name": "roster_weekly_2023.csv",
+      "sha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+      "normalizedRows": 1812
+    },
+    {
+      "name": "roster_weekly_2024.csv.gz",
+      "sha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+      "normalizedRows": 1867
+    },
+    {
+      "name": "roster_weekly_2025.csv.gz",
+      "sha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+      "normalizedRows": 1948
+    },
+    {
+      "name": "stats_player_week_2021.csv.gz",
+      "sha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+      "normalizedRows": 655
+    },
+    {
+      "name": "stats_player_week_2022.csv.gz",
+      "sha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+      "normalizedRows": 633
+    },
+    {
+      "name": "stats_player_week_2023.csv.gz",
+      "sha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+      "normalizedRows": 663
+    },
+    {
+      "name": "stats_player_week_2024.csv.gz",
+      "sha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+      "normalizedRows": 664
+    },
+    {
+      "name": "stats_player_week_2025.csv.gz",
+      "sha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+      "normalizedRows": 664
+    }
+  ],
+  "plainContextPlan": [
+    {
+      "QUERY PLAN": [
+        {
+          "Plan": {
+            "Node Type": "Hash Join",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Join Type": "Left",
+            "Startup Cost": 2713.45,
+            "Total Cost": 2718.29,
+            "Plan Rows": 48,
+            "Plan Width": 192,
+            "Disabled": false,
+            "Inner Unique": false,
+            "Hash Cond": "((r.player_id = p.player_id) AND (r.game_id = p.game_id) AND (r.context_game_id = p.context_game_id))",
+            "Plans": [
+              {
+                "Node Type": "Hash Join",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE snapshots",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Inner",
+                "Startup Cost": 2.3,
+                "Total Cost": 3.61,
+                "Plan Rows": 5,
+                "Plan Width": 657,
+                "Disabled": false,
+                "Inner Unique": false,
+                "Hash Cond": "(j.job_id = s.job_id)",
+                "Plans": [
+                  {
+                    "Node Type": "Seq Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Relation Name": "job_runs",
+                    "Alias": "j",
+                    "Startup Cost": 0,
+                    "Total Cost": 1.2,
+                    "Plan Rows": 16,
+                    "Plan Width": 16,
+                    "Disabled": false,
+                    "Filter": "(status = 'succeeded'::text)"
+                  },
+                  {
+                    "Node Type": "Hash",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 2.24,
+                    "Total Cost": 2.24,
+                    "Plan Rows": 5,
+                    "Plan Width": 657,
+                    "Disabled": false,
+                    "Plans": [
+                      {
+                        "Node Type": "Seq Scan",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Relation Name": "source_snapshots",
+                        "Alias": "s",
+                        "Startup Cost": 0,
+                        "Total Cost": 2.24,
+                        "Plan Rows": 5,
+                        "Plan Width": 657,
+                        "Disabled": false,
+                        "Filter": "(ingested_at <= clock_timestamp())"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Unique",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE discovery_schedule",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 133.59,
+                "Total Cost": 228.69,
+                "Plan Rows": 1359,
+                "Plan Width": 145,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "Incremental Sort",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 133.59,
+                    "Total Cost": 225.29,
+                    "Plan Rows": 1359,
+                    "Plan Width": 145,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "n.game_id",
+                      "s_1.available_at DESC",
+                      "s_1.ingested_at DESC",
+                      "n.snapshot_id"
+                    ],
+                    "Presorted Key": [
+                      "n.game_id"
+                    ],
+                    "Plans": [
+                      {
+                        "Node Type": "WindowAgg",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 133.56,
+                        "Total Cost": 164.14,
+                        "Plan Rows": 1359,
+                        "Plan Width": 145,
+                        "Disabled": false,
+                        "Window": "w1 AS (PARTITION BY n.game_id, s_1.available_at, s_1.ingested_at)",
+                        "Plans": [
+                          {
+                            "Node Type": "Sort",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 133.56,
+                            "Total Cost": 136.96,
+                            "Plan Rows": 1359,
+                            "Plan Width": 137,
+                            "Disabled": false,
+                            "Sort Key": [
+                              "n.game_id",
+                              "s_1.available_at",
+                              "s_1.ingested_at"
+                            ],
+                            "Plans": [
+                              {
+                                "Node Type": "Hash Join",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Join Type": "Inner",
+                                "Startup Cost": 0.16,
+                                "Total Cost": 62.84,
+                                "Plan Rows": 1359,
+                                "Plan Width": 137,
+                                "Disabled": false,
+                                "Inner Unique": false,
+                                "Hash Cond": "(n.snapshot_id = s_1.snapshot_id)",
+                                "Plans": [
+                                  {
+                                    "Node Type": "Seq Scan",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Relation Name": "norm_schedule",
+                                    "Alias": "n",
+                                    "Startup Cost": 0,
+                                    "Total Cost": 43.99,
+                                    "Plan Rows": 1359,
+                                    "Plan Width": 121,
+                                    "Disabled": false,
+                                    "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                  },
+                                  {
+                                    "Node Type": "Hash",
+                                    "Parent Relationship": "Inner",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Startup Cost": 0.1,
+                                    "Total Cost": 0.1,
+                                    "Plan Rows": 5,
+                                    "Plan Width": 32,
+                                    "Disabled": false,
+                                    "Plans": [
+                                      {
+                                        "Node Type": "CTE Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "CTE Name": "snapshots",
+                                        "Alias": "s_1",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 0.1,
+                                        "Plan Rows": 5,
+                                        "Plan Width": 32,
+                                        "Disabled": false
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Unique",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE population",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 1655.39,
+                "Total Cost": 1713.98,
+                "Plan Rows": 1360,
+                "Plan Width": 64,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "Merge Append",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 1655.39,
+                    "Total Cost": 1707.18,
+                    "Plan Rows": 1360,
+                    "Plan Width": 64,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "n_1.player_id",
+                      "s_2.game_id"
+                    ],
+                    "Subplans Removed": 0,
+                    "Plans": [
+                      {
+                        "Node Type": "Sort",
+                        "Parent Relationship": "Member",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 1320.67,
+                        "Total Cost": 1320.67,
+                        "Plan Rows": 1,
+                        "Plan Width": 43,
+                        "Disabled": false,
+                        "Sort Key": [
+                          "n_1.player_id",
+                          "s_2.game_id"
+                        ],
+                        "Plans": [
+                          {
+                            "Node Type": "Merge Join",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Join Type": "Inner",
+                            "Startup Cost": 1302.94,
+                            "Total Cost": 1320.66,
+                            "Plan Rows": 1,
+                            "Plan Width": 43,
+                            "Disabled": false,
+                            "Inner Unique": false,
+                            "Merge Cond": "((n_1.season = s_2.season) AND (n_1.week = s_2.week))",
+                            "Join Filter": "((n_1.team = s_2.home_team) OR (n_1.team = s_2.away_team))",
+                            "Plans": [
+                              {
+                                "Node Type": "Sort",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Startup Cost": 1205.04,
+                                "Total Cost": 1207.38,
+                                "Plan Rows": 939,
+                                "Plan Width": 22,
+                                "Disabled": false,
+                                "Sort Key": [
+                                  "n_1.season",
+                                  "n_1.week"
+                                ],
+                                "Plans": [
+                                  {
+                                    "Node Type": "Subquery Scan",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Alias": "n_1",
+                                    "Startup Cost": 1031.95,
+                                    "Total Cost": 1158.67,
+                                    "Plan Rows": 939,
+                                    "Plan Width": 22,
+                                    "Disabled": false,
+                                    "Plans": [
+                                      {
+                                        "Node Type": "Unique",
+                                        "Parent Relationship": "Subquery",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Startup Cost": 1031.95,
+                                        "Total Cost": 1149.28,
+                                        "Plan Rows": 939,
+                                        "Plan Width": 230,
+                                        "Disabled": false,
+                                        "Plans": [
+                                          {
+                                            "Node Type": "Sort",
+                                            "Parent Relationship": "Outer",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "Startup Cost": 1031.95,
+                                            "Total Cost": 1055.41,
+                                            "Plan Rows": 9387,
+                                            "Plan Width": 230,
+                                            "Disabled": false,
+                                            "Sort Key": [
+                                              "n_2.player_id",
+                                              "n_2.season",
+                                              "n_2.week",
+                                              "n_2.team",
+                                              "s_3.available_at DESC",
+                                              "s_3.ingested_at DESC",
+                                              "n_2.snapshot_id"
+                                            ],
+                                            "Plans": [
+                                              {
+                                                "Node Type": "Hash Join",
+                                                "Parent Relationship": "Outer",
+                                                "Parallel Aware": false,
+                                                "Async Capable": false,
+                                                "Join Type": "Inner",
+                                                "Startup Cost": 0.16,
+                                                "Total Cost": 412.57,
+                                                "Plan Rows": 9387,
+                                                "Plan Width": 230,
+                                                "Disabled": false,
+                                                "Inner Unique": false,
+                                                "Hash Cond": "(n_2.snapshot_id = s_3.snapshot_id)",
+                                                "Plans": [
+                                                  {
+                                                    "Node Type": "Seq Scan",
+                                                    "Parent Relationship": "Outer",
+                                                    "Parallel Aware": false,
+                                                    "Async Capable": false,
+                                                    "Relation Name": "norm_identity",
+                                                    "Alias": "n_2",
+                                                    "Startup Cost": 0,
+                                                    "Total Cost": 283.34,
+                                                    "Plan Rows": 9387,
+                                                    "Plan Width": 38,
+                                                    "Disabled": false,
+                                                    "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                                  },
+                                                  {
+                                                    "Node Type": "Hash",
+                                                    "Parent Relationship": "Inner",
+                                                    "Parallel Aware": false,
+                                                    "Async Capable": false,
+                                                    "Startup Cost": 0.1,
+                                                    "Total Cost": 0.1,
+                                                    "Plan Rows": 5,
+                                                    "Plan Width": 32,
+                                                    "Disabled": false,
+                                                    "Plans": [
+                                                      {
+                                                        "Node Type": "CTE Scan",
+                                                        "Parent Relationship": "Outer",
+                                                        "Parallel Aware": false,
+                                                        "Async Capable": false,
+                                                        "CTE Name": "snapshots",
+                                                        "Alias": "s_3",
+                                                        "Startup Cost": 0,
+                                                        "Total Cost": 0.1,
+                                                        "Plan Rows": 5,
+                                                        "Plan Width": 32,
+                                                        "Disabled": false
+                                                      }
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              },
+                              {
+                                "Node Type": "Sort",
+                                "Parent Relationship": "Inner",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Startup Cost": 97.9,
+                                "Total Cost": 101.3,
+                                "Plan Rows": 1359,
+                                "Plan Width": 104,
+                                "Disabled": false,
+                                "Sort Key": [
+                                  "s_2.season",
+                                  "s_2.week"
+                                ],
+                                "Plans": [
+                                  {
+                                    "Node Type": "CTE Scan",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "CTE Name": "discovery_schedule",
+                                    "Alias": "s_2",
+                                    "Startup Cost": 0,
+                                    "Total Cost": 27.18,
+                                    "Plan Rows": 1359,
+                                    "Plan Width": 104,
+                                    "Disabled": false
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "Node Type": "Subquery Scan",
+                        "Parent Relationship": "Member",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Alias": "discovery_stats",
+                        "Startup Cost": 334.71,
+                        "Total Cost": 372.9,
+                        "Plan Rows": 1359,
+                        "Plan Width": 26,
+                        "Disabled": false,
+                        "Plans": [
+                          {
+                            "Node Type": "Unique",
+                            "Parent Relationship": "Subquery",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 334.71,
+                            "Total Cost": 359.31,
+                            "Plan Rows": 1359,
+                            "Plan Width": 210,
+                            "Disabled": false,
+                            "Plans": [
+                              {
+                                "Node Type": "Sort",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Startup Cost": 334.71,
+                                "Total Cost": 342.91,
+                                "Plan Rows": 3279,
+                                "Plan Width": 210,
+                                "Disabled": false,
+                                "Sort Key": [
+                                  "n_3.player_id",
+                                  "n_3.game_id",
+                                  "s_4.available_at DESC",
+                                  "s_4.ingested_at DESC",
+                                  "n_3.snapshot_id"
+                                ],
+                                "Plans": [
+                                  {
+                                    "Node Type": "Hash Join",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Join Type": "Inner",
+                                    "Startup Cost": 0.16,
+                                    "Total Cost": 143.24,
+                                    "Plan Rows": 3279,
+                                    "Plan Width": 210,
+                                    "Disabled": false,
+                                    "Inner Unique": false,
+                                    "Hash Cond": "(n_3.snapshot_id = s_4.snapshot_id)",
+                                    "Plans": [
+                                      {
+                                        "Node Type": "Seq Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Relation Name": "norm_player_game_stats",
+                                        "Alias": "n_3",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 97.99,
+                                        "Plan Rows": 3279,
+                                        "Plan Width": 42,
+                                        "Disabled": false,
+                                        "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                      },
+                                      {
+                                        "Node Type": "Hash",
+                                        "Parent Relationship": "Inner",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Startup Cost": 0.1,
+                                        "Total Cost": 0.1,
+                                        "Plan Rows": 5,
+                                        "Plan Width": 32,
+                                        "Disabled": false,
+                                        "Plans": [
+                                          {
+                                            "Node Type": "CTE Scan",
+                                            "Parent Relationship": "Outer",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "CTE Name": "snapshots",
+                                            "Alias": "s_4",
+                                            "Startup Cost": 0,
+                                            "Total Cost": 0.1,
+                                            "Plan Rows": 5,
+                                            "Plan Width": 32,
+                                            "Disabled": false
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Hash Join",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE targets",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Left",
+                "Startup Cost": 44.17,
+                "Total Cost": 103.74,
+                "Plan Rows": 7,
+                "Plan Width": 84,
+                "Disabled": false,
+                "Inner Unique": false,
+                "Hash Cond": "(p_1.game_id = s_5.game_id)",
+                "Filter": "(COALESCE(s_5.season, (\"substring\"(p_1.game_id, '^([0-9]{4})_'::text))::integer) = 2025)",
+                "Plans": [
+                  {
+                    "Node Type": "CTE Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "CTE Name": "population",
+                    "Alias": "p_1",
+                    "Startup Cost": 0,
+                    "Total Cost": 27.2,
+                    "Plan Rows": 1360,
+                    "Plan Width": 64,
+                    "Disabled": false
+                  },
+                  {
+                    "Node Type": "Hash",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 27.18,
+                    "Total Cost": 27.18,
+                    "Plan Rows": 1359,
+                    "Plan Width": 52,
+                    "Disabled": false,
+                    "Plans": [
+                      {
+                        "Node Type": "CTE Scan",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "CTE Name": "discovery_schedule",
+                        "Alias": "s_5",
+                        "Startup Cost": 0,
+                        "Total Cost": 27.18,
+                        "Plan Rows": 1359,
+                        "Plan Width": 52,
+                        "Disabled": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Merge Join",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE requests",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Right",
+                "Startup Cost": 32.9,
+                "Total Cost": 64.2,
+                "Plan Rows": 48,
+                "Plan Width": 132,
+                "Disabled": false,
+                "Inner Unique": false,
+                "Merge Cond": "(d.game_id = h.game_id)",
+                "Plans": [
+                  {
+                    "Node Type": "CTE Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "CTE Name": "discovery_schedule",
+                    "Alias": "d",
+                    "Startup Cost": 0,
+                    "Total Cost": 27.18,
+                    "Plan Rows": 1359,
+                    "Plan Width": 40,
+                    "Disabled": false
+                  },
+                  {
+                    "Node Type": "Sort",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 32.9,
+                    "Total Cost": 33.02,
+                    "Plan Rows": 48,
+                    "Plan Width": 116,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "h.game_id"
+                    ],
+                    "Plans": [
+                      {
+                        "Node Type": "Merge Join",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Join Type": "Inner",
+                        "Startup Cost": 0.24,
+                        "Total Cost": 31.56,
+                        "Plan Rows": 48,
+                        "Plan Width": 116,
+                        "Disabled": false,
+                        "Inner Unique": false,
+                        "Merge Cond": "(h.player_id = t.player_id)",
+                        "Plans": [
+                          {
+                            "Node Type": "CTE Scan",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "CTE Name": "population",
+                            "Alias": "h",
+                            "Startup Cost": 0,
+                            "Total Cost": 27.2,
+                            "Plan Rows": 1360,
+                            "Plan Width": 64,
+                            "Disabled": false
+                          },
+                          {
+                            "Node Type": "Sort",
+                            "Parent Relationship": "Inner",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 0.24,
+                            "Total Cost": 0.26,
+                            "Plan Rows": 7,
+                            "Plan Width": 84,
+                            "Disabled": false,
+                            "Sort Key": [
+                              "t.player_id"
+                            ],
+                            "Plans": [
+                              {
+                                "Node Type": "CTE Scan",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "CTE Name": "targets",
+                                "Alias": "t",
+                                "Startup Cost": 0,
+                                "Total Cost": 0.14,
+                                "Plan Rows": 7,
+                                "Plan Width": 84,
+                                "Disabled": false
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Unique",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE schedules",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 53.33,
+                "Total Cost": 57.49,
+                "Plan Rows": 48,
+                "Plan Width": 161,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "Incremental Sort",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 53.33,
+                    "Total Cost": 57.13,
+                    "Plan Rows": 48,
+                    "Plan Width": 161,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "r_1.player_id",
+                      "r_1.game_id",
+                      "r_1.context_game_id",
+                      "s_6.available_at DESC",
+                      "s_6.ingested_at DESC",
+                      "n_4.snapshot_id"
+                    ],
+                    "Presorted Key": [
+                      "r_1.player_id",
+                      "r_1.game_id",
+                      "r_1.context_game_id"
+                    ],
+                    "Plans": [
+                      {
+                        "Node Type": "WindowAgg",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 53.29,
+                        "Total Cost": 54.97,
+                        "Plan Rows": 48,
+                        "Plan Width": 161,
+                        "Disabled": false,
+                        "Window": "w1 AS (PARTITION BY r_1.player_id, r_1.game_id, r_1.context_game_id, s_6.available_at, s_6.ingested_at)",
+                        "Plans": [
+                          {
+                            "Node Type": "Sort",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 53.29,
+                            "Total Cost": 53.41,
+                            "Plan Rows": 48,
+                            "Plan Width": 169,
+                            "Disabled": false,
+                            "Sort Key": [
+                              "r_1.player_id",
+                              "r_1.game_id",
+                              "r_1.context_game_id",
+                              "s_6.available_at",
+                              "s_6.ingested_at"
+                            ],
+                            "Plans": [
+                              {
+                                "Node Type": "Hash Join",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Join Type": "Inner",
+                                "Startup Cost": 1.72,
+                                "Total Cost": 51.95,
+                                "Plan Rows": 48,
+                                "Plan Width": 169,
+                                "Disabled": false,
+                                "Inner Unique": false,
+                                "Hash Cond": "(n_4.snapshot_id = s_6.snapshot_id)",
+                                "Plans": [
+                                  {
+                                    "Node Type": "Hash Join",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Join Type": "Inner",
+                                    "Startup Cost": 1.56,
+                                    "Total Cost": 51.12,
+                                    "Plan Rows": 48,
+                                    "Plan Width": 153,
+                                    "Disabled": false,
+                                    "Inner Unique": false,
+                                    "Hash Cond": "(n_4.game_id = r_1.context_game_id)",
+                                    "Plans": [
+                                      {
+                                        "Node Type": "Seq Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Relation Name": "norm_schedule",
+                                        "Alias": "n_4",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 43.99,
+                                        "Plan Rows": 1359,
+                                        "Plan Width": 72,
+                                        "Disabled": false,
+                                        "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                      },
+                                      {
+                                        "Node Type": "Hash",
+                                        "Parent Relationship": "Inner",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Startup Cost": 0.96,
+                                        "Total Cost": 0.96,
+                                        "Plan Rows": 48,
+                                        "Plan Width": 96,
+                                        "Disabled": false,
+                                        "Plans": [
+                                          {
+                                            "Node Type": "CTE Scan",
+                                            "Parent Relationship": "Outer",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "CTE Name": "requests",
+                                            "Alias": "r_1",
+                                            "Startup Cost": 0,
+                                            "Total Cost": 0.96,
+                                            "Plan Rows": 48,
+                                            "Plan Width": 96,
+                                            "Disabled": false
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "Node Type": "Hash",
+                                    "Parent Relationship": "Inner",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Startup Cost": 0.1,
+                                    "Total Cost": 0.1,
+                                    "Plan Rows": 5,
+                                    "Plan Width": 32,
+                                    "Disabled": false,
+                                    "Plans": [
+                                      {
+                                        "Node Type": "CTE Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "CTE Name": "snapshots",
+                                        "Alias": "s_6",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 0.1,
+                                        "Plan Rows": 5,
+                                        "Plan Width": 32,
+                                        "Disabled": false
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Unique",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE stats",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 124.47,
+                "Total Cost": 124.58,
+                "Plan Rows": 1,
+                "Plan Width": 145,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "Incremental Sort",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 124.47,
+                    "Total Cost": 124.57,
+                    "Plan Rows": 2,
+                    "Plan Width": 145,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "r_2.player_id",
+                      "r_2.game_id",
+                      "r_2.context_game_id",
+                      "s_7.available_at DESC",
+                      "s_7.ingested_at DESC",
+                      "n_5.snapshot_id"
+                    ],
+                    "Presorted Key": [
+                      "r_2.player_id",
+                      "r_2.game_id",
+                      "r_2.context_game_id"
+                    ],
+                    "Plans": [
+                      {
+                        "Node Type": "WindowAgg",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 124.44,
+                        "Total Cost": 124.48,
+                        "Plan Rows": 1,
+                        "Plan Width": 145,
+                        "Disabled": false,
+                        "Window": "w1 AS (PARTITION BY r_2.player_id, r_2.game_id, r_2.context_game_id, s_7.available_at, s_7.ingested_at)",
+                        "Plans": [
+                          {
+                            "Node Type": "Sort",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 124.44,
+                            "Total Cost": 124.45,
+                            "Plan Rows": 1,
+                            "Plan Width": 142,
+                            "Disabled": false,
+                            "Sort Key": [
+                              "r_2.player_id",
+                              "r_2.game_id",
+                              "r_2.context_game_id",
+                              "s_7.available_at",
+                              "s_7.ingested_at"
+                            ],
+                            "Plans": [
+                              {
+                                "Node Type": "Nested Loop",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Join Type": "Inner",
+                                "Startup Cost": 1.68,
+                                "Total Cost": 124.43,
+                                "Plan Rows": 1,
+                                "Plan Width": 142,
+                                "Disabled": false,
+                                "Inner Unique": false,
+                                "Join Filter": "(n_5.snapshot_id = s_7.snapshot_id)",
+                                "Plans": [
+                                  {
+                                    "Node Type": "Hash Join",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Join Type": "Inner",
+                                    "Startup Cost": 1.68,
+                                    "Total Cost": 124.27,
+                                    "Plan Rows": 1,
+                                    "Plan Width": 126,
+                                    "Disabled": false,
+                                    "Inner Unique": false,
+                                    "Hash Cond": "((n_5.player_id = r_2.player_id) AND (n_5.game_id = r_2.context_game_id))",
+                                    "Plans": [
+                                      {
+                                        "Node Type": "Seq Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Relation Name": "norm_player_game_stats",
+                                        "Alias": "n_5",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 97.99,
+                                        "Plan Rows": 3279,
+                                        "Plan Width": 56,
+                                        "Disabled": false,
+                                        "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                      },
+                                      {
+                                        "Node Type": "Hash",
+                                        "Parent Relationship": "Inner",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Startup Cost": 0.96,
+                                        "Total Cost": 0.96,
+                                        "Plan Rows": 48,
+                                        "Plan Width": 96,
+                                        "Disabled": false,
+                                        "Plans": [
+                                          {
+                                            "Node Type": "CTE Scan",
+                                            "Parent Relationship": "Outer",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "CTE Name": "requests",
+                                            "Alias": "r_2",
+                                            "Startup Cost": 0,
+                                            "Total Cost": 0.96,
+                                            "Plan Rows": 48,
+                                            "Plan Width": 96,
+                                            "Disabled": false
+                                          }
+                                        ]
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "Node Type": "CTE Scan",
+                                    "Parent Relationship": "Inner",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "CTE Name": "snapshots",
+                                    "Alias": "s_7",
+                                    "Startup Cost": 0,
+                                    "Total Cost": 0.1,
+                                    "Plan Rows": 5,
+                                    "Plan Width": 32,
+                                    "Disabled": false
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Aggregate",
+                "Strategy": "Sorted",
+                "Partial Mode": "Simple",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE identities",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 12.22,
+                "Total Cost": 12.38,
+                "Plan Rows": 1,
+                "Plan Width": 162,
+                "Disabled": false,
+                "Group Key": [
+                  "r_3.player_id",
+                  "r_3.game_id",
+                  "r_3.context_game_id"
+                ],
+                "Plans": [
+                  {
+                    "Node Type": "Unique",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 12.22,
+                    "Total Cost": 12.33,
+                    "Plan Rows": 1,
+                    "Plan Width": 149,
+                    "Disabled": false,
+                    "Plans": [
+                      {
+                        "Node Type": "Incremental Sort",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 12.22,
+                        "Total Cost": 12.31,
+                        "Plan Rows": 2,
+                        "Plan Width": 149,
+                        "Disabled": false,
+                        "Sort Key": [
+                          "r_3.player_id",
+                          "r_3.game_id",
+                          "r_3.context_game_id",
+                          "n_6.team",
+                          "s_8.available_at DESC",
+                          "s_8.ingested_at DESC",
+                          "n_6.snapshot_id"
+                        ],
+                        "Presorted Key": [
+                          "r_3.player_id",
+                          "r_3.game_id",
+                          "r_3.context_game_id",
+                          "n_6.team"
+                        ],
+                        "Plans": [
+                          {
+                            "Node Type": "WindowAgg",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 12.19,
+                            "Total Cost": 12.22,
+                            "Plan Rows": 1,
+                            "Plan Width": 149,
+                            "Disabled": false,
+                            "Window": "w1 AS (PARTITION BY r_3.player_id, r_3.game_id, r_3.context_game_id, n_6.team, s_8.available_at, s_8.ingested_at)",
+                            "Plans": [
+                              {
+                                "Node Type": "Sort",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Startup Cost": 12.19,
+                                "Total Cost": 12.2,
+                                "Plan Rows": 1,
+                                "Plan Width": 141,
+                                "Disabled": false,
+                                "Sort Key": [
+                                  "r_3.player_id",
+                                  "r_3.game_id",
+                                  "r_3.context_game_id",
+                                  "n_6.team",
+                                  "s_8.available_at",
+                                  "s_8.ingested_at"
+                                ],
+                                "Plans": [
+                                  {
+                                    "Node Type": "Nested Loop",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Join Type": "Inner",
+                                    "Startup Cost": 2.08,
+                                    "Total Cost": 12.18,
+                                    "Plan Rows": 1,
+                                    "Plan Width": 141,
+                                    "Disabled": false,
+                                    "Inner Unique": false,
+                                    "Join Filter": "(n_6.snapshot_id = s_8.snapshot_id)",
+                                    "Plans": [
+                                      {
+                                        "Node Type": "Nested Loop",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Join Type": "Inner",
+                                        "Startup Cost": 2.08,
+                                        "Total Cost": 12.02,
+                                        "Plan Rows": 1,
+                                        "Plan Width": 125,
+                                        "Disabled": false,
+                                        "Inner Unique": false,
+                                        "Join Filter": "(n_6.player_id = r_3.player_id)",
+                                        "Plans": [
+                                          {
+                                            "Node Type": "Hash Join",
+                                            "Parent Relationship": "Outer",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "Join Type": "Inner",
+                                            "Startup Cost": 1.8,
+                                            "Total Cost": 3.31,
+                                            "Plan Rows": 1,
+                                            "Plan Width": 200,
+                                            "Disabled": false,
+                                            "Inner Unique": false,
+                                            "Hash Cond": "((r_3.player_id = g_1.player_id) AND (r_3.game_id = g_1.game_id) AND (r_3.context_game_id = g_1.context_game_id))",
+                                            "Plans": [
+                                              {
+                                                "Node Type": "CTE Scan",
+                                                "Parent Relationship": "Outer",
+                                                "Parallel Aware": false,
+                                                "Async Capable": false,
+                                                "CTE Name": "requests",
+                                                "Alias": "r_3",
+                                                "Startup Cost": 0,
+                                                "Total Cost": 0.96,
+                                                "Plan Rows": 48,
+                                                "Plan Width": 96,
+                                                "Disabled": false
+                                              },
+                                              {
+                                                "Node Type": "Hash",
+                                                "Parent Relationship": "Inner",
+                                                "Parallel Aware": false,
+                                                "Async Capable": false,
+                                                "Startup Cost": 0.96,
+                                                "Total Cost": 0.96,
+                                                "Plan Rows": 48,
+                                                "Plan Width": 168,
+                                                "Disabled": false,
+                                                "Plans": [
+                                                  {
+                                                    "Node Type": "CTE Scan",
+                                                    "Parent Relationship": "Outer",
+                                                    "Parallel Aware": false,
+                                                    "Async Capable": false,
+                                                    "CTE Name": "schedules",
+                                                    "Alias": "g_1",
+                                                    "Startup Cost": 0,
+                                                    "Total Cost": 0.96,
+                                                    "Plan Rows": 48,
+                                                    "Plan Width": 168,
+                                                    "Disabled": false
+                                                  }
+                                                ]
+                                              }
+                                            ]
+                                          },
+                                          {
+                                            "Node Type": "Index Scan",
+                                            "Parent Relationship": "Inner",
+                                            "Parallel Aware": false,
+                                            "Async Capable": false,
+                                            "Scan Direction": "Forward",
+                                            "Index Name": "identity_player_week",
+                                            "Relation Name": "norm_identity",
+                                            "Alias": "n_6",
+                                            "Startup Cost": 0.29,
+                                            "Total Cost": 8.7,
+                                            "Plan Rows": 1,
+                                            "Plan Width": 48,
+                                            "Disabled": false,
+                                            "Index Cond": "((player_id = g_1.player_id) AND (season = g_1.season) AND (week = g_1.week) AND (team = ANY (ARRAY[g_1.home_team, g_1.away_team])))",
+                                            "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                          }
+                                        ]
+                                      },
+                                      {
+                                        "Node Type": "CTE Scan",
+                                        "Parent Relationship": "Inner",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "CTE Name": "snapshots",
+                                        "Alias": "s_8",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 0.1,
+                                        "Plan Rows": 5,
+                                        "Plan Width": 32,
+                                        "Disabled": false
+                                      }
+                                    ]
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Unique",
+                "Parent Relationship": "InitPlan",
+                "Subplan Name": "CTE participation",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 402.76,
+                "Total Cost": 402.87,
+                "Plan Rows": 1,
+                "Plan Width": 138,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "Incremental Sort",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 402.76,
+                    "Total Cost": 402.86,
+                    "Plan Rows": 2,
+                    "Plan Width": 138,
+                    "Disabled": false,
+                    "Sort Key": [
+                      "r_4.player_id",
+                      "r_4.game_id",
+                      "r_4.context_game_id",
+                      "s_9.available_at DESC",
+                      "s_9.ingested_at DESC",
+                      "n_7.snapshot_id"
+                    ],
+                    "Presorted Key": [
+                      "r_4.player_id",
+                      "r_4.game_id",
+                      "r_4.context_game_id"
+                    ],
+                    "Plans": [
+                      {
+                        "Node Type": "WindowAgg",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 402.73,
+                        "Total Cost": 402.77,
+                        "Plan Rows": 1,
+                        "Plan Width": 138,
+                        "Disabled": false,
+                        "Window": "w1 AS (PARTITION BY r_4.player_id, r_4.game_id, r_4.context_game_id, s_9.available_at, s_9.ingested_at)",
+                        "Plans": [
+                          {
+                            "Node Type": "Sort",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 402.73,
+                            "Total Cost": 402.74,
+                            "Plan Rows": 1,
+                            "Plan Width": 139,
+                            "Disabled": false,
+                            "Sort Key": [
+                              "r_4.player_id",
+                              "r_4.game_id",
+                              "r_4.context_game_id",
+                              "s_9.available_at",
+                              "s_9.ingested_at"
+                            ],
+                            "Plans": [
+                              {
+                                "Node Type": "Nested Loop",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "Join Type": "Inner",
+                                "Startup Cost": 0.42,
+                                "Total Cost": 402.72,
+                                "Plan Rows": 1,
+                                "Plan Width": 139,
+                                "Disabled": false,
+                                "Inner Unique": false,
+                                "Join Filter": "(n_7.snapshot_id = s_9.snapshot_id)",
+                                "Plans": [
+                                  {
+                                    "Node Type": "Nested Loop",
+                                    "Parent Relationship": "Outer",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "Join Type": "Inner",
+                                    "Startup Cost": 0.42,
+                                    "Total Cost": 402.56,
+                                    "Plan Rows": 1,
+                                    "Plan Width": 123,
+                                    "Disabled": false,
+                                    "Inner Unique": false,
+                                    "Plans": [
+                                      {
+                                        "Node Type": "CTE Scan",
+                                        "Parent Relationship": "Outer",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "CTE Name": "requests",
+                                        "Alias": "r_4",
+                                        "Startup Cost": 0,
+                                        "Total Cost": 0.96,
+                                        "Plan Rows": 48,
+                                        "Plan Width": 96,
+                                        "Disabled": false
+                                      },
+                                      {
+                                        "Node Type": "Index Scan",
+                                        "Parent Relationship": "Inner",
+                                        "Parallel Aware": false,
+                                        "Async Capable": false,
+                                        "Scan Direction": "Forward",
+                                        "Index Name": "participation_player_game",
+                                        "Relation Name": "norm_participation",
+                                        "Alias": "n_7",
+                                        "Startup Cost": 0.42,
+                                        "Total Cost": 8.36,
+                                        "Plan Rows": 1,
+                                        "Plan Width": 53,
+                                        "Disabled": false,
+                                        "Index Cond": "((player_id = r_4.player_id) AND (game_id = r_4.context_game_id))",
+                                        "Filter": "(normalizer_version = 'fs138-normalizer-v1'::text)"
+                                      }
+                                    ]
+                                  },
+                                  {
+                                    "Node Type": "CTE Scan",
+                                    "Parent Relationship": "Inner",
+                                    "Parallel Aware": false,
+                                    "Async Capable": false,
+                                    "CTE Name": "snapshots",
+                                    "Alias": "s_9",
+                                    "Startup Cost": 0,
+                                    "Total Cost": 0.1,
+                                    "Plan Rows": 5,
+                                    "Plan Width": 32,
+                                    "Disabled": false
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Hash Join",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Join Type": "Left",
+                "Startup Cost": 1.88,
+                "Total Cost": 4.48,
+                "Plan Rows": 48,
+                "Plan Width": 319,
+                "Disabled": false,
+                "Inner Unique": false,
+                "Hash Cond": "((r.player_id = i.player_id) AND (r.game_id = i.game_id) AND (r.context_game_id = i.context_game_id))",
+                "Plans": [
+                  {
+                    "Node Type": "Hash Join",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Join Type": "Left",
+                    "Startup Cost": 1.84,
+                    "Total Cost": 3.9,
+                    "Plan Rows": 48,
+                    "Plan Width": 253,
+                    "Disabled": false,
+                    "Inner Unique": false,
+                    "Hash Cond": "((r.player_id = st.player_id) AND (r.game_id = st.game_id) AND (r.context_game_id = st.context_game_id))",
+                    "Plans": [
+                      {
+                        "Node Type": "Hash Join",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Join Type": "Left",
+                        "Startup Cost": 1.8,
+                        "Total Cost": 3.31,
+                        "Plan Rows": 48,
+                        "Plan Width": 207,
+                        "Disabled": false,
+                        "Inner Unique": false,
+                        "Hash Cond": "((r.player_id = g.player_id) AND (r.game_id = g.game_id) AND (r.context_game_id = g.context_game_id))",
+                        "Plans": [
+                          {
+                            "Node Type": "CTE Scan",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "CTE Name": "requests",
+                            "Alias": "r",
+                            "Startup Cost": 0,
+                            "Total Cost": 0.96,
+                            "Plan Rows": 48,
+                            "Plan Width": 124,
+                            "Disabled": false
+                          },
+                          {
+                            "Node Type": "Hash",
+                            "Parent Relationship": "Inner",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "Startup Cost": 0.96,
+                            "Total Cost": 0.96,
+                            "Plan Rows": 48,
+                            "Plan Width": 179,
+                            "Disabled": false,
+                            "Plans": [
+                              {
+                                "Node Type": "CTE Scan",
+                                "Parent Relationship": "Outer",
+                                "Parallel Aware": false,
+                                "Async Capable": false,
+                                "CTE Name": "schedules",
+                                "Alias": "g",
+                                "Startup Cost": 0,
+                                "Total Cost": 0.96,
+                                "Plan Rows": 48,
+                                "Plan Width": 179,
+                                "Disabled": false
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "Node Type": "Hash",
+                        "Parent Relationship": "Inner",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "Startup Cost": 0.02,
+                        "Total Cost": 0.02,
+                        "Plan Rows": 1,
+                        "Plan Width": 142,
+                        "Disabled": false,
+                        "Plans": [
+                          {
+                            "Node Type": "CTE Scan",
+                            "Parent Relationship": "Outer",
+                            "Parallel Aware": false,
+                            "Async Capable": false,
+                            "CTE Name": "stats",
+                            "Alias": "st",
+                            "Startup Cost": 0,
+                            "Total Cost": 0.02,
+                            "Plan Rows": 1,
+                            "Plan Width": 142,
+                            "Disabled": false
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "Node Type": "Hash",
+                    "Parent Relationship": "Inner",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Startup Cost": 0.02,
+                    "Total Cost": 0.02,
+                    "Plan Rows": 1,
+                    "Plan Width": 162,
+                    "Disabled": false,
+                    "Plans": [
+                      {
+                        "Node Type": "CTE Scan",
+                        "Parent Relationship": "Outer",
+                        "Parallel Aware": false,
+                        "Async Capable": false,
+                        "CTE Name": "identities",
+                        "Alias": "i",
+                        "Startup Cost": 0,
+                        "Total Cost": 0.02,
+                        "Plan Rows": 1,
+                        "Plan Width": 162,
+                        "Disabled": false
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "Node Type": "Hash",
+                "Parent Relationship": "Inner",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Startup Cost": 0.02,
+                "Total Cost": 0.02,
+                "Plan Rows": 1,
+                "Plan Width": 106,
+                "Disabled": false,
+                "Plans": [
+                  {
+                    "Node Type": "CTE Scan",
+                    "Parent Relationship": "Outer",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "CTE Name": "participation",
+                    "Alias": "p",
+                    "Startup Cost": 0,
+                    "Total Cost": 0.02,
+                    "Plan Rows": 1,
+                    "Plan Width": 106,
+                    "Disabled": false
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "error": "Error: feature-trial-failed-stop-before-connection-reuse",
+  "peakRssBytes": 621772800,
+  "benchmarkRecipeAtFailure": {
+    "path": "scripts/feature-store/derived-spike.ts",
+    "sha256": "c74856b3c28d5ca0c142140f8ba77d2e747f418971260983937ea0b5d57bdec8",
+    "content": "import { execFile } from \"node:child_process\";\nimport { readFile,writeFile } from \"node:fs/promises\";\nimport { arch,cpus,platform,totalmem } from \"node:os\";\nimport { promisify } from \"node:util\";\nimport { withFeatureStoreDatabase } from \"./harness.ts\";\nimport { runDerivedJob } from \"../../src/lib/featureStore/derived.ts\";\nimport { ingestSource } from \"../../src/lib/featureStore/ingest.ts\";\nimport { openLocalObjectStore } from \"../../src/lib/featureStore/localObjectStore.ts\";\nimport { sha256 } from \"../../src/lib/featureStore/objectStore.ts\";\nimport { NORMALIZER_VERSION } from \"../../src/lib/featureStore/source.ts\";\nimport type { SourceAsset } from \"../../src/lib/featureStore/source.ts\";\n\nconst root=new URL(\"../../\",import.meta.url);\nconst path=new URL(\"docs/evidence/feature-store-138/step-4-real-derived.json\",root);\nconst sourcePath=new URL(\"docs/evidence/feature-store-138/step-3-source-manifest.json\",root);\nconst source=JSON.parse(await readFile(sourcePath,\"utf8\")) as {assets:{asset:SourceAsset}[]};\nconst previous=JSON.parse(await readFile(new URL(\"docs/evidence/feature-store-138/step-3-real-ingestion.json\",root),\"utf8\")) as {storageRoot:string;results:{name:string;objectKey:string;wireSha256:string}[]};\nconst store=await openLocalObjectStore(previous.storageRoot);\nconst files=[\"src/lib/featureStore/derived.ts\",\"db/proposals/138_feature_store.sql\",\"scripts/feature-store/harness.ts\",\n \"scripts/feature-store/derived-spike.ts\",\"src/lib/featureStore/ingest.ts\",\"src/lib/featureStore/normalize.ts\",\"src/lib/featureStore/source.ts\",\"package-lock.json\"];\nconst codeHashes=Object.fromEntries(await Promise.all(files.map(async p=>[p,sha256(await readFile(new URL(p,root)))])));\nconst code={gitSha:(await promisify(execFile)(\"git\",[\"rev-parse\",\"HEAD\"])).stdout.trim(),contentSha256:sha256(Buffer.from(JSON.stringify(codeHashes)))};\nconst trials:Record<string,unknown>[]=[];\nconst qualification:Record<string,unknown>[]=[];\nconst report:Record<string,unknown>={schemaVersion:1,issue:138,step:4,recordedAt:new Date().toISOString(),code,codeHashes,\n sourceManifestSha256:sha256(await readFile(sourcePath)),runtime:process.version,\n machine:{arch:arch(),platform:platform(),cpus:cpus().length,totalMemoryBytes:totalmem()},\n fixture:\"exact step-3 wire objects; all five seasons normalized in a fresh scratch DB; no synthetic corrections\",\n evidenceMode:\"retrospective-reconstruction-v1\",flags:[\"historical-availability-unverified\"],evaluationRun:false,\n setup:\"ObjectStore reads exact pinned raw bytes for re-normalization; this is not an ingestion/network benchmark\",\n cacheState:\"cold trials use fresh restricted DB connections; warm trials reuse a connection; no app cache or job-output reuse; OS/DB buffers not flushed; one Node process\",\n trials,qualification,verdict:\"running\"};\nconst save=()=>writeFile(path,JSON.stringify(report,null,2)+\"\\n\");\nawait save();\ntry{await withFeatureStoreDatabase(async({admin,writer,reader,openWriter,queryCounts})=>{\n report.database=(await admin.query(\"SELECT version() AS version\")).rows[0].version;\n const inputs=[];\n for(const {asset} of source.assets){\n  const prior=previous.results.find(row=>row.name===asset.name);if(!prior)throw new Error(\"source-receipt-missing\");\n  const bytes=await store.get(prior.objectKey);if(sha256(bytes)!==prior.wireSha256)throw new Error(\"raw-integrity-failed\");\n  const result=await ingestSource(writer,store,asset,code,{download:async()=>({bytes,capturedAt:new Date().toISOString(),requests:0})});\n  if(result.status!==\"ingested\")throw new Error(\"source-setup-refused\");\n  inputs.push({name:asset.name,sha256:result.wireSha256,normalizedRows:result.normalizedRows});\n  console.log(JSON.stringify({setup:asset.name,rows:result.normalizedRows}));\n }\n report.inputs=inputs;\n await writer.query(\"ANALYZE fs138.job_runs,fs138.source_snapshots,fs138.norm_schedule,fs138.norm_player_game_stats,fs138.norm_identity,fs138.norm_participation\");\n const body=(await admin.query(\"SELECT prosrc FROM pg_proc WHERE oid='fs138.qb_job_context(integer,timestamptz,text,text,text)'::regprocedure\")).rows[0].prosrc as string;\n const contextSql=body.replaceAll(\"p_season\",\"2025\").replaceAll(\"p_checkpoint\",\"clock_timestamp()\")\n  .replaceAll(\"p_mode\",\"'retrospective-reconstruction-v1'\").replaceAll(\"p_purpose\",\"'features'\").replaceAll(\"p_normalizer\",\"'\"+NORMALIZER_VERSION+\"'\");\n report.plainContextPlan=(await admin.query(\"EXPLAIN (FORMAT JSON) \"+contextSql)).rows;\n await save();\n const mode=\"retrospective-reconstruction-v1\" as const;\n const digest=async(jobId:string)=>sha256(Buffer.from(JSON.stringify((await reader.query(`SELECT player_id,game_id,cutoff::text,state,reasons,flags,sample_size,history,history_gaps\n  FROM fs138.feature_values WHERE job_id=$1 ORDER BY player_id,game_id`,[jobId])).rows)));\n const measure=async(season:number,trialMode:\"cold\"|\"warm\",trial:number)=>{\n  const client=trialMode===\"cold\"?await openWriter():writer;\n  const before=queryCounts.writer;\n  const started=performance.now();\n  let entry:Record<string,unknown>;\n  try{\n   const result=await runDerivedJob(client,\"features\",{season,mode},code);\n   const measuredMs=performance.now()-started;\n   entry={season,trialMode,trial,...result,measuredMs,queries:queryCounts.writer-before,deadlineMs:120000,headroomLimitMs:84000,\n    verdict:result.status===\"succeeded\"&&measuredMs<=84000?\"pass\":\"fail\"};\n   if(result.status===\"succeeded\")entry.resultContentSha256=await digest(result.jobId);\n  }catch(error){entry={season,trialMode,trial,status:\"failed\",error:String(error),measuredMs:performance.now()-started,queries:queryCounts.writer-before,verdict:\"fail\"};}\n  trials.push(entry);await save();console.log(JSON.stringify(entry));\n  if(entry.status!==\"succeeded\")throw new Error(\"feature-trial-failed-stop-before-connection-reuse\");\n };\n // Absolute target: alternating cold/warm, three full recomputations of each.\n // No optimization comparison is being made, so this is not an ABBA claim.\n for(let trial=1;trial<=3;trial++)for(const trialMode of [\"cold\",\"warm\"] as const)await measure(2025,trialMode,trial);\n for(const season of [2021,2022,2023,2024]){\n  const before=queryCounts.writer;\n  const result=await runDerivedJob(writer,\"features\",{season,mode},code);\n  qualification.push({kind:\"features\",season,...result,queries:queryCounts.writer-before});await save();\n }\n for(const season of [2021,2022,2023,2024,2025]){\n  const before=queryCounts.writer;\n  const result=await runDerivedJob(writer,\"labels\",{season,mode},code);\n  qualification.push({kind:\"labels\",season,...result,queries:queryCounts.writer-before});await save();\n }\n // Exercise the persistent writer well beyond the generic-plan threshold.\n for(let trial=4;trial<=6;trial++)await measure(2025,\"warm\",trial);\n const strict=await runDerivedJob(writer,\"features\",{season:2025,mode:\"strict-point-in-time-v1\"},code);\n report.strictComparison=strict;\n report.coverage=(await reader.query(`WITH latest_features AS (\n   SELECT DISTINCT ON(player_id,game_id) * FROM fs138.feature_values WHERE evidence_mode=$1 ORDER BY player_id,game_id,checkpoint DESC,computed_at DESC\n  ),latest_labels AS (\n   SELECT DISTINCT ON(player_id,game_id) * FROM fs138.outcome_labels WHERE evidence_mode=$1 ORDER BY player_id,game_id,label_cutoff DESC,known_at DESC\n  ) SELECT f.season,count(*)::integer AS candidates,count(*) FILTER(WHERE f.state='usable')::integer AS usable_features,\n    count(*) FILTER(WHERE l.state='usable')::integer AS usable_labels,\n    count(*) FILTER(WHERE f.state='usable' AND l.state='usable')::integer AS usable_both,\n    count(*) FILTER(WHERE f.state='usable' AND f.sample_size BETWEEN 2 AND 4)::integer AS sample_2_4,\n    count(*) FILTER(WHERE f.state='usable' AND f.sample_size BETWEEN 5 AND 8)::integer AS sample_5_8,\n    count(*) FILTER(WHERE f.state='usable' AND f.sample_size BETWEEN 9 AND 16)::integer AS sample_9_16\n   FROM latest_features f LEFT JOIN latest_labels l USING(player_id,game_id) GROUP BY f.season ORDER BY f.season`,[mode])).rows;\n report.labelRefusalReasons=(await reader.query(`SELECT reason,count(*)::integer AS n FROM fs138.outcome_labels l CROSS JOIN LATERAL unnest(l.reasons) reason GROUP BY reason ORDER BY reason`)).rows;\n report.eventTimeLeaks=(await reader.query(`SELECT count(*)::integer AS n FROM fs138.feature_values f CROSS JOIN LATERAL jsonb_array_elements(f.history) h\n  WHERE h->>'gameId'=f.game_id OR (h->>'kickoff')::timestamptz>=f.cutoff`)).rows[0].n;\n report.lineage=(await reader.query(`SELECT (SELECT count(*)::integer FROM fs138.feature_inputs) AS feature_snapshot_links,\n  (SELECT count(*)::integer FROM fs138.label_inputs) AS label_snapshot_links,(SELECT count(*)::integer FROM fs138.source_snapshots) AS snapshots`)).rows[0];\n const content=new Set(trials.filter(t=>t.status===\"succeeded\").map(t=>t.resultContentSha256));\n report.repeatedOutputParity=content.size===1;\n report.featureTargetVerdict=trials.length===9&&trials.every(t=>t.verdict===\"pass\"&&t.queries===8)&&content.size===1?\"pass\":\"fail\";\n report.verdict=report.featureTargetVerdict===\"pass\"&&report.eventTimeLeaks===0?\"step-4-real-correctness-and-season-feature-target-pass\":\"fail\";\n });}\ncatch(error){report.verdict=\"failed\";report.error=String(error);throw error;}\nfinally{report.peakRssBytes=process.resourceUsage().maxRSS*1024;await save();}\nconsole.log(JSON.stringify({report:path.pathname,verdict:report.verdict,featureTargetVerdict:report.featureTargetVerdict}));\nif(report.verdict!==\"step-4-real-correctness-and-season-feature-target-pass\")process.exitCode=1;\n"
+  },
+  "fixtureStorageBytes": 536870912
+}

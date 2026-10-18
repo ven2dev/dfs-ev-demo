@@ -1,0 +1,106 @@
+{
+  "issue": 138,
+  "step": 4,
+  "recordedAt": "2026-10-17T19:53:27.391089+00:00",
+  "verdict": "pass",
+  "checks": [
+    {
+      "suite": "derived",
+      "exitCode": 0,
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "--test",
+        "tests/feature-store/derived.check.mts"
+      ],
+      "evidence": "docs/evidence/feature-store-138/step-4-integration.json",
+      "stdout": "\u25b6 #138 derived jobs: synthetic event-time, qualification, correction and budgets\n  \u2714 SQL excludes target, equal-cutoff and future events in BOTH evidence modes (169.001208ms)\n  \u2714 missing participation is an unavailable NULL label, and zero is preserved when qualified (53.373041ms)\n  \u2714 synthetic corrections preserve old labels and never put the corrected target outcome into its features (149.848333ms)\n  \u2714 ambiguous stats give an unavailable label while the earlier valid value stays visibly stale (16.934834ms)\n  \u2714 equal-time source rivals stay ambiguous and an unavailable feature preserves its last valid history (86.141792ms)\n  \u2714 only pipeline writes derived rows, timestamps are DB clocks and lineage is snapshot level (9.872875ms)\n  \u2714 feature SQL statement count stays constant from 2 to 65 QBs (13821.957583ms)\n  \u2714 history and gap aggregates execute once for the complete cohort (13865.6725ms)\n  \u2714 derived publication rollback leaves no partial outputs or lineage (19.67075ms)\n\u2714 #138 derived jobs: synthetic event-time, qualification, correction and budgets (29184.784291ms)\n\u2139 tests 10\n\u2139 suites 0\n\u2139 pass 10\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 29341.067041\n",
+      "stderr": ""
+    },
+    {
+      "suite": "ingest",
+      "exitCode": 0,
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "--test",
+        "tests/feature-store/ingest.check.mts"
+      ],
+      "evidence": "docs/evidence/feature-store-138/step-4-ingestion-regression.json",
+      "stdout": "\u25b6 #138 ingestion and bitemporal selection\n  \u2714 trusted pipeline ingests atomically and retry does not republish (40.985208ms)\n  \u2714 strict cutoff is inclusive for both clocks and refuses either future clock (10.2025ms)\n  \u2714 reconstruction keeps its warning and never admits knowledge after its checkpoint (3.55725ms)\n  \u2714 corrupt download never replaces a valid snapshot or stores refused bytes (5.841625ms)\n  \u2714 later correction changes current selection but not the earlier checkpoint (14.4535ms)\n  \u2714 equal-time rivals are ambiguous and unknown normalizer versions are excluded (6.255292ms)\n  \u2714 failed publication rolls back normalized/snapshot rows and records a failed job (22.824792ms)\n  \u2714 SQL work stays fixed when normalized row count increases (14.435833ms)\n\u2714 #138 ingestion and bitemporal selection (777.384042ms)\n\u2139 tests 9\n\u2139 suites 0\n\u2139 pass 9\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 930.441084\n",
+      "stderr": ""
+    },
+    {
+      "suite": "schema",
+      "exitCode": 0,
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "--test",
+        "tests/feature-store/schema.check.mts"
+      ],
+      "evidence": "docs/evidence/feature-store-138/step-4-schema-regression.json",
+      "stdout": "\u25b6 #138 proposal: main isolation, trusted writer, database clocks and idempotent jobs\n  \u2714 proposal application rolls back cleanly and leaves main unchanged (258.342667ms)\n  \u2714 real non-pipeline login cannot forge, overwrite, delete or escalate (34.935875ms)\n  \u2714 pipeline inserts use DB knowledge clocks and cannot later be backdated (9.722042ms)\n  \u2714 backdated valid-time rights do not enter an earlier knowledge-time answer (3.495375ms)\n  \u2714 only pipeline logins publish normalized values and normalized rows are immutable (8.547208ms)\n  \u2714 concurrent idempotent jobs have one executor and distinct policies remain distinct (5.455083ms)\n  \u2714 job completion is DB-stamped and terminal jobs cannot be rewritten (3.037208ms)\n  \u2714 proposal leaves main catalog and frozen migration hashes unchanged (58.408167ms)\n\u2714 #138 proposal: main isolation, trusted writer, database clocks and idempotent jobs (993.643875ms)\n\u2139 tests 9\n\u2139 suites 0\n\u2139 pass 9\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 1095.900042\n",
+      "stderr": ""
+    },
+    {
+      "suite": "unit",
+      "exitCode": 0,
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "vitest.node.config.ts",
+        "tests/predictive/featureStoreDerived.test.ts",
+        "tests/predictive/featureStoreNormalize.test.ts",
+        "tests/predictive/featureStoreObjectStore.test.ts",
+        "--reporter=json",
+        "--outputFile=docs/evidence/feature-store-138/step-4-unit-tests.json"
+      ],
+      "stdout": "JSON report written to /Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138/docs/evidence/feature-store-138/step-4-unit-tests.json\n",
+      "stderr": "(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:\n  - ESM syntax in a file loaded as CommonJS (vitest.node.config.ts:1:1). Use a `.mjs` extension or set `\"type\": \"module\"` in the closest package.json\nSet `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.\nThe plugin \"vite-tsconfig-paths\" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.\n"
+    },
+    {
+      "suite": "typecheck",
+      "exitCode": 0,
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "suite": "lint",
+      "exitCode": 0,
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "node_modules/eslint/bin/eslint.js",
+        "src/lib/featureStore/derived.ts",
+        "scripts/feature-store",
+        "tests/feature-store/derived.check.mts",
+        "tests/feature-store/schema.check.mts",
+        "tests/predictive/featureStoreDerived.test.ts"
+      ],
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "codeHashes": {
+    "db/proposals/138_feature_store.sql": "1f6f3caab3ad1795df0720ce4568d2335432d46dba0344ed92ff29c982548076",
+    "src/lib/featureStore/derived.ts": "e6b7a56522f71ec80a191101b2a6ed0ceabafd222b7ef4f35abd822f8eb27b34",
+    "scripts/feature-store/harness.ts": "117de42e8a0e2f756b2dcd2fe12c8dde90a1066ed942ee8b04c195cb67d1bf80",
+    "scripts/feature-store/derived-spike.ts": "c1319ffc1f75f03fab2082437a747d3c374206561d61efa04c6db4d9f1b8469d",
+    "scripts/feature-store/derived-cold.ts": "0495f0014796bc2ea08bce3da23fa9b289a49a391c9b46f3362e94ced86840eb",
+    "scripts/feature-store/profile-derived.ts": "ac0163a77cca239faa5f196afa2d9c4c02c55e837fea30278baab6ac1b552608",
+    "tests/feature-store/derived.check.mts": "354598f71d954a0c5210c1da025dbb6b594f9f82ece984c010c27d93017b5b2a",
+    "tests/feature-store/schema.check.mts": "0162470fcc9921df253f74da35de7f456cfda860b641fd2d9832990e80dcf198",
+    "tests/feature-store/ingest.check.mts": "cff0e10f27f7de1303a472bc4a5d13460107997694553cfceae2ca36fd4fc472",
+    "tests/predictive/featureStoreDerived.test.ts": "5f53b1be2999ce0e88ac17d47efcd5d0546fd46a54ef5cedca3cb53ed3339f93",
+    "compose.feature-store-spike.yml": "65abd96dd3849676b69485c0c0186fd100b31aa5545177dfe82a022c1884b8e8",
+    "package.json": "9134d88236c81b78b772aabea5d2ce9a395fb3f71d872b797fa3f08954e4e64f",
+    "package-lock.json": "f93f6fe9bcc5e4347ea923542004efe6c1182af76d80e1e9fdafbf18f7e96570"
+  }
+}

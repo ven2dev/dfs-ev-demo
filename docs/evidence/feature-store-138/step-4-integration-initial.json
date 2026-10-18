@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "issue": 138,
+  "step": 4,
+  "recordedAt": "2026-10-17T15:55:00.139Z",
+  "fixture": "synthetic-only; includes owner-admin historical clock setup and fabricated corrections",
+  "codeHashes": {
+    "db/proposals/138_feature_store.sql": "805ea3cc592513a73abe0d13345597e9138a035e8b213d2334008d1c90d98f45",
+    "src/lib/featureStore/derived.ts": "cade4f58a538644ccf7b97bf5396c22a2b2f26902ed1e480cc9ba6d29aca5993",
+    "tests/feature-store/derived.check.mts": "3d780aad1ae784ad053a1a56a6fa5c740501fe12b447d3eb628a30fdd7616c64"
+  },
+  "verdict": "pass",
+  "probes": [
+    {
+      "name": "SQL excludes target, equal-cutoff and future events in BOTH evidence modes",
+      "verdict": "pass",
+      "details": {
+        "sameGameLeaks": 0,
+        "equalCutoffIncluded": false,
+        "futureIncluded": false,
+        "statements": 7,
+        "sample": 16
+      }
+    },
+    {
+      "name": "missing participation is an unavailable NULL label, and zero is preserved when qualified",
+      "verdict": "pass",
+      "details": {
+        "missingValue": null,
+        "qualifiedZero": 0
+      }
+    },
+    {
+      "name": "synthetic corrections preserve old labels and never put the corrected target outcome into its features",
+      "verdict": "pass",
+      "details": {
+        "synthetic": true,
+        "oldLabel": 9999,
+        "correctedLabel": 350,
+        "reconstructionPriorCorrection": 700,
+        "strictPriorValue": 118,
+        "eventMembershipEqual": true
+      }
+    },
+    {
+      "name": "ambiguous stats give an unavailable label while the earlier valid value stays visibly stale",
+      "verdict": "pass",
+      "details": {
+        "unavailableValue": null,
+        "displayed": 350,
+        "stale": true,
+        "superseded": true
+      }
+    },
+    {
+      "name": "only pipeline writes derived rows, timestamps are DB clocks and lineage is snapshot level",
+      "verdict": "pass",
+      "details": {
+        "snapshotLinks": 144,
+        "badClock": 0,
+        "nonPipelineMutationRefusals": 13
+      }
+    },
+    {
+      "name": "feature SQL statement count stays constant from 2 to 65 QBs",
+      "verdict": "pass",
+      "details": {
+        "smallExamples": 8,
+        "largeExamples": 260,
+        "smallQueries": 7,
+        "largeQueries": 7
+      }
+    },
+    {
+      "name": "derived publication rollback leaves no partial outputs or lineage",
+      "verdict": "pass",
+      "details": {
+        "partialLabels": 0,
+        "failedJob": 1
+      }
+    }
+  ]
+}

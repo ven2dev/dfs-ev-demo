@@ -15,7 +15,8 @@ import { finishJob, startJob } from "../../src/lib/featureStore/jobs.ts";
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
 const proposal = await readFile(new URL("../../db/proposals/138_feature_store.sql", import.meta.url), "utf8");
 const tables = ["source_profiles", "rights_decisions", "job_runs", "source_snapshots", "job_inputs",
-  "norm_schedule", "norm_player_game_stats", "norm_identity", "norm_participation"];
+  "norm_schedule", "norm_player_game_stats", "norm_identity", "norm_participation",
+  "feature_values", "feature_inputs", "outcome_labels", "label_inputs"];
 const identity = { kind: "normalize" as const, codeSha: "a".repeat(40), policySha256: digest("policy"), inputSetSha256: digest("inputs") };
 const codePaths = ["db/proposals/138_feature_store.sql", "src/lib/featureStore/objectStore.ts",
   "src/lib/featureStore/localObjectStore.ts", "src/lib/featureStore/jobs.ts", "tests/feature-store/schema.check.mts"];

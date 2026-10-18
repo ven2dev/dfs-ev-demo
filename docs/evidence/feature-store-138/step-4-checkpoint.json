@@ -1,0 +1,369 @@
+{
+  "schemaVersion": 1,
+  "issue": 138,
+  "step": 4,
+  "recordedAt": "2026-10-17T20:03:35.917575+00:00",
+  "baseCommit": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+  "branch": "feature/dfsEV-138-feature-store-spike",
+  "step3Commit": "b9b6f81",
+  "implementation": "step 4 uncommitted; owner review/commit approval pending; no push",
+  "verdict": "pass for step-4 correctness and local one-season feature target; full #138 acceptance incomplete",
+  "stopBeforeStep5": true,
+  "remoteMainObserved": "12290d8e4c2aa87567bf422b58097b2ef28e7f89",
+  "mainIntegration": "pending; no newer-main integrated validation claimed",
+  "pattern": "trusted typed set-based ELT; one cohort materialization; immutable outputs; snapshot lineage",
+  "scope": "no JSON-union per-example reads, no source-byte reads in derived jobs, no reader table locks, no cache",
+  "codeIdentity": {
+    "gitSha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+    "contentSha256": "2cab08ee6bdba08e3421af305a103793951a516239b7f33c9e11b47b28baaddb"
+  },
+  "benchmarkCodeHashes": {
+    "src/lib/featureStore/derived.ts": "e6b7a56522f71ec80a191101b2a6ed0ceabafd222b7ef4f35abd822f8eb27b34",
+    "db/proposals/138_feature_store.sql": "1f6f3caab3ad1795df0720ce4568d2335432d46dba0344ed92ff29c982548076",
+    "scripts/feature-store/harness.ts": "117de42e8a0e2f756b2dcd2fe12c8dde90a1066ed942ee8b04c195cb67d1bf80",
+    "scripts/feature-store/derived-spike.ts": "c1319ffc1f75f03fab2082437a747d3c374206561d61efa04c6db4d9f1b8469d",
+    "scripts/feature-store/derived-cold.ts": "0495f0014796bc2ea08bce3da23fa9b289a49a391c9b46f3362e94ced86840eb",
+    "src/lib/featureStore/ingest.ts": "11d1bf28eb57dd95c2fb18346534ef3ce718cbf266565b485da6e844547cad09",
+    "src/lib/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "src/lib/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7",
+    "package-lock.json": "f93f6fe9bcc5e4347ea923542004efe6c1182af76d80e1e9fdafbf18f7e96570"
+  },
+  "validationCodeHashes": {
+    "db/proposals/138_feature_store.sql": "1f6f3caab3ad1795df0720ce4568d2335432d46dba0344ed92ff29c982548076",
+    "src/lib/featureStore/derived.ts": "e6b7a56522f71ec80a191101b2a6ed0ceabafd222b7ef4f35abd822f8eb27b34",
+    "scripts/feature-store/harness.ts": "117de42e8a0e2f756b2dcd2fe12c8dde90a1066ed942ee8b04c195cb67d1bf80",
+    "scripts/feature-store/derived-spike.ts": "c1319ffc1f75f03fab2082437a747d3c374206561d61efa04c6db4d9f1b8469d",
+    "scripts/feature-store/derived-cold.ts": "0495f0014796bc2ea08bce3da23fa9b289a49a391c9b46f3362e94ced86840eb",
+    "scripts/feature-store/profile-derived.ts": "ac0163a77cca239faa5f196afa2d9c4c02c55e837fea30278baab6ac1b552608",
+    "tests/feature-store/derived.check.mts": "354598f71d954a0c5210c1da025dbb6b594f9f82ece984c010c27d93017b5b2a",
+    "tests/feature-store/schema.check.mts": "0162470fcc9921df253f74da35de7f456cfda860b641fd2d9832990e80dcf198",
+    "tests/feature-store/ingest.check.mts": "cff0e10f27f7de1303a472bc4a5d13460107997694553cfceae2ca36fd4fc472",
+    "tests/predictive/featureStoreDerived.test.ts": "5f53b1be2999ce0e88ac17d47efcd5d0546fd46a54ef5cedca3cb53ed3339f93",
+    "compose.feature-store-spike.yml": "65abd96dd3849676b69485c0c0186fd100b31aa5545177dfe82a022c1884b8e8",
+    "package.json": "9134d88236c81b78b772aabea5d2ce9a395fb3f71d872b797fa3f08954e4e64f",
+    "package-lock.json": "f93f6fe9bcc5e4347ea923542004efe6c1182af76d80e1e9fdafbf18f7e96570"
+  },
+  "evidence": {
+    "step-4-ingestion-regression.json": {
+      "path": "docs/evidence/feature-store-138/step-4-ingestion-regression.json",
+      "sha256": "a9c65ac6655c9f21b3d73f632fd261b2db285964d63bd977d0424a260bbbbf99"
+    },
+    "step-4-inline-code.json": {
+      "path": "docs/evidence/feature-store-138/step-4-inline-code.json",
+      "sha256": "56c3044e724e8d0120372c7fedd127d25605d865b0d07bd2557a92045212f7cd"
+    },
+    "step-4-integration-initial.json": {
+      "path": "docs/evidence/feature-store-138/step-4-integration-initial.json",
+      "sha256": "d2e7a8f6167d55e9a08431dd55659222967f30e109f53fa4ebe59070a880a27a"
+    },
+    "step-4-integration.json": {
+      "path": "docs/evidence/feature-store-138/step-4-integration.json",
+      "sha256": "004458c420431f3d0df4e857e9d9357ec2c6cf8c8c8d551da50352ec71c2f3c2"
+    },
+    "step-4-plan-baseline-code.json": {
+      "path": "docs/evidence/feature-store-138/step-4-plan-baseline-code.json",
+      "sha256": "1ff39fc2f6a458655ddadef231ef981d1ba06e74b039602df06e953f8f11b5ca"
+    },
+    "step-4-plan-probe-timing-failure.json": {
+      "path": "docs/evidence/feature-store-138/step-4-plan-probe-timing-failure.json",
+      "sha256": "6f8015a027884bbd7cb04aed9e43b61b3be03787519f385429ef1e23361bacd1"
+    },
+    "step-4-query-profile.json": {
+      "path": "docs/evidence/feature-store-138/step-4-query-profile.json",
+      "sha256": "e358252ae40f396cabb3b0b918cea268157b1f5a2c3325e00d490ddb7bfbc9df"
+    },
+    "step-4-real-derived-connection-cold.json": {
+      "path": "docs/evidence/feature-store-138/step-4-real-derived-connection-cold.json",
+      "sha256": "c339c0f61f0d11c1e9a8712fd28c4065cd3dc24ffeea143bead42e966bc5ee3c"
+    },
+    "step-4-real-derived-initial.json": {
+      "path": "docs/evidence/feature-store-138/step-4-real-derived-initial.json",
+      "sha256": "bca95682257c9a31bb1d3eb897c7997c91c95c054c17f1216251a3687471be00"
+    },
+    "step-4-real-derived-inline-failure.json": {
+      "path": "docs/evidence/feature-store-138/step-4-real-derived-inline-failure.json",
+      "sha256": "eb0ba8ba4a4bd1b93253951e57457915bb3b3806955ab05d6820387b48f2aae9"
+    },
+    "step-4-real-derived-plan-timeout.json": {
+      "path": "docs/evidence/feature-store-138/step-4-real-derived-plan-timeout.json",
+      "sha256": "0adcb8e817b1c34b3889acda9c47a1b8cb9ee2247e615f63b36d7aa5a71ce270"
+    },
+    "step-4-real-derived-storage-failure.json": {
+      "path": "docs/evidence/feature-store-138/step-4-real-derived-storage-failure.json",
+      "sha256": "59471e72bf71f83cbfd6c80beef8e6949d9050033fcfdc7de2580c5877d7b56e"
+    },
+    "step-4-real-derived-warm-plan-failure.json": {
+      "path": "docs/evidence/feature-store-138/step-4-real-derived-warm-plan-failure.json",
+      "sha256": "ac8642b8f0c3c16b06160f1e283952cb6a8594eaf357d4f21145985f89786d7d"
+    },
+    "step-4-real-derived.json": {
+      "path": "docs/evidence/feature-store-138/step-4-real-derived.json",
+      "sha256": "808850c59f8cd399c396b43a0ef2c09c9c61aecd7cb11b0dd7d9117ca6412169"
+    },
+    "step-4-schema-regression.json": {
+      "path": "docs/evidence/feature-store-138/step-4-schema-regression.json",
+      "sha256": "d22d2588ef6fb9ae44a620294cd61173e9196a57a46faff45a618d818a9a3594"
+    },
+    "step-4-unit-tests.json": {
+      "path": "docs/evidence/feature-store-138/step-4-unit-tests.json",
+      "sha256": "7b3bb544bffc21a0c70ad7cea4d30799914b6bf25903acc38eb07731904ab47d"
+    },
+    "step-4-validation.json": {
+      "path": "docs/evidence/feature-store-138/step-4-validation.json",
+      "sha256": "b2e31b88c27a3af7765cbf348c9d148f0899642136b079ff941f72ef6cba1f97"
+    },
+    "step-4-warm-plan-code.json": {
+      "path": "docs/evidence/feature-store-138/step-4-warm-plan-code.json",
+      "sha256": "1cc00bd5ffd7d989950dd0a440fa01c675ca42736bd38d50eb81251cc2d20887"
+    }
+  },
+  "checks": {
+    "derivedPostgresql": {
+      "verdict": "pass",
+      "probes": 9,
+      "parentTests": 1
+    },
+    "ingestionPostgresql": {
+      "verdict": "pass",
+      "probes": 8,
+      "parentTests": 1
+    },
+    "schemaPostgresql": {
+      "verdict": "pass",
+      "probes": 8,
+      "parentTests": 1
+    },
+    "focusedUnit": {
+      "verdict": "pass",
+      "tests": 15
+    },
+    "typecheck": {
+      "verdict": "pass",
+      "exitCode": 0
+    },
+    "lint": {
+      "verdict": "pass",
+      "exitCode": 0
+    },
+    "whitespace": {
+      "verdict": "pass",
+      "scope": "tracked and untracked changed text"
+    },
+    "documentationLinks": {
+      "verdict": "pass",
+      "path": "docs/feature-store-spike.md"
+    },
+    "frozenMigrations": {
+      "verdict": "pass",
+      "count": 11,
+      "hashes": {
+        "db/migrations/0001_pre_41_baseline.sql": "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98",
+        "db/migrations/0002_market_observation_history.sql": "df35a458b5d6e3f26cbbdd84d8cfa65244e865dd6963b6f0e1f8f5f0e8dd7297",
+        "db/migrations/0003_predictive_evidence.sql": "ec72796bc69169e8a8a487c2dfd2240c86a4dc94c4ab74b29e4c05c83df9e695",
+        "db/migrations/0004_creator_corpus_projection.sql": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba",
+        "db/migrations/0005_predictive_source_claims.sql": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a",
+        "db/migrations/0006_predictive_source_bindings.sql": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19",
+        "db/migrations/0007_predictive_unavailable_bindings.sql": "fc10fe50cb8913c2c755db8ff15c0aa3d40e49b5a92d2471fff86c89c4409679",
+        "db/migrations/0008_predictive_source_witnesses.sql": "ea824b2f2b943feafc576ed0cb7130f0f78ea37376859995f7a1fa0b2e139cfb",
+        "db/migrations/0009_predictive_source_decisions.sql": "f861c1afd210c65886628581b78a1f135bb950f6b5e5d00989d065930a49ea31",
+        "db/migrations/0010_predictive_source_consumers.sql": "813ca0e75d014bc5e38c9d454c481a479890f1c43e16128400442da6ad57ee35",
+        "db/migrations/0011_predictive_capture_ingestion_clock.sql": "3908fa33bcb79301a870dca9a6c18dddacf755580a303025610d20bb20716d67"
+      }
+    },
+    "evidenceHashMatch": {
+      "verdict": "pass",
+      "scope": "benchmark/validation implementation hashes plus source manifest and step-3 wire parity"
+    }
+  },
+  "deterministicWork": {
+    "ingestionStatements": 10,
+    "derivedStatements": 8,
+    "testedExampleCounts": [
+      8,
+      260
+    ],
+    "contextQueriesPerJob": 1,
+    "perExampleQueries": 0,
+    "derivedSourceByteReads": 0,
+    "historyAggregateExecutions": 1,
+    "gapAggregateExecutions": 1,
+    "rightsDeliveryBudget": "pending step 5: one batched authorization plus one batched pre-delivery query"
+  },
+  "featureTarget": {
+    "fixtureSeason": 2025,
+    "examples": 1948,
+    "coldTrials": 3,
+    "warmTrials": 6,
+    "coldBoundary": "fresh Node process + restricted DB connection + complete job; includes startup",
+    "warmBoundary": "same Node process/restricted connection, full recomputation; last three after all-season jobs",
+    "osDatabaseCaches": "not flushed; no cold-disk claim",
+    "coldMs": [
+      3513.12875,
+      3555.726499999997
+    ],
+    "warmMs": [
+      3387.8487499999974,
+      3576.5437080000047
+    ],
+    "deadlineMs": 120000,
+    "headroomLimitMs": 84000,
+    "verdict": "pass",
+    "resultContentSha256": "315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9",
+    "comparison": "absolute target only; no relative speedup claim or ABBA comparison verdict"
+  },
+  "capacityTargets": [
+    {
+      "operation": "ingest one season file",
+      "deadlineMs": 60000,
+      "headroomLimitMs": 42000,
+      "verdict": "pending-repeated-network-cold-warm-trials"
+    },
+    {
+      "operation": "one-season feature job",
+      "deadlineMs": 120000,
+      "headroomLimitMs": 84000,
+      "verdict": "pass",
+      "fixture": "2025 full roster candidate season; three fresh-process cold plus six warm"
+    },
+    {
+      "operation": "five-season dataset build",
+      "deadlineMs": 30000,
+      "headroomLimitMs": 21000,
+      "verdict": "not-measured"
+    },
+    {
+      "operation": "prediction p95",
+      "deadlineMs": 300,
+      "headroomLimitMs": 210,
+      "verdict": "not-measured"
+    }
+  ],
+  "realQualification": {
+    "evidenceMode": "retrospective-reconstruction-v1",
+    "flags": [
+      "historical-availability-unverified"
+    ],
+    "coverageBySeason": [
+      {
+        "season": 2021,
+        "candidates": 1916,
+        "usable_features": 780,
+        "usable_labels": 655,
+        "usable_both": 507,
+        "sample_2_4": 337,
+        "sample_5_8": 215,
+        "sample_9_16": 228
+      },
+      {
+        "season": 2022,
+        "candidates": 1838,
+        "usable_features": 1204,
+        "usable_labels": 633,
+        "usable_both": 595,
+        "sample_2_4": 291,
+        "sample_5_8": 279,
+        "sample_9_16": 634
+      },
+      {
+        "season": 2023,
+        "candidates": 1812,
+        "usable_features": 1380,
+        "usable_labels": 663,
+        "usable_both": 632,
+        "sample_2_4": 212,
+        "sample_5_8": 345,
+        "sample_9_16": 823
+      },
+      {
+        "season": 2024,
+        "candidates": 1867,
+        "usable_features": 1482,
+        "usable_labels": 664,
+        "usable_both": 644,
+        "sample_2_4": 124,
+        "sample_5_8": 243,
+        "sample_9_16": 1115
+      },
+      {
+        "season": 2025,
+        "candidates": 1948,
+        "usable_features": 1536,
+        "usable_labels": 663,
+        "usable_both": 633,
+        "sample_2_4": 135,
+        "sample_5_8": 152,
+        "sample_9_16": 1249
+      }
+    ],
+    "totals": {
+      "candidates": 9381,
+      "usable_features": 6382,
+      "usable_labels": 3278,
+      "usable_both": 3011
+    },
+    "evaluationSeasonUsablePairs": 2504,
+    "strict2025": {
+      "rows": 1948,
+      "usable": 0,
+      "unavailable": 1948,
+      "max_sample": 0
+    },
+    "eventTimeLeaks": 0,
+    "lineage": {
+      "feature_snapshot_links": 430608,
+      "label_snapshot_links": 150096,
+      "snapshots": 16
+    },
+    "corrections": "real fixture contains no fabricated changes; correction scenario confined to synthetic PostgreSQL probes",
+    "persistentDatabaseOutputs": false,
+    "durableArtifacts": "source/job/lineage receipts, three stratified audit examples and hashes; scratch databases dropped",
+    "evaluationRun": false,
+    "datasetModelPredictionProduced": false
+  },
+  "resourceBoundary": {
+    "postgresTmpfsBytes": 2147483648,
+    "override": "compose.feature-store-spike.yml",
+    "mainDefaultTmpfsBytes": 536870912,
+    "initialStorageFailureRetained": true,
+    "lastTrialDatabaseBytes": 199988927,
+    "cumulativeTemporaryWriteBytes": 2446488895,
+    "temporaryWriteMeaning": "cumulative writes, not simultaneous disk occupancy",
+    "nodePeakRssBytes": 570867712,
+    "dockerMemoryBytes": 8319238144,
+    "dockerCpus": 12,
+    "hostedCapacity": "not demonstrated"
+  },
+  "fullCorrectnessProbes": {
+    "pipelineOnlyWrites": "pass for normalized/features/labels and snapshot lineage; future datasets/models pending",
+    "knowledgeClocks": "pass; actual clocks never backdated in real data; owner-only historical clocks synthetic",
+    "eventTimeNoLookAhead": "pass in SQL in both modes; own-game/equal-cutoff/future exclusion; real output leak count zero",
+    "unavailableLabels": "pass for missing participation, ambiguous stats and equal-time rivals; NULL, never fabricated zero",
+    "qualifiedZero": "pass",
+    "syntheticCorrectionAndLastValid": "pass; 9999 to 350 then ambiguity; history as-of preserved; stale/superseded flags for label and feature",
+    "corruptDownload": "step-3 ingestion regression pass",
+    "legalDeletionAndInvalidation": "not implemented; step 5"
+  },
+  "failedAttempts": [
+    "initial timeout matrix invalid: client timeout left backend running, later trials overlapped; retained and stopped",
+    "real 84s SQL ceiling miss after transport alignment; retained",
+    "initial calls passed but later season timed out; six-call evidence alone rejected",
+    "inlining alone failed; isolated profiling identified repeated cohort aggregates",
+    "512 MiB disposable filesystem filled after retained versions; explicit 2 GiB fixture measured",
+    "timed EXPLAIN loop-count probe exceeded default harness timeout; per-node timing disabled, existing job ceiling used",
+    "connection-cold matrix superseded by exact fresh-process boundary; retained"
+  ],
+  "remaining": [
+    "step 5 datasets, rights authorization/delivery, mandatory deletion/invalidation, orphan/temp cleanup and audit",
+    "step 6 walk-forward scoring and local predictions",
+    "step 7 remaining repeated capacity gates and complete work budgets",
+    "step 8 external confirmations and final acceptance audit",
+    "main integration before final PR"
+  ],
+  "externalAndSourceRisks": [
+    "historical availability unverified; strict historical usable output absent",
+    "2025 Wilson participation evidence gap remains unavailable",
+    "schedule upstream license chain unresolved beyond release declaration; no commercial-clearance claim",
+    "GCS blocked until owner approves Blaze, budget and dedicated pipeline account; app admin key forbidden",
+    "Neon timeout/configuration not confirmed; no hosted DB access"
+  ]
+}

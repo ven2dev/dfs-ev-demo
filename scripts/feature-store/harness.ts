@@ -9,7 +9,7 @@ import { createScratchHarness } from "../../tests/db/scratch.mjs";
 import { parseTestDatabaseUrl } from "../../tests/db/target.mts";
 
 export const withFeatureStoreDatabase = async <T>(run: (context: {
-  admin: Client; writer: Client; reader: Client; queryCounts: { writer: number; reader: number };
+  admin: Client; writer: Client; reader: Client; openWriter: () => Promise<Client>; createWriterConfig: () => Promise<ClientConfig>; queryCounts: { writer: number; reader: number };
 }) => Promise<T>): Promise<T> => {
   const harness = await createScratchHarness(process.env);
   const names: string[] = [];
@@ -27,12 +27,15 @@ export const withFeatureStoreDatabase = async <T>(run: (context: {
           await admin.query("COMMIT");
         } catch (error) { await admin.query("ROLLBACK"); throw error; }
         const queryCounts = { writer: 0, reader: 0 };
-        const login = async (role: "writer" | "reader") => {
+        const loginConfig = async (role: "writer" | "reader") => {
           const name = "fs138_job_" + randomBytes(8).toString("hex");
           await admin.query(`CREATE ROLE ${name} LOGIN PASSWORD 'fs138_throwaway' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS`);
           names.push(name);
           await admin.query(`GRANT ${role === "writer" ? "fs138_pipeline_writer" : "fs138_reader"} TO ${name}`);
-          const client = new Client({ ...config, user: name, password: "fs138_throwaway" });
+          return { ...config, user: name, password: "fs138_throwaway" };
+        };
+        const login = async (role: "writer" | "reader") => {
+          const client = new Client(await loginConfig(role));
           clients.push(client);
           await client.connect();
           let busy = false;
@@ -45,7 +48,7 @@ export const withFeatureStoreDatabase = async <T>(run: (context: {
             };
           } });
         };
-        return await run({ admin, writer: await login("writer"), reader: await login("reader"), queryCounts });
+        return await run({ admin, writer: await login("writer"), reader: await login("reader"), openWriter: () => login("writer"), createWriterConfig: () => loginConfig("writer"), queryCounts });
       } finally { await Promise.all(clients.map((client) => client.end())); }
     });
   } finally {

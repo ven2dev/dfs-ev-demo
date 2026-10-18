@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "issue": 138,
+  "step": 4,
+  "recordedAt": "2026-10-17T15:56:38.980Z",
+  "code": {
+    "gitSha": "b9b6f811f733295748f30b75408c7cf4d6ebbd65",
+    "contentSha256": "c6bbc5f50a27d8185c3bc463c4277a5fbcdd7197a5ba7784c9098993256ab02e"
+  },
+  "codeHashes": {
+    "src/lib/featureStore/derived.ts": "cade4f58a538644ccf7b97bf5396c22a2b2f26902ed1e480cc9ba6d29aca5993",
+    "db/proposals/138_feature_store.sql": "805ea3cc592513a73abe0d13345597e9138a035e8b213d2334008d1c90d98f45",
+    "scripts/feature-store/harness.ts": "55ba2f3028be47abf7c52cf465b8b9592e8aa32d33b808e3f704a3e96bbd1519",
+    "scripts/feature-store/derived-spike.ts": "c38de88583c7884b4e3999102770032fc91c7a2614b199ec37e5668aad8dac51",
+    "src/lib/featureStore/ingest.ts": "11d1bf28eb57dd95c2fb18346534ef3ce718cbf266565b485da6e844547cad09",
+    "src/lib/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "src/lib/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7",
+    "package-lock.json": "f93f6fe9bcc5e4347ea923542004efe6c1182af76d80e1e9fdafbf18f7e96570"
+  },
+  "sourceManifestSha256": "63517d4e667af249a6c8c3a4b6ea8cd72550d1afb578182510629d68ec710c38",
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin",
+    "cpus": 12,
+    "totalMemoryBytes": 19327352832
+  },
+  "fixture": "exact step-3 wire objects; all five seasons normalized in a fresh scratch DB; no synthetic corrections",
+  "evidenceMode": "retrospective-reconstruction-v1",
+  "flags": [
+    "historical-availability-unverified"
+  ],
+  "evaluationRun": false,
+  "setup": "ObjectStore reads exact pinned raw bytes for re-normalization; this is not an ingestion/network benchmark",
+  "cacheState": "cold trials use fresh restricted DB connections; warm trials reuse a connection; no app cache or job-output reuse; OS/DB buffers not flushed; one Node process",
+  "trials": [
+    {
+      "season": 2025,
+      "trialMode": "cold",
+      "trial": 1,
+      "status": "failed",
+      "error": "Error: Query read timeout",
+      "measuredMs": 40008.990333,
+      "queries": 6,
+      "verdict": "fail"
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 1,
+      "status": "failed",
+      "error": "Error: Query read timeout",
+      "measuredMs": 40009.332875,
+      "queries": 6,
+      "verdict": "fail"
+    },
+    {
+      "season": 2025,
+      "trialMode": "cold",
+      "trial": 2,
+      "status": "failed",
+      "error": "Error: Query read timeout",
+      "measuredMs": 40007.434167,
+      "queries": 6,
+      "verdict": "fail"
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 2,
+      "status": "failed",
+      "error": "error: current transaction is aborted, commands ignored until end of transaction block",
+      "measuredMs": 3973.223583999992,
+      "queries": 1,
+      "verdict": "fail"
+    },
+    {
+      "season": 2025,
+      "trialMode": "cold",
+      "trial": 3,
+      "status": "failed",
+      "error": "error: canceling statement due to user request",
+      "measuredMs": 10370.251332999993,
+      "queries": 7,
+      "verdict": "fail"
+    },
+    {
+      "season": 2025,
+      "trialMode": "warm",
+      "trial": 3,
+      "status": "failed",
+      "error": "error: current transaction is aborted, commands ignored until end of transaction block",
+      "measuredMs": 0.6255420000234153,
+      "queries": 1,
+      "verdict": "fail"
+    }
+  ],
+  "qualification": [],
+  "verdict": "failed",
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "inputs": [
+    {
+      "name": "games.csv.gz",
+      "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+      "normalizedRows": 1359
+    },
+    {
+      "name": "pbp_participation_2021.csv",
+      "sha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+      "normalizedRows": 18309
+    },
+    {
+      "name": "pbp_participation_2022.csv",
+      "sha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+      "normalizedRows": 18193
+    },
+    {
+      "name": "pbp_participation_2023.csv",
+      "sha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+      "normalizedRows": 17670
+    },
+    {
+      "name": "pbp_participation_2024.csv",
+      "sha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+      "normalizedRows": 17564
+    },
+    {
+      "name": "pbp_participation_2025.csv",
+      "sha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+      "normalizedRows": 17707
+    },
+    {
+      "name": "roster_weekly_2021.csv",
+      "sha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+      "normalizedRows": 1916
+    },
+    {
+      "name": "roster_weekly_2022.csv",
+      "sha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+      "normalizedRows": 1844
+    },
+    {
+      "name": "roster_weekly_2023.csv",
+      "sha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+      "normalizedRows": 1812
+    },
+    {
+      "name": "roster_weekly_2024.csv.gz",
+      "sha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+      "normalizedRows": 1867
+    },
+    {
+      "name": "roster_weekly_2025.csv.gz",
+      "sha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+      "normalizedRows": 1948
+    },
+    {
+      "name": "stats_player_week_2021.csv.gz",
+      "sha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+      "normalizedRows": 655
+    },
+    {
+      "name": "stats_player_week_2022.csv.gz",
+      "sha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+      "normalizedRows": 633
+    },
+    {
+      "name": "stats_player_week_2023.csv.gz",
+      "sha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+      "normalizedRows": 663
+    },
+    {
+      "name": "stats_player_week_2024.csv.gz",
+      "sha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+      "normalizedRows": 664
+    },
+    {
+      "name": "stats_player_week_2025.csv.gz",
+      "sha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+      "normalizedRows": 664
+    }
+  ],
+  "error": "error: current transaction is aborted, commands ignored until end of transaction block",
+  "peakRssBytes": 581222400,
+  "measurementQualification": "invalid capacity matrix: client read timeout was 20s while server statement_timeout was 84s; rollback also timed out, and later trials overlapped live backends. No speed ratio or target-failure conclusion from these durations. First trial is censored at the 20s client timeout.",
+  "operatorIntervention": "In this disposable DB only: revoked context-function execution and cancelled active spike-role queries, then let harness drop the scratch DB. Later refusals/cancellations are intervention outcomes, not independent capacity trials."
+}
