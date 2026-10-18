@@ -810,3 +810,61 @@ or app Firebase admin credentials were used.
   Missing or mismatched metadata refuses publication. The live test still waits
   for the owner's Blaze, budget and dedicated pipeline-account decision; the
   app Firebase admin key is outside this pipeline's credential boundary.
+
+
+## PR #174 queue-progress correction — Design basis
+
+**Pattern:** durable work-queue completion with deletion-driven re-arming. A
+due address is either removed or completed as `shared-retained`, under the
+existing writer-only address lock. A later source deletion re-arms that address,
+clears completion/outcome, records its new deletion event and preserves its grace.
+The permanent address tombstone still refuses republication.
+
+**Alternatives:** increasing the page limit merely moves the starvation boundary;
+retry-time deferral makes progress but repeatedly polls live shared references.
+Deletion-driven re-arming avoids that polling because deletion already knows
+which addresses lose references. No new lock or reader coordination is added.
+
+**Targets:** retain the 1,024-address work-page limit. A synthetic local fixture
+with 1,025 shared addresses followed by a deletable address completes the latter
+within two cleanup calls. Deleting the final references re-arms all 1,025 shared
+addresses, which complete within two further calls. Check committed outcomes,
+rollback, latest-event association, existing grace and idempotent retry behavior.
+These are deterministic progress/work targets, not new storage-capacity claims.
+
+**Requirement reasons:** resolve shared work durably to prevent a bounded page
+from starving later mandatory removals; reset both completion and outcome when
+re-arming to prevent a prior attempt from suppressing final-reference deletion.
+Associate the latest event to retain the reason for the current attempt. Keep
+the same address lock through recheck, state transition and byte removal to
+prevent a reference race. Preserve role checks to prevent unauthorized erasure.
+
+**Assumptions:** the existing trusted pipeline, local ObjectStore and short
+writer transactions; readers remain lock-free. Proposal SQL remains mutable
+outside the ordered migration chain. This is a correction to the approved
+tombstone-and-sweep design, not a new subsystem or a hosted validation claim.
+
+
+### Queue-progress correction result
+
+The new regression fails on PR head `df9643f`: two consecutive calls each
+revisit the same 1,024 shared addresses, leaving the later deletable object
+pending. With durable `shared-retained` completion, the first call resolves
+1,024 shared attempts; the second resolves the last shared attempt and removes
+the later object. Deleting the final references re-arms all 1,025 shared addresses
+with their latest deletion event and cleared completion/outcome; two cleanup
+pages remove 1,024 then one, leaving no pending work or objects.
+
+Rollback preserves pending work; an idempotent retry completes it. Non-pipeline
+queue APIs and direct writer updates are refused. Recreated tombstoned bytes are
+re-armed and removed after publication refusal. The existing one-second grace
+probe now also checks the shared outcome, latest event and state reset.
+
+All 41 PostgreSQL behavior probes (45 Node test entries), TypeScript and
+changed-file ESLint pass. The schema probes confirm proposal rollback, unchanged
+main catalog and frozen migrations. The unchanged 1,024-address limit is a
+deterministic work budget; this is not a new capacity benchmark. No fresh full
+application or hosted-CI result is claimed. An initial run was interrupted by
+the original shared fixture stopping, then rerun on a separate disposable fixture.
+See the [compact correction receipt](evidence/feature-store-138/queue-progress-correction.json).
+Focused independent re-review and owner commit/push approval remain pending.

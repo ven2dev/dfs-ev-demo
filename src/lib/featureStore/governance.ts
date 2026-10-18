@@ -9,6 +9,8 @@ export const deleteSources = async (client:Database,snapshotIds:string[],reason:
 
 // One bounded page, resumable after failures. The writer-only address lock
 // prevents republication between reference check and ObjectStore deletion.
+// Recheck completes shared attempts durably; deleting another source reference
+// re-arms them. This lets later pages progress without polling shared addresses.
 // A crash after delete but before ack is safe: ObjectStore.delete is idempotent.
 export const cleanupDeletedObjects = async (client:Database,store:ObjectStore) => {
  const pending=(await client.query<{object_key:string}>(`SELECT object_key FROM fs138.object_removals

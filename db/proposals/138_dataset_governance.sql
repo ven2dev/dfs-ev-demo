@@ -47,7 +47,9 @@ CREATE TABLE fs138.object_removals (
  object_key text PRIMARY KEY CHECK(object_key ~ '^(raw|datasets)/[a-f0-9]{64}$'),
  event_id uuid NOT NULL REFERENCES fs138.deletion_events,
  remove_after timestamptz NOT NULL,
- completed_at timestamptz
+ completed_at timestamptz,
+ outcome text CHECK(outcome IN ('removed','shared-retained')),
+ CHECK((completed_at IS NULL) = (outcome IS NULL))
 );
 CREATE TRIGGER dataset_clock BEFORE INSERT ON fs138.dataset_manifests
  FOR EACH ROW EXECUTE FUNCTION fs138.stamp_recorded_at();
@@ -108,8 +110,13 @@ BEGIN
  FOR address IN SELECT object_key FROM fs138.source_snapshots WHERE snapshot_id=ANY(ids)
   UNION SELECT object_key FROM fs138.dataset_manifests WHERE dataset_id=ANY(receipt.dataset_ids) ORDER BY 1 LOOP
   PERFORM pg_advisory_xact_lock(hashtextextended(address,138));
-  INSERT INTO fs138.object_removals VALUES(address,receipt.event_id,receipt.recorded_at+make_interval(secs=>grace_seconds),NULL)
-   ON CONFLICT(object_key) DO UPDATE SET remove_after=greatest(fs138.object_removals.remove_after,EXCLUDED.remove_after);
+  -- Each deletion is a new attempt, including a formerly shared address.
+  -- Re-arm completed work so final-reference deletion cannot strand its bytes.
+  INSERT INTO fs138.object_removals(object_key,event_id,remove_after)
+   VALUES(address,receipt.event_id,receipt.recorded_at+make_interval(secs=>grace_seconds))
+   ON CONFLICT(object_key) DO UPDATE SET event_id=EXCLUDED.event_id,
+    remove_after=greatest(fs138.object_removals.remove_after,EXCLUDED.remove_after),
+    completed_at=NULL,outcome=NULL;
  END LOOP;
  UPDATE fs138.source_snapshots SET deleted_at=coalesce(deleted_at,receipt.recorded_at) WHERE snapshot_id=ANY(ids);
  UPDATE fs138.dataset_manifests SET invalidated_at=coalesce(invalidated_at,receipt.recorded_at) WHERE dataset_id=ANY(receipt.dataset_ids);
@@ -169,15 +176,23 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
 BEGIN
  IF NOT pg_has_role(session_user,'fs138_pipeline_writer','member') THEN RAISE EXCEPTION 'pipeline-role-required' USING ERRCODE='42501'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(address,138));
- RETURN EXISTS(SELECT 1 FROM fs138.object_removals WHERE object_key=address AND completed_at IS NULL AND remove_after<=clock_timestamp())
-  AND NOT EXISTS(SELECT 1 FROM fs138.source_snapshots WHERE object_key=address AND deleted_at IS NULL)
-  AND NOT EXISTS(SELECT 1 FROM fs138.dataset_manifests WHERE object_key=address AND invalidated_at IS NULL);
+ IF NOT EXISTS(SELECT 1 FROM fs138.object_removals WHERE object_key=address AND completed_at IS NULL AND remove_after<=clock_timestamp()) THEN
+  RETURN false;
+ END IF;
+ IF EXISTS(SELECT 1 FROM fs138.source_snapshots WHERE object_key=address AND deleted_at IS NULL)
+ OR EXISTS(SELECT 1 FROM fs138.dataset_manifests WHERE object_key=address AND invalidated_at IS NULL) THEN
+  -- Complete this attempt durably, releasing its bounded queue slot. A later
+  -- delete_sources call re-arms the address when another reference disappears.
+  UPDATE fs138.object_removals SET completed_at=clock_timestamp(),outcome='shared-retained' WHERE object_key=address;
+  RETURN false;
+ END IF;
+ RETURN true;
 END $$;
 CREATE FUNCTION fs138.ack_removal(address text) RETURNS void
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
 BEGIN
  IF NOT fs138.removal_recheck(address) THEN RAISE EXCEPTION 'removal-not-authorized' USING ERRCODE='23514'; END IF;
- UPDATE fs138.object_removals SET completed_at=clock_timestamp() WHERE object_key=address;
+ UPDATE fs138.object_removals SET completed_at=clock_timestamp(),outcome='removed' WHERE object_key=address;
 END $$;
 REVOKE ALL ON FUNCTION fs138.removal_recheck(text),fs138.ack_removal(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fs138.removal_recheck(text),fs138.ack_removal(text) TO fs138_pipeline_writer;
@@ -228,7 +243,7 @@ BEGIN
  IF NOT pg_has_role(session_user,'fs138_pipeline_writer','member') THEN RAISE EXCEPTION 'pipeline-role-required' USING ERRCODE='42501'; END IF;
  IF address IS NULL OR address !~ '^(raw|datasets)/[a-f0-9]{64}$' THEN RAISE EXCEPTION 'object-address-refused' USING ERRCODE='23514'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(address,138));
- UPDATE fs138.object_removals SET completed_at=NULL WHERE object_key=address;
+ UPDATE fs138.object_removals SET completed_at=NULL,outcome=NULL WHERE object_key=address;
 END $$;
 REVOKE ALL ON FUNCTION fs138.requeue_removed_object(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fs138.requeue_removed_object(text) TO fs138_pipeline_writer;

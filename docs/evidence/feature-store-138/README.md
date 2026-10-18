@@ -40,3 +40,9 @@ with the same application, scripts, tests and proposal-SQL bytes. The old spike
 commits remain reachable through the evidence tag, not through the PR's ancestry.
 This keeps full diagnostic blobs out of main regardless of squash/merge strategy.
 Independent owner review and green CI at the new SHA are still merge gates.
+
+
+The [queue-progress correction receipt](queue-progress-correction.json) is fresh
+post-review evidence, rather than an archived step-3/4 diagnostic. It records the
+failing baseline, passing boundary regression and focused validation against
+the corrected uncommitted source hashes. Historical receipts remain unchanged.

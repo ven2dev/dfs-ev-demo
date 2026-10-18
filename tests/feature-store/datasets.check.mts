@@ -251,7 +251,12 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
    }
    await deleteSources(writer,[ids[0]],'synthetic first shared deletion',0);
    const firstCleanup=await cleanupDeletedObjects(writer,store);assert(firstCleanup.shared.includes(key));assert(await store.head(key));
-   await deleteSources(writer,[ids[1]],'synthetic last shared deletion',1);
+   const sharedAttempt=(await reader.query('SELECT completed_at,outcome,event_id FROM fs138.object_removals WHERE object_key=$1',[key])).rows[0];
+   assert(sharedAttempt.completed_at);assert.equal(sharedAttempt.outcome,'shared-retained');
+   const lastDeletion=await deleteSources(writer,[ids[1]],'synthetic last shared deletion',1);
+   const rearmed=(await reader.query('SELECT completed_at,outcome,event_id,remove_after>clock_timestamp() AS grace FROM fs138.object_removals WHERE object_key=$1',[key])).rows[0];
+   assert.equal(rearmed.completed_at,null);assert.equal(rearmed.outcome,null);assert.equal(rearmed.event_id,lastDeletion.event_id);
+   assert.notEqual(rearmed.event_id,sharedAttempt.event_id);assert.equal(rearmed.grace,true);
    assert(!(await cleanupDeletedObjects(writer,store)).removed.includes(key));assert(await store.head(key));
    await admin.query('SELECT pg_sleep(1.1)');assert((await cleanupDeletedObjects(writer,store)).removed.includes(key));assert.equal(await store.head(key),null);
    return {sharedReferencePreserved:true,latestGraceEnforced:true};
