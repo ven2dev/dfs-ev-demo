@@ -19,3 +19,5 @@ export const getSql = (): NeonQueryFunction<false, false> => {
   cachedSql = neon(connectionString);
   return cachedSql;
 };
+
+// CI probe (throwaway).
