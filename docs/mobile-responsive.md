@@ -95,3 +95,11 @@ Authenticated account browser/Lighthouse verification is removed from #136 accep
 - Actual admin component rendered in the temporary isolated fixture with synthetic long names/URLs; GET returns only the local fixture and submission requests throw. No credentials or real creator data used.
 - At 360, 375, 390, 430, 768 and 1440 px: document scroll width matches viewport; inputs, textarea, submit and submission link targets are at least 44x44 px.
 - Screenshots: [phone](screenshots/136/admin-fixture-phone-375.jpg), [desktop](screenshots/136/admin-fixture-desktop-1440.jpg). These establish component usability, not authenticated deployment verification.
+
+## Manifest/icons iteration evidence
+
+- Added typed Next manifest with EdgeTrace name/short name, root id/start URL/scope, standalone display, and #18181b background/theme. Viewport export supplies theme-color; Next file conventions supply manifest, SVG browser icon and Apple touch icon links. Replaced scaffold favicon.
+- Regular PNGs are 192x192 and 512x512; maskable PNG is 512x512, Apple PNG is 180x180. Maskable/Apple files are opaque. Original SVG source is src/app/icon.svg; PNGs generated with installed Sharp. Maskable artwork is within the central 80% safe circle.
+- Served /manifest.webmanifest inspected; live DOM links point to the manifest and Apple icon and expose the expected theme color. No service worker or offline code added.
+- TypeScript, changed-file ESLint and whitespace checks passed. Preliminary mobile Lighthouse 13.5.0 / HeadlessChrome 155 accessibility audit on the development main page scored 95. It identified contrast failures for existing muted/error text; final production/populated-state audit remains pending.
+- Native Chrome access was not approved, so Chrome UI installability/actual installation remains unverified. No claim that the Chrome installability target has passed.
