@@ -87,6 +87,12 @@ remain deliberate; see the [dependency review guide](dependency-updates.md).
 
 ## Suite contract
 
+Ordinary migrated fixtures clone sealed, run-scoped migration-prefix templates;
+explicit migration proofs keep empty scratch databases. The parent verifies each
+prefix once, owns interrupted-clone cleanup, and removes the chain after each
+run. See [the #153 design and validation](database-suite-speed.md).
+
+
 `vitest.db.config.mts` selects only `tests/db/**/*.test.ts`, runs files serially,
 and uses real Node timers. The jsdom suite excludes `tests/db/`. Setup installs
 ordered migrations through the repository runner, then verifies a no-op rerun;
@@ -97,7 +103,8 @@ or adoption. Setup truncates only `live_prop_inputs_cache` between cases.
 Tracked database clients close after each case and suite.
 
 The runner also validates Vitest's JSON report: all 13 required #45 cases,
-four readiness cases and 15 predictive persistence cases must execute and pass.
+four readiness cases, 111 predictive/source-claims cases and eight corpus cases
+must execute and pass.
 Skipped/todo or missing cases fail. The #45 contract
 covers full-schema bootstrap, including ledger/data-preserving reruns, plus
 these lease scenarios:

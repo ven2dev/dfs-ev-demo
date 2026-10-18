@@ -1,3 +1,4 @@
+import { registerTemplateClone } from "./templates.mts";
 import { randomBytes } from "node:crypto";
 import { Client } from "pg";
 import { checkConnectedTarget } from "../../scripts/db-migrations/core.mjs";
@@ -23,9 +24,24 @@ export async function createScratchHarness(environment) {
   }
   return {
     assertTarget,
-    async withDatabase(run) {
-      const name = "dfs_ev_test_" + randomBytes(10).toString("hex");
-      await admin.query(`CREATE DATABASE "${name}"`);
+    /**
+     * @template T
+     * @param {(client: Client, config: ReturnType<typeof parseTestDatabaseUrl>) => Promise<T>} run
+     * @param {import("./templates.mts").TemplateReference} [template]
+     */
+    async withDatabase(run, template) {
+      const registration = template === undefined ? undefined : await registerTemplateClone(admin, template);
+      const name = registration?.database ?? "dfs_ev_test_" + randomBytes(10).toString("hex");
+      try {
+        await admin.query(`CREATE DATABASE "${name}"${registration ? ` TEMPLATE "${registration.source}"` : ""}`);
+      } catch (error) {
+        if (registration) {
+          // A duplicate name is not ours to remove. Other ambiguous CREATE
+          // failures retain the pre-created registry entry for parent cleanup.
+          if (error?.code === "42P04") await registration.release();
+        }
+        throw error;
+      }
       active.add(name);
       const config = Object.freeze({ ...base, database: name });
       const client = new Client(config);
@@ -40,6 +56,7 @@ export async function createScratchHarness(environment) {
           assertTarget(config);
           await admin.query(`DROP DATABASE "${name}" WITH (FORCE)`);
           active.delete(name);
+          await registration?.release();
         }
       }
     },

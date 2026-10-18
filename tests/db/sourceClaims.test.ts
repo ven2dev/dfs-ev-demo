@@ -7,7 +7,7 @@ import { expect, it } from "vitest";
 import { checkMigrationArtifacts } from "../../scripts/db-migrations/files.mjs";
 import { createCatalogVerifier, loadCatalogContracts } from "../../scripts/db-migrations/contracts.mjs";
 import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
-import { ensureHarnessSession, ensurePredictiveRoles } from "../../scripts/predictive/harness.ts";
+import { ensureHarnessSession } from "../../scripts/predictive/harness.ts";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { createLocalPredictiveStore, retentionIdsDigest } from "../../src/lib/predictive/persistence.ts";
 import type { Dataset, RecordedRetentionEvent } from "../../src/lib/predictive/types.ts";
@@ -28,25 +28,20 @@ import { sourceCsv, sourceGameId, sourceSamples } from "../predictive/fixtures/s
 import { passingYardsFixture } from "../predictive/fixtures/passingYards.ts";
 import { addCapture, completionMarkers, coverage, gameId, membership, profile, PROFILE, revision, rights, schedule } from "../predictive/fixtures/passingYards.ts";
 import { BRIDGE_PROFILE, normalizationFixture, NORMALIZATION_GAME, rewriteNormalizationRows } from "../predictive/fixtures/sourceNormalization.ts";
-import { createScratchHarness } from "./scratch.mjs";
+import { withMigratedDatabase } from "./migrated.mts";
 
 type Store = Awaited<ReturnType<typeof createLocalPredictiveStore>>;
 type Artifacts = Awaited<ReturnType<typeof openArtifactStore>>;
 type Target = { expected: object; assertTarget: (config: object) => void };
 const withProof = async (work: (context: { client: Client; store: Store; artifacts: Artifacts; root: string; target: Target }) => Promise<void>, migrationCount?: number) => {
-  const harness = await createScratchHarness(process.env);
   const root = await realpath(await mkdtemp(join(tmpdir(), "dfs52-csv-db-")));
   try {
-    const files = await checkMigrationArtifacts(); const contracts = await loadCatalogContracts(files);
-    await harness.withDatabase(async (client: Client, expected: object) => {
-      const target = { expected, assertTarget: harness.assertTarget };
-      await ensurePredictiveRoles(client);
-      await runScratchMigrations(client, { ...target, files: files.slice(0, migrationCount), verify: createCatalogVerifier(contracts) });
+    await withMigratedDatabase(process.env, async (client, target) => {
       await ensureHarnessSession(client);
       const artifacts = await openArtifactStore(root, 8_000_000);
       await work({ client, artifacts, root, target, store: await createLocalPredictiveStore(client, target, artifacts) });
-    });
-  } finally { try { await harness.close(); } finally { await rm(root, { recursive: true, force: true }); } }
+    }, migrationCount);
+  } finally { await rm(root, { recursive: true, force: true }); }
 };
 const captureTime = async (client: Client, id: string) => (await client.query(`SELECT to_char(ingested_at AT TIME ZONE 'UTC',
   'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS time FROM predictive_captures WHERE id=$1`, [id])).rows[0].time as string;
