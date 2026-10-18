@@ -211,30 +211,90 @@ It is validation evidence, not a passing integration run.
 
 ## CI enforcement
 
-On PRs to `main` and pushes to `main`, `App checks` and `DB integration` run
-independently on Linux. The database job runs a clean Node 24 `npm ci`, the
-target/bootstrap/report guards, and `npm run test:db:local`. The local command
-requires migration/reference integrity, all named database cases and freshly
-rebuilt contract equality to succeed. This uses the same Compose file,
-image digest, health check, loopback port, throwaway credentials, and tmpfs as
-the laptop command. An additional `always()` cleanup step runs
-`npm run test:db:down`; no production credentials or external database access
-are configured in either CI job.
+### Suite selection (#140)
 
-The sole job named `CI` depends on both jobs and uses `if: always()` with
-`permissions: {}` and no checkout. It fails unless both dependency results are
-exactly `success`, including when a dependency failed, was cancelled, or was
-skipped. This retains the existing ruleset's required `CI` check without a
-settings change. Workflow cancellation can cancel the gate itself; cancellation
-does not provide a successful required check. GitHub documents these results
-in the [needs context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context).
+On PRs to `main`, a dependency-free `Detect affected suites` job
+(`scripts/ci/affected.mjs`) decides which suites run. It also hosts the
+whitespace check.
 
-`npm run test:ci-gate` extracts and executes the actual inline gate shell script
-against all 16 combinations of GitHub's four job results. It also rejects empty
-or unexpected results and checks the gate's always-run condition, dependency
-list, unique check name, empty permissions, and absence of checkout. This runs
-inside `App checks`. The extraction checks the current YAML block layout;
-`actionlint` remains the workflow syntax validator.
+| Changed files | App checks | DB integration |
+|---|---|---|
+| Only documentation no test reads (top-level Markdown, `docs/`, issue templates) | skipped | skipped |
+| Only the UI layer (`src/components/`, `src/store/`, `src/app/` except `src/app/api/`, `public/`) and docs | run | **skipped** |
+| Anything else | run | run |
+
+- Renames count both paths (`git diff --no-renames -z`).
+- Pushes to `main` and any selection error run everything. A failure before or
+  after selection (runner setup, writing outputs) fails the detect job, which
+  blocks the required `CI` gate without running suites.
+- Docs that tests read are declared in `APP_DOC_INPUTS`, so changing them
+  runs App checks. A best-effort literal scan in `tests/ciAffected.check.mjs`
+  fails when code names an undeclared doc.
+
+**Why skipping DB integration for UI changes is safe: an enforced boundary.**
+No code outside the UI layer may import from it. dependency-cruiser enforces
+this (`.dependency-cruiser.cjs`, `npm run lint:boundaries`, in `App checks`)
+for every import form:
+
+- static imports, the `@/` alias, type-only imports and re-exports;
+- dynamic `import()` and `require()`;
+- imports it cannot resolve.
+
+`tests/ciBoundary.check.mjs` proves each form is caught, and
+`tests/ciAffected.check.mjs` keeps the selector's UI layer identical to the
+enforced boundary.
+
+**Accepted residual risk (owner decision, 2026-10-17).** Non-import access from
+non-UI code to UI-layer files is not detected. That covers filesystem reads,
+shell commands, Docker mounts, symlinks and globs. It is the same trade-off
+standard path-filter tools (GitHub path filters, Turborepo, Nx) make; only
+hermetic sandboxing removes it. Mitigations:
+
+- pushes to `main` always run every suite, so a missed dependency surfaces
+  right after merge;
+- the workspace monorepo (#148) replaces this interim selector with
+  package-level boundaries.
+
+**Review bar.** Reviews verify that the selector and boundary implement this
+design. A missed *import* route from non-UI code into the UI layer is a defect.
+Non-import file access to UI paths is the accepted risk above, not a blocker.
+
+### Suites and gate
+
+When needed, `App checks` and `DB integration` run independently on Linux. The
+database job runs a clean Node 24 `npm ci`, the target/bootstrap/report
+guards, and `npm run test:db:local`. The local command requires
+migration/reference integrity, all named database cases and freshly rebuilt
+contract equality to succeed. This uses the same Compose file, image digest,
+health check, loopback port, throwaway credentials, and tmpfs as the laptop
+command. An additional `always()` cleanup step runs `npm run test:db:down`; no
+production credentials or external database access are configured in either
+CI job.
+
+The sole job named `CI` depends on the detector and both suites. It uses
+`if: always()` with `permissions: {}` and no checkout. It passes only when:
+
+- detection succeeded;
+- every suite marked needed finished `success`;
+- every suite marked not needed was `skipped`.
+
+A failure, a cancellation, or a skip of a needed suite fails it. This retains
+the existing ruleset's required `CI` check without a settings change. Workflow
+cancellation can cancel the gate itself; cancellation does not provide a
+successful required check. GitHub documents these results in the
+[needs context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context).
+
+`npm run test:ci-gate` (inside `App checks`) runs three test files:
+
+- `tests/ciGate.check.mjs` extracts and executes the actual inline gate shell
+  script against every combination of detector result, needed flags and job
+  results. It rejects empty or unexpected values, and checks the gate's wiring,
+  unique check name, empty permissions and absence of checkout.
+- `tests/ciBoundary.check.mjs` covers the boundary rules.
+- `tests/ciAffected.check.mjs` covers the selection rules.
+
+The extraction checks the current YAML block layout; `actionlint` remains the
+workflow syntax validator.
 
 ### Hosted gate validation
 
