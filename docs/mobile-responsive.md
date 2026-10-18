@@ -88,3 +88,10 @@ After owner merges #136, repeat triage/roadmap approval for #104 on feature/dfsE
 ## Owner scope amendment — 2026-10-18
 
 Authenticated account browser/Lighthouse verification is removed from #136 acceptance until managed-secret delivery (#97–#101) is established. No local credential setup is required for this UI issue. This is deferred verification, not a passing authenticated result. Account responsive layout stays in scope using isolated component fixtures; the main-page mobile Lighthouse accessibility target remains >=90.
+
+## Admin usability iteration evidence
+
+- Minimal layout-only adaptation: 16 px phone section padding, contained/wrapping long submission names and URLs, wrapping date row, vertical-only textarea resizing, accessible input names and 44 px controls. Authorization, identity/race guards and submission logic unchanged.
+- Actual admin component rendered in the temporary isolated fixture with synthetic long names/URLs; GET returns only the local fixture and submission requests throw. No credentials or real creator data used.
+- At 360, 375, 390, 430, 768 and 1440 px: document scroll width matches viewport; inputs, textarea, submit and submission link targets are at least 44x44 px.
+- Screenshots: [phone](screenshots/136/admin-fixture-phone-375.jpg), [desktop](screenshots/136/admin-fixture-desktop-1440.jpg). These establish component usability, not authenticated deployment verification.
