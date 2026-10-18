@@ -3,7 +3,8 @@
 Owner-approved roadmap: [issue #163](https://github.com/ven2dev/dfs-ev-demo/issues/163#issuecomment-6250059648).
 Implementation branch: `feature/dfsEV-163-empirical-adapter`, created in a separate
 worktree from fresh `origin/main` at `20b712c7ec2a9a4e8cd3bbb5d780f5f4f559ac21`.
-The owner approved starting the issue iteration. No adapter latency pass is claimed.
+The owner approved starting the issue iteration. The step-2 prototype passes its
+local latency/work-budget proof; the complete adapter remains unimplemented.
 
 ## Design basis
 
@@ -127,7 +128,8 @@ exceeds five hours, split the remaining scope and stop before taking it on.
 ## Approval and scope boundaries
 
 The owner approved this roadmap with the four incorporated amendments; this
-issue comment is the durable roadmap record. The owner has approved the branch and starting implementation from fresh main.
+issue comment is the durable roadmap record. The owner has approved the branch
+and starting implementation from fresh main.
 Keep every other worktree/branch untouched to avoid modifying reference work.
 Each atomic step is verified and summarized for owner approval before its commit.
 The owner runs Codex review; each push needs fresh consent; the owner merges.
@@ -151,4 +153,65 @@ committed regression tests cover hand-calculated values, arithmetic order,
 temporal/refusal precedence, the 37-game case and the domain import boundary.
 See the [compact receipt](evidence/feature-store-163/step-1-kernel.json).
 This step makes no adapter latency, SQL-budget or database-permission claim.
-Step 1 is ready for the owner's commit approval; the request-path spike follows.
+The owner approved the step-1 commit, recorded as `42c9d09`.
+
+
+## Step 2 checkpoint — cheap request-path proof
+
+The script-only prototype follows the approved check/read/recheck pattern and
+uses the step-1 kernel. The proposal SQL adds a dedicated research reader role,
+with feature and lineage/rights metadata permissions. It adds no tables, reader
+locks, cache or ordered migration. The full adapter remains step 3.
+
+The fixture was rebuilt from all 16 exact #138 source objects through ObjectStore
+and the existing ingestion/feature jobs. Its 2021 data supplies warm-up history;
+2022–2025 features are materialized before timing. No labels were materialized.
+The 12 measured examples span all four evaluation seasons and exactly 2, 8 and
+16 history games. Each mode includes 25 requests for every season/sample pair.
+This remains retrospective evidence with historical availability unverified.
+
+Three alternating-order rounds each contain 100 cold and 100 warm requests.
+No requests were discarded. Each cohort and both aggregate modes passed the
+unchanged nearest-rank p95 <=210 ms gate; there were zero refusals, deadline
+failures or individual requests above 210 ms.
+
+| Request boundary | n | p50 | p95 | Worst cohort p95 | Maximum | Verdict |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Cold | 300 | 14.27 ms | 17.26 ms | 19.02 ms | 34.87 ms | Pass |
+| Warm | 300 | 3.80 ms | 5.78 ms | 8.17 ms | 35.23 ms | Pass |
+
+All 600 requests executed exactly **three SQL statements**, including **two
+batched research-rights/status checks**. Actual statement tracing verifies the
+authorization/history/authorization sequence. EXPLAIN visits only feature values,
+feature inputs, source-snapshot metadata, job status and rights decisions.
+The restricted login's label-table, label-input, normalized-table/view and raw
+source-manifest reads all fail with PostgreSQL 42501; its derived insert fails
+too. Earlier outcomes are obtained exclusively from materialized feature history.
+
+Cold requests include a fresh restricted connection inside an already-running
+process. Warm requests reuse a restricted connection. SQL loading, fixture setup,
+permission probes and EXPLAIN happen before timing. There is no application-result
+cache and no named prepared statement; OS/PostgreSQL caches are unflushed.
+Separate fresh-Node probes (n=3, measured only) report process/module/setup,
+connection, each query, calculation, serialization and parent-observed total.
+They do not establish Vercel boot or Neon compute-wake readiness.
+
+See the [compact receipt](evidence/feature-store-163/step-2-hot-path.json) for stage
+percentiles, query/fixture/code hashes, every target verdict and misses. Full
+per-request trials and plans stay outside git in the receipt's local ObjectStore
+audit addresses. Typecheck and changed-script lint pass. No database suite or
+kernel suite was repeated for this script-only checkpoint; its actual PostgreSQL
+permission/work probes and repeated latency matrix ran successfully.
+
+Reproduce on Node 24 with the disposable local PostgreSQL service running:
+
+```sh
+TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/empirical-spike.ts
+```
+
+The prototype clears the early performance gate. It does not complete #163:
+explicit supported-version/refusal handling, both evidence modes, stale/superseded
+disclosures, interrupted-connection handling and race probes remain steps 3–4,
+followed by the final adapter matrix and owner-run independent review.
+Revocations after the last query snapshot retain the approved delivery-gap limit.
+Step 2 is ready for the owner's commit approval. Nothing has been pushed.
