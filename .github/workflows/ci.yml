@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - main
+      # TEMPORARY staging trigger for #140 hosted verification; reverted before the PR.
+      - feature/dfsEV-140-ci-db-gating
   push:
     branches:
       - main
