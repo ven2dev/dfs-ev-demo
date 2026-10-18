@@ -15,7 +15,7 @@ import {
 } from "@/lib/nflStadiums";
 import { getCurrentSeason } from "@/lib/nflverseClient";
 import { MAX_TICKS, POLL_INTERVAL_MS, parseSampleWindow } from "@/lib/streamConfig";
-import { mockCoverageFilters } from "@/store/mockData";
+import { mockCoverageFilters } from "@/lib/mockCoverage";
 import { getRealRecentGameStats } from "@/lib/playerStatsRepo";
 import { buildWatchPropId } from "@/lib/watchPropId";
 import { getPlayerPropMarket, type PlayerPropDirection } from "@/lib/playerPropMarkets";
@@ -323,6 +323,8 @@ export async function GET(request: NextRequest) {
               afterCoverage: result.afterCoverage,
             },
             recentStatAverage,
+            sampleWindow,
+            sampleSize: recentStatWindow.length,
           });
         } catch (err) {
           send({ type: "error", message: String(err) });

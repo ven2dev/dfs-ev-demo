@@ -1,4 +1,4 @@
-import type { WatchSelection } from "@/store/slices/matchupSlice";
+import type { WatchSelection } from "@/types";
 
 // One canonical propId format, shared by the client (watchlist keys,
 // SSE query params) and /api/stream (echoes it back on every tick) --

@@ -166,7 +166,7 @@ describe("GET /api/stream market capability validation", () => {
 });
 
 describe("GET /api/stream consensus devig ticks", () => {
-  const openStream = async (direction: "over" | "under" = "over") => {
+  const openStream = async (direction: "over" | "under" = "over", sampleWindow: 3 | 5 | 7 = 3) => {
     const response = await GET(
       requestFor({
         eventId: "evt-1",
@@ -174,7 +174,7 @@ describe("GET /api/stream consensus devig ticks", () => {
         playerName: "Jalen Hurts",
         bookmakerKey: "draftkings",
         direction,
-        sampleWindow: "3",
+        sampleWindow: String(sampleWindow),
       })
     );
     const reader = response.body?.getReader();
@@ -230,6 +230,16 @@ describe("GET /api/stream consensus devig ticks", () => {
       version: 1,
       contributingBookCount: 3,
     });
+  });
+
+  it.each([3, 5, 7] as const)("reports actual games counted rather than the requested %i-game maximum", async (window) => {
+    getRealRecentGameStatsMock.mockResolvedValue([240, 260]);
+    const tick = await openStream("over", window);
+    expect(tick.sampleWindow).toBe(window);
+    expect(tick.sampleSize).toBe(2);
+    expect(tick.stages.baseRate).toBe(0.5);
+    expect(getRealRecentGameStatsMock).toHaveBeenCalledTimes(1);
+    expect(getSharedLivePropInputsMock).toHaveBeenCalledTimes(1);
   });
 
   it("derives the Under consensus as the complement of Over", async () => {
