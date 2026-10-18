@@ -340,7 +340,7 @@ export const SlateBrowser = () => {
   );
 
   return (
-    <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+    <section className="min-w-0 rounded-lg border border-zinc-200 p-4 sm:p-6 dark:border-zinc-800">
       <h2 className="text-lg font-medium">
         Browse the {realSlateWindow?.label ?? "current NFL"} slate
       </h2>
@@ -363,7 +363,7 @@ export const SlateBrowser = () => {
         <>
           <select
             aria-label="Select a game"
-            className="mt-3 w-full rounded border border-zinc-300 bg-white p-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="mt-3 min-h-11 w-full min-w-0 rounded border border-zinc-300 bg-white p-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             value={selectedEventId ?? ""}
             onChange={(event) => setSelectedEventId(event.target.value || null)}
           >
@@ -379,9 +379,9 @@ export const SlateBrowser = () => {
           {selectedEventId && (
             <div className="mt-4">
               <p className="text-sm font-medium">Which prop markets?</p>
-              <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {PLAYER_PROP_MARKETS.map((market) => (
-                  <label key={market.key} className="flex items-center gap-2 text-sm">
+                  <label key={market.key} className="flex min-h-11 min-w-0 items-center gap-2 text-sm">
                     <input
                       type="checkbox"
                       checked={checkedMarketKeys.includes(market.key)}
@@ -397,7 +397,7 @@ export const SlateBrowser = () => {
                   type="button"
                   onClick={() => fetchDiscoveredProps(false)}
                   disabled={checkedMarketKeys.length === 0 || discoveryStatus === "loading"}
-                  className="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
+                  className="min-h-11 rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
                 >
                   {discoveryStatus === "loading" ? "Loading…" : "Show props"}
                 </button>
@@ -406,7 +406,7 @@ export const SlateBrowser = () => {
                     type="button"
                     onClick={() => fetchDiscoveredProps(true)}
                     disabled={discoveryStatus === "loading"}
-                    className="rounded border border-zinc-300 px-3 py-2 text-sm disabled:opacity-50 dark:border-zinc-700"
+                    className="min-h-11 rounded border border-zinc-300 px-3 py-2 text-sm disabled:opacity-50 dark:border-zinc-700"
                   >
                     Refresh odds
                   </button>
@@ -421,18 +421,18 @@ export const SlateBrowser = () => {
                 <div className="mt-4">
                   <div className="flex flex-wrap items-center gap-3">
                     {!comparisonMode && selectedBookmakerKey && (
-                      <div className="flex items-center gap-2 text-sm">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
                         <button
                           type="button"
                           aria-label="Previous bookmaker"
                           onClick={() => cycleBookmaker(-1)}
-                          className="rounded px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                          className="min-h-11 min-w-11 rounded px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
                         >
                           ‹
                         </button>
                         <span
                           data-testid="bookmaker-stepper-label"
-                          className="min-w-24 text-center font-medium"
+                          className="min-w-24 max-w-full break-words text-center font-medium"
                         >
                           {smartDefault
                             ? `Best ${watchDirection === "over" ? "Over" : "Under"} price`
@@ -442,7 +442,7 @@ export const SlateBrowser = () => {
                           type="button"
                           aria-label="Next bookmaker"
                           onClick={() => cycleBookmaker(1)}
-                          className="rounded px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                          className="min-h-11 min-w-11 rounded px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
                         >
                           ›
                         </button>
@@ -450,7 +450,7 @@ export const SlateBrowser = () => {
                           <button
                             type="button"
                             onClick={() => setSmartDefault(true)}
-                            className="rounded px-2 py-1.5 text-xs text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                            className="min-h-11 rounded px-2 py-1.5 text-xs text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
                           >
                             Reset to best
                           </button>
@@ -460,7 +460,7 @@ export const SlateBrowser = () => {
                     <button
                       type="button"
                       onClick={() => setComparisonMode((current) => !current)}
-                      className={`rounded px-3 py-2 text-sm ${
+                      className={`min-h-11 rounded px-3 py-2 text-sm ${
                         comparisonMode
                           ? "bg-black text-white dark:bg-white dark:text-black"
                           : "border border-zinc-300 dark:border-zinc-700"
@@ -478,7 +478,7 @@ export const SlateBrowser = () => {
                           key={direction}
                           type="button"
                           onClick={() => setWatchDirection(direction)}
-                          className={`rounded px-3 py-1.5 capitalize ${
+                          className={`min-h-11 rounded px-3 py-1.5 capitalize ${
                             watchDirection === direction
                               ? "bg-black text-white dark:bg-white dark:text-black"
                               : "border border-zinc-300 dark:border-zinc-700"
@@ -487,13 +487,13 @@ export const SlateBrowser = () => {
                           {direction}
                         </button>
                       ))}
-                      <span className="ml-2 text-zinc-500">Watch button assigns:</span>
+                      <span className="w-full text-zinc-500 sm:ml-2 sm:w-auto">Watch button assigns:</span>
                       {(["primary", "secondary"] as const).map((target) => (
                         <button
                           key={target}
                           type="button"
                           onClick={() => setWatchAssignTarget(target)}
-                          className={`rounded px-3 py-1.5 ${
+                          className={`min-h-11 rounded px-3 py-1.5 ${
                             watchAssignTarget === target
                               ? "bg-black text-white dark:bg-white dark:text-black"
                               : "border border-zinc-300 dark:border-zinc-700"
@@ -510,7 +510,7 @@ export const SlateBrowser = () => {
                       {primaryWatch && (
                         <div
                           data-testid="primary-watch-status"
-                          className="flex items-center justify-between gap-2 rounded bg-zinc-50 px-3 py-2 dark:bg-zinc-900"
+                          className="flex flex-wrap items-center justify-between gap-2 rounded bg-zinc-50 px-3 py-2 dark:bg-zinc-900"
                         >
                           <span>
                             <span className="text-zinc-400">Primary: </span>
@@ -520,7 +520,7 @@ export const SlateBrowser = () => {
                           <button
                             type="button"
                             onClick={() => setPrimaryWatch(null)}
-                            className="text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                            className="min-h-11 min-w-11 text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
                           >
                             Clear
                           </button>
@@ -529,7 +529,7 @@ export const SlateBrowser = () => {
                       {secondaryWatch && (
                         <div
                           data-testid="secondary-watch-status"
-                          className="flex items-center justify-between gap-2 rounded bg-zinc-50 px-3 py-2 dark:bg-zinc-900"
+                          className="flex flex-wrap items-center justify-between gap-2 rounded bg-zinc-50 px-3 py-2 dark:bg-zinc-900"
                         >
                           <span>
                             <span className="text-zinc-400">Secondary: </span>
@@ -539,7 +539,7 @@ export const SlateBrowser = () => {
                           <button
                             type="button"
                             onClick={() => setSecondaryWatch(null)}
-                            className="text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                            className="min-h-11 min-w-11 text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
                           >
                             Clear
                           </button>
@@ -557,7 +557,7 @@ export const SlateBrowser = () => {
                         return (
                           <label
                             key={bookmakerKey}
-                            className={`flex items-center gap-1.5 rounded border px-2 py-1.5 text-sm ${
+                            className={`flex min-h-11 max-w-full items-center gap-1.5 break-words rounded border px-2 py-1.5 text-sm ${
                               atLimit
                                 ? "border-zinc-100 text-zinc-400 dark:border-zinc-900"
                                 : "border-zinc-300 dark:border-zinc-700"

@@ -40,3 +40,10 @@ After owner merges #136, repeat triage/roadmap approval for #104 on feature/dfsE
 - Screenshots: [phone](screenshots/136/shell-phone-375.jpg), [desktop](screenshots/136/shell-desktop-1440.jpg).
 - Nine focused tests passed (page, auth menu, status while account data is loading/failed); TypeScript, changed-file ESLint and whitespace checks passed.
 - Local Firebase sign-in was unavailable; authenticated account and menu dimensions in-browser remain pending. Lighthouse/installability and all remaining surface checks are pending.
+
+## Slate-controls iteration evidence
+
+- Fixture-only populated slate checked at 360, 375, 390, 430, 768 and 1440 px. Document scroll width matched viewport width at every size.
+- Game select, market labels and normal-mode toolbar buttons measured at least 44x44 px at all six widths. At 375 px, comparison chips measured 44 px tall, with widths 120–135 px.
+- Screenshots: [phone comparison controls](screenshots/136/slate-controls-phone-375.jpg), [desktop comparison controls](screenshots/136/slate-controls-desktop-1440.jpg).
+- All 17 existing slate-browser tests passed; changed-file ESLint and whitespace checks passed. This step changes layout only; card/table accessibility and card action sizes belong to the next iteration.
