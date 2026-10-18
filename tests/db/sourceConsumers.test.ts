@@ -7,16 +7,26 @@ import { runScratchMigrations } from "../../scripts/db-migrations/core.mjs";
 import { createLocalPredictiveStore, retentionIdsDigest } from "../../src/lib/predictive/persistence.ts";
 import type { Dataset } from "../../src/lib/predictive/types.ts";
 import { canonical } from "../../src/lib/predictive/validation.ts";
+import { applicableQuarterback } from "../../src/lib/predictive/identity.ts";
 import { sourceConsumerInputDigest, type SourceConsumerBody } from "../../src/lib/predictive/sourceConsumers.ts";
 import { sourceClaimFixture } from "../predictive/fixtures/sourceClaims.ts";
 import { sourceCsv, sourceGameId, sourceSamples } from "../predictive/fixtures/source.ts";
 import { addCapture, profile, revision, rights } from "../predictive/fixtures/passingYards.ts";
 import { BRIDGE_PROFILE, NORMALIZATION_GAME } from "../predictive/fixtures/sourceNormalization.ts";
-import { withProof, probe, withLogin, seedBinding, witnessClock, decisionScope, seedConsumers, sqlConsumer } from "./sourceClaimsSupport";
+import { withProof, probe, withLogin, seedBinding, witnessClock, decisionScope, consumerTargetAt, seedConsumers, sqlConsumer } from "./sourceClaimsSupport";
+
+it("CSV QB consumer fixtures keep a future target and applicable membership across year boundaries", () => {
+  for (const clock of ["2026-12-31T23:59:59.999Z","2027-12-31T23:59:59.999Z"]) {
+    const { target,targetMember } = consumerTargetAt(clock);
+    expect(Date.parse(target.kickoff)).toBeGreaterThan(Date.parse(clock));
+    expect(new Date(target.kickoff).getUTCFullYear()).toBe(new Date(clock).getUTCFullYear() + 1);
+    expect(applicableQuarterback(targetMember,target)).toBe(true);
+  }
+});
 
 it("CSV QB consumers record explicit source manifests and final labels without ordinary stats observations", async () => {
   await withProof(async ({ client,store }) => {
-    const seed = await seedConsumers(store);
+    const seed = await seedConsumers(store,await witnessClock(client));
     const feature = await store.recordSourcePassingYards("qb-feature",seed.request,seed.profiles);
     expect(feature.body.kind).toBe("feature"); if (feature.body.kind !== "feature") throw new Error("expected feature");
     expect(feature.body.bundle).toMatchObject({ status: "ready-inputs",featureVersion: "passing-yards-source-v1" });
@@ -49,7 +59,7 @@ it("CSV QB consumers record explicit source manifests and final labels without o
 
 it("CSV QB consumers preserve earlier cutoffs while recaptures withhold current decisions and labels", async () => {
   await withProof(async ({ client,store }) => {
-    const seed = await seedConsumers(store); const original = await store.replaySourcePassingYards(seed.request,seed.profiles);
+    const seed = await seedConsumers(store,await witnessClock(client)); const original = await store.replaySourcePassingYards(seed.request,seed.profiles);
     const saved = await store.recordSourcePassingYards("old-feature",seed.request,seed.profiles);
     const b = sourceClaimFixture("consumer-recapture"); b.capturedAt=seed.part.record.recordedAt;
     b.rightsDecisions=seed.fixture.input.rightsDecisions; await store.publishSourceStats(b);
@@ -70,7 +80,7 @@ it("CSV QB consumers preserve earlier cutoffs while recaptures withhold current 
 
 it("CSV QB consumers preserve earlier unavailable replay after a later unrelated source deletion", async () => {
   await withProof(async ({ client,store }) => {
-    const seed = await seedConsumers(store);
+    const seed = await seedConsumers(store,await witnessClock(client));
     // The fixture has no opponent schedule coverage. This is a legitimate
     // unavailable answer whose reasons must not acquire later retention history.
     const request = { ...seed.request,candidate: "player-opponent-v1:player_pass_yds" as const };
@@ -95,8 +105,8 @@ it("CSV QB consumers preserve earlier unavailable replay after a later unrelated
 });
 
 it("CSV QB final labels refuse pre-window captures and unresolved participation without invented zeros", async () => {
-  await withProof(async ({ store }) => {
-    const seed = await seedConsumers(store,"2026-10-09T12:00:00.000Z");
+  await withProof(async ({ client,store }) => {
+    const seed = await seedConsumers(store,await witnessClock(client),"2026-10-09T12:00:00.000Z");
     await expect(store.recordSourceFinalLabel("too-early",seed.labelRequest,null)).rejects.toThrow("source-label-post-window-refused");
     const b = sourceClaimFixture("zero-consumer","player",sourceCsv("player",[{ ...sourceSamples().player[0],attempts: "0",passing_yards: "0" }]));
     b.capturedAt=seed.part.record.recordedAt; b.rightsDecisions=seed.fixture.input.rightsDecisions;
@@ -112,7 +122,7 @@ it("CSV QB final labels refuse pre-window captures and unresolved participation 
 
 it("CSV QB SQL refuses rehashed source manifests forged values identity and completion", async () => {
   await withProof(async ({ client,store }) => {
-    const seed = await seedConsumers(store); const feature = await store.replaySourcePassingYards(seed.request,seed.profiles);
+    const seed = await seedConsumers(store,await witnessClock(client)); const feature = await store.replaySourcePassingYards(seed.request,seed.profiles);
     const label = (await store.recordSourceFinalLabel("valid-label",seed.labelRequest,null)).body;
     const mutations: ((body: SourceConsumerBody) => void)[] = [
       (body) => { body.manifest.sources[0].selected!.headToken="0".repeat(64); },
@@ -134,7 +144,7 @@ it("CSV QB SQL refuses rehashed source manifests forged values identity and comp
 
 it("CSV QB consumers enforce use-specific rights before files for source context and native evidence", async () => {
   for (const revokeProfile of ["csv-synthetic-player",BRIDGE_PROFILE,"consumer-native"]) await withProof(async ({ client,store,artifacts,target }) => {
-    const seed = await seedConsumers(store);
+    const seed = await seedConsumers(store,await witnessClock(client));
     if (revokeProfile === "consumer-native") {
       const native: Dataset = { formatVersion: 2,profiles: [profile(revokeProfile)],rightsDecisions: [rights(revokeProfile)],
         artifacts: [],captures: [],decisions: [],labels: [],identityLinks: [] };
@@ -176,7 +186,7 @@ it("CSV QB migration upgrades v9 preserving binding and decision history and is 
 
 it("CSV QB consumers operate through non-superuser execute-only recorders and replay refuses damaged bytes or links", async () => {
   await withProof(async ({ client,store,artifacts,target,root }) => {
-    const seed = await seedConsumers(store);
+    const seed = await seedConsumers(store,await witnessClock(client));
     await withLogin(client,target,["predictive_replay","predictive_recorder","predictive_harness"],async (login,loginTarget) => {
       const restricted = await createLocalPredictiveStore(login,loginTarget,artifacts);
       const saved = await restricted.recordSourcePassingYards("role-feature",seed.request,seed.profiles);
@@ -197,7 +207,7 @@ it("CSV QB consumers operate through non-superuser execute-only recorders and re
 
 it("CSV QB consumer retention removes features labels and complete label lineage through the retention-only login", async () => {
   await withProof(async ({ client,store,artifacts,target }) => {
-    const seed = await seedConsumers(store);
+    const seed = await seedConsumers(store,await witnessClock(client));
     const feature = await store.recordSourcePassingYards("retained-feature",seed.request,seed.profiles);
     await store.recordSourceFinalLabel("retained-label-A",seed.labelRequest,null);
     await store.recordSourceFinalLabel("retained-label-B",seed.labelRequest,"retained-label-A");

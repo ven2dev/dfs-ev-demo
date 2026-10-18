@@ -15,7 +15,7 @@ import { NORMALIZER_VERSION } from "../../src/lib/featureStore/source.ts";
 const code={gitSha:"b".repeat(40),contentSha256:sha256(Buffer.from("synthetic-step5-v1"))};
 const mode="retrospective-reconstruction-v1" as const;
 const probes:{name:string;verdict:string;details:unknown}[]=[];
-const paths=["src/lib/featureStore/datasets.ts","src/lib/featureStore/governance.ts","db/proposals/138_dataset_governance.sql","db/proposals/138_feature_store.sql","src/lib/featureStore/derived.ts","tests/feature-store/datasets.check.mts"];
+const paths=["db/proposals/163_effective_rights.sql","src/lib/featureStore/datasets.ts","src/lib/featureStore/governance.ts","db/proposals/138_dataset_governance.sql","db/proposals/138_feature_store.sql","src/lib/featureStore/derived.ts","tests/feature-store/datasets.check.mts"];
 const codeHashes=Object.fromEntries(await Promise.all(paths.map(async p=>[p,sha256(await readFile(new URL("../../"+p,import.meta.url)))])));
 test("#138 pinned datasets, rights, two-step deletion and bounded derived retention",{timeout:120000},async t=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),"dfs138-datasets-")));
@@ -119,6 +119,18 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
    await assert.rejects(readDataset(reader,{...store,get:async key=>{const b=await store.get(key);await grant([]);return b;}},first.datasetId),/current-rights/);
    assert.equal(queryCounts.reader-before,3);await grant(['research']);
    return {objectReadsWhenInitiallyDenied:0,queriesDuringRevocation:3,delivered:false};
+  });
+  await check("expired superseding rights refuse dataset build and file reads until an explicit new grant",async()=>{
+   for(const uses of [['research'],[]]){
+    await writer.query(`INSERT INTO fs138.rights_decisions(profile_id,allowed_uses,valid_from,valid_until,rationale)
+     SELECT profile_id,$1::text[],'2020-01-01','2020-01-02','synthetic expired superseding decision' FROM fs138.source_profiles`,[uses]);
+    let gets=0,puts=0;
+    await assert.rejects(readDataset(reader,{...store,get:async key=>{gets++;return store.get(key);}},first.datasetId),/current-rights/);
+    await assert.rejects(buildDataset(writer,{...store,putIfAbsent:async(key,bytes)=>{puts++;return store.putIfAbsent(key,bytes);}},spec,code),/current-rights/);
+    assert.equal(gets,0);assert.equal(puts,0);
+    await grant(['research']);await readDataset(reader,store,first.datasetId);
+   }
+   return {expiredGrantAndDenialRefused:true,oldGrantResurrected:false,explicitNewGrantRestored:true};
   });
   await check("SQL and rights budgets stay constant as membership grows from 2 to 130 examples",async()=>{
    await writer.query(`INSERT INTO fs138.feature_values(job_id,player_id,game_id,stat,season,cutoff,checkpoint,feature_version,history_policy,evidence_mode,state,reasons,flags,sample_size,history,history_gaps)
@@ -263,6 +275,6 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
   });
  });}finally{
   await rm(root,{recursive:true,force:true});
-  if(process.env.FEATURE_STORE_EVIDENCE_PATH)await writeFile(process.env.FEATURE_STORE_EVIDENCE_PATH,JSON.stringify({issue:138,step:5,recordedAt:new Date().toISOString(),fixture:'synthetic only; not an observed source correction',codeHashes,verdict:probes.length===13&&probes.every(p=>p.verdict==='pass')?'pass':'fail',probes},null,2)+'\n');
+  if(process.env.FEATURE_STORE_EVIDENCE_PATH)await writeFile(process.env.FEATURE_STORE_EVIDENCE_PATH,JSON.stringify({issue:138,step:5,recordedAt:new Date().toISOString(),fixture:'synthetic only; not an observed source correction',codeHashes,verdict:probes.length===14&&probes.every(p=>p.verdict==='pass')?'pass':'fail',probes},null,2)+'\n');
  }
 });
