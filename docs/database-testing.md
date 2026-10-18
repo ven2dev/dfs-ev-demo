@@ -323,3 +323,5 @@ dispositions, and hosted run URLs on #45 rather than in this guide. The initial
 hosted failure and passing proofs are recorded in the
 [completed validation evidence](https://github.com/ven2dev/dfs-ev-demo/issues/45#issuecomment-5989637479).
 Do not treat local truth-table coverage as hosted failure-propagation evidence.
+
+Probe line (throwaway, #140 round 2).
