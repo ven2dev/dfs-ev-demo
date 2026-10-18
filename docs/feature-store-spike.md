@@ -5,6 +5,14 @@ Status: approved by Vernon, amended 2026-10-17. Main-based worktree
 This roadmap records owner authorization to implement the spike, not permission
 to commit, push, freeze a migration, deploy or merge.
 
+## Current delivery boundary (owner revision)
+
+The owner split the original full spike after step 5. This PR delivers the
+completed local foundation; remaining criteria have separate <=5-hour issues.
+See [the revised acceptance boundary and successor roadmap](feature-store-foundation-scope.md).
+The original sequence below is retained as history, not authorization to continue
+steps 6–8 in this issue. No performance or qualification gate is waived.
+
 ## Design basis
 
 - **Pattern:** the approved feature-store / ELT design: immutable content-addressed
