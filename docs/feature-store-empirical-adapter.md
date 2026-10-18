@@ -8,8 +8,18 @@ confirmed the premise and found a shared rights-expiry defect. The owner approve
 the latest-effective-decision rule; the repair below passes its local correctness
 and repeated latency gates. The review fix is committed at `b071c4e`; the
 focused review reported the low-severity follow-ups addressed below. The owner
-approved committing those follow-ups and pushing the branch; hosted CI remains
-pending.
+approved committing those follow-ups and pushing the branch. The initial hosted
+DB gate exposed a date-sensitive legacy test fixture; its approved correction and
+local validation are recorded below. A fresh hosted run remains pending.
+
+## Evidence retained in this PR
+
+Four compact receipts remain: the kernel compatibility proof and the final
+post-review correctness, timing and validation records. Superseded step-2/3/4
+receipts are preserved at commit `7c8fd96`, archived by tag `spike/163-evidence`;
+the historical links below point to that immutable commit. Full per-request
+logs remain outside main, as described in the timing receipt. The application
+and test suite do not read these receipts; they record completed verification.
 
 ## Design basis
 
@@ -201,7 +211,7 @@ Separate fresh-Node probes (n=3, measured only) report process/module/setup,
 connection, each query, calculation, serialization and parent-observed total.
 They do not establish Vercel boot or Neon compute-wake readiness.
 
-See the [compact receipt](evidence/feature-store-163/step-2-hot-path.json) for stage
+See the [compact receipt](https://github.com/ven2dev/dfs-ev-demo/blob/7c8fd9671d51b2b5a07420c057332e7f68b179be/docs/evidence/feature-store-163/step-2-hot-path.json) for stage
 percentiles, query/fixture/code hashes, every target verdict and misses. Full
 per-request trials and plans stay outside git in the receipt's local ObjectStore
 audit addresses. Typecheck and changed-script lint pass. No database suite or
@@ -271,7 +281,7 @@ small source object written through the local ObjectStore. Strict-mode success
 uses a fictional future target with sources captured now; it is **not** proof of
 genuine historical strict availability. No target labels are materialized. These
 are correctness probes, not an evaluation or a final latency benchmark. See the
-[compact receipt](evidence/feature-store-163/step-3-adapter.json) for every probe
+[compact receipt](https://github.com/ven2dev/dfs-ev-demo/blob/7c8fd9671d51b2b5a07420c057332e7f68b179be/docs/evidence/feature-store-163/step-3-adapter.json) for every probe
 verdict and source hashes.
 
 All 33 kernel/legacy projection tests also pass. Typecheck, changed-file ESLint
@@ -303,7 +313,7 @@ rather than silently selecting a replacement. Tests use separate restricted
 reader and pipeline-writer connections with no reader transaction or table lock,
 no timing sleeps for the committed-change races, and real database knowledge
 clocks. An assertion requires every named case to run even without receipt output.
-See the [correctness receipt](evidence/feature-store-163/step-4-correctness.json).
+See the [correctness receipt](https://github.com/ven2dev/dfs-ev-demo/blob/7c8fd9671d51b2b5a07420c057332e7f68b179be/docs/evidence/feature-store-163/step-4-correctness.json).
 
 The final fixture re-ingests all **16 exact #138 wire objects** (103,468 normalized
 rows) and materializes 2022–2025 features, retaining 2021 as warm-up history. No
@@ -346,7 +356,7 @@ and parent-observed total (115.92–126.52 ms); these are measured, not gated. L
 PostgreSQL does not establish Vercel cold boot, Neon wake, hosted networking,
 concurrent-load or production-capacity readiness. The broader gate remains #168.
 
-The [final latency receipt](evidence/feature-store-163/step-4-hot-path.json) records
+The [final latency receipt](https://github.com/ven2dev/dfs-ev-demo/blob/7c8fd9671d51b2b5a07420c057332e7f68b179be/docs/evidence/feature-store-163/step-4-hot-path.json) records
 all boundaries, fixture/code/query hashes, run/stage/sample-size distributions,
 zero misses and each target verdict. Full per-request trials and plans are stored
 outside git through the local ObjectStore at the receipt's exact audit addresses.
@@ -367,7 +377,7 @@ Final affected checks pass: **68/68 feature-store PostgreSQL test entries**
 Frozen migration hashes and main catalog isolation remain covered by the existing
 feature-store schema probes. No repeated benchmark was needed after the passing
 matrix: only documentation and evidence packaging changed. The
-[checkpoint receipt](evidence/feature-store-163/step-4-checkpoint.json) indexes
+[checkpoint receipt](https://github.com/ven2dev/dfs-ev-demo/blob/7c8fd9671d51b2b5a07420c057332e7f68b179be/docs/evidence/feature-store-163/step-4-checkpoint.json) indexes
 these results and the exact correctness/timing receipts. Repo-wide hosted CI and
 owner-run independent review remain pending.
 
@@ -486,7 +496,8 @@ not establish a speed improvement relative to the earlier checkpoint.
 TypeScript and ESLint on all 13 changed TypeScript/MTS files pass. Kernel/legacy
 code and tests are unchanged from the 33-test passing checkpoint. The original
 step-2/step-3/step-4 correctness and timing receipts remain historical evidence;
-the current repair uses [review correctness](evidence/feature-store-163/review-1-correctness.json),
+those earlier receipts are archived under `spike/163-evidence`. The current
+repair uses [review correctness](evidence/feature-store-163/review-1-correctness.json),
 [repeated timings](evidence/feature-store-163/review-1-hot-path.json) and the
 [validation index](evidence/feature-store-163/review-1-validation.json). The latter
 records current source hashes and the complete lint scope.
@@ -498,3 +509,38 @@ The accepted post-final-snapshot revocation gap still applies. The owner approve
 committing the review fixes. Focused re-review reported the low-severity notes
 addressed above. The owner approved the follow-up commit and branch push; hosted
 CI remains pending.
+
+
+## CI fixture repair and evidence cleanup
+
+PR #178's first [DB integration run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/39165441168/job/117787292921)
+ran after the legacy source-consumer fixture's fixed kickoff of October 18, 2026,
+17:00 UTC. Its real database cutoff therefore correctly produced
+`target-not-pregame`, causing six secondary test failures. The failing fixture
+and production path were unchanged from main. An isolated reproduction had
+three passing and six failing cases; moving only the synthetic target into the
+future made all nine original cases pass.
+
+The approved correction uses a clock-dependent fixture factory: sample the
+existing database clock, set the synthetic target seven days later, and end its
+membership interval after kickoff. Each seeded case asserts that its actual
+recorded database cutoff still precedes kickoff. A named regression checks
+membership applicability across both the 2026 and 2027 year boundaries, and the
+required-case contract prevents skipping that regression. Real ingestion and
+decision timestamps and the application's pregame refusal stay unchanged.
+A different fixed future date only defers the same failure; overriding the
+database clock would weaken the knowledge-time proof. Neither approach is used.
+
+The complete aggregate database runner (`scripts/test-db.mjs run`, using the
+existing guarded loopback PostgreSQL 18.6 service) passes, including all ten
+source-consumer cases. TypeScript, changed-file ESLint, six report-contract unit
+cases and whitespace checks also pass. This is the same regression runner used
+by `test:db:local` after service startup. Full logs remain off main; this test-only
+repair does not change the adapter's previously recorded latency evidence.
+
+The PR retains four receipts: **37,003 bytes and 1,213 lines**, down from
+95,296 bytes and 3,274 lines. Five superseded receipts are preserved unchanged
+under local tag `spike/163-evidence` at `7c8fd96`; their links use that already
+pushed immutable commit. Retained receipt hashes and local links verify. The
+owner approved this cleanup and fixture fix for commit; publishing the new
+commit and archive tag still requires fresh push consent.
