@@ -23,6 +23,7 @@ export const READINESS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const PREDICTIVE_REQUIRED_CASES = Object.freeze([
+  "CSV QB consumer fixtures keep a future target and applicable membership across year boundaries",
   "CSV QB consumers record explicit source manifests and final labels without ordinary stats observations",
   "CSV QB consumers preserve earlier cutoffs while recaptures withhold current decisions and labels",
   "CSV QB consumers preserve earlier unavailable replay after a later unrelated source deletion",

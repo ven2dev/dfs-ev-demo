@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "issue": 163,
+  "step": 4,
+  "checkpoint": "review-1-rights-expiry",
+  "runtime": "v24.18.1",
+  "workload": "synthetic adapter contracts and committed between-query writer races on restricted PostgreSQL connections; no real evaluation or latency claim",
+  "codeHashes": {
+    "db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "scripts/feature-store/harness.ts": "5a77a6b8e88da53b9864e3f5a1976135899383b1a631cbe3b8f979c3862009f5",
+    "src/lib/featureStore/empiricalAdapter.ts": "7289081f0500584fa7f0cadf922964bf3010eb9b685fb77524f06c6657c6c07b",
+    "db/proposals/163_empirical_authorize.sql": "5b2940582548aea025c08133dbb356bcb8055de85e57738a16c09d511d3e37a3",
+    "db/proposals/163_empirical_history.sql": "f6c43d4a16504e4b9ce8e60a4adaa027712323276937dced6867b4c44859d0e2",
+    "db/proposals/163_empirical_reader.sql": "91f534bb874d4d08f1ec32a62f9d3b9bd9ccea926fedb578824d41a18c796593",
+    "tests/feature-store/empirical-adapter.check.mts": "8ff7e94ded4524682f964b7fe6c8253f9d285fa4ad13c04a1e2d8535308082c4"
+  },
+  "probes": [
+    {
+      "name": "restricted login cannot read labels, normalized evidence or raw manifests, or write derived values",
+      "verdict": "pass"
+    },
+    {
+      "name": "lagged features alone reproduce hand probabilities and expose research, clocks, versions and lineage",
+      "verdict": "pass"
+    },
+    {
+      "name": "2, 8 and 16 observations keep the same three-statement/two-rights budget",
+      "verdict": "pass"
+    },
+    {
+      "name": "unknown request versions and malformed inputs refuse before SQL",
+      "verdict": "pass"
+    },
+    {
+      "name": "stored unknown versions cannot be reinterpreted as the supported version",
+      "verdict": "pass"
+    },
+    {
+      "name": "real database knowledge clocks have inclusive as-of selection without backdating",
+      "verdict": "pass"
+    },
+    {
+      "name": "strict and retrospective feature versions remain distinct; no synthetic clock is backdated",
+      "verdict": "pass"
+    },
+    {
+      "name": "missing features, one-game history and unavailable features have explicit tagged refusals",
+      "verdict": "pass"
+    },
+    {
+      "name": "materialized history rejects malformed, noninteger, duplicate and mismatched rows",
+      "verdict": "pass"
+    },
+    {
+      "name": "target, equal-cutoff and future events refuse identically in both evidence modes",
+      "verdict": "pass"
+    },
+    {
+      "name": "one microsecond before the event cutoff is accepted in both modes",
+      "verdict": "pass"
+    },
+    {
+      "name": "pinned values survive corrections with current superseded and stale flags",
+      "verdict": "pass"
+    },
+    {
+      "name": "current rights refusals return no derived values or lineage",
+      "verdict": "pass"
+    },
+    {
+      "name": "expired superseding grants and revocations never revive an older research grant",
+      "verdict": "pass"
+    },
+    {
+      "name": "pre-cancellation and an expired request deadline send no query and keep the connection reusable",
+      "verdict": "pass"
+    },
+    {
+      "name": "an in-flight query timeout terminates the connection and returns a discard refusal",
+      "verdict": "pass"
+    },
+    {
+      "name": "in-flight caller cancellation terminates the query connection without a follow-up SQL statement",
+      "verdict": "pass"
+    },
+    {
+      "name": "committed research revocation at either read boundary withholds delivery",
+      "verdict": "pass"
+    },
+    {
+      "name": "committed source deletion at either read boundary removes the selected feature and withholds delivery",
+      "verdict": "pass"
+    },
+    {
+      "name": "delivery refuses lineage attached after authorization instead of widening its authorization",
+      "verdict": "pass"
+    },
+    {
+      "name": "pruned exact versions refuse before or during delivery and never fall back to a newer version",
+      "verdict": "pass"
+    },
+    {
+      "name": "a revocation after the final snapshot illustrates the accepted delivery gap; the next request refuses",
+      "verdict": "pass"
+    },
+    {
+      "name": "the absolute request deadline interrupts a query even without a pg query timeout",
+      "verdict": "pass"
+    }
+  ],
+  "verdict": "pass"
+}

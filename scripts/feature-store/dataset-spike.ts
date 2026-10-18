@@ -23,7 +23,7 @@ const originals=await openLocalObjectStore(previous.storageRoot);
 const storageRoot=await realpath(await mkdtemp(join(tmpdir(),'dfs138-dataset-real-')));
 const store=await openLocalObjectStore(storageRoot);
 const files=['src/lib/featureStore/datasets.ts','src/lib/featureStore/governance.ts','src/lib/featureStore/derived.ts',
- 'db/proposals/138_feature_store.sql','db/proposals/138_dataset_governance.sql','scripts/feature-store/harness.ts',
+ 'db/proposals/138_feature_store.sql','db/proposals/138_dataset_governance.sql','db/proposals/163_effective_rights.sql','scripts/feature-store/harness.ts',
  'scripts/feature-store/dataset-spike.ts','scripts/feature-store/dataset-cold.ts','src/lib/featureStore/objectStore.ts',
  'src/lib/featureStore/localObjectStore.ts','src/lib/featureStore/ingest.ts','src/lib/featureStore/normalize.ts','package-lock.json'];
 const codeHashes=Object.fromEntries(await Promise.all(files.map(async f=>[f,sha256(await readFile(new URL(f,root)))])));
