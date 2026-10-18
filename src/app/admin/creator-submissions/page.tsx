@@ -139,10 +139,10 @@ export default function CreatorSubmissionsPage() {
   };
 
   if (authStatus === "loading") {
-    return <p className="text-sm text-zinc-500">…</p>;
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">…</p>;
   }
   if (authStatus === "unavailable") {
-    return <p className="text-sm text-zinc-500">Sign-in is currently unavailable.</p>;
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">Sign-in is currently unavailable.</p>;
   }
   if (authStatus !== "signed-in") {
     return <p className="text-sm text-zinc-600 dark:text-zinc-400">Sign in to view this page.</p>;
@@ -151,13 +151,13 @@ export default function CreatorSubmissionsPage() {
   // identity transition, before the new uid's own fetch has resolved.
   // Either way, nothing loaded for THIS uid yet -- render as "loading."
   if (!current) {
-    return <p className="text-sm text-zinc-500">…</p>;
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">…</p>;
   }
   if (current.status === "forbidden") {
     return <p className="text-sm text-zinc-600 dark:text-zinc-400">Not authorized.</p>;
   }
   if (current.status === "error") {
-    return <p className="text-sm text-red-600">Failed to load. Refresh to retry.</p>;
+    return <p className="text-sm text-red-700 dark:text-red-400">Failed to load. Refresh to retry.</p>;
   }
 
   return (
@@ -214,7 +214,7 @@ export default function CreatorSubmissionsPage() {
       <section className="min-w-0 rounded-lg border border-zinc-200 p-4 sm:p-6 dark:border-zinc-800">
         <h2 className="text-lg font-medium">Past submissions</h2>
         {current.submissions.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-500">None yet.</p>
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">None yet.</p>
         ) : (
           <ul className="mt-4 space-y-2 text-sm">
             {current.submissions.map((s) => (

@@ -141,8 +141,14 @@ The prior score of 95 did not establish WCAG AA conformance: the reported contra
 ## Post-review verification
 
 - Rebuilt corrected production UI using npm run build -- --webpack; full lint and typecheck passed. All 43 focused page/slate/card/sheet/auth/indicator tests passed.
-- Chrome 155 DevTools Lighthouse 13.4.1 Snapshot mode, Mobile, Accessibility only: populated fixture home page scored 100 in dark mode and 100 in light mode. Both report color-contrast score 1 and no failed automated audits (25/25 applicable audits passed).
-- The light-mode populated bookmaker-sheet snapshot scored 100 with color-contrast score 1 and no failed audits (26/26 applicable audits passed).
+- Chrome 155 DevTools Lighthouse 13.4.1 Snapshot mode, Accessibility only, actual window viewport (Mobile preset selected but screen emulation disabled): populated fixture home page scored 100 in dark mode and 100 in light mode. Both report color-contrast score 1 and no failed automated audits (25/25 applicable audits passed).
+- The light-mode populated bookmaker-sheet snapshot, also at the actual window viewport, scored 100 with color-contrast score 1 and no failed audits (26/26 applicable audits passed).
 - Setup: fixture game; Passing Yards + Anytime Touchdown; load props; Watch Avery Stone Passing Yards as Primary; select Jordan Vale as Secondary. These snapshots preserve the loaded table/tracker state instead of navigating back to an empty page. Light mode uses DevTools CSS prefers-color-scheme emulation.
 - Updated verification/136-lighthouse-main.json records these passing runs and reproduction steps; the previous 95/contrast-failing result is superseded. Raw JSON reports and new screenshots remain outside Git for PR attachments.
 - Screenshot paths do not appear in any commit in origin/main..HEAD after the owner-requested history rewrite. No screenshot binaries will enter main through this branch. Final code corrections await owner commit approval, followed by owner-run Codex review and fresh push consent.
+
+## Final review clarifications
+
+- Account and admin muted labels/loading/empty states now use zinc-600 in light mode and zinc-400 in dark mode; admin load-error text uses red-700/red-400. Authenticated verification remains deferred, as previously approved.
+- Populated DevTools snapshots used the actual Chrome window viewport, not an enforced 412 px viewport: screen emulation was disabled. The recorded configured dimensions are not measurements. Snapshot contrast/accessibility scores remain 100, but will not be described in the PR as 412 px results. Separate phone layout checks remain the width-specific evidence.
+- Disabled Watch explanations remain #104 scope.

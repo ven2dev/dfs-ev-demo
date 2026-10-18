@@ -5,7 +5,7 @@
   "procedure": [
     "Select fixture game, check Passing Yards and Anytime Touchdown, Show props.",
     "Watch Avery Stone Passing Yards as Primary; select Jordan Vale as Secondary.",
-    "DevTools > Lighthouse: Snapshot, Mobile, Accessibility only; Analyze page state.",
+    "DevTools > Lighthouse: Snapshot, Accessibility only; Mobile preset selected but screen emulation disabled, so audit uses the actual window viewport; Analyze page state.",
     "Repeat using DevTools Emulate CSS prefers-color-scheme: light; then open Avery Stone Passing Yards See all and repeat."
   ],
   "runs": [
@@ -20,14 +20,15 @@
       "colorContrastScore": 1,
       "gatherMode": "snapshot",
       "formFactor": "mobile",
-      "screenEmulation": {
+      "failedAudits": [],
+      "configuredScreenEmulation": {
         "mobile": true,
         "width": 412,
         "height": 823,
         "deviceScaleFactor": 1.75,
         "disabled": true
       },
-      "failedAudits": []
+      "actualViewport": "Current Chrome window viewport; pixel dimensions were not recorded. Configured 412x823 dimensions were not enforced because screen emulation was disabled."
     },
     {
       "attachment": "populated-mobile-light.json",
@@ -40,14 +41,15 @@
       "colorContrastScore": 1,
       "gatherMode": "snapshot",
       "formFactor": "mobile",
-      "screenEmulation": {
+      "failedAudits": [],
+      "configuredScreenEmulation": {
         "mobile": true,
         "width": 412,
         "height": 823,
         "deviceScaleFactor": 1.75,
         "disabled": true
       },
-      "failedAudits": []
+      "actualViewport": "Current Chrome window viewport; pixel dimensions were not recorded. Configured 412x823 dimensions were not enforced because screen emulation was disabled."
     },
     {
       "attachment": "bookmaker-sheet-mobile-light.json",
@@ -60,19 +62,21 @@
       "colorContrastScore": 1,
       "gatherMode": "snapshot",
       "formFactor": "mobile",
-      "screenEmulation": {
+      "failedAudits": [],
+      "configuredScreenEmulation": {
         "mobile": true,
         "width": 412,
         "height": 823,
         "deviceScaleFactor": 1.75,
         "disabled": true
       },
-      "failedAudits": []
+      "actualViewport": "Current Chrome window viewport; pixel dimensions were not recorded. Configured 412x823 dimensions were not enforced because screen emulation was disabled."
     }
   ],
   "limitations": [
     "Automated accessibility checks do not prove full WCAG conformance.",
     "Authenticated account audit remains deferred by owner.",
-    "Raw reports and screenshots are external PR attachments, not repository assets."
+    "Raw reports and screenshots are external PR attachments, not repository assets.",
+    "Populated snapshot scores are actual-window results, not 412px mobile-viewport results; they establish automated contrast/accessibility findings for the audited states, not phone-width layout evidence."
   ]
 }

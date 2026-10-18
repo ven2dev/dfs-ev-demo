@@ -55,11 +55,11 @@ export default function AccountPage() {
   };
 
   if (authStatus === "loading") {
-    return <p className="text-sm text-zinc-500">…</p>;
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">…</p>;
   }
 
   if (authStatus === "unavailable") {
-    return <p className="text-sm text-zinc-500">Sign-in is currently unavailable.</p>;
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">Sign-in is currently unavailable.</p>;
   }
 
   // Reachable by direct URL/bookmark even though there's no standing nav
@@ -79,11 +79,11 @@ export default function AccountPage() {
       <h2 className="text-lg font-medium">Account</h2>
       <dl className="mt-4 space-y-3 text-sm">
         <div className="grid grid-cols-1 gap-1 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-3">
-          <dt className="text-zinc-500">Name</dt>
+          <dt className="text-zinc-600 dark:text-zinc-400">Name</dt>
           <dd>{displayName ?? "—"}</dd>
         </div>
         <div className="grid grid-cols-1 gap-1 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-3">
-          <dt className="text-zinc-500">Signed in with</dt>
+          <dt className="text-zinc-600 dark:text-zinc-400">Signed in with</dt>
           <dd>{providerId ? (PROVIDER_LABELS[providerId] ?? providerId) : "—"}</dd>
         </div>
       </dl>
