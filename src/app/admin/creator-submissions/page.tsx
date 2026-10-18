@@ -139,10 +139,10 @@ export default function CreatorSubmissionsPage() {
   };
 
   if (authStatus === "loading") {
-    return <p className="text-sm text-zinc-500">…</p>;
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">…</p>;
   }
   if (authStatus === "unavailable") {
-    return <p className="text-sm text-zinc-500">Sign-in is currently unavailable.</p>;
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">Sign-in is currently unavailable.</p>;
   }
   if (authStatus !== "signed-in") {
     return <p className="text-sm text-zinc-600 dark:text-zinc-400">Sign in to view this page.</p>;
@@ -151,55 +151,59 @@ export default function CreatorSubmissionsPage() {
   // identity transition, before the new uid's own fetch has resolved.
   // Either way, nothing loaded for THIS uid yet -- render as "loading."
   if (!current) {
-    return <p className="text-sm text-zinc-500">…</p>;
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">…</p>;
   }
   if (current.status === "forbidden") {
     return <p className="text-sm text-zinc-600 dark:text-zinc-400">Not authorized.</p>;
   }
   if (current.status === "error") {
-    return <p className="text-sm text-red-600">Failed to load. Refresh to retry.</p>;
+    return <p className="text-sm text-red-700 dark:text-red-400">Failed to load. Refresh to retry.</p>;
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+    <div className="min-w-0 space-y-6 break-words">
+      <section className="min-w-0 rounded-lg border border-zinc-200 p-4 sm:p-6 dark:border-zinc-800">
         <h2 className="text-lg font-medium">Submit a creator transcript</h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <input
             type="text"
             required
+            aria-label="Channel name"
             placeholder="Channel name"
             value={form.channelName}
             onChange={(e) => setForm({ ...form, channelName: e.target.value })}
-            className="w-full rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="min-h-11 w-full min-w-0 rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
           <input
             type="text"
             required
+            aria-label="Video URL"
             placeholder="Video URL"
             value={form.videoUrl}
             onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
-            className="w-full rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="min-h-11 w-full min-w-0 rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
           <input
             type="text"
+            aria-label="Video title (optional)"
             placeholder="Video title (optional)"
             value={form.videoTitle}
             onChange={(e) => setForm({ ...form, videoTitle: e.target.value })}
-            className="w-full rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="min-h-11 w-full min-w-0 rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
           <textarea
             required
+            aria-label="Transcript text"
             placeholder="Transcript text"
             rows={10}
             value={form.transcriptText}
             onChange={(e) => setForm({ ...form, transcriptText: e.target.value })}
-            className="w-full rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+            className="min-h-11 w-full min-w-0 resize-y rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
           />
           <button
             type="submit"
             disabled={submitting}
-            className="rounded bg-black px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
+            className="min-h-11 rounded bg-black px-3 py-1.5 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
           >
             {submitting ? "Submitting…" : "Submit"}
           </button>
@@ -207,25 +211,25 @@ export default function CreatorSubmissionsPage() {
         </form>
       </section>
 
-      <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+      <section className="min-w-0 rounded-lg border border-zinc-200 p-4 sm:p-6 dark:border-zinc-800">
         <h2 className="text-lg font-medium">Past submissions</h2>
         {current.submissions.length === 0 ? (
-          <p className="mt-2 text-sm text-zinc-500">None yet.</p>
+          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">None yet.</p>
         ) : (
           <ul className="mt-4 space-y-2 text-sm">
             {current.submissions.map((s) => (
-              <li key={s.id} className="flex justify-between border-b border-zinc-100 pb-2 dark:border-zinc-800">
-                <span>
+              <li key={s.id} className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 border-b border-zinc-100 pb-2 dark:border-zinc-800">
+                <span className="min-w-0 break-all">
                   {s.channelName} —{" "}
                   {s.videoUrl ? (
-                    <a href={s.videoUrl} target="_blank" rel="noreferrer" className="underline">
+                    <a href={s.videoUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 max-w-full items-center underline">
                       {s.videoTitle || s.videoUrl}
                     </a>
                   ) : (
                     s.videoTitle || "(untitled)"
                   )}
                 </span>
-                <span className="text-zinc-400">
+                <span className="shrink-0 text-zinc-600 dark:text-zinc-400">
                   {new Date(s.submittedAt).toLocaleDateString()}
                 </span>
               </li>
