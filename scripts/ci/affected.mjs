@@ -1,16 +1,15 @@
 // Interim CI suite selection (#140) until the workspace monorepo (#148) moves
 // selection to per-package Turborepo task graphs.
 //
-// - DB integration is skipped when every changed file is in the UI layer or is
-//   documentation. The premise "nothing outside the UI layer imports it" is
-//   enforced by dependency-cruiser (.dependency-cruiser.cjs) in App checks.
-// - App checks are skipped only when every changed file is documentation that
-//   no test reads (APP_DOC_INPUTS).
-// - Everything else runs every suite. Pushes to main and any selection error
-//   run everything. A failure before or after selection (runner setup, writing
-//   outputs) fails the detect job, which blocks the required CI gate.
-// Non-import file access to UI paths is accepted residual risk; see
-// docs/database-testing.md.
+// DB integration is skipped when every changed file is in the skip set: the
+// UI layer and documentation. App checks always run on PRs. The premise that
+// nothing outside the skip set depends on it is enforced in App checks by
+// dependency-cruiser (.dependency-cruiser.cjs) and by the ESLint rule that
+// refuses non-literal module loads (eslint.config.mjs). Pushes to main and
+// any selection error run everything; a failure before or after selection
+// (runner setup, writing outputs) fails the detect job, which blocks the
+// required CI gate. Non-import file access to skip-set paths is accepted
+// residual risk; see docs/database-testing.md.
 import { execFileSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -18,25 +17,15 @@ import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
-// Must equal UI_LAYER in .dependency-cruiser.cjs (enforced by tests/ciAffected.check.mjs).
-export const UI_LAYER = "^(src/components/|src/store/|src/app/(?!api/)|public/)";
+// Must equal SKIP_SET in .dependency-cruiser.cjs (enforced by tests/ciAffected.check.mjs).
+export const SKIP_SET = "^(src/components/|src/store/|src/app/(?!api/)|public/|docs/|[^/]+[.]md$|[.]github/ISSUE_TEMPLATE/)";
 
-// Top-level Markdown, docs/ and issue templates. Markdown elsewhere (e.g.
-// fixtures under tests/) is treated as code.
-export const DOC_LIKE = [/^[^/]+\.md$/, /^docs\//, /^\.github\/ISSUE_TEMPLATE\//];
-
-// Documentation that tests read at runtime, so App checks must run for it.
-export const APP_DOC_INPUTS = ["docs/creator-corpus-operations.md", "docs/creator-corpus-test-matrix.md"];
-
-const isDoc = (file) => DOC_LIKE.some((rule) => rule.test(file));
-const isUi = (file) => new RegExp(UI_LAYER).test(file);
+const inSkipSet = (file) => new RegExp(SKIP_SET).test(file);
 
 export const decide = ({ event, files }) => {
   if (event !== "pull_request" || files.length === 0) return { app: true, db: true, reason: "full run" };
-  const dbInput = files.find((file) => !isUi(file) && !isDoc(file));
-  const appInput = files.find((file) => !isDoc(file) || APP_DOC_INPUTS.includes(file));
-  const reason = dbInput ? `input: ${dbInput}` : appInput ? `UI/docs only (app input: ${appInput})` : "docs only";
-  return { app: Boolean(dbInput || appInput), db: Boolean(dbInput), reason };
+  const dbInput = files.find((file) => !inSkipSet(file));
+  return { app: true, db: Boolean(dbInput), reason: dbInput ? `DB input: ${dbInput}` : "UI layer and docs only" };
 };
 
 // Both paths of a rename are listed (--no-renames); -z keeps unusual names intact.

@@ -17,10 +17,10 @@ concurrency:
 
 jobs:
   changes:
-    # UI/docs-only PRs skip DB integration; docs-only PRs skip both suites;
-    # everything else runs both (scripts/ci/affected.mjs). The UI-layer import
-    # boundary is enforced by dependency-cruiser in App checks. Pushes to main
-    # run everything.
+    # App checks always run. PRs that change only the UI layer and docs skip
+    # DB integration; everything else runs both (scripts/ci/affected.mjs). The
+    # skip-set import boundary is enforced in App checks by dependency-cruiser
+    # and ESLint. Pushes to main run everything.
     name: Detect affected suites
     runs-on: ubuntu-latest
     timeout-minutes: 5

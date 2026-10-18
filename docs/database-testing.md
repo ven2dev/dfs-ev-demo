@@ -215,40 +215,40 @@ It is validation evidence, not a passing integration run.
 
 On PRs to `main`, a dependency-free `Detect affected suites` job
 (`scripts/ci/affected.mjs`) decides which suites run. It also hosts the
-whitespace check.
+whitespace check. `App checks` always runs.
 
 | Changed files | App checks | DB integration |
 |---|---|---|
-| Only documentation no test reads (top-level Markdown, `docs/`, issue templates) | skipped | skipped |
-| Only the UI layer (`src/components/`, `src/store/`, `src/app/` except `src/app/api/`, `public/`) and docs | run | **skipped** |
+| Only the skip set: the UI layer (`src/components/`, `src/store/`, `src/app/` except `src/app/api/`, `public/`) and docs (top-level Markdown, `docs/`, issue templates) | run | **skipped** |
 | Anything else | run | run |
 
 - Renames count both paths (`git diff --no-renames -z`).
 - Pushes to `main` and any selection error run everything. A failure before or
   after selection (runner setup, writing outputs) fails the detect job, which
   blocks the required `CI` gate without running suites.
-- Docs that tests read are declared in `APP_DOC_INPUTS`, so changing them
-  runs App checks. A best-effort literal scan in `tests/ciAffected.check.mjs`
-  fails when code names an undeclared doc.
 
-**Why skipping DB integration for UI changes is safe: an enforced boundary.**
-No code outside the UI layer may import from it. dependency-cruiser enforces
-this (`.dependency-cruiser.cjs`, `npm run lint:boundaries`, in `App checks`)
-for every import form:
+**Why skipping DB integration is safe: an enforced boundary.** No code outside
+the skip set may load a module from it. Both checks run in `App checks`:
 
-- static imports, the `@/` alias, type-only imports and re-exports;
-- dynamic `import()` and `require()`;
-- imports it cannot resolve.
+- dependency-cruiser (`.dependency-cruiser.cjs`, `npm run lint:boundaries`)
+  fails on every literal import form: static imports, the `@/` alias,
+  type-only imports and re-exports, JSON imports, dynamic `import()`,
+  `require()`, `module.require()` and the Vitest loaders (`vi.importActual`,
+  `vi.importMock`, `vi.mock` and friends). It also fails on any import it
+  cannot resolve, such as a tool-only alias.
+- ESLint (`no-restricted-syntax` in `eslint.config.mjs`) refuses module loads
+  dependency-cruiser cannot follow: non-literal `import()`, `require()` and
+  loader arguments, aliasing `require`, and `createRequire`.
 
-`tests/ciBoundary.check.mjs` proves each form is caught, and
-`tests/ciAffected.check.mjs` keeps the selector's UI layer identical to the
+`tests/ciBoundary.check.mjs` proves each form is caught by the real configs,
+and `tests/ciAffected.check.mjs` keeps the selector's skip set identical to the
 enforced boundary.
 
 **Accepted residual risk (owner decision, 2026-10-17).** Non-import access from
-non-UI code to UI-layer files is not detected. That covers filesystem reads,
-shell commands, Docker mounts, symlinks and globs. It is the same trade-off
-standard path-filter tools (GitHub path filters, Turborepo, Nx) make; only
-hermetic sandboxing removes it. Mitigations:
+outside the skip set to skip-set files is not detected. That covers filesystem
+reads (including tests reading docs), shell commands, Docker mounts, symlinks
+and globs. It is the same trade-off standard path-filter tools (GitHub path
+filters, Turborepo, Nx) make; only hermetic sandboxing removes it. Mitigations:
 
 - pushes to `main` always run every suite, so a missed dependency surfaces
   right after merge;
@@ -256,8 +256,9 @@ hermetic sandboxing removes it. Mitigations:
   package-level boundaries.
 
 **Review bar.** Reviews verify that the selector and boundary implement this
-design. A missed *import* route from non-UI code into the UI layer is a defect.
-Non-import file access to UI paths is the accepted risk above, not a blocker.
+design. A missed *module-load* route from outside the skip set into it is a
+defect. Non-import file access to skip-set paths is the accepted risk above,
+not a blocker.
 
 ### Suites and gate
 
