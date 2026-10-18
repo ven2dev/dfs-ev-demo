@@ -45,7 +45,18 @@
       "verdict": "pass"
     },
     "changedFileLint": {
-      "command": "eslint scripts/feature-store/empirical-spike.ts scripts/feature-store/empirical-startup.ts tests/feature-store/empirical-adapter.check.mts",
+      "command": "eslint scripts/feature-store/empirical-prototype.ts scripts/feature-store/empirical-spike.ts scripts/feature-store/empirical-startup.ts src/lib/featureStore/empiricalAdapter.ts src/lib/projection/baseline.ts src/lib/projection/empirical.ts tests/feature-store/empirical-adapter.check.mts tests/projection/baseline.test.ts tests/projection/empirical.test.ts",
+      "files": [
+        "scripts/feature-store/empirical-prototype.ts",
+        "scripts/feature-store/empirical-spike.ts",
+        "scripts/feature-store/empirical-startup.ts",
+        "src/lib/featureStore/empiricalAdapter.ts",
+        "src/lib/projection/baseline.ts",
+        "src/lib/projection/empirical.ts",
+        "tests/feature-store/empirical-adapter.check.mts",
+        "tests/projection/baseline.test.ts",
+        "tests/projection/empirical.test.ts"
+      ],
       "verdict": "pass"
     },
     "whitespace": {
@@ -85,8 +96,9 @@
     "Broader prediction capacity remains #168; owner-run independent review and hosted CI are pending"
   ],
   "localVerdict": "pass",
-  "independentReview": "pending",
+  "independentReview": "completed at 938d398: shared rights-expiry finding confirmed; owner approved latest-effective repair; focused re-review pending",
   "step4CommitApproval": "approved by owner before this checkpoint commit",
   "pushConsent": "pending",
-  "packagedAt": "2026-10-18T20:07:54.979380+00:00"
+  "packagedAt": "2026-10-18T20:07:54.979380+00:00",
+  "reviewResponseCommitApproval": "approved by owner before this review-fix commit"
 }

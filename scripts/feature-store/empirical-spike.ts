@@ -19,13 +19,13 @@ import type { SourceAsset } from "../../src/lib/featureStore/source.ts";
 type Trial = { round: number; mode: "cold" | "warm"; ordinal: number; season: number; sampleSize: number;
   timing?: ProbeTiming; statements: number; rightsChecks: number; serializedBytes?: number; failure?: string };
 const root = new URL("../../", import.meta.url);
-const reportPath = new URL("docs/evidence/feature-store-163/step-4-hot-path.json", root);
+const reportPath = new URL("docs/evidence/feature-store-163/review-1-hot-path.json", root);
 const storageRoot = await realpath(await mkdtemp(join(tmpdir(), "dfs163-spike-")));
 const store = await openLocalObjectStore(storageRoot);
 const predict = await createEmpiricalAdapter();
 const sql = { authorize: await readFile(new URL("db/proposals/163_empirical_authorize.sql", root), "utf8"),
   history: await readFile(new URL("db/proposals/163_empirical_history.sql", root), "utf8") };
-const files = ["db/proposals/163_empirical_reader.sql", "db/proposals/163_empirical_authorize.sql", "db/proposals/163_empirical_history.sql",
+const files = ["db/proposals/163_effective_rights.sql","db/proposals/163_empirical_reader.sql", "db/proposals/163_empirical_authorize.sql", "db/proposals/163_empirical_history.sql",
   "src/lib/featureStore/empiricalAdapter.ts", "scripts/feature-store/empirical-startup.ts", "scripts/feature-store/empirical-spike.ts",
   "scripts/feature-store/harness.ts", "src/lib/projection/empirical.ts", "src/lib/projection/baseline.ts",
   "src/lib/featureStore/derived.ts", "src/lib/featureStore/ingest.ts", "src/lib/featureStore/normalize.ts", "src/lib/featureStore/source.ts",
@@ -36,7 +36,7 @@ const code = { gitSha: (await promisify(execFile)("git", ["rev-parse", "HEAD"]))
 const trials: Trial[] = [];
 const startups: Record<string, unknown>[] = [];
 const report: Record<string, unknown> = {
-  schemaVersion: 1, issue: 163, step: 4, adapter: EMPIRICAL_ADAPTER, recordedAt: new Date().toISOString(), code, codeHashes, runtime: process.version,
+  schemaVersion: 1, issue: 163, step: 4, checkpoint: "review-1-rights-expiry", adapter: EMPIRICAL_ADAPTER, recordedAt: new Date().toISOString(), code, codeHashes, runtime: process.version,
   machine: { platform: platform(), arch: arch(), cpus: cpus().length, memoryBytes: totalmem() }, storageRoot,
   boundary: { warm: "existing restricted connection through response JSON serialization",
     cold: "already-running process: new restricted connection through response JSON serialization",

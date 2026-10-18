@@ -25,12 +25,7 @@ feature AS MATERIALIZED(
 ), profiles AS(SELECT DISTINCT profile_id FROM lineage WHERE profile_id IS NOT NULL),
 decisions AS MATERIALIZED(
  SELECT p.profile_id,r.decision_id,r.allowed_uses FROM profiles p CROSS JOIN clock
- LEFT JOIN LATERAL(
-  SELECT decision_id,allowed_uses FROM fs138.rights_decisions r
-  WHERE r.profile_id=p.profile_id AND r.recorded_at<=now AND r.valid_from<=now
-   AND (r.valid_until IS NULL OR r.valid_until>now)
-  ORDER BY r.recorded_at DESC,r.decision_id DESC LIMIT 1
- ) r ON true
+ LEFT JOIN LATERAL fs138.effective_rights(p.profile_id,now,now) r ON true
 ), inputs AS(
  SELECT coalesce(array_agg(snapshot_id ORDER BY snapshot_id),'{}') AS ids FROM lineage
 ), head AS MATERIALIZED(

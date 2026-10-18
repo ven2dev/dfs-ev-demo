@@ -14,7 +14,7 @@ import { openLocalObjectStore } from "../../src/lib/featureStore/localObjectStor
 import { objectKey, sha256 } from "../../src/lib/featureStore/objectStore.ts";
 
 const probes: { name: string; verdict: string }[] = [];
-const paths = ["src/lib/featureStore/empiricalAdapter.ts", "db/proposals/163_empirical_authorize.sql",
+const paths = ["db/proposals/163_effective_rights.sql", "scripts/feature-store/harness.ts", "src/lib/featureStore/empiricalAdapter.ts", "db/proposals/163_empirical_authorize.sql",
   "db/proposals/163_empirical_history.sql", "db/proposals/163_empirical_reader.sql", "tests/feature-store/empirical-adapter.check.mts"];
 const codeHashes = Object.fromEntries(await Promise.all(paths.map(async path => [path, sha256(await readFile(new URL("../../" + path, import.meta.url)))])));
 const retrospective = "retrospective-reconstruction-v1" as const;
@@ -211,6 +211,15 @@ test("#163 versioned materialized research adapter", { timeout: 120_000 }, async
           await grant([]); unavailable(await predict(reader, request), "current-rights-or-status-refused");
           await grant(["research"]); assert.equal((await predict(reader, request)).response.status, "available");
         });
+        await check("expired superseding grants and revocations never revive an older research grant", async () => {
+          for (const uses of [["research"], []]) {
+            await writer.query(`INSERT INTO fs138.rights_decisions(profile_id,allowed_uses,valid_from,valid_until,rationale)
+              VALUES('fs163-synthetic',$1,'2020-01-01','2020-01-02','synthetic expired superseding decision')`, [uses]);
+            const result = await predict(reader, request); unavailable(result, "current-rights-or-status-refused");
+            assert.equal(result.work.statements, 1);
+            await grant(["research"]); assert.equal((await predict(reader, request)).response.status, "available");
+          }
+        });
         await check("pre-cancellation and an expired request deadline send no query and keep the connection reusable", async () => {
           const controller = new AbortController(); controller.abort();
           const cancelled = await predict(reader, request, { signal: controller.signal }); unavailable(cancelled, "cancelled");
@@ -298,13 +307,13 @@ test("#163 versioned materialized research adapter", { timeout: 120_000 }, async
         });
       } finally { await Promise.all(clients.map(client => client.end())); }
     });
-    assert.equal(probes.length, 22, "all adapter contract cases ran");
+    assert.equal(probes.length, 23, "all adapter contract cases ran");
     assert(probes.every(probe => probe.verdict === "pass"));
   } finally {
     await rm(root, { recursive: true, force: true });
     if (process.env.FEATURE_STORE_EVIDENCE_PATH) await writeFile(process.env.FEATURE_STORE_EVIDENCE_PATH, JSON.stringify({
-      schemaVersion: 1, issue: 163, step: 4, runtime: process.version, workload: "synthetic adapter contracts and committed between-query writer races on restricted PostgreSQL connections; no real evaluation or latency claim",
-      codeHashes, probes, verdict: probes.length === 22 && probes.every(probe => probe.verdict === "pass") ? "pass" : "fail",
+      schemaVersion: 1, issue: 163, step: 4, checkpoint: "review-1-rights-expiry", runtime: process.version, workload: "synthetic adapter contracts and committed between-query writer races on restricted PostgreSQL connections; no real evaluation or latency claim",
+      codeHashes, probes, verdict: probes.length === 23 && probes.every(probe => probe.verdict === "pass") ? "pass" : "fail",
     }, null, 2) + "\n");
   }
 });

@@ -10,3 +10,4 @@ GRANT SELECT ON fs138.feature_values,fs138.feature_inputs,fs138.rights_decisions
 GRANT SELECT(snapshot_id,profile_id,job_id,deleted_at,available_at,ingested_at,evidence_basis)
  ON fs138.source_snapshots TO fs163_research_reader;
 GRANT SELECT(job_id,status) ON fs138.job_runs TO fs163_research_reader;
+GRANT EXECUTE ON FUNCTION fs138.effective_rights(text,timestamptz,timestamptz) TO fs163_research_reader;

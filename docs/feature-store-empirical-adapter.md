@@ -3,10 +3,11 @@
 Owner-approved roadmap: [issue #163](https://github.com/ven2dev/dfs-ev-demo/issues/163#issuecomment-6250059648).
 Implementation branch: `feature/dfsEV-163-empirical-adapter`, created in a separate
 worktree from fresh `origin/main` at `20b712c7ec2a9a4e8cd3bbb5d780f5f4f559ac21`.
-The owner approved starting the issue iteration. Steps 1–3 are committed. The
-completed adapter passes the step-4 correctness and repeated local latency/work
-gates below. The owner approved the step-4 commit; owner-run independent review
-and hosted CI remain pending. Nothing has been pushed.
+The original four steps are committed through `938d398`. Independent review
+confirmed the premise and found a shared rights-expiry defect. The owner approved
+the latest-effective-decision rule; the repair below passes its local correctness
+and repeated latency gates. The owner approved the review-fix commit; focused
+re-review remains pending. Nothing has been pushed.
 
 ## Design basis
 
@@ -387,3 +388,96 @@ The owner approved the step-4 commit. This checkpoint packages the completed
 local proof for owner-run independent review. Fresh consent precedes any push
 or PR; the owner merges.
 No frozen migration, hosted write, GCS, UI, deployment or retired branch changed.
+
+
+## Independent review at 938d398 — shared rights repair
+
+The reviewer confirmed the design premise and reported no high-severity finding.
+The medium finding was confirmed in both readers: filtering expired decisions
+before choosing the latest one could resurrect an older grant. The owner approved
+**latest effective decision wins; expiry refuses access until a new grant**.
+
+The companion proposal `db/proposals/163_effective_rights.sql` now defines the
+single read-only, invoker-rights policy function used by both the adapter and the
+existing dataset reader. It selects the latest recorded decision whose valid-from
+has passed, then returns no effective uses if that decision has expired. The
+selected decision identity remains intact. Future-effective decisions wait until
+their effective time, and later explicit grants can restore access. Both callers
+pass their single statement clock as effective and knowledge time. No clock is
+backdated and no reader privilege is elevated.
+
+The disposable harness applies this proposal after the two existing #138 files.
+Those #138 files and all frozen migrations remain unchanged. Any manually created
+scratch fixture using the updated dataset reader also needs this companion
+proposal; it is not a hosted rollout or an ordered migration.
+
+The original checkpoint's lint entry now lists all nine TypeScript/MTS files
+changed at `938d398`. The repair's complete changed-file lint run covers **13
+files**, including its additional dataset, harness and rights tests. The parser's
+short timezone-offset behavior remains unchanged: an unsupported format refuses
+access. No authorization or look-ahead bypass was identified in that low finding.
+
+The benchmark boundary remains deliberately narrow: 12 feature IDs, one
+knowledge-as-of time, retrospective mode only and unflushed OS/database caches.
+#168's broader capacity work should vary feature identities and knowledge clocks
+and include strict mode. This proof supplies no such coverage.
+
+### Approved shared-policy repair design basis
+
+- **Pattern:** one read-only SQL policy function shared by the empirical adapter
+  and dataset reader. Select the latest recorded, effective decision first;
+  expose no effective uses after its expiry, preventing older grants from
+  reappearing. Both callers supply the same statement clock for effective and
+  knowledge time. A later explicit grant can restore access.
+- **Alternatives rejected:** duplicating the corrected predicate leaves two
+  policy implementations that can drift; a current-time-only view hides the
+  caller's authorization clock and makes knowledge/boundary tests less explicit.
+- **Targets:** preserve exactly three prediction statements and two batched
+  rights/status queries; repeat all six 100-request cold/warm cohorts at unchanged
+  p95 <=210 ms and 300 ms deadline. Dataset build/read statement budgets remain
+  eight/three and two rights queries.
+- **Requirement reasons:** select before checking expiry to prevent superseded
+  grants from resurrecting; preserve database-recorded knowledge time to prevent
+  retrospective rights from entering earlier answers; use SECURITY INVOKER and
+  existing role grants to avoid expanding reader privileges.
+- **Scope:** a companion proposal in db/proposals/, applied by the disposable
+  harness after #138. Existing #138 proposal files and all frozen migrations stay
+  unchanged. No new tables, cache, reader locks, model artifacts or hosted path.
+  The existing rights tables and trusted-writer threat model remain in use. This
+  is the shared source/dataset policy repair, not #166's model-artifact expansion.
+
+
+### Repair validation and focused re-review
+
+All **77 feature-store PostgreSQL test entries** pass, including **23 named
+adapter probes**, the dataset build/read regression, and six shared-policy cases:
+expired newer grant; expired newer denial; exact microsecond expiry boundary;
+future-effective selection; earlier knowledge snapshot; and explicit restoration.
+Policy tests use fixed valid-time instants and actual DB-recorded knowledge clocks,
+without sleeping to cross expiry. Both production reader regressions show that an
+expired superseding decision releases no probabilities/file bytes, and an explicit
+new grant restores access. Dataset statement budgets remain eight for build and
+three for read, with two rights checks in each operation.
+
+The repeated final adapter matrix also passes: **600/600 requests**, all six
+100-request cohorts, exactly **three statements and two batched rights/status
+queries**, no raw/normalized/label/per-row validation queries, and **zero misses**.
+The same source bytes and natural feature-content hash are retained. Aggregate
+p95 is **20.85 ms cold** and **6.80 ms warm**; worst cohort p95 is **20.90 ms**,
+against the unchanged 210 ms target and 300 ms deadline. These absolute runs do
+not establish a speed improvement relative to the earlier checkpoint.
+
+TypeScript and ESLint on all 13 changed TypeScript/MTS files pass. Kernel/legacy
+code and tests are unchanged from the 33-test passing checkpoint. The original
+step-2/step-3/step-4 correctness and timing receipts remain historical evidence;
+the current repair uses [review correctness](evidence/feature-store-163/review-1-correctness.json),
+[repeated timings](evidence/feature-store-163/review-1-hot-path.json) and the
+[validation index](evidence/feature-store-163/review-1-validation.json). The latter
+records current source hashes and the complete lint scope.
+
+Focused re-review should verify selection-before-expiration in the shared
+function, its use at both checks in both readers, invoker privileges, actual
+knowledge-time and expiry boundaries, and the unchanged work/speed budgets.
+The accepted post-final-snapshot revocation gap still applies. The owner approved
+committing the review fixes. Focused re-review, fresh push consent and hosted CI
+remain pending.

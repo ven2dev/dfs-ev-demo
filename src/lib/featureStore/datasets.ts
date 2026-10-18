@@ -91,8 +91,7 @@ const authorize = async (client: Database, snapshots: string[], datasetId: strin
  profiles AS(SELECT DISTINCT s.profile_id FROM wanted w JOIN fs138.source_snapshots s USING(snapshot_id)),
  decisions AS MATERIALIZED(
   SELECT p.profile_id,r.decision_id,r.allowed_uses FROM profiles p CROSS JOIN clock
-  LEFT JOIN LATERAL(SELECT * FROM fs138.rights_decisions r WHERE r.profile_id=p.profile_id AND r.recorded_at<=now
-   AND r.valid_from<=now AND (r.valid_until IS NULL OR r.valid_until>now) ORDER BY r.recorded_at DESC,r.decision_id DESC LIMIT 1) r ON true
+  LEFT JOIN LATERAL fs138.effective_rights(p.profile_id,now,now) r ON true
  ) SELECT now::text AS checked_at,
   NOT EXISTS(SELECT 1 FROM wanted w LEFT JOIN fs138.source_snapshots s USING(snapshot_id) WHERE s.snapshot_id IS NULL OR s.deleted_at IS NOT NULL)
   AND NOT EXISTS(SELECT 1 FROM decisions WHERE decision_id IS NULL OR NOT('research'=ANY(allowed_uses)))

@@ -1,0 +1,920 @@
+{
+  "schemaVersion": 1,
+  "issue": 163,
+  "step": 4,
+  "checkpoint": "review-1-rights-expiry",
+  "adapter": {
+    "id": "qb-passing-yards-materialized",
+    "version": "empirical-feature-adapter-v1"
+  },
+  "recordedAt": "2026-10-18T20:35:00.626Z",
+  "code": {
+    "gitSha": "938d398e493c274b8bf00bbc01a9fffc4d07cd35",
+    "contentSha256": "55d440631e8041969fb7e22abdc074923c232402c4e43aaf280e5d6090a9835a"
+  },
+  "codeHashes": {
+    "db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "db/proposals/163_empirical_reader.sql": "91f534bb874d4d08f1ec32a62f9d3b9bd9ccea926fedb578824d41a18c796593",
+    "db/proposals/163_empirical_authorize.sql": "5b2940582548aea025c08133dbb356bcb8055de85e57738a16c09d511d3e37a3",
+    "db/proposals/163_empirical_history.sql": "f6c43d4a16504e4b9ce8e60a4adaa027712323276937dced6867b4c44859d0e2",
+    "src/lib/featureStore/empiricalAdapter.ts": "7289081f0500584fa7f0cadf922964bf3010eb9b685fb77524f06c6657c6c07b",
+    "scripts/feature-store/empirical-startup.ts": "9a564c47699e6bd4952fb0bd818a8a50e930b0cafba211c5fa91c7ccd3a7ebdd",
+    "scripts/feature-store/empirical-spike.ts": "3c39207d15a76506ab88fced2a10a2d05882ff837f264d979433754bbbb5e951",
+    "scripts/feature-store/harness.ts": "5a77a6b8e88da53b9864e3f5a1976135899383b1a631cbe3b8f979c3862009f5",
+    "src/lib/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "src/lib/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "src/lib/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "src/lib/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+    "src/lib/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "src/lib/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7",
+    "db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "package-lock.json": "1d3d7bfba991beda56edf888745509909e6521043e8e29d969c1114959f265fc"
+  },
+  "runtime": "v24.18.1",
+  "machine": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpus": 12,
+    "memoryBytes": 19327352832
+  },
+  "storageRoot": "/private/var/folders/fp/n2fl150x07x3xbljxhw3pt800000gn/T/dfs163-spike-7fGTKW",
+  "boundary": {
+    "warm": "existing restricted connection through response JSON serialization",
+    "cold": "already-running process: new restricted connection through response JSON serialization",
+    "processStartup": "separate fresh-process probes; not gated; parent observes first complete response line, excluding teardown",
+    "deadlineMs": 300,
+    "p95TargetMs": 210,
+    "percentile": "nearest rank",
+    "requestsPerModePerRound": 100,
+    "rounds": 3
+  },
+  "cacheState": "No prediction result cache or prepared statement names; OS and PostgreSQL buffers are unflushed; setup SQL/artifacts loaded before request timing",
+  "limitations": [
+    "Local PostgreSQL only; no Vercel function boot or Neon scale-to-zero wake measurement",
+    "Retrospective reconstruction using current corrected files; historical availability unverified",
+    "Revocations after the final SQL snapshot and before response bytes leave the process may not be observed"
+  ],
+  "verdict": "pass",
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "fixture": {
+    "sourceManifestSha256": "2086cbbde03664d99eccbec64c12f659262f848c31ccb97d90aaff2c1c601f30",
+    "inputs": [
+      {
+        "name": "games.csv.gz",
+        "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+        "rows": 1359
+      },
+      {
+        "name": "pbp_participation_2021.csv",
+        "sha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+        "rows": 18309
+      },
+      {
+        "name": "pbp_participation_2022.csv",
+        "sha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+        "rows": 18193
+      },
+      {
+        "name": "pbp_participation_2023.csv",
+        "sha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+        "rows": 17670
+      },
+      {
+        "name": "pbp_participation_2024.csv",
+        "sha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+        "rows": 17564
+      },
+      {
+        "name": "pbp_participation_2025.csv",
+        "sha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+        "rows": 17707
+      },
+      {
+        "name": "roster_weekly_2021.csv",
+        "sha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+        "rows": 1916
+      },
+      {
+        "name": "roster_weekly_2022.csv",
+        "sha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+        "rows": 1844
+      },
+      {
+        "name": "roster_weekly_2023.csv",
+        "sha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+        "rows": 1812
+      },
+      {
+        "name": "roster_weekly_2024.csv.gz",
+        "sha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+        "rows": 1867
+      },
+      {
+        "name": "roster_weekly_2025.csv.gz",
+        "sha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+        "rows": 1948
+      },
+      {
+        "name": "stats_player_week_2021.csv.gz",
+        "sha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+        "rows": 655
+      },
+      {
+        "name": "stats_player_week_2022.csv.gz",
+        "sha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+        "rows": 633
+      },
+      {
+        "name": "stats_player_week_2023.csv.gz",
+        "sha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+        "rows": 663
+      },
+      {
+        "name": "stats_player_week_2024.csv.gz",
+        "sha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+        "rows": 664
+      },
+      {
+        "name": "stats_player_week_2025.csv.gz",
+        "sha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+        "rows": 664
+      }
+    ],
+    "derived": [
+      {
+        "season": 2022,
+        "rows": 1838,
+        "usable": 1204
+      },
+      {
+        "season": 2023,
+        "rows": 1812,
+        "usable": 1380
+      },
+      {
+        "season": 2024,
+        "rows": 1867,
+        "usable": 1482
+      },
+      {
+        "season": 2025,
+        "rows": 1948,
+        "usable": 1536
+      }
+    ],
+    "featureContentSha256": "7596bc9b7d600395dc92f3ad39225aa78de2e58a0a1640ad7d030584eafac196",
+    "mode": "retrospective-reconstruction-v1",
+    "historicalAvailability": "unverified",
+    "labelsMaterialized": 0,
+    "examples": [
+      {
+        "season": 2022,
+        "sampleSize": 2
+      },
+      {
+        "season": 2022,
+        "sampleSize": 8
+      },
+      {
+        "season": 2022,
+        "sampleSize": 16
+      },
+      {
+        "season": 2023,
+        "sampleSize": 2
+      },
+      {
+        "season": 2023,
+        "sampleSize": 8
+      },
+      {
+        "season": 2023,
+        "sampleSize": 16
+      },
+      {
+        "season": 2024,
+        "sampleSize": 2
+      },
+      {
+        "season": 2024,
+        "sampleSize": 8
+      },
+      {
+        "season": 2024,
+        "sampleSize": 16
+      },
+      {
+        "season": 2025,
+        "sampleSize": 2
+      },
+      {
+        "season": 2025,
+        "sampleSize": 8
+      },
+      {
+        "season": 2025,
+        "sampleSize": 16
+      }
+    ],
+    "knownAsOf": "2026-10-18 20:35:31.837358+00"
+  },
+  "workProof": {
+    "actualPlanRelations": [
+      "feature_inputs",
+      "feature_values",
+      "job_runs",
+      "rights_decisions",
+      "source_snapshots"
+    ],
+    "deniedReads": [
+      "outcome_labels",
+      "label_inputs",
+      "norm_schedule",
+      "norm_player_game_stats",
+      "norm_identity",
+      "norm_participation",
+      "normalized_evidence"
+    ],
+    "rawManifestReadDenied": true,
+    "derivedWriteDenied": true,
+    "measuredQuerySequence": [
+      "authorize",
+      "history",
+      "authorize"
+    ],
+    "noRawEvidenceOrPerRowValidationReads": "Restricted permissions and EXPLAIN relation inventory; every measured SQL text matches the two recorded proposal hashes"
+  },
+  "processStartup": {
+    "probes": [
+      {
+        "processReadyMs": 106.113583,
+        "parentObservedTotalMs": 152.4477079999997,
+        "request": {
+          "connection": 10.930542000000003,
+          "authorization": 12.554333000000014,
+          "history": 0.8112919999999804,
+          "calculation": 0.2732499999999902,
+          "delivery": 3.506750000000011,
+          "serialization": 0.039791000000008125,
+          "request": 28.6965
+        }
+      },
+      {
+        "processReadyMs": 79.279125,
+        "parentObservedTotalMs": 125.0111670000042,
+        "request": {
+          "connection": 11.628958999999995,
+          "authorization": 16.81387500000001,
+          "history": 0.9455420000000032,
+          "calculation": 0.3042080000000027,
+          "delivery": 3.9918750000000074,
+          "serialization": 0.031041999999999348,
+          "request": 34.242959
+        }
+      },
+      {
+        "processReadyMs": 74.28275,
+        "parentObservedTotalMs": 110.17445900000166,
+        "request": {
+          "connection": 8.96929200000001,
+          "authorization": 11.29325,
+          "history": 0.8954999999999984,
+          "calculation": 0.32879199999999287,
+          "delivery": 3.580083000000002,
+          "serialization": 0.032707999999999515,
+          "request": 25.677375000000012
+        }
+      }
+    ],
+    "measuredOnly": true,
+    "n": 3
+  },
+  "plans": {
+    "objectKey": "audits/f631164ac726f0fa0ae6d24470dfe22468e5e3bea7fc9546af8915520dd273e6",
+    "sha256": "f631164ac726f0fa0ae6d24470dfe22468e5e3bea7fc9546af8915520dd273e6",
+    "byteSize": 24819
+  },
+  "cohorts": [
+    {
+      "round": 1,
+      "mode": "cold",
+      "requests": 100,
+      "completed": 100,
+      "timeMs": {
+        "connection": {
+          "n": 100,
+          "p50": 5.000041999999667,
+          "p95": 5.753833000002487,
+          "max": 11.884500000000116
+        },
+        "authorization": {
+          "n": 100,
+          "p50": 8.194208000000799,
+          "p95": 10.630417000000307,
+          "max": 15.029834000000847
+        },
+        "history": {
+          "n": 100,
+          "p50": 0.6645410000019183,
+          "p95": 0.909750000002532,
+          "max": 3.4528750000026776
+        },
+        "calculation": {
+          "n": 100,
+          "p50": 0.07329200000094716,
+          "p95": 0.11883300000044983,
+          "max": 0.31954099999711616
+        },
+        "delivery": {
+          "n": 100,
+          "p50": 2.8626250000015716,
+          "p95": 3.4503750000003492,
+          "max": 7.650708000001032
+        },
+        "serialization": {
+          "n": 100,
+          "p50": 0.042417000004206784,
+          "p95": 0.05404099999941536,
+          "max": 0.05991599999833852
+        },
+        "request": {
+          "n": 100,
+          "p50": 17.003208999994968,
+          "p95": 20.902125000000524,
+          "max": 31.218917000001966
+        }
+      },
+      "over210Ms": 0,
+      "misses": [],
+      "statementCounts": [
+        3
+      ],
+      "rightsCheckCounts": [
+        2
+      ],
+      "verdict": "pass"
+    },
+    {
+      "round": 1,
+      "mode": "warm",
+      "requests": 100,
+      "completed": 100,
+      "timeMs": {
+        "connection": {
+          "n": 100,
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "authorization": {
+          "n": 100,
+          "p50": 2.577167000003101,
+          "p95": 3.146999999997206,
+          "max": 7.660624999996799
+        },
+        "history": {
+          "n": 100,
+          "p50": 0.45204199999716366,
+          "p95": 0.6146669999943697,
+          "max": 2.5851669999974547
+        },
+        "calculation": {
+          "n": 100,
+          "p50": 0.021542000002227724,
+          "p95": 0.0571669999990263,
+          "max": 0.08612500000162981
+        },
+        "delivery": {
+          "n": 100,
+          "p50": 2.548792000001413,
+          "p95": 3.282166999997571,
+          "max": 7.249917000001005
+        },
+        "serialization": {
+          "n": 100,
+          "p50": 0.018084000003000256,
+          "p95": 0.04333300000143936,
+          "max": 0.05495800000062445
+        },
+        "request": {
+          "n": 100,
+          "p50": 5.6675410000025295,
+          "p95": 7.023124999999709,
+          "max": 16.864166999999725
+        }
+      },
+      "over210Ms": 0,
+      "misses": [],
+      "statementCounts": [
+        3
+      ],
+      "rightsCheckCounts": [
+        2
+      ],
+      "verdict": "pass"
+    },
+    {
+      "round": 2,
+      "mode": "cold",
+      "requests": 100,
+      "completed": 100,
+      "timeMs": {
+        "connection": {
+          "n": 100,
+          "p50": 4.730666999996174,
+          "p95": 6.495709000002535,
+          "max": 10.647125000003143
+        },
+        "authorization": {
+          "n": 100,
+          "p50": 8.541541999999026,
+          "p95": 10.072624999993423,
+          "max": 15.082249999999476
+        },
+        "history": {
+          "n": 100,
+          "p50": 0.6412500000005821,
+          "p95": 0.9369579999984126,
+          "max": 4.3304170000046724
+        },
+        "calculation": {
+          "n": 100,
+          "p50": 0.044541999995999504,
+          "p95": 0.08383299999695737,
+          "max": 0.10691699999733828
+        },
+        "delivery": {
+          "n": 100,
+          "p50": 2.862582999994629,
+          "p95": 3.691500000000815,
+          "max": 7.162374999999884
+        },
+        "serialization": {
+          "n": 100,
+          "p50": 0.029499999996914994,
+          "p95": 0.05745800000295276,
+          "max": 0.10983300000225427
+        },
+        "request": {
+          "n": 100,
+          "p50": 16.965958000000683,
+          "p95": 20.385291999999026,
+          "max": 29.89587500000198
+        }
+      },
+      "over210Ms": 0,
+      "misses": [],
+      "statementCounts": [
+        3
+      ],
+      "rightsCheckCounts": [
+        2
+      ],
+      "verdict": "pass"
+    },
+    {
+      "round": 2,
+      "mode": "warm",
+      "requests": 100,
+      "completed": 100,
+      "timeMs": {
+        "connection": {
+          "n": 100,
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "authorization": {
+          "n": 100,
+          "p50": 2.515040999998746,
+          "p95": 2.8658749999958673,
+          "max": 4.059165999999095
+        },
+        "history": {
+          "n": 100,
+          "p50": 0.471958000001905,
+          "p95": 0.6615420000016456,
+          "max": 1.7637090000062017
+        },
+        "calculation": {
+          "n": 100,
+          "p50": 0.03562499999679858,
+          "p95": 0.06529199999931734,
+          "max": 0.09591699999873526
+        },
+        "delivery": {
+          "n": 100,
+          "p50": 2.4875410000022384,
+          "p95": 2.932375000003958,
+          "max": 3.443333999995957
+        },
+        "serialization": {
+          "n": 100,
+          "p50": 0.03745799999887822,
+          "p95": 0.06866599999921164,
+          "max": 0.07662499999423744
+        },
+        "request": {
+          "n": 100,
+          "p50": 5.618249999999534,
+          "p95": 6.681834000002709,
+          "max": 8.949832999998762
+        }
+      },
+      "over210Ms": 0,
+      "misses": [],
+      "statementCounts": [
+        3
+      ],
+      "rightsCheckCounts": [
+        2
+      ],
+      "verdict": "pass"
+    },
+    {
+      "round": 3,
+      "mode": "cold",
+      "requests": 100,
+      "completed": 100,
+      "timeMs": {
+        "connection": {
+          "n": 100,
+          "p50": 4.988707999997132,
+          "p95": 6.309832999999344,
+          "max": 9.367207999996026
+        },
+        "authorization": {
+          "n": 100,
+          "p50": 8.124500000005355,
+          "p95": 9.58887500000128,
+          "max": 21.82958399999916
+        },
+        "history": {
+          "n": 100,
+          "p50": 0.6171659999963595,
+          "p95": 0.8271250000034343,
+          "max": 2.733334000004106
+        },
+        "calculation": {
+          "n": 100,
+          "p50": 0.05645800000638701,
+          "p95": 0.08720899999752874,
+          "max": 0.09445799999957671
+        },
+        "delivery": {
+          "n": 100,
+          "p50": 2.868709000002127,
+          "p95": 3.514792000001762,
+          "max": 8.998665999999503
+        },
+        "serialization": {
+          "n": 100,
+          "p50": 0.04483299999992596,
+          "p95": 0.05754200000228593,
+          "max": 0.11579200000414858
+        },
+        "request": {
+          "n": 100,
+          "p50": 16.906875000000582,
+          "p95": 20.074375000003783,
+          "max": 40.069250000000466
+        }
+      },
+      "over210Ms": 0,
+      "misses": [],
+      "statementCounts": [
+        3
+      ],
+      "rightsCheckCounts": [
+        2
+      ],
+      "verdict": "pass"
+    },
+    {
+      "round": 3,
+      "mode": "warm",
+      "requests": 100,
+      "completed": 100,
+      "timeMs": {
+        "connection": {
+          "n": 100,
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "authorization": {
+          "n": 100,
+          "p50": 2.5397499999962747,
+          "p95": 3.5179169999973965,
+          "max": 7.69445899999846
+        },
+        "history": {
+          "n": 100,
+          "p50": 0.42991600000095787,
+          "p95": 0.6087079999997513,
+          "max": 2.195625000000291
+        },
+        "calculation": {
+          "n": 100,
+          "p50": 0.02745899999717949,
+          "p95": 0.06195799999841256,
+          "max": 0.07862500000192085
+        },
+        "delivery": {
+          "n": 100,
+          "p50": 2.492416000000958,
+          "p95": 3.1653340000048047,
+          "max": 7.8879999999990105
+        },
+        "serialization": {
+          "n": 100,
+          "p50": 0.023999999997613486,
+          "p95": 0.046999999998661224,
+          "max": 0.09420799999497831
+        },
+        "request": {
+          "n": 100,
+          "p50": 5.612916000005498,
+          "p95": 7.199000000000524,
+          "max": 17.745083000001614
+        }
+      },
+      "over210Ms": 0,
+      "misses": [],
+      "statementCounts": [
+        3
+      ],
+      "rightsCheckCounts": [
+        2
+      ],
+      "verdict": "pass"
+    }
+  ],
+  "aggregate": [
+    {
+      "mode": "cold",
+      "requests": 300,
+      "completed": 300,
+      "timeMs": {
+        "connection": {
+          "n": 300,
+          "p50": 4.919792000000598,
+          "p95": 6.275667000001704,
+          "max": 11.884500000000116
+        },
+        "authorization": {
+          "n": 300,
+          "p50": 8.29316700000345,
+          "p95": 10.2243750000016,
+          "max": 21.82958399999916
+        },
+        "history": {
+          "n": 300,
+          "p50": 0.6337920000005397,
+          "p95": 0.894124999998894,
+          "max": 4.3304170000046724
+        },
+        "calculation": {
+          "n": 300,
+          "p50": 0.056041000003460795,
+          "p95": 0.09491700000216952,
+          "max": 0.31954099999711616
+        },
+        "delivery": {
+          "n": 300,
+          "p50": 2.864000000001397,
+          "p95": 3.617832999996608,
+          "max": 8.998665999999503
+        },
+        "serialization": {
+          "n": 300,
+          "p50": 0.040917000002082204,
+          "p95": 0.05620900000212714,
+          "max": 0.11579200000414858
+        },
+        "request": {
+          "n": 300,
+          "p50": 16.963999999999942,
+          "p95": 20.847999999998137,
+          "max": 40.069250000000466
+        }
+      },
+      "over210Ms": 0,
+      "misses": [],
+      "statementCounts": [
+        3
+      ],
+      "rightsCheckCounts": [
+        2
+      ],
+      "verdict": "pass"
+    },
+    {
+      "mode": "warm",
+      "requests": 300,
+      "completed": 300,
+      "timeMs": {
+        "connection": {
+          "n": 300,
+          "p50": 0,
+          "p95": 0,
+          "max": 0
+        },
+        "authorization": {
+          "n": 300,
+          "p50": 2.5420410000006086,
+          "p95": 3.2553330000009737,
+          "max": 7.69445899999846
+        },
+        "history": {
+          "n": 300,
+          "p50": 0.44995799999742303,
+          "p95": 0.6613750000033178,
+          "max": 2.5851669999974547
+        },
+        "calculation": {
+          "n": 300,
+          "p50": 0.028875000003608875,
+          "p95": 0.06229199999506818,
+          "max": 0.09591699999873526
+        },
+        "delivery": {
+          "n": 300,
+          "p50": 2.5111249999972642,
+          "p95": 3.132333000001381,
+          "max": 7.8879999999990105
+        },
+        "serialization": {
+          "n": 300,
+          "p50": 0.02674999999726424,
+          "p95": 0.05633399999351241,
+          "max": 0.09420799999497831
+        },
+        "request": {
+          "n": 300,
+          "p50": 5.64783300000272,
+          "p95": 6.795832999996492,
+          "max": 17.745083000001614
+        }
+      },
+      "over210Ms": 0,
+      "misses": [],
+      "statementCounts": [
+        3
+      ],
+      "rightsCheckCounts": [
+        2
+      ],
+      "verdict": "pass"
+    }
+  ],
+  "strataCounts": [
+    {
+      "season": 2022,
+      "sampleSize": 2,
+      "cold": 25,
+      "warm": 25
+    },
+    {
+      "season": 2022,
+      "sampleSize": 8,
+      "cold": 25,
+      "warm": 25
+    },
+    {
+      "season": 2022,
+      "sampleSize": 16,
+      "cold": 25,
+      "warm": 25
+    },
+    {
+      "season": 2023,
+      "sampleSize": 2,
+      "cold": 25,
+      "warm": 25
+    },
+    {
+      "season": 2023,
+      "sampleSize": 8,
+      "cold": 25,
+      "warm": 25
+    },
+    {
+      "season": 2023,
+      "sampleSize": 16,
+      "cold": 25,
+      "warm": 25
+    },
+    {
+      "season": 2024,
+      "sampleSize": 2,
+      "cold": 25,
+      "warm": 25
+    },
+    {
+      "season": 2024,
+      "sampleSize": 8,
+      "cold": 25,
+      "warm": 25
+    },
+    {
+      "season": 2024,
+      "sampleSize": 16,
+      "cold": 25,
+      "warm": 25
+    },
+    {
+      "season": 2025,
+      "sampleSize": 2,
+      "cold": 25,
+      "warm": 25
+    },
+    {
+      "season": 2025,
+      "sampleSize": 8,
+      "cold": 25,
+      "warm": 25
+    },
+    {
+      "season": 2025,
+      "sampleSize": 16,
+      "cold": 25,
+      "warm": 25
+    }
+  ],
+  "sampleSizeLatency": [
+    {
+      "mode": "cold",
+      "sampleSize": 2,
+      "requestMs": {
+        "n": 100,
+        "p50": 16.961791999994603,
+        "p95": 20.385291999999026,
+        "max": 40.069250000000466
+      }
+    },
+    {
+      "mode": "warm",
+      "sampleSize": 2,
+      "requestMs": {
+        "n": 100,
+        "p50": 5.618249999999534,
+        "p95": 6.6947500000023865,
+        "max": 12.254583999994793
+      }
+    },
+    {
+      "mode": "cold",
+      "sampleSize": 8,
+      "requestMs": {
+        "n": 100,
+        "p50": 17.08666599999924,
+        "p95": 21.055458000002545,
+        "max": 29.89587500000198
+      }
+    },
+    {
+      "mode": "warm",
+      "sampleSize": 8,
+      "requestMs": {
+        "n": 100,
+        "p50": 5.635291000005964,
+        "p95": 7.104333000002953,
+        "max": 16.864166999999725
+      }
+    },
+    {
+      "mode": "cold",
+      "sampleSize": 16,
+      "requestMs": {
+        "n": 100,
+        "p50": 16.884125000000495,
+        "p95": 18.50958299999911,
+        "max": 28.267707999999402
+      }
+    },
+    {
+      "mode": "warm",
+      "sampleSize": 16,
+      "requestMs": {
+        "n": 100,
+        "p50": 5.652290999998513,
+        "p95": 6.758125000000291,
+        "max": 17.745083000001614
+      }
+    }
+  ],
+  "targets": {
+    "coldP95": "pass",
+    "warmP95": "pass",
+    "constantThreeStatements": "pass",
+    "exactlyTwoRightsChecks": "pass",
+    "zeroRawOrPerRowValidationReads": "pass"
+  },
+  "fullDiagnostics": {
+    "objectKey": "audits/d0c78e4f5388eb3013af9e9a1a108acee66754d1a9d3d89bc89c845a90efd2ec",
+    "sha256": "d0c78e4f5388eb3013af9e9a1a108acee66754d1a9d3d89bc89c845a90efd2ec",
+    "byteSize": 226502
+  }
+}
