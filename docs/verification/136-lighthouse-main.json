@@ -1,0 +1,29 @@
+{
+  "issue": 136,
+  "source": "production webpack build, fixture mode, signed out, initial main-page state",
+  "url": "http://localhost:3138/",
+  "fetchTime": "2026-10-18T17:48:47.888Z",
+  "lighthouseVersion": "13.5.0",
+  "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+  "accessibilityScore": 0.95,
+  "formFactor": "mobile",
+  "screenEmulation": {
+    "mobile": true,
+    "width": 412,
+    "height": 823,
+    "deviceScaleFactor": 1.75,
+    "disabled": false
+  },
+  "failedAudits": [
+    {
+      "id": "color-contrast",
+      "title": "Background and foreground colors do not have a sufficient contrast ratio."
+    }
+  ],
+  "command": "npx --yes lighthouse http://localhost:3138/ --only-categories=accessibility --output=json --chrome-flags=--headless",
+  "limitations": [
+    "Does not establish authenticated account accessibility (deferred by owner).",
+    "Does not establish Chrome installability or actual installation.",
+    "Contrast audit failures remain despite meeting the >=90 score target."
+  ]
+}

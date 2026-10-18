@@ -361,20 +361,32 @@ export const SlateBrowser = () => {
 
       {realSlateStatus === "loaded" && (
         <>
-          <select
-            aria-label="Select a game"
-            className="mt-3 min-h-11 w-full min-w-0 rounded border border-zinc-300 bg-white p-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            value={selectedEventId ?? ""}
-            onChange={(event) => setSelectedEventId(event.target.value || null)}
-          >
-            <option value="">Select a game…</option>
-            {sortedSlate.map((slateEvent) => (
-              <option key={slateEvent.id} value={slateEvent.id}>
-                {slateEvent.awayTeam} @ {slateEvent.homeTeam} —{" "}
-                {formatKickoff(slateEvent.commenceTime)}
-              </option>
-            ))}
-          </select>
+          <div className="relative mt-3">
+            <select
+              aria-label="Select a game"
+              className="min-h-11 w-full min-w-0 appearance-none rounded border border-zinc-300 bg-white py-2 pr-10 pl-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              value={selectedEventId ?? ""}
+              onChange={(event) => setSelectedEventId(event.target.value || null)}
+            >
+              <option value="">Select a game…</option>
+              {sortedSlate.map((slateEvent) => (
+                <option key={slateEvent.id} value={slateEvent.id}>
+                  {slateEvent.awayTeam} @ {slateEvent.homeTeam} —{" "}
+                  {formatKickoff(slateEvent.commenceTime)}
+                </option>
+              ))}
+            </select>
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-zinc-600 dark:text-zinc-400"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </div>
 
           {selectedEventId && (
             <div className="mt-4">

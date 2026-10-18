@@ -103,3 +103,31 @@ Authenticated account browser/Lighthouse verification is removed from #136 accep
 - Served /manifest.webmanifest inspected; live DOM links point to the manifest and Apple icon and expose the expected theme color. No service worker or offline code added.
 - TypeScript, changed-file ESLint and whitespace checks passed. Preliminary mobile Lighthouse 13.5.0 / HeadlessChrome 155 accessibility audit on the development main page scored 95. It identified contrast failures for existing muted/error text; final production/populated-state audit remains pending.
 - Native Chrome access was not approved, so Chrome UI installability/actual installation remains unverified. No claim that the Chrome installability target has passed.
+
+## Final verification
+
+- Manifest/icons committed as 3dfcace; owner-approved lowercase e applied to SVG, regular PNGs, opaque maskable/Apple icons and favicon.
+- Full ESLint and npm run typecheck passed, including database-readiness verification (read-only; no protected files changed).
+- npm test passed outside sandbox: 68 browser-environment files / 899 tests plus 35 Node-environment files / 681 tests = 1,580 tests. Initial sandbox run could not bind synthetic loopback servers; rerun with required access passed.
+- Default npm run build could not complete: first Google Fonts access was blocked, then Turbopack's PostCSS worker port binding was blocked even on rerun. Supported diagnostic npm run build -- --webpack passed, including TypeScript and all static pages. No project build configuration changed; default Turbopack build still needs confirmation in the owner's environment/CI.
+- Production served on localhost:3138 with ODDS_DATA_SOURCE=fixture and ODDS_COLLECTION_PROFILE=disabled. Main-page initial-state mobile Lighthouse accessibility: 95, exceeding >=90 target, using Lighthouse 13.5.0 / HeadlessChrome 155, 412x823 viewport. Color-contrast audit still reports failures for muted/error text. [Machine-readable summary](verification/136-lighthouse-main.json).
+- Production populated fixture matchup visually verified; [phone](screenshots/136/production-matchup-phone-375.jpg) and [desktop](screenshots/136/production-matchup-desktop-1440.jpg) screenshots captured. Provider credits consumed: zero.
+- Authenticated account verification remains removed from #136 acceptance by the owner's scope amendment; isolated account/admin component evidence is labeled as fixtures.
+- Chrome installability and installation subsequently verified after owner authorization; see evidence below.
+- Owner-run Codex review, fresh push consent, PR screenshot links and owner merge remain pending. No service worker, protected directory or CI changes; no push or PR created.
+
+## Chrome installation verification — 2026-10-18
+
+- Google Chrome 155.0.8059.40 (Official Build, arm64), macOS 14.6.1. Used production fixture server at http://localhost:3138/.
+- Application > Manifest displayed EdgeTrace name/short name, standalone display, root start URL and all three icons. No blocking installability errors. Two optional warnings request wide/mobile screenshots for Richer PWA Install UI; these do not prevent the minimal manifest installation.
+- Maskable safe-area preview selected. Chrome offered Install EdgeTrace, installation reported Successfully installed, and Open tab in app launched an EdgeTrace application window without browser tabs. The installed target is the local fixture server and requires that server to remain running.
+- Evidence: [manifest](screenshots/136/chrome-manifest.jpg), [installation success](screenshots/136/chrome-install-success.jpg), [standalone application](screenshots/136/edgetrace-installed-standalone.jpg).
+- No service worker/offline capability added, no provider calls, no app publication or remote deployment performed.
+
+## Selector-caret follow-up
+
+Owner reported the native game selector caret flush against the right edge. Retained the native select, suppressed its platform arrow and added a decorative pointer-transparent chevron with 12 px right inset and 40 px text padding. Verified at 375 and 1440 px; game selection still works and the control remains 44 px tall. All 17 slate-browser tests, TypeScript, changed-file ESLint and whitespace checks passed. [Phone evidence](screenshots/136/selector-caret-phone-375.jpg).
+
+## Idle tracking-status follow-up
+
+Owner approved distinguishing no watched prop from an interrupted connection. Indicator remains visible and selector-based; no primary watch now displays a neutral “Not tracking” dot/label with a short explanatory tooltip. Actual connection states remain intact when a primary watch exists. Browser fixture verification: idle → Watch → Fixture stream → Clear → Not tracking. Tests cover disconnected-with-watch versus idle, plus connection changes while account data is loading/failed. Both follow-ups passed 19 focused tests, TypeScript, changed-file ESLint and whitespace checks. [Phone evidence](screenshots/136/idle-tracking-phone-375.jpg).
