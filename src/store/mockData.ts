@@ -4,16 +4,9 @@ import type { PickEmGoal } from "@/types";
 // weekly-rotation ritual) are retired as of #27 step 8 -- the app
 // ingests the real slate now (SlateBrowser + /api/stream driven by a
 // real watched selection), so there's no longer a single seeded game to
-// keep in sync by hand. mockCoverageFilters/mockGoal below remain: both
-// are still-legitimate, deliberately-scoped mocks (no affordable
-// alignment/coverage data source exists; no goal-building UI exists
-// yet), not artifacts of the retired rotation habit.
-export const mockCoverageFilters: Record<string, unknown> = {
-  primaryDefender: "J. Smith",
-  shadowCoverageRate: 0.35,
-  avgSeparationYards: 2.3,
-};
-
+// keep in sync by hand. mockGoal below remains a deliberately-scoped mock
+// (no goal-building UI exists yet). The coverage mock lives in
+// src/lib/mockCoverage.ts because server code (/api/stream) uses it too.
 // The only goal value anyone gets today, signed in or not -- no real
 // goal-building UI exists yet (Phase 10). Shared between page.tsx's
 // signed-out demo-preview seed and useInitAuth's signed-in Firestore

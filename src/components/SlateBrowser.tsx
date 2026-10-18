@@ -34,7 +34,7 @@ import {
   useSetSelectedEventId,
   useToggleMarketKey,
 } from "@/store/hooks";
-import type { WatchSelection } from "@/store/slices/matchupSlice";
+import type { WatchSelection } from "@/types";
 import { useAppStore } from "@/store";
 
 const MAX_COMPARISON_BOOKMAKERS = 3;
