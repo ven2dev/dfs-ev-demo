@@ -6,8 +6,10 @@ worktree from fresh `origin/main` at `20b712c7ec2a9a4e8cd3bbb5d780f5f4f559ac21`.
 The original four steps are committed through `938d398`. Independent review
 confirmed the premise and found a shared rights-expiry defect. The owner approved
 the latest-effective-decision rule; the repair below passes its local correctness
-and repeated latency gates. The owner approved the review-fix commit; focused
-re-review remains pending. Nothing has been pushed.
+and repeated latency gates. The review fix is committed at `b071c4e`; the
+focused review reported the low-severity follow-ups addressed below. The owner
+approved committing those follow-ups and pushing the branch; hosted CI remains
+pending.
 
 ## Design basis
 
@@ -411,6 +413,20 @@ Those #138 files and all frozen migrations remain unchanged. Any manually create
 scratch fixture using the updated dataset reader also needs this companion
 proposal; it is not a hosted rollout or an ordered migration.
 
+The rights comment in frozen `138_feature_store.sql` is historical context, not
+an alternative current rule: **select the latest known, effective decision first;
+expiry refuses access and never restores an older grant**. Despite its #163
+filename, `163_effective_rights.sql` is a shared #138 dataset dependency. Apply
+`138_feature_store.sql`, `138_dataset_governance.sql`, then
+`163_effective_rights.sql` before using the updated dataset reader. During #148's
+move into `packages/db`, keep these schema/setup dependencies together to prevent
+a missing-function failure in #138-only setup paths.
+
+`dataset-spike.ts` now includes `163_effective_rights.sql` in its dependency-hash
+list. The next dataset benchmark will record it; historical receipts remain as
+captured. These documentation and hash-list changes do not alter runtime policy
+or require another latency run.
+
 The original checkpoint's lint entry now lists all nine TypeScript/MTS files
 changed at `938d398`. The repair's complete changed-file lint run covers **13
 files**, including its additional dataset, harness and rights tests. The parser's
@@ -479,5 +495,6 @@ Focused re-review should verify selection-before-expiration in the shared
 function, its use at both checks in both readers, invoker privileges, actual
 knowledge-time and expiry boundaries, and the unchanged work/speed budgets.
 The accepted post-final-snapshot revocation gap still applies. The owner approved
-committing the review fixes. Focused re-review, fresh push consent and hosted CI
-remain pending.
+committing the review fixes. Focused re-review reported the low-severity notes
+addressed above. The owner approved the follow-up commit and branch push; hosted
+CI remains pending.
