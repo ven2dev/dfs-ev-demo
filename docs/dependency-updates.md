@@ -44,8 +44,9 @@ contract. Review image updates for PostgreSQL and Alpine compatibility and run
 update job discovers the file and assigns its PR after this configuration merges.
 
 Firebase client, Admin, and tooling have separate version groups. The client
-group excludes `@firebase/rules-unit-testing`; that package belongs with
-`firebase-tools` in tooling. Related groups may contain coordinated major
+group includes `@firebase/rules-unit-testing`, because it declares a peer
+dependency on `firebase`'s major version: split groups deadlock on every major
+(#121/#122). Tooling holds `firebase-tools` alone. Related groups may contain coordinated major
 upgrades, which require explicit compatibility review. Other major upgrades
 remain individual PRs. Grouping does not establish compatibility by itself.
 
