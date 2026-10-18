@@ -55,11 +55,11 @@ export default function AccountPage() {
   };
 
   if (authStatus === "loading") {
-    return <p className="text-sm text-zinc-500">…</p>;
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">…</p>;
   }
 
   if (authStatus === "unavailable") {
-    return <p className="text-sm text-zinc-500">Sign-in is currently unavailable.</p>;
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">Sign-in is currently unavailable.</p>;
   }
 
   // Reachable by direct URL/bookmark even though there's no standing nav
@@ -75,15 +75,15 @@ export default function AccountPage() {
   }
 
   return (
-    <section className="rounded-lg border border-zinc-200 p-6 dark:border-zinc-800">
+    <section className="min-w-0 break-words rounded-lg border border-zinc-200 p-4 sm:p-6 dark:border-zinc-800">
       <h2 className="text-lg font-medium">Account</h2>
       <dl className="mt-4 space-y-3 text-sm">
-        <div className="flex justify-between">
-          <dt className="text-zinc-500">Name</dt>
+        <div className="grid grid-cols-1 gap-1 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-3">
+          <dt className="text-zinc-600 dark:text-zinc-400">Name</dt>
           <dd>{displayName ?? "—"}</dd>
         </div>
-        <div className="flex justify-between">
-          <dt className="text-zinc-500">Signed in with</dt>
+        <div className="grid grid-cols-1 gap-1 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-3">
+          <dt className="text-zinc-600 dark:text-zinc-400">Signed in with</dt>
           <dd>{providerId ? (PROVIDER_LABELS[providerId] ?? providerId) : "—"}</dd>
         </div>
       </dl>
@@ -92,7 +92,7 @@ export default function AccountPage() {
         <button
           type="button"
           onClick={signOut}
-          className="rounded border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          className="min-h-11 rounded border border-zinc-300 px-3 py-1.5 text-sm hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
         >
           Sign out
         </button>
@@ -103,13 +103,13 @@ export default function AccountPage() {
           <button
             type="button"
             onClick={() => setShowDeleteConfirm(true)}
-            className="text-sm text-red-600 hover:underline"
+            className="min-h-11 text-sm text-red-700 hover:underline dark:text-red-400"
           >
             Delete account
           </button>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-red-600">
+            <p className="text-sm text-red-700 dark:text-red-400">
               This permanently deletes your account and all saved data. This
               cannot be undone.
             </p>
@@ -118,19 +118,21 @@ export default function AccountPage() {
               to confirm.
             </p>
             <input
+              aria-label="Type DELETE to confirm account deletion"
+              autoComplete="off"
               type="text"
               value={confirmText}
               onChange={(event) => setConfirmText(event.target.value)}
               disabled={deleting}
               placeholder={DELETE_CONFIRM_TEXT}
-              className="w-full rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              className="min-h-11 w-full min-w-0 rounded border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             />
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={handleDeleteAccount}
                 disabled={confirmText !== DELETE_CONFIRM_TEXT || deleting}
-                className="rounded bg-red-600 px-3 py-1.5 text-sm text-white disabled:opacity-50"
+                className="min-h-11 rounded bg-red-700 px-3 py-1.5 text-sm text-white disabled:opacity-50"
               >
                 {deleting ? "Deleting…" : "Permanently delete my account"}
               </button>
@@ -138,12 +140,12 @@ export default function AccountPage() {
                 type="button"
                 onClick={cancelDelete}
                 disabled={deleting}
-                className="rounded border border-zinc-300 px-3 py-1.5 text-sm disabled:opacity-50 dark:border-zinc-700"
+                className="min-h-11 rounded border border-zinc-300 px-3 py-1.5 text-sm disabled:opacity-50 dark:border-zinc-700"
               >
                 Cancel
               </button>
             </div>
-            {deleteError && <p className="text-sm text-red-600">{deleteError}</p>}
+            {deleteError && <p className="text-sm text-red-700 dark:text-red-400">{deleteError}</p>}
           </div>
         )}
       </div>

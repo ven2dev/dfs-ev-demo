@@ -1,0 +1,82 @@
+{
+  "issue": 136,
+  "source": "production webpack build, fixture mode, signed out, loaded results and active watched prop",
+  "url": "http://localhost:3139/",
+  "procedure": [
+    "Select fixture game, check Passing Yards and Anytime Touchdown, Show props.",
+    "Watch Avery Stone Passing Yards as Primary; select Jordan Vale as Secondary.",
+    "DevTools > Lighthouse: Snapshot, Accessibility only; Mobile preset selected but screen emulation disabled, so audit uses the actual window viewport; Analyze page state.",
+    "Repeat using DevTools Emulate CSS prefers-color-scheme: light; then open Avery Stone Passing Yards See all and repeat."
+  ],
+  "runs": [
+    {
+      "attachment": "populated-mobile-dark.json",
+      "colorScheme": "dark",
+      "state": "fixture Passing Yards + Anytime Touchdown results, primary Avery Stone watched, secondary Jordan Vale selected",
+      "fetchTime": "2026-10-18T19:55:55.640Z",
+      "lighthouseVersion": "13.4.1",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "accessibilityScore": 1,
+      "colorContrastScore": 1,
+      "gatherMode": "snapshot",
+      "formFactor": "mobile",
+      "failedAudits": [],
+      "configuredScreenEmulation": {
+        "mobile": true,
+        "width": 412,
+        "height": 823,
+        "deviceScaleFactor": 1.75,
+        "disabled": true
+      },
+      "actualViewport": "Current Chrome window viewport; pixel dimensions were not recorded. Configured 412x823 dimensions were not enforced because screen emulation was disabled."
+    },
+    {
+      "attachment": "populated-mobile-light.json",
+      "colorScheme": "light",
+      "state": "same populated fixture state",
+      "fetchTime": "2026-10-18T19:58:12.229Z",
+      "lighthouseVersion": "13.4.1",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "accessibilityScore": 1,
+      "colorContrastScore": 1,
+      "gatherMode": "snapshot",
+      "formFactor": "mobile",
+      "failedAudits": [],
+      "configuredScreenEmulation": {
+        "mobile": true,
+        "width": 412,
+        "height": 823,
+        "deviceScaleFactor": 1.75,
+        "disabled": true
+      },
+      "actualViewport": "Current Chrome window viewport; pixel dimensions were not recorded. Configured 412x823 dimensions were not enforced because screen emulation was disabled."
+    },
+    {
+      "attachment": "bookmaker-sheet-mobile-light.json",
+      "colorScheme": "light",
+      "state": "populated fixture state with Avery Stone Passing Yards bookmaker sheet open",
+      "fetchTime": "2026-10-18T19:59:11.922Z",
+      "lighthouseVersion": "13.4.1",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36",
+      "accessibilityScore": 1,
+      "colorContrastScore": 1,
+      "gatherMode": "snapshot",
+      "formFactor": "mobile",
+      "failedAudits": [],
+      "configuredScreenEmulation": {
+        "mobile": true,
+        "width": 412,
+        "height": 823,
+        "deviceScaleFactor": 1.75,
+        "disabled": true
+      },
+      "actualViewport": "Current Chrome window viewport; pixel dimensions were not recorded. Configured 412x823 dimensions were not enforced because screen emulation was disabled."
+    }
+  ],
+  "limitations": [
+    "Automated accessibility checks do not prove full WCAG conformance.",
+    "Authenticated account audit remains deferred by owner.",
+    "Raw reports and screenshots are external PR attachments, not repository assets.",
+    "Populated snapshot scores are actual-window results, not 412px mobile-viewport results; they establish automated contrast/accessibility findings for the audited states, not phone-width layout evidence."
+  ]
+}

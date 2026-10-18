@@ -1,0 +1,80 @@
+{
+  "issue": 163,
+  "step": 1,
+  "baseCommit": "20b712c7ec2a9a4e8cd3bbb5d780f5f4f559ac21",
+  "scope": "Single empirical math implementation; strict qualification and public API retained",
+  "verdict": "pass",
+  "checks": {
+    "projectionTests": {
+      "command": "node node_modules/vitest/vitest.mjs run --config vitest.node.config.ts tests/projection",
+      "passed": 33,
+      "failed": 0
+    },
+    "typecheck": {
+      "command": "npm run typecheck",
+      "verdict": "pass"
+    },
+    "lint": {
+      "files": [
+        "src/lib/projection/baseline.ts",
+        "src/lib/projection/empirical.ts",
+        "tests/projection/baseline.test.ts",
+        "tests/projection/empirical.test.ts"
+      ],
+      "verdict": "pass"
+    },
+    "diffCheck": {
+      "command": "git diff --check",
+      "verdict": "pass"
+    },
+    "domainBoundary": {
+      "rule": "empirical.ts has no static, type-only, re-export, dynamic or require module dependencies",
+      "verdict": "pass"
+    }
+  },
+  "supplementalLegacyParity": {
+    "method": "One-off deepStrictEqual comparison against original main module, including exact floating-point values and error names/messages",
+    "markets": 9,
+    "historyLengths": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      8,
+      16,
+      37
+    ],
+    "historyOrders": [
+      "original",
+      "reversed"
+    ],
+    "coverage": "Support and full envelopes; integer/fractional/tail lines; both pricing sides; invalid prices; inclusive/future clocks; malformed identities, versions, sample policies and outcomes",
+    "counts": {
+      "fitBaseline": 387,
+      "probabilityAt": 1296,
+      "priceSide": 10594,
+      "instant": 5,
+      "validateTriple": 5
+    },
+    "totalComparisons": 12287,
+    "originalSourceSha256": "a50e63fdebce501e8574c6380c6f993bcb4247def5abc6dadbcaf649eff0dda6",
+    "corpusSha256": "bd79a6b20d29a7f1bb67a811e4175e596d4ab7ea6faee7e559869f5256fa5c87",
+    "resultSha256": "8909a5b6d1af54f0affc2e0144af80ee6a61c92e00d4d33b524ebcbda8ceab05",
+    "scriptSha256": "ac36992276a2416f308f4f0ef9530367a25b89fe5b7781b817eee898e02da86a",
+    "retention": "Supplemental comparison script remains temporary; committed hand fixtures and legacy tests are the repeatable regression gate",
+    "verdict": "pass"
+  },
+  "sourceSha256": {
+    "src/lib/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "src/lib/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "tests/projection/baseline.test.ts": "6bf5c321e58dfb25599b9a9a0155743a16c30cf9719850d7e393b06bac0a4e5f",
+    "tests/projection/empirical.test.ts": "be5b98db72bc709d90a1f98b0bf725ee784ecec28b2ea1dd2e3ffc1d00089a54"
+  },
+  "runtime": "Node v24.18.1",
+  "notYetMeasured": [
+    "cold/warm adapter latency",
+    "three-SQL and two-rights-check budgets",
+    "restricted PostgreSQL permissions and revocation/deletion probes"
+  ]
+}

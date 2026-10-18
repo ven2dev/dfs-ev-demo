@@ -8,7 +8,7 @@ import { ensureHarnessSession } from "../../scripts/predictive/harness.ts";
 import { openArtifactStore } from "../../src/lib/predictive/artifacts.ts";
 import { createLocalPredictiveStore } from "../../src/lib/predictive/persistence.ts";
 import type { Dataset } from "../../src/lib/predictive/types.ts";
-import { canonical, digest } from "../../src/lib/predictive/validation.ts";
+import { canonical, digest, instant } from "../../src/lib/predictive/validation.ts";
 import { createReplay } from "../../src/lib/predictive/replay.ts";
 import { sourceFactWitness } from "../../src/lib/predictive/sourceWitness.ts";
 import { type SourceDecisionPlan, type SourceDecisionRequest } from "../../src/lib/predictive/sourceDecisions.ts";
@@ -100,16 +100,24 @@ export const publishInactive = async (store: Store, id = "native-inactive", pred
   expect(await store.publish(id, dataset, at)).toMatchObject({ status: "published" });
   return dataset;
 };
-export const seedConsumers = async (store: Store, captureAt = "2026-10-11T12:00:00.000Z") => {
+// Only synthetic event time moves. Database ingestion/decision clocks stay real,
+// so these fixtures cannot become postgame merely because CI runs on a later day.
+export const consumerTargetAt = (clock: string) => {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const kickoff = instant(clock) + 7 * dayMs;
+  const target = schedule(77,new Date(kickoff).toISOString(),"nfl:team:PHI","nfl:team:CAR");
+  return { target, targetMember: membership(target,{ effectiveTo: new Date(kickoff + dayMs).toISOString() }) };
+};
+export const seedConsumers = async (store: Store, clock: string, captureAt = "2026-10-11T12:00:00.000Z") => {
   const fixture = await normalizationFixture();
   fixture.input.capturedAt = captureAt;
   fixture.input.rightsDecisions[0].allowedUses = ["internal-research","model-input","outcome-label"];
   fixture.context.rightsDecisions = [...fixture.input.rightsDecisions,rights(BRIDGE_PROFILE)];
   const prior = { ...schedule(6,"2026-10-04T17:00:00.000Z","nfl:team:PHI","nfl:team:CAR"),gameId: NORMALIZATION_GAME,rawGameId: sourceGameId };
-  const target = schedule(77,"2026-10-18T17:00:00.000Z","nfl:team:PHI","nfl:team:CAR");
+  const { target,targetMember } = consumerTargetAt(clock);
   const rows = fixture.bridgeRows.map((row) => row.kind === "schedule" ? { ...row,data: prior } : row);
   rows.push(revision("source-target","schedule",target),revision("source-coverage","schedule-coverage",coverage("nfl:team:PHI",[prior.gameId,target.gameId])),
-    revision("source-prior-member","membership",membership(prior)),revision("source-target-member","membership",membership(target)),
+    revision("source-prior-member","membership",membership(prior)),revision("source-target-member","membership",targetMember),
     ...completionMarkers(prior));
   rewriteNormalizationRows(fixture.context,rows);
   Object.assign(fixture.context.artifacts[0],{ scopeKind: "season-file",scopeSeason: 2026 });
@@ -123,6 +131,7 @@ export const seedConsumers = async (store: Store, captureAt = "2026-10-11T12:00:
   const binding = await store.recordSourceNormalization("consumer-binding",raw,null);
   const rec = await store.recordSourceDecision("consumer-reconciliation",decisionScope(raw.profileId),null);
   const part = await store.recordSourceDecision("consumer-participation",decisionScope(raw.profileId,"participation"),null);
+  expect(instant(part.record.recordedAt)).toBeLessThan(instant(target.kickoff));
   const request = { playerId: "00-0000001",gameId: target.gameId,cutoff: part.record.recordedAt,computedAt: part.record.recordedAt,
     candidate: "stats-v1:player_pass_yds" as const };
   return { fixture,raw,binding,rec,part,request,profiles: [raw.profileId],labelRequest: { playerId: request.playerId,gameId: prior.gameId,profileIds: [raw.profileId] } };

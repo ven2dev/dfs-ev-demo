@@ -19,13 +19,13 @@ export function MarketConsensusSummary({
 
   return (
     <div className="border-t border-zinc-200 pt-3 dark:border-zinc-800">
-      <div className="flex justify-between text-sm">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm">
         <span>Market probability ({direction})</span>
-        <span>
+        <span className="whitespace-nowrap tabular-nums">
           {(probability * 100).toFixed(1)}% · {consensus.contributingBookCount} {bookLabel}
         </span>
       </div>
-      <p className="mt-1 text-xs text-zinc-400">
+      <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
         {methodLabel} v{consensus.version} of each book&rsquo;s independently
         devigged Over/Under prices at line {line}. Book count reports market coverage,
         not confidence.

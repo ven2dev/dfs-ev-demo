@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "issue": 163,
+  "checkpoint": "review-1-rights-expiry",
+  "recordedAt": "2026-10-18T20:38:04.466052+00:00",
+  "reviewedBaseCommit": "938d398e493c274b8bf00bbc01a9fffc4d07cd35",
+  "ownerPolicy": "latest recorded decision whose valid_from has passed wins; its expiration refuses access until a new grant",
+  "implementation": "shared fs138.effective_rights SQL SECURITY INVOKER function; both empirical and dataset checks use it",
+  "sourceHashes": {
+    "scripts/feature-store/empirical-prototype.ts": "f11b51f3510179db4e18a7b6db76df6302128899cccc67fbcb87ba684817663a",
+    "scripts/feature-store/empirical-spike.ts": "3c39207d15a76506ab88fced2a10a2d05882ff837f264d979433754bbbb5e951",
+    "scripts/feature-store/empirical-startup.ts": "9a564c47699e6bd4952fb0bd818a8a50e930b0cafba211c5fa91c7ccd3a7ebdd",
+    "scripts/feature-store/harness.ts": "5a77a6b8e88da53b9864e3f5a1976135899383b1a631cbe3b8f979c3862009f5",
+    "src/lib/featureStore/empiricalAdapter.ts": "7289081f0500584fa7f0cadf922964bf3010eb9b685fb77524f06c6657c6c07b",
+    "src/lib/featureStore/datasets.ts": "bc19bbfadc1cce86686f9c415f9981e85d80fc022845bd806b07bac9225c1997",
+    "src/lib/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "src/lib/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "tests/feature-store/empirical-adapter.check.mts": "8ff7e94ded4524682f964b7fe6c8253f9d285fa4ad13c04a1e2d8535308082c4",
+    "tests/feature-store/datasets.check.mts": "5df0d97c9a4b3fefc40c8f27fc05e063c3d042e375a47a8f1ebcc0dec373f225",
+    "tests/feature-store/rights.check.mts": "45e8a52c315f2b1a4ce8e0034e1316e162e2acedcf0a0aff4beb8414f327ccaa",
+    "tests/projection/baseline.test.ts": "6bf5c321e58dfb25599b9a9a0155743a16c30cf9719850d7e393b06bac0a4e5f",
+    "tests/projection/empirical.test.ts": "be5b98db72bc709d90a1f98b0bf725ee784ecec28b2ea1dd2e3ffc1d00089a54",
+    "db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "db/proposals/163_empirical_authorize.sql": "5b2940582548aea025c08133dbb356bcb8055de85e57738a16c09d511d3e37a3",
+    "db/proposals/163_empirical_reader.sql": "91f534bb874d4d08f1ec32a62f9d3b9bd9ccea926fedb578824d41a18c796593"
+  },
+  "receipts": {
+    "review-1-correctness.json": {
+      "sha256": "8e7e5b1bf105f14c410ddc09caf812fcf96f05c81dec863c8149bcc8db2d2caf",
+      "bytes": 4321
+    },
+    "review-1-hot-path.json": {
+      "sha256": "6a55a23c68a986466d9f894e8ca385ca7fdf3e28cc0df580934b5c753355628a",
+      "bytes": 24388
+    }
+  },
+  "validation": {
+    "featureStorePostgres": {
+      "command": "npm run test:feature-store:db",
+      "passed": 77,
+      "failed": 0,
+      "verdict": "pass"
+    },
+    "kernelAndLegacy": {
+      "passed": 33,
+      "sourceAndTestsUnchangedSince": "938d398",
+      "verdict": "previous pass retained; no rerun"
+    },
+    "typeScript": {
+      "command": "tsc --noEmit",
+      "verdict": "pass"
+    },
+    "changedFileLint": {
+      "command": "eslint scripts/feature-store/empirical-prototype.ts scripts/feature-store/empirical-spike.ts scripts/feature-store/empirical-startup.ts scripts/feature-store/harness.ts src/lib/featureStore/empiricalAdapter.ts src/lib/featureStore/datasets.ts src/lib/projection/baseline.ts src/lib/projection/empirical.ts tests/feature-store/empirical-adapter.check.mts tests/feature-store/datasets.check.mts tests/feature-store/rights.check.mts tests/projection/baseline.test.ts tests/projection/empirical.test.ts",
+      "files": [
+        "scripts/feature-store/empirical-prototype.ts",
+        "scripts/feature-store/empirical-spike.ts",
+        "scripts/feature-store/empirical-startup.ts",
+        "scripts/feature-store/harness.ts",
+        "src/lib/featureStore/empiricalAdapter.ts",
+        "src/lib/featureStore/datasets.ts",
+        "src/lib/projection/baseline.ts",
+        "src/lib/projection/empirical.ts",
+        "tests/feature-store/empirical-adapter.check.mts",
+        "tests/feature-store/datasets.check.mts",
+        "tests/feature-store/rights.check.mts",
+        "tests/projection/baseline.test.ts",
+        "tests/projection/empirical.test.ts"
+      ],
+      "verdict": "pass"
+    },
+    "frozenAndFoundationSql": {
+      "unchangedAgainst": "20b712c",
+      "paths": [
+        "db/migrations",
+        "db/schema.sql",
+        "db/catalog-contracts",
+        "db/proposals/138_feature_store.sql",
+        "db/proposals/138_dataset_governance.sql"
+      ],
+      "verdict": "pass"
+    }
+  },
+  "targets": {
+    "coldP95": "pass",
+    "warmP95": "pass",
+    "constantThreeStatements": "pass",
+    "exactlyTwoRightsChecks": "pass",
+    "zeroRawOrPerRowValidationReads": "pass"
+  },
+  "limitations": [
+    "Local PostgreSQL only; no Vercel function boot or Neon scale-to-zero wake measurement",
+    "Retrospective reconstruction using current corrected files; historical availability unverified",
+    "Revocations after the final SQL snapshot and before response bytes leave the process may not be observed",
+    "Only 12 feature IDs, one knowledge-as-of time and retrospective mode are measured; #168 needs broader strict and retrospective workloads"
+  ],
+  "localVerdict": "pass",
+  "focusedReReview": "pending",
+  "commitApproval": "approved by owner before this review-fix commit",
+  "pushConsent": "pending"
+}

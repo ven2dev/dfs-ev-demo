@@ -26,7 +26,7 @@ const AvatarIcon = () => (
   <svg
     viewBox="0 0 24 24"
     fill="currentColor"
-    className="h-full w-full text-zinc-500 dark:text-zinc-400"
+    className="h-full w-full text-zinc-600 dark:text-zinc-400"
     aria-hidden="true"
   >
     <circle cx="12" cy="8" r="4" />
@@ -101,14 +101,14 @@ export const AuthStatus = () => {
   };
 
   if (authStatus === "loading") {
-    return <span className="text-sm text-zinc-500">…</span>;
+    return <span className="text-sm text-zinc-600 dark:text-zinc-400">…</span>;
   }
 
   if (authStatus === "unavailable") {
     return (
       <div className="flex flex-col items-end gap-1">
-        <span className="text-sm text-zinc-500">Sign-in unavailable</span>
-        {authError && <p className="text-xs text-red-600">{authError}</p>}
+        <span className="text-sm text-zinc-600 dark:text-zinc-400">Sign-in unavailable</span>
+        {authError && <p className="text-xs text-red-700 dark:text-red-400">{authError}</p>}
       </div>
     );
   }
@@ -122,7 +122,7 @@ export const AuthStatus = () => {
           aria-haspopup="menu"
           aria-expanded={menuOpen}
           aria-label="Account menu"
-          className="h-8 w-8 overflow-hidden rounded-full border border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+          className="h-11 w-11 overflow-hidden rounded-full border border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
         >
           <AvatarIcon />
         </button>
@@ -130,7 +130,7 @@ export const AuthStatus = () => {
         {menuOpen && (
           <div
             role="menu"
-            className="absolute top-10 right-0 z-10 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
+            className="absolute top-12 right-0 z-10 w-48 rounded-lg border border-zinc-200 bg-white py-1 shadow-lg dark:border-zinc-700 dark:bg-zinc-900"
           >
             <p className="truncate px-3 py-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
               {displayName ?? "Signed in"}
@@ -139,7 +139,7 @@ export const AuthStatus = () => {
               href="/account"
               role="menuitem"
               onClick={() => setMenuOpen(false)}
-              className="block px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="flex min-h-11 items-center px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               Account
             </Link>
@@ -147,13 +147,13 @@ export const AuthStatus = () => {
               type="button"
               role="menuitem"
               onClick={handleSignOut}
-              className="block w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+              className="block min-h-11 w-full px-3 py-2 text-left text-sm text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
             >
               Sign out
             </button>
           </div>
         )}
-        {authError && <p className="text-xs text-red-600">{authError}</p>}
+        {authError && <p className="text-xs text-red-700 dark:text-red-400">{authError}</p>}
       </div>
     );
   }
@@ -163,11 +163,11 @@ export const AuthStatus = () => {
       <button
         type="button"
         onClick={handleSignIn}
-        className="rounded border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+        className="min-h-11 rounded border border-zinc-300 px-3 py-2 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
       >
         Sign in with Google
       </button>
-      {authError && <p className="text-xs text-red-600">{authError}</p>}
+      {authError && <p className="text-xs text-red-700 dark:text-red-400">{authError}</p>}
     </div>
   );
 };

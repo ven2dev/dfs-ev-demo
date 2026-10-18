@@ -73,6 +73,22 @@ describe("adherence QC: independent boundaries and evaluation accounting", () =>
     const patches: [Partial<Observation>, string][] = [[{ participation: "absent" }, "ineligible-or-unresolved-participation"], [{ value: .5 }, "invalid-outcome"], [{ labelVersion: "l2" }, "version-mismatch"], [{ eventTime: a.cutoff }, "target-or-future-event"], [{ id: "" }, "duplicate-or-missing-identity"], [{ eventTime: "invalid" }, "invalid-timestamp"]];
     for (const [patch, reason] of patches) expect(fitBaseline({ ...a, history: [{ ...a.history[0], ...patch }, ...a.history.slice(1)] })).toEqual({ status: "unavailable", reason });
   });
+  it("preserves the complete legacy model envelope and validation precedence", () => {
+    expect(fitBaseline(input())).toEqual({
+      status: "available", modelVersion: "empirical-integer-v1", market: "player_pass_yds",
+      cutoff: "2026-10-01T00:00:00Z", featureVersion: "f1", labelVersion: "l1", sampleCount: 4,
+      minimumSamples: 2, trainingIds: ["r0", "r1", "r2", "r3"], quality: "exploratory",
+      support: [{ value: -2, mass: .25 }, { value: 0, mass: .25 }, { value: 2, mass: .5 }],
+    });
+    const a = input();
+    const history = a.history.map(row => ({ ...row, eventId: a.targetEventId, eventTime: "invalid" }));
+    expect(fitBaseline({ ...a, history })).toEqual({ status: "unavailable", reason: "target-or-future-event" });
+    expect(fitBaseline({ ...a, history, minimumSamples: 1, cutoff: "invalid" })).toEqual({ status: "unavailable", reason: "invalid-sample-policy" });
+    expect(fitBaseline({ ...a, history, featureVersion: "", minimumSamples: 1 })).toEqual({ status: "unavailable", reason: "missing-identity-or-version" });
+    const unavailable = fitBaseline({ ...a, history: [] });
+    expect(probabilityAt(unavailable, 0)).toBeNull();
+    expect(() => probabilityAt(unavailable, Infinity)).toThrow("line must be finite");
+  });
   it("matches direct integer counting across fractional, negative and tail lines", () => {
     const values = Array.from({ length: 37 }, (_, i) => i - 18);
     const a = input();

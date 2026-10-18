@@ -14,9 +14,9 @@ export const HitRateSummary = ({ rate, adjustedRate, sampleSize }: HitRateSummar
 
   return (
     <div>
-      <div className="flex justify-between gap-3 text-sm">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm">
         <span>Recent hit rate · {sample}</span>
-        <span>{(rate * 100).toFixed(1)}%</span>
+        <span className="whitespace-nowrap tabular-nums">{(rate * 100).toFixed(1)}%</span>
       </div>
       <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
         Small sample. Recent results are not a calibrated prediction.
