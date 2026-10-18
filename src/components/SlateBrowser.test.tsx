@@ -283,6 +283,45 @@ describe("SlateBrowser", () => {
     await screen.findByText("Jalen Hurts");
   };
 
+  it("collapses successful results to a summary and reopens preserved selections without fetching", async () => {
+    await showPropsWithFourBooks();
+
+    expect(screen.queryByLabelText("Select a game")).not.toBeInTheDocument();
+    expect(screen.queryByText("Which prop markets?")).not.toBeInTheDocument();
+    expect(screen.getByText("Pittsburgh Steelers @ Cleveland Browns")).toBeInTheDocument();
+    expect(screen.getByText("Passing Yards · 1 player")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Refresh odds" })).toBeEnabled();
+    const requests = fetchMock().mock.calls.length;
+
+    fireEvent.click(screen.getByRole("button", { name: "Change selection" }));
+    expect(screen.getByLabelText("Select a game")).toHaveValue("evt-1");
+    expect(screen.getByLabelText("Passing Yards")).toBeChecked();
+    expect(screen.getByText("Jalen Hurts")).toBeInTheDocument();
+    expect(fetchMock()).toHaveBeenCalledTimes(requests);
+
+    fireEvent.click(screen.getByLabelText("Receptions"));
+    expect(fetchMock()).toHaveBeenCalledTimes(requests);
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players: [] });
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+    expect(await screen.findByRole("button", { name: "Change selection" })).toBeInTheDocument();
+    expect(screen.getByText("Passing Yards, Receptions · 0 players")).toBeInTheDocument();
+    expect(fetchMock()).toHaveBeenCalledTimes(requests + 1);
+  });
+
+  it("keeps selection open when discovery fails instead of presenting an empty success summary", async () => {
+    global.fetch = vi.fn();
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
+    render(<SlateBrowser />);
+    fireEvent.change(await screen.findByLabelText("Select a game"), { target: { value: "evt-1" } });
+    fireEvent.click(screen.getByLabelText("Passing Yards"));
+    mockFetchOnce({ success: false, reason: "Props unavailable" });
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+    expect(await screen.findByText("Props unavailable")).toBeInTheDocument();
+    expect(screen.getByLabelText("Select a game")).toHaveValue("evt-1");
+    expect(screen.getByLabelText("Passing Yards")).toBeChecked();
+    expect(screen.queryByRole("button", { name: "Change selection" })).not.toBeInTheDocument();
+  });
+
   it("starts on the direction-aware smart price default, and cycling switches to a manual override starting from the first book alphabetically, wrapping around", async () => {
     await showPropsWithFourBooks();
     const stepperLabel = () => screen.getByTestId("bookmaker-stepper-label");

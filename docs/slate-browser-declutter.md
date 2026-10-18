@@ -1,0 +1,22 @@
+## Owner-approved roadmap — #104
+
+Approved with the owner's four additions: distinct accessible Watch/See all names; sportsbook-bound watch confirmations and refresh stability; normal-mode removal of #136's table scroll scaffolding while retaining it in compare mode; and 360 px verification.
+
+### Design basis
+
+- **Pattern:** progressive disclosure for selection and demo controls, with explicit per-item/per-side actions. Presentation state stays local; existing selector-based store reads and contracts remain in place.
+- **Alternatives:** retain a global side selector (rejected because the Watch action's direction is ambiguous); compress the old table (rejected because narrower cells still hide actions and require horizontal scrolling in normal mode).
+- **Targets:** normal cards and page fit 360, 375, 768, 1024 and 1440 px without horizontal scrolling or clipped actions; retain 16 px phone gutters, deliberate 44×44 px touch targets, keyboard usability, and accessible light/dark contrast. Wide result grids have at most two columns. Compare mode may use its labeled, keyboard-focusable local table scroll region.
+- **Requirement reasons:** retain explicit submission to prevent extra provider spending; preserve request generation/identity checks to reject stale responses; keep fixture/live and sample-data labels to prevent misleading provenance; retain last-valid values and visible freshness flags to avoid losing useful results. Selector-based reads prevent unrelated store updates from rerendering the whole UI. Watch captures the exact visible direction/book so refreshing quotes cannot silently retarget an existing watch. Accessible action names identify player, market, side, line and book so repeated buttons are distinguishable.
+- **Assumptions/scope:** UI-only; reuse `getBestBookmakerKey(lines, direction)` and its existing shared/modal-line rule. No store contracts, backend, feature-store/predictive, DB or CI changes. Account/admin contrast is already fixed and those pages remain untouched. Verification uses fixtures/cached data only, spending no Odds API credits. No new performance-sensitive data path or subsystem; no benchmark spike is needed for this presentation change.
+
+### Atomic steps (approval before each commit)
+
+1. **Compact selection:** after successful prop loading, show matchup, selected markets, player count and Change selection. Reopen without changing selections or fetching; submit explicitly. Cover collapse/reopen/no-request behavior.
+2. **Simplify toolbar:** replace bookmaker cycling with labeled Odds shown (Best available default / specific sportsbook), keep Compare books and Refresh odds, remove global Track side, and progressively disclose demo Primary/Secondary assignment.
+3. **Per-side actions:** separate Over and Under rows with line, price, sportsbook and explicit Watch. Resolve best books independently per side at the existing modal line; preserve manual-book, missing coverage, browse-only and compare safeguards. Explain disabled Watch actions visibly. Give Watch and See all books full contextual accessible names and tests. Confirmation labels the captured sportsbook; test that a refresh selecting a different best book does not change an existing watch.
+4. **Responsive results:** normal mode uses responsive card rows without table scroll region/hint/sticky column; retain those only in compare mode and update #136's structural tests. Stack narrow layouts and cap wide result grids at two columns; keep actions inside cards.
+5. **Empty state:** remove duplicate instructions in `src/app/page.tsx` (the only production UI file outside SlateBrowser/PlayerPropsCard), retaining one clear instruction with the tracker.
+6. **Verification:** behavioral tests for direction-aware books, manual overrides, missing sides, browse-only, comparison, watch assignment and stability, contextual action names and selection disclosure. Fixture browser checks at 360, 375, 768, 1024 and 1440 px, light/dark, keyboard and touch targets; lint, typecheck, relevant/full unit tests, production build and whitespace. Screenshots remain outside Git and are attached to the PR.
+
+Create `feature/dfsEV-104-declutter-slate-browser` from fresh `origin/main`. Owner runs the final Codex review; every commit requires approval, every push requires fresh consent, and the owner merges. Aim to merge before #148; pause at a commit boundary and rebase if its file move proceeds first.

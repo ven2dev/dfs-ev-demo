@@ -99,6 +99,7 @@ export const SlateBrowser = () => {
   // watch/unwatch + rollback with a second discovered (but not stream-tracked)
   // prop.
   const [watchAssignTarget, setWatchAssignTarget] = useState<"primary" | "secondary">("primary");
+  const [selectionOpen, setSelectionOpen] = useState(true);
   const [watchDirection, setWatchDirection] = useState<PlayerPropDirection>("over");
 
   const sortedCheckedMarketKeys = useMemo(
@@ -267,6 +268,7 @@ export const SlateBrowser = () => {
       }
       setDiscoveredProps(data.players, eventId, marketKeys);
       setDiscoveryStatus("loaded");
+      if (!forceRefresh) setSelectionOpen(false);
     } catch (err) {
       if (controller.signal.aborted) return;
       const currentState = useAppStore.getState();
@@ -335,6 +337,9 @@ export const SlateBrowser = () => {
     }
   };
 
+  const selectedEvent = realSlate.find((event) => event.id === selectedEventId);
+  const showSelection = selectionOpen || !hasCurrentDiscovery;
+
   const sortedSlate = [...realSlate].sort(
     (a, b) => new Date(a.commenceTime).getTime() - new Date(b.commenceTime).getTime()
   );
@@ -361,58 +366,86 @@ export const SlateBrowser = () => {
 
       {realSlateStatus === "loaded" && (
         <>
-          <div className="relative mt-3">
-            <select
-              aria-label="Select a game"
-              className="min-h-11 w-full min-w-0 appearance-none rounded border border-zinc-300 bg-white py-2 pr-10 pl-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={selectedEventId ?? ""}
-              onChange={(event) => setSelectedEventId(event.target.value || null)}
-            >
-              <option value="">Select a game…</option>
-              {sortedSlate.map((slateEvent) => (
-                <option key={slateEvent.id} value={slateEvent.id}>
-                  {slateEvent.awayTeam} @ {slateEvent.homeTeam} —{" "}
-                  {formatKickoff(slateEvent.commenceTime)}
-                </option>
-              ))}
-            </select>
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-zinc-600 dark:text-zinc-400"
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </div>
+          {!showSelection && selectedEvent && (
+            <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0 break-words text-sm" aria-live="polite">
+                <p className="font-medium">{selectedEvent.awayTeam} @ {selectedEvent.homeTeam}</p>
+                <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+                  {PLAYER_PROP_MARKETS.filter((market) => checkedMarketKeys.includes(market.key))
+                    .map((market) => market.label).join(", ")}
+                  {" · "}{visibleDiscoveredProps.length} {visibleDiscoveredProps.length === 1 ? "player" : "players"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectionOpen(true)}
+                className="min-h-11 rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+              >
+                Change selection
+              </button>
+            </div>
+          )}
+          {showSelection && (
+            <div className="relative mt-3">
+              <select
+                aria-label="Select a game"
+                className="min-h-11 w-full min-w-0 appearance-none rounded border border-zinc-300 bg-white py-2 pr-10 pl-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                value={selectedEventId ?? ""}
+                onChange={(event) => setSelectedEventId(event.target.value || null)}
+              >
+                <option value="">Select a game…</option>
+                {sortedSlate.map((slateEvent) => (
+                  <option key={slateEvent.id} value={slateEvent.id}>
+                    {slateEvent.awayTeam} @ {slateEvent.homeTeam} —{" "}
+                    {formatKickoff(slateEvent.commenceTime)}
+                  </option>
+                ))}
+              </select>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-zinc-600 dark:text-zinc-400"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </div>
+
+          )}
 
           {selectedEventId && (
             <div className="mt-4">
-              <p className="text-sm font-medium">Which prop markets?</p>
-              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {PLAYER_PROP_MARKETS.map((market) => (
-                  <label key={market.key} className="flex min-h-11 min-w-0 items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={checkedMarketKeys.includes(market.key)}
-                      onChange={() => toggleMarketKey(market.key)}
-                    />
-                    {market.label}
-                  </label>
-                ))}
-              </div>
+              {showSelection && (
+                <>
+                  <p className="text-sm font-medium">Which prop markets?</p>
+                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {PLAYER_PROP_MARKETS.map((market) => (
+                      <label key={market.key} className="flex min-h-11 min-w-0 items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={checkedMarketKeys.includes(market.key)}
+                          onChange={() => toggleMarketKey(market.key)}
+                        />
+                        {market.label}
+                      </label>
+                    ))}
+                  </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => fetchDiscoveredProps(false)}
-                  disabled={checkedMarketKeys.length === 0 || discoveryStatus === "loading"}
-                  className="min-h-11 rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
-                >
-                  {discoveryStatus === "loading" ? "Loading…" : "Show props"}
-                </button>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fetchDiscoveredProps(false)}
+                      disabled={checkedMarketKeys.length === 0 || discoveryStatus === "loading"}
+                      className="min-h-11 rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
+                    >
+                      {discoveryStatus === "loading" ? "Loading…" : "Show props"}
+                    </button>
+                  </div>
+                </>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
                 {visibleDiscoveredProps.length > 0 && (
                   <button
                     type="button"
