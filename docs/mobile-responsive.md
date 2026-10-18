@@ -56,3 +56,10 @@ After owner merges #136, repeat triage/roadmap approval for #104 on feature/dfsE
 - Verification found screen-reader-only action heading text escaping the scroll container's positioning context at narrow widths; making the region a positioning context resolved it. Both modes and all widths were rechecked after the fix.
 - Screenshots: [phone scrolled to actions](screenshots/136/prop-table-phone-375.jpg), [desktop](screenshots/136/prop-table-desktop-1440.jpg).
 - All 28 existing prop-card and slate-browser tests passed; TypeScript, changed-file ESLint and whitespace checks passed. No odds selection/watch logic changed.
+
+## Bookmaker-sheet iteration evidence
+
+- Sheet uses an 80dvh height limit, contained vertical scrolling, bottom safe-area padding, wrapping heading, and a fixed-layout table with wrapping bookmaker names and semantic row/column headers. Close is 44x44 px.
+- Fixture sheet checked at 360, 375, 390, 430, 768 and 1440 px. Document scroll width matched each viewport; table scroll width matched its client width at every size (326–396 px). Desktop panel remains capped at 384 px.
+- Escape dismissal verified in browser. All five existing sheet tests passed, including Close, backdrop and Escape behavior. TypeScript, changed-file ESLint and whitespace checks passed.
+- Screenshots: [phone](screenshots/136/bookmaker-sheet-phone-375.jpg), [desktop](screenshots/136/bookmaker-sheet-desktop-1440.jpg).
