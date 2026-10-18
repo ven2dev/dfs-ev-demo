@@ -22,7 +22,7 @@ Verify each surface and obtain owner approval before committing it separately:
 ## Targets and reasons
 - 375 px: 16 px outer gutters, no page-level horizontal scrolling; local table scrolling allowed.
 - Interactive targets >=44x44 px, including chip/checkbox labels: deliberate product choice stricter than WCAG AA to improve touch usability.
-- Mobile Lighthouse accessibility >=90 on main and account pages. Account audited with DevTools Lighthouse in a signed-in Chrome profile; record Chrome version, route, authenticated state, settings and results. Admin gets usability/no-page-overflow check.
+- Mobile Lighthouse accessibility >=90 on the main page; record browser version, route, fixture state, settings and results. Authenticated account browser/Lighthouse verification is deferred by owner decision until managed-secret delivery is established (#97–#101); it is not an acceptance gate for #136. Account layout remains in scope using isolated component fixtures. Admin gets usability/no-page-overflow check.
 - Validate manifest and installation in current Chrome; record version/results separately from Lighthouse accessibility (legacy PWA category removed).
 - Exercise populated, long-content, stale/disconnected and loading/error states.
 - Selector-only Zustand reads prevent broad subscriptions. Persistent connection status and stale/as-of flags prevent misleading freshness. Retaining once-valid values prevents information loss. Visible “sample data” labels prevent mocked coverage appearing real.
@@ -77,3 +77,14 @@ After owner merges #136, repeat triage/roadmap approval for #104 on feature/dfsE
 - Fixture primary analysis and secondary tracker checked at 360, 375, 390, 430, 768 and 1440 px: document scroll width equals viewport width; no numeric grid overflow; sample-window/secondary controls are 44 px tall at every size.
 - Screenshots: [phone matchup](screenshots/136/matchup-phone-375.jpg), [phone tracker](screenshots/136/tracker-phone-375.jpg), [desktop tracker](screenshots/136/tracker-desktop-1440.jpg).
 - Existing tests cover preserved last-valid stale/failed values, observation time, original sample count and fixture/sample labels. Rendering and freshness logic unchanged; muted evidence copy contrast improved for light mode.
+
+## Account iteration evidence
+
+- Account fields stack on phones and use a label/value grid on larger screens; long unbroken names wrap. Confirmation actions wrap, all inputs/actions have 44 px minimum height, and the confirmation input has an accessible label. Deletion/auth behavior unchanged.
+- Temporary isolated Vite component fixture (outside the repository) renders the actual account component with a fake signed-in identity and an unusually long unbroken display name. No auth bootstrap or credentials; sign-out is inert and auth headers throw, so account operations cannot run.
+- Fixture confirmation layout checked at 360, 375, 390, 430, 768 and 1440 px: document width matches viewport; input and buttons are at least 44x44 px. These screenshots are component layout evidence, not authenticated app evidence: [phone](screenshots/136/account-fixture-phone-375.jpg), [desktop](screenshots/136/account-fixture-desktop-1440.jpg).
+- Four existing account behavior tests passed; TypeScript, changed-file ESLint and whitespace checks passed. Authenticated account browser/Lighthouse verification is deferred by owner decision until managed-secret delivery is established (#97–#101); it is not an acceptance gate for #136.
+
+## Owner scope amendment — 2026-10-18
+
+Authenticated account browser/Lighthouse verification is removed from #136 acceptance until managed-secret delivery (#97–#101) is established. No local credential setup is required for this UI issue. This is deferred verification, not a passing authenticated result. Account responsive layout stays in scope using isolated component fixtures; the main-page mobile Lighthouse accessibility target remains >=90.
