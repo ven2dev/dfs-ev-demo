@@ -47,3 +47,12 @@ After owner merges #136, repeat triage/roadmap approval for #104 on feature/dfsE
 - Game select, market labels and normal-mode toolbar buttons measured at least 44x44 px at all six widths. At 375 px, comparison chips measured 44 px tall, with widths 120–135 px.
 - Screenshots: [phone comparison controls](screenshots/136/slate-controls-phone-375.jpg), [desktop comparison controls](screenshots/136/slate-controls-desktop-1440.jpg).
 - All 17 existing slate-browser tests passed; changed-file ESLint and whitespace checks passed. This step changes layout only; card/table accessibility and card action sizes belong to the next iteration.
+
+## Prop-results iteration evidence
+
+- Labeled, described and keyboard-focusable scroll regions preserve native table semantics, explicit column/row headings, sticky first columns, and visible focus. Watch and See all targets measure 44 px tall.
+- Fixture single and two-book comparison modes checked at 360, 375, 390, 430, 768 and 1440 px: document scroll width equals viewport width in both modes at every size.
+- At 375 px, ArrowRight advanced the first table from scrollLeft 0 to 40 and then its 178.5 px end; the row header stayed at the region's left edge and both action buttons were visible at the end.
+- Verification found screen-reader-only action heading text escaping the scroll container's positioning context at narrow widths; making the region a positioning context resolved it. Both modes and all widths were rechecked after the fix.
+- Screenshots: [phone scrolled to actions](screenshots/136/prop-table-phone-375.jpg), [desktop](screenshots/136/prop-table-desktop-1440.jpg).
+- All 28 existing prop-card and slate-browser tests passed; TypeScript, changed-file ESLint and whitespace checks passed. No odds selection/watch logic changed.

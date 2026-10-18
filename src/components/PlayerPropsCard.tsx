@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 import {
   getBestBookmakerKey,
   groupLinesByBookmaker,
@@ -66,34 +68,45 @@ export const PlayerPropsCard = ({
   onSeeAll,
   onWatch,
 }: PlayerPropsCardProps) => {
+  const scrollHintId = useId();
+
   return (
-    <div className="rounded border border-zinc-200 p-3 dark:border-zinc-800">
+    <div className="min-w-0 rounded border border-zinc-200 p-3 dark:border-zinc-800">
       <div className="flex items-center gap-3 border-b border-zinc-100 pb-3 dark:border-zinc-900">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-zinc-100 dark:bg-zinc-900">
           <JerseyPlacardIcon />
         </div>
-        <p className="text-sm font-medium">{player.playerName}</p>
+        <p className="min-w-0 break-words text-sm font-medium">{player.playerName}</p>
       </div>
 
-      <div className="mt-3 overflow-x-auto">
-        <table className="w-full min-w-max text-xs">
+      <p id={scrollHintId} className="mt-3 text-xs text-zinc-600 dark:text-zinc-400">
+        Scroll the table sideways for all prices and actions. Keyboard: focus the table, then use arrow keys.
+      </p>
+      <div
+        role="region"
+        aria-label={`${player.playerName} prop prices`}
+        aria-describedby={scrollHintId}
+        tabIndex={0}
+        className="relative mt-2 max-w-full overflow-x-auto rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 dark:focus-visible:outline-blue-400"
+      >
+        <table className="w-full min-w-max border-separate border-spacing-0 text-xs">
           <thead>
             <tr className="text-left text-zinc-400">
-              <th className="py-1 pr-4 font-normal">Prop</th>
+              <th scope="col" className="sticky left-0 z-10 bg-white py-1 pr-4 text-zinc-600 dark:bg-black dark:text-zinc-400 font-normal">Prop</th>
               {mode === "single" ? (
                 <>
-                  <th className="py-1 pr-4 font-normal">Book</th>
-                  <th className="py-1 pr-4 font-normal">Line</th>
-                  <th className="py-1 pr-4 font-normal">Over / Under</th>
+                  <th scope="col" className="py-1 pr-4 font-normal">Book</th>
+                  <th scope="col" className="py-1 pr-4 font-normal">Line</th>
+                  <th scope="col" className="py-1 pr-4 font-normal">Over / Under</th>
                 </>
               ) : (
                 comparisonBookmakerKeys.map((bookmakerKey) => (
-                  <th key={bookmakerKey} className="py-1 pr-4 font-normal" colSpan={2}>
+                  <th scope="colgroup" key={bookmakerKey} className="py-1 pr-4 font-normal" colSpan={2}>
                     {bookmakerKey}
                   </th>
                 ))
               )}
-              <th className="py-1 font-normal" />
+              <th scope="col" className="py-1 font-normal"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -114,9 +127,9 @@ export const PlayerPropsCard = ({
 
               return (
                 <tr key={market.marketKey} className="border-t border-zinc-100 dark:border-zinc-900">
-                  <td className="py-2 pr-4 whitespace-nowrap">
+                  <th scope="row" className="sticky left-0 z-10 w-28 max-w-32 border-r border-zinc-200 bg-white py-2 pr-4 text-left font-normal whitespace-normal dark:border-zinc-800 dark:bg-black">
                     {marketLabel(market.marketKey as PlayerPropMarketKey)}
-                  </td>
+                  </th>
 
                   {mode === "single" ? (
                     <>
@@ -168,7 +181,7 @@ export const PlayerPropsCard = ({
                             direction: watchDirection,
                           })
                         }
-                        className="rounded px-2 py-1.5 text-zinc-500 underline hover:text-zinc-900 disabled:opacity-40 disabled:no-underline dark:hover:text-zinc-100"
+                        className="min-h-11 min-w-11 rounded px-2 py-1.5 text-zinc-500 underline hover:text-zinc-900 disabled:opacity-40 disabled:no-underline dark:hover:text-zinc-100"
                       >
                         Watch {watchDirection === "over" ? "Over" : "Under"}
                       </button>
@@ -179,7 +192,7 @@ export const PlayerPropsCard = ({
                     <button
                       type="button"
                       onClick={() => onSeeAll(market.marketKey)}
-                      className="rounded px-2 py-1.5 text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
+                      className="min-h-11 min-w-11 rounded px-2 py-1.5 text-zinc-500 underline hover:text-zinc-900 dark:hover:text-zinc-100"
                     >
                       See all
                     </button>
