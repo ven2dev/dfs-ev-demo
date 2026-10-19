@@ -45,13 +45,13 @@ it a deployment/traffic gate before adoption. Existing application behavior
 does not depend on a readiness 200.
 
 Remote `up` continues to refuse before connection. This PR cannot initialize a
-new hosted application database through the migration CLI. `db/schema.sql` is
+new hosted application database through the migration CLI. `packages/db/schema.sql` is
 a generated reference, not an alternate remote activation path. Keep issue #60
 open for the remaining activation work described below.
 
 ## Candidate migrations and local runner
 
-`db/migrations/0001_pre_41_baseline.sql` preserves the authentic eight-table
+`packages/db/migrations/0001_pre_41_baseline.sql` preserves the authentic eight-table
 historical schema byte for byte. `0002_market_observation_history.sql` adds the
 nine #41 tables; concatenating these files preserves the original current SQL
 and its comments. The owner-run Production snapshot matches the complete
@@ -126,7 +126,7 @@ fixed disposable primary database.
 
 ## Migration artifacts and immutability
 
-`db/migration-manifest.json` commits the SHA-256 checksum for every SQL file.
+`packages/db/migration-manifest.json` commits the SHA-256 checksum for every SQL file.
 `.gitattributes` enforces LF for SQL and the manifest. Files must use ordered,
 contiguous four-digit versions starting at 0001; down files, symlinks, invalid
 UTF-8, CRLF and empty content are refused.
@@ -136,7 +136,7 @@ npm run db:migrations:check
 npm run test:db:migrations:unit
 ```
 
-The check verifies SQL against the complete manifest and verifies `db/schema.sql`
+The check verifies SQL against the complete manifest and verifies `packages/db/schema.sql`
 against commented migration-file concatenation. The reference is generated;
 edit ordered migration files rather than the reference. Append a reviewed file,
 then run `npm run db:migrations:generate`. Generation preserves the checksums of
@@ -157,8 +157,8 @@ runner's checksum protection were **not** changed.
 Until PR A passes review, every edit to `0003_predictive_evidence.sql` follows
 this procedure, and the commit message names the reset:
 
-1. `git show origin/main:db/migration-manifest.json > db/migration-manifest.json`
-2. remove `db/catalog-contracts/0003.json`
+1. `git show origin/main:packages/db/migration-manifest.json > packages/db/migration-manifest.json`
+2. remove `packages/db/catalog-contracts/0003.json`
 3. `npm run db:migrations:generate`, then `npm run db:contracts:generate` against
    the disposable database, then `npm run db:readiness:generate`
 4. `npm run test:db:down` and recreate disposable databases with `npm run test:db:local`
@@ -202,7 +202,7 @@ current scope and remaining canonical bindings.
 
 ## Generated catalog contracts
 
-`db/catalog-contracts/0001.json` and `0002.json` describe the application catalog
+`packages/db/catalog-contracts/0001.json` and `0002.json` describe the application catalog
 after each migration prefix. `ledger.json` independently describes the ledger
 DDL. Each artifact has a SHA-256 catalog fingerprint and binds the exact catalog
 query plus its migration-prefix checksums or ledger-DDL checksum/runner version.
@@ -404,7 +404,7 @@ EOF
 ```
 
 The endpoint imports a generated TypeScript manifest, never migration tooling
-or SQL files. `db/readiness.json` explicitly declares this application's minimum
+or SQL files. `packages/db/readiness.json` explicitly declares this application's minimum
 compatible version (currently 2). The generated manifest separately records
 the maximum known version (currently 4 on the #52 WIP branch), known checksums/filenames/runner
 version and required tables from the minimum version's verified contract.
@@ -569,7 +569,7 @@ the authentic current catalog, data/ledger-preserving no-op reruns, read-only
 status, refusal of unversioned schemas, two-file failure rollback, verification
 rollback, independently connected lock contention and concurrent runners,
 corrupt-ledger rejection and scratch target/cleanup guards. The committed
-`tests/db/fixtures/` schemas retain source-object provenance and SHA-256 anchors;
+`packages/db/tests/fixtures/` schemas retain source-object provenance and SHA-256 anchors;
 tests use those immutable independent copies without needing Git history. Run it with
 the explicit `TEST_DATABASE_URL` while the Compose service is running.
 `npm run test:db:local` now requires all catalog/contract/migration/plan unit and

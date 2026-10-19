@@ -26,7 +26,7 @@ provider-shaped observations, telemetry, caches, or crosswalk rows.
 The two Neon resources are separate projects connected to mutually exclusive
 Vercel environments under the normal unprefixed database variable names. Do
 not reconnect either database to both environments. Preview must not receive
-a Production data copy. `db/schema.sql` is now a generated reference; do not
+a Production data copy. `packages/db/schema.sql` is now a generated reference; do not
 apply it as a hosted setup command. Remote migration writes remain disabled;
 initializing a new hosted Preview database requires separately approved schema
 delivery under the [migration guide](database-migrations.md). The fixture odds

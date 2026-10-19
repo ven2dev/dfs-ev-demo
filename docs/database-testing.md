@@ -98,20 +98,21 @@ prefix once, owns interrupted-clone cleanup, and removes the chain after each
 run. See [the #153 design and validation](database-suite-speed.md).
 
 
-`vitest.db.config.mts` runs the six primary/readiness/corpus files serially.
-`vitest.db.scratch.config.mts` runs four isolated predictive/source files with
-CPU-bounded workers and no primary reset hooks. The runner overlaps that lane
-with Node checks, catalog verification and then serial Vitest; one CPU falls
-back to consecutive lanes. Both use real Node timers. The jsdom suite excludes `tests/db/`. Setup installs
+`vitest.db.config.mts` runs the six retained primary/readiness/corpus files
+serially across `packages/db/tests`, `apps/web/tests/db` and
+`services/pipeline/tests/creator`. The legacy scratch lane was retired in #177.
+The runner executes Node checks, catalog verification and then serial Vitest;
+the Node workers remain CPU-bounded. These tests use real Node timers and are
+excluded from the jsdom suite. Setup installs
 ordered migrations through the repository runner, then verifies a no-op rerun;
 both calls verify the full application and ledger catalog before commit. The
-generated `db/schema.sql` remains a checked reference and is never executed by
+generated `packages/db/schema.sql` remains a checked reference and is never executed by
 the bootstrap. An existing unversioned nonempty schema is refused without repair
 or adoption. Setup truncates only `live_prop_inputs_cache` between cases.
 Tracked database clients close after each case and suite.
 
 The runner also validates Vitest's JSON report: all 13 required #45 cases,
-four readiness cases, 111 predictive/source-claims cases and eight corpus cases
+four readiness cases and eight corpus cases
 must execute and pass.
 Skipped/todo or missing cases fail. The #45 contract
 covers full-schema bootstrap, including ledger/data-preserving reruns, plus
@@ -183,7 +184,7 @@ contracts and validate the v3 tip. Genuine v2 remains application-ready.
 Synthetic pending/ahead migration scenarios append beyond the current tip;
 they do not redefine the historical v2 adoption evidence.
 
-`scripts/db-test-contract.mjs` contains the reviewed static list of required
+`packages/db/scripts/db-test-contract.mjs` contains the reviewed static list of required
 cases. The mandatory Node suite covers target/bootstrap/report guards and every
 catalog, contract, migration, plan and readiness-artifact unit/integration case.
 A custom reporter

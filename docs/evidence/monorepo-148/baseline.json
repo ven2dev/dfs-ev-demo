@@ -1,0 +1,162 @@
+{
+  "formatVersion": 1,
+  "issue": 148,
+  "stage": "pre-relocation baseline",
+  "recordedOn": "2026-10-19",
+  "baselineCommit": "3b9d946cd57054803d1af892d62dd4413d82d43a",
+  "branch": "feature/dfsEV-148-monorepo-layout",
+  "treeCleanBeforeDocumentation": true,
+  "runtime": {
+    "node": "v24.18.1",
+    "next": "16.4.2",
+    "vitest": "5.0.5"
+  },
+  "trackedFiles": {
+    "count": 490,
+    "sha256": "16568158b37bf5a89fac0cbbe32c5709ea6eb056b1c8046d161f7fcb93150fb1",
+    "method": "sorted path + exact byte SHA-256, JSON.stringify encoding; reconstructable from baseline git tree"
+  },
+  "immutableFiles": {
+    "db/catalog-contracts/0001.json": "7db7ff0f095d4075cbb029887e6531e15638998097aad3f015f3c4dca59a1113",
+    "db/catalog-contracts/0002.json": "68ecc828365667c376ac3ec8385b8ad0c187515494d148324acea571c65994ac",
+    "db/catalog-contracts/0003.json": "1c377f990a00f2c19902d9887c94ce0523376d91adb57ffa0ae6ac6e3069ac78",
+    "db/catalog-contracts/0004.json": "0455b4561315eb3363b087e1380703192bfabe56a1abb90a05a60dee0c93a05f",
+    "db/catalog-contracts/0005.json": "908678b73b9b9ab07ed4668b1a1a01e89d68bf4e5f6a2fbdc922626824fc3e39",
+    "db/catalog-contracts/0006.json": "2f5a7c815955e47be583b5e94c28906ce504b0a76cb2ac704021661e7f9f2433",
+    "db/catalog-contracts/0007.json": "c2095909ebacaa1657e08b120b0b3538665e8a7b19f9587c31b383481f7aa7ef",
+    "db/catalog-contracts/0008.json": "8b1ea894cbda0b9afc1c193e8d4b41fd2026882aabb2c18f3f2fe4691ef52d17",
+    "db/catalog-contracts/0009.json": "8968e7c389f1a2714de8c139282eab4fd5a245eee49cec509f021cd091c2a93d",
+    "db/catalog-contracts/0010.json": "4ed78f91ea0900a1bfd6113ada384a5319d3ea66b6726556da331d8c86204e63",
+    "db/catalog-contracts/0011.json": "fedf66e205ecce73a06c48ebfd47e353a2f7364da5b04bcfae1fe3c1ae6126b1",
+    "db/catalog-contracts/ledger.json": "48e948beb754e9137fcb9d71e6d42714f500db432230fe684414c7fca002cdac",
+    "db/catalog.sql": "6174d71894f9e05c3e57dda8bef4dce2ce7e97bc99ce9ef5da14edb334ce67fa",
+    "db/migration-manifest.json": "6a9ec6d3d6627b1f8c0ff5b6be08c89d8fba3ea70901684723f2497e66a768b5",
+    "db/migrations/0001_pre_41_baseline.sql": "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98",
+    "db/migrations/0002_market_observation_history.sql": "df35a458b5d6e3f26cbbdd84d8cfa65244e865dd6963b6f0e1f8f5f0e8dd7297",
+    "db/migrations/0003_predictive_evidence.sql": "ec72796bc69169e8a8a487c2dfd2240c86a4dc94c4ab74b29e4c05c83df9e695",
+    "db/migrations/0004_creator_corpus_projection.sql": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba",
+    "db/migrations/0005_predictive_source_claims.sql": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a",
+    "db/migrations/0006_predictive_source_bindings.sql": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19",
+    "db/migrations/0007_predictive_unavailable_bindings.sql": "fc10fe50cb8913c2c755db8ff15c0aa3d40e49b5a92d2471fff86c89c4409679",
+    "db/migrations/0008_predictive_source_witnesses.sql": "ea824b2f2b943feafc576ed0cb7130f0f78ea37376859995f7a1fa0b2e139cfb",
+    "db/migrations/0009_predictive_source_decisions.sql": "f861c1afd210c65886628581b78a1f135bb950f6b5e5d00989d065930a49ea31",
+    "db/migrations/0010_predictive_source_consumers.sql": "813ca0e75d014bc5e38c9d454c481a479890f1c43e16128400442da6ad57ee35",
+    "db/migrations/0011_predictive_capture_ingestion_clock.sql": "3908fa33bcb79301a870dca9a6c18dddacf755580a303025610d20bb20716d67",
+    "db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "db/proposals/163_empirical_authorize.sql": "5b2940582548aea025c08133dbb356bcb8055de85e57738a16c09d511d3e37a3",
+    "db/proposals/163_empirical_history.sql": "f6c43d4a16504e4b9ce8e60a4adaa027712323276937dced6867b4c44859d0e2",
+    "db/proposals/163_empirical_reader.sql": "91f534bb874d4d08f1ec32a62f9d3b9bd9ccea926fedb578824d41a18c796593",
+    "db/readiness.json": "d2f108774fb1b2732fcc80776e7beb2a8e78e179916c12e3954c4db86060d3fe",
+    "db/schema.sql": "993fad84aa8f992c5b3373d869a7260d4bb13557b3e36aa626b8873570e5d34b",
+    "src/lib/dbReadinessManifest.ts": "4079a4e55bff154095bba98180e9c2e8a22fed403d4edc0f5aa201c825eb3153"
+  },
+  "rootCommands": {
+    "count": 42,
+    "sha256": "5bcde2d2d3a55dacd358bbe8ec27c94451304abe7ded551093c0a1a5981e5ac7",
+    "names": [
+      "build",
+      "creators",
+      "db:catalog",
+      "db:catalog:diff",
+      "db:contracts:check",
+      "db:contracts:generate",
+      "db:migrate",
+      "db:migrate:dev",
+      "db:migrations:check",
+      "db:migrations:generate",
+      "db:readiness:check",
+      "db:readiness:generate",
+      "dev",
+      "feature-store:dataset:spike",
+      "feature-store:derived:spike",
+      "feature-store:ingest:spike",
+      "lint",
+      "projection:demo",
+      "start",
+      "test",
+      "test:ci-gate",
+      "test:db",
+      "test:db:catalog",
+      "test:db:catalog:unit",
+      "test:db:contracts",
+      "test:db:contracts:unit",
+      "test:db:down",
+      "test:db:guard",
+      "test:db:lifecycle",
+      "test:db:local",
+      "test:db:migrations",
+      "test:db:migrations:unit",
+      "test:db:plans",
+      "test:db:plans:unit",
+      "test:db:repeat",
+      "test:db:startup",
+      "test:db:templates",
+      "test:feature-store:db",
+      "test:firebase-admin-runtime",
+      "test:firestore-rules",
+      "test:watch",
+      "typecheck"
+    ],
+    "method": "name/command tuples sorted by name; values reconstructable from baseline package.json"
+  },
+  "testCollections": {
+    "browser": {
+      "files": 68,
+      "namedCases": 908,
+      "sha256": "e82660e8e4333ee7270c801cfd52636db4a08843c7fa0f16cabad5c6970089cf",
+      "method": "Vitest 5 list --no-staticParse; collection only, tests not executed"
+    },
+    "node": {
+      "files": 23,
+      "namedCases": 243,
+      "sha256": "99e78ab2bd15cda410292b1ffd0735b58a0102f223e01398897fb594e39a14f5",
+      "method": "Vitest 5 list --no-staticParse; collection only, tests not executed"
+    },
+    "database": {
+      "files": 6,
+      "namedCases": 25,
+      "sha256": "40b9287dd17a0c7bce4b3dc1787172c0e63e1787969d5f37975bd6df8cfc8eea",
+      "method": "Vitest 5 list --no-staticParse; collection only, tests not executed"
+    }
+  },
+  "databaseRequiredContract": {
+    "nodeFiles": 12,
+    "nodeCases": 74,
+    "leaseCases": 13,
+    "readinessCases": 4,
+    "corpusCases": 8,
+    "sha256": "f47566faaabaae1dd3df96ffa7fcc3d28894da37f894d61f640ff737c478c720",
+    "method": "reviewed named-case arrays from scripts/db-test-contract.mjs; not a test run"
+  },
+  "featureStoreStaticNames": {
+    "files": 7,
+    "names": 77,
+    "sha256": "d9c5e66a8d29ba6e79c61497b083e70357e07d05edee1cdfd57a2293e7b36734",
+    "method": "TypeScript AST literal first arguments to test/check calls; includes parent tests; discovery aid only, not executed coverage"
+  },
+  "deployment": {
+    "source": "GitHub deployments/statuses read-only API",
+    "id": 7165428123,
+    "environment": "Production",
+    "sha": "3b9d946cd57054803d1af892d62dd4413d82d43a",
+    "status": "success",
+    "reportedAt": "2026-10-19T04:04:19Z",
+    "dashboardSettings": "not inspected; verify actual settings and record previous values before owner cutover",
+    "runtimeSmoke": "not performed; deployment status is not a runtime-health claim",
+    "repositoryConfigurationSha256": "c89133ed19abcfed7e59197af39c1c19cbecce27fa8af62c5aa1aa0655c8574a"
+  },
+  "checks": {
+    "lockedDependencyInstall": "pass; npm ci, unchanged package-lock.json",
+    "threeVitestCollections": "pass; names collected only",
+    "databaseExecution": "not run at this documentation-only baseline",
+    "relocation": "not started",
+    "hostedWrites": "none"
+  },
+  "evidence": {
+    "compactOnly": true,
+    "fullInventories": "temporary working files, reconstructable from baseline checkout and documented commands",
+    "logPolicy": "full collection logs remain off git; no credential files copied"
+  }
+}

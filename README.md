@@ -13,8 +13,21 @@ checked-in Node version contract can be selected before installing dependencies:
 ```bash
 nvm use
 npm install
-cp .env.example .env.local
+cp apps/web/.env.example apps/web/.env.local
 ```
+
+The web app is in `apps/web`, pure math in `packages/domain`, database assets
+and tooling in `packages/db`, and pipeline/creator jobs in `services/pipeline`.
+Install from the repository root with the single lockfile; existing root npm
+commands remain supported. Package API extraction follows this physical move.
+See the [relocation and deployment guide](docs/monorepo-layout.md).
+
+Root `dev`, `build` and `start` commands also load existing root `.env*` files
+for local compatibility. Shell variables take precedence, then root dotenv
+values, then app dotenv values; each directory uses Next's normal file order.
+New local configuration belongs in `apps/web/.env.local`. Direct app workspace
+commands load only app dotenv files. Hosted Vercel commands use the native app
+boundary and environment-specific project settings.
 
 ## Quality checks
 
@@ -68,7 +81,7 @@ private file outside the worktree in your own terminal, separate from the agent
 session:
 
 - **Odds API** (`ODDS_API_KEY`) — free tier key from [the-odds-api.com](https://the-odds-api.com).
-- **Firebase** (`NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_SERVICE_ACCOUNT_KEY_BASE64`) — see the comments in `.env.example`.
+- **Firebase** (`NEXT_PUBLIC_FIREBASE_*`, `FIREBASE_SERVICE_ACCOUNT_KEY_BASE64`) — see the comments in `apps/web/.env.example`.
 - **Postgres / historical stats** (`DATABASE_URL`, `CRON_SECRET`) — see below.
 
 Vercel Preview is deliberately isolated from Production and uses deterministic
@@ -129,7 +142,7 @@ conditional; retiring the old implementation grants no display authorization.
   [GitHub's rate-limit docs](https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api)).
   The sync job makes 3 of those calls per run, once daily — comfortably
   under the limit, but it isn't literally unlimited.
-- **Coverage:** current season, current rosters only (see `db/schema.sql`'s
+- **Coverage:** current season, current rosters only (see `packages/db/schema.sql`'s
   header comment) — not a multi-season historical archive.
 - **Freshness:** updated nightly after each game day during the season, plus
   additional passes on game days themselves, plus a Wednesday-night pass

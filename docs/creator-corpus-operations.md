@@ -50,7 +50,7 @@ Before importing the corpus or examining any holdout, create the private
 eligible-creator commitment in your own terminal. Use the same private creators
 file that discovery uses. The private record is created outside the repository;
 the command writes only the safe commitment, counts, thresholds, window and
-rule to the committed `scripts/creator-corpus/readiness-gate.json` file.
+rule to the committed `services/pipeline/scripts/creator-corpus/readiness-gate.json` file.
 
 ```bash
 npm run creators -- gate-register \
@@ -66,14 +66,14 @@ revealing the eligible keys.
 
 ## What is fixed in advance
 
-`scripts/creator-corpus/registration.json` records the window and rule that were
+`services/pipeline/scripts/creator-corpus/registration.json` records the window and rule that were
 registered before any data was pulled (see the registration comments on #88):
 
 - **Window:** 2024 Week 1 through 2026 Week 4, regular-season weeks 1–18 only.
   Playoffs and the preseason are excluded. Extending the window, adding a
   creator or changing the rule is a new, separately recorded registration. It is
   not an edit made after looking at results.
-- **Inclusion rule v1** (`src/lib/creatorVideoRule.ts`): a video is a *candidate*
+- **Inclusion rule v1** (`apps/web/src/lib/creatorVideoRule.ts`): a video is a *candidate*
   when its title has a clear prop signal (props, DFS, player TDs) and a football
   signal (NFL, TNF/SNF/MNF, or "Week N"), and it was published inside a
   registered week. Fantasy-football titles, other leagues, videos under two
@@ -82,7 +82,7 @@ registered before any data was pulled (see the registration comments on #88):
   title week that disagrees with the publish week, an unknown length) is
   **flagged for your review** and never decided automatically. Week and season
   always come from the publish date, using the nflverse-derived calendar in
-  `src/lib/nflSeasonCalendar.ts`.
+  `apps/web/src/lib/nflSeasonCalendar.ts`.
 
 Each registered week for each creator becomes one **slot**: *included* (at least
 one video counts), *needs review* (only flagged videos), or *missing* (nothing
@@ -382,7 +382,7 @@ From the repository, connect as the local database owner—not as
 `corpus_importer`—and install the reviewed schema:
 
 ```bash
-psql -d dfs_ev_corpus -v ON_ERROR_STOP=1 -f db/schema.sql
+psql -d dfs_ev_corpus -v ON_ERROR_STOP=1 -f packages/db/schema.sql
 ```
 
 Create this owner-only registration outside the repository, adjusting the port
@@ -494,7 +494,7 @@ private commitment salt. Keep API-derived discovery/registry files only inside
 their 30-day period.
 
 To recover, create a **new empty local database with a different name** rather
-than deleting the current one. Apply `db/schema.sql` as its owner after ensuring
+than deleting the current one. Apply `packages/db/schema.sql` as its owner after ensuring
 `corpus_importer` exists, make a matching private database registration, then
 run `import`, `expire-api` and `readiness` against the new database. If the saved
 discovery is stale, refresh it first and reuse the permanent decision and
