@@ -100,7 +100,6 @@ export const SlateBrowser = () => {
   // prop.
   const [watchAssignTarget, setWatchAssignTarget] = useState<"primary" | "secondary">("primary");
   const [selectionOpen, setSelectionOpen] = useState(true);
-  const [watchDirection, setWatchDirection] = useState<PlayerPropDirection>("over");
 
   const sortedCheckedMarketKeys = useMemo(
     () => [...checkedMarketKeys].sort(),
@@ -488,26 +487,6 @@ export const SlateBrowser = () => {
                   </div>
 
                   {!comparisonMode && (
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                      <span className="text-zinc-600 dark:text-zinc-400">Track side:</span>
-                      {(["over", "under"] as const).map((direction) => (
-                        <button
-                          key={direction}
-                          type="button"
-                          onClick={() => setWatchDirection(direction)}
-                          className={`min-h-11 rounded px-3 py-1.5 capitalize ${
-                            watchDirection === direction
-                              ? "bg-black text-white dark:bg-white dark:text-black"
-                              : "border border-zinc-300 dark:border-zinc-700"
-                          }`}
-                        >
-                          {direction}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {!comparisonMode && (
                     <details className="mt-3 text-sm">
                       <summary className="min-h-11 cursor-pointer rounded px-2 py-3 text-zinc-600 dark:text-zinc-400">
                         Demo watch assignment
@@ -537,7 +516,7 @@ export const SlateBrowser = () => {
                   )}
 
                   {(primaryWatch || secondaryWatch) && (
-                    <div className="mt-3 space-y-1 text-sm">
+                    <div role="status" className="mt-3 space-y-1 text-sm">
                       {primaryWatch && (
                         <div
                           data-testid="primary-watch-status"
@@ -619,7 +598,6 @@ export const SlateBrowser = () => {
                         smartDefault={smartDefault}
                         selectedBookmakerKey={selectedBookmakerKey}
                         comparisonBookmakerKeys={comparisonBookmakerKeys}
-                        watchDirection={watchDirection}
                         onSeeAll={(marketKey) =>
                           setSeeAllTarget({ playerName: player.playerName, marketKey })
                         }

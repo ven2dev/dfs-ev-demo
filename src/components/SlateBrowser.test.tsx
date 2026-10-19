@@ -384,12 +384,29 @@ describe("SlateBrowser", () => {
 
   it("lets the user explicitly watch Under and records that direction", async () => {
     await showPropsWithFourBooks();
-    fireEvent.click(screen.getByRole("button", { name: "under" }));
     fireEvent.click(screen.getByText("Watch Under"));
 
     expect(useAppStore.getState().primaryWatch?.direction).toBe("under");
     expect(useAppStore.getState().primaryWatch?.bookmakerKey).toBe("bovada");
     expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("under");
+  });
+
+  it("captures and labels the watched sportsbook, and refresh cannot silently retarget the existing watch", async () => {
+    await showPropsWithFourBooks();
+    expect(screen.queryByText("Track side:")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Watch Over .*draftkings for Jalen Hurts/ }));
+    const watch = useAppStore.getState().primaryWatch;
+    expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("over, draftkings");
+    const refreshed = structuredClone(useAppStore.getState().discoveredProps);
+    for (const line of refreshed[0].markets[0].lines) {
+      if (line.side === "over" && line.bookmakerKey === "bovada") line.price = 2.5;
+    }
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players: refreshed });
+    fireEvent.click(screen.getByRole("button", { name: "Refresh odds" }));
+    expect(await screen.findByRole("button", { name: /Watch Over .*bovada for Jalen Hurts/ })).toBeEnabled();
+    expect(useAppStore.getState().primaryWatch).toEqual(watch);
+    expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("over, draftkings");
+    expect(screen.getByTestId("primary-watch-status")).not.toHaveTextContent("bovada");
   });
 
   it("switching the assign target to Secondary watches a second discovered prop without disturbing the primary one", async () => {
