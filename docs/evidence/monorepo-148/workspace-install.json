@@ -1,0 +1,125 @@
+{
+  "formatVersion": 1,
+  "issue": 148,
+  "stage": "workspace-only Preview build correction; commit and push pending owner approval",
+  "recordedAt": "2026-10-19T19:36:30.274093+00:00",
+  "baseCommit": "0318d9a4476462c507b6cfa6120797da7dd61a36",
+  "runtime": {
+    "node": "v24.18.1",
+    "npm": "11.16.0",
+    "next": "16.4.2"
+  },
+  "boundary": {
+    "source": "fresh git archive exports of the tracked base; candidate overlays only the manifest, lockfile and layout test",
+    "initialState": "no node_modules, .next, dotenv files or parent node_modules; separate baseline and candidate directories",
+    "install": "npm ci --workspace @dfs-ev/web --no-audit --no-fund; no root install; normal npm cache, not a network-cold claim",
+    "build": "npm run build --workspace @dfs-ev/web; fixture mode; no app credentials; network used for Google Fonts",
+    "hostedWrites": "none; Vercel Preview remains pending owner-approved commit and push"
+  },
+  "implementationFiles": {
+    "apps/web/package.json": "e3cd9263e7bcb1849126bab0751a09f15530c7e31561d5b4a09fc5358ab8683a",
+    "package-lock.json": "4927dbfc1ce71b3ffd71d5251e3df264bd0a59a255ed5d70e3bdccaf320c5e64",
+    "tests/monorepo-layout.check.mjs": "bf1f74abc56f2bf166c46d16e801e317cb094c06f4d86b13baabdabca6097cb2"
+  },
+  "lockfile": {
+    "changedPackageEntries": [
+      "apps/web"
+    ],
+    "existingResolvedVersionsChanged": 0,
+    "verdict": "pass"
+  },
+  "installs": [
+    {
+      "mode": "baseline",
+      "exitCode": 0,
+      "packagesAdded": 261,
+      "seconds": 4.467,
+      "logSha256": "37a02f5bd3f61de6c65885fb6b57b75cd140ad120d826006c5453ef386b628bd"
+    },
+    {
+      "mode": "candidate",
+      "exitCode": 0,
+      "packagesAdded": 377,
+      "seconds": 5.077,
+      "logSha256": "9fd5205931e80e56f018eb94dcac2b265c9de7bb26fc80f9a6b98278444a8956"
+    }
+  ],
+  "checks": [
+    {
+      "mode": "baseline",
+      "stage": "build",
+      "command": [
+        "npm",
+        "run",
+        "build",
+        "--workspace",
+        "@dfs-ev/web"
+      ],
+      "exitCode": 1,
+      "seconds": 2.774,
+      "logSha256": "f0db4c6850d72245dc72600ab43813db86039dfa8789a30493106e0c00323cee"
+    },
+    {
+      "mode": "candidate",
+      "stage": "build",
+      "command": [
+        "npm",
+        "run",
+        "build",
+        "--workspace",
+        "@dfs-ev/web"
+      ],
+      "exitCode": 0,
+      "seconds": 8.072,
+      "logSha256": "75e15d0fa88438fe25a2837ba57bc4ccb6dbe6e16c7d5dd2e5999058dbdfba62"
+    },
+    {
+      "mode": "candidate",
+      "stage": "gate",
+      "command": [
+        "npm",
+        "run",
+        "test:ci-gate"
+      ],
+      "exitCode": 0,
+      "seconds": 1.852,
+      "logSha256": "8335fbb5a0110cdd588ea9469a31ec365e6fd6461ec2964cd68a16caefbd02af"
+    }
+  ],
+  "baselineFailure": "Cannot find module '@tailwindcss/postcss'",
+  "candidateResult": "CSS compilation, TypeScript, all 16 static pages and route generation pass",
+  "isolationChecks": {
+    "baselinePostcssAndTypescript": "absent",
+    "candidatePostcssAndTypescript": "installed",
+    "candidateRootOnlyTools": [
+      "eslint absent",
+      "firebase-tools absent",
+      "pg absent"
+    ]
+  },
+  "dependencyGuard": {
+    "cases": 10,
+    "failures": 0,
+    "coverage": [
+      "app TypeScript project including tests and local shared imports",
+      "Next/PostCSS config imports",
+      "PostCSS plugin names and CSS imports",
+      "implicit Next compiler and Node/React types",
+      "root/web version equality and Next/@next/env equality",
+      "every required package removed in turn refuses; mismatched version refuses",
+      "scoped subpaths, re-exports, require, dynamic and type imports"
+    ]
+  },
+  "otherChecks": {
+    "repositoryLint": "pass",
+    "repositoryTypecheckAndReadiness": "pass",
+    "frozenArtifactHashes": 34,
+    "gitDiffCheck": "pass"
+  },
+  "correctedAttempts": [
+    "Initial guard mapped Next bundled triple-slash types to nonexistent @types/next; corrected by resolving each reference to its owning package.",
+    "Sandboxed baseline build was blocked on Google Fonts; retry encountered a sandbox-created Turbopack port error. Clearing generated output and running with network access reproduced the exact missing PostCSS module failure."
+  ],
+  "evidencePolicy": "compact receipt only; full logs remain off git in temporary validation storage",
+  "verdict": "pass: clean workspace-only install/build and layout regression checks; hosted verification pending"
+}

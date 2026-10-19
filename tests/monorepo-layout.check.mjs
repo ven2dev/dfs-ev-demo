@@ -5,6 +5,9 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isBuiltin } from "node:module";
+import ts from "typescript";
+import postcss from "../apps/web/postcss.config.mjs";
 import { test } from "node:test";
 import { webCommand } from "../scripts/web.mjs";
 
@@ -72,4 +75,97 @@ test("root and workspace web entry points both resolve Next.js without reading l
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /Usage: next/);
   }
+});
+
+// Include the complete Next type-check project, including colocated tests and
+// local imports outside apps/web. A root install can otherwise hide missing
+// workspace declarations that fail in Vercel's workspace-only installation.
+const packageName = specifier => {
+  if (specifier.startsWith(".") || specifier.startsWith("/") || specifier.startsWith("@/") || isBuiltin(specifier)) return null;
+  return specifier.split("/").slice(0, specifier.startsWith("@") ? 2 : 1).join("/");
+};
+
+const importedPackages = source => {
+  const info = ts.preProcessFile(source, true, true);
+  return new Set([
+    ...info.importedFiles.map(reference => packageName(reference.fileName)),
+  ].filter(Boolean));
+};
+
+const requiredWebPackages = async () => {
+  const directory = fileURLToPath(root);
+  const config = ts.readConfigFile(join(directory, "apps/web/tsconfig.json"), ts.sys.readFile);
+  assert.equal(config.error, undefined);
+  const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, join(directory, "apps/web"));
+  assert.deepEqual(parsed.errors, []);
+  const program = ts.createProgram([
+    ...parsed.fileNames,
+    join(directory, "apps/web/next.config.ts"),
+    join(directory, "apps/web/postcss.config.mjs"),
+  ], parsed.options);
+  // Next's compiler and implicit Node/JSX types are not explicit source imports.
+  const required = new Set(["next", "react", "react-dom", "typescript", "@types/node", "@types/react", "@types/react-dom"]);
+  for (const source of program.getSourceFiles()) {
+    if (source.fileName.includes("/node_modules/") || source.fileName.includes("/.next/")) continue;
+    for (const name of importedPackages(source.text)) required.add(name);
+    for (const reference of source.typeReferenceDirectives) {
+      const resolved = ts.resolveTypeReferenceDirective(reference.fileName, source.fileName, parsed.options, ts.sys).resolvedTypeReferenceDirective;
+      assert.ok(resolved, `Cannot resolve type reference ${reference.fileName}`);
+      const dependency = resolved.resolvedFileName.split("/node_modules/").at(-1);
+      if (dependency !== resolved.resolvedFileName) required.add(packageName(dependency));
+    }
+  }
+  for (const plugin of parsed.options.plugins ?? []) required.add(packageName(plugin.name));
+  // PostCSS plugins are package names in configuration, not import statements.
+  for (const plugin of Object.keys(postcss.plugins)) required.add(packageName(plugin));
+  for (const css of ts.sys.readDirectory(join(directory, "apps/web/src"), [".css"])) {
+    const text = await readFile(css, "utf8");
+    for (const match of text.matchAll(/@import\s+(?:url\(\s*)?["']([^"']+)["']/g)) {
+      if (/^(?:https?:|data:)/.test(match[1])) continue;
+      const name = packageName(match[1]);
+      if (name) required.add(name);
+    }
+  }
+  return required;
+};
+
+const assertWebDependencies = (web, repository, required) => {
+  const declared = { ...web.dependencies, ...web.devDependencies };
+  const rootDeclared = { ...repository.dependencies, ...repository.devDependencies };
+  for (const name of required) assert.ok(declared[name], `apps/web/package.json is missing build dependency ${name}`);
+  for (const [name, version] of Object.entries(declared)) {
+    if (rootDeclared[name]) assert.equal(version, rootDeclared[name], `${name} differs between root and web`);
+  }
+  assert.equal(rootDeclared["@next/env"], declared.next, "root @next/env must match web Next.js to prevent internal version drift");
+};
+
+test("web declares every build import, PostCSS/CSS plugin and compiler dependency at matching root versions", async () => {
+  const web = JSON.parse(await readFile(new URL("apps/web/package.json", root)));
+  const repository = JSON.parse(await readFile(new URL("package.json", root)));
+  const required = await requiredWebPackages();
+  assertWebDependencies(web, repository, required);
+  // Prove each missing declaration fails even when the root still declares it.
+  for (const name of required) {
+    const missing = structuredClone(web);
+    delete missing.dependencies?.[name];
+    delete missing.devDependencies?.[name];
+    assert.throws(() => assertWebDependencies(missing, repository, required), { message: `apps/web/package.json is missing build dependency ${name}` });
+  }
+  const mismatched = structuredClone(web);
+  mismatched.devDependencies["@tailwindcss/postcss"] = "0.0.0";
+  assert.throws(() => assertWebDependencies(mismatched, repository, required), /differs between root and web/);
+});
+
+test("web dependency discovery covers scoped subpaths, re-exports, runtime and type imports while ignoring local aliases and builtins", () => {
+  assert.deepEqual([...importedPackages(`
+    import type { X } from "@scope/tool/subpath";
+    export { x } from "exported/subpath";
+    const a = require("commonjs");
+    const b = import("dynamic/subpath");
+    type T = import("typed").T;
+    import "@/local";
+    import "./relative";
+    import "node:fs";
+    import "fs";
+  `)].sort(), ["@scope/tool", "commonjs", "dynamic", "exported", "typed"]);
 });

@@ -179,3 +179,40 @@ source and root settings otherwise break deployment.
 See [Vercel build settings](https://vercel.com/docs/builds/configure-a-build),
 [monorepo guidance](https://vercel.com/docs/monorepos/monorepo-faq) and the
 [existing Preview isolation contract](preview-environment.md).
+
+## Workspace-only Preview build correction (2026-10-19)
+
+Vercel's apps/web root installs only the web workspace. The earlier root install
+masked missing build dependencies: the 261-package workspace-only baseline fails
+with Cannot find module '@tailwindcss/postcss'. Declare Tailwind/PostCSS,
+TypeScript and Node/React types in apps/web/package.json, at the same versions as
+the root. The app's existing TypeScript project also checks colocated tests, so
+its Vitest and Testing Library dependencies are declared there as well.
+
+This follows workspace dependency ownership. Forcing a full root install would
+hide undeclared dependencies and install unrelated pipeline/test tools. Relying
+on transitive dependencies would make the build depend on another package's
+internal choices. Neither is used. Root dependency ownership is still finalized
+in #189–#192; the layout gate checks shared version equality during transition.
+
+The [compact workspace-install receipt](evidence/monorepo-148/workspace-install.json)
+records separate fresh tracked-source exports, no pre-existing dependencies,
+build outputs or dotenv files, and no full root install. The fixed workspace
+installs 377 packages and passes its native build, including TypeScript and all
+16 static pages. All 10 CI/layout cases pass in that isolated installation;
+root-only ESLint, Firebase CLI and pg are absent. The lockfile adds only web's
+declarations, with no resolved version changes. Repository lint and typecheck
+also pass. Hosted Preview verification follows approved commit and push.
+
+Reproduce from a clean checkout at the repository root with Node 24:
+
+~~~sh
+npm ci --workspace @dfs-ev/web
+npm run build --workspace @dfs-ev/web
+npm run test:ci-gate
+~~~
+
+The layout gate follows the app's TypeScript import graph, Next/PostCSS configs,
+PostCSS plugins and CSS imports, plus implicit compiler/JSX types. Negative
+probes remove each required declaration and change a shared version to confirm
+that root dependencies cannot silently mask either error.
