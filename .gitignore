@@ -4,7 +4,7 @@
 CLAUDE.md
 
 # dependencies
-/node_modules
+**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -14,17 +14,17 @@ CLAUDE.md
 !.yarn/versions
 
 # testing
-/coverage
-/firebase-debug.log
-/firestore-debug.log
-/.firebase/
+**/coverage/
+**/firebase-debug.log
+**/firestore-debug.log
+**/.firebase/
 
 # next.js
-/.next/
-/out/
+**/.next/
+**/out/
 
 # production
-/build
+**/build/
 
 # misc
 .DS_Store

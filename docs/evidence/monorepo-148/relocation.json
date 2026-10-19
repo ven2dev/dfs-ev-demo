@@ -1,0 +1,261 @@
+{
+  "formatVersion": 1,
+  "issue": 148,
+  "stage": "local physical relocation checkpoint; commit/review/push/deployment pending",
+  "recordedAt": "2026-10-19T16:21:21.744284+00:00",
+  "baselineCommit": "3b9d946cd57054803d1af892d62dd4413d82d43a",
+  "parentCommit": "dffcdf98a83228da91df79c1597965d239000a5d",
+  "runtime": {
+    "node": "v24.18.1",
+    "next": "16.4.2",
+    "vitest": "5.0.5"
+  },
+  "implementation": {
+    "files": 371,
+    "sha256": "7862246660f986fc4690c2444f9b975986af7d04dacd692d193c05ec1de79899",
+    "method": "SHA-256 of compact UTF-8 JSON of sorted {path,sha256} objects; moved destinations plus declared root configuration/new launcher files; excludes documentation and generated outputs"
+  },
+  "moves": {
+    "count": 358,
+    "destinations": {
+      "apps/web": 179,
+      "packages/db": 85,
+      "services/pipeline": 81,
+      "packages/domain": 13
+    },
+    "rules": "docs/monorepo-layout.md#local-relocation-checkpoint-2026-10-19"
+  },
+  "immutable": {
+    "baselineHashesVerified": 34,
+    "historicalSqlFixturesVerified": 2,
+    "verdict": "pass"
+  },
+  "lockfile": {
+    "existingDependencyEntriesChanged": 0,
+    "addedEntries": [
+      "apps/web",
+      "node_modules/@dfs-ev/web"
+    ],
+    "verdict": "pass"
+  },
+  "rootCommands": {
+    "baselineNamesRetained": 42,
+    "added": [
+      "test:repo-layout"
+    ],
+    "verdict": "pass"
+  },
+  "inventory": {
+    "browser": {
+      "before": 908,
+      "after": 909,
+      "missing": [],
+      "added": [
+        [
+          "services/pipeline/scripts/creator-corpus/privateOutput.test.ts",
+          "writePrivateJson > refuses private output in every sibling workspace"
+        ]
+      ]
+    },
+    "node": {
+      "before": 243,
+      "after": 243,
+      "missing": [],
+      "added": []
+    },
+    "database": {
+      "before": 25,
+      "after": 25,
+      "missing": [],
+      "added": []
+    }
+  },
+  "requiredContracts": {
+    "featureStoreLiteralNames": 77,
+    "databaseRequiredContract": "identical after path mapping",
+    "verdict": "pass"
+  },
+  "tests": {
+    "browser": 909,
+    "node": 243,
+    "dbRequiredNode": 74,
+    "dbVitest": 25,
+    "featureStorePostgres": 77,
+    "catalogContracts": 12,
+    "leaseRequiredNames": 13,
+    "readinessRequiredNames": 4,
+    "corpusRequiredNames": 8,
+    "note": "required names overlap suite counts; do not add them as separate tests"
+  },
+  "checks": [
+    {
+      "name": "install",
+      "exitCode": 0,
+      "seconds": 16.618,
+      "logSha256": "327b88ecf37d874adc6b60f1c690fed0f895eb537b35a51670116e24ee331c31"
+    },
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "seconds": 2.584,
+      "logSha256": "99692f5da0a9684baf6c6a200a96eef646840fc3745fa37da10bf2199c74e3ed"
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "seconds": 4.935,
+      "logSha256": "b7aa93b961bf11814b8023fd7dd6e8504cb62e568a56f6af0afa43c7a2f0b701"
+    },
+    {
+      "name": "ci-gate",
+      "exitCode": 0,
+      "seconds": 0.688,
+      "logSha256": "699d433be005226c5f4737e0a5c32e7cbd9990c9c6280dbcfbe801bfa67b8b9b"
+    },
+    {
+      "name": "unit",
+      "exitCode": 0,
+      "seconds": 19.494,
+      "logSha256": "214183d542f1d7fa65178b9c4debefef28adf78da5a395577b732ba05ec61cd8"
+    },
+    {
+      "name": "projection-demo",
+      "exitCode": 0,
+      "seconds": 0.157,
+      "logSha256": "4c3257f42758766d3a144849dc7013eda0049bd9de2ff0983b019d46bd872abc"
+    },
+    {
+      "name": "creator-refusal",
+      "exitCode": 1,
+      "seconds": 0.256
+    },
+    {
+      "name": "firestore",
+      "exitCode": 0,
+      "seconds": 4.674,
+      "logSha256": "9b86368b31a535b0d6805e0d4100f5ee8d1df621d4c050585940e39ef51d7814"
+    },
+    {
+      "name": "build",
+      "exitCode": 0,
+      "seconds": 4.982,
+      "logSha256": "acec04c205f1ccf9414f596756a3e7fdf02c6e923e3c832497e4385b9d97c720"
+    },
+    {
+      "name": "db-guard",
+      "exitCode": 0,
+      "seconds": 0.833,
+      "logSha256": "a4c6c9356c33f97e421fcf8b378af96c86e70a63c1de65b6bc8ee614bb51ad1c"
+    },
+    {
+      "name": "db-lifecycle",
+      "exitCode": 0,
+      "seconds": 8.568,
+      "logSha256": "7d6c634185ecfe7a8f45126e3ac2c02563b0324e699bd43fa57887fa42131a1c"
+    },
+    {
+      "name": "db-local",
+      "exitCode": 0,
+      "seconds": 29.118,
+      "logSha256": "c087fd21698f7e182f32533bc742e5510b30ca2732afa5ca2885ab1c6124c445"
+    },
+    {
+      "name": "feature-store-db",
+      "exitCode": 0,
+      "seconds": 53.765,
+      "logSha256": "70564075abb655e1be20cd9c7d4f8f7d9d3aaf63b88db67443a7883a260ab3b3"
+    },
+    {
+      "name": "db-down",
+      "exitCode": 0,
+      "seconds": 0.59,
+      "logSha256": "65bcc27e8b1cdfdcbdb9b25de33bae8b38dfe9d408404badbed0d137650b68a7"
+    }
+  ],
+  "productionDependencyAudit": {
+    "command": "npm audit --omit=dev --audit-level=critical",
+    "exitCode": 0,
+    "vulnerabilities": 0
+  },
+  "localSmoke": {
+    "name": "web-smoke",
+    "exitCode": 0,
+    "boundary": "local built app; fixture odds; no app credentials; root npm start with forwarded hostname/port",
+    "checks": [
+      {
+        "path": "/",
+        "status": 200,
+        "bytes": 9626,
+        "sha256": "f8c475c762453bbd17a5c1d8a233ed946190c7c24ea79472504c9821a686cb31"
+      },
+      {
+        "path": "/manifest.webmanifest",
+        "status": 200,
+        "bytes": 500,
+        "sha256": "fb5c18f98ab11596b8d0f404ba9393e12478b37c0a5321109bf2aadb36df43a0"
+      },
+      {
+        "path": "/icons/edgetrace-192.png",
+        "status": 200,
+        "bytes": 4624,
+        "sha256": "2bfb7f3c43e63dafb400b1f864af4c7a59695e5dce081e12a7edac4710273656"
+      },
+      {
+        "path": "/api/slate",
+        "status": 200,
+        "bytes": 405,
+        "sha256": "5863cb79d3c73e17dc11c67f58632f73590d0dbf8dc7adb386cbe702d4bbcd41"
+      }
+    ]
+  },
+  "correctedFailures": [
+    {
+      "stage": "initial catalog/readiness guards",
+      "reason": "mechanical literal rewrite changed semantic public schema string",
+      "correction": "restore public, then rerun guards/typecheck and integrated database checkpoint"
+    },
+    {
+      "stage": "path review",
+      "reason": "Firestore rules path duplicated apps/web",
+      "correction": "restore app-relative path before emulator run"
+    },
+    {
+      "stage": "first database checkpoint",
+      "exitCode": 1,
+      "reason": "old reporter path inside --test-reporter flag",
+      "correction": "point at packages/db/scripts and rerun combined checkpoint",
+      "logSha256": "6270c8b628ea2fd45fc8910289e551ca865384594894ddc4efca2d3814cb4ba3"
+    },
+    {
+      "stage": "first build",
+      "exitCode": 1,
+      "reason": "app tsconfig omitted shared Vitest matcher declarations",
+      "correction": "include root vitest.setup.ts; build passes",
+      "logSha256": "966b7073ee3794f3e1cfd4684c5141f0f260865a02046b7d9527d453af004fdc"
+    },
+    {
+      "stage": "creator CLI probe",
+      "exitCode": 1,
+      "reason": "--help is unsupported on baseline",
+      "correction": "documented resolve invocation verifies required-input refusal; CLI unchanged"
+    }
+  ],
+  "databaseFixture": {
+    "compose": "compose.test.yml",
+    "tmpfsMiB": 512,
+    "spikeOverride": false,
+    "cleanup": "pass"
+  },
+  "pending": [
+    "owner commit approval",
+    "independent review",
+    "fresh push approval",
+    "hosted CI",
+    "owner Vercel dashboard cutover",
+    "Preview verification",
+    "owner merge and Production verification"
+  ],
+  "hostedWrites": "none",
+  "verdict": "local relocation targets pass; issue remains incomplete until review and hosted cutover verification",
+  "evidencePolicy": "compact receipt only; full logs and inventories off git and reproducible from the baseline and relocation source"
+}

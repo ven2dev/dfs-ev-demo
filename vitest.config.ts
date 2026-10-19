@@ -8,6 +8,6 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
-    exclude: ["**/node_modules/**", "src/lib/*.server.test.ts", "tests/db/**", "tests/feature-store/**", "tests/projection/**"],
+    exclude: ["packages/db/**", "services/pipeline/tests/**/*.check.mts", "apps/web/tests/db/**", "services/pipeline/tests/creator/**", "**/node_modules/**", "apps/web/src/lib/*.server.test.ts", "tests/db/**", "services/pipeline/tests/feature-store/**", "packages/domain/tests/projection/**"],
   },
 });

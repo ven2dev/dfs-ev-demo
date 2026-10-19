@@ -8,6 +8,14 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
+# Monorepo documentation and work ownership
+
+The Next app lives in apps/web. Resolve Next.js guides through
+apps/web/node_modules/next/dist/docs/; if npm hoists Next, follow its resolved
+installation from apps/web. Root npm commands remain supported. Database assets
+are in packages/db and jobs in services/pipeline; package API extraction follows
+the relocation. See docs/monorepo-layout.md for the approved sequence.
+
 # Project engineering standards
 
 These rules apply to every agent and every checkout. They exist because a
@@ -43,10 +51,10 @@ targets (for example "seal 256 examples in ≤ 5 s with ≥ 30% deadline headroo
 and names the fixture they are measured on.
 
 1. **Spike before approval.** Prototype the hot path at target scale before
-   the roadmap is approved. Proposal SQL lives in `db/proposals/`, outside the
+   the roadmap is approved. Proposal SQL lives in `packages/db/proposals/`, outside the
    ordered migration chain. If the spike misses a target, the design changes
    or the owner decides. Targets are never quietly relaxed.
-2. **Freeze only after proof.** A migration moves into `db/migrations/`, where
+2. **Freeze only after proof.** A migration moves into `packages/db/migrations/`, where
    it is immutable, only after its spike benchmark and behavior tests pass.
 3. **Two measurement tiers:**
    - **Work budgets (CI, every PR):** deterministic counts that do not depend

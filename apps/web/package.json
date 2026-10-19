@@ -1,0 +1,25 @@
+{
+  "name": "@dfs-ev/web",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-dfs-ev-preview-rules \"node tests/firestoreRules.mjs\""
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "1.2.0",
+    "csv-parse": "7.0.3",
+    "firebase": "13.0.0",
+    "firebase-admin": "14.5.0",
+    "next": "16.4.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "server-only": "0.0.1",
+    "zustand": "5.0.15"
+  }
+}
