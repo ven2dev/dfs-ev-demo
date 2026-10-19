@@ -22,6 +22,10 @@ updates:
       - dependency-name: "@types/node"
         update-types:
           - version-update:semver-major
+      # ESLint 10 is blocked by Next's React lint plugin; revisit after compatibility is proven.
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
     groups:
       next:
         applies-to: version-updates
