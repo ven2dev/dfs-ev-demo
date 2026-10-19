@@ -589,7 +589,7 @@ export const SlateBrowser = () => {
                     </div>
                   )}
 
-                  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
                     {visibleDiscoveredProps.map((player) => (
                       <PlayerPropsCard
                         key={player.playerName}
