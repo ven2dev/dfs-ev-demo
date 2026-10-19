@@ -1,0 +1,41 @@
+## Owner-approved roadmap — #104
+
+Approved with the owner's four additions: distinct accessible Watch/See all names; sportsbook-bound watch confirmations and refresh stability; normal-mode removal of #136's table scroll scaffolding while retaining it in compare mode; and 360 px verification.
+
+### Design basis
+
+- **Pattern:** progressive disclosure for selection and demo controls, with explicit per-item/per-side actions. Presentation state stays local; existing selector-based store reads and contracts remain in place.
+- **Alternatives:** retain a global side selector (rejected because the Watch action's direction is ambiguous); compress the old table (rejected because narrower cells still hide actions and require horizontal scrolling in normal mode).
+- **Targets:** normal cards and page fit 360, 375, 768, 1024 and 1440 px without horizontal scrolling or clipped actions; retain 16 px phone gutters, deliberate 44×44 px touch targets, keyboard usability, and accessible light/dark contrast. Wide result grids have at most two columns. Compare mode may use its labeled, keyboard-focusable local table scroll region.
+- **Requirement reasons:** retain explicit submission to prevent extra provider spending; preserve request generation/identity checks to reject stale responses; keep fixture/live and sample-data labels to prevent misleading provenance; retain last-valid values and visible freshness flags to avoid losing useful results. Selector-based reads prevent unrelated store updates from rerendering the whole UI. Watch captures the exact visible direction/book so refreshing quotes cannot silently retarget an existing watch. Accessible action names identify player, market, side, line and book so repeated buttons are distinguishable.
+- **Assumptions/scope:** UI-only; reuse `getBestBookmakerKey(lines, direction)` and its existing shared/modal-line rule. No store contracts, backend, feature-store/predictive, DB or CI changes. Account/admin contrast is already fixed and those pages remain untouched. Verification uses fixtures/cached data only, spending no Odds API credits. No new performance-sensitive data path or subsystem; no benchmark spike is needed for this presentation change.
+
+### Atomic steps (approval before each commit)
+
+1. **Compact selection:** after successful prop loading, show matchup, selected markets, player count and Change selection. Reopen without changing selections or fetching; submit explicitly. Cover collapse/reopen/no-request behavior.
+2. **Simplify toolbar:** replace bookmaker cycling with labeled Odds shown (Best available default / specific sportsbook), keep Compare books and Refresh odds, remove global Track side, and progressively disclose demo Primary/Secondary assignment.
+3. **Per-side actions:** separate Over and Under rows with line, price, sportsbook and explicit Watch. Resolve best books independently per side at the existing modal line; preserve manual-book, missing coverage, browse-only and compare safeguards. Explain disabled Watch actions visibly. Give Watch and See all books full contextual accessible names and tests. Confirmation labels the captured sportsbook; test that a refresh selecting a different best book does not change an existing watch.
+4. **Responsive results:** normal mode uses responsive card rows without table scroll region/hint/sticky column; retain those only in compare mode and update #136's structural tests. Stack narrow layouts and cap wide result grids at two columns; keep actions inside cards.
+5. **Empty state:** remove duplicate instructions in `src/app/page.tsx` (the only production UI file outside SlateBrowser/PlayerPropsCard), retaining one clear instruction with the tracker.
+6. **Verification:** behavioral tests for direction-aware books, manual overrides, missing sides, browse-only, comparison, watch assignment and stability, contextual action names and selection disclosure. Fixture browser checks at 360, 375, 768, 1024 and 1440 px, light/dark, keyboard and touch targets; lint, typecheck, relevant/full unit tests, production build and whitespace. Screenshots remain outside Git and are attached to the PR.
+
+Create `feature/dfsEV-104-declutter-slate-browser` from fresh `origin/main`. Owner runs the final Codex review; every commit requires approval, every push requires fresh consent, and the owner merges. Aim to merge before #148; pause at a commit boundary and rebase if its file move proceeds first.
+
+## Implementation and verification
+
+- Selection summary, toolbar, per-side actions, responsive grid and tracker guidance are implemented. The normal-mode scroll wrapper/hint/sticky column removal landed with the per-side markup so the transition had one coherent structure; the grid breakpoint followed separately.
+- Watch names include side, line, market, sportsbook and player. See all books names include player and market. Disabled Watch actions have visible, associated reasons. A test covers mismatched quote lines as well as absent/incomplete quotes.
+- Watch confirmation retains the selected sportsbook. The refresh test changes the best Over book and verifies the existing primary watch and its confirmation remain unchanged.
+- `npm test`: **904 unit tests and 688 Node tests passed** using Node 24.21.0. The test runner needs localhost socket access for creator-corpus HTTP tests; a sandboxed run failed on `listen EPERM`, and the permitted rerun passed.
+- Full ESLint, typecheck (including route type generation and DB readiness verification), default `npm run build` (Next 16.4.2 / Turbopack), and `git diff --check` passed. The build and browser servers use `ODDS_DATA_SOURCE=fixture` and `ODDS_COLLECTION_PROFILE=disabled`.
+- The production build at localhost:3140 was checked at **360, 375, 768, 1024 and 1440 CSS px**. Document scroll width equaled viewport width at each size. Results had one column at 360/375/768 and two at 1024/1440. Every tested Watch button was at least 44×44 px and stayed inside its market section.
+- Keyboard: Tab from Change selection reaches Odds shown; Enter activates the exact named Under action. Phone comparison region accepts keyboard focus and ArrowRight scrolls its content locally. See all books opens the selected player's selected market. Fixture stream status remains visible during tracking.
+- Dark mode was checked in the in-app browser; light mode was checked in Chrome with DevTools `prefers-color-scheme: light` emulation left open. Both displayed readable controls, quote rows, provenance and watch confirmation. These are visual/behavior checks, not new Lighthouse scores. Local sign-in remains unavailable; no authenticated pages are part of this issue.
+- Screenshots are outside Git for later PR attachment: `final-normal-{360,375,768,1024,1440}-dark.png`, `final-compare-360-dark.png`, `final-all-books-360-dark.png`, and `final-light-devtools.png`. The light screenshot includes DevTools and is not labeled as a fixed-width measurement. No attribution trailers were added.
+
+### Review follow-up
+
+- Preserve manual Odds shown through successful refreshes, including refreshes that remove an unrelated book. Reset for a changed game/market selection or removal of the chosen book; the latter displays a fallback notice.
+- Move focus to Change selection after successful submission, to the game dropdown when reopening, and back to Change selection through Keep current selection. The no-request close action appears only while the selection still matches loaded results. Odds shown now has an explicit generated ID and accessible label reference.
+- Added regression coverage for manual refresh persistence, removed-book fallback, selection-change reset, focus on both disclosure transitions, and no-request close. Browser fixture checks reproduced the reported fixture-northstar scenario and confirmed the retained book and focus targets.
+- Updated validation: **908 unit tests and 688 Node tests passed**, plus full lint, typecheck, default production build and whitespace checks. Screenshot `review-fix-manual-book-375.png` remains outside Git for PR attachment.

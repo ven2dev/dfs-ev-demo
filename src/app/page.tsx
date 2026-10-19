@@ -209,13 +209,6 @@ export default function Home() {
     <>
       <SlateBrowser />
 
-      {!primaryWatch && (
-        <section className="min-w-0 break-words rounded-lg border border-zinc-200 p-4 sm:p-6 text-sm text-zinc-600 dark:text-zinc-400 dark:border-zinc-800">
-          Select a game and a prop above, then click <strong>Watch</strong> to start
-          tracking its EV here.
-        </section>
-      )}
-
       {primaryWatch && (
         <section className="min-w-0 break-words rounded-lg border border-zinc-200 p-4 sm:p-6 dark:border-zinc-800">
           {provenance.isFixture && (
@@ -382,7 +375,7 @@ export default function Home() {
           </div>
         ) : (
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            {primaryWatch ? provenance.waiting : "Nothing watched yet."}
+            {primaryWatch ? provenance.waiting : "Select a game and markets above, then choose Watch Over or Watch Under on a player’s prop to start tracking here."}
           </p>
         )}
 

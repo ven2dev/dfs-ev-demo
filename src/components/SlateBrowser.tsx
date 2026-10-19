@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   PLAYER_PROP_MARKETS,
   type PlayerPropDirection,
@@ -88,7 +88,7 @@ export const SlateBrowser = () => {
   // rather than in the store.
   const [selectedBookmakerKey, setSelectedBookmakerKey] = useState<string | null>(null);
   // true: every row shows its own best-priced book independently (see
-  // getBestBookmakerKey). false: the stepper has forced one specific
+  // getBestBookmakerKey). false: Odds shown has forced one specific
   // book across every row -- a manual override, not the default.
   const [smartDefault, setSmartDefault] = useState(true);
   const [comparisonMode, setComparisonMode] = useState(false);
@@ -99,12 +99,18 @@ export const SlateBrowser = () => {
   // watch/unwatch + rollback with a second discovered (but not stream-tracked)
   // prop.
   const [watchAssignTarget, setWatchAssignTarget] = useState<"primary" | "secondary">("primary");
-  const [watchDirection, setWatchDirection] = useState<PlayerPropDirection>("over");
+  const [selectionOpen, setSelectionOpen] = useState(true);
+  const gameSelectRef = useRef<HTMLSelectElement>(null);
+  const changeSelectionRef = useRef<HTMLButtonElement>(null);
+  const selectionFocusRef = useRef<"game" | "summary" | null>(null);
+  const oddsControlId = useId();
+  const [oddsViewNotice, setOddsViewNotice] = useState<string | null>(null);
 
   const sortedCheckedMarketKeys = useMemo(
     () => [...checkedMarketKeys].sort(),
     [checkedMarketKeys]
   );
+  const discoveryIdentity = `${selectedEventId ?? ""}::${sortedCheckedMarketKeys.join(",")}`;
   const hasCurrentDiscovery =
     discoveredPropsEventId === selectedEventId &&
     discoveredPropsMarketKeys.join(",") === sortedCheckedMarketKeys.join(",");
@@ -118,22 +124,19 @@ export const SlateBrowser = () => {
     [visibleDiscoveredProps]
   );
 
-  // Adjust state during render, not in an effect (React's own documented
-  // pattern for "reset some state when a computed value changes") -- the
-  // useMemo above keeps allBookmakerKeys referentially stable unless
-  // discoveredProps itself changes, so this only fires on a REAL change,
-  // not every render. A fresh discovery result can drop the book that
-  // was selected (a different market set may not include it) or arrive
-  // with none selected yet -- default to the first available book rather than
-  // show a stale/invalid one.
-  const [prevAllBookmakerKeys, setPrevAllBookmakerKeys] = useState(allBookmakerKeys);
-  if (allBookmakerKeys !== prevAllBookmakerKeys) {
-    setPrevAllBookmakerKeys(allBookmakerKeys);
-    setSmartDefault(true); // a fresh discovery result starts back at smart defaults, not a stale manual override
-    if (allBookmakerKeys.length === 0) {
+  // Keep a manual book through quote refreshes. Reset only for a new
+  // selection or a book disappearing, so the control matches user intent.
+  const [previousOddsView, setPreviousOddsView] = useState({ identity: discoveryIdentity, books: allBookmakerKeys });
+  if (previousOddsView.identity !== discoveryIdentity || previousOddsView.books !== allBookmakerKeys) {
+    const selectionChanged = previousOddsView.identity !== discoveryIdentity;
+    const bookDisappeared = selectedBookmakerKey !== null && !allBookmakerKeys.includes(selectedBookmakerKey);
+    setPreviousOddsView({ identity: discoveryIdentity, books: allBookmakerKeys });
+    if (selectionChanged || bookDisappeared) {
+      setOddsViewNotice(!selectionChanged && bookDisappeared && !smartDefault
+        ? "The selected sportsbook is no longer quoted. Showing Best available."
+        : null);
+      setSmartDefault(true);
       setSelectedBookmakerKey(null);
-    } else if (!selectedBookmakerKey || !allBookmakerKeys.includes(selectedBookmakerKey)) {
-      setSelectedBookmakerKey(allBookmakerKeys[0]);
     }
   }
 
@@ -201,8 +204,6 @@ export const SlateBrowser = () => {
     controller?: AbortController;
   }>({ generation: 0, identity: "" });
 
-  const discoveryIdentity = `${selectedEventId ?? ""}::${sortedCheckedMarketKeys.join(",")}`;
-
   useEffect(() => {
     discoveryRequestRef.current.generation += 1;
     discoveryRequestRef.current.identity = discoveryIdentity;
@@ -267,6 +268,10 @@ export const SlateBrowser = () => {
       }
       setDiscoveredProps(data.players, eventId, marketKeys);
       setDiscoveryStatus("loaded");
+      if (!forceRefresh) {
+        selectionFocusRef.current = "summary";
+        setSelectionOpen(false);
+      }
     } catch (err) {
       if (controller.signal.aborted) return;
       const currentState = useAppStore.getState();
@@ -285,15 +290,6 @@ export const SlateBrowser = () => {
       setDiscoveryStatus("error");
       setDiscoveryError(String(err));
     }
-  };
-
-  const cycleBookmaker = (direction: 1 | -1) => {
-    if (allBookmakerKeys.length === 0 || !selectedBookmakerKey) return;
-    setSmartDefault(false); // cycling is a manual override -- it always wins over per-row smart defaults
-    const currentIndex = allBookmakerKeys.indexOf(selectedBookmakerKey);
-    const nextIndex =
-      (currentIndex + direction + allBookmakerKeys.length) % allBookmakerKeys.length;
-    setSelectedBookmakerKey(allBookmakerKeys[nextIndex]);
   };
 
   const toggleComparisonBookmaker = (bookmakerKey: string) => {
@@ -335,6 +331,19 @@ export const SlateBrowser = () => {
     }
   };
 
+  const selectedEvent = realSlate.find((event) => event.id === selectedEventId);
+  const showSelection = selectionOpen || !hasCurrentDiscovery;
+
+  useEffect(() => {
+    if (selectionFocusRef.current === "game" && showSelection) {
+      gameSelectRef.current?.focus();
+      selectionFocusRef.current = null;
+    } else if (selectionFocusRef.current === "summary" && !showSelection) {
+      changeSelectionRef.current?.focus();
+      selectionFocusRef.current = null;
+    }
+  }, [showSelection]);
+
   const sortedSlate = [...realSlate].sort(
     (a, b) => new Date(a.commenceTime).getTime() - new Date(b.commenceTime).getTime()
   );
@@ -361,69 +370,102 @@ export const SlateBrowser = () => {
 
       {realSlateStatus === "loaded" && (
         <>
-          <div className="relative mt-3">
-            <select
-              aria-label="Select a game"
-              className="min-h-11 w-full min-w-0 appearance-none rounded border border-zinc-300 bg-white py-2 pr-10 pl-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-              value={selectedEventId ?? ""}
-              onChange={(event) => setSelectedEventId(event.target.value || null)}
-            >
-              <option value="">Select a game…</option>
-              {sortedSlate.map((slateEvent) => (
-                <option key={slateEvent.id} value={slateEvent.id}>
-                  {slateEvent.awayTeam} @ {slateEvent.homeTeam} —{" "}
-                  {formatKickoff(slateEvent.commenceTime)}
-                </option>
-              ))}
-            </select>
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-zinc-600 dark:text-zinc-400"
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </div>
+          {!showSelection && selectedEvent && (
+            <div className="mt-3 flex min-w-0 flex-wrap items-center justify-between gap-3">
+              <div className="min-w-0 break-words text-sm" aria-live="polite">
+                <p className="font-medium">{selectedEvent.awayTeam} @ {selectedEvent.homeTeam}</p>
+                <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+                  {PLAYER_PROP_MARKETS.filter((market) => checkedMarketKeys.includes(market.key))
+                    .map((market) => market.label).join(", ")}
+                  {" · "}{visibleDiscoveredProps.length} {visibleDiscoveredProps.length === 1 ? "player" : "players"}
+                </p>
+              </div>
+              <button
+                type="button"
+                ref={changeSelectionRef}
+                onClick={() => {
+                  selectionFocusRef.current = "game";
+                  setSelectionOpen(true);
+                }}
+                className="min-h-11 rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+              >
+                Change selection
+              </button>
+            </div>
+          )}
+          {showSelection && (
+            <div className="relative mt-3">
+              <select
+                ref={gameSelectRef}
+                aria-label="Select a game"
+                className="min-h-11 w-full min-w-0 appearance-none rounded border border-zinc-300 bg-white py-2 pr-10 pl-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                value={selectedEventId ?? ""}
+                onChange={(event) => setSelectedEventId(event.target.value || null)}
+              >
+                <option value="">Select a game…</option>
+                {sortedSlate.map((slateEvent) => (
+                  <option key={slateEvent.id} value={slateEvent.id}>
+                    {slateEvent.awayTeam} @ {slateEvent.homeTeam} —{" "}
+                    {formatKickoff(slateEvent.commenceTime)}
+                  </option>
+                ))}
+              </select>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-zinc-600 dark:text-zinc-400"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </div>
+
+          )}
 
           {selectedEventId && (
             <div className="mt-4">
-              <p className="text-sm font-medium">Which prop markets?</p>
-              <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {PLAYER_PROP_MARKETS.map((market) => (
-                  <label key={market.key} className="flex min-h-11 min-w-0 items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={checkedMarketKeys.includes(market.key)}
-                      onChange={() => toggleMarketKey(market.key)}
-                    />
-                    {market.label}
-                  </label>
-                ))}
-              </div>
+              {showSelection && (
+                <>
+                  <p className="text-sm font-medium">Which prop markets?</p>
+                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {PLAYER_PROP_MARKETS.map((market) => (
+                      <label key={market.key} className="flex min-h-11 min-w-0 items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={checkedMarketKeys.includes(market.key)}
+                          onChange={() => toggleMarketKey(market.key)}
+                        />
+                        {market.label}
+                      </label>
+                    ))}
+                  </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => fetchDiscoveredProps(false)}
-                  disabled={checkedMarketKeys.length === 0 || discoveryStatus === "loading"}
-                  className="min-h-11 rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
-                >
-                  {discoveryStatus === "loading" ? "Loading…" : "Show props"}
-                </button>
-                {visibleDiscoveredProps.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => fetchDiscoveredProps(true)}
-                    disabled={discoveryStatus === "loading"}
-                    className="min-h-11 rounded border border-zinc-300 px-3 py-2 text-sm disabled:opacity-50 dark:border-zinc-700"
-                  >
-                    Refresh odds
-                  </button>
-                )}
-              </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fetchDiscoveredProps(false)}
+                      disabled={checkedMarketKeys.length === 0 || discoveryStatus === "loading"}
+                      className="min-h-11 rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-white dark:text-black"
+                    >
+                      {discoveryStatus === "loading" ? "Loading…" : "Show props"}
+                    </button>
+                    {hasCurrentDiscovery && discoveryStatus !== "loading" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          selectionFocusRef.current = "summary";
+                          setSelectionOpen(false);
+                        }}
+                        className="min-h-11 rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+                      >
+                        Keep current selection
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
 
               {discoveryStatus === "error" && (
                 <p className="mt-2 text-sm text-red-700 dark:text-red-400">{discoveryError}</p>
@@ -432,45 +474,33 @@ export const SlateBrowser = () => {
               {visibleDiscoveredProps.length > 0 && (
                 <div className="mt-4">
                   <div className="flex flex-wrap items-center gap-3">
-                    {!comparisonMode && selectedBookmakerKey && (
-                      <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-                        <button
-                          type="button"
-                          aria-label="Previous bookmaker"
-                          onClick={() => cycleBookmaker(-1)}
-                          className="min-h-11 min-w-11 rounded px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                    <label htmlFor={oddsControlId} className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+                      <span id={`${oddsControlId}-label`}>Odds shown</span>
+                      <span className="relative min-w-0">
+                        <select
+                          id={oddsControlId}
+                          aria-labelledby={`${oddsControlId}-label`}
+                          value={smartDefault ? "" : selectedBookmakerKey ?? ""}
+                          disabled={comparisonMode}
+                          onChange={(event) => {
+                            setOddsViewNotice(null);
+                            setSmartDefault(event.target.value === "");
+                            setSelectedBookmakerKey(event.target.value || null);
+                          }}
+                          className="min-h-11 max-w-full appearance-none rounded border border-zinc-300 bg-white py-2 pr-10 pl-3 disabled:cursor-not-allowed dark:border-zinc-700 dark:bg-zinc-900"
                         >
-                          ‹
-                        </button>
-                        <span
-                          data-testid="bookmaker-stepper-label"
-                          className="min-w-24 max-w-full break-words text-center font-medium"
-                        >
-                          {smartDefault
-                            ? `Best ${watchDirection === "over" ? "Over" : "Under"} price`
-                            : selectedBookmakerKey}
-                        </span>
-                        <button
-                          type="button"
-                          aria-label="Next bookmaker"
-                          onClick={() => cycleBookmaker(1)}
-                          className="min-h-11 min-w-11 rounded px-3 py-2 hover:bg-zinc-100 dark:hover:bg-zinc-900"
-                        >
-                          ›
-                        </button>
-                        {!smartDefault && (
-                          <button
-                            type="button"
-                            onClick={() => setSmartDefault(true)}
-                            className="min-h-11 rounded px-2 py-1.5 text-xs text-zinc-600 dark:text-zinc-400 underline hover:text-zinc-900 dark:hover:text-zinc-100"
-                          >
-                            Reset to best
-                          </button>
-                        )}
-                      </div>
-                    )}
+                          <option value="">Best available</option>
+                          {allBookmakerKeys.map((key) => <option key={key} value={key}>{key}</option>)}
+                        </select>
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                          className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-zinc-600 dark:text-zinc-400">
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </span>
+                    </label>
                     <button
                       type="button"
+                      aria-pressed={comparisonMode}
                       onClick={() => setComparisonMode((current) => !current)}
                       className={`min-h-11 rounded px-3 py-2 text-sm ${
                         comparisonMode
@@ -480,45 +510,51 @@ export const SlateBrowser = () => {
                     >
                       Compare books
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => fetchDiscoveredProps(true)}
+                      disabled={discoveryStatus === "loading"}
+                      className="min-h-11 rounded border border-zinc-300 px-3 py-2 text-sm disabled:cursor-wait dark:border-zinc-700"
+                    >
+                      {discoveryStatus === "loading" ? "Refreshing…" : "Refresh odds"}
+                    </button>
                   </div>
 
+                  {oddsViewNotice && (
+                    <p role="status" className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{oddsViewNotice}</p>
+                  )}
+
                   {!comparisonMode && (
-                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-                      <span className="text-zinc-600 dark:text-zinc-400">Track side:</span>
-                      {(["over", "under"] as const).map((direction) => (
-                        <button
-                          key={direction}
-                          type="button"
-                          onClick={() => setWatchDirection(direction)}
-                          className={`min-h-11 rounded px-3 py-1.5 capitalize ${
-                            watchDirection === direction
-                              ? "bg-black text-white dark:bg-white dark:text-black"
-                              : "border border-zinc-300 dark:border-zinc-700"
-                          }`}
-                        >
-                          {direction}
-                        </button>
-                      ))}
-                      <span className="w-full text-zinc-600 dark:text-zinc-400 sm:ml-2 sm:w-auto">Watch button assigns:</span>
-                      {(["primary", "secondary"] as const).map((target) => (
-                        <button
-                          key={target}
-                          type="button"
-                          onClick={() => setWatchAssignTarget(target)}
-                          className={`min-h-11 rounded px-3 py-1.5 ${
-                            watchAssignTarget === target
-                              ? "bg-black text-white dark:bg-white dark:text-black"
-                              : "border border-zinc-300 dark:border-zinc-700"
-                          }`}
-                        >
-                          {target === "primary" ? "Primary" : "Secondary (demo)"}
-                        </button>
-                      ))}
-                    </div>
+                    <details className="mt-3 text-sm">
+                      <summary className="min-h-11 cursor-pointer rounded px-2 py-3 text-zinc-600 dark:text-zinc-400">
+                        Demo watch assignment
+                      </summary>
+                      <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
+                        Primary drives live analysis. Secondary demonstrates watch/unwatch and rollback only.
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span className="text-zinc-600 dark:text-zinc-400">Watch button assigns:</span>
+                        {(["primary", "secondary"] as const).map((target) => (
+                          <button
+                            key={target}
+                            type="button"
+                            aria-pressed={watchAssignTarget === target}
+                            onClick={() => setWatchAssignTarget(target)}
+                            className={`min-h-11 rounded px-3 py-1.5 ${
+                              watchAssignTarget === target
+                                ? "bg-black text-white dark:bg-white dark:text-black"
+                                : "border border-zinc-300 dark:border-zinc-700"
+                            }`}
+                          >
+                            {target === "primary" ? "Primary" : "Secondary (demo)"}
+                          </button>
+                        ))}
+                      </div>
+                    </details>
                   )}
 
                   {(primaryWatch || secondaryWatch) && (
-                    <div className="mt-3 space-y-1 text-sm">
+                    <div role="status" className="mt-3 space-y-1 text-sm">
                       {primaryWatch && (
                         <div
                           data-testid="primary-watch-status"
@@ -591,7 +627,7 @@ export const SlateBrowser = () => {
                     </div>
                   )}
 
-                  <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
                     {visibleDiscoveredProps.map((player) => (
                       <PlayerPropsCard
                         key={player.playerName}
@@ -600,7 +636,6 @@ export const SlateBrowser = () => {
                         smartDefault={smartDefault}
                         selectedBookmakerKey={selectedBookmakerKey}
                         comparisonBookmakerKeys={comparisonBookmakerKeys}
-                        watchDirection={watchDirection}
                         onSeeAll={(marketKey) =>
                           setSeeAllTarget({ playerName: player.playerName, marketKey })
                         }

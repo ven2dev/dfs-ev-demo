@@ -283,31 +283,146 @@ describe("SlateBrowser", () => {
     await screen.findByText("Jalen Hurts");
   };
 
-  it("starts on the direction-aware smart price default, and cycling switches to a manual override starting from the first book alphabetically, wrapping around", async () => {
+  it("collapses successful results to a summary and reopens preserved selections without fetching", async () => {
     await showPropsWithFourBooks();
-    const stepperLabel = () => screen.getByTestId("bookmaker-stepper-label");
 
-    expect(stepperLabel()).toHaveTextContent("Best Over price");
-    expect(screen.queryByText("Reset to best")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Select a game")).not.toBeInTheDocument();
+    expect(screen.queryByText("Which prop markets?")).not.toBeInTheDocument();
+    expect(screen.getByText("Pittsburgh Steelers @ Cleveland Browns")).toBeInTheDocument();
+    expect(screen.getByText("Passing Yards · 1 player")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Refresh odds" })).toBeEnabled();
+    const requests = fetchMock().mock.calls.length;
 
-    fireEvent.click(screen.getByLabelText("Next bookmaker"));
-    expect(stepperLabel()).toHaveTextContent("bovada"); // one past "betmgm", the alphabetically-first book
-    expect(screen.getByText("Reset to best")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Change selection" }));
+    expect(screen.getByLabelText("Select a game")).toHaveValue("evt-1");
+    expect(screen.getByLabelText("Passing Yards")).toBeChecked();
+    expect(screen.getByText("Jalen Hurts")).toBeInTheDocument();
+    expect(fetchMock()).toHaveBeenCalledTimes(requests);
 
-    fireEvent.click(screen.getByLabelText("Next bookmaker"));
-    expect(stepperLabel()).toHaveTextContent("draftkings");
+    fireEvent.click(screen.getByLabelText("Receptions"));
+    expect(fetchMock()).toHaveBeenCalledTimes(requests);
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players: [] });
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+    expect(await screen.findByRole("button", { name: "Change selection" })).toBeInTheDocument();
+    expect(screen.getByText("Passing Yards, Receptions · 0 players")).toBeInTheDocument();
+    expect(fetchMock()).toHaveBeenCalledTimes(requests + 1);
+  });
 
-    fireEvent.click(screen.getByLabelText("Previous bookmaker"));
-    expect(stepperLabel()).toHaveTextContent("bovada");
+  it("moves focus to the summary after loading, to the game on reopen, and back without a request", async () => {
+    await showPropsWithFourBooks();
+    expect(screen.getByRole("button", { name: "Change selection" })).toHaveFocus();
+    const requests = fetchMock().mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Change selection" }));
+    expect(screen.getByLabelText("Select a game")).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Keep current selection" }));
+    expect(screen.getByRole("button", { name: "Change selection" })).toHaveFocus();
+    expect(screen.queryByLabelText("Select a game")).not.toBeInTheDocument();
+    expect(fetchMock()).toHaveBeenCalledTimes(requests);
 
-    // Wrap backward from the first book to the last.
-    fireEvent.click(screen.getByLabelText("Previous bookmaker"));
-    fireEvent.click(screen.getByLabelText("Previous bookmaker"));
-    expect(stepperLabel()).toHaveTextContent("fanduel");
+    fireEvent.click(screen.getByRole("button", { name: "Change selection" }));
+    fireEvent.click(screen.getByLabelText("Receptions"));
+    expect(screen.queryByRole("button", { name: "Keep current selection" })).not.toBeInTheDocument();
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players: [] });
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Change selection" })).toHaveFocus());
+  });
 
-    fireEvent.click(screen.getByText("Reset to best"));
-    expect(stepperLabel()).toHaveTextContent("Best Over price");
-    expect(screen.queryByText("Reset to best")).not.toBeInTheDocument();
+  it("keeps selection open when discovery fails instead of presenting an empty success summary", async () => {
+    global.fetch = vi.fn();
+    mockFetchOnce({ success: true, dataSource: "live", events: sampleEvents });
+    render(<SlateBrowser />);
+    fireEvent.change(await screen.findByLabelText("Select a game"), { target: { value: "evt-1" } });
+    fireEvent.click(screen.getByLabelText("Passing Yards"));
+    mockFetchOnce({ success: false, reason: "Props unavailable" });
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+    expect(await screen.findByText("Props unavailable")).toBeInTheDocument();
+    expect(screen.getByLabelText("Select a game")).toHaveValue("evt-1");
+    expect(screen.getByLabelText("Passing Yards")).toBeChecked();
+    expect(screen.queryByRole("button", { name: "Change selection" })).not.toBeInTheDocument();
+  });
+
+  it("defaults Odds shown to Best available and switches to a specific book without a request", async () => {
+    await showPropsWithFourBooks();
+    const odds = screen.getByLabelText("Odds shown");
+    expect(odds).toHaveValue("");
+    expect(screen.getByRole("option", { name: "Best available" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Next bookmaker")).not.toBeInTheDocument();
+    const requests = fetchMock().mock.calls.length;
+
+    fireEvent.change(odds, { target: { value: "bovada" } });
+    expect(odds).toHaveValue("bovada");
+    fireEvent.click(screen.getByText("Watch Over"));
+    expect(useAppStore.getState().primaryWatch?.bookmakerKey).toBe("bovada");
+    fireEvent.change(odds, { target: { value: "" } });
+    expect(odds).toHaveValue("");
+    fireEvent.click(screen.getByText("Watch Over"));
+    expect(useAppStore.getState().primaryWatch?.bookmakerKey).toBe("draftkings");
+    expect(fetchMock()).toHaveBeenCalledTimes(requests);
+  });
+
+  it("preserves a manual book across refreshes even when other books disappear", async () => {
+    await showPropsWithFourBooks();
+    const odds = screen.getByRole("combobox", { name: "Odds shown" });
+    expect(odds).toHaveAccessibleName("Odds shown");
+    fireEvent.change(odds, { target: { value: "bovada" } });
+    for (const removeOtherBook of [false, true]) {
+      const players = structuredClone(useAppStore.getState().discoveredProps);
+      for (const market of players[0].markets) {
+        for (const line of market.lines) if (line.bookmakerKey === "bovada" && line.side === "over") line.price = 2.2;
+        if (removeOtherBook) market.lines = market.lines.filter((line) => line.bookmakerKey !== "fanduel");
+      }
+      mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players });
+      const refresh = screen.getByRole("button", { name: "Refresh odds" });
+      refresh.focus();
+      fireEvent.click(refresh);
+      await waitFor(() => expect(screen.getByRole("button", { name: "Refresh odds" })).toBeEnabled());
+      expect(odds).toHaveValue("bovada");
+      expect(refresh).toHaveFocus();
+      fireEvent.click(screen.getByRole("button", { name: /Watch Over .*bovada for Jalen Hurts/ }));
+      expect(useAppStore.getState().primaryWatch?.bookmakerKey).toBe("bovada");
+    }
+  });
+
+  it("falls back with a notice if the manually chosen book disappears", async () => {
+    await showPropsWithFourBooks();
+    fireEvent.change(screen.getByLabelText("Odds shown"), { target: { value: "bovada" } });
+    const players = structuredClone(useAppStore.getState().discoveredProps);
+    for (const market of players[0].markets) market.lines = market.lines.filter((line) => line.bookmakerKey !== "bovada");
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players });
+    fireEvent.click(screen.getByRole("button", { name: "Refresh odds" }));
+    expect(await screen.findByText("The selected sportsbook is no longer quoted. Showing Best available.")).toBeInTheDocument();
+    expect(screen.getByLabelText("Odds shown")).toHaveValue("");
+    expect(screen.getByRole("button", { name: /Watch Over .*draftkings for Jalen Hurts/ })).toBeEnabled();
+  });
+
+  it("resets manual odds only when the selection changes", async () => {
+    await showPropsWithFourBooks();
+    fireEvent.change(screen.getByLabelText("Odds shown"), { target: { value: "bovada" } });
+    const players = structuredClone(useAppStore.getState().discoveredProps);
+    fireEvent.click(screen.getByRole("button", { name: "Change selection" }));
+    fireEvent.click(screen.getByLabelText("Receptions"));
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players });
+    fireEvent.click(screen.getByRole("button", { name: "Show props" }));
+    await screen.findByRole("button", { name: "Change selection" });
+    expect(screen.getByLabelText("Odds shown")).toHaveValue("");
+    expect(screen.queryByText(/The selected sportsbook is no longer quoted/)).not.toBeInTheDocument();
+  });
+
+  it("discloses demo assignment only on demand and preserves the odds view through comparison", async () => {
+    await showPropsWithFourBooks();
+    expect(screen.getByText("Secondary (demo)")).not.toBeVisible();
+    fireEvent.click(screen.getByText("Demo watch assignment"));
+    expect(screen.getByRole("button", { name: "Primary" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Secondary (demo)" })).toBeInTheDocument();
+    const odds = screen.getByLabelText("Odds shown");
+    fireEvent.change(odds, { target: { value: "fanduel" } });
+    const compare = screen.getByRole("button", { name: "Compare books" });
+    fireEvent.click(compare);
+    expect(odds).toBeDisabled();
+    expect(compare).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(compare);
+    expect(odds).toBeEnabled();
+    expect(odds).toHaveValue("fanduel");
   });
 
   it("compare mode's book picker allows at most 3 selections, disabling the rest", async () => {
@@ -324,7 +439,7 @@ describe("SlateBrowser", () => {
 
   it("Watch assigns to the primary slot by default, using the currently-effective book", async () => {
     await showPropsWithFourBooks();
-    fireEvent.click(screen.getByLabelText("Next bookmaker")); // manual override -> "bovada"
+    fireEvent.change(screen.getByLabelText("Odds shown"), { target: { value: "bovada" } });
 
     fireEvent.click(screen.getByText("Watch Over"));
 
@@ -336,7 +451,6 @@ describe("SlateBrowser", () => {
 
   it("lets the user explicitly watch Under and records that direction", async () => {
     await showPropsWithFourBooks();
-    fireEvent.click(screen.getByRole("button", { name: "under" }));
     fireEvent.click(screen.getByText("Watch Under"));
 
     expect(useAppStore.getState().primaryWatch?.direction).toBe("under");
@@ -344,13 +458,32 @@ describe("SlateBrowser", () => {
     expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("under");
   });
 
+  it("captures and labels the watched sportsbook, and refresh cannot silently retarget the existing watch", async () => {
+    await showPropsWithFourBooks();
+    expect(screen.queryByText("Track side:")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Watch Over .*draftkings for Jalen Hurts/ }));
+    const watch = useAppStore.getState().primaryWatch;
+    expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("over, draftkings");
+    const refreshed = structuredClone(useAppStore.getState().discoveredProps);
+    for (const line of refreshed[0].markets[0].lines) {
+      if (line.side === "over" && line.bookmakerKey === "bovada") line.price = 2.5;
+    }
+    mockFetchOnce({ success: true, dataSource: "live", eventId: "evt-1", players: refreshed });
+    fireEvent.click(screen.getByRole("button", { name: "Refresh odds" }));
+    expect(await screen.findByRole("button", { name: /Watch Over .*bovada for Jalen Hurts/ })).toBeEnabled();
+    expect(useAppStore.getState().primaryWatch).toEqual(watch);
+    expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("over, draftkings");
+    expect(screen.getByTestId("primary-watch-status")).not.toHaveTextContent("bovada");
+  });
+
   it("switching the assign target to Secondary watches a second discovered prop without disturbing the primary one", async () => {
     await showPropsWithFourBooks();
-    fireEvent.click(screen.getByLabelText("Next bookmaker")); // -> "bovada"
+    fireEvent.change(screen.getByLabelText("Odds shown"), { target: { value: "bovada" } });
     fireEvent.click(screen.getByText("Watch Over"));
 
+    fireEvent.click(screen.getByText("Demo watch assignment"));
     fireEvent.click(screen.getByRole("button", { name: "Secondary (demo)" }));
-    fireEvent.click(screen.getByLabelText("Next bookmaker")); // -> "draftkings"
+    fireEvent.change(screen.getByLabelText("Odds shown"), { target: { value: "draftkings" } });
     fireEvent.click(screen.getByText("Watch Over"));
 
     expect(screen.getByTestId("primary-watch-status")).toHaveTextContent("bovada");
@@ -359,8 +492,9 @@ describe("SlateBrowser", () => {
 
   it("Clear removes one watch selection independently of the other", async () => {
     await showPropsWithFourBooks();
-    fireEvent.click(screen.getByLabelText("Next bookmaker"));
+    fireEvent.change(screen.getByLabelText("Odds shown"), { target: { value: "bovada" } });
     fireEvent.click(screen.getByText("Watch Over"));
+    fireEvent.click(screen.getByText("Demo watch assignment"));
     fireEvent.click(screen.getByRole("button", { name: "Secondary (demo)" }));
     fireEvent.click(screen.getByText("Watch Over"));
 
