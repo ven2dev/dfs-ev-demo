@@ -1,0 +1,181 @@
+{
+  "issue": 177,
+  "baselineCommit": "cf13f2c8d57d23e376041ca79093ba46a9d376c1",
+  "archive": {
+    "tag": "archive/legacy-evidence-graph",
+    "commit": "cf13f2c8d57d23e376041ca79093ba46a9d376c1",
+    "tagObject": "1b53732fb3780d3c1b0c3fc7d40efea7958c6365",
+    "publication": "pending owner approval"
+  },
+  "removals": {
+    "legacyRuntime": [
+      "src/lib/predictive/artifacts.ts",
+      "src/lib/predictive/completion.ts",
+      "src/lib/predictive/featureRuns.ts",
+      "src/lib/predictive/identity.ts",
+      "src/lib/predictive/ingest.ts",
+      "src/lib/predictive/labels.ts",
+      "src/lib/predictive/participation.ts",
+      "src/lib/predictive/passingYards.ts",
+      "src/lib/predictive/persistence.ts",
+      "src/lib/predictive/policies.ts",
+      "src/lib/predictive/replay.ts",
+      "src/lib/predictive/scheduleContext.ts",
+      "src/lib/predictive/snaps.ts",
+      "src/lib/predictive/sourceAdapters.ts",
+      "src/lib/predictive/sourceClaims.ts",
+      "src/lib/predictive/sourceConsumers.ts",
+      "src/lib/predictive/sourceDecisions.ts",
+      "src/lib/predictive/sourceFacts.ts",
+      "src/lib/predictive/sourceHeaders.ts",
+      "src/lib/predictive/sourceLineage.ts",
+      "src/lib/predictive/sourceNormalization.ts",
+      "src/lib/predictive/sourcePrototype.ts",
+      "src/lib/predictive/sourceQualification.ts",
+      "src/lib/predictive/sourceReadiness.ts",
+      "src/lib/predictive/sourceStats.ts",
+      "src/lib/predictive/sourceTransport.ts",
+      "src/lib/predictive/sourceWitness.ts",
+      "src/lib/predictive/types.ts",
+      "src/lib/predictive/validation.ts"
+    ],
+    "legacyScripts": [
+      "scripts/predictive/archive.ts",
+      "scripts/predictive/demo.ts",
+      "scripts/predictive/harness.ts",
+      "scripts/predictive/local.ts",
+      "scripts/predictive/source.ts",
+      "scripts/predictive/sourceLocal.ts"
+    ],
+    "legacyUnitTestsAndFixtures": [
+      "tests/predictive/artifacts.test.ts",
+      "tests/predictive/fixtures/passingYards.ts",
+      "tests/predictive/fixtures/source.ts",
+      "tests/predictive/fixtures/sourceClaims.ts",
+      "tests/predictive/fixtures/sourceNormalization.ts",
+      "tests/predictive/passingYards.test.ts",
+      "tests/predictive/sourceAdapters.test.ts",
+      "tests/predictive/sourceClaims.test.ts",
+      "tests/predictive/sourceFacts.test.ts",
+      "tests/predictive/sourceLineage.test.ts",
+      "tests/predictive/sourceNormalization.test.ts",
+      "tests/predictive/sourcePrototype.test.ts",
+      "tests/predictive/sourceQualification.test.ts",
+      "tests/predictive/sourceReadiness.test.ts",
+      "tests/predictive/sourceStats.test.ts",
+      "tests/predictive/sourceTransport.test.ts",
+      "tests/predictive/sourceWitness.test.ts"
+    ],
+    "legacyDatabaseSuitesAndSupport": [
+      "tests/db/predictive.test.ts",
+      "tests/db/sourceClaims.test.ts",
+      "tests/db/sourceDecisions.test.ts",
+      "tests/db/sourceConsumers.test.ts",
+      "tests/db/sourceClaimsSupport.ts"
+    ],
+    "obsoleteLaneConfiguration": [
+      "vitest.db.scratch.config.mts"
+    ]
+  },
+  "relocations": {
+    "tests/predictive/featureStoreDerived.test.ts": "tests/feature-store/featureStoreDerived.test.ts",
+    "tests/predictive/featureStoreNormalize.test.ts": "tests/feature-store/featureStoreNormalize.test.ts",
+    "tests/predictive/featureStoreObjectStore.test.ts": "tests/feature-store/featureStoreObjectStore.test.ts"
+  },
+  "roleBootstrap": {
+    "from": "scripts/predictive/harness.ts",
+    "to": "tests/db/legacyRoles.ts",
+    "purpose": "historical migration ACL setup only; no synthetic-evidence session grants"
+  },
+  "removedPackageScripts": [
+    "predictive:demo",
+    "predictive:local",
+    "predictive:source",
+    "predictive:source:local"
+  ],
+  "retainedFrozenArtifactsSha256": {
+    "db/catalog-contracts/0001.json": "7db7ff0f095d4075cbb029887e6531e15638998097aad3f015f3c4dca59a1113",
+    "db/catalog-contracts/0002.json": "68ecc828365667c376ac3ec8385b8ad0c187515494d148324acea571c65994ac",
+    "db/catalog-contracts/0003.json": "1c377f990a00f2c19902d9887c94ce0523376d91adb57ffa0ae6ac6e3069ac78",
+    "db/catalog-contracts/0004.json": "0455b4561315eb3363b087e1380703192bfabe56a1abb90a05a60dee0c93a05f",
+    "db/catalog-contracts/0005.json": "908678b73b9b9ab07ed4668b1a1a01e89d68bf4e5f6a2fbdc922626824fc3e39",
+    "db/catalog-contracts/0006.json": "2f5a7c815955e47be583b5e94c28906ce504b0a76cb2ac704021661e7f9f2433",
+    "db/catalog-contracts/0007.json": "c2095909ebacaa1657e08b120b0b3538665e8a7b19f9587c31b383481f7aa7ef",
+    "db/catalog-contracts/0008.json": "8b1ea894cbda0b9afc1c193e8d4b41fd2026882aabb2c18f3f2fe4691ef52d17",
+    "db/catalog-contracts/0009.json": "8968e7c389f1a2714de8c139282eab4fd5a245eee49cec509f021cd091c2a93d",
+    "db/catalog-contracts/0010.json": "4ed78f91ea0900a1bfd6113ada384a5319d3ea66b6726556da331d8c86204e63",
+    "db/catalog-contracts/0011.json": "fedf66e205ecce73a06c48ebfd47e353a2f7364da5b04bcfae1fe3c1ae6126b1",
+    "db/catalog-contracts/ledger.json": "48e948beb754e9137fcb9d71e6d42714f500db432230fe684414c7fca002cdac",
+    "db/migration-manifest.json": "6a9ec6d3d6627b1f8c0ff5b6be08c89d8fba3ea70901684723f2497e66a768b5",
+    "db/migrations/0001_pre_41_baseline.sql": "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98",
+    "db/migrations/0002_market_observation_history.sql": "df35a458b5d6e3f26cbbdd84d8cfa65244e865dd6963b6f0e1f8f5f0e8dd7297",
+    "db/migrations/0003_predictive_evidence.sql": "ec72796bc69169e8a8a487c2dfd2240c86a4dc94c4ab74b29e4c05c83df9e695",
+    "db/migrations/0004_creator_corpus_projection.sql": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba",
+    "db/migrations/0005_predictive_source_claims.sql": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a",
+    "db/migrations/0006_predictive_source_bindings.sql": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19",
+    "db/migrations/0007_predictive_unavailable_bindings.sql": "fc10fe50cb8913c2c755db8ff15c0aa3d40e49b5a92d2471fff86c89c4409679",
+    "db/migrations/0008_predictive_source_witnesses.sql": "ea824b2f2b943feafc576ed0cb7130f0f78ea37376859995f7a1fa0b2e139cfb",
+    "db/migrations/0009_predictive_source_decisions.sql": "f861c1afd210c65886628581b78a1f135bb950f6b5e5d00989d065930a49ea31",
+    "db/migrations/0010_predictive_source_consumers.sql": "813ca0e75d014bc5e38c9d454c481a479890f1c43e16128400442da6ad57ee35",
+    "db/migrations/0011_predictive_capture_ingestion_clock.sql": "3908fa33bcb79301a870dca9a6c18dddacf755580a303025610d20bb20716d67",
+    "db/readiness.json": "d2f108774fb1b2732fcc80776e7beb2a8e78e179916c12e3954c4db86060d3fe",
+    "db/schema.sql": "993fad84aa8f992c5b3373d869a7260d4bb13557b3e36aa626b8873570e5d34b",
+    "src/lib/dbReadinessManifest.ts": "4079a4e55bff154095bba98180e9c2e8a22fed403d4edc0f5aa201c825eb3153"
+  },
+  "retainedRuntime": [
+    "src/lib/featureStore/",
+    "src/lib/projection/",
+    "src/lib/creator*.ts",
+    "scripts/feature-store/",
+    "scripts/projection/",
+    "scripts/creator-corpus/"
+  ],
+  "ci": {
+    "prerequisitePr": 186,
+    "workflowChangedIn177": false,
+    "retiredSelection": "legacy predictive scratch lane and its report contract",
+    "retainedSelection": "all remaining DB suites, Node report contracts and the feature-store step added by #185"
+  },
+  "readiness": {
+    "minimumVersion": 2,
+    "maximumKnownVersion": 11,
+    "disposition": "keep every entry; verify unchanged bytes and existing checks"
+  },
+  "documentation": {
+    "liveUpdates": [
+      "README.md",
+      "docs/predictive-data-platform.md",
+      "docs/feature-store-spike.md"
+    ],
+    "historicalNotices": [
+      "docs/predictive-data-operations.md",
+      "docs/predictive-data-sources.md",
+      "docs/predictive-evidence-ddl.md",
+      "docs/predictive-feature-contract.md",
+      "docs/predictive-followups.md",
+      "docs/predictive-ingestion.md",
+      "docs/predictive-pr-b-review.md",
+      "docs/predictive-pr-b.md",
+      "docs/predictive-real-source-schema.md",
+      "docs/predictive-session-handoff.md",
+      "docs/predictive-source-lineage.md",
+      "docs/predictive-source-prototype.md",
+      "docs/predictive-test-review.md",
+      "docs/database-suite-speed.md"
+    ],
+    "agents": "reviewed; no retired-code references to change"
+  },
+  "sharedTestInfrastructure": [
+    "tests/db/legacyRoles.ts",
+    "tests/db/templates.mts",
+    "scripts/test-db.mjs",
+    "scripts/db-test-lanes.mjs",
+    "scripts/db-test-workers.mjs",
+    "scripts/db-test-contract.mjs",
+    "tests/db/lanes-unit.check.mjs",
+    "tests/db/report-unit.check.mjs",
+    "vitest.db.config.mts",
+    "vitest.config.ts",
+    "vitest.node.config.ts"
+  ]
+}

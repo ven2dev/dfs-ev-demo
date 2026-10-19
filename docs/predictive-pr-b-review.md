@@ -1,5 +1,10 @@
 # PR B independent review and final-candidate record
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 Status: **conditional independent assessment received for `2f897e9`; affected-code
 and migration 0011 re-review are pending. Implementation and merge are not approved.**
 The owner supplied the assessment below on 2026-10-13 after three independent,

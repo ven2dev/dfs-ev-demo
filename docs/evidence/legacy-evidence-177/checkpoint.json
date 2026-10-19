@@ -1,0 +1,162 @@
+{
+  "issue": 177,
+  "baselineCommit": "cf13f2c8d57d23e376041ca79093ba46a9d376c1",
+  "archive": {
+    "tag": "archive/legacy-evidence-graph",
+    "commit": "cf13f2c8d57d23e376041ca79093ba46a9d376c1",
+    "tagObject": "1b53732fb3780d3c1b0c3fc7d40efea7958c6365",
+    "publication": "pending owner approval"
+  },
+  "scope": "Local retirement checkpoint; uncommitted working tree. Owner commit approval and independent review pending.",
+  "environment": {
+    "node": "v24.18.1",
+    "database": "Disposable loopback PostgreSQL 18; standard compose.test.yml; 512 MiB data tmpfs; no spike override",
+    "hostedWrites": false
+  },
+  "counts": {
+    "browserUnitPassed": 900,
+    "nodeUnitPassed": 243,
+    "databaseGuardPassed": 20,
+    "ciGatePassed": 4,
+    "databaseLifecyclePassed": 1,
+    "databaseNodePassed": 74,
+    "catalogContractsVerified": 12,
+    "retainedPostgresPassed": 25,
+    "featureStorePostgresPassed": 77
+  },
+  "guardAndCiGate": "Executed successfully before the combined checkpoint; existing focused checks retained unchanged.",
+  "stages": [
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "elapsedSeconds": 4.652,
+      "logSha256": "c5ce797f4d891a7c297cfcf70cd71c9361eab3ab883b9f49011bdd73d1181e1c"
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "elapsedSeconds": 4.437,
+      "logSha256": "b7aa93b961bf11814b8023fd7dd6e8504cb62e568a56f6af0afa43c7a2f0b701"
+    },
+    {
+      "name": "unit",
+      "exitCode": 0,
+      "elapsedSeconds": 19.934,
+      "logSha256": "b349ba8ab8f5f5ff9b0c2de9a99c8336b5dbe4eb1ea0007f613ec09aafe64570"
+    },
+    {
+      "name": "db-lifecycle",
+      "exitCode": 0,
+      "elapsedSeconds": 8.481,
+      "logSha256": "01bd5d05fd25280ed8acf5865f2aa3b2fd2fe548c8eef03bedf68ccd6a512020"
+    },
+    {
+      "name": "db-local",
+      "exitCode": 0,
+      "elapsedSeconds": 24.054,
+      "logSha256": "0fe4d1dd967ea48df8162037924c50f1486005d44edf0d8913a69e595ab78307"
+    },
+    {
+      "name": "feature-store-up",
+      "exitCode": 0,
+      "elapsedSeconds": 1.713,
+      "logSha256": "0729f56e1543e971912498fdb0e936924cd57bf85417d9b5ba94d1c2be644bc0"
+    },
+    {
+      "name": "feature-store-mount",
+      "exitCode": 0,
+      "elapsedSeconds": 0.065,
+      "logSha256": "eaac94f92940f8abe90f8707ff83349ccd47e95156532f3644e0fd404f14aa3d"
+    },
+    {
+      "name": "feature-store",
+      "exitCode": 0,
+      "elapsedSeconds": 47.149,
+      "logSha256": "d26751fb9ac3b01636b9a18f92997d3166e6f0c1a4e86a5bb8207e03d9923524",
+      "counts": {
+        "tests": 77,
+        "failed": 0,
+        "passed": 77,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0,
+        "topLevel": 7,
+        "suites": 0
+      },
+      "reportSha256": "3bbeb4b49d2d6af58004c7a5f8c1780d28c247e5b3d31334ace84cf46358e2b9"
+    },
+    {
+      "name": "db-cleanup",
+      "exitCode": 0,
+      "elapsedSeconds": 0.606,
+      "logSha256": "fec338d2cb94c25f54ae25d46f49268009cc0e5573424e2e53708cb16ebcd84e"
+    }
+  ],
+  "invariants": {
+    "removedLegacyFiles": 58,
+    "activeTestsRelocated": [
+      {
+        "from": "tests/predictive/featureStoreDerived.test.ts",
+        "to": "tests/feature-store/featureStoreDerived.test.ts",
+        "sha256": "62501f2e9a1af5bf41cfde0b8df213e2ebc11a748303539f9ed58b0ff30a1943",
+        "change": "byte-identical"
+      },
+      {
+        "from": "tests/predictive/featureStoreNormalize.test.ts",
+        "to": "tests/feature-store/featureStoreNormalize.test.ts",
+        "sha256": "461f1f964695830dbdc5279b9d0c02dabe799596f0e0aadc80cd005b8f8942a9",
+        "change": "relative fixture import only"
+      },
+      {
+        "from": "tests/predictive/featureStoreObjectStore.test.ts",
+        "to": "tests/feature-store/featureStoreObjectStore.test.ts",
+        "sha256": "34d0950fa729ee7b90cef997d58c0d6f85005d82e71a87a09e379b3ece9a4f70",
+        "change": "byte-identical"
+      }
+    ],
+    "frozenArtifactsComparedToBaseline": 27,
+    "otherPreservedFilesComparedToBaseline": 306,
+    "otherPreservedFilesManifestSha256": "dd0c250b044d7febccf07751a4fe3fc6ce6188d584a7ebd0d5ae2dfdb16e8580",
+    "scan": {
+      "engine": "rg",
+      "pattern": "lib/predictive|scripts/predictive|tests/predictive|sourceClaimsSupport|SCRATCH_FILES|validatePredictiveDbReport|PREDICTIVE_REQUIRED|predictive:(demo|local|source)",
+      "liveMatches": 0
+    },
+    "packageChanges": "four retired npm commands only; lockfile unchanged",
+    "archiveTagIdentityVerified": true,
+    "workflowAndAllDatabaseFilesUnchanged": true,
+    "verdict": "pass"
+  },
+  "changedTestInfrastructureSha256": {
+    "package.json": "e6c4593502f1851b8c2e2519d1e694df42ecc10d8c64ccf4bb4f89b4d8a463dc",
+    "scripts/db-test-contract.mjs": "2d27d595b892a6a801efb9295a90395f3b5899e0f427e07b1a683b16e79c195d",
+    "scripts/db-test-lanes.mjs": "05b2d97523bbc0d848e7767e1156fe1f8844024f304e3aa2733aa21967af866e",
+    "scripts/db-test-workers.mjs": "8a9b0947c664115c383dd3dd8ecc23e675c1d79b8184f7e47c863c80f8d7afb5",
+    "scripts/test-db.mjs": "49f7aa10300b4dd94f3f5aca876188a2e30702c743468c10e1b112f4a1b1b380",
+    "tests/db/lanes-unit.check.mjs": "00dcbfcd1725ae2c0f509e297e4a0297148c8ee1fb384b5e422d7c555e732884",
+    "tests/db/legacyRoles.ts": "4765547aeea539c922e35a89c1accaeb81621db8b4d043b7663b15dad28f0313",
+    "tests/db/report-unit.check.mjs": "d05b6bd3d417a3501a45aca8a5537ce3d38aa55647d69e68e874ae51f23bc316",
+    "tests/db/templates.mts": "64aa78f6705a2f2b638dd01d1ac2aeaadc4e656dc3d9ca10235138443cf959a7",
+    "tests/feature-store/featureStoreDerived.test.ts": "62501f2e9a1af5bf41cfde0b8df213e2ebc11a748303539f9ed58b0ff30a1943",
+    "tests/feature-store/featureStoreNormalize.test.ts": "461f1f964695830dbdc5279b9d0c02dabe799596f0e0aadc80cd005b8f8942a9",
+    "tests/feature-store/featureStoreObjectStore.test.ts": "34d0950fa729ee7b90cef997d58c0d6f85005d82e71a87a09e379b3ece9a4f70",
+    "vitest.config.ts": "30b3820f0732fa979e947c8833f392a11fb862162de142611ff9081850fca570",
+    "vitest.db.config.mts": "53551c9dbd80ea2e4a2efdc35e666067fb47839ed42bc7dbae39acad79d04dfe",
+    "vitest.node.config.ts": "c7d1fe6e590285700d43b7c96a2c4957c918c5c4fb52ebb2b68745080f026058"
+  },
+  "inventorySha256": "dd800e5175d609cb73752e2dc64bb1a0a90241c166c509daa8ea2aae95171a75",
+  "review": {
+    "premise": "Expand/contract deprecation; application removal now, schema contraction deferred to #95.",
+    "result": "Self-review complete; no confirmed defect found. Owner independent review remains required.",
+    "retainedChecks": "Historical ACL bootstrap and fail-closed retained suite completeness checks remain.",
+    "wallClockClaim": "No before/after comparison or CI speedup claim; elapsed times identify this validation run only."
+  },
+  "fullLogs": "Off git in /private/tmp/dfs177-validation; hashes in this receipt identify local logs, not a durable archive.",
+  "verdict": "pass",
+  "pending": [
+    "Owner commit approval",
+    "Owner independent review",
+    "Fresh push consent for branch and annotated archive tag",
+    "Hosted CI and owner merge"
+  ]
+}

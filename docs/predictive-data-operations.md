@@ -1,5 +1,10 @@
 # Predictive source decision, costs and operational handoff
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 Decision and public-pricing review date: 2026-10-05. This completes the
 documentation decision for [#49](https://github.com/ven2dev/dfs-ev-demo/issues/49).
 The [source qualification](predictive-data-sources.md) owns provider evidence;

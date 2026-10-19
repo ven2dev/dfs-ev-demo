@@ -1,5 +1,10 @@
 # #52 session handoff
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 Updated 2026-10-13 after the independent PR #105 assessment and review fixes.
 Resume from this state; preserve historical evidence and do not repeat downloads.
 

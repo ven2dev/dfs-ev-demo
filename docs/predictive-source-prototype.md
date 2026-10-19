@@ -1,5 +1,10 @@
 # Bounded source qualification prototype
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 **2026-10-11 update:** PR A merged and migration 0003 is frozen. The separate
 [PR B assessment](predictive-pr-b.md) now applies approved F3 to these retained
 samples: positive usage supports individual participation, while population

@@ -1,5 +1,10 @@
 # Delivery 2 test reasoning review
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 Review date: 2026-10-09. Scope: the 12 new predictive PostgreSQL cases, five
 artifact/archive cases, the mandatory-report case, and existing migration/
 readiness tests adjusted for v3. The governing behavior is documented in the
