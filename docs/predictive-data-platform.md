@@ -228,6 +228,11 @@ affected rows and raises an alert.
 
 ## 4. Reuse and retire
 
+The [#177 retirement](legacy-evidence-retirement.md) archives the legacy runtime.
+Names in this table are archival porting references, not current import paths;
+active code lives in `src/lib/featureStore` and `src/lib/projection`. The frozen
+migration, catalog and readiness history remains intact pending #95.
+
 | Keep (port as-is or nearly) | Simplify | Retire / never merge |
 |---|---|---|
 | Pure parsers and policies: `sourceTransport`, `sourceHeaders`, `sourceClaims`, `sourceNormalization`, `scheduleContext`, `passingYards`, `participation`, `labels` | 0003 profiles, rights, blobs, artifacts and captures become profiles, rights and `source_snapshots` | 0012–0020 (never on main), the scratch 0021, the `db/proposals/` spike SQL |

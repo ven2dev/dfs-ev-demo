@@ -1,5 +1,10 @@
 # Local predictive cutoff replay proofs
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 For continuation after the 2026-10-09 session, read the [current handoff](predictive-session-handoff.md) for the pushed branch state, owner decisions, evidence and next schema-design work.
 
 Deliveries 1 and 2 of [#52's implementation proposal](https://github.com/ven2dev/dfs-ev-demo/issues/52#issuecomment-6054299022) provide executable contracts, a synthetic passing-yards replay, and the same proof backed by private immutable artifacts and disposable PostgreSQL. Delivery 3 now includes a [bounded public-source qualification prototype](predictive-source-prototype.md); real feature publication remains unavailable pending its reported evidence requirements. The [feature contract](predictive-feature-contract.md), [source decision](predictive-data-sources.md) and [operating policy](predictive-data-operations.md) continue to govern subsequent work.

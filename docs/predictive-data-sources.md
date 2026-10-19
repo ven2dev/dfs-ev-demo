@@ -1,5 +1,10 @@
 # Predictive data source qualification
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 Research date: 2026-10-05. This document is the Step 1 source decision for
 [issue #49](https://github.com/ven2dev/dfs-ev-demo/issues/49). It qualifies
 candidate inputs for later ingestion and model evaluation; it does not add an

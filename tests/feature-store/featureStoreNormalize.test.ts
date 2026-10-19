@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { normalizeSource, easternKickoff } from "../../src/lib/featureStore/normalize.ts";
 import { sha256 } from "../../src/lib/featureStore/objectStore.ts";
 import { downloadSource, INGEST_LIMITS } from "../../src/lib/featureStore/source.ts";
-import { csvFixture, sourceFixture, STAT_HEADER, STAT_ROW } from "../feature-store/fixtures.ts";
+import { csvFixture, sourceFixture, STAT_HEADER, STAT_ROW } from "./fixtures.ts";
 
 const signal = () => AbortSignal.timeout(5_000);
 describe("#138 source normalization", () => {

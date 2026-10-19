@@ -210,9 +210,9 @@ export async function createTemplateRun(environment: Environment, directory: str
         if (file.version === 1) {
           // Keep TS role-module loading out of the raw scratch/CLI path: those
           // commands intentionally have exact stderr contracts.
-          const { ensurePredictiveRoles } = await import("../../scripts/predictive/harness.ts");
+          const { ensureLegacyPredictiveRoles } = await import("./legacyRoles.ts");
           const { ensureCorpusImporterRole } = await import("../../scripts/creator-corpus/dbHarness.ts");
-          await ensurePredictiveRoles(client);
+          await ensureLegacyPredictiveRoles(client);
           await ensureCorpusImporterRole(client);
         }
         const result = await runScratchMigrations(client, { expected, files: files.slice(0, file.version),

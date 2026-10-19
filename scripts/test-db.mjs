@@ -1,13 +1,13 @@
 import { DatabaseTestRunActiveError, startDatabaseTestRun } from "../tests/db/startup.mts";
 import { createTemplateRun } from "../tests/db/templates.mts";
 import { databaseTestWorkers } from "./db-test-workers.mjs";
-import { mergeDatabaseReports } from "./db-test-lanes.mjs";
+import { validateDatabaseReport } from "./db-test-lanes.mjs";
 import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { NODE_REQUIRED_CASES, validateCorpusDbReport, validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport, validatePredictiveDbReport } from "./db-test-contract.mjs";
+import { NODE_REQUIRED_CASES, validateCorpusDbReport, validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport } from "./db-test-contract.mjs";
 import {
   assertNoApplicationCredentials,
   LOCAL_TEST_DATABASE_URL,
@@ -68,47 +68,28 @@ async function runSuite(environment, filters, leaseSignal) {
     const workers = databaseTestWorkers();
     console.log(JSON.stringify({ dbWorkers: workers }));
     const templateEnvironment = { ...environment, TEST_DATABASE_TEMPLATE_MANIFEST: templates.manifestPath };
-    const laneStop = new AbortController();
-    const signal = AbortSignal.any([templates.failureSignal, leaseSignal, stop.signal, laneStop.signal]);
+    const signal = AbortSignal.any([templates.failureSignal, leaseSignal, stop.signal]);
     const checked = async (args) => {
       const result = await run(process.execPath, args, templateEnvironment, signal);
-      if (result !== 0) throw new Error("DB test lane failed with exit code " + result);
+      if (result !== 0) throw new Error("DB test command failed with exit code " + result);
     };
     const nodeReportPath = join(reportDir, "node-results.json");
-    const serialPath = join(reportDir, "serial-results.json");
-    const scratchPath = join(reportDir, "scratch-results.json");
-    let nodeRequiredCases;
-    const vitest = (config, path) => checked([
+    const reportPath = join(reportDir, "vitest-results.json");
+    await checked(["--test", "--test-concurrency=" + workers.nodeWorkers, "--test-timeout=60000",
+      "--test-reporter=spec", "--test-reporter=./scripts/db-test-reporter.mjs",
+      "--test-reporter-destination=stdout", "--test-reporter-destination=" + nodeReportPath,
+      ...Object.keys(NODE_REQUIRED_CASES)]);
+    const nodeRequiredCases = validateNodeDbReport(JSON.parse(await readFile(nodeReportPath, "utf8")));
+    await checked(["scripts/db-catalog-contracts.mjs", "check"]);
+    await checked([
       fileURLToPath(new URL("../node_modules/vitest/vitest.mjs", import.meta.url)),
-      "run", "--config", config, "--reporter=default", "--reporter=json", "--outputFile.json=" + path, ...filters,
+      "run", "--config", "vitest.db.config.mts", "--reporter=default", "--reporter=json", "--outputFile.json=" + reportPath, ...filters,
     ]);
-    const serialLane = async () => {
-      await checked(["--test", "--test-concurrency=" + workers.nodeWorkers, "--test-timeout=60000",
-        "--test-reporter=spec", "--test-reporter=./scripts/db-test-reporter.mjs",
-        "--test-reporter-destination=stdout", "--test-reporter-destination=" + nodeReportPath,
-        ...Object.keys(NODE_REQUIRED_CASES)]);
-      nodeRequiredCases = validateNodeDbReport(JSON.parse(await readFile(nodeReportPath, "utf8")));
-      await checked(["scripts/db-catalog-contracts.mjs", "check"]);
-      await vitest("vitest.db.config.mts", serialPath);
-    };
-    const scratchLane = () => vitest("vitest.db.scratch.config.mts", scratchPath);
-    if (workers.overlap) {
-      const lanes = [serialLane, scratchLane].map(async (lane) => {
-        try { await lane(); } catch (error) { laneStop.abort(); throw error; }
-      });
-      const results = await Promise.allSettled(lanes);
-      const failures = results.filter((result) => result.status === "rejected");
-      if (failures.length) throw new AggregateError(failures.map((result) => result.reason), "DB test lanes failed.");
-    } else {
-      await serialLane(); await scratchLane();
-    }
-    const report = mergeDatabaseReports(JSON.parse(await readFile(serialPath, "utf8")),
-      JSON.parse(await readFile(scratchPath, "utf8")));
+    const report = validateDatabaseReport(JSON.parse(await readFile(reportPath, "utf8")));
     const leaseRequiredCases = validateLeaseDbReport(report);
     const readinessRequiredCases = validateReadinessDbReport(report);
-    const predictiveRequiredCases = validatePredictiveDbReport(report);
     const corpusRequiredCases = validateCorpusDbReport(report);
-    console.log(JSON.stringify({ nodeRequiredCases, leaseRequiredCases, readinessRequiredCases, predictiveRequiredCases, corpusRequiredCases, result: "verified" }));
+    console.log(JSON.stringify({ nodeRequiredCases, leaseRequiredCases, readinessRequiredCases, corpusRequiredCases, result: "verified" }));
     leaseSignal.throwIfAborted();
     return 0;
   } catch (error) {

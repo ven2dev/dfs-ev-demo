@@ -186,7 +186,7 @@ Reproduce using Node 24 and locked dependencies (`npm ci`), with no application
 credentials or `.env` loading:
 
 ```sh
-node node_modules/vitest/vitest.mjs run --config vitest.node.config.ts tests/predictive/featureStoreObjectStore.test.ts
+node node_modules/vitest/vitest.mjs run --config vitest.node.config.ts tests/feature-store/featureStoreObjectStore.test.ts
 docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml up -d --wait
 TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test npm run test:feature-store:db
 docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml down --volumes

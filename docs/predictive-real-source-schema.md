@@ -1,5 +1,10 @@
 # #52 real-source schema proposal — revision 2
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 Status: **revision 2 approved by the owner (2026-10-09), including the snap-share
 amendment, and implemented in PR A** on `feature/dfsEV-52-evidence-schema`
 (2026-10-10). The column-level DDL, with per-step and per-review-fix notes, is in

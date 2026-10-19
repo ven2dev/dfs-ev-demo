@@ -1,5 +1,10 @@
 # `0003_predictive_evidence.sql`: column-level DDL, revision 2
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 Status: **implemented in PR A** on `feature/dfsEV-52-evidence-schema` (steps 1–10
 and both implementation review rounds, through 2026-10-11). Sections 1–13 are the
 approved design; section 14 records what each step and review fix built and where

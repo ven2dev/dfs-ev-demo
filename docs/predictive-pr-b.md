@@ -1,5 +1,10 @@
 # #52 PR B: versioned source foundation
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 Updated 2026-10-13. PR A merged as [PR #102](https://github.com/ven2dev/dfs-ev-demo/pull/102),
 `d934432e8aa32a38226c65306592b77e04e05f01`. Migration 0003 is frozen.
 PR B's historical review baseline is merged-main checkpoint `3daf1dc`, which
