@@ -117,6 +117,8 @@ The older evidence-graph implementation and its demo commands are
 [archived under #177](docs/legacy-evidence-retirement.md); its frozen schema
 history is retained. Historical source/rights decisions remain available in
 the linked reference documents and do not authorize new provider use.
+Public or commercial display rights for independent-model data remain
+conditional; retiring the old implementation grants no display authorization.
 
 ### Provider notes (nflverse)
 

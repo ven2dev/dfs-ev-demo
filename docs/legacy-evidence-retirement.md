@@ -27,7 +27,8 @@ immediately before removal:
 
 - Commit: `cf13f2c8d57d23e376041ca79093ba46a9d376c1`
 - Tag object: `1b53732fb3780d3c1b0c3fc7d40efea7958c6365`
-- Publication: local only, awaiting fresh owner push approval before PR merge.
+- Publication: [published annotated tag](https://github.com/ven2dev/dfs-ev-demo/tree/archive/legacy-evidence-graph),
+  with owner approval; remote tag-object and archived-commit hashes verified.
 
 The [archived commit](https://github.com/ven2dev/dfs-ev-demo/tree/cf13f2c8d57d23e376041ca79093ba46a9d376c1)
 already provides a stable source reference. Existing #106/#118/#127 reference
@@ -37,6 +38,11 @@ All 11 frozen migrations, catalog contracts, generated schema, migration manifes
 and readiness policy/manifest stay byte-identical. The creator-track migration
 0004 and creator code are retained. Keeping these historical objects is a
 deliberate decision, not a claim that they have been applied to Production.
+
+References to deleted application paths in frozen comments, including
+`src/lib/predictive/validation.ts` in migration 0003 and `db/schema.sql`,
+resolve through the published `archive/legacy-evidence-graph` tag. The
+comments remain unchanged to preserve frozen file hashes.
 
 ## Inventory and removal boundary
 
@@ -80,6 +86,10 @@ The 74 Node database cases replace 75 only because the dedicated retired-suite
 report test was removed. The retained lease, readiness and creator required-case
 contracts remain intact. Validation timings are receipts, not a measured speedup.
 
-Self-review found no confirmed defect. Owner independent review is still pending.
-Commit, push and archive-tag publication await their respective owner approvals.
-The archive tag is local only. No hosted changes occur.
+Independent review of `917ce053a1b4329559d0ef0ee7b33441dcf11a01` reported
+no blockers and confirmed the checks above. The review's three documentation
+notes are addressed here and in the README. The implementation commit and
+archive tag were published with owner approval. The compact receipt records
+its earlier pre-commit collection state; its code hashes match that commit.
+Hosted PR checks and owner merge remain pending. No hosted database changes
+occur.
