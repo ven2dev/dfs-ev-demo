@@ -32,3 +32,10 @@ Create `feature/dfsEV-104-declutter-slate-browser` from fresh `origin/main`. Own
 - Keyboard: Tab from Change selection reaches Odds shown; Enter activates the exact named Under action. Phone comparison region accepts keyboard focus and ArrowRight scrolls its content locally. See all books opens the selected player's selected market. Fixture stream status remains visible during tracking.
 - Dark mode was checked in the in-app browser; light mode was checked in Chrome with DevTools `prefers-color-scheme: light` emulation left open. Both displayed readable controls, quote rows, provenance and watch confirmation. These are visual/behavior checks, not new Lighthouse scores. Local sign-in remains unavailable; no authenticated pages are part of this issue.
 - Screenshots are outside Git for later PR attachment: `final-normal-{360,375,768,1024,1440}-dark.png`, `final-compare-360-dark.png`, `final-all-books-360-dark.png`, and `final-light-devtools.png`. The light screenshot includes DevTools and is not labeled as a fixed-width measurement. No attribution trailers were added.
+
+### Review follow-up
+
+- Preserve manual Odds shown through successful refreshes, including refreshes that remove an unrelated book. Reset for a changed game/market selection or removal of the chosen book; the latter displays a fallback notice.
+- Move focus to Change selection after successful submission, to the game dropdown when reopening, and back to Change selection through Keep current selection. The no-request close action appears only while the selection still matches loaded results. Odds shown now has an explicit generated ID and accessible label reference.
+- Added regression coverage for manual refresh persistence, removed-book fallback, selection-change reset, focus on both disclosure transitions, and no-request close. Browser fixture checks reproduced the reported fixture-northstar scenario and confirmed the retained book and focus targets.
+- Updated validation: **908 unit tests and 688 Node tests passed**, plus full lint, typecheck, default production build and whitespace checks. Screenshot `review-fix-manual-book-375.png` remains outside Git for PR attachment.

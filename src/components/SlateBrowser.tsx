@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   PLAYER_PROP_MARKETS,
   type PlayerPropDirection,
@@ -88,7 +88,7 @@ export const SlateBrowser = () => {
   // rather than in the store.
   const [selectedBookmakerKey, setSelectedBookmakerKey] = useState<string | null>(null);
   // true: every row shows its own best-priced book independently (see
-  // getBestBookmakerKey). false: the stepper has forced one specific
+  // getBestBookmakerKey). false: Odds shown has forced one specific
   // book across every row -- a manual override, not the default.
   const [smartDefault, setSmartDefault] = useState(true);
   const [comparisonMode, setComparisonMode] = useState(false);
@@ -100,11 +100,17 @@ export const SlateBrowser = () => {
   // prop.
   const [watchAssignTarget, setWatchAssignTarget] = useState<"primary" | "secondary">("primary");
   const [selectionOpen, setSelectionOpen] = useState(true);
+  const gameSelectRef = useRef<HTMLSelectElement>(null);
+  const changeSelectionRef = useRef<HTMLButtonElement>(null);
+  const selectionFocusRef = useRef<"game" | "summary" | null>(null);
+  const oddsControlId = useId();
+  const [oddsViewNotice, setOddsViewNotice] = useState<string | null>(null);
 
   const sortedCheckedMarketKeys = useMemo(
     () => [...checkedMarketKeys].sort(),
     [checkedMarketKeys]
   );
+  const discoveryIdentity = `${selectedEventId ?? ""}::${sortedCheckedMarketKeys.join(",")}`;
   const hasCurrentDiscovery =
     discoveredPropsEventId === selectedEventId &&
     discoveredPropsMarketKeys.join(",") === sortedCheckedMarketKeys.join(",");
@@ -118,22 +124,19 @@ export const SlateBrowser = () => {
     [visibleDiscoveredProps]
   );
 
-  // Adjust state during render, not in an effect (React's own documented
-  // pattern for "reset some state when a computed value changes") -- the
-  // useMemo above keeps allBookmakerKeys referentially stable unless
-  // discoveredProps itself changes, so this only fires on a REAL change,
-  // not every render. A fresh discovery result can drop the book that
-  // was selected (a different market set may not include it) or arrive
-  // with none selected yet -- default to the first available book rather than
-  // show a stale/invalid one.
-  const [prevAllBookmakerKeys, setPrevAllBookmakerKeys] = useState(allBookmakerKeys);
-  if (allBookmakerKeys !== prevAllBookmakerKeys) {
-    setPrevAllBookmakerKeys(allBookmakerKeys);
-    setSmartDefault(true); // a fresh discovery result starts back at smart defaults, not a stale manual override
-    if (allBookmakerKeys.length === 0) {
+  // Keep a manual book through quote refreshes. Reset only for a new
+  // selection or a book disappearing, so the control matches user intent.
+  const [previousOddsView, setPreviousOddsView] = useState({ identity: discoveryIdentity, books: allBookmakerKeys });
+  if (previousOddsView.identity !== discoveryIdentity || previousOddsView.books !== allBookmakerKeys) {
+    const selectionChanged = previousOddsView.identity !== discoveryIdentity;
+    const bookDisappeared = selectedBookmakerKey !== null && !allBookmakerKeys.includes(selectedBookmakerKey);
+    setPreviousOddsView({ identity: discoveryIdentity, books: allBookmakerKeys });
+    if (selectionChanged || bookDisappeared) {
+      setOddsViewNotice(!selectionChanged && bookDisappeared && !smartDefault
+        ? "The selected sportsbook is no longer quoted. Showing Best available."
+        : null);
+      setSmartDefault(true);
       setSelectedBookmakerKey(null);
-    } else if (!selectedBookmakerKey || !allBookmakerKeys.includes(selectedBookmakerKey)) {
-      setSelectedBookmakerKey(allBookmakerKeys[0]);
     }
   }
 
@@ -201,8 +204,6 @@ export const SlateBrowser = () => {
     controller?: AbortController;
   }>({ generation: 0, identity: "" });
 
-  const discoveryIdentity = `${selectedEventId ?? ""}::${sortedCheckedMarketKeys.join(",")}`;
-
   useEffect(() => {
     discoveryRequestRef.current.generation += 1;
     discoveryRequestRef.current.identity = discoveryIdentity;
@@ -267,7 +268,10 @@ export const SlateBrowser = () => {
       }
       setDiscoveredProps(data.players, eventId, marketKeys);
       setDiscoveryStatus("loaded");
-      if (!forceRefresh) setSelectionOpen(false);
+      if (!forceRefresh) {
+        selectionFocusRef.current = "summary";
+        setSelectionOpen(false);
+      }
     } catch (err) {
       if (controller.signal.aborted) return;
       const currentState = useAppStore.getState();
@@ -330,6 +334,16 @@ export const SlateBrowser = () => {
   const selectedEvent = realSlate.find((event) => event.id === selectedEventId);
   const showSelection = selectionOpen || !hasCurrentDiscovery;
 
+  useEffect(() => {
+    if (selectionFocusRef.current === "game" && showSelection) {
+      gameSelectRef.current?.focus();
+      selectionFocusRef.current = null;
+    } else if (selectionFocusRef.current === "summary" && !showSelection) {
+      changeSelectionRef.current?.focus();
+      selectionFocusRef.current = null;
+    }
+  }, [showSelection]);
+
   const sortedSlate = [...realSlate].sort(
     (a, b) => new Date(a.commenceTime).getTime() - new Date(b.commenceTime).getTime()
   );
@@ -368,7 +382,11 @@ export const SlateBrowser = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setSelectionOpen(true)}
+                ref={changeSelectionRef}
+                onClick={() => {
+                  selectionFocusRef.current = "game";
+                  setSelectionOpen(true);
+                }}
                 className="min-h-11 rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
               >
                 Change selection
@@ -378,6 +396,7 @@ export const SlateBrowser = () => {
           {showSelection && (
             <div className="relative mt-3">
               <select
+                ref={gameSelectRef}
                 aria-label="Select a game"
                 className="min-h-11 w-full min-w-0 appearance-none rounded border border-zinc-300 bg-white py-2 pr-10 pl-3 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                 value={selectedEventId ?? ""}
@@ -432,6 +451,18 @@ export const SlateBrowser = () => {
                     >
                       {discoveryStatus === "loading" ? "Loading…" : "Show props"}
                     </button>
+                    {hasCurrentDiscovery && discoveryStatus !== "loading" && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          selectionFocusRef.current = "summary";
+                          setSelectionOpen(false);
+                        }}
+                        className="min-h-11 rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+                      >
+                        Keep current selection
+                      </button>
+                    )}
                   </div>
                 </>
               )}
@@ -443,13 +474,16 @@ export const SlateBrowser = () => {
               {visibleDiscoveredProps.length > 0 && (
                 <div className="mt-4">
                   <div className="flex flex-wrap items-center gap-3">
-                    <label className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
-                      <span>Odds shown</span>
+                    <label htmlFor={oddsControlId} className="flex min-w-0 flex-wrap items-center gap-2 text-sm">
+                      <span id={`${oddsControlId}-label`}>Odds shown</span>
                       <span className="relative min-w-0">
                         <select
+                          id={oddsControlId}
+                          aria-labelledby={`${oddsControlId}-label`}
                           value={smartDefault ? "" : selectedBookmakerKey ?? ""}
                           disabled={comparisonMode}
                           onChange={(event) => {
+                            setOddsViewNotice(null);
                             setSmartDefault(event.target.value === "");
                             setSelectedBookmakerKey(event.target.value || null);
                           }}
@@ -485,6 +519,10 @@ export const SlateBrowser = () => {
                       {discoveryStatus === "loading" ? "Refreshing…" : "Refresh odds"}
                     </button>
                   </div>
+
+                  {oddsViewNotice && (
+                    <p role="status" className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{oddsViewNotice}</p>
+                  )}
 
                   {!comparisonMode && (
                     <details className="mt-3 text-sm">
