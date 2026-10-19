@@ -1,5 +1,10 @@
 # Predictive feature, identity and outcome contract
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 Decision date: 2026-10-05. This is Step 2 of
 [issue #49](https://github.com/ven2dev/dfs-ev-demo/issues/49), following the
 [source qualification](predictive-data-sources.md) and

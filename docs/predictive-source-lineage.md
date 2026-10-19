@@ -1,5 +1,10 @@
 # PR B canonical source lineage
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 The pure contract in `sourceLineage.ts` now has a PostgreSQL recorder and verified
 hydration path under forward migrations 0006 and 0007. **These canonical source revisions
 remain internal research staging.** They do not enter `predictive_observations`

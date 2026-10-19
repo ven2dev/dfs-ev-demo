@@ -1,5 +1,10 @@
 # DB integration suite speed (#153)
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 The suite prepares one verified chain of migration-prefix templates per run,
 then clones a fresh database for each ordinary integration fixture. Raw
 migration proofs retain empty scratch databases and execute the migration

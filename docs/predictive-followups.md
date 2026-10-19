@@ -1,5 +1,10 @@
 # #52 follow-up issues and acceptance criteria
 
+> Historical evidence-graph reference: implementation paths and commands below
+> refer to the [archived source](legacy-evidence-retirement.md), not the active
+> [feature-store design](predictive-data-platform.md). #177 retires the code;
+> this notice does not relax source-rights restrictions or renew authorization.
+
 These acceptance criteria now have native GitHub child issues under #52. On
 2026-10-13 the owner authorized the draft-PR review process for the
 [PR B foundation boundary](predictive-pr-b.md#revised-pr-b-acceptance-boundary-2026-10-13).

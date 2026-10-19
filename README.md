@@ -109,18 +109,14 @@ Real sample-window hit rates (base rate of the EV pipeline) are backed by
 [nflverse](https://github.com/nflverse/nflverse-data)'s public NFL stats, synced
 into a Neon Postgres database.
 
-The future independent projection has a separate
-[predictive source decision](docs/predictive-data-sources.md),
-[feature/cutoff/identity contract](docs/predictive-feature-contract.md), and
-[operating-cost and handoff plan](docs/predictive-data-operations.md) from #49.
-All nine market candidates support prospective predictor capture; complete
-outcome coverage remains blocked on qualified participation evidence. Current
-revised historical files are exploratory, public/commercial display rights
-remain conditional, and no projection model or new ingestion job ships here.
-
-The [local synthetic cutoff replay proof](docs/predictive-ingestion.md) for #52
-is runnable with `npm run predictive:demo`. It demonstrates immutable corrections
-and separate player/team/opponent passing inputs without an API key or database.
+Independent model work follows the [feature-store design](docs/predictive-data-platform.md)
+and [local foundation checkpoint](docs/feature-store-spike.md). The
+[empirical adapter](docs/feature-store-empirical-adapter.md) is a research-only,
+uncalibrated interim hit-rate model, not a calibrated predictive projection.
+The older evidence-graph implementation and its demo commands are
+[archived under #177](docs/legacy-evidence-retirement.md); its frozen schema
+history is retained. Historical source/rights decisions remain available in
+the linked reference documents and do not authorize new provider use.
 
 ### Provider notes (nflverse)
 
