@@ -34,6 +34,16 @@ afterEach(() => {
 });
 
 describe("Home honest interim labels", () => {
+  it("gives a single per-side Watch instruction inside the empty tracker", () => {
+    useAppStore.setState({ primaryWatch: null, secondaryWatch: null, watchlist: {} });
+    render(<Home />);
+    const instruction = screen.getByText(/Select a game and markets above/);
+    expect(instruction).toHaveTextContent("Watch Over or Watch Under");
+    expect(instruction.parentElement).toContainElement(screen.getByRole("heading", { name: "EV Tracker" }));
+    expect(screen.getAllByText(/start tracking/)).toHaveLength(1);
+    expect(screen.queryByText("Nothing watched yet.")).not.toBeInTheDocument();
+  });
+
   it("displays actual n and labels every coverage-derived surface as sample data", () => {
     render(<Home />);
     expect(screen.getByText("Recent hit rate · n = 4 games")).toBeInTheDocument();
