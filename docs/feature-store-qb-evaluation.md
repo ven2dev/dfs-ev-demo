@@ -1,6 +1,6 @@
 # Preregistered QB baseline evaluation (#164)
 
-Status: step 1, cohort reproduction and input pins; no real-data scoring yet.
+Status: step 2, scoring verified on synthetic cases; no real-data scoring yet.
 The [owner-approved roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/164#issuecomment-6296073750)
 sets a five-hour engineering cap. Each atomic commit and every push needs owner
 approval. This follows merged #189; database/pipeline extraction remains later work.
@@ -120,3 +120,41 @@ The clean environment prevents application credentials entering the scratch
 harness. A missing or mismatched pinned file fails setup rather than fetching a
 new revision. The normal preparation path performs no scoring and keeps full
 artifacts outside the checkout.
+
+
+## Step 2 checkpoint
+
+The public domain API `@dfs-ev/domain/qb-evaluation` adds the registered report
+scorer. It reuses the existing empirical kernel and three-class probability
+scorer; the strict fitter and its existing math/refusals are unchanged. The new
+RPS implementation uses the pairwise empirical formula, proven against six
+hand-calculated fixtures and an independent integer-CDF sum.
+
+Fold identities contain player/game/history policy; threshold-case identities
+contain player/game/threshold. Opposing QBs remain distinct, and duplicate folds
+are refused. Predictions use lagged history only. Coverage records remain
+separate from scored examples so missing labels never become zero outcomes.
+
+Reports include pooled and per-season groups, all three registered sample-size
+strata, and an additional unassigned coverage group for n=0–1. Empty cells stay
+visible. RPS counts folds once; threshold metrics count five cases per fold.
+Calibration bins retain empty cells and exact zero/one probabilities. Infinite
+log loss remains infinite in threshold and combined aggregates, with explicit
+case counts/fractions. Chronological history reuse is recorded without claiming
+independent folds.
+
+The [synthetic receipt](evidence/feature-store-164/step-2-synthetic-math.json)
+records six native Node 24 runs over 2,504 synthetic folds / 12,520 cases:
+142–181 ms for calculation plus logical JSON serialization, with the same report
+hash every time. No database, connection setup, source reads or object writes
+are inside that measurement. The full 7.5 MB synthetic report stays in local
+ObjectStore. This is partial-path feasibility, not the completed-report gate.
+
+The [validation receipt](evidence/feature-store-164/step-2-checkpoint.json)
+records 56 passing projection tests, standalone domain and repository typechecks,
+repository lint/boundary checks and 12 CI/layout checks. No real evaluation has
+run. Reproduce the synthetic-only probe with Node 24:
+
+```sh
+node services/pipeline/scripts/feature-store/evaluation-math-spike.ts
+```
