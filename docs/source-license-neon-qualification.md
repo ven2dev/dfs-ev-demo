@@ -115,7 +115,7 @@ Observed code at this branch's base `edb5981` (documentation follow-up only). Th
 | Normalized per-player/game offense_play_count | normalize.ts aggregates offensive players into counts | Treat proposed public export as participation-derived; licence/attribution review required |
 | Eligible game histories and features | qb_job_context uses positive offense participation as an eligibility condition; derived.ts selects histories using that result | Hiding counts does not remove selection lineage; public use stays blocked |
 | Outcome labels and dataset membership | Label context and dataset feature/label selection depend on qualified game context; dataset manifests retain snapshot lineage | Review the selected dataset as a whole, not only its numeric columns |
-| Empirical support, probabilities and pricing | empiricalAdapter.ts reads the selected materialized history and emits research-scoped results | No automatic model-output exemption; public serving decision pending |
+| Empirical support, probabilities and pricing | empiricalAdapter.ts reads the selected materialized history and emits research-scoped results | Classify each output; apply the approved compliance direction where obligations attach |
 | Training/evaluation artifacts, model reports and published metrics using those datasets | Potential downstream dependency even without raw participation fields | Inventory each concrete artifact before release; do not infer all model artifacts share the same classification |
 | Source code and unrelated product features | Reading data does not establish that the entire codebase is adapted data | Do not relicense the whole app by assertion; assess any embedded data and affected outputs separately |
 
@@ -123,10 +123,10 @@ Technical references: [normalization](../services/pipeline/src/featureStore/norm
 
 The adapter declares rightsScope=research and the dataset path checks research rights. Those existing checks are not a complete public-serving policy or a legal ShareAlike test. #197 still needs an explicit release prerequisite and verification in the future serving work.
 
-### Recommended owner decision (not yet approved)
+### Owner-approved direction — October 20, 2026
 
-Keep the existing participation-dependent pipeline, datasets and empirical artifacts private/research-only. Before public use, choose an output-specific path in #197: comply with applicable ShareAlike terms for shared adapted material; obtain authoritative alternate permission; or build a separately qualified participation-free/replacement lineage and evaluate it afresh. The last option changes the eligibility/history policy, so it needs new versions, dataset hashes and validation; removing a field from a JSON response is insufficient. No source deletion or pipeline redesign is authorized here.
+The owner selected compliance with applicable ShareAlike obligations for shared participation-derived outputs (option 1). Preserve the proprietary algorithm/source code; this decision neither relicenses the application nor assumes every prediction is Adapted Material. Technical dependency alone does not establish that legal classification. #197 owns output-specific classification, attribution/licensing and serving verification. The current research-only implementation remains unchanged until the relevant serving scope meets those requirements. No alternate permission request, source replacement, source deletion or pipeline redesign is selected by this decision.
 
 For a proposed shared artifact, record input snapshot IDs/years, classification and rationale, provider/source/licence credits, modification notices, adapter's licence when applicable, and compatibility of product terms/access controls with recipient rights. Paywall/login alone does not establish either compliance or noncompliance. Unresolved outputs remain excluded from public serving to prevent a research grant being reused as production permission.
 
-#171 can complete this qualification record while #197 retains the public-serving decision. No source-code licence was changed, no data/model released, and no new claim about #54 population completeness was made.
+#171 records the approved compliance direction; #197 retains output-specific assessment and implementation verification. No source-code licence was changed, no data/model released, and no new claim about #54 population completeness was made.

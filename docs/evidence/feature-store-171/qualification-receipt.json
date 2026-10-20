@@ -412,7 +412,7 @@
     },
     "participationAssessment": {
       "datePacific": "2026-10-20",
-      "status": "qualification-record-complete; owner public-serving disposition pending in #197",
+      "status": "owner compliance direction approved; output-specific classification and serving implementation pending in #197",
       "issue": "https://github.com/ven2dev/dfs-ev-demo/issues/197",
       "specificDeclarationAppliesToSeasons": [
         2021,
@@ -435,12 +435,21 @@
         "research empirical support/probabilities/pricing",
         "potential trained/evaluation/report artifacts"
       ],
-      "recommendation": "private research only for existing dependent artifacts; output-specific #197 disposition before public serving",
+      "recommendation": "superseded by owner-approved ShareAlike compliance direction",
       "publicServingApproved": false,
-      "ownerDispositionApproved": false,
+      "ownerDispositionApproved": true,
       "codeLicenceChanged": false,
       "dataOrModelReleased": false,
-      "sourceIdentitiesChanged": false
+      "sourceIdentitiesChanged": false,
+      "ownerDecision": {
+        "datePacific": "2026-10-20",
+        "option": 1,
+        "direction": "comply with applicable ShareAlike obligations for shared participation-derived outputs",
+        "algorithmAndSourceCode": "remain proprietary; no application relicensing authorized",
+        "predictionClassification": "not automatically Adapted Material because of computational dependency; assess specific outputs",
+        "servingImplementationApprovedByThisRecord": false,
+        "remainingIssue": 197
+      }
     }
   }
 }
