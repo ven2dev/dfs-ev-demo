@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { consensusDevigAtLine } from "../../../../../../packages/domain/src/consensusDevig";
-import { computeEV } from "../../../../../../packages/domain/src/computeEV";
+import { consensusDevigAtLine } from "@dfs-ev/domain/consensus-devig";
+import { computeEV } from "@dfs-ev/domain/ev";
 import { fetchSlateEvents } from "@/lib/oddsApi";
 import { DEFAULT_SPORT_KEY, isSafeOddsEventId, isSupportedOddsSport } from "@/lib/oddsRequestInputs";
 import { resolveOddsDataSource } from "@/lib/oddsDataSource";
@@ -18,7 +18,8 @@ import { MAX_TICKS, POLL_INTERVAL_MS, parseSampleWindow } from "@/lib/streamConf
 import { mockCoverageFilters } from "@/lib/mockCoverage";
 import { getRealRecentGameStats } from "@/lib/playerStatsRepo";
 import { buildWatchPropId } from "@/lib/watchPropId";
-import { getPlayerPropMarket, type PlayerPropDirection } from "@/lib/playerPropMarkets";
+import { getPlayerPropMarket } from "@/lib/playerPropMarkets";
+import type { PlayerPropDirection } from "@dfs-ev/domain";
 import { getSharedLivePropInputs } from "@/lib/livePropCacheRepo";
 
 // SSE endpoint. Production resolves real odds, weather, and player history

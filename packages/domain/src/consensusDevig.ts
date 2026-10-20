@@ -1,4 +1,4 @@
-import { devigTwoWay } from "./devig";
+import { devigTwoWay } from "./devig.ts";
 
 export const CONSENSUS_DEVIG_METHOD = "exact-line-median" as const;
 export const CONSENSUS_DEVIG_VERSION = 1 as const;

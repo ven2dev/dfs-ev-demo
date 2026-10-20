@@ -115,3 +115,53 @@ This setting is separate from Turborepo's #192 CI task selection. See
 Approved order: #189 → #164 → #190 → #191 → #192, with each branch starting from
 fresh main after the preceding issue merges. #191 incorporates and moves #164's
 files. Follow the owner's merges-only policy; no rebases.
+
+## Step 2: package exports and consumer imports
+
+`@dfs-ev/domain` is now a private source workspace with no runtime dependencies.
+The root export supplies the `EVScore` and `PlayerPropDirection` leaf types;
+`/empirical`, `/baseline`, `/devig`, `/consensus-devig` and `/ev` expose the
+existing calculations. Source internals are not exported. Web and pipeline
+declare the domain dependency and use those exports. Web type consumers import
+directly from domain, with no old type definitions or compatibility re-exports.
+
+The pipeline manifest intentionally declares only the domain edge here. Root
+runtime/tooling declarations continue supporting its existing jobs until #191
+assigns the complete pipeline dependency graph. This is the approved bounded
+transition, not a claim that pipeline can already install independently.
+
+Run from the repository root on Node 24:
+
+~~~sh
+npm run typecheck --workspace @dfs-ev/domain
+node node_modules/vitest/vitest.mjs run --config vitest.config.ts packages/domain/src
+node node_modules/vitest/vitest.mjs run --config vitest.node.config.ts packages/domain/tests/projection services/pipeline/tests/feature-store/domainPackage.test.ts
+npm run projection:demo
+~~~
+
+The standalone domain typecheck uses NodeNext resolution, ES2022 libraries and
+`types: []`, so app/Node ambient types cannot hide a source dependency. Explicit
+`.ts` imports support native Node ESM. The existing math tests now exercise public
+package imports; the pure-kernel parser check remains in place. A pipeline-owned
+regression also starts native Node 24 with a clean child environment, checks the
+real workspace source path, exercises each runtime export, rejects a private
+subpath, loads the adapter and verifies invalid input performs zero SQL queries.
+
+The [step-2 receipt](evidence/domain-189/step-2-extraction.json) records 132
+focused passing cases and 10 CI/layout cases, root/domain typechecks and lint.
+The original empirical kernel, strict fitter, evaluator and devig are byte
+identical. EV and consensus changes are import-only; the synthetic projection
+demo output is byte identical. All 34 frozen artifacts retain their hashes.
+Code-hash inventories now include the workspace manifests and kernel inputs.
+
+A fresh tracked-source export with the actual extraction installed only web
+(378 packages; root-only pg, ESLint and Firebase CLI absent) and built all 16
+static pages successfully, without `transpilePackages`. Both domain typecheck
+and the existing CI/layout checks pass there too. No installed dependency
+versions changed. The initial new subprocess typecheck failure and its explicit
+`NODE_ENV=test` correction are retained in the receipt.
+
+The lint boundary and strengthened version probes are step 3. The full combined
+gate, including both PostgreSQL suites, is step 4. Hosted Preview/source inclusion
+and domain-only deployment selection remain pending; no push or deployment has
+been performed at this checkpoint.

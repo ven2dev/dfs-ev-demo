@@ -1,10 +1,8 @@
 "use client";
 
+import type { PlayerPropDirection } from "@dfs-ev/domain";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import {
-  PLAYER_PROP_MARKETS,
-  type PlayerPropDirection,
-} from "@/lib/playerPropMarkets";
+import { PLAYER_PROP_MARKETS } from "@/lib/playerPropMarkets";
 import { getAllBookmakerKeys } from "@/lib/discoveredProps";
 import { isOddsDataSource, type OddsDataSource } from "@/lib/oddsDataSource";
 import { PlayerPropsCard } from "@/components/PlayerPropsCard";

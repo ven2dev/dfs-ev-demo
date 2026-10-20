@@ -4,7 +4,7 @@
 // migration); this file owns turning that raw bookmaker/market shape
 // into the player-grouped view the discovery UI actually wants.
 import type { EventOddsResponse } from "./oddsApi";
-import type { PlayerPropDirection } from "./playerPropMarkets";
+import type { PlayerPropDirection } from "@dfs-ev/domain";
 
 export type DiscoveredLine = {
   bookmakerKey: string;

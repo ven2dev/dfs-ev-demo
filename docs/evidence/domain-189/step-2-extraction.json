@@ -1,0 +1,297 @@
+{
+  "formatVersion": 1,
+  "issue": 189,
+  "step": 2,
+  "recordedAt": "2026-10-20T03:02:56.497271+00:00",
+  "baseCommit": "bc5129318c2b1e28bc44c4f11b8d302828a1ec7e",
+  "branch": "feature/dfsEV-189-domain-package",
+  "boundary": {
+    "implementation": "actual worktree extraction, independently copied into a fresh tracked-source export for isolated web build",
+    "installation": "root npm ci for focused checks; separate clean npm ci --workspace @dfs-ev/web with no preceding root install",
+    "environment": "allowlisted noncredential environment; fixture build; no app dotenv files",
+    "database": "none; combined PostgreSQL checkpoint remains step 4",
+    "network": "package installation and configured Google Fonts only; no hosted database or provider calls"
+  },
+  "runtime": {
+    "node": "v24.18.1",
+    "next": "16.4.2",
+    "npm": "11.16.0"
+  },
+  "implementationHashes": {
+    "apps/web/package.json": "39038b42a4f17b5e04aab37eda36a76166cf1ba113ec563bb0dc28542bbddce0",
+    "apps/web/src/app/api/stream/route.ts": "03ecc377b0a6549da6f6747667fe23a16e6156e9a5f823a1ad058c38cdef087c",
+    "apps/web/src/components/PlayerPropsCard.tsx": "08d6229c82b92d3cb998a9c0a3e01a7369435c675195dcb1a12595372177f96d",
+    "apps/web/src/components/SlateBrowser.tsx": "854d71871d0a63a38c50e118517847896ca5ec5093728aeb33fe98339ca3c519",
+    "apps/web/src/lib/discoveredProps.ts": "e8f64131265a3fcfed91e5a6e6b2863ce704fdfc2662b680a6b846a78bf808d3",
+    "apps/web/src/lib/historicalOddsQuery.ts": "9dc4cf6368ec1ba6f8d4cae1762f35ef6f73ec04af93b30c995ff5a4b1fcd32e",
+    "apps/web/src/lib/playerPropMarkets.ts": "d4d9eec96a64d4fbecd25d1d48f7eb7686d7e12cf4c0f18c1cad249be93e3a0f",
+    "apps/web/src/types/index.ts": "9c5f4cc0293e0b3f343a34874db7fb7e0deb8ddf279a9dcba9bf3e54bbf7bc96",
+    "package-lock.json": "76b11cf6b543cc6d084f3c86ac9ab9a5610dcae6dbd09d6260dfe639de8d62a9",
+    "packages/domain/package.json": "e270a4eb69e7a6ced3d7b595bb7e95a9e1b857db3200876fa88e9c4f33e0575c",
+    "packages/domain/src/computeEV.test.ts": "557f231e07f94b7fb4b7ca041defb7c9a84df6eed0f9f5feac1487208be9aa50",
+    "packages/domain/src/computeEV.ts": "9b11a169649715865a4fae23b1c1fd5a0a9842bd65be9c65e0cb531ab719a14e",
+    "packages/domain/src/consensusDevig.test.ts": "4cf9b8a105832817babcfbe28bdfa0c356bbd24a93a9c4419bcb8ba24d16e928",
+    "packages/domain/src/consensusDevig.ts": "99558fd757022167357d7cc8c589e889183ceaeb72c42ef8425bd0d626ef7aa6",
+    "packages/domain/src/contracts.ts": "a1db956c5404cd2276d4bcd7256e54e8d4cc94e68e51e264f9c4814e45f988dd",
+    "packages/domain/src/devig.test.ts": "0f3d22247d6957cfe77b8f475b6a3b2f5fb175c727a4ae4d104d9dd8dc5f7b73",
+    "packages/domain/src/projection/report.ts": "39fd702d0ceb1ec26818b001751699787c8e6a499d839b33181dc7332382c4d2",
+    "packages/domain/tests/projection/baseline.test.ts": "af0fa688e3b50a62268dc7a6618ffd609a677b842761884984b66b03d1eef210",
+    "packages/domain/tests/projection/empirical.test.ts": "fc14734d5e9a379ff011a0d8a0e1160fc7d3fc5a46bb1dcfd715943a7351e6cd",
+    "packages/domain/tsconfig.json": "fc55ad16a1fc62dd338a756dbde651df81602a0d51798c818053e04a2c0417ea",
+    "services/pipeline/package.json": "49b750026343da9cfffdc0d2aa6558a2cf0c97878b847586501792f6bfdf694e",
+    "services/pipeline/scripts/feature-store/empirical-prototype.ts": "ab2ca0df6ca1cdaf668c776e173a7f2a6f2d9c178af80003b7e0dc29024a4f37",
+    "services/pipeline/scripts/feature-store/empirical-spike.ts": "9c31b0838135467734deb7591c6de6166f1fdd689734402c43401040b6e56ebf",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "086863c08215e74282e0665bc20affc0ddc6cc21c7b599e92025b5867e51e98f",
+    "services/pipeline/tests/feature-store/domainPackage.test.ts": "6f9829556c3c635e3ea37a201f05d7e52b7584623722a2883881fd210bbdd785",
+    "services/pipeline/tests/feature-store/empirical-adapter.check.mts": "2a3ffb1ab3550284766c090e3ebf635bf8be9cef1cb60c96dcd250e56f9b16a9"
+  },
+  "api": {
+    "package": "@dfs-ev/domain",
+    "exports": [
+      ".",
+      "./empirical",
+      "./baseline",
+      "./devig",
+      "./consensus-devig",
+      "./ev"
+    ],
+    "leafTypes": [
+      "EVScore",
+      "PlayerPropDirection"
+    ],
+    "webCompatibilityReexports": 0,
+    "domainRuntimeDependencies": [],
+    "pipelineManifest": "minimal domain dependency only; full runtime ownership remains #191"
+  },
+  "focusedChecks": [
+    {
+      "stage": "domain-types",
+      "command": [
+        "npm",
+        "run",
+        "typecheck",
+        "--workspace",
+        "@dfs-ev/domain"
+      ],
+      "exitCode": 0,
+      "seconds": 1.427,
+      "logSha256": "9aa479d7f5f06057c08995bb34cb364a4a0078b43442d3fa60a484bfb22550c9"
+    },
+    {
+      "stage": "types",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "exitCode": 0,
+      "seconds": 2.509,
+      "logSha256": "99692f5da0a9684baf6c6a200a96eef646840fc3745fa37da10bf2199c74e3ed"
+    },
+    {
+      "stage": "lint",
+      "command": [
+        "npm",
+        "run",
+        "lint"
+      ],
+      "exitCode": 0,
+      "seconds": 5.428,
+      "logSha256": "b7aa93b961bf11814b8023fd7dd6e8504cb62e568a56f6af0afa43c7a2f0b701"
+    },
+    {
+      "stage": "math",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "vitest.config.ts",
+        "packages/domain/src"
+      ],
+      "exitCode": 0,
+      "seconds": 2.013,
+      "logSha256": "cd3bd69523ed93d8184ffc0d788bceb9e18e1f53825d4031b31cc86935cfe68a"
+    },
+    {
+      "stage": "projection",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "vitest.node.config.ts",
+        "packages/domain/tests/projection",
+        "services/pipeline/tests/feature-store/domainPackage.test.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.76,
+      "logSha256": "ebde4c42aa826d198716a4b3d0939d2fe5d280e87da5972197d056b721a77cdc"
+    },
+    {
+      "stage": "web",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "vitest.config.ts",
+        "apps/web/src/app/api/stream/route.test.ts",
+        "apps/web/src/components/PlayerPropsCard.test.tsx",
+        "apps/web/src/components/SlateBrowser.test.tsx",
+        "apps/web/src/lib/discoveredProps.test.ts",
+        "apps/web/src/lib/historicalOddsQuery.test.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 1.995,
+      "logSha256": "2ddce9df95fa143d8f57e7987dfe823d1c9ca05930fdcd01cfb95a46baa3f622"
+    },
+    {
+      "stage": "stream",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "vitest.node.config.ts",
+        "apps/web/src/lib/streamRoute.server.test.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.719,
+      "logSha256": "92b83716fd7baec51eeebec17d44b38ca05098a1f26cc5618a37e7d0fca09fa0"
+    },
+    {
+      "stage": "layout",
+      "command": [
+        "npm",
+        "run",
+        "test:ci-gate"
+      ],
+      "exitCode": 0,
+      "seconds": 2.147,
+      "logSha256": "58d42cf21ec332a6fd038a9fcde0900028e00500e45855be4dcd1b1c147ef954"
+    }
+  ],
+  "focusedTestCounts": {
+    "devigConsensusEv": 17,
+    "strictFitterKernelAndNativeConsumer": 35,
+    "webConsumers": 60,
+    "streamRoute": 20,
+    "total": 132,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "followupLint": {
+    "files": [
+      "services/pipeline/tests/feature-store/domainPackage.test.ts",
+      "apps/web/src/components/SlateBrowser.tsx"
+    ],
+    "verdict": "pass"
+  },
+  "isolatedWebChecks": [
+    {
+      "stage": "install",
+      "command": [
+        "npm",
+        "ci",
+        "--workspace",
+        "@dfs-ev/web",
+        "--no-audit",
+        "--no-fund"
+      ],
+      "exitCode": 0,
+      "seconds": 4.595,
+      "logSha256": "cd8582b70288de44471c01da36942e2506cddaaad334e4aaeeda791e2b14d0b8"
+    },
+    {
+      "stage": "gate",
+      "command": [
+        "npm",
+        "run",
+        "test:ci-gate"
+      ],
+      "exitCode": 0,
+      "seconds": 1.598,
+      "logSha256": "77e5978d2122d1771d4f502102985a3e45dc89902314fba2bcb9f46b0983e67f"
+    },
+    {
+      "stage": "build",
+      "command": [
+        "npm",
+        "run",
+        "build",
+        "--workspace",
+        "@dfs-ev/web"
+      ],
+      "exitCode": 0,
+      "seconds": 6.498,
+      "logSha256": "0f3a54f17fed473a0244fd4625806e9e26e33cd9df2608cbfb3f43573dd9e9e4"
+    }
+  ],
+  "isolatedWebResult": {
+    "packagesAdded": 378,
+    "rootOnlyToolsAbsent": [
+      "pg",
+      "eslint",
+      "firebase-tools"
+    ],
+    "transpilePackages": "not configured or needed",
+    "staticPages": 16,
+    "verdict": "pass"
+  },
+  "sourceParity": {
+    "byteIdentical": {
+      "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+      "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+      "packages/domain/src/projection/evaluation.ts": "7fa42bc43cfd36f4366bab60c07c6c6756434833ee478b10ba90de3dcfc3e643",
+      "packages/domain/src/devig.ts": "050bd24371773adc4052a1fb18860124bbd4686330d2b606e6cee74c84017b8e"
+    },
+    "computeEvAndConsensusChanges": "import declarations only",
+    "reportChange": "type-only import gains explicit .ts extension for NodeNext checking",
+    "syntheticProjectionDemoSha256": "be499be204e9dbf33f5ae0786c5e30f70982cf781649a8b4da9cf4dc02a5a494",
+    "verdict": "pass"
+  },
+  "lockfile": {
+    "changedPackageEntries": [
+      "apps/web",
+      "node_modules/@dfs-ev/domain",
+      "node_modules/@dfs-ev/pipeline",
+      "packages/domain",
+      "services/pipeline"
+    ],
+    "existingInstalledPackageEntriesChanged": 0,
+    "verdict": "pass"
+  },
+  "frozenFiles": {
+    "reference": "docs/evidence/monorepo-148/baseline.json",
+    "unchanged": 34,
+    "verdict": "pass"
+  },
+  "correctedAttempts": [
+    {
+      "stage": "types",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "exitCode": 2,
+      "seconds": 4.803,
+      "logSha256": "5aa32fa628776e4fdc11e55cf24f51893382d0f1fc3c28a2abdd5f4fb2205b28",
+      "summary": "New native subprocess test env omitted NODE_ENV, required by Next global ProcessEnv types.",
+      "fix": "Explicit NODE_ENV=test in the credential-free child env; root typecheck and native consumer test rechecked."
+    }
+  ],
+  "pending": [
+    "Step 3 import restrictions, reverse-direction negative probes and strengthened version checks",
+    "Step 4 full combined checks including both PostgreSQL suites",
+    "Owner independent review and approved push; real Vercel Preview before merge",
+    "Complete declared graph and domain-only deployment proof before enabling Skip deployments"
+  ],
+  "fullDiagnostics": {
+    "focusedChecks": "/private/tmp/dfs189-step2-checks",
+    "isolatedBuild": "/private/tmp/dfs189-clean-web-h4pa2t11",
+    "policy": "full logs off git; compact receipts only"
+  },
+  "verdict": "pass for extraction and focused/isolated-build checkpoint; remaining issue gates pending"
+}

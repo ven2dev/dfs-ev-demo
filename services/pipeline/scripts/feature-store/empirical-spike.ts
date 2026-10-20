@@ -27,7 +27,8 @@ const sql = { authorize: await readFile(new URL("packages/db/proposals/163_empir
   history: await readFile(new URL("packages/db/proposals/163_empirical_history.sql", root), "utf8") };
 const files = ["packages/db/proposals/163_effective_rights.sql","packages/db/proposals/163_empirical_reader.sql", "packages/db/proposals/163_empirical_authorize.sql", "packages/db/proposals/163_empirical_history.sql",
   "services/pipeline/src/featureStore/empiricalAdapter.ts", "services/pipeline/scripts/feature-store/empirical-startup.ts", "services/pipeline/scripts/feature-store/empirical-spike.ts",
-  "services/pipeline/scripts/feature-store/harness.ts", "packages/domain/src/projection/empirical.ts", "packages/domain/src/projection/baseline.ts",
+  "services/pipeline/scripts/feature-store/harness.ts", "packages/domain/package.json", "services/pipeline/package.json",
+  "packages/domain/src/projection/empirical.ts", "packages/domain/src/projection/baseline.ts",
   "services/pipeline/src/featureStore/derived.ts", "services/pipeline/src/featureStore/ingest.ts", "services/pipeline/src/featureStore/normalize.ts", "services/pipeline/src/featureStore/source.ts",
   "packages/db/proposals/138_feature_store.sql", "packages/db/proposals/138_dataset_governance.sql", "package-lock.json"];
 const codeHashes = Object.fromEntries(await Promise.all(files.map(async path => [path, sha256(await readFile(new URL(path, root)))])));

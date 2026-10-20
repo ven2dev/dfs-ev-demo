@@ -4,7 +4,7 @@ import {
   CONSENSUS_DEVIG_METHOD,
   CONSENSUS_DEVIG_VERSION,
   consensusDevigAtLine,
-} from "./consensusDevig";
+} from "@dfs-ev/domain/consensus-devig";
 
 type LineOverrides = Partial<{
   bookmakerKey: string;

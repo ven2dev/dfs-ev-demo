@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fitBaseline, probabilityAt, priceSide, MARKETS, type Input, type Observation } from "../../src/projection/baseline";
+import { fitBaseline, probabilityAt, priceSide, MARKETS, type Input, type Observation } from "@dfs-ev/domain/baseline";
 import { serializeReport } from "../../src/projection/report";
 import { evaluate, score } from "../../src/projection/evaluation";
 const row = (value: number, index: number): Observation => ({ id: `r${index}`, eventId: `e${index}`, eventTime: `2026-09-0${index + 1}T00:00:00Z`, featureAvailableAt: "2026-09-10T00:00:00Z", identityAvailableAt: "2026-09-10T00:00:00Z", labelAvailableAt: "2026-09-10T00:00:00Z", featureVersion: "f1", labelVersion: "l1", value, participation: "offensive" });

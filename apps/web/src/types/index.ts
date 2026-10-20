@@ -1,16 +1,10 @@
-import type { PlayerPropDirection } from "@/lib/playerPropMarkets";
+import type { EVScore, PlayerPropDirection } from "@dfs-ev/domain";
 
 import type { OddsDataSource } from "@/lib/oddsDataSource";
 
 export type ConnectionStatus = "connecting" | "live" | "stale" | "disconnected";
 
 export type AuthStatus = "loading" | "signed-in" | "signed-out" | "unavailable";
-
-export type EVScore = {
-  modelProb: number;
-  impliedProb: number;
-  edge: number;
-};
 
 export type EVHistoryEntry = {
   timestamp: number;

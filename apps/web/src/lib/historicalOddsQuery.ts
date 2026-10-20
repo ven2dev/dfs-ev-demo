@@ -1,4 +1,4 @@
-import { consensusDevigAtLine, type ConsensusDevigResult } from "../../../../packages/domain/src/consensusDevig";
+import { consensusDevigAtLine, type ConsensusDevigResult } from "@dfs-ev/domain/consensus-devig";
 import type { OddsObservationSource } from "./oddsSnapshotRepo";
 import type { SnapshotMarketStatus } from "./oddsSnapshot";
 

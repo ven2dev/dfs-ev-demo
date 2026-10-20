@@ -12,6 +12,7 @@
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-dfs-ev-preview-rules \"node tests/firestoreRules.mjs\""
   },
   "dependencies": {
+    "@dfs-ev/domain": "0.1.0",
     "@neondatabase/serverless": "1.2.0",
     "csv-parse": "7.0.3",
     "firebase": "13.0.0",
