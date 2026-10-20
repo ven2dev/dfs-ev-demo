@@ -1,0 +1,474 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 3,
+  "recordedAt": "2026-10-20T20:26:55.572Z",
+  "code": {
+    "gitSha": "2d6927a54f9c1a0269e1faad04d90619cbf1f128",
+    "contentSha256": "045b51669ef9743cdc781bffe917cdf7b23a283a4e35035ff18c6b226dcb0b6e"
+  },
+  "codeHashes": {
+    "package-lock.json": "76b11cf6b543cc6d084f3c86ac9ab9a5610dcae6dbd09d6260dfe639de8d62a9",
+    "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "packages/domain/package.json": "1981ff8b9d068c2150ec8abe14401d0f01ee682408a2c35042cd9255b0f70f4c",
+    "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "packages/domain/src/projection/evaluation.ts": "7fa42bc43cfd36f4366bab60c07c6c6756434833ee478b10ba90de3dcfc3e643",
+    "packages/domain/src/projection/qb-evaluation.ts": "230f6d4a5774ede04b43dcb178845a3b1ab0a7b8a4ed8a01fd662e6ac874d654",
+    "services/pipeline/package.json": "49b750026343da9cfffdc0d2aa6558a2cf0c97878b847586501792f6bfdf694e",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "337c7254299a2c354b8f5992fa0efefa4222b0bfb2345615bf420954e0555564",
+    "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts": "9668b4ff3c7fde1a3de7f18c3ac96a7dbebe0f7e23e769debb92be2a78f3dbcf",
+    "services/pipeline/scripts/feature-store/evaluation-run.ts": "2042463914c76d33d2c4a426637e0091251e523e93a4ddb5ec3b3f0f5b9754eb",
+    "services/pipeline/scripts/feature-store/harness.ts": "ebd86bfff3a5556887593a7ab83e24a98507ce2051e7a6b6a120a60a9b34743d",
+    "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+    "services/pipeline/src/featureStore/datasets.ts": "33d71b86b80f38b8129a9738483eb85415b3e52a275005ac9b5a29953748bde3",
+    "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "086863c08215e74282e0665bc20affc0ddc6cc21c7b599e92025b5867e51e98f",
+    "services/pipeline/src/featureStore/governance.ts": "5e3b72fdf6583dc2c920ba5a60d8cc2b07346db917365304dca4f4e00ad9da2b",
+    "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+    "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "services/pipeline/src/featureStore/objectStore.ts": "d6a9f26c2fd8f54eef161ce5e8dcf8c127a284e90bc6a0e6051355ffc6e737e9",
+    "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7"
+  },
+  "storageRoot": "/private/tmp/dfs164-scored-oRfycU",
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin"
+  },
+  "verdict": "step-3-warm-pass",
+  "targetMs": 7000,
+  "deadlineMs": 10000,
+  "boundary": "report execution: pinned inputs, three restricted SQL queries, three object reads, scoring, serialization, private report write, final rights/status recheck; excludes fixture reconstruction and connection setup",
+  "cacheState": "three alternating rounds per evidence mode; existing restricted connection; OS/database/file caches unflushed; no scored-result reuse",
+  "limitation": "warm-path checkpoint only; repeated fresh-connection cold trials and integrated suites remain step 4; local timings omit Vercel boot and Neon wake",
+  "deliveryLimit": "a revocation after the final SQL snapshot and before bytes leave the process cannot be prevented; archived reports require fresh authorization before later delivery",
+  "trials": [
+    {
+      "round": 1,
+      "mode": "retrospective-reconstruction-v1",
+      "elapsedMs": 484.9597500000091,
+      "calculation": 335.0294169999979,
+      "serialization": 62.784333000003244,
+      "objectWrite": 27.515666999999667,
+      "logicalSha256": "e8bf09a84fda43f2c19fc28e5a7c78be430ec74eadec660a80270590bc532dfa",
+      "artifact": {
+        "objectKey": "audits/c503e6223a4dc56368065742670039fe0345b44d913e4741a5b45d30c16f3496",
+        "sha256": "c503e6223a4dc56368065742670039fe0345b44d913e4741a5b45d30c16f3496",
+        "byteSize": 9290036
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:04.659074+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:05.140698+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    },
+    {
+      "round": 1,
+      "mode": "strict-point-in-time-v1",
+      "elapsedMs": 920.9262089999975,
+      "calculation": 746.7206250000017,
+      "serialization": 2.751416999992216,
+      "objectWrite": 8.42333299999882,
+      "logicalSha256": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e",
+      "artifact": {
+        "objectKey": "audits/b431190f9aaf651723257b5739db320f811e528841c800f4f92ed03cef175c8f",
+        "sha256": "b431190f9aaf651723257b5739db320f811e528841c800f4f92ed03cef175c8f",
+        "byteSize": 306544
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:05.145569+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:06.061425+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    },
+    {
+      "round": 2,
+      "mode": "retrospective-reconstruction-v1",
+      "elapsedMs": 502.3235410000052,
+      "calculation": 306.4905839999992,
+      "serialization": 59.84766600000148,
+      "objectWrite": 30.7664589999913,
+      "logicalSha256": "e8bf09a84fda43f2c19fc28e5a7c78be430ec74eadec660a80270590bc532dfa",
+      "artifact": {
+        "objectKey": "audits/c503e6223a4dc56368065742670039fe0345b44d913e4741a5b45d30c16f3496",
+        "sha256": "c503e6223a4dc56368065742670039fe0345b44d913e4741a5b45d30c16f3496",
+        "byteSize": 9290036
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:06.067452+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:06.56393+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    },
+    {
+      "round": 2,
+      "mode": "strict-point-in-time-v1",
+      "elapsedMs": 927.0829159999994,
+      "calculation": 735.4971249999944,
+      "serialization": 2.905292000010377,
+      "objectWrite": 8.590958000000683,
+      "logicalSha256": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e",
+      "artifact": {
+        "objectKey": "audits/b431190f9aaf651723257b5739db320f811e528841c800f4f92ed03cef175c8f",
+        "sha256": "b431190f9aaf651723257b5739db320f811e528841c800f4f92ed03cef175c8f",
+        "byteSize": 306544
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:06.569268+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:07.491135+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    },
+    {
+      "round": 3,
+      "mode": "retrospective-reconstruction-v1",
+      "elapsedMs": 503.526915999988,
+      "calculation": 303.6564170000056,
+      "serialization": 58.149208000002545,
+      "objectWrite": 37.23404199999641,
+      "logicalSha256": "e8bf09a84fda43f2c19fc28e5a7c78be430ec74eadec660a80270590bc532dfa",
+      "artifact": {
+        "objectKey": "audits/c503e6223a4dc56368065742670039fe0345b44d913e4741a5b45d30c16f3496",
+        "sha256": "c503e6223a4dc56368065742670039fe0345b44d913e4741a5b45d30c16f3496",
+        "byteSize": 9290036
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:07.496654+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:07.994925+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    },
+    {
+      "round": 3,
+      "mode": "strict-point-in-time-v1",
+      "elapsedMs": 879.6897079999908,
+      "calculation": 733.8380000000034,
+      "serialization": 2.694791999994777,
+      "objectWrite": 10.400957999998354,
+      "logicalSha256": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e",
+      "artifact": {
+        "objectKey": "audits/b431190f9aaf651723257b5739db320f811e528841c800f4f92ed03cef175c8f",
+        "sha256": "b431190f9aaf651723257b5739db320f811e528841c800f4f92ed03cef175c8f",
+        "byteSize": 306544
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:08.001293+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-20 20:28:08.874897+00",
+        "decisions": 16,
+        "decisionsSha256": "9daa09df4318bf0aa0e9e792ea8637454c40d342cf73cd5c389aec361e07579a"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    }
+  ],
+  "reports": [
+    {
+      "artifact": {
+        "objectKey": "audits/c503e6223a4dc56368065742670039fe0345b44d913e4741a5b45d30c16f3496",
+        "sha256": "c503e6223a4dc56368065742670039fe0345b44d913e4741a5b45d30c16f3496",
+        "byteSize": 9290036
+      },
+      "logicalSha256": "e8bf09a84fda43f2c19fc28e5a7c78be430ec74eadec660a80270590bc532dfa",
+      "evidenceMode": "retrospective-reconstruction-v1",
+      "designation": "uncalibrated-interim-hit-rate",
+      "historicalAvailability": "unverified",
+      "folds": 2504,
+      "cases": 12520,
+      "warmup": {
+        "candidates": 1916,
+        "availableForecasts": 780,
+        "usableLabels": 655,
+        "scoredFolds": 0,
+        "excludedFolds": 1916,
+        "missingFeatures": 1136,
+        "missingLabels": 1261,
+        "distinctPlayers": 124,
+        "distinctGames": 272,
+        "exclusions": {
+          "warm-up-only": 1916
+        },
+        "policyExclusionReasons": {},
+        "reasons": {
+          "feature:insufficient-history": 1136,
+          "label:positive-offense-participation-missing": 1222,
+          "label:stats-missing": 1261
+        },
+        "flagCounts": {
+          "historical-availability-unverified": 1916
+        },
+        "historyGaps": {
+          "candidates": 1423,
+          "records": 9738,
+          "reasons": {
+            "positive-offense-participation-missing": 9466,
+            "stats-missing": 9738
+          }
+        },
+        "zeroOpportunity": {
+          "zeroAttemptGames": 41,
+          "unknownAttemptStatus": 1261
+        }
+      },
+      "walkForward": {
+        "independentFolds": false,
+        "historyReferences": 34166,
+        "uniqueHistoryPlayerGames": 3092,
+        "historyPlayerGamesReusedAcrossFolds": 2949,
+        "foldsWithPriorEvaluationReuse": 2387,
+        "priorEvaluationHistoryReferences": 27758
+      },
+      "marketComparison": {
+        "status": "unavailable",
+        "reason": "no-genuine-captured-market-lines",
+        "count": 0
+      }
+    },
+    {
+      "artifact": {
+        "objectKey": "audits/b431190f9aaf651723257b5739db320f811e528841c800f4f92ed03cef175c8f",
+        "sha256": "b431190f9aaf651723257b5739db320f811e528841c800f4f92ed03cef175c8f",
+        "byteSize": 306544
+      },
+      "logicalSha256": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e",
+      "evidenceMode": "strict-point-in-time-v1",
+      "designation": "uncalibrated-interim-hit-rate",
+      "historicalAvailability": "snapshot-qualified",
+      "folds": 0,
+      "cases": 0,
+      "warmup": {
+        "candidates": 1916,
+        "availableForecasts": 0,
+        "usableLabels": 655,
+        "scoredFolds": 0,
+        "excludedFolds": 1916,
+        "missingFeatures": 1916,
+        "missingLabels": 1261,
+        "distinctPlayers": 124,
+        "distinctGames": 272,
+        "exclusions": {
+          "warm-up-only": 1916
+        },
+        "policyExclusionReasons": {},
+        "reasons": {
+          "feature:insufficient-history": 1916,
+          "feature:target-identity-missing": 1916,
+          "feature:target-schedule-missing": 1916,
+          "label:positive-offense-participation-missing": 1222,
+          "label:stats-missing": 1261
+        },
+        "flagCounts": {},
+        "historyGaps": {
+          "candidates": 1792,
+          "records": 14971,
+          "reasons": {
+            "completion-unavailable": 14971,
+            "identity-missing": 14971,
+            "positive-offense-participation-missing": 14971,
+            "schedule-missing": 14971,
+            "stats-missing": 14971
+          }
+        },
+        "zeroOpportunity": {
+          "zeroAttemptGames": 41,
+          "unknownAttemptStatus": 1261
+        }
+      },
+      "walkForward": {
+        "independentFolds": false,
+        "historyReferences": 0,
+        "uniqueHistoryPlayerGames": 0,
+        "historyPlayerGamesReusedAcrossFolds": 0,
+        "foldsWithPriorEvaluationReuse": 0,
+        "priorEvaluationHistoryReferences": 0
+      },
+      "marketComparison": {
+        "status": "unavailable",
+        "reason": "no-genuine-captured-market-lines",
+        "count": 0
+      }
+    }
+  ],
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "inputPinsArtifact": {
+    "objectKey": "audits/8217d0b47de034fb7ad70f4a1bd03f55aa2399782bd385424f58b2779f22673e",
+    "sha256": "8217d0b47de034fb7ad70f4a1bd03f55aa2399782bd385424f58b2779f22673e",
+    "byteSize": 36910
+  },
+  "preregistration": {
+    "commit": "6aa7953dfd0df0c9bf879c2be64e94eaa2c55a3f",
+    "path": "docs/feature-store-spike-preregistration.md",
+    "sha256": "dc6bf2e044bcbdd6de4b1d6f91db9c623f630ad1eaf7bf1b8abdfe1f3c05c97d",
+    "approved": true
+  },
+  "versions": {
+    "model": "empirical-integer-v1",
+    "adapter": {
+      "id": "qb-passing-yards-materialized",
+      "version": "empirical-feature-adapter-v1"
+    },
+    "feature": "qb-passing-yards-feature-v1",
+    "label": "qb-passing-yards-label-v1",
+    "history": "prior-eligible-reg-max16-min2-cutoff1h-v1"
+  },
+  "populationDiagnostics": [
+    {
+      "season": 2021,
+      "observedQbStats": 655,
+      "statsWithoutMatchingRoster": 0,
+      "rosterRowsWithoutScheduledGame": 0,
+      "zeroAttempts": 41,
+      "unknownAttempts": 0
+    },
+    {
+      "season": 2022,
+      "observedQbStats": 633,
+      "statsWithoutMatchingRoster": 0,
+      "rosterRowsWithoutScheduledGame": 6,
+      "zeroAttempts": 16,
+      "unknownAttempts": 0
+    },
+    {
+      "season": 2023,
+      "observedQbStats": 663,
+      "statsWithoutMatchingRoster": 0,
+      "rosterRowsWithoutScheduledGame": 0,
+      "zeroAttempts": 30,
+      "unknownAttempts": 0
+    },
+    {
+      "season": 2024,
+      "observedQbStats": 664,
+      "statsWithoutMatchingRoster": 0,
+      "rosterRowsWithoutScheduledGame": 0,
+      "zeroAttempts": 33,
+      "unknownAttempts": 0
+    },
+    {
+      "season": 2025,
+      "observedQbStats": 664,
+      "statsWithoutMatchingRoster": 0,
+      "rosterRowsWithoutScheduledGame": 0,
+      "zeroAttempts": 36,
+      "unknownAttempts": 0
+    }
+  ],
+  "cohorts": [
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "fileSha256": "d5563d70720fed1e46504a150cfcc0b107aafb5d3a419c381c52b50aa545ef5c",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+      "count": 2504
+    },
+    {
+      "mode": "strict-point-in-time-v1",
+      "fileSha256": "9ec8e68f82a4beddec6649142ef80fdeef43792c9d23870eb0616d7fa7f9a8e0",
+      "contentSha256": "7858bc13cfd59085549e3c61fc1d42685f5a9134114316bbb623e79aaff43caf",
+      "count": 0
+    }
+  ],
+  "peakRssBytes": 980664320,
+  "fullReceipt": {
+    "objectKey": "audits/6a26dcc3588128543a1b61679b164a5e2fcaf772af5ff46557e93300dcac26d4",
+    "sha256": "6a26dcc3588128543a1b61679b164a5e2fcaf772af5ff46557e93300dcac26d4",
+    "byteSize": 135328
+  }
+}

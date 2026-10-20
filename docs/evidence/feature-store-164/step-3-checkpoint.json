@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 3,
+  "baseCommit": "2d6927a54f9c1a0269e1faad04d90619cbf1f128",
+  "codeHashes": {
+    "services/pipeline/src/featureStore/datasets.ts": "33d71b86b80f38b8129a9738483eb85415b3e52a275005ac9b5a29953748bde3",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "337c7254299a2c354b8f5992fa0efefa4222b0bfb2345615bf420954e0555564",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts": "9668b4ff3c7fde1a3de7f18c3ac96a7dbebe0f7e23e769debb92be2a78f3dbcf",
+    "services/pipeline/scripts/feature-store/evaluation-run.ts": "2042463914c76d33d2c4a426637e0091251e523e93a4ddb5ec3b3f0f5b9754eb",
+    "services/pipeline/tests/feature-store/datasets.check.mts": "58f13874cc140a0274c99ff604e8188b0e3d8bbc6980cc4a04c53e96d276b1a8"
+  },
+  "evidence": {
+    "step-3-evaluation.json": {
+      "sha256": "93118484f6cd3763e92a1515ebe92c63f48c1327dd099ce27ea6c858aacfc428",
+      "byteSize": 18713,
+      "lines": 474
+    },
+    "step-3-score-summary.json": {
+      "sha256": "c46d4a715d041f4ac9a46cd08ebf7341f5da836dbe8d75952b144ca89d4a089b",
+      "byteSize": 21028,
+      "lines": 56
+    }
+  },
+  "checks": [
+    {
+      "command": "node --test services/pipeline/tests/feature-store/datasets.check.mts",
+      "passed": 17,
+      "skipped": 0,
+      "cancelled": 0,
+      "verdict": "pass"
+    },
+    {
+      "command": "npx vitest run --config vitest.node.config.ts packages/domain/tests/projection",
+      "passed": 56,
+      "files": 3,
+      "skipped": 0,
+      "cancelled": 0,
+      "verdict": "pass"
+    },
+    {
+      "command": "npm run typecheck",
+      "verdict": "pass"
+    },
+    {
+      "command": "npm run lint",
+      "boundaryProbesPassed": 7,
+      "verdict": "pass"
+    },
+    {
+      "command": "npm run test:ci-gate",
+      "passed": 12,
+      "verdict": "pass"
+    },
+    {
+      "check": "26 measured code hashes, input/preregistration pins, full report/file hashes, logical hashes, coverage partitions, calibration denominators, Brier conventions, infinity, event-time/history policy and measured work counts",
+      "verdict": "pass"
+    },
+    {
+      "check": "standard disposable PostgreSQL data tmpfs is 512 MiB; scratch database query empty after cleanup",
+      "verdict": "pass"
+    },
+    {
+      "check": "legacy strict fitter, empirical kernel and step-2 scoring code unchanged; frozen database artifacts unchanged",
+      "verdict": "pass"
+    }
+  ],
+  "targets": [
+    {
+      "target": "2504 logical examples and preregistered natural content hash",
+      "verdict": "pass"
+    },
+    {
+      "target": "chronological 2022\u20132025, 2021 warm-up only, player-aware identities and history reuse",
+      "verdict": "pass"
+    },
+    {
+      "target": "all registered metrics and season/sample strata, infinity and empty cells",
+      "verdict": "pass"
+    },
+    {
+      "target": "strict and retrospective separate; captured market comparison unavailable",
+      "verdict": "pass"
+    },
+    {
+      "target": "three SQL statements/two batched rights checks through report staging/delivery, no raw or per-example reads",
+      "verdict": "pass"
+    },
+    {
+      "target": "repeat logical hash per evidence mode",
+      "verdict": "pass"
+    },
+    {
+      "target": "completed report <=7000 ms against 10000 ms deadline",
+      "warm": "pass, six trials; 485\u2013927 ms",
+      "cold": "pending step 4",
+      "verdict": "pending-final-cold-warm-gate"
+    }
+  ],
+  "initialRun": {
+    "storageRoot": "/private/tmp/dfs164-scored-ch26bb",
+    "fullReceipt": {
+      "objectKey": "audits/34d9a428cb30d795739c7ae109c10c5cd3d6bf80feb4b520f3f6e2e641f02463",
+      "sha256": "34d9a428cb30d795739c7ae109c10c5cd3d6bf80feb4b520f3f6e2e641f02463",
+      "byteSize": 135158
+    },
+    "retrospectiveMs": [
+      507.259583,
+      523.022875,
+      489.603041
+    ],
+    "strictMs": [
+      891.625625,
+      885.384708,
+      891.331
+    ],
+    "verdict": "pass",
+    "logicalHashesMatchFinalRun": true,
+    "changeBeforeFinalRun": "compact rights receipt formatting and fixture-only unmatched-roster diagnostics; no scorer/model changes"
+  },
+  "remaining": [
+    "step 4 repeated cold/warm completed-report gate and percentiles",
+    "both full PostgreSQL suites and final review checkpoint"
+  ],
+  "verdict": "step-3-ready-for-owner-review"
+}

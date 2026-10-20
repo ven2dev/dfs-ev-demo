@@ -1,6 +1,7 @@
 # Preregistered QB baseline evaluation (#164)
 
-Status: step 2, scoring verified on synthetic cases; no real-data scoring yet.
+Status: step 3, registered real-cohort evaluation complete; cold-path and full
+integration checkpoint remain step 4.
 The [owner-approved roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/164#issuecomment-6296073750)
 sets a five-hour engineering cap. Each atomic commit and every push needs owner
 approval. This follows merged #189; database/pipeline extraction remains later work.
@@ -158,3 +159,87 @@ run. Reproduce the synthetic-only probe with Node 24:
 ```sh
 node services/pipeline/scripts/feature-store/evaluation-math-spike.ts
 ```
+
+
+## Step 3 checkpoint
+
+The [evaluation receipt](evidence/feature-store-164/step-3-evaluation.json)
+records the first registered evaluation of the pinned real cohort. Exact input
+pins (including the preregistration and an aggregate identity over 26
+runtime/setup code hashes) were written before scoring. Two independent fixture rebuilds retained the same
+natural cohort hash and logical report hashes. The first run's detailed receipt
+is retained in local ObjectStore; the compact checkpoint records its reference.
+No scoring policy, threshold or smoothing changed after observing results.
+
+The flagged retrospective report contains 2,504 chronological player-game folds
+and 12,520 fixed-threshold cases. Season counts are 595 / 632 / 644 / 633;
+pooled sample-stratum counts are 176 (n=2–4), 233 (n=5–8), 2,095 (n=9–16).
+The [compact score summary](evidence/feature-store-164/step-3-score-summary.json)
+retains all 25 season/sample groups per mode. Detailed threshold scores,
+Over/Under calibration bins, case identities and history membership stay in the
+ObjectStore reports referenced by SHA-256. Empty cells remain explicit.
+
+| Retrospective pooled metric | Result |
+| --- | --- |
+| Three-class Brier, equal mean of five thresholds | 0.37277348 |
+| Binary Over Brier, equal mean of five thresholds | 0.18638674 |
+| Unnormalized integer RPS, once per fold | 50.90145845 |
+| Natural log loss | positive infinity |
+| Impossible observed outcomes under the empirical support | 183 / 12,520 (1.4617%) |
+
+Positive-infinite log loss is preserved in the cases and every affected
+aggregate. It is an expected weakness of unsmoothed empirical frequencies, not a
+reason to clip or tune the registered baseline. There is no calibrated-product,
+ROI or comparative-win claim. Genuine captured market lines are absent, so market
+comparison is unavailable. Previously evaluated outcomes enter 2,387 later folds
+as lagged history; the report explicitly rejects an independence claim.
+
+Of 7,465 retrospective evaluation candidates, 5,602 have usable features and
+2,623 have usable labels, with 2,504 in their scored intersection. The disjoint
+selection exclusions are 1,863 feature-unavailable and 3,098 label-unavailable.
+Missing-feature and missing-label totals overlap; they are not summed as separate
+people. The ledger retains missing participation/stats and unresolved history
+reasons. It records 115 known zero-attempt evaluation candidates and 4,841 whose
+attempt status is unknown; absent stats are not zero outcomes. All observed QB
+stat rows match a roster/game join. Six 2022 roster rows lack a scheduled-game
+match; this gap is reported separately from the joined candidate population.
+These diagnostics describe the captured fixture, not population completeness.
+
+Strict PIT is separate, with zero forecasts and 7,465 explicitly unavailable
+feature candidates. Its later label checkpoint can know historical outcomes
+without making historical forecasts available. No knowledge timestamp is
+backdated. Both reports retain the 1,916 warm-up candidates separately, with no
+2021 target scored. Retrospective outputs carry
+`historical-availability-unverified`, `rightsScope: research` and the
+uncalibrated interim hit-rate designation.
+
+`withDatasetRead` extends the existing reader's guard through trusted calculation
+and private report staging. The three statements are manifest lookup,
+authorization and pre-delivery recheck. There are no reader table locks or open
+transactions across I/O. A revocation during calculation or upload refuses the
+return value; newly staged report bytes are removed on refusal. A source deletion
+during calculation also refuses delivery. The ordinary `readDataset` API delegates
+to the same operation and retains its previous behavior and work budget.
+
+Reports are private, dataset-bound research artifacts. An archived address is
+not a public-serving entitlement: any later delivery requires fresh rights/status
+authorization against its pinned dataset. Revocation between the final SQL
+snapshot and bytes leaving the process is the accepted delivery-window limit.
+There is no report-serving endpoint in this issue.
+
+Three alternating warm rounds per mode on the standard 512 MiB PostgreSQL
+fixture completed in 485–504 ms (retrospective) and 880–927 ms (strict). The
+boundary includes pin/coverage/dataset reads, three SQL statements, scoring,
+serialization, report upload and final rights/status check. Each trial measured
+exactly two batched checks, three object reads and one report write, with zero
+raw-source or per-example queries. Setup/reconstruction and connection setup
+are excluded; caches were unflushed and no scored result was reused. These are
+warm checkpoint measurements, not the final cold/warm latency verdict. Fresh
+restricted-connection trials, percentiles and both full database suites remain
+step 4. Local probes cannot represent Vercel boot or Neon compute wake.
+
+The [validation checkpoint](evidence/feature-store-164/step-3-checkpoint.json)
+records 17 focused PostgreSQL cases, 56 projection tests, typecheck, lint,
+boundaries and layout/CI checks. Scratch databases and the disposable container
+were removed. Reproduce using the clean environment shown for preparation,
+substituting `evaluation-run.ts` for `evaluation-prepare.ts`.

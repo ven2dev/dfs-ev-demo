@@ -5,11 +5,12 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { withFeatureStoreDatabase } from "../../scripts/feature-store/harness.ts";
 import { runDerivedJob,FEATURE_VERSION,LABEL_VERSION,HISTORY_POLICY } from "../../src/featureStore/derived.ts";
-import { buildDataset,readDataset,type DatasetSpec } from "../../src/featureStore/datasets.ts";
+import { buildDataset,readDataset,withDatasetRead,type DatasetSpec } from "../../src/featureStore/datasets.ts";
 import { deleteSources,cleanupDeletedObjects,pruneDerivedVersions,sweepOrphanObjects } from "../../src/featureStore/governance.ts";
 import { startJob,finishJob } from "../../src/featureStore/jobs.ts";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
 import { sha256,objectKey } from "../../src/featureStore/objectStore.ts";
+import { completeQbReport } from "../../scripts/feature-store/evaluation-report.ts";
 import { NORMALIZER_VERSION } from "../../src/featureStore/source.ts";
 
 const code={gitSha:"b".repeat(40),contentSha256:sha256(Buffer.from("synthetic-step5-v1"))};
@@ -78,6 +79,29 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
    const excluded=await buildDataset(writer,store,{...spec,includeRetrospective:false},code);assert.equal(excluded.rowCount,0);assert.equal(excluded.exclusions['retrospective-excluded'],2);
    return {rows:first.rowCount,exclusions:first.exclusions,statements:8,rightsQueries:2,repeatedHash:first.fileSha256};
   });
+  await check("pinned research report uses three queries and withholds newly staged bytes on revocation",async()=>{
+   const dataset=JSON.parse((await store.get(first.objectKey)).toString());
+   const coverage=Buffer.from(JSON.stringify({mode,rows:dataset.rows.map((r:{playerId:string;gameId:string;season:number;sampleSize:number;flags:string[]})=>({
+    player_id:r.playerId,game_id:r.gameId,season:r.season,sample_size:r.sampleSize,feature_state:'usable',label_state:'usable',
+    feature_reasons:[],label_reasons:[],history_gaps:[],flags:r.flags,zero_attempts:false}))}));
+   const coverageArtifact={objectKey:objectKey('audits',coverage),sha256:sha256(coverage),byteSize:coverage.length};
+   await store.putIfAbsent(coverageArtifact.objectKey,coverage);
+   const pins=Buffer.from(JSON.stringify({format:'qb-evaluation-input-pins-v1',rightsScope:'research',code,versions:{feature:FEATURE_VERSION,label:LABEL_VERSION,history:HISTORY_POLICY},
+    populationDiagnostics:[],modes:[{mode,dataset:first,spec,coverageArtifact}]}));
+   const inputPins={objectKey:objectKey('audits',pins),sha256:sha256(pins),byteSize:pins.length};
+   await store.putIfAbsent(inputPins.objectKey,pins);
+   let staged='';
+   await assert.rejects(completeQbReport(reader,{...store,putIfAbsent:async(key,bytes)=>{
+    const uploaded=await store.putIfAbsent(key,bytes);assert(uploaded.created);staged=key;await grant([]);return uploaded;
+   }},inputPins,mode),/current-rights/);
+   assert(staged);assert.equal(await store.head(staged),null);await grant(['research']);
+   const before=queryCounts.reader;
+   const result=await completeQbReport(reader,store,inputPins,mode);
+   assert.equal(queryCounts.reader-before,3);assert.equal(result.rightsScope,'research');assert.equal(result.report.folds.length,2);
+   assert.equal(result.report.cases.length,10);assert(result.delivery.allowed);
+   assert((await store.get(result.artifact.objectKey)).includes(Buffer.from('historical-availability-unverified')));
+   return {folds:2,cases:10,statements:3,rightsChecks:2,stagedOnDeniedDeliveryRemoved:true};
+  });
   await check("natural-key hash survives independent derived IDs and clocks but changes with values",async()=>{
    await derive();const now=await clock();
    const duplicate=await buildDataset(writer,store,{...spec,featuresAsOf:now,labelsAsOf:now},code);
@@ -119,6 +143,19 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
    await assert.rejects(readDataset(reader,{...store,get:async key=>{const b=await store.get(key);await grant([]);return b;}},first.datasetId),/current-rights/);
    assert.equal(queryCounts.reader-before,3);await grant(['research']);
    return {objectReadsWhenInitiallyDenied:0,queriesDuringRevocation:3,delivered:false};
+  });
+  await check("report calculation stays inside the two-check guard and refuses a mid-calculation revocation",async()=>{
+   let calculated=false,delivered=false;
+   const before=queryCounts.reader;
+   await assert.rejects(withDatasetRead(reader,store,first.datasetId,async bytes=>{
+    assert.equal(JSON.parse(bytes.toString()).rows.length,2);calculated=true;
+    await grant([]);return "private-staged-report";
+   }).then(()=>{delivered=true;}),/current-rights/);
+   assert.equal(calculated,true);assert.equal(delivered,false);assert.equal(queryCounts.reader-before,3);
+   await grant(['research']);
+   const result=await withDatasetRead(reader,store,first.datasetId,()=>"report");
+   assert.equal(result.value,"report");assert(result.authorization.allowed&&result.delivery.allowed);
+   return {calculated,delivered,statements:3,rightsChecks:2};
   });
   await check("expired superseding rights refuse dataset build and file reads until an explicit new grant",async()=>{
    for(const uses of [['research'],[]]){
@@ -200,9 +237,10 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
    const datasets=(await reader.query('SELECT dataset_id FROM fs138.dataset_inputs WHERE snapshot_id=$1 ORDER BY dataset_id',[correction])).rows.map(r=>r.dataset_id);
    const key=(await reader.query('SELECT object_key FROM fs138.source_snapshots WHERE snapshot_id=$1',[correction])).rows[0].object_key;
    let captured:Awaited<ReturnType<typeof deleteSources>>|undefined;
-   await assert.rejects(readDataset(reader,{...store,get:async address=>{
-    const b=await store.get(address);captured=await deleteSources(writer,[correction],'synthetic source correction removal',1);return b;
-   }},datasets[0]),/current-rights-or-status/);
+   await assert.rejects(withDatasetRead(reader,store,datasets[0],async bytes=>{
+    assert(bytes.byteLength>0);captured=await deleteSources(writer,[correction],'synthetic source correction removal',1);
+    return "private-staged-report";
+   }),/current-rights-or-status/);
    assert(captured);const receipt=captured;
    assert.deepEqual(receipt.feature_ids,features);assert.deepEqual(receipt.label_ids,labels);assert.deepEqual(receipt.dataset_ids,datasets);
    assert(features.length>0&&labels.length>0&&datasets.length>0);

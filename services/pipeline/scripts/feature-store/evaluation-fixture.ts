@@ -10,6 +10,7 @@ import { EMPIRICAL_ADAPTER } from "../../src/featureStore/empiricalAdapter.ts";
 import { ingestSource } from "../../src/featureStore/ingest.ts";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
 import { objectKey, sha256, type ObjectStore } from "../../src/featureStore/objectStore.ts";
+import { NORMALIZER_VERSION } from "../../src/featureStore/source.ts";
 import type { SourceAsset } from "../../src/featureStore/source.ts";
 
 export const EVALUATION_ROOT = new URL("../../../../", import.meta.url);
@@ -22,8 +23,8 @@ export const EVALUATION_MODES = ["retrospective-reconstruction-v1", "strict-poin
 type FixtureDatabase = { admin: Client; writer: Client; reader: Client; queryCounts: { writer: number; reader: number } };
 export type PinnedDataset = { contentSha256: string; spec: DatasetSpec; exclusions: Record<string, number>; rows: DatasetRow[] };
 export type CoverageRow = { player_id: string; game_id: string; season: number; cutoff: string;
-  sample_size: number; feature_state: string; feature_reasons: string[]; history_gaps: unknown[];
-  label_state: string | null; label_reasons: string[]; flags: string[] };
+  sample_size: number; feature_state: string; feature_reasons: string[]; history_gaps: { gameId: string; reasons: string[] }[];
+  label_state: string | null; label_reasons: string[]; flags: string[]; zero_attempts: boolean | null };
 const persist = async (store: ObjectStore, value: unknown) => {
   const bytes = Buffer.from(JSON.stringify(value) + "\n");
   const key = objectKey("audits", bytes);
@@ -38,7 +39,9 @@ export const evaluationCodeIdentity = async () => {
   const files = [
     ...await readdir(new URL(sourceDirectory, EVALUATION_ROOT)).then(names => names.filter(n => n.endsWith(".ts")).map(n => sourceDirectory + n)),
     "services/pipeline/scripts/feature-store/evaluation-fixture.ts", "services/pipeline/scripts/feature-store/evaluation-prepare.ts",
-    "services/pipeline/scripts/feature-store/harness.ts", "packages/db/proposals/138_feature_store.sql",
+    "services/pipeline/scripts/feature-store/harness.ts",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts", "services/pipeline/scripts/feature-store/evaluation-run.ts",
+    "packages/domain/src/projection/qb-evaluation.ts", "packages/domain/src/projection/evaluation.ts", "packages/db/proposals/138_feature_store.sql",
     "packages/db/proposals/138_dataset_governance.sql", "packages/db/proposals/163_effective_rights.sql",
     "packages/domain/src/projection/empirical.ts", "packages/domain/src/projection/baseline.ts", "packages/domain/package.json",
     "services/pipeline/package.json", "package-lock.json",
@@ -91,6 +94,30 @@ export const prepareEvaluationFixture = async (
   await database.writer.query(`INSERT INTO fs138.rights_decisions(profile_id,allowed_uses,valid_from,rationale)
     SELECT profile_id,ARRAY['research'],clock_timestamp(),'owner-approved #164 local research; no serving clearance'
     FROM fs138.source_profiles`);
+  const observedStats = (await database.reader.query<{ player_id: string; game_id: string; season: number;
+    zero_attempts: boolean | null; roster_join_missing: boolean }>(`WITH stats AS MATERIALIZED (
+    SELECT DISTINCT ON(n.player_id,n.game_id) n.* FROM fs138.norm_player_game_stats n
+    JOIN fs138.source_snapshots s USING(snapshot_id) WHERE s.deleted_at IS NULL AND s.ingested_at<=$1
+      AND n.normalizer_version=$2 ORDER BY n.player_id,n.game_id,s.available_at DESC,s.ingested_at DESC,n.snapshot_id
+   ) SELECT n.player_id,n.game_id,substring(n.game_id from '^([0-9]{4})_')::integer AS season,
+    CASE WHEN n.state='usable' THEN n.passing_attempts=0 END AS zero_attempts,
+    NOT EXISTS(SELECT 1 FROM fs138.norm_identity i JOIN fs138.norm_schedule g
+      ON g.season=i.season AND g.week=i.week AND i.team IN(g.home_team,g.away_team)
+      WHERE i.player_id=n.player_id AND g.game_id=n.game_id AND i.team=n.team
+       AND i.normalizer_version=$2 AND g.normalizer_version=$2) AS roster_join_missing FROM stats n
+    ORDER BY season,n.game_id,n.player_id`,[ingestionCheckpoint,NORMALIZER_VERSION])).rows;
+  const observedByKey = new Map(observedStats.map(row => [JSON.stringify([row.player_id,row.game_id]),row]));
+  const rosterGaps = (await database.reader.query<{season:number;unmatched:number}>(`SELECT i.season,count(*)::integer AS unmatched
+    FROM fs138.norm_identity i WHERE i.normalizer_version=$1 AND NOT EXISTS(
+     SELECT 1 FROM fs138.norm_schedule g WHERE g.normalizer_version=$1 AND g.season=i.season AND g.week=i.week
+      AND i.team IN(g.home_team,g.away_team)) GROUP BY i.season ORDER BY i.season`,[NORMALIZER_VERSION])).rows;
+  const populationDiagnostics = [2021,2022,2023,2024,2025].map(season => {
+    const rows=observedStats.filter(r=>r.season===season);
+    return {season,observedQbStats:rows.length,statsWithoutMatchingRoster:rows.filter(r=>r.roster_join_missing).length,
+      rosterRowsWithoutScheduledGame:rosterGaps.find(r=>r.season===season)?.unmatched??0,
+      zeroAttempts:rows.filter(r=>r.zero_attempts===true).length,unknownAttempts:rows.filter(r=>r.zero_attempts===null).length};
+  });
+  const populationArtifact = await persist(store,{format:"qb-evaluation-observed-stats-v1",rows:observedStats});
   const prepared = [];
   for (const mode of EVALUATION_MODES) {
     const jobs = [];
@@ -151,7 +178,8 @@ export const prepareEvaluationFixture = async (
       FROM fs138.feature_values f LEFT JOIN fs138.outcome_labels l
         ON (l.player_id,l.game_id,l.evidence_mode,l.label_version)=(f.player_id,f.game_id,f.evidence_mode,$2)
       WHERE f.evidence_mode=$1 AND f.feature_version=$3 AND f.history_policy=$4 ORDER BY f.season,f.game_id,f.player_id`,
-    [mode, LABEL_VERSION, FEATURE_VERSION, HISTORY_POLICY])).rows;
+    [mode, LABEL_VERSION, FEATURE_VERSION, HISTORY_POLICY])).rows.map(row => ({...row,
+      zero_attempts: observedByKey.get(JSON.stringify([row.player_id,row.game_id]))?.zero_attempts ?? null}));
     const coverageArtifact = await persist(store, { format: "qb-evaluation-coverage-v1", mode, rows: coverage });
     const coverageSummary = [2021, 2022, 2023, 2024, 2025].map(season => {
       const rows = coverage.filter(r => r.season === season);
@@ -168,7 +196,7 @@ export const prepareEvaluationFixture = async (
     available_at::text,captured_at::text,ingested_at::text,evidence_basis FROM fs138.source_snapshots ORDER BY profile_id`)).rows;
   const pins = { format: "qb-evaluation-input-pins-v1", preregistration, code, ingestionCheckpoint,
     versions: { model: MODEL_VERSION, adapter: EMPIRICAL_ADAPTER, feature: FEATURE_VERSION, label: LABEL_VERSION, history: HISTORY_POLICY },
-    sourceManifestSha256: sha256(manifestBytes), inputs, snapshots,
+    sourceManifestSha256: sha256(manifestBytes), inputs, snapshots, populationDiagnostics, populationArtifact,
     modes: prepared.map(({ mode, dataset, spec, coverageArtifact, readWork }) => ({ mode, dataset, spec, coverageArtifact, readWork })),
     rightsScope: "research", designation: "uncalibrated-interim-hit-rate", scoringRun: false };
   const inputPinsArtifact = await persist(store, pins);
