@@ -14,7 +14,8 @@ import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts
 import { objectKey, sha256 } from "../../src/featureStore/objectStore.ts";
 
 const probes: { name: string; verdict: string }[] = [];
-const paths = ["packages/db/proposals/163_effective_rights.sql", "services/pipeline/scripts/feature-store/harness.ts", "services/pipeline/src/featureStore/empiricalAdapter.ts", "packages/db/proposals/163_empirical_authorize.sql",
+const paths = ["packages/domain/package.json", "services/pipeline/package.json",
+  "packages/domain/src/projection/empirical.ts", "packages/domain/src/projection/baseline.ts", "packages/db/proposals/163_effective_rights.sql", "services/pipeline/scripts/feature-store/harness.ts", "services/pipeline/src/featureStore/empiricalAdapter.ts", "packages/db/proposals/163_empirical_authorize.sql",
   "packages/db/proposals/163_empirical_history.sql", "packages/db/proposals/163_empirical_reader.sql", "services/pipeline/tests/feature-store/empirical-adapter.check.mts"];
 const codeHashes = Object.fromEntries(await Promise.all(paths.map(async path => [path, sha256(await readFile(new URL("../../../../" + path, import.meta.url)))])));
 const retrospective = "retrospective-reconstruction-v1" as const;

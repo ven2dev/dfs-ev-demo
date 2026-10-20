@@ -169,3 +169,50 @@ test("web dependency discovery covers scoped subpaths, re-exports, runtime and t
     import "fs";
   `)].sort(), ["@scope/tool", "commonjs", "dynamic", "exported", "typed"]);
 });
+
+const assertWorkspaceVersions = manifests => {
+  const local = new Map(manifests.map(manifest => [manifest.name, manifest.version]));
+  const domainVersion = local.get("@dfs-ev/domain");
+  for (const name of ["@dfs-ev/web", "@dfs-ev/pipeline"]) {
+    const consumer = manifests.find(manifest => manifest.name === name);
+    assert.equal(consumer?.dependencies?.["@dfs-ev/domain"], domainVersion, `${name} must declare its domain dependency`);
+  }
+  const declared = new Map();
+  for (const manifest of manifests) {
+    for (const [name, version] of Object.entries({ ...manifest.dependencies, ...manifest.devDependencies })) {
+      if (local.has(name)) assert.equal(version, local.get(name), `${manifest.name}: ${name} must match its workspace version`);
+      if (declared.has(name)) assert.equal(version, declared.get(name), `${name} differs across workspace declarations`);
+      declared.set(name, version);
+    }
+  }
+};
+
+test("shared versions and workspace dependency declarations stay identical, including Next internals and React", async () => {
+  const manifests = await Promise.all(["package.json", "apps/web/package.json", "packages/domain/package.json", "services/pipeline/package.json"]
+    .map(async path => JSON.parse(await readFile(new URL(path, root), "utf8"))));
+  assertWorkspaceVersions(manifests);
+  const [repository, web] = manifests;
+  for (const name of ["next", "react", "react-dom", "@next/env"]) {
+    const changed = structuredClone(repository);
+    changed.dependencies[name] = "0.0.0";
+    assert.throws(() => assertWebDependencies(web, changed, new Set()), name === "@next/env" ? /must match web Next.js/ : /differs between root and web/);
+  }
+  for (const index of [1, 3]) {
+    const changed = structuredClone(manifests);
+    delete changed[index].dependencies["@dfs-ev/domain"];
+    assert.throws(() => assertWorkspaceVersions(changed), /must declare its domain dependency/);
+  }
+  for (const [index, name, group] of [[2, "typescript", "devDependencies"], [1, "@dfs-ev/domain", "dependencies"], [3, "@dfs-ev/domain", "dependencies"]]) {
+    const changed = structuredClone(manifests);
+    changed[index][group][name] = "0.0.0";
+    assert.throws(() => assertWorkspaceVersions(changed), /differs across workspace declarations|must match its workspace version|must declare its domain dependency/);
+  }
+});
+
+test("workspace scripts and test process exclude preserve-symlinks so native TypeScript resolves real package paths", async () => {
+  for (const path of ["package.json", "apps/web/package.json", "packages/domain/package.json", "services/pipeline/package.json"]) {
+    const manifest = JSON.parse(await readFile(new URL(path, root), "utf8"));
+    assert.doesNotMatch(JSON.stringify(manifest.scripts ?? {}), /--preserve-symlinks/);
+  }
+  assert.doesNotMatch(process.execArgv.join(" ") + " " + (process.env.NODE_OPTIONS ?? ""), /--preserve-symlinks/);
+});

@@ -9,7 +9,7 @@
     "dev": "node scripts/web.mjs dev",
     "build": "node scripts/web.mjs build",
     "start": "node scripts/web.mjs start",
-    "lint": "eslint",
+    "lint": "eslint && npm run test:import-boundaries",
     "typecheck": "npm run db:readiness:check && node scripts/web.mjs typegen && tsc --noEmit",
     "test": "npm run test:firebase-admin-runtime && vitest run --config vitest.config.ts && vitest run --config vitest.node.config.ts",
     "test:firebase-admin-runtime": "node --no-experimental-require-module -e \"require('firebase-admin/auth')\"",
@@ -48,7 +48,8 @@
     "feature-store:ingest:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON services/pipeline/scripts/feature-store/ingest-spike.ts",
     "feature-store:derived:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON services/pipeline/scripts/feature-store/derived-spike.ts",
     "feature-store:dataset:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON services/pipeline/scripts/feature-store/dataset-spike.ts",
-    "test:repo-layout": "node --test tests/monorepo-layout.check.mjs"
+    "test:repo-layout": "node --test tests/monorepo-layout.check.mjs",
+    "test:import-boundaries": "node --test tests/import-boundaries.check.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "1.2.0",

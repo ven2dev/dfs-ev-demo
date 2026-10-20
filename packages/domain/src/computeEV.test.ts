@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeEV } from "./computeEV.ts";
+import { computeEV } from "@dfs-ev/domain/ev";
 
 describe("computeEV", () => {
   it("rejects an unavailable model instead of representing empty history as 0%", () => {

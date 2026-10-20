@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
-import { equalMassSupport, probabilityAt, priceSide, validateTriple } from "../../src/projection/empirical";
-import { priceSide as legacyPriceSide, validateTriple as legacyValidateTriple } from "../../src/projection/baseline";
+import { equalMassSupport, probabilityAt, priceSide, validateTriple } from "@dfs-ev/domain/empirical";
+import { priceSide as legacyPriceSide, validateTriple as legacyValidateTriple } from "@dfs-ev/domain/baseline";
 
 describe("pure empirical distribution kernel", () => {
   it("gives each observation equal mass and preserves signed values, zeros and ties", () => {

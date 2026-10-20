@@ -1,0 +1,240 @@
+{
+  "formatVersion": 1,
+  "issue": 189,
+  "step": 1,
+  "recordedAt": "2026-10-20T02:50:57.817682+00:00",
+  "baseCommit": "13fac536fb99f21b4c73ba1bfb151c6dcad5a66c",
+  "branch": "feature/dfsEV-189-domain-package",
+  "boundary": {
+    "source": "fresh git archive of baseline with scratch-only prototype overlay; production code in worktree remains unchanged",
+    "initialState": "no node_modules, .next, credentials or parent node_modules; tracked .env.example is a template only",
+    "installation": "npm ci --workspace @dfs-ev/web; no full root install; ordinary npm cache, no network-cold claim",
+    "environment": "allowlisted process environment; no app dotenv or credentials; ODDS_DATA_SOURCE=fixture for build",
+    "database": "no database connection; existing pipeline prototype receives in-memory synthetic query replies",
+    "network": "package installation and configured Google Fonts; no hosted database or provider calls",
+    "timings": "diagnostic elapsed times only; no adapter-latency or capacity claim"
+  },
+  "runtime": {
+    "node": "v24.18.1",
+    "next": "16.4.2",
+    "npm": "11.16.0"
+  },
+  "prototypeFiles": {
+    "packages/domain/package.json": "7d718a67afbb49884e11d8436bc22c809224eefb8cde0da22150321ba08e6c1d",
+    "services/pipeline/package.json": "2abc4a7c4a194e346f215c1c2faeb50d9fb94c5a7360ebbe121ea016f2096ee5",
+    "apps/web/package.json": "b55eb645ad2543879dd998d0e1c1d8d30756124158cd252545ccb4ebe3ed5dc7",
+    "package-lock.json": "8194a6e991d2b4e629229ab86208f7a8f08e58cb8a7da5848d7116de2d59478a",
+    "packages/domain/src/consensusDevig.ts": "99558fd757022167357d7cc8c589e889183ceaeb72c42ef8425bd0d626ef7aa6",
+    "apps/web/src/app/api/stream/route.ts": "a79289d7be2a455dc84b8c65375fd68046c72355df918316222e82281d6105fd",
+    "apps/web/src/lib/historicalOddsQuery.ts": "9dc4cf6368ec1ba6f8d4cae1762f35ef6f73ec04af93b30c995ff5a4b1fcd32e",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "086863c08215e74282e0665bc20affc0ddc6cc21c7b599e92025b5867e51e98f",
+    "services/pipeline/scripts/feature-store/empirical-prototype.ts": "ab2ca0df6ca1cdaf668c776e173a7f2a6f2d9c178af80003b7e0dc29024a4f37",
+    "services/pipeline/scripts/domain-resolution-probe.mts": "be9b5046f33f6361da7bb421bcb1f055b270d18b4862632d149ac16522e5b6c4"
+  },
+  "bundledNextGuide": {
+    "path": "node_modules/next/dist/docs/01-app/03-api-reference/05-config/01-next-config-js/transpilePackages.md",
+    "sha256": "991f36305b9fe8c37e23c0297cb04d48c78130dcb3da8e91dec8bcb8a1a193ca",
+    "finding": "Turbopack automatically transpiles workspace source packages; confirmed by clean native web build"
+  },
+  "runs": [
+    {
+      "stage": "lock",
+      "attempt": 1,
+      "command": [
+        "npm",
+        "install",
+        "--package-lock-only",
+        "--ignore-scripts",
+        "--no-audit",
+        "--no-fund"
+      ],
+      "exitCode": 0,
+      "seconds": 0.776,
+      "logSha256": "2b429e1d660d59f9fd7b578e909cfdfec82308ad4c9eae9ab18be6d5111b3b37"
+    },
+    {
+      "stage": "install",
+      "attempt": 1,
+      "command": [
+        "npm",
+        "ci",
+        "--workspace",
+        "@dfs-ev/web",
+        "--no-audit",
+        "--no-fund"
+      ],
+      "exitCode": 0,
+      "seconds": 4.119,
+      "logSha256": "cd8582b70288de44471c01da36942e2506cddaaad334e4aaeeda791e2b14d0b8"
+    },
+    {
+      "stage": "node",
+      "attempt": 1,
+      "command": [
+        "node",
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "services/pipeline/scripts/domain-resolution-probe.mts"
+      ],
+      "exitCode": 1,
+      "seconds": 0.079,
+      "logSha256": "3bcc398d1431f007fe26461f597953b798b85e622fc8b428eef0785d1c4b54cd"
+    },
+    {
+      "stage": "node",
+      "attempt": 2,
+      "command": [
+        "node",
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "services/pipeline/scripts/domain-resolution-probe.mts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.128,
+      "logSha256": "72de7633efe66e2f6ad48a487fe27b32df0d4b8b9cde68d5fe051409d6125de6"
+    },
+    {
+      "stage": "gate",
+      "attempt": 1,
+      "command": [
+        "npm",
+        "run",
+        "test:ci-gate"
+      ],
+      "exitCode": 0,
+      "seconds": 1.473,
+      "logSha256": "a95ab144aa27f0c14be2b1dd76c83cb5b84b6c5336c67b2d6ced468d4963d054"
+    },
+    {
+      "stage": "build",
+      "attempt": 1,
+      "command": [
+        "npm",
+        "run",
+        "build",
+        "--workspace",
+        "@dfs-ev/web"
+      ],
+      "exitCode": 0,
+      "seconds": 6.886,
+      "logSha256": "1fc6c1a8e27a4619fb59eb529fe75d53e9c66ef6aa96cf11084a43ba2968a0dd"
+    },
+    {
+      "stage": "node",
+      "attempt": 3,
+      "command": [
+        "node",
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "services/pipeline/scripts/domain-resolution-probe.mts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.241,
+      "logSha256": "f8f1f36ae89f41d0f86915eee4f945504d4a5b1d936f968835e8b3bd5e0ec018"
+    }
+  ],
+  "correctedAttempts": [
+    {
+      "stage": "direct Node resolution, attempt 1",
+      "error": "ERR_MODULE_NOT_FOUND",
+      "cause": "consensusDevig.ts used extensionless ./devig; native Node TypeScript ESM requires explicit .ts",
+      "correction": "scratch-only import changed to ./devig.ts; carry into step 2 without arithmetic changes",
+      "recheck": "attempt 2 passed; attempt 3 added and passed private-subpath rejection"
+    }
+  ],
+  "checks": {
+    "workspaceOnlyInstall": {
+      "packagesAdded": 378,
+      "rootOnlyToolsAbsent": [
+        "pg",
+        "eslint",
+        "firebase-tools"
+      ],
+      "verdict": "pass"
+    },
+    "nodeWorkspaceLink": {
+      "runtime": "v24.18.1",
+      "resolved": "file:///private/tmp/dfs189-resolution-qlo5918h/candidate/packages/domain/src/projection/empirical.ts",
+      "realPath": "/private/tmp/dfs189-resolution-qlo5918h/candidate/packages/domain/src/projection/empirical.ts",
+      "preserveSymlinks": false,
+      "exportsExercised": [
+        "empirical",
+        "baseline",
+        "devig",
+        "consensus-devig",
+        "ev"
+      ],
+      "privateSubpathRefused": true,
+      "fixture": "synthetic; no database connection; prototype queries use in-memory replies",
+      "prototype": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "probabilities": {
+          "underProbability": 0.5,
+          "pushProbability": 0,
+          "overProbability": 0.5
+        }
+      },
+      "adapter": {
+        "loaded": true,
+        "invalidRequestRefused": true
+      },
+      "modelVersion": "empirical-integer-v1",
+      "verdict": "pass",
+      "workspaceLink": "node_modules/@dfs-ev/domain -> packages/domain"
+    },
+    "nextBuild": {
+      "transpilePackages": "not configured or needed in this probe",
+      "staticPages": 16,
+      "streamRoute": "/api/stream compiles its real consensus/EV imports from exported TypeScript sources",
+      "verdict": "pass"
+    },
+    "existingCiLayoutGate": {
+      "tests": 10,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "verdict": "pass"
+    },
+    "existingSyntheticProjectionDemo": {
+      "command": [
+        "/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node",
+        "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+        "packages/domain/scripts/projection/demo.ts"
+      ],
+      "identicalOutputSha256": "be499be204e9dbf33f5ae0786c5e30f70982cf781649a8b4da9cf4dc02a5a494",
+      "verdict": "pass"
+    },
+    "lockfile": {
+      "changedPackageEntries": [
+        "apps/web",
+        "node_modules/@dfs-ev/domain",
+        "node_modules/@dfs-ev/pipeline",
+        "packages/domain",
+        "services/pipeline"
+      ],
+      "existingInstalledPackageEntriesChanged": 0,
+      "verdict": "pass"
+    },
+    "frozenFiles": {
+      "reference": "docs/evidence/monorepo-148/baseline.json",
+      "count": 34,
+      "unchangedInBothBaselineAndPrototype": true,
+      "verdict": "pass"
+    }
+  },
+  "pending": [
+    "Permanent extraction, domain-owned contracts and direct consumer type imports (step 2)",
+    "Lint boundaries with reverse-direction negative probes and version checks (step 3)",
+    "Full combined validation including both PostgreSQL suites (step 4)",
+    "Real Vercel Preview and outside-root source inclusion, after owner-approved commit/push; required before merge",
+    "Domain-only deployment proof and complete declared graph before re-enabling Skip deployments"
+  ],
+  "limitations": [
+    "Synthetic module-resolution probe does not replace real PostgreSQL authorization/correctness suites",
+    "Prototype still contains existing type-only domain-to-web imports; their removal is step 2, not claimed here",
+    "Local Next success does not prove Vercel install or Preview success"
+  ],
+  "fullDiagnostics": {
+    "location": "/private/tmp/dfs189-resolution-qlo5918h",
+    "gitPolicy": "full logs and scratch prototype kept off main; compact receipt only"
+  },
+  "verdict": "pass for cheap local source-package resolution; issue and hosted deployment gates remain pending"
+}

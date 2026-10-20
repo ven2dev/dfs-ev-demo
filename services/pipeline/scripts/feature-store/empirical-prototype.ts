@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import type { Client } from "pg";
-import { equalMassSupport, probabilityAt, priceSide } from "../../../../packages/domain/src/projection/empirical.ts";
-import { MODEL_VERSION } from "../../../../packages/domain/src/projection/baseline.ts";
+import { equalMassSupport, probabilityAt, priceSide } from "@dfs-ev/domain/empirical";
+import { MODEL_VERSION } from "@dfs-ev/domain/baseline";
 import { FEATURE_VERSION, HISTORY_POLICY } from "../../src/featureStore/derived.ts";
 
 // Spike only: full version/refusal/deadline integration is the next approved step.

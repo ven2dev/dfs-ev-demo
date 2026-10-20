@@ -1,0 +1,178 @@
+{
+  "formatVersion": 1,
+  "issue": 189,
+  "step": 3,
+  "recordedAt": "2026-10-20T03:15:12.207533+00:00",
+  "baseCommit": "cf802166fcfee815465de7d35c50130d7207058b",
+  "branch": "feature/dfsEV-189-domain-package",
+  "boundary": {
+    "installation": "existing root npm ci; Node 24.18.1; no new dependency installation or installed-version changes",
+    "scope": "workspace source, scripts and tests; repository orchestration stays root-owned",
+    "databaseAndHostedServices": "none; both PostgreSQL suites remain the combined step-4 gate",
+    "measurement": "check runtimes are diagnostic, not a new performance claim"
+  },
+  "implementationSha256": {
+    "eslint.config.mjs": "90c78194d109743f3f7e09e4bda653ed294e7790ade8f505b6c3333fd4983133",
+    "eslint.boundaries.mjs": "7035aa366e031c00d654d579f467fefdb8f4112a0d26664e5a6b847c4a15035e",
+    "eslint.boundary-exceptions.json": "390f765e543129a4f8d4b49c48c3bea1dd32b80e6428a087e51b2e325e598598",
+    "package.json": "1fc4ce56e953ca421123fe26c33d99397e4af8319b172e99629838bf444f7074",
+    "package-lock.json": "76b11cf6b543cc6d084f3c86ac9ab9a5610dcae6dbd09d6260dfe639de8d62a9",
+    "packages/domain/package.json": "e270a4eb69e7a6ced3d7b595bb7e95a9e1b857db3200876fa88e9c4f33e0575c",
+    "apps/web/package.json": "39038b42a4f17b5e04aab37eda36a76166cf1ba113ec563bb0dc28542bbddce0",
+    "services/pipeline/package.json": "49b750026343da9cfffdc0d2aa6558a2cf0c97878b847586501792f6bfdf694e",
+    "packages/domain/src/projection/report.ts": "219e096535eaa43056ec1e1f75de7f869a48a6e157f4511f4b33c05986cc7eb1",
+    "tests/import-boundaries.check.mjs": "8c93a7a26647682ff9472c51abaa2209489991f5187f06319540603378275d55",
+    "tests/monorepo-layout.check.mjs": "f0b178a5cb0b13ffb2ba45e7b3aaa703360781eeacef281d5219e1ed1b09154b"
+  },
+  "checks": [
+    {
+      "stage": "lint",
+      "command": [
+        "npm",
+        "run",
+        "lint"
+      ],
+      "exitCode": 0,
+      "seconds": 5.69,
+      "logSha256": "aa15ade037befce46082367dbb0c2d3a84c02d5d0f8a48da24408868b7638261"
+    },
+    {
+      "stage": "layout",
+      "command": [
+        "npm",
+        "run",
+        "test:ci-gate"
+      ],
+      "exitCode": 0,
+      "seconds": 1.731,
+      "logSha256": "ee2a2376823e8860a1a01afe1ef1b7878a4b881167b12d158c67b87cf062d22a"
+    },
+    {
+      "stage": "types",
+      "command": [
+        "npm",
+        "run",
+        "typecheck"
+      ],
+      "exitCode": 0,
+      "seconds": 2.134,
+      "logSha256": "99692f5da0a9684baf6c6a200a96eef646840fc3745fa37da10bf2199c74e3ed"
+    },
+    {
+      "stage": "domain-types",
+      "command": [
+        "npm",
+        "run",
+        "typecheck",
+        "--workspace",
+        "@dfs-ev/domain"
+      ],
+      "exitCode": 0,
+      "seconds": 0.654,
+      "logSha256": "9aa479d7f5f06057c08995bb34cb364a4a0078b43442d3fa60a484bfb22550c9"
+    },
+    {
+      "stage": "projection",
+      "command": [
+        "node",
+        "node_modules/vitest/vitest.mjs",
+        "run",
+        "--config",
+        "vitest.node.config.ts",
+        "packages/domain/tests/projection",
+        "services/pipeline/tests/feature-store/domainPackage.test.ts"
+      ],
+      "exitCode": 0,
+      "seconds": 0.823,
+      "logSha256": "5c204999f3d4bc1ae924039044a3b2912734143d360630709d8675010f4b8d1b"
+    }
+  ],
+  "passingCases": {
+    "boundary": 7,
+    "ciAndLayout": 12,
+    "strictFitterKernelAndNativeConsumer": 35,
+    "total": 54,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "importRules": {
+    "pattern": "ESLint flat-config overrides using existing eslint-plugin-import and core ESLint rules",
+    "rules": [
+      "import/no-relative-packages",
+      "import/no-restricted-paths",
+      "import/no-internal-modules",
+      "no-restricted-imports",
+      "no-restricted-syntax"
+    ],
+    "negativeProbes": [
+      "cross-workspace imports including JSX and nested paths",
+      "domain to app/service through relative paths, package names and the web alias",
+      "static and type-only imports, re-exports, dynamic imports and require",
+      "TypeScript inline and import-equals bypasses",
+      "unknown/private domain package subpaths",
+      "each exception denied to a neighboring file and new destinations denied to its importer"
+    ],
+    "positiveProbes": [
+      "every declared domain export",
+      "within-workspace imports",
+      "external inline types",
+      "each exact existing exception"
+    ],
+    "typescriptVisitorLimit": "Use static import type for local/workspace types because the standard import visitor omits TSImportType and TSImportEqualsDeclaration.",
+    "exceptionFiles": 36,
+    "exceptionEdges": 74,
+    "exceptionEdgesByRemovalIssue": {
+      "190": 23,
+      "191": 51
+    },
+    "domainExceptions": 0,
+    "staleOrDuplicateExceptions": "fail the required boundary probes",
+    "ci": "npm run lint runs ESLint followed by the boundary negative probes; no workflow selection change"
+  },
+  "versionChecks": {
+    "policy": "identical declarations across root/web/domain/pipeline during the approved ownership transition",
+    "negativeProbes": [
+      "Next.js",
+      "React",
+      "ReactDOM",
+      "@next/env versus Next.js",
+      "TypeScript",
+      "missing or mismatched web/pipeline domain dependency"
+    ],
+    "nativeNodeCheck": "workspace scripts and executing test process reject --preserve-symlinks",
+    "verdict": "pass"
+  },
+  "sourceParity": {
+    "report": "inline type query becomes a static type-only import; emitted JavaScript byte-identical",
+    "reportEmittedJavascriptSha256": "c383eae1910628619de974f9550db590c126abbe98047c1012f582f591374989",
+    "syntheticProjectionDemoSha256": "be499be204e9dbf33f5ae0786c5e30f70982cf781649a8b4da9cf4dc02a5a494",
+    "existingCalculationSourceChanges": 0,
+    "lockfileChanges": 0,
+    "verdict": "pass"
+  },
+  "frozenFiles": {
+    "reference": "docs/evidence/monorepo-148/baseline.json",
+    "unchanged": 34,
+    "verdict": "pass"
+  },
+  "correctedAttempts": [
+    {
+      "stage": "initial lint",
+      "summary": "Two exact exception entries for one importer were applied as successive flat overrides; the second replaced the first.",
+      "fix": "One override per importer, preserving the removal ticket separately for each exact source. Required probes exercise all 74 pairs.",
+      "minorWarning": "Named the exported flat-config array to satisfy the existing anonymous-export lint rule."
+    }
+  ],
+  "pending": [
+    "Owner step-3 commit approval",
+    "Step 4 combined app/build, catalog/readiness and both PostgreSQL suites",
+    "Independent owner review and fresh push approval",
+    "Real Vercel Preview before merge; outside-root source inclusion and domain-only deployment proof",
+    "Keep Skip deployments disabled until its complete declared dependency graph and selection proof are established"
+  ],
+  "fullDiagnostics": {
+    "directory": "/private/tmp/dfs189-step3-checks",
+    "policy": "full logs off git; compact receipt only"
+  },
+  "verdict": "pass for step-3 boundary/version checkpoint; issue completion gates remain pending"
+}
