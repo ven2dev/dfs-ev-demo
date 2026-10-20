@@ -13,7 +13,6 @@
 //   shapes uniformly rather than special-casing this list.
 import type { SupportedStatType } from "./playerStatsSync";
 
-export type PlayerPropDirection = "over" | "under";
 export type PlayerPropOutcomeShape = "over-under" | "yes-only";
 
 type PlayerPropMarketDefinition = {

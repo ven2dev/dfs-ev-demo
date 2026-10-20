@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { devigTwoWay } from "./devig.ts";
+import { devigTwoWay } from "@dfs-ev/domain/devig";
 
 describe("devigTwoWay", () => {
   it("a fair (no-vig) 50/50 market stays 50/50", () => {

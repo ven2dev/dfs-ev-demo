@@ -1,0 +1,229 @@
+{
+  "formatVersion": 1,
+  "issue": 189,
+  "step": 4,
+  "recordedAt": "2026-10-20T04:34:51.552955+00:00",
+  "baselineCommit": "13fac536fb99f21b4c73ba1bfb151c6dcad5a66c",
+  "testedCommit": "ff5671da6f13ce18751100e1710d8aba1f4e7ae2",
+  "branch": "feature/dfsEV-189-domain-package",
+  "boundary": {
+    "runtime": "Node 24.18.1; npm 11.16.0; Next.js 16.4.2; native workspace TypeScript source",
+    "installation": "existing full root npm ci; separate clean web-only install/build proof remains the step-2 receipt",
+    "environment": "allowlisted; no application credentials or dotenv loading; preview override restricted to build/smoke",
+    "database": "fresh PostgreSQL 18 standard compose.test.yml, 512 MiB tmpfs verified at 524288 KiB; no spike override",
+    "services": "loopback PostgreSQL and demo Firestore emulator only; no hosted DB/provider writes or deployment",
+    "cacheAndTiming": "ordinary installed dependencies and OS/DB caches; first build reported no build cache; elapsed times diagnostic only"
+  },
+  "implementationSha256": {
+    "package.json": "1fc4ce56e953ca421123fe26c33d99397e4af8319b172e99629838bf444f7074",
+    "package-lock.json": "76b11cf6b543cc6d084f3c86ac9ab9a5610dcae6dbd09d6260dfe639de8d62a9",
+    "apps/web/package.json": "39038b42a4f17b5e04aab37eda36a76166cf1ba113ec563bb0dc28542bbddce0",
+    "packages/domain/package.json": "e270a4eb69e7a6ced3d7b595bb7e95a9e1b857db3200876fa88e9c4f33e0575c",
+    "packages/domain/tsconfig.json": "fc55ad16a1fc62dd338a756dbde651df81602a0d51798c818053e04a2c0417ea",
+    "services/pipeline/package.json": "49b750026343da9cfffdc0d2aa6558a2cf0c97878b847586501792f6bfdf694e",
+    "eslint.config.mjs": "90c78194d109743f3f7e09e4bda653ed294e7790ade8f505b6c3333fd4983133",
+    "eslint.boundaries.mjs": "7035aa366e031c00d654d579f467fefdb8f4112a0d26664e5a6b847c4a15035e",
+    "eslint.boundary-exceptions.json": "390f765e543129a4f8d4b49c48c3bea1dd32b80e6428a087e51b2e325e598598",
+    "tests/import-boundaries.check.mjs": "8c93a7a26647682ff9472c51abaa2209489991f5187f06319540603378275d55",
+    "tests/monorepo-layout.check.mjs": "f0b178a5cb0b13ffb2ba45e7b3aaa703360781eeacef281d5219e1ed1b09154b",
+    "services/pipeline/tests/feature-store/domainPackage.test.ts": "6f9829556c3c635e3ea37a201f05d7e52b7584623722a2883881fd210bbdd785",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "086863c08215e74282e0665bc20affc0ddc6cc21c7b599e92025b5867e51e98f"
+  },
+  "checks": [
+    {
+      "stage": "types",
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "seconds": 3.232,
+      "logSha256": "99692f5da0a9684baf6c6a200a96eef646840fc3745fa37da10bf2199c74e3ed"
+    },
+    {
+      "stage": "domain-types",
+      "command": "npm run typecheck --workspace @dfs-ev/domain",
+      "exitCode": 0,
+      "seconds": 0.654,
+      "logSha256": "9aa479d7f5f06057c08995bb34cb364a4a0078b43442d3fa60a484bfb22550c9"
+    },
+    {
+      "stage": "lint",
+      "command": "npm run lint",
+      "exitCode": 0,
+      "seconds": 12.873,
+      "logSha256": "eb4caff2897078b45e61d5449102ceeac1e5a9d4804d9e900283cf514b9d4b09"
+    },
+    {
+      "stage": "ci-layout",
+      "command": "npm run test:ci-gate",
+      "exitCode": 0,
+      "seconds": 1.732,
+      "logSha256": "0a65bb5fda1c362a13824e05d0d2f09465f5ebf6acd53221149505453fa70c18"
+    },
+    {
+      "stage": "unit",
+      "command": "npm test",
+      "exitCode": 0,
+      "seconds": 17.281,
+      "logSha256": "f9355b19e59fcc9b7a0e44e2d61533fba5295a92b51512c9fc8980b99760d32c"
+    },
+    {
+      "stage": "build",
+      "command": "npm run build",
+      "exitCode": 0,
+      "seconds": 17.537,
+      "logSha256": "7f33b89b7168c20bfa8b70d7cf959d382d95f34be9ec7e7700d869e192d9d1e9"
+    },
+    {
+      "stage": "firestore",
+      "command": "npm run test:firestore-rules",
+      "exitCode": 0,
+      "seconds": 6.754,
+      "logSha256": "98acb678bca970e5eaa9b4bc85aff0d927f0c0c9165cbc2eea39b576fb5af743"
+    },
+    {
+      "stage": "audit",
+      "command": "npm audit --omit=dev --audit-level=critical",
+      "exitCode": 0,
+      "seconds": 1.125,
+      "logSha256": "6d8c5c8f3d7684adb070417bd608d01ae90aa3dc26a65af03ffda4955f38d9a3"
+    },
+    {
+      "stage": "db-guard",
+      "command": "npm run test:db:guard",
+      "exitCode": 0,
+      "seconds": 0.935,
+      "logSha256": "7e09d7b93ba5555d5b890e9edf7e5ffee2cdbe57b67e82ea22623f3d9275d8e5"
+    },
+    {
+      "stage": "db-lifecycle",
+      "command": "npm run test:db:lifecycle",
+      "exitCode": 0,
+      "seconds": 9.613,
+      "logSha256": "bd7aceb3cdbd2046f5326a54964c301cf628998601ca60ea0fb4a102be6573bb"
+    },
+    {
+      "stage": "db-local",
+      "command": "npm run test:db:local",
+      "exitCode": 0,
+      "seconds": 38.102,
+      "logSha256": "569daead108ddb35c8bbd3b1339b2a027e9d84a707e130c3b46e3e26e12fd7a6"
+    },
+    {
+      "stage": "feature-store-db",
+      "command": "npm run test:feature-store:db",
+      "exitCode": 0,
+      "seconds": 64.459,
+      "logSha256": "be8d5a6d256818bd63cf255ffbe209651658d24a8e320b41402909cbc66fddf6"
+    },
+    {
+      "stage": "db-down",
+      "command": "npm run test:db:down",
+      "exitCode": 0,
+      "seconds": 0.609,
+      "logSha256": "65bcc27e8b1cdfdcbdb9b25de33bae8b38dfe9d408404badbed0d137650b68a7"
+    }
+  ],
+  "counts": {
+    "browserUnit": 909,
+    "nodeUnit": 245,
+    "importBoundary": 7,
+    "ciAndLayout": 12,
+    "dbGuards": 20,
+    "dbLifecycle": 1,
+    "dbTemplatePrerequisites": 2,
+    "nodeDatabase": 74,
+    "catalogContracts": 12,
+    "postgresBehavior": 25,
+    "featureStorePostgres": 77,
+    "requiredDatabaseCases": {
+      "lease": 13,
+      "readiness": 4,
+      "corpus": 8
+    },
+    "staticPageGeneration": 16,
+    "failedSkippedOrCancelledInPassingSuites": 0,
+    "note": "Repository-wide cumulative suites; required-case counts are subsets, not additional tests."
+  },
+  "compatibility": {
+    "frozenArtifactReference": "docs/evidence/monorepo-148/baseline.json",
+    "unchangedFrozenArtifacts": 34,
+    "unchangedMigrationFiles": 11,
+    "databaseTreeAndReadinessAndCiWorkflow": "byte-identical to baseline",
+    "unchangedCalculationFiles": [
+      "empirical.ts",
+      "baseline.ts",
+      "evaluation.ts",
+      "devig.ts"
+    ],
+    "otherMathChanges": "imports/types only; no arithmetic or temporal-policy changes",
+    "syntheticProjectionDemoSha256": "be499be204e9dbf33f5ae0786c5e30f70982cf781649a8b4da9cf4dc02a5a494",
+    "existingInstalledPackageVersionChanges": 0,
+    "rootCommands": "dev/build/start help, actual build/start, synthetic projection demo; creator resolve refuses missing arguments with its expected fixed code"
+  },
+  "builtAppSmoke": {
+    "receipt": "loopback fixture only",
+    "checks": [
+      {
+        "path": "/",
+        "status": 200,
+        "bytes": 9661,
+        "sha256": "ffc8763643e4c9dedabd79a1938adc789afd07a90c0b0dfdee935e495e7d343e"
+      },
+      {
+        "path": "/manifest.webmanifest",
+        "status": 200,
+        "bytes": 500,
+        "sha256": "fb5c18f98ab11596b8d0f404ba9393e12478b37c0a5321109bf2aadb36df43a0"
+      },
+      {
+        "path": "/icons/edgetrace-192.png",
+        "status": 200,
+        "bytes": 4624,
+        "sha256": "2bfb7f3c43e63dafb400b1f864af4c7a59695e5dce081e12a7edac4710273656"
+      },
+      {
+        "path": "/api/slate",
+        "status": 200,
+        "bytes": 405,
+        "sha256": "6ca4d054e1b1c9bd41b19555da51d9cd8ee3b15732bbc8614d6ec104fba84182"
+      }
+    ]
+  },
+  "cleanup": {
+    "databaseServiceRemoved": true,
+    "localBuiltServerStopped": true,
+    "demoEmulatorStopped": true
+  },
+  "correctedProbeAttempts": [
+    {
+      "stage": "initial unit run",
+      "exitCode": 1,
+      "failedNodeCases": 69,
+      "logSha256": "aa0502c0220155c73a4a31768978226b26f644d84ffb2bf16a849265853031f3",
+      "reason": "Runner incorrectly set VERCEL_ENV=preview for unit tests that simulate live odds; removing that runner override restored CI-style tests with no source change."
+    },
+    {
+      "stage": "creator help probe",
+      "exitCode": 1,
+      "logSha256": "ff9ed16a94c406174df4b3a2766ce5954eace8e1b5f89247ab234a0db6f62e9a",
+      "reason": "Existing creator CLI has no --help command; expected success was a probe mistake. Its documented missing-argument refusal passed and creator tests passed in the full suite."
+    }
+  ],
+  "acceptanceVerdicts": {
+    "packageApiAndDeclaredDomainEdges": "pass",
+    "pureKernelAndSingleMathImplementation": "pass",
+    "legacyNumericAndTemporalContract": "pass",
+    "enforcedImportAndVersionBoundaries": "pass",
+    "rootCommandsAndApplicationBuild": "pass",
+    "migrationCatalogReadinessAndBothDatabaseSuites": "pass",
+    "cleanWebOnlyBuild": "pass: step-2 receipt",
+    "realVercelPreview": "pending hosted execution after owner-approved push/PR",
+    "outsideRootHostedSourceInclusion": "pending real Preview",
+    "domainOnlyHostedDeploymentSelection": "pending; keep Skip deployments disabled"
+  },
+  "reviewAndDelivery": "owner approved checkpoint commit, push and PR; independent review and hosted Preview gates remain pending",
+  "fullDiagnostics": {
+    "directory": "/private/tmp/dfs189-step4-checks",
+    "policy": "full logs off git; compact timings/counts/hashes/verdict receipt only"
+  },
+  "verdict": "all local integrated gates pass; hosted deployment and review gates remain pending"
+}

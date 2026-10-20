@@ -1,0 +1,23 @@
+{
+  "name": "@dfs-ev/domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "exports": {
+    ".": "./src/contracts.ts",
+    "./empirical": "./src/projection/empirical.ts",
+    "./baseline": "./src/projection/baseline.ts",
+    "./devig": "./src/devig.ts",
+    "./consensus-devig": "./src/consensusDevig.ts",
+    "./ev": "./src/computeEV.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

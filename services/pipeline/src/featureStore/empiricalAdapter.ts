@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import type { Client, QueryResultRow } from "pg";
-import { equalMassSupport, probabilityAt, priceSide, type SupportPoint, type Triple } from "../../../../packages/domain/src/projection/empirical.ts";
-import { MODEL_VERSION } from "../../../../packages/domain/src/projection/baseline.ts";
+import { equalMassSupport, probabilityAt, priceSide, type SupportPoint, type Triple } from "@dfs-ev/domain/empirical";
+import { MODEL_VERSION } from "@dfs-ev/domain/baseline";
 import { FEATURE_VERSION, HISTORY_POLICY } from "./derived.ts";
 import type { EvidenceMode } from "./asOf.ts";
 

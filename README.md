@@ -19,8 +19,10 @@ cp apps/web/.env.example apps/web/.env.local
 The web app is in `apps/web`, pure math in `packages/domain`, database assets
 and tooling in `packages/db`, and pipeline/creator jobs in `services/pipeline`.
 Install from the repository root with the single lockfile; existing root npm
-commands remain supported. Package API extraction follows this physical move.
-See the [relocation and deployment guide](docs/monorepo-layout.md).
+commands remain supported. Web and pipeline consume the private `@dfs-ev/domain`
+package through explicit exports; database/pipeline API extraction follows. See
+the [domain package guide](docs/domain-package-extraction.md) and
+[relocation and deployment guide](docs/monorepo-layout.md).
 
 Root `dev`, `build` and `start` commands also load existing root `.env*` files
 for local compatibility. Shell variables take precedence, then root dotenv

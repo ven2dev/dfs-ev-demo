@@ -1,5 +1,4 @@
-import type { EVScore } from "../../../apps/web/src/types";
-import type { PlayerPropDirection } from "../../../apps/web/src/lib/playerPropMarkets";
+import type { EVScore, PlayerPropDirection } from "./contracts.ts";
 
 export type EVPipelineInput = {
   recentGameStats: number[];

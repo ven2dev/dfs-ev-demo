@@ -1,5 +1,6 @@
 "use client";
 
+import type { PlayerPropDirection } from "@dfs-ev/domain";
 import { useId } from "react";
 
 import {
@@ -10,7 +11,6 @@ import {
 import {
   getPlayerPropMarket,
   PLAYER_PROP_MARKETS,
-  type PlayerPropDirection,
 } from "@/lib/playerPropMarkets";
 
 export type PlayerPropsCardMode = "single" | "compare";
