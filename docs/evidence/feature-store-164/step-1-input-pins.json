@@ -1,0 +1,278 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 1,
+  "scoringRun": false,
+  "recordedAt": "2026-10-20T17:04:09.836Z",
+  "code": {
+    "gitSha": "edb5981c7561f12a6777a4ab7b7dd65b991815a1",
+    "contentSha256": "0228c79cab5d48a5063b70b83518156b9c1e56fa624f277d9d772e8478c8b9fc"
+  },
+  "codeHashes": {
+    "package-lock.json": "76b11cf6b543cc6d084f3c86ac9ab9a5610dcae6dbd09d6260dfe639de8d62a9",
+    "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "packages/domain/package.json": "e270a4eb69e7a6ced3d7b595bb7e95a9e1b857db3200876fa88e9c4f33e0575c",
+    "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "services/pipeline/package.json": "49b750026343da9cfffdc0d2aa6558a2cf0c97878b847586501792f6bfdf694e",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "a57d483742f742ff550db615141bc06ea3a1662ba81515b07499f5df2e592d36",
+    "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+    "services/pipeline/scripts/feature-store/harness.ts": "ebd86bfff3a5556887593a7ab83e24a98507ce2051e7a6b6a120a60a9b34743d",
+    "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+    "services/pipeline/src/featureStore/datasets.ts": "bc19bbfadc1cce86686f9c415f9981e85d80fc022845bd806b07bac9225c1997",
+    "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "086863c08215e74282e0665bc20affc0ddc6cc21c7b599e92025b5867e51e98f",
+    "services/pipeline/src/featureStore/governance.ts": "5e3b72fdf6583dc2c920ba5a60d8cc2b07346db917365304dca4f4e00ad9da2b",
+    "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+    "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "services/pipeline/src/featureStore/objectStore.ts": "d6a9f26c2fd8f54eef161ce5e8dcf8c127a284e90bc6a0e6051355ffc6e737e9",
+    "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7"
+  },
+  "storageRoot": "/private/tmp/dfs164-evaluation-tqkrVh",
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin"
+  },
+  "boundary": "fixture rebuild and pinned materialized input artifacts only; no real evaluation; disposable local PostgreSQL",
+  "verdict": "pass",
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "preregistration": {
+    "commit": "6aa7953dfd0df0c9bf879c2be64e94eaa2c55a3f",
+    "path": "docs/feature-store-spike-preregistration.md",
+    "sha256": "dc6bf2e044bcbdd6de4b1d6f91db9c623f630ad1eaf7bf1b8abdfe1f3c05c97d",
+    "approved": true
+  },
+  "inputPinsArtifact": {
+    "objectKey": "audits/0c112714afcb66c455b566979c6cd728c8104b459131fc09215e4595049bbd7d",
+    "sha256": "0c112714afcb66c455b566979c6cd728c8104b459131fc09215e4595049bbd7d",
+    "byteSize": 35945
+  },
+  "sourceManifestSha256": "2086cbbde03664d99eccbec64c12f659262f848c31ccb97d90aaff2c1c601f30",
+  "wireFiles": 16,
+  "ingestionCheckpoint": "2026-10-20 17:04:25.943802+00",
+  "versions": {
+    "model": "empirical-integer-v1",
+    "adapter": {
+      "id": "qb-passing-yards-materialized",
+      "version": "empirical-feature-adapter-v1"
+    },
+    "feature": "qb-passing-yards-feature-v1",
+    "label": "qb-passing-yards-label-v1",
+    "history": "prior-eligible-reg-max16-min2-cutoff1h-v1"
+  },
+  "modes": [
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "datasetId": "ce09619f-0243-4791-b876-d0220dbc3d99",
+      "datasetObjectKey": "datasets/c6e8afe63ce789d936875f8502993109498423e9083336699a197092cdf06ace",
+      "fileSha256": "c6e8afe63ce789d936875f8502993109498423e9083336699a197092cdf06ace",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+      "rowCount": 2504,
+      "byteSize": 3527908,
+      "exclusions": {
+        "warm-up-only": 1916,
+        "label-unavailable": 3098,
+        "feature-unavailable": 1863
+      },
+      "spec": {
+        "mode": "retrospective-reconstruction-v1",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "labelVersion": "qb-passing-yards-label-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "featuresAsOf": "2026-10-20 17:05:04.982785+00",
+        "labelsAsOf": "2026-10-20 17:05:04.982785+00",
+        "includeRetrospective": true,
+        "includeSuperseded": true
+      },
+      "coverageArtifact": {
+        "objectKey": "audits/5d366ee702c769c8c84b70ef89e51b9e8f9720917e16543f7fb58980dad0c067",
+        "sha256": "5d366ee702c769c8c84b70ef89e51b9e8f9720917e16543f7fb58980dad0c067",
+        "byteSize": 20130850
+      },
+      "coverage": [
+        {
+          "season": 2021,
+          "candidates": 1916,
+          "usableFeatures": 780,
+          "usableLabels": 655,
+          "selected": 0,
+          "strata": {
+            "2-4": 0,
+            "5-8": 0,
+            "9-16": 0
+          }
+        },
+        {
+          "season": 2022,
+          "candidates": 1838,
+          "usableFeatures": 1204,
+          "usableLabels": 633,
+          "selected": 595,
+          "strata": {
+            "2-4": 62,
+            "5-8": 67,
+            "9-16": 466
+          }
+        },
+        {
+          "season": 2023,
+          "candidates": 1812,
+          "usableFeatures": 1380,
+          "usableLabels": 663,
+          "selected": 632,
+          "strata": {
+            "2-4": 50,
+            "5-8": 81,
+            "9-16": 501
+          }
+        },
+        {
+          "season": 2024,
+          "candidates": 1867,
+          "usableFeatures": 1482,
+          "usableLabels": 664,
+          "selected": 644,
+          "strata": {
+            "2-4": 25,
+            "5-8": 51,
+            "9-16": 568
+          }
+        },
+        {
+          "season": 2025,
+          "candidates": 1948,
+          "usableFeatures": 1536,
+          "usableLabels": 663,
+          "selected": 633,
+          "strata": {
+            "2-4": 39,
+            "5-8": 34,
+            "9-16": 560
+          }
+        }
+      ],
+      "work": {
+        "buildStatements": 8,
+        "cohortRead": {
+          "statements": 3,
+          "rightsChecks": 2,
+          "objectReads": 1,
+          "perExampleQueries": 0,
+          "rawSourceReads": 0
+        }
+      }
+    },
+    {
+      "mode": "strict-point-in-time-v1",
+      "datasetId": "0ae1779b-e236-47c8-8da3-112a551fe088",
+      "datasetObjectKey": "datasets/d9fd354643e39f37124adcc0991094a8d041799540048a561dbac89cc0472911",
+      "fileSha256": "d9fd354643e39f37124adcc0991094a8d041799540048a561dbac89cc0472911",
+      "contentSha256": "7858bc13cfd59085549e3c61fc1d42685f5a9134114316bbb623e79aaff43caf",
+      "rowCount": 0,
+      "byteSize": 2926,
+      "exclusions": {
+        "warm-up-only": 1916,
+        "feature-unavailable": 7465
+      },
+      "spec": {
+        "mode": "strict-point-in-time-v1",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "labelVersion": "qb-passing-yards-label-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "featuresAsOf": "2026-10-20 17:05:43.033332+00",
+        "labelsAsOf": "2026-10-20 17:05:43.033332+00",
+        "includeRetrospective": false,
+        "includeSuperseded": true
+      },
+      "coverageArtifact": {
+        "objectKey": "audits/38dde46b593e68c001f654c6d0a09a1d9c33853915b7e124b900b635ff2c08b1",
+        "sha256": "38dde46b593e68c001f654c6d0a09a1d9c33853915b7e124b900b635ff2c08b1",
+        "byteSize": 51162114
+      },
+      "coverage": [
+        {
+          "season": 2021,
+          "candidates": 1916,
+          "usableFeatures": 0,
+          "usableLabels": 655,
+          "selected": 0,
+          "strata": {
+            "2-4": 0,
+            "5-8": 0,
+            "9-16": 0
+          }
+        },
+        {
+          "season": 2022,
+          "candidates": 1838,
+          "usableFeatures": 0,
+          "usableLabels": 633,
+          "selected": 0,
+          "strata": {
+            "2-4": 0,
+            "5-8": 0,
+            "9-16": 0
+          }
+        },
+        {
+          "season": 2023,
+          "candidates": 1812,
+          "usableFeatures": 0,
+          "usableLabels": 663,
+          "selected": 0,
+          "strata": {
+            "2-4": 0,
+            "5-8": 0,
+            "9-16": 0
+          }
+        },
+        {
+          "season": 2024,
+          "candidates": 1867,
+          "usableFeatures": 0,
+          "usableLabels": 664,
+          "selected": 0,
+          "strata": {
+            "2-4": 0,
+            "5-8": 0,
+            "9-16": 0
+          }
+        },
+        {
+          "season": 2025,
+          "candidates": 1948,
+          "usableFeatures": 0,
+          "usableLabels": 663,
+          "selected": 0,
+          "strata": {
+            "2-4": 0,
+            "5-8": 0,
+            "9-16": 0
+          }
+        }
+      ],
+      "work": {
+        "buildStatements": 8,
+        "cohortRead": {
+          "statements": 3,
+          "rightsChecks": 2,
+          "objectReads": 1,
+          "perExampleQueries": 0,
+          "rawSourceReads": 0
+        }
+      }
+    }
+  ],
+  "elapsedMs": 94102.212166,
+  "peakRssBytes": 654868480,
+  "fullReceipt": {
+    "objectKey": "audits/5c90d12926f9887172ea53bf0ba5e78a716c86a5624d6d1e3be4b9e34e76877d",
+    "sha256": "5c90d12926f9887172ea53bf0ba5e78a716c86a5624d6d1e3be4b9e34e76877d",
+    "byteSize": 7591
+  }
+}
