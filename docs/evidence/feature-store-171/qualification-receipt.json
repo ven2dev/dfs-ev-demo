@@ -20,15 +20,16 @@
       "license_id": "CC-BY-4.0",
       "attribution": "Lee Sharpe / nflverse",
       "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
-      "license_qualification": "release-repository-declared",
+      "license_qualification": "release-repository-declared-and-organization-scope-confirmed",
       "inventoryWireSha256": "6983084aff35e6ea9228440cfb5bba70b23625b9b2799eaff5b03eb808f1498e",
       "changedFromInitialInventory": true,
-      "qualification": "blocked-upstream-grant",
-      "releasePermission": "not-approved-by-this-research",
+      "qualification": "release-use-qualified-with-attribution",
+      "releasePermission": "publisher-declared CC-BY-4.0 release scope; obligations apply; not product release approval",
       "obligations": [
         "retain source, credit and license link",
         "record modifications; no endorsement claim"
-      ]
+      ],
+      "additionalLicenseEvidenceUrl": "https://github.com/nflverse/.github/blob/74a492cc87123142279c83d2d543e822e81a879c/profile/README.md#licensing"
     },
     {
       "feed": "pbp_participation",
@@ -308,11 +309,13 @@
   ],
   "summary": {
     "fileCount": 16,
-    "declaredLicenseVerified": 15,
+    "declaredLicenseVerified": 16,
     "upstreamGrantBlocked": 1,
-    "permissionForRedistributionOrDeployment": "not-established",
+    "permissionForRedistributionOrDeployment": "schedule release-use scope qualified subject to CC-BY-4.0; full dataset/product not approved",
     "historicalAvailability": "historical-availability-unverified",
-    "populationCompleteness": "not-established; owned by #54"
+    "populationCompleteness": "not-established; owned by #54",
+    "directUpstreamRepositoryGrant": "unresolved; excluded from qualified release-use scope",
+    "scheduleReleaseUseBlocked": 0
   },
   "neon": {
     "postgresDocumentedStatementTimeoutDefault": "0 (disabled)",
@@ -327,8 +330,8 @@
   "scheduleGap": {
     "licenseRequest": "https://github.com/nflverse/nfldata/issues/33",
     "commercialClarification": "https://github.com/nflverse/nfldata/issues/35",
-    "finding": "#33 open; #35 closed as not planned without an affirmative grant",
-    "nextOwnerDecision": "authorize a narrowly scoped clarification request, supply authoritative permission, or choose another qualified schedule source"
+    "finding": "Superseded release-use block: first-party org statement explicitly covers nflverse-data releases except FTN; upstream issues still do not establish direct nfldata permission.",
+    "nextOwnerDecision": "Review scoped release qualification and attribution; no maintainer outreach or replacement required for that scope."
   },
   "followUp": {
     "datePacific": "2026-10-19",
@@ -357,6 +360,55 @@
       "dataReleaseLicense": "https://github.com/nflverse/nflverse-pbp/blob/cd7bfd9bbf9251529bf5e0283ae84f10e11e7d17/LICENSE.md",
       "newRawDataDownloads": 0
     },
-    "timeoutFollowUp": "Per-role application/pipeline statement_timeout decision belongs in #190 or #95; no ALTER/SET performed"
+    "timeoutFollowUp": "Per-role application/pipeline statement_timeout decision belongs in #190 or #95; no ALTER/SET performed",
+    "scheduleResolution": {
+      "datePacific": "2026-10-20",
+      "priorScheduleQualification": {
+        "feed": "schedules",
+        "season": null,
+        "name": "games.csv.gz",
+        "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+        "license_id": "CC-BY-4.0",
+        "attribution": "Lee Sharpe / nflverse",
+        "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+        "license_qualification": "release-repository-declared",
+        "inventoryWireSha256": "6983084aff35e6ea9228440cfb5bba70b23625b9b2799eaff5b03eb808f1498e",
+        "changedFromInitialInventory": true,
+        "qualification": "blocked-upstream-grant",
+        "releasePermission": "not-approved-by-this-research",
+        "obligations": [
+          "retain source, credit and license link",
+          "record modifications; no endorsement claim"
+        ]
+      },
+      "policyPublishedAtUtc": "2026-10-13T17:29:19Z",
+      "publisher": "nflverse organization",
+      "policyCommit": "74a492cc87123142279c83d2d543e822e81a879c",
+      "policyUrl": "https://github.com/nflverse/.github/blob/74a492cc87123142279c83d2d543e822e81a879c/profile/README.md#licensing",
+      "release": "https://github.com/nflverse/nflverse-data/releases/tag/schedules",
+      "releaseId": 251386473,
+      "license": "CC-BY-4.0",
+      "scope": "nflverse-data release-distributed schedule dataset; commercial reuse with attribution subject to licence terms",
+      "exclusions": [
+        "direct nfldata downloads",
+        "warranty of all third-party rights",
+        "unassessed betting-line/unrelated fields",
+        "participation/FTN public-serving decision",
+        "product/dataset release approval"
+      ],
+      "hashSpecificAttestation": false,
+      "currentMutableAssetMetadata": {
+        "assetId": 659823874,
+        "sha256": "8d272f16ceae09e30cc533c47b39bab5929bcd1b1764db9d520829af25187c4d",
+        "updatedAtUtc": "2026-10-20T16:16:34Z",
+        "rawBytesDownloaded": false
+      },
+      "upstreamRepositoryObservation": {
+        "commit": "6e3fd8d3f003cf06f133daf5805c934effdcb242",
+        "repositoryLicense": null
+      },
+      "thirdPartyMessages": 0,
+      "newRawDataDownloads": 0
+    }
   }
 }

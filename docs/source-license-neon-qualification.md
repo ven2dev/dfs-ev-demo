@@ -4,7 +4,7 @@ Research date: October 18, 2026 (Pacific); observed at 2026-10-19T04:11:51Z. Ori
 
 ## Verdict
 
-All 16 inputs are accounted for against #138's **actual ingestion manifest**, not just its earlier inventory. Fifteen published license declarations are verified. The schedule's upstream grant remains blocked. This record does not authorize redistribution, commercial deployment, model evaluation or #54 population-completeness claims. A later console-role timeout observation is recorded below; the intended pipeline connection configuration remains unverified.
+All 16 inputs are accounted for against #138's **actual ingestion manifest**, not just its earlier inventory. All 16 published licence declarations are now verified for the exact release inputs. The schedule release-use scope is qualified under the first-party clarification recorded below; direct upstream nfldata licensing remains unresolved. This record does not authorize redistribution, commercial deployment, model evaluation or #54 population-completeness claims. A later console-role timeout observation is recorded below; the intended pipeline connection configuration remains unverified.
 
 ## Design basis
 
@@ -14,7 +14,7 @@ Pattern: evidence-backed source qualification with separate declaration, operati
 
 | Input | Published declaration | Verdict |
 |---|---|---|
-| games.csv.gz | CC-BY-4.0 | Blocked upstream grant |
+| games.csv.gz | CC-BY-4.0 | Release use qualified with attribution; direct upstream repository excluded |
 | pbp_participation_2021.csv | CC-BY-SA-4.0 | Declaration verified; obligations apply |
 | pbp_participation_2022.csv | CC-BY-SA-4.0 | Declaration verified; obligations apply |
 | pbp_participation_2023.csv | CC-BY-SA-4.0 | Declaration verified; obligations apply |
@@ -41,7 +41,7 @@ The [pinned participation documentation](https://github.com/nflverse/nflreadr/bl
 
 The official [CC BY terms](https://creativecommons.org/licenses/by/4.0/) and [CC BY-SA terms](https://creativecommons.org/licenses/by-sa/4.0/) explain credit, license references, modification notices and the latter's ShareAlike conditions. This research adds no attribution trailers to Git; source attribution obligations concern the data and any authorized distribution.
 
-The schedule's upstream [license request #33](https://github.com/nflverse/nfldata/issues/33) remains open. [Commercial clarification #35](https://github.com/nflverse/nfldata/issues/35) was closed as not planned without an affirmative grant. Closure does not establish permission. Owner decision: provide authoritative permission, explicitly authorize a scoped clarification request, or select a different qualified source. No contact was sent.
+The schedule's upstream [licence request #33](https://github.com/nflverse/nfldata/issues/33) remains open, and [commercial clarification #35](https://github.com/nflverse/nfldata/issues/35) was closed without a grant. Neither issue establishes permission. However, the [nflverse organization clarification pinned to 74a492c](https://github.com/nflverse/.github/blob/74a492cc87123142279c83d2d543e822e81a879c/profile/README.md#licensing), published October 13, 2026, explicitly scopes CC BY 4.0 to nflverse-data release datasets except FTN data and permits commercial use with attribution. The initial research missed this already-published first-party evidence. The current [schedule release](https://github.com/nflverse/nflverse-data/releases/tag/schedules) identifies the artifact and upstream maintainer and publishes no contrary licence exception. This qualifies the release-use scope of the ingested games.csv.gz; it does not supply a licence for separate direct nfldata downloads or warrant all third-party rights. No contact was sent.
 
 The 2023-onward participation documentation describes post-season publication; it does not demonstrate availability before historical games. Retain `historical-availability-unverified`. The recorded 2,504 player-games and dataset hash `a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d` are existing #138 evidence, not freshly reproduced here. Identity and participation gaps remain outside a population-completeness claim.
 
@@ -55,11 +55,11 @@ Only after the owner designates a non-production read-only target, inspect with 
 
 ## Follow-up roadmap and AC disposition
 
-1. Research complete: preserve the 16-file manifest, pinned policy references, attribution/modification duties, ShareAlike distinction and schedule grant gap in this receipt.
+1. Research complete: preserve the 16-file manifest, pinned policy references, attribution/modification duties, ShareAlike distinction and scoped schedule release-use finding in this receipt.
 2. Research complete with a qualification limit: separate Postgres documented defaults and Neon documented override/pooling behavior from actual account settings. Actual settings remain blocked.
-3. Owner decision pending: schedule permission evidence or specifically authorized outreach/replacement. Unanswered closure is not qualified.
+3. Schedule release-use evidence established on October 20: retain nflverse and Lee Sharpe attribution, source/licence references and modification notices. Direct upstream repository licensing remains unresolved and outside this qualified scope; unanswered issue closure is not permission.
 4. Owner decision pending: designated non-production read-only connection, if actual settings are wanted. Otherwise retain blocked status.
-5. Repository documentation delivery is prepared on feature/dfsEV-171-source-license-record, with commit and push still subject to owner approval. No issue closure or dataset release is warranted while grant/configuration gates remain unresolved.
+5. Repository documentation delivery is prepared on feature/dfsEV-171-source-license-record, with commit and push still subject to owner approval. Issue closure is assessed against the qualification-record ACs; dataset/public-serving approval remains a separate downstream decision.
 
 ## Monorepo and access review — October 19, 2026
 
@@ -75,10 +75,20 @@ Recommendation: evaluate replacement before requesting maintainer permission, bu
 
 The current [pinned producer helper](https://github.com/nflverse/nflfastR/blob/701bbf38bc1c030ff9f1f4825a23191287d3903c/R/helper_add_game_data.R) loads nflreadr::load_schedules(), joins its game data, and sets game_date from gameday. The [raw NFL parser](https://github.com/nflverse/nflfastR/blob/701bbf38bc1c030ff9f1f4825a23191287d3903c/R/helper_scrape_nfl.R) obtains start_time from the raw game-detail startTime field, but exact historical release provenance, completeness and underlying rights were not established. This is a current-source code inspection, not proof that every 2021–2025 artifact used the identical producer version.
 
-A qualified replacement needs independent authorized provenance for every required game identifier/date/kickoff field, one consistent timestamp per game, timezone/DST and postponed-game handling, 2021–2025 coverage against the bounded research population, and immutable source/input hashes. Historical postgame PBP also does not provide future schedule availability or prove pregame knowledge. No raw release was downloaded, new dataset ingested, pipeline code changed or maintainer contacted. Keep games.csv.gz blocked pending this evidence or authoritative permission.
+A qualified replacement needs independent authorized provenance for every required game identifier/date/kickoff field, one consistent timestamp per game, timezone/DST and postponed-game handling, 2021–2025 coverage against the bounded research population, and immutable source/input hashes. Historical postgame PBP also does not provide future schedule availability or prove pregame knowledge. No raw release was downloaded, new dataset ingested, pipeline code changed or maintainer contacted. This replacement candidate remains unqualified as independent provenance. The subsequent first-party release clarification below makes replacement unnecessary for the documented release-use scope; it does not rewrite the existing input snapshot.
 
 ## Public-serving and operational gates
 
 [ShareAlike decision #197](https://github.com/ven2dev/dfs-ev-demo/issues/197) tracks the owner-approved disposition before participation-derived features are served publicly. It covers per-output lineage, applicable notices/ShareAlike review and an explicit Phase 10 release prerequisite. This record does not clear those outputs.
 
 The observed console-role statement_timeout of 0 means that server setting does not impose a statement-duration limit on that connection. It does not prove that no other timeout/cancellation exists. Assess per-role app/pipeline limits in #190 or #95; neither this research nor the catalog comparison changes those settings. Vercel Query unblocks bounded read-only snapshot/plan investigation for #95; restore and branch drills remain subject to #86 access.
+
+## Schedule release-use resolution — October 20, 2026
+
+**Decision basis:** retain the exact ingested nflverse-data release artifact, under the publisher's explicit CC BY 4.0 release scope, rather than replace it with a field copied from the same schedule source or send a redundant permission request. The publisher offers no warranty of underlying rights; this is a scoped source qualification, not a legal guarantee or general product release approval.
+
+**Scope:** research storage/normalization, derived analysis and commercial reuse of the release-distributed schedule under CC BY 4.0, subject to its terms. Preserve credit to nflverse and Lee Sharpe, source/release link, licence link and notices of normalization, Eastern-to-UTC conversion, filtering and other modifications. Do not imply endorsement. Do not extend this finding to direct nfldata downloads, betting-line provenance, unrelated fields or participation/FTN obligations without their own assessment.
+
+**Input identity:** retain ingestion wire SHA-256 962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd and the earlier inventory hash as distinct recorded identities. The release asset is mutable: metadata observed October 20 reports a different current games.csv.gz digest (8d272f16ceae09e30cc533c47b39bab5929bcd1b1764db9d520829af25187c4d). No new raw bytes were downloaded or substituted. The publisher's dataset-level statement scopes the release generally; it is not an individual hash-specific attestation.
+
+**Boundaries:** #197 still governs public participation-derived outputs; #54 still owns population completeness; pipeline-role settings remain unverified. No pipeline code, rights registry, data distribution or hosted configuration changed. The record can clear the schedule release-declaration gap without claiming those separate gates passed.
