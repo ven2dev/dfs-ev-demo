@@ -92,3 +92,41 @@ The observed console-role statement_timeout of 0 means that server setting does 
 **Input identity:** retain ingestion wire SHA-256 962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd and the earlier inventory hash as distinct recorded identities. The release asset is mutable: metadata observed October 20 reports a different current games.csv.gz digest (8d272f16ceae09e30cc533c47b39bab5929bcd1b1764db9d520829af25187c4d). No new raw bytes were downloaded or substituted. The publisher's dataset-level statement scopes the release generally; it is not an individual hash-specific attestation.
 
 **Boundaries:** #197 still governs public participation-derived outputs; #54 still owns population completeness; pipeline-role settings remain unverified. No pipeline code, rights registry, data distribution or hosted configuration changed. The record can clear the schedule release-declaration gap without claiming those separate gates passed.
+
+## Participation / ShareAlike assessment — October 20, 2026
+
+### Licence scope and interpretation
+
+The [pinned participation loader](https://github.com/nflverse/nflreadr/blob/23f915a5be30415aeaa0c5c80cd23b2c69cda122/R/load_participation.R) explicitly assigns CC BY-SA 4.0 and separate provider attribution: NFL NextGenStats via nflverse for 2021–2022; FTN Data via nflverse for 2023–2025. Retain this specific declaration for all five ingested files rather than silently applying the organization's broader non-FTN CC BY summary to the earlier years. The year-specific scope discrepancy remains a review item, not permission to downgrade obligations.
+
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode.en) permits commercial reuse. Sharing adapted material invokes ShareAlike and attribution; the database-rights provisions also matter. Applicable downstream rights cannot be restricted by additional terms or technical measures. This is not an automatic prohibition on charging for a service.
+
+The [Creative Commons FAQ](https://creativecommons.org/faq/) distinguishes private reuse from public sharing and says CC licences do not compel publication of private work. Whether a particular output is an adaptation depends on applicable rights and law. Its software guidance does not support treating all surrounding application source as automatically covered. That also does not automatically exempt a model or prediction.
+
+The [publisher's organizational explanation](https://github.com/nflverse/.github/blob/74a492cc87123142279c83d2d543e822e81a879c/profile/README.md#licensing) describes FTN-derived models/applications broadly as subject to ShareAlike/open availability. Preserve that stricter published interpretation alongside the legal terms; do not promise proprietary public model serving on the strength of a narrower interpretation without an output-specific qualified decision. No legal clearance or alternate permission was obtained.
+
+### Repository lineage inventory
+
+Observed code at this branch's base `edb5981` (documentation follow-up only). These are technical dependencies, not legal determinations that every downstream object is Adapted Material.
+
+| Output or boundary | Observed participation dependency | Proposed disposition for #197 |
+|---|---|---|
+| Five raw participation snapshots | Direct copies, with year-specific provider credit | Keep private research; assess terms/notices before any sharing |
+| Normalized per-player/game offense_play_count | normalize.ts aggregates offensive players into counts | Treat proposed public export as participation-derived; licence/attribution review required |
+| Eligible game histories and features | qb_job_context uses positive offense participation as an eligibility condition; derived.ts selects histories using that result | Hiding counts does not remove selection lineage; public use stays blocked |
+| Outcome labels and dataset membership | Label context and dataset feature/label selection depend on qualified game context; dataset manifests retain snapshot lineage | Review the selected dataset as a whole, not only its numeric columns |
+| Empirical support, probabilities and pricing | empiricalAdapter.ts reads the selected materialized history and emits research-scoped results | No automatic model-output exemption; public serving decision pending |
+| Training/evaluation artifacts, model reports and published metrics using those datasets | Potential downstream dependency even without raw participation fields | Inventory each concrete artifact before release; do not infer all model artifacts share the same classification |
+| Source code and unrelated product features | Reading data does not establish that the entire codebase is adapted data | Do not relicense the whole app by assertion; assess any embedded data and affected outputs separately |
+
+Technical references: [normalization](../services/pipeline/src/featureStore/normalize.ts), [eligibility SQL](../packages/db/proposals/138_feature_store.sql), [feature/label materialization](../services/pipeline/src/featureStore/derived.ts), [dataset construction](../services/pipeline/src/featureStore/datasets.ts), [empirical adapter](../services/pipeline/src/featureStore/empiricalAdapter.ts). The current apps/web API source search found no featureStore/empiricalAdapter integration. That is a source-code observation, not an audit of a deployed service.
+
+The adapter declares rightsScope=research and the dataset path checks research rights. Those existing checks are not a complete public-serving policy or a legal ShareAlike test. #197 still needs an explicit release prerequisite and verification in the future serving work.
+
+### Recommended owner decision (not yet approved)
+
+Keep the existing participation-dependent pipeline, datasets and empirical artifacts private/research-only. Before public use, choose an output-specific path in #197: comply with applicable ShareAlike terms for shared adapted material; obtain authoritative alternate permission; or build a separately qualified participation-free/replacement lineage and evaluate it afresh. The last option changes the eligibility/history policy, so it needs new versions, dataset hashes and validation; removing a field from a JSON response is insufficient. No source deletion or pipeline redesign is authorized here.
+
+For a proposed shared artifact, record input snapshot IDs/years, classification and rationale, provider/source/licence credits, modification notices, adapter's licence when applicable, and compatibility of product terms/access controls with recipient rights. Paywall/login alone does not establish either compliance or noncompliance. Unresolved outputs remain excluded from public serving to prevent a research grant being reused as production permission.
+
+#171 can complete this qualification record while #197 retains the public-serving decision. No source-code licence was changed, no data/model released, and no new claim about #54 population completeness was made.

@@ -409,6 +409,38 @@
       },
       "thirdPartyMessages": 0,
       "newRawDataDownloads": 0
+    },
+    "participationAssessment": {
+      "datePacific": "2026-10-20",
+      "status": "qualification-record-complete; owner public-serving disposition pending in #197",
+      "issue": "https://github.com/ven2dev/dfs-ev-demo/issues/197",
+      "specificDeclarationAppliesToSeasons": [
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+      ],
+      "declaration": "https://github.com/nflverse/nflreadr/blob/23f915a5be30415aeaa0c5c80cd23b2c69cda122/R/load_participation.R",
+      "generalNonFtnScopeConflict": "do not silently replace feed-specific BY-SA declaration with broad org BY summary for 2021\u20132022",
+      "legalTerms": "https://creativecommons.org/licenses/by-sa/4.0/legalcode.en",
+      "ccFaq": "https://creativecommons.org/faq/",
+      "publisherInterpretation": "https://github.com/nflverse/.github/blob/74a492cc87123142279c83d2d543e822e81a879c/profile/README.md#licensing",
+      "observedCodeBase": "edb5981",
+      "lineage": [
+        "raw participation",
+        "normalized offense_play_count",
+        "positive-offense eligibility selection",
+        "feature history and label/dataset selection",
+        "research empirical support/probabilities/pricing",
+        "potential trained/evaluation/report artifacts"
+      ],
+      "recommendation": "private research only for existing dependent artifacts; output-specific #197 disposition before public serving",
+      "publicServingApproved": false,
+      "ownerDispositionApproved": false,
+      "codeLicenceChanged": false,
+      "dataOrModelReleased": false,
+      "sourceIdentitiesChanged": false
     }
   }
 }
