@@ -1,7 +1,7 @@
 # Preregistered QB baseline evaluation (#164)
 
-Status: step 3, registered real-cohort evaluation complete; cold-path and full
-integration checkpoint remain step 4.
+Status: step 4 complete, ready for owner and independent review. Local targets
+pass; hosted CI and merge remain pending.
 The [owner-approved roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/164#issuecomment-6296073750)
 sets a five-hour engineering cap. Each atomic commit and every push needs owner
 approval. This follows merged #189; database/pipeline extraction remains later work.
@@ -243,3 +243,76 @@ records 17 focused PostgreSQL cases, 56 projection tests, typecheck, lint,
 boundaries and layout/CI checks. Scratch databases and the disposable container
 were removed. Reproduce using the clean environment shown for preparation,
 substituting `evaluation-run.ts` for `evaluation-prepare.ts`.
+
+
+## Step 4 checkpoint
+
+The [capacity receipt](evidence/feature-store-164/step-4-capacity.json) records
+40 completed reports across ten alternating rounds of cold/warm and both evidence
+modes. Every request completed below the 7,000 ms target and 10,000 ms deadline;
+no errors, misses or censored observations were removed. This is an absolute
+target probe, not an optimization comparison. Cold/warm order reverses every
+other round, with no scored-result reuse. OS, file and PostgreSQL caches remain
+unflushed. Repeated immutable writes can find the existing report address and
+validate its bytes; the first report of each mode also exercises creation.
+
+| Evidence mode | Request state | Runs | p50 | p95 / maximum |
+| --- | --- | --- | --- | --- |
+| Retrospective | Fresh process and connection | 10 | 513 ms | 537 ms |
+| Retrospective | Existing process and connection | 10 | 474 ms | 507 ms |
+| Strict PIT | Fresh process and connection | 10 | 941 ms | 962 ms |
+| Strict PIT | Existing process and connection | 10 | 893 ms | 931 ms |
+
+The cold gate starts before opening the fresh restricted connection and ends
+after report persistence and the pre-delivery check. Node startup and ObjectStore
+initialization are recorded separately; local end-to-end p95 including those
+stages is 616 ms retrospectively and 1,020 ms strictly. Every query, calculation,
+serialization and object-write duration is retained in the full ObjectStore
+receipt. Ten observations make nearest-rank p95 equal the maximum: these establish
+ample local headroom, not a precise production tail estimate. Local Node boot
+does not model Vercel boot or a Neon compute waking from scale-to-zero.
+
+All 40 reports used exactly three SQL statements, two batched rights/status
+checks, three object reads and one report write. No query reads normalized raw
+evidence, feature rows or label rows during report execution. The same work
+budget now runs in CI at 2 and 130 examples; the opt-in probe proves it at 2,504.
+The restricted connection factory issues only reader membership. Each cold
+trial starts a native Node 24 process, using generated scratch credentials over
+IPC and no application configuration. Process startup is measured separately
+from the gated connection-plus-request path.
+
+Fresh input pins bind the exact file/content hashes, versions, preregistration
+and aggregate of 29 setup/runtime file hashes before scoring. The logical hashes
+match step 3 across all trials and this independent fixture rebuild:
+
+- Retrospective: `e8bf09a84fda43f2c19fc28e5a7c78be430ec74eadec660a80270590bc532dfa`.
+- Strict PIT: `5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e`.
+
+The registered scores and coverage are unchanged. Infinity remains visible;
+strict PIT still has no forecast-qualified historical evidence. No smoothing,
+calibration, market-price substitution or policy tuning was added.
+
+The [final checkpoint](evidence/feature-store-164/step-4-checkpoint.json) maps each
+acceptance criterion to a verdict. Both full PostgreSQL suites passed on the
+standard 512 MiB fixture: 79 feature-store cases; aggregate migration/catalog,
+readiness, lease and corpus checks, including 25 PostgreSQL Vitest cases and
+74 required Node cases. Guards, lifecycle and 12 catalog contracts passed.
+Disposable databases and the container were removed. No frozen database asset,
+legacy fitter, existing empirical adapter, UI, workflow or lockfile changed.
+
+The initial default-concurrency application run recorded four existing
+5-second test timeouts (AuthStatus, ConnectionIndicator, creator capture-store
+concurrency and creator CLI). The complete retry with two workers passed all
+909 tests, and the Node lane passed 268, including the 56 projection tests.
+No timeout, assertion or application code changed. Both outcomes and full log
+hashes are retained; hosted CI still needs to pass at its configured concurrency.
+Repository/domain typechecks, lint, seven boundary probes and 12 layout/CI
+checks pass. Full reports/traces/logs remain local ObjectStore artifacts; Git
+receives compact verdict/hash/count/timing receipts.
+
+Reproduce the opt-in capacity matrix with the clean local environment above,
+using `evaluation-benchmark.ts`. The full CI database sequence is
+`test:db:guard`, `test:db:lifecycle`, `test:db:local`, then a fresh standard
+container for `test:feature-store:db` and cleanup. This completes implementation
+and local acceptance proof; owner approval precedes the final commit, fresh
+consent precedes pushing/opening the PR, and independent review precedes merge.

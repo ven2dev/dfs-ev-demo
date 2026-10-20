@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 4,
+  "recordedAt": "2026-10-20T20:43:17.908Z",
+  "code": {
+    "gitSha": "3279ab0d14c0383f05b818331b2950bd209c4ff8",
+    "contentSha256": "20552789f51e4b93e6c8b4e741a3c2f4aaba4a84bc175d2ebfe04981cce2a8fb"
+  },
+  "codeHashes": {
+    "package-lock.json": "76b11cf6b543cc6d084f3c86ac9ab9a5610dcae6dbd09d6260dfe639de8d62a9",
+    "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "packages/domain/package.json": "1981ff8b9d068c2150ec8abe14401d0f01ee682408a2c35042cd9255b0f70f4c",
+    "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "packages/domain/src/projection/evaluation.ts": "7fa42bc43cfd36f4366bab60c07c6c6756434833ee478b10ba90de3dcfc3e643",
+    "packages/domain/src/projection/qb-evaluation.ts": "230f6d4a5774ede04b43dcb178845a3b1ab0a7b8a4ed8a01fd662e6ac874d654",
+    "services/pipeline/package.json": "49b750026343da9cfffdc0d2aa6558a2cf0c97878b847586501792f6bfdf694e",
+    "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "9a1ebf1e7a476e4359f0a8e359bafdbadb1c3c4d929caa380ceda351fdd94057",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "6acc51becdf54518f15ebe930f8628f3fa7b109c22404b7c9d3bf44686521021",
+    "services/pipeline/scripts/feature-store/evaluation-measure.ts": "53e7917c1e695f0701ca1aa6d83da61efdfdf32952a39d4f64ddd42bac0ce3ea",
+    "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts": "9668b4ff3c7fde1a3de7f18c3ac96a7dbebe0f7e23e769debb92be2a78f3dbcf",
+    "services/pipeline/scripts/feature-store/evaluation-run.ts": "2042463914c76d33d2c4a426637e0091251e523e93a4ddb5ec3b3f0f5b9754eb",
+    "services/pipeline/scripts/feature-store/evaluation-worker.ts": "ec7adf737d3bcaabdc93a8fd87a0a954f51d505d7b5cf248c4e427c06c711a7f",
+    "services/pipeline/scripts/feature-store/harness.ts": "fedfc23c25d0c776cdeeb93224ef4e3ece82dd8b92aaf11cd537e6f29c25059a",
+    "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+    "services/pipeline/src/featureStore/datasets.ts": "33d71b86b80f38b8129a9738483eb85415b3e52a275005ac9b5a29953748bde3",
+    "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "086863c08215e74282e0665bc20affc0ddc6cc21c7b599e92025b5867e51e98f",
+    "services/pipeline/src/featureStore/governance.ts": "5e3b72fdf6583dc2c920ba5a60d8cc2b07346db917365304dca4f4e00ad9da2b",
+    "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+    "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "services/pipeline/src/featureStore/objectStore.ts": "d6a9f26c2fd8f54eef161ce5e8dcf8c127a284e90bc6a0e6051355ffc6e737e9",
+    "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7"
+  },
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin"
+  },
+  "storageRoot": "/private/tmp/dfs164-final-0saGdB",
+  "rounds": 10,
+  "verdict": "pass",
+  "targetMs": 7000,
+  "deadlineMs": 10000,
+  "gate": "every completed request <=7000 ms, including fresh restricted connection for cold; any error/deadline miss fails; report nearest-rank p50/p95 and maximum by mode/temperature",
+  "boundary": "request connection (cold) plus pinned input reads, three SQL statements, full scoring/serialization, private ObjectStore report write and pre-delivery rights/status recheck; fixture reconstruction excluded",
+  "cacheState": "ten alternating rounds, cold/warm order reversed on even rounds; fresh native Node process and connection per cold; existing connection/process per warm; OS/file/PostgreSQL caches unflushed; no scored-result reuse; immutable output address may already exist (put-if-absent validates existing bytes)",
+  "disclosures": [
+    "cold Node startup and ObjectStore initialization measured separately; full local end-to-end disclosed, not gated",
+    "no optimization comparison: absolute repeated targets, not ABBA",
+    "local probes do not model Vercel boot or Neon compute wake",
+    "revocation after the final SQL snapshot and before bytes leave the process remains the accepted delivery window"
+  ],
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "inputPinsArtifact": {
+    "objectKey": "audits/d7d1633a51abd96397005386d07e969b8af847997939943fbaa3885c8b09f729",
+    "sha256": "d7d1633a51abd96397005386d07e969b8af847997939943fbaa3885c8b09f729",
+    "byteSize": 36884
+  },
+  "preregistration": {
+    "commit": "6aa7953dfd0df0c9bf879c2be64e94eaa2c55a3f",
+    "path": "docs/feature-store-spike-preregistration.md",
+    "sha256": "dc6bf2e044bcbdd6de4b1d6f91db9c623f630ad1eaf7bf1b8abdfe1f3c05c97d",
+    "approved": true
+  },
+  "versions": {
+    "model": "empirical-integer-v1",
+    "adapter": {
+      "id": "qb-passing-yards-materialized",
+      "version": "empirical-feature-adapter-v1"
+    },
+    "feature": "qb-passing-yards-feature-v1",
+    "label": "qb-passing-yards-label-v1",
+    "history": "prior-eligible-reg-max16-min2-cutoff1h-v1"
+  },
+  "cohorts": [
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "fileSha256": "d2fbedfc8ec9c54db782fce495e7c06848861d23e3aa457f1dbf58f739db8808",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+      "count": 2504
+    },
+    {
+      "mode": "strict-point-in-time-v1",
+      "fileSha256": "1a8ca6e94eb992849f3e01bfff3765fe6e4b9fa2c341f0ec9770f68545f0901c",
+      "contentSha256": "7858bc13cfd59085549e3c61fc1d42685f5a9134114316bbb623e79aaff43caf",
+      "count": 0
+    }
+  ],
+  "logicalHashes": {
+    "retrospective-reconstruction-v1": "e8bf09a84fda43f2c19fc28e5a7c78be430ec74eadec660a80270590bc532dfa",
+    "strict-point-in-time-v1": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e"
+  },
+  "cohortsMeasured": [
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "temperature": "cold",
+      "attempted": 10,
+      "completed": 10,
+      "failed": 0,
+      "p50Ms": 513.379958,
+      "p95Ms": 537.166959,
+      "maximumMs": 537.166959,
+      "processStartP95Ms": 77.5412079999951,
+      "endToEndP95Ms": 616.4790829999984,
+      "verdict": "pass"
+    },
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "temperature": "warm",
+      "attempted": 10,
+      "completed": 10,
+      "failed": 0,
+      "p50Ms": 473.5309999999881,
+      "p95Ms": 506.7405839999992,
+      "maximumMs": 506.7405839999992,
+      "processStartP95Ms": null,
+      "endToEndP95Ms": null,
+      "verdict": "pass"
+    },
+    {
+      "mode": "strict-point-in-time-v1",
+      "temperature": "cold",
+      "attempted": 10,
+      "completed": 10,
+      "failed": 0,
+      "p50Ms": 940.965542,
+      "p95Ms": 961.6422090000001,
+      "maximumMs": 961.6422090000001,
+      "processStartP95Ms": 76.7431249999936,
+      "endToEndP95Ms": 1020.0655419999966,
+      "verdict": "pass"
+    },
+    {
+      "mode": "strict-point-in-time-v1",
+      "temperature": "warm",
+      "attempted": 10,
+      "completed": 10,
+      "failed": 0,
+      "p50Ms": 893.336209000001,
+      "p95Ms": 930.5454170000012,
+      "maximumMs": 930.5454170000012,
+      "processStartP95Ms": null,
+      "endToEndP95Ms": null,
+      "verdict": "pass"
+    }
+  ],
+  "fullReceipt": {
+    "objectKey": "audits/82326c2269dac39914ebc60f8c7c2babe5eec01e483ac29e6c07384733ecf42b",
+    "sha256": "82326c2269dac39914ebc60f8c7c2babe5eec01e483ac29e6c07384733ecf42b",
+    "byteSize": 57289
+  }
+}

@@ -1,0 +1,393 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 4,
+  "baseCommit": "edb5981c7561f12a6777a4ab7b7dd65b991815a1",
+  "headBeforeStep4": "3279ab0d14c0383f05b818331b2950bd209c4ff8",
+  "verdict": "ready-for-owner-review",
+  "benchmarkReceipt": {
+    "path": "docs/evidence/feature-store-164/step-4-capacity.json",
+    "sha256": "fd6c4c650b7ed1aa460c58b7a0a049bdc6789fae69e31fea437a05875120bec3"
+  },
+  "measuredImplementation": {
+    "gitSha": "3279ab0d14c0383f05b818331b2950bd209c4ff8",
+    "contentSha256": "20552789f51e4b93e6c8b4e741a3c2f4aaba4a84bc175d2ebfe04981cce2a8fb"
+  },
+  "testFileSha256": {
+    "services/pipeline/tests/feature-store/datasets.check.mts": "9265385eca8c37324d648cf07b5be00ecf087002d00b086d77d49808f7a914ca"
+  },
+  "artifacts": {
+    "storageRoot": "/private/tmp/dfs164-final-0saGdB",
+    "fullBenchmark": {
+      "objectKey": "audits/82326c2269dac39914ebc60f8c7c2babe5eec01e483ac29e6c07384733ecf42b",
+      "sha256": "82326c2269dac39914ebc60f8c7c2babe5eec01e483ac29e6c07384733ecf42b",
+      "byteSize": 57289
+    },
+    "logs": [
+      {
+        "name": "unit",
+        "objectKey": "audits/b845197a197876e3f799389983645c9cda80a9563670821c932202aedc774d5f",
+        "sha256": "b845197a197876e3f799389983645c9cda80a9563670821c932202aedc774d5f",
+        "byteSize": 6935
+      },
+      {
+        "name": "unit-bounded",
+        "objectKey": "audits/13cfe908c4afe5886207b202ec32fd77694967e7f802bb4f1240e1b8038910bc",
+        "sha256": "13cfe908c4afe5886207b202ec32fd77694967e7f802bb4f1240e1b8038910bc",
+        "byteSize": 1149
+      },
+      {
+        "name": "node",
+        "objectKey": "audits/9e4bfeb61cf3010db9fae742b965f38596d69c866530b3ac3b8463c4ae688f0f",
+        "sha256": "9e4bfeb61cf3010db9fae742b965f38596d69c866530b3ac3b8463c4ae688f0f",
+        "byteSize": 1028
+      },
+      {
+        "name": "lint",
+        "objectKey": "audits/03961536da5994657fef89ae9b3d243d175f9768d0a73cbf0c87189565e142f9",
+        "sha256": "03961536da5994657fef89ae9b3d243d175f9768d0a73cbf0c87189565e142f9",
+        "byteSize": 990
+      },
+      {
+        "name": "ci",
+        "objectKey": "audits/7632022a3993d89f2f0f1de83230609a80c15ff87b25e7ddd228fb690c66d417",
+        "sha256": "7632022a3993d89f2f0f1de83230609a80c15ff87b25e7ddd228fb690c66d417",
+        "byteSize": 1574
+      },
+      {
+        "name": "guard",
+        "objectKey": "audits/5d632e81ef4457cf42c1863f290c0679ca486d4f5b5638627317a86c866f8377",
+        "sha256": "5d632e81ef4457cf42c1863f290c0679ca486d4f5b5638627317a86c866f8377",
+        "byteSize": 2474
+      },
+      {
+        "name": "lifecycle",
+        "objectKey": "audits/ec97fef1b25bf9ab63f83c8f1d1f353e2d2345f033155d35dbe1efd2b4bcd926",
+        "sha256": "ec97fef1b25bf9ab63f83c8f1d1f353e2d2345f033155d35dbe1efd2b4bcd926",
+        "byteSize": 312
+      },
+      {
+        "name": "local",
+        "objectKey": "audits/18756a85deb38b1f67a82c524abbabb7a25ac2407df84b7a5a796510b7bdc2b3",
+        "sha256": "18756a85deb38b1f67a82c524abbabb7a25ac2407df84b7a5a796510b7bdc2b3",
+        "byteSize": 12618
+      },
+      {
+        "name": "feature-up",
+        "objectKey": "audits/0729f56e1543e971912498fdb0e936924cd57bf85417d9b5ba94d1c2be644bc0",
+        "sha256": "0729f56e1543e971912498fdb0e936924cd57bf85417d9b5ba94d1c2be644bc0",
+        "byteSize": 464
+      },
+      {
+        "name": "feature-store",
+        "objectKey": "audits/462b73b86876256c69e1f14da3746321550f9f77b0f0b80695ca3505e94421f4",
+        "sha256": "462b73b86876256c69e1f14da3746321550f9f77b0f0b80695ca3505e94421f4",
+        "byteSize": 8514
+      }
+    ]
+  },
+  "targets": [
+    {
+      "criterion": "Pin dataset/file/content hashes, code, all input versions and preregistration before scoring",
+      "verdict": "pass",
+      "evidence": "step-1 and step-3 input pins; step-4 pins bind all 29 hashed setup/runtime files"
+    },
+    {
+      "criterion": "Reproduce exactly 2504 logical examples and the registered natural content hash",
+      "verdict": "pass",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+    },
+    {
+      "criterion": "2022–2025 chronological targets; 2021 warm-up; latest <=16 prior games, minimum 2, kickoff-minus-one-hour cutoff",
+      "verdict": "pass",
+      "scored": 2504,
+      "warmupCandidates": 1916
+    },
+    {
+      "criterion": "Player/game/policy folds; player/game/threshold cases; duplicate refusals, opposing QBs and recorded history reuse",
+      "verdict": "pass",
+      "evidence": "56 domain projection cases; real report has 12520 threshold cases and explicit reuse"
+    },
+    {
+      "criterion": "Registered thresholds, both Brier conventions, natural log loss, ten-bin Over/Under calibration and integer RPS",
+      "verdict": "pass",
+      "evidence": "hand/CDF RPS parity and full reports; no scorer changes after step 2"
+    },
+    {
+      "criterion": "Every metric pooled/per-season and by n=2–4/5–8/9–16, with empty cells, coverage, exclusions and extreme counts; preserve infinity",
+      "verdict": "pass",
+      "groupsPerMode": 25,
+      "infiniteCases": 183,
+      "aggregateLogLoss": "positive-infinity"
+    },
+    {
+      "criterion": "Separate strict PIT and flagged retrospective reports; unavailable market comparison; repeated logical hashes",
+      "verdict": "pass",
+      "strictForecasts": 0,
+      "retrospectiveForecasts": 2504,
+      "logicalHashes": {
+        "retrospective-reconstruction-v1": "e8bf09a84fda43f2c19fc28e5a7c78be430ec74eadec660a80270590bc532dfa",
+        "strict-point-in-time-v1": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e"
+      }
+    },
+    {
+      "criterion": "Fixed SQL work through delivery, two batched rights/status checks and no raw/per-example reads",
+      "verdict": "pass",
+      "statementsPerReport": 3,
+      "rightsChecksPerReport": 2,
+      "objectReadsPerReport": 3,
+      "objectWritesPerReport": 1,
+      "rawSourceReads": 0,
+      "perExampleQueries": 0,
+      "totalStatements": 120,
+      "totalRightsChecks": 80,
+      "ciCohortSizes": [
+        2,
+        130
+      ],
+      "realCohortSize": 2504
+    },
+    {
+      "criterion": "Completed report <=7000 ms against a 10000 ms deadline, repeated cold/warm",
+      "verdict": "pass",
+      "attempted": 40,
+      "completed": 40,
+      "misses": 0,
+      "cohorts": [
+        {
+          "mode": "retrospective-reconstruction-v1",
+          "temperature": "cold",
+          "attempted": 10,
+          "completed": 10,
+          "failed": 0,
+          "p50Ms": 513.379958,
+          "p95Ms": 537.166959,
+          "maximumMs": 537.166959,
+          "processStartP95Ms": 77.5412079999951,
+          "endToEndP95Ms": 616.4790829999984,
+          "verdict": "pass"
+        },
+        {
+          "mode": "retrospective-reconstruction-v1",
+          "temperature": "warm",
+          "attempted": 10,
+          "completed": 10,
+          "failed": 0,
+          "p50Ms": 473.5309999999881,
+          "p95Ms": 506.7405839999992,
+          "maximumMs": 506.7405839999992,
+          "processStartP95Ms": null,
+          "endToEndP95Ms": null,
+          "verdict": "pass"
+        },
+        {
+          "mode": "strict-point-in-time-v1",
+          "temperature": "cold",
+          "attempted": 10,
+          "completed": 10,
+          "failed": 0,
+          "p50Ms": 940.965542,
+          "p95Ms": 961.6422090000001,
+          "maximumMs": 961.6422090000001,
+          "processStartP95Ms": 76.7431249999936,
+          "endToEndP95Ms": 1020.0655419999966,
+          "verdict": "pass"
+        },
+        {
+          "mode": "strict-point-in-time-v1",
+          "temperature": "warm",
+          "attempted": 10,
+          "completed": 10,
+          "failed": 0,
+          "p50Ms": 893.336209000001,
+          "p95Ms": 930.5454170000012,
+          "maximumMs": 930.5454170000012,
+          "processStartP95Ms": null,
+          "endToEndP95Ms": null,
+          "verdict": "pass"
+        }
+      ]
+    },
+    {
+      "criterion": "Domain/boundary tests and both complete PostgreSQL suites",
+      "verdict": "pass",
+      "evidence": "checks below; standard 512 MiB fixture; no skipped or cancelled database cases"
+    }
+  ],
+  "checks": [
+    {
+      "command": "npm run typecheck",
+      "verdict": "pass",
+      "includes": "database readiness and repository TypeScript"
+    },
+    {
+      "command": "npm run typecheck --workspace @dfs-ev/domain",
+      "verdict": "pass"
+    },
+    {
+      "command": "npm run lint",
+      "verdict": "pass",
+      "boundaryProbes": 7
+    },
+    {
+      "command": "npm run test:ci-gate",
+      "verdict": "pass",
+      "passed": 12
+    },
+    {
+      "command": "npm test",
+      "verdict": "fail",
+      "passed": 905,
+      "failed": 4,
+      "skipped": 0,
+      "reason": "four unchanged tests exceeded their existing 5-second limits; Node lane not reached",
+      "failures": [
+        "AuthStatus: accessible closed menu",
+        "ConnectionIndicator: visibility during loading/failure",
+        "creator captureStore: two-store append concurrency",
+        "creator CLI: missing key/unusable output directory"
+      ]
+    },
+    {
+      "command": "npx vitest run --config vitest.config.ts --maxWorkers=2",
+      "verdict": "pass",
+      "passed": 909,
+      "files": 68,
+      "skipped": 0,
+      "timeoutChanges": false,
+      "codeChangesToFailedTests": false
+    },
+    {
+      "command": "npx vitest run --config vitest.node.config.ts --maxWorkers=2",
+      "verdict": "pass",
+      "passed": 268,
+      "files": 25,
+      "skipped": 0,
+      "includesProjectionCases": 56
+    },
+    {
+      "command": "npm run test:db:guard",
+      "verdict": "pass",
+      "passed": 20
+    },
+    {
+      "command": "npm run test:db:lifecycle",
+      "verdict": "pass",
+      "passed": 1
+    },
+    {
+      "command": "npm run test:db:local",
+      "verdict": "pass",
+      "catalogContracts": 12,
+      "nodeRequiredCases": 74,
+      "leaseRequiredCases": 13,
+      "readinessRequiredCases": 4,
+      "corpusRequiredCases": 8,
+      "postgresqlVitestCases": 25
+    },
+    {
+      "command": "npm run test:feature-store:db",
+      "verdict": "pass",
+      "passed": 79,
+      "skipped": 0,
+      "cancelled": 0,
+      "fixtureTmpfsMiB": 512
+    },
+    {
+      "check": "Full trace and artifact verification",
+      "verdict": "pass",
+      "codeFiles": 29,
+      "reports": 2,
+      "trials": 40,
+      "work": {
+        "statementsPerReport": 3,
+        "rightsChecksPerReport": 2,
+        "objectReadsPerReport": 3,
+        "objectWritesPerReport": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0,
+        "totalStatements": 120,
+        "totalRightsChecks": 80
+      },
+      "checks": [
+        "code and aggregate hashes",
+        "pre-score input and preregistration pins",
+        "exact and natural dataset hashes",
+        "report envelope and logical hashes",
+        "step 3/4 logical hash parity",
+        "all 40 work budgets and timings",
+        "nearest-rank percentile parity",
+        "coverage partitions and calibration denominators",
+        "Brier conventions and visible infinity",
+        "event-time/history and warm-up policy"
+      ]
+    },
+    {
+      "check": "Frozen DB assets, legacy strict fitter/kernel, existing adapter, app, workflows and lockfile unchanged",
+      "verdict": "pass",
+      "paths": [
+        "packages/db",
+        "package-lock.json",
+        "apps/web",
+        ".github",
+        "services/pipeline/src/featureStore/empiricalAdapter.ts",
+        "packages/domain/src/projection/baseline.ts",
+        "packages/domain/src/projection/empirical.ts",
+        "packages/domain/src/projection/evaluation.ts"
+      ]
+    },
+    {
+      "check": "Disposable database cleanup",
+      "verdict": "pass",
+      "exitCode": 0
+    }
+  ],
+  "limitations": [
+    "Ten requests per mode/temperature: nearest-rank p95 equals maximum; large margin, no tail-population estimate",
+    "Local caches unflushed; cold uses a fresh native process and restricted connection; connection+request gated, startup disclosed separately",
+    "No Vercel boot or Neon compute-wake measurement; no hosted writes or deployment",
+    "Archived private reports need fresh dataset authorization before later delivery; post-recheck delivery window remains",
+    "Default-concurrency app run had four timeouts; complete bounded-worker retry passed without raising timeouts; hosted CI remains pending"
+  ],
+  "databaseExecution": {
+    "totalMs": 213964.0655843541,
+    "cleanupExitCode": 0,
+    "commands": [
+      {
+        "name": "guard",
+        "exitCode": 0,
+        "elapsedMs": 20097.988333553076,
+        "logSha256": "5d632e81ef4457cf42c1863f290c0679ca486d4f5b5638627317a86c866f8377"
+      },
+      {
+        "name": "lifecycle",
+        "exitCode": 0,
+        "elapsedMs": 54250.21562445909,
+        "logSha256": "ec97fef1b25bf9ab63f83c8f1d1f353e2d2345f033155d35dbe1efd2b4bcd926"
+      },
+      {
+        "name": "local",
+        "exitCode": 0,
+        "elapsedMs": 67540.53912498057,
+        "logSha256": "18756a85deb38b1f67a82c524abbabb7a25ac2407df84b7a5a796510b7bdc2b3"
+      },
+      {
+        "name": "feature-up",
+        "exitCode": 0,
+        "elapsedMs": 3154.7903744503856,
+        "logSha256": "0729f56e1543e971912498fdb0e936924cd57bf85417d9b5ba94d1c2be644bc0"
+      },
+      {
+        "name": "feature-store",
+        "exitCode": 0,
+        "elapsedMs": 68458.58525019139,
+        "logSha256": "462b73b86876256c69e1f14da3746321550f9f77b0f0b80695ca3505e94421f4"
+      }
+    ]
+  },
+  "remaining": [
+    "owner review and step-4 commit approval",
+    "fresh push/PR consent",
+    "hosted CI and independent review before owner merge"
+  ]
+}

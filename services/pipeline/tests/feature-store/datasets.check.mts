@@ -10,6 +10,7 @@ import { deleteSources,cleanupDeletedObjects,pruneDerivedVersions,sweepOrphanObj
 import { startJob,finishJob } from "../../src/featureStore/jobs.ts";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
 import { sha256,objectKey } from "../../src/featureStore/objectStore.ts";
+import { measureQbReport } from "../../scripts/feature-store/evaluation-measure.ts";
 import { completeQbReport } from "../../scripts/feature-store/evaluation-report.ts";
 import { NORMALIZER_VERSION } from "../../src/featureStore/source.ts";
 
@@ -63,6 +64,19 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
    featuresAsOf:originalClock,labelsAsOf:originalClock,includeRetrospective:true,includeSuperseded:true};
   let first:Awaited<ReturnType<typeof buildDataset>>;
   let firstRows:{rows:{featureId:string;labelId:string;label:number;season:number;sampleSize:number;flags:string[]}[]};
+  const reportPins=async(pinned:Awaited<ReturnType<typeof buildDataset>>)=>{
+   const dataset=JSON.parse((await store.get(pinned.objectKey)).toString());
+   const coverage=Buffer.from(JSON.stringify({mode,rows:dataset.rows.map((r:{playerId:string;gameId:string;season:number;sampleSize:number;flags:string[]})=>({
+    player_id:r.playerId,game_id:r.gameId,season:r.season,sample_size:r.sampleSize,feature_state:'usable',label_state:'usable',
+    feature_reasons:[],label_reasons:[],history_gaps:[],flags:r.flags,zero_attempts:false}))}));
+   const coverageArtifact={objectKey:objectKey('audits',coverage),sha256:sha256(coverage),byteSize:coverage.length};
+   await store.putIfAbsent(coverageArtifact.objectKey,coverage);
+   const pins=Buffer.from(JSON.stringify({format:'qb-evaluation-input-pins-v1',rightsScope:'research',code,versions:{feature:FEATURE_VERSION,label:LABEL_VERSION,history:HISTORY_POLICY},
+    populationDiagnostics:[],modes:[{mode,dataset:pinned,spec:dataset.spec,coverageArtifact}]}));
+   const inputPins={objectKey:objectKey('audits',pins),sha256:sha256(pins),byteSize:pins.length};
+   await store.putIfAbsent(inputPins.objectKey,pins);
+   return inputPins;
+  };
   await check("pinned join excludes warm-up and unavailable labels; file hash reproduces, two constant rights checks",async()=>{
    const before=queryCounts.writer;
    first=await buildDataset(writer,store,spec,code);
@@ -80,25 +94,16 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
    return {rows:first.rowCount,exclusions:first.exclusions,statements:8,rightsQueries:2,repeatedHash:first.fileSha256};
   });
   await check("pinned research report uses three queries and withholds newly staged bytes on revocation",async()=>{
-   const dataset=JSON.parse((await store.get(first.objectKey)).toString());
-   const coverage=Buffer.from(JSON.stringify({mode,rows:dataset.rows.map((r:{playerId:string;gameId:string;season:number;sampleSize:number;flags:string[]})=>({
-    player_id:r.playerId,game_id:r.gameId,season:r.season,sample_size:r.sampleSize,feature_state:'usable',label_state:'usable',
-    feature_reasons:[],label_reasons:[],history_gaps:[],flags:r.flags,zero_attempts:false}))}));
-   const coverageArtifact={objectKey:objectKey('audits',coverage),sha256:sha256(coverage),byteSize:coverage.length};
-   await store.putIfAbsent(coverageArtifact.objectKey,coverage);
-   const pins=Buffer.from(JSON.stringify({format:'qb-evaluation-input-pins-v1',rightsScope:'research',code,versions:{feature:FEATURE_VERSION,label:LABEL_VERSION,history:HISTORY_POLICY},
-    populationDiagnostics:[],modes:[{mode,dataset:first,spec,coverageArtifact}]}));
-   const inputPins={objectKey:objectKey('audits',pins),sha256:sha256(pins),byteSize:pins.length};
-   await store.putIfAbsent(inputPins.objectKey,pins);
+   const inputPins=await reportPins(first);
    let staged='';
    await assert.rejects(completeQbReport(reader,{...store,putIfAbsent:async(key,bytes)=>{
     const uploaded=await store.putIfAbsent(key,bytes);assert(uploaded.created);staged=key;await grant([]);return uploaded;
    }},inputPins,mode),/current-rights/);
    assert(staged);assert.equal(await store.head(staged),null);await grant(['research']);
    const before=queryCounts.reader;
-   const result=await completeQbReport(reader,store,inputPins,mode);
-   assert.equal(queryCounts.reader-before,3);assert.equal(result.rightsScope,'research');assert.equal(result.report.folds.length,2);
-   assert.equal(result.report.cases.length,10);assert(result.delivery.allowed);
+   const result=await measureQbReport(reader,store,inputPins,mode);
+   assert.equal(queryCounts.reader-before,3);assert.equal(result.rightsScope,'research');assert.equal(result.folds,2);
+   assert.equal(result.cases,10);assert(result.delivery.allowed);
    assert((await store.get(result.artifact.objectKey)).includes(Buffer.from('historical-availability-unverified')));
    return {folds:2,cases:10,statements:3,rightsChecks:2,stagedOnDeniedDeliveryRemoved:true};
   });
@@ -186,6 +191,9 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
    const large=await buildDataset(writer,store,{...spec,featuresAsOf:now,labelsAsOf:now},code);
    assert.equal(large.rowCount,130);assert.equal(queryCounts.writer-before,8);
    const readBefore=queryCounts.reader;await readDataset(reader,store,large.datasetId);assert.equal(queryCounts.reader-readBefore,3);
+   const report=await measureQbReport(reader,store,await reportPins(large),mode);
+   assert.equal(report.folds,130);assert.equal(report.cases,650);
+   assert.deepEqual(report.work,{statements:3,rightsChecks:2,objectReads:3,objectWrites:1,rawSourceReads:0,perExampleQueries:0});
    return {small:2,large:130,buildStatements:8,readStatements:3,batchedRightsQueriesPerOperation:2};
   });
   await check("strict historical snapshots remain unavailable at dataset selection",async()=>{
@@ -313,6 +321,6 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
   });
  });}finally{
   await rm(root,{recursive:true,force:true});
-  if(process.env.FEATURE_STORE_EVIDENCE_PATH)await writeFile(process.env.FEATURE_STORE_EVIDENCE_PATH,JSON.stringify({issue:138,step:5,recordedAt:new Date().toISOString(),fixture:'synthetic only; not an observed source correction',codeHashes,verdict:probes.length===14&&probes.every(p=>p.verdict==='pass')?'pass':'fail',probes},null,2)+'\n');
+  if(process.env.FEATURE_STORE_EVIDENCE_PATH)await writeFile(process.env.FEATURE_STORE_EVIDENCE_PATH,JSON.stringify({issue:138,step:5,recordedAt:new Date().toISOString(),fixture:'synthetic only; not an observed source correction',codeHashes,verdict:probes.length===16&&probes.every(p=>p.verdict==='pass')?'pass':'fail',probes},null,2)+'\n');
  }
 });
