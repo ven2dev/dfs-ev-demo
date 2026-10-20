@@ -77,4 +77,14 @@ describe("AnalysisSummary presentation", () => {
     expect(screen.getByRole("region", { name: "Edge" })).toHaveTextContent("+6.5 pts");
     expect(screen.getByRole("region", { name: "Market" })).toHaveTextContent("synthetic fixture line");
   });
+
+  it("labels a retained earlier quote with its own line, source and observation time", () => {
+    show({ ...snapshot, line: 249.5, quote: { bookmakerKey: "draftkings", price: 1.8,
+      line: 245.5, timestamp: snapshot.updatedAt! - 90_000, dataSource: "fixture" } });
+    const market = screen.getByRole("region", { name: "Market" });
+    expect(market).toHaveTextContent("draftkings · over 249.5");
+    expect(market).toHaveTextContent("Earlier quote · Sample data · Decimal price 1.80 at line 245.5");
+    expect(within(market).queryByText("Price unavailable.")).not.toBeInTheDocument();
+    expect(market.querySelector("time")).toHaveAttribute("datetime", new Date(snapshot.updatedAt! - 90_000).toISOString());
+  });
 });

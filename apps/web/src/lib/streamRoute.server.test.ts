@@ -224,6 +224,8 @@ describe("GET /api/stream consensus devig ticks", () => {
     expect(tick.type).toBe("tick");
     expect(tick.dataSource).toBe("live");
     expect(tick.line).toBe(250.5);
+    expect(tick.quote).toEqual({ bookmakerKey: "draftkings", price: 1.8 });
+    expect(getSharedLivePropInputsMock).toHaveBeenCalledTimes(1);
     expect(tick.evScore.impliedProb).toBeCloseTo(0.525, 12);
     expect(tick.marketConsensus).toEqual({
       method: "exact-line-median",
@@ -247,6 +249,7 @@ describe("GET /api/stream consensus devig ticks", () => {
 
     expect(tick.type).toBe("tick");
     expect(tick.evScore.impliedProb).toBeCloseTo(0.475, 12);
+    expect(tick.quote).toEqual({ bookmakerKey: "draftkings", price: 2 });
     expect(tick.marketConsensus.contributingBookCount).toBe(3);
   });
 

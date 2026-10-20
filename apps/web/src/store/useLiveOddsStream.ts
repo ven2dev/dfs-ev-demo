@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { isOddsDataSource } from "@/lib/oddsDataSource";
 import { STALE_TIMEOUT_MS } from "@/lib/streamConfig";
 import { buildWatchPropId } from "@/lib/watchPropId";
 import type { WatchedProp } from "@/types";
@@ -14,6 +15,7 @@ export function useLiveOddsStream() {
   const setConnectionStatus = useSetConnectionStatus();
   const sampleWindow = useSampleWindow();
   const primaryWatch = usePrimaryWatch();
+  const [historySessionId] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
     if (!primaryWatch) {
@@ -38,7 +40,8 @@ export function useLiveOddsStream() {
         [expectedPropId]: {
           ...existing,
           propId: expectedPropId,
-          evHistory: existing?.evHistory ?? [],
+          evHistory: existing?.historySessionId === historySessionId ? existing.evHistory : [],
+          historySessionId,
           refreshState,
         },
       });
@@ -99,7 +102,16 @@ export function useLiveOddsStream() {
 
         if (data.type !== "tick" || data.propId !== expectedPropId) return;
         if (data.sampleWindow !== undefined && data.sampleWindow !== sampleWindow) return;
-        if (!data.evScore || !data.stages || !Number.isFinite(data.timestamp)) return;
+        if (!data.evScore || !data.stages || !Number.isFinite(data.timestamp)
+          || !Number.isFinite(data.evScore.edge)) return;
+
+        const line = Number.isFinite(data.line) ? data.line as number : undefined;
+        const quote = line !== undefined && data.quote?.bookmakerKey === primaryWatch.bookmakerKey
+          && Number.isFinite(data.quote.price) && data.quote.price > 1
+          ? { bookmakerKey: data.quote.bookmakerKey as string, price: data.quote.price as number,
+            line, timestamp: data.timestamp as number,
+            dataSource: isOddsDataSource(data.dataSource) ? data.dataSource : undefined }
+          : undefined;
 
         const state = useAppStore.getState();
         const existing = state.watchlist[data.propId];
@@ -110,9 +122,18 @@ export function useLiveOddsStream() {
             dataSource: data.dataSource,
             evScore: data.evScore,
             evHistory: [
-              ...(existing?.sampleWindow === sampleWindow ? existing.evHistory : []),
-              { timestamp: data.timestamp, evScore: data.evScore.edge },
+              ...(existing?.sampleWindow === sampleWindow && existing.historySessionId === historySessionId ? existing.evHistory : []),
+              { timestamp: data.timestamp, evScore: data.evScore.edge, context: {
+                propId: expectedPropId, bookmakerKey: quote?.bookmakerKey,
+                direction: primaryWatch.direction, sampleWindow,
+                dataSource: isOddsDataSource(data.dataSource) ? data.dataSource : undefined,
+                line, price: quote?.price,
+                marketProbability: Number.isFinite(data.evScore.impliedProb)
+                  && data.evScore.impliedProb >= 0 && data.evScore.impliedProb <= 1 ? data.evScore.impliedProb : undefined,
+              } },
             ],
+            historySessionId,
+            quote: quote ?? existing?.quote,
             stages: data.stages,
             sampleWindow,
             sampleSize: Number.isInteger(data.sampleSize) && data.sampleSize > 0 && data.sampleSize <= sampleWindow
@@ -149,5 +170,6 @@ export function useLiveOddsStream() {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       if (staleTimer) clearTimeout(staleTimer);
     };
-  }, [setConnectionStatus, sampleWindow, primaryWatch]);
+  }, [setConnectionStatus, sampleWindow, primaryWatch, historySessionId]);
+  return historySessionId;
 }

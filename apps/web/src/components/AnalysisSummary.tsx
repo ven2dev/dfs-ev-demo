@@ -3,6 +3,7 @@ import { getOddsProvenanceCopy } from "@/lib/oddsProvenance";
 import { HitRateSummary } from "./HitRateSummary";
 import { MarketConsensusSummary } from "./MarketConsensusSummary";
 import { ResultFreshness } from "./ResultFreshness";
+import { formatEdgePoints } from "@/lib/analysisPresentation";
 
 type AnalysisSummaryProps = {
   snapshot?: WatchedProp;
@@ -14,11 +15,6 @@ type AnalysisSummaryProps = {
 const isProbability = (value: number | undefined): value is number =>
   value !== undefined && Number.isFinite(value) && value >= 0 && value <= 1;
 
-const edgePoints = (edge: number) => {
-  const rounded = (edge * 100).toFixed(1);
-  return `${rounded === "-0.0" ? "0.0" : edge > 0 && rounded !== "0.0" ? `+${rounded}` : rounded} pts`;
-};
-
 export const AnalysisSummary = ({ snapshot, selection, requestedWindow, connectionStatus }: AnalysisSummaryProps) => {
   const provenance = getOddsProvenanceCopy(snapshot?.dataSource);
   const score = snapshot?.evScore;
@@ -26,6 +22,9 @@ export const AnalysisSummary = ({ snapshot, selection, requestedWindow, connecti
   const estimateAvailable = isProbability(score?.modelProb) && isProbability(stages?.baseRate);
   const line = snapshot?.line;
   const lineAvailable = line !== undefined && Number.isFinite(line);
+  const quote = snapshot?.quote;
+  const quoteAvailable = quote && Number.isFinite(quote.price) && quote.price > 1
+    && Number.isFinite(quote.line) && Number.isFinite(new Date(quote.timestamp).getTime());
   const consensus = snapshot?.marketConsensus;
   const marketAvailable = lineAvailable && isProbability(score?.impliedProb) && consensus !== undefined
     && Number.isInteger(consensus.contributingBookCount) && consensus.contributingBookCount > 0;
@@ -72,7 +71,15 @@ export const AnalysisSummary = ({ snapshot, selection, requestedWindow, connecti
             <p className="mt-1">{selection.bookmakerKey} · {selection.direction}{" "}
               {lineAvailable ? line : "— (line unavailable)"}
             </p>
-            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{provenance.line}. Price unavailable.</p>
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{provenance.line}.</p>
+            {quoteAvailable && quote ? (
+              <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
+                {quote.timestamp !== snapshot?.updatedAt || quote.line !== snapshot?.line || quote.dataSource !== snapshot?.dataSource ? "Earlier quote · " : ""}
+                {quote.dataSource === "fixture" ? "Sample data · " : quote.dataSource === "live" ? "Live quote · " : "Quote source unavailable · "}
+                Decimal price {quote.price.toFixed(2)} at line {quote.line}, {quote.bookmakerKey}; as of{" "}
+                <time dateTime={new Date(quote.timestamp).toISOString()}>{new Date(quote.timestamp).toLocaleString()}</time>.
+              </p>
+            ) : <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">Price unavailable.</p>}
           </div>
           <div className="mt-3">
             {marketAvailable && score && consensus && line !== undefined ? (
@@ -87,7 +94,7 @@ export const AnalysisSummary = ({ snapshot, selection, requestedWindow, connecti
           {edgeAvailable && score ? (
             <p className={`mt-2 text-2xl font-medium tabular-nums ${score.edge > 0
               ? "text-green-700 dark:text-green-400" : score.edge < 0 ? "text-red-700 dark:text-red-400" : "text-zinc-900 dark:text-zinc-100"}`}>
-              {edgePoints(score.edge)}
+              {formatEdgePoints(score.edge)}
             </p>
           ) : <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Edge unavailable. A valid estimate and same-line market consensus are needed.</p>}
           <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">Percentage-point difference between the illustrative estimate and market probability. Not a return per stake.</p>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkline } from "@/components/Sparkline";
+import { ObservedMovement } from "@/components/ObservedMovement";
+import { formatEdgePoints } from "@/lib/analysisPresentation";
 import { AnalysisSummary } from "@/components/AnalysisSummary";
 import { ResultFreshness } from "@/components/ResultFreshness";
 import { SlateBrowser } from "@/components/SlateBrowser";
@@ -28,7 +29,7 @@ import { useLiveOddsStream } from "@/store/useLiveOddsStream";
 import { toggleWatchedProp } from "@/store/watchlistToggle";
 
 export default function Home() {
-  useLiveOddsStream();
+  const historySessionId = useLiveOddsStream();
 
   const authStatus = useAuthStatus();
   const dataVerified = useDataVerified();
@@ -260,7 +261,7 @@ export default function Home() {
               <span>
                 {primaryWatch.playerName} — illustrative edge (includes sample coverage data)
               </span>
-              <span className="whitespace-nowrap tabular-nums">{(watched.evScore.edge * 100).toFixed(1)} pts</span>
+              <span className="whitespace-nowrap tabular-nums">{formatEdgePoints(watched.evScore.edge)}</span>
             </div>
             <ResultFreshness
               snapshot={watched}
@@ -268,12 +269,7 @@ export default function Home() {
               connectionStatus={connectionStatus}
               compact
             />
-            <div className="mt-2">
-              <Sparkline values={watched.evHistory.map((h) => h.evScore)} />
-            </div>
-            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
-              {watched.evHistory.length} {provenance.ticks}
-            </p>
+            <ObservedMovement snapshot={watched} sessionId={historySessionId} />
           </div>
         ) : (
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">

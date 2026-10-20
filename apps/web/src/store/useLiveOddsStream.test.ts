@@ -221,7 +221,7 @@ describe("useLiveOddsStream: connection URL", () => {
       refreshState: "updating",
       stages: { baseRate: 0.6, afterEnvironment: 0.6, afterCoverage: 0.5 },
       dataSource: "live",
-      evHistory: [{ timestamp: 1, evScore: 0.1 }],
+      evHistory: [],
       evScore: { modelProb: 0.6, impliedProb: 0.5, edge: 0.1 },
       recentStatAverage: 233.5,
       line: 214.5,
@@ -388,6 +388,76 @@ describe("useLiveOddsStream: retained-result lifecycle", () => {
     expect(other.evScore).toBeUndefined();
     act(() => useAppStore.getState().setPrimaryWatch(samplePrimaryWatch));
     expect(useAppStore.getState().watchlist[samplePropId]).toMatchObject({ updatedAt: 123, refreshState: "updating", line: 250.5 });
+    unmount();
+  });
+});
+
+describe("useLiveOddsStream: observed quote history", () => {
+  const tick = (timestamp: number, extra: Record<string, unknown> = {}) => ({
+    type: "tick", propId: samplePropId, dataSource: "fixture", timestamp, sampleWindow: 5,
+    line: 247.5, quote: { bookmakerKey: "draftkings", price: 1.8 },
+    evScore: { modelProb: 0.6, impliedProb: 0.52, edge: 0.08 },
+    stages: { baseRate: 0.6, afterEnvironment: 0.6, afterCoverage: 0.6 }, ...extra,
+  });
+  const receive = (source: FakeEventSource, data: unknown) => act(() => source.onmessage?.({ data: JSON.stringify(data) }));
+  const start = () => {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    useAppStore.setState({ primaryWatch: samplePrimaryWatch });
+    const hook = renderHook(() => useLiveOddsStream());
+    return { ...hook, source: FakeEventSource.instances[0] };
+  };
+
+  it("captures immutable per-tick context rather than backfilling earlier quotes", () => {
+    const { source, unmount } = start();
+    receive(source, tick(100));
+    receive(source, tick(200, { line: 249.5, quote: { bookmakerKey: "draftkings", price: 2 } }));
+    const current = useAppStore.getState().watchlist[samplePropId];
+    expect(current.evHistory[0].context).toEqual({ propId: samplePropId, bookmakerKey: "draftkings", direction: "over",
+      sampleWindow: 5, dataSource: "fixture", line: 247.5, price: 1.8, marketProbability: 0.52 });
+    expect(current.evHistory[1].context).toMatchObject({ line: 249.5, price: 2 });
+    expect(current.quote).toEqual({ bookmakerKey: "draftkings", price: 2, line: 249.5, timestamp: 200, dataSource: "fixture" });
+    expect(FakeEventSource.instances).toHaveLength(1);
+    unmount();
+  });
+
+  it("keeps an earlier valid quote but does not insert it into a context-less new observation", () => {
+    const { source, unmount } = start();
+    receive(source, tick(100));
+    receive(source, tick(200, { line: 249.5, quote: undefined }));
+    const current = useAppStore.getState().watchlist[samplePropId];
+    expect(current.quote).toMatchObject({ price: 1.8, line: 247.5, timestamp: 100 });
+    expect(current.evHistory[1].context?.price).toBeUndefined();
+    expect(current.evHistory[1].context?.bookmakerKey).toBeUndefined();
+    unmount();
+  });
+
+  it("starts a new observation history after remount while retaining the last valid result", () => {
+    const first = start();
+    receive(first.source, tick(100));
+    const previousSession = first.result.current;
+    first.unmount();
+    const second = renderHook(() => useLiveOddsStream());
+    const retained = useAppStore.getState().watchlist[samplePropId];
+    expect(second.result.current).not.toBe(previousSession);
+    expect(retained.evHistory).toEqual([]);
+    expect(retained.line).toBe(247.5);
+    expect(retained.updatedAt).toBe(100);
+    expect(retained.refreshState).toBe("updating");
+    receive(FakeEventSource.instances.at(-1)!, tick(200));
+    expect(useAppStore.getState().watchlist[samplePropId].evHistory).toHaveLength(1);
+    second.unmount();
+  });
+
+  it("drops hydrated legacy history at the next observed tick without inventing price context", () => {
+    const { source, unmount } = start();
+    act(() => useAppStore.setState({ watchlist: { [samplePropId]: {
+      propId: samplePropId, sampleWindow: 5, evHistory: [{ timestamp: 1, evScore: 0.99 }],
+    } } }));
+    receive(source, tick(200, { quote: undefined }));
+    const current = useAppStore.getState().watchlist[samplePropId];
+    expect(current.evHistory).toHaveLength(1);
+    expect(current.evHistory[0].timestamp).toBe(200);
+    expect(current.evHistory[0].context?.price).toBeUndefined();
     unmount();
   });
 });
