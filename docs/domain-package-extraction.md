@@ -165,3 +165,41 @@ The lint boundary and strengthened version probes are step 3. The full combined
 gate, including both PostgreSQL suites, is step 4. Hosted Preview/source inclusion
 and domain-only deployment selection remain pending; no push or deployment has
 been performed at this checkpoint.
+
+## Step 3: import boundaries and dependency versions
+
+The existing ESLint flat configuration now uses `import/no-relative-packages`
+across workspace source, tests and scripts, including dynamic imports, require,
+re-exports and type-only imports. Public domain exports remain allowed; private
+and unknown subpaths are refused. Domain also has a resolved path restriction
+against apps/services and explicit package-name/alias checks, with no exceptions.
+This uses the installed import plugin and core rules, without a custom graph tool
+or new dependency. Next's bundled ESLint guide confirms the flat-config approach.
+
+The import plugin does not visit TypeScript inline `import()` types or
+import-equals declarations. Use static `import type` for local/workspace types
+so resolved boundary checks apply; external inline types such as `import("pg")`
+remain allowed. The report serializer's one local inline type was converted.
+Its emitted JavaScript and the projection demo output remain byte identical.
+
+The transition inventory is [eslint.boundary-exceptions.json](../eslint.boundary-exceptions.json):
+74 exact importing-file/source pairs across 36 files, individually assigned to
+#190 or #191 for removal. Tests check that each pair is still used, works only
+from its named file, and does not allow a new destination. Duplicate/stale entries
+fail. There is no blanket tests exemption; root orchestration remains root-owned.
+
+`npm run lint` runs the normal lint pass and seven boundary probe cases. The
+layout checks enforce matching dependency versions across all current manifests,
+the Next/`@next/env` relationship, declared web/pipeline domain edges and the
+native Node prohibition on preserve-symlinks. Negative mutations cover Next,
+React, ReactDOM, `@next/env`, TypeScript and missing/mismatched domain declarations.
+The root/web declarations remain duplicated under this enforced equality policy.
+
+The [step-3 receipt](evidence/domain-189/step-3-boundaries.json) records clean lint,
+root/domain typechecks, 7 boundary cases, 12 CI/layout cases and 35 domain/native
+consumer regressions, plus 34 unchanged frozen artifacts. It retains the initial
+exception-override mistake and its correction. Full logs stay outside git.
+
+The combined PostgreSQL/application/build checkpoint remains step 4. A real
+Vercel Preview and domain-only deployment-selection proof remain pending after
+an owner-approved push; Skip deployments has not been enabled.
