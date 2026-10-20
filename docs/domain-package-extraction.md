@@ -203,3 +203,45 @@ exception-override mistake and its correction. Full logs stay outside git.
 The combined PostgreSQL/application/build checkpoint remains step 4. A real
 Vercel Preview and domain-only deployment-selection proof remain pending after
 an owner-approved push; Skip deployments has not been enabled.
+
+## Step 4: integrated local checkpoint
+
+The [compact integrated receipt](evidence/domain-189/step-4-integrated.json)
+records the checks on `ff5671d`. The complete repository suites pass: 909 browser
+and 245 Node tests, seven boundary probes, 12 CI/layout cases, both typechecks,
+lint, build, local built-app smoke checks, demo Firestore rules and the critical
+production-dependency audit (zero vulnerabilities). These are cumulative repo
+tests, not tests newly introduced by #189. Build generates all 16 static pages.
+
+The CI database sequence passes on fresh standard 512 MiB PostgreSQL: 20 guard
+cases, the lifecycle recovery case, two template prerequisites, 74 Node database
+cases, 12 catalog contracts, 25 PostgreSQL behavior tests and 77 feature-store
+PostgreSQL tests. Required lease/readiness/corpus case contracts also pass. No
+suite is filtered, skipped or cancelled; the disposable service is removed.
+All 34 frozen artifacts match their original hashes, including all 11 migrations.
+The entire database tree, readiness manifest and CI workflow remain unchanged.
+
+This checkpoint needed no source fix. The validation runner initially applied
+the Preview environment to unit tests that deliberately simulate live mode;
+removing that override restored the normal CI boundary. An unsupported creator
+`--help` probe also refused as the existing CLI specifies. Its documented
+missing-argument refusal passes, as do the full creator regressions. Both probe
+mistakes are retained in the receipt. Full logs remain outside git.
+
+### Review handoff and remaining deployment gates
+
+Review `13fac53..ff5671d` for the implementation; the final checkpoint adds only
+this documentation and its receipt. Start with the package dependency direction
+and explicit exports, then unchanged math/refusals, boundary negative probes and
+the exact #190/#191 exception inventory. Step 2 independently proved a clean
+web-only installation/build; this integrated run proves the combined repository
+checks. No model evaluation or capacity claim is added.
+
+The owner approved the checkpoint commit, push and PR publication. Independent
+review and a real Vercel Preview remain required before merge:
+Root Directory `apps/web`, outside-root source inclusion enabled, and successful
+compilation of the domain source. Verify that a domain-only change triggers a
+web deployment before enabling Skip deployments, and leave it disabled while
+the remaining DB/pipeline dependency graph is incomplete. Hosted success is
+not inferred from the passing local build. No Production deployment is part of
+this issue. #164 follows once #189 merges.
