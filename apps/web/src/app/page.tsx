@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Sparkline } from "@/components/Sparkline";
-import { HitRateSummary } from "@/components/HitRateSummary";
+import { AnalysisSummary } from "@/components/AnalysisSummary";
 import { ResultFreshness } from "@/components/ResultFreshness";
-import { MarketConsensusSummary } from "@/components/MarketConsensusSummary";
 import { SlateBrowser } from "@/components/SlateBrowser";
 import { getAuthHeaders } from "@/lib/authHeaders";
 import { getOddsProvenanceCopy } from "@/lib/oddsProvenance";
@@ -27,13 +26,6 @@ import {
 import { useAppStore } from "@/store";
 import { useLiveOddsStream } from "@/store/useLiveOddsStream";
 import { toggleWatchedProp } from "@/store/watchlistToggle";
-
-const STAGES = [
-  { key: "baseRate", label: "Recent hit rate" },
-  { key: "afterEnvironment", label: "Illustrative weather adjustment" },
-  { key: "afterCoverage", label: "Coverage adjustment (sample data)" },
-  { key: "final", label: "Illustrative edge" },
-] as const;
 
 export default function Home() {
   useLiveOddsStream();
@@ -162,21 +154,6 @@ export default function Home() {
     if (!goal) setGoal(mockGoal);
   }, [goal, setGoal]);
 
-  const [activeStageIndex, setActiveStageIndex] = useState(3);
-
-  useEffect(() => {
-    if (!watched) return;
-    // New tick arrived — visually step through the pipeline stages in
-    // sequence, mirroring the actual base -> environment -> coverage ->
-    // final order computeEV() applies them in, rather than a static
-    // highlight that never reflects an actual event.
-    const timers = [0, 1, 2, 3].map((stageIndex) =>
-      setTimeout(() => setActiveStageIndex(stageIndex), stageIndex * 350)
-    );
-    return () => timers.forEach(clearTimeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only step on a genuinely new tick, not every watched object identity change
-  }, [watched?.evHistory.length]);
-
   // Every hook above this line must always run, in the same order, on
   // every render -- this early return has to come after all of them.
   // Persisted goal/watchlist can't be trusted to render until useInitAuth
@@ -244,87 +221,12 @@ export default function Home() {
             ))}
           </div>
 
-          {/* Active-node stepper — steps through base->env->coverage->final
-              on each new tick; exactly one node active at a time. */}
-          <ol
-            aria-label="Analysis pipeline"
-            className="mt-6 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4"
-          >
-            {STAGES.map((stage, i) => (
-              <li
-                key={stage.key}
-                aria-current={i === activeStageIndex ? "step" : undefined}
-                className={`flex min-w-0 items-center gap-2 rounded-lg px-3 py-2 transition-colors ${
-                  i === activeStageIndex
-                    ? "bg-black text-white dark:bg-white dark:text-black"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400"
-                }`}
-              >
-                <span aria-hidden="true" className="shrink-0 font-medium">{i + 1}.</span>
-                <span className="break-words">{stage.label}</span>
-              </li>
-            ))}
-          </ol>
-
-          {watched?.stages && watched.evScore && (
-            <div className="mt-6 space-y-3">
-              <ResultFreshness
-                snapshot={watched}
-                requestedWindow={matchupConfig.sampleWindow}
-                connectionStatus={connectionStatus}
-              />
-              <HitRateSummary
-                rate={watched.stages.baseRate}
-                adjustedRate={watched.evScore.modelProb}
-                sampleSize={watched.sampleSize}
-              />
-              <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                Weather and coverage adjustments are illustrative, not calibrated.
-              </p>
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm">
-                <span>{provenance.environment}</span>
-                <span className="whitespace-nowrap tabular-nums">{(watched.stages.afterEnvironment * 100).toFixed(1)}%</span>
-              </div>
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm">
-                <span>
-                  Illustrative adjusted estimate{" "}
-                  <em className="text-zinc-600 dark:text-zinc-400">(includes sample coverage data)</em>
-                </span>
-                <span className="whitespace-nowrap tabular-nums">{(watched.stages.afterCoverage * 100).toFixed(1)}%</span>
-              </div>
-              {watched.marketConsensus && watched.line !== undefined && (
-                <MarketConsensusSummary
-                  probability={watched.evScore.impliedProb}
-                  direction={primaryWatch.direction}
-                  line={watched.line}
-                  consensus={watched.marketConsensus}
-                />
-              )}
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-t border-zinc-200 pt-3 text-sm font-medium dark:border-zinc-800">
-                <span>
-                  Illustrative edge vs. same-line market consensus{" "}
-                  <em className="font-normal">(includes sample coverage data)</em>
-                </span>
-                <span
-                  className={
-                    `whitespace-nowrap tabular-nums ${watched.evScore.edge > 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`
-                  }
-                >
-                  {(watched.evScore.edge * 100).toFixed(1)}%
-                </span>
-              </div>
-            </div>
-          )}
-
-          {watched?.recentStatAverage !== undefined && (
-            <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
-              Average · {watched.sampleSize === undefined ? "sample size unavailable" : `n = ${watched.sampleSize} games`}:{" "}
-              {watched.recentStatAverage.toFixed(1)} {primaryWatch.propType.toLowerCase()}{" "}
-              <em className="text-zinc-600 dark:text-zinc-400">
-                ({provenance.history})
-              </em>
-            </p>
-          )}
+          <AnalysisSummary
+            snapshot={watched}
+            selection={primaryWatch}
+            requestedWindow={matchupConfig.sampleWindow}
+            connectionStatus={connectionStatus}
+          />
 
           {goal?.kind === "pickEm" && watched?.stages && watched.evScore !== undefined && (
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
@@ -358,7 +260,7 @@ export default function Home() {
               <span>
                 {primaryWatch.playerName} — illustrative edge (includes sample coverage data)
               </span>
-              <span className="whitespace-nowrap tabular-nums">{(watched.evScore.edge * 100).toFixed(1)}%</span>
+              <span className="whitespace-nowrap tabular-nums">{(watched.evScore.edge * 100).toFixed(1)} pts</span>
             </div>
             <ResultFreshness
               snapshot={watched}
