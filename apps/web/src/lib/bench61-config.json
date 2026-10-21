@@ -1,0 +1,8 @@
+{
+  "tokenHash": "74a0edfef03e1cf9d2c417979078b80dc827e9cea8a80bd34748a8911bd43d74",
+  "expiresAt": "2026-10-22T17:56:23.098802+00:00",
+  "host": "ep-broad-mouse-b773hf6f-pooler.c-13.us-east-1.aws.neon.tech",
+  "schema": "bench61_20261019",
+  "maxStatements": 16040,
+  "maxRoundTrips": 8020
+}
