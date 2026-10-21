@@ -88,8 +88,21 @@ export const AuthStatus = () => {
       setAuthError("Sign-in is currently unavailable.");
       return;
     }
-    signInWithPopup(authInstance, googleProvider).catch((err) => {
-      setAuthError("Sign-in failed. Try again.");
+    signInWithPopup(authInstance, googleProvider).catch((err: unknown) => {
+      const code = typeof err === "object" && err !== null && "code" in err
+        ? err.code
+        : undefined;
+      // A superseded popup can reject after a newer attempt has failed.
+      // Returning without a store write preserves that newer guidance.
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") return;
+
+      if (code === "auth/popup-blocked") {
+        setAuthError("Your browser blocked the sign-in window. Allow pop-ups for this site and try again.");
+      } else if (code === "auth/network-request-failed") {
+        setAuthError("Could not connect to sign in. Check your connection and try again.");
+      } else {
+        setAuthError("Sign-in failed. Try again.");
+      }
       console.error("[AuthStatus] sign-in failed:", err);
     });
   };

@@ -1,0 +1,455 @@
+{
+  "schema": "source-configuration-qualification-readonly-v1",
+  "issue": 171,
+  "observedAtUtc": "2026-10-19T04:11:51Z",
+  "baseCommit": "3b9d946cd57054803d1af892d62dd4413d82d43a",
+  "scope": "original read-only research snapshot; later observations explicitly separated in followUp",
+  "hostedConnections": 0,
+  "hostedWrites": 0,
+  "productionCommands": 0,
+  "thirdPartyMessages": 0,
+  "newRawDataDownloads": 0,
+  "sourceInventorySha256": "8b5444545354f3cfb16473ca88ddf1cc4f59fe19c54ee6f6c282e12f63c289b9",
+  "ingestionManifestSha256": "2086cbbde03664d99eccbec64c12f659262f848c31ccb97d90aaff2c1c601f30",
+  "files": [
+    {
+      "feed": "schedules",
+      "season": null,
+      "name": "games.csv.gz",
+      "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+      "license_id": "CC-BY-4.0",
+      "attribution": "Lee Sharpe / nflverse",
+      "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+      "license_qualification": "release-repository-declared-and-organization-scope-confirmed",
+      "inventoryWireSha256": "6983084aff35e6ea9228440cfb5bba70b23625b9b2799eaff5b03eb808f1498e",
+      "changedFromInitialInventory": true,
+      "qualification": "release-use-qualified-with-attribution",
+      "releasePermission": "publisher-declared CC-BY-4.0 release scope; obligations apply; not product release approval",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim"
+      ],
+      "additionalLicenseEvidenceUrl": "https://github.com/nflverse/.github/blob/74a492cc87123142279c83d2d543e822e81a879c/profile/README.md#licensing"
+    },
+    {
+      "feed": "pbp_participation",
+      "season": 2021,
+      "name": "pbp_participation_2021.csv",
+      "sha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+      "license_id": "CC-BY-SA-4.0",
+      "attribution": "NFL NextGenStats via nflverse",
+      "license_evidence_url": "https://github.com/nflverse/nflreadr/blob/23f915a5be30415aeaa0c5c80cd23b2c69cda122/R/load_participation.R",
+      "license_qualification": "feed-declared",
+      "inventoryWireSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim",
+        "assess ShareAlike for distributed adapted data"
+      ]
+    },
+    {
+      "feed": "pbp_participation",
+      "season": 2022,
+      "name": "pbp_participation_2022.csv",
+      "sha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+      "license_id": "CC-BY-SA-4.0",
+      "attribution": "NFL NextGenStats via nflverse",
+      "license_evidence_url": "https://github.com/nflverse/nflreadr/blob/23f915a5be30415aeaa0c5c80cd23b2c69cda122/R/load_participation.R",
+      "license_qualification": "feed-declared",
+      "inventoryWireSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim",
+        "assess ShareAlike for distributed adapted data"
+      ]
+    },
+    {
+      "feed": "pbp_participation",
+      "season": 2023,
+      "name": "pbp_participation_2023.csv",
+      "sha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+      "license_id": "CC-BY-SA-4.0",
+      "attribution": "FTN Data via nflverse",
+      "license_evidence_url": "https://github.com/nflverse/nflreadr/blob/23f915a5be30415aeaa0c5c80cd23b2c69cda122/R/load_participation.R",
+      "license_qualification": "feed-declared",
+      "inventoryWireSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim",
+        "assess ShareAlike for distributed adapted data"
+      ]
+    },
+    {
+      "feed": "pbp_participation",
+      "season": 2024,
+      "name": "pbp_participation_2024.csv",
+      "sha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+      "license_id": "CC-BY-SA-4.0",
+      "attribution": "FTN Data via nflverse",
+      "license_evidence_url": "https://github.com/nflverse/nflreadr/blob/23f915a5be30415aeaa0c5c80cd23b2c69cda122/R/load_participation.R",
+      "license_qualification": "feed-declared",
+      "inventoryWireSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim",
+        "assess ShareAlike for distributed adapted data"
+      ]
+    },
+    {
+      "feed": "pbp_participation",
+      "season": 2025,
+      "name": "pbp_participation_2025.csv",
+      "sha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+      "license_id": "CC-BY-SA-4.0",
+      "attribution": "FTN Data via nflverse",
+      "license_evidence_url": "https://github.com/nflverse/nflreadr/blob/23f915a5be30415aeaa0c5c80cd23b2c69cda122/R/load_participation.R",
+      "license_qualification": "feed-declared",
+      "inventoryWireSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim",
+        "assess ShareAlike for distributed adapted data"
+      ]
+    },
+    {
+      "feed": "weekly_rosters",
+      "season": 2021,
+      "name": "roster_weekly_2021.csv",
+      "sha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+      "license_id": "CC-BY-4.0",
+      "attribution": "nflverse contributors",
+      "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+      "license_qualification": "release-repository-declared",
+      "inventoryWireSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim"
+      ]
+    },
+    {
+      "feed": "weekly_rosters",
+      "season": 2022,
+      "name": "roster_weekly_2022.csv",
+      "sha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+      "license_id": "CC-BY-4.0",
+      "attribution": "nflverse contributors",
+      "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+      "license_qualification": "release-repository-declared",
+      "inventoryWireSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim"
+      ]
+    },
+    {
+      "feed": "weekly_rosters",
+      "season": 2023,
+      "name": "roster_weekly_2023.csv",
+      "sha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+      "license_id": "CC-BY-4.0",
+      "attribution": "nflverse contributors",
+      "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+      "license_qualification": "release-repository-declared",
+      "inventoryWireSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim"
+      ]
+    },
+    {
+      "feed": "weekly_rosters",
+      "season": 2024,
+      "name": "roster_weekly_2024.csv.gz",
+      "sha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+      "license_id": "CC-BY-4.0",
+      "attribution": "nflverse contributors",
+      "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+      "license_qualification": "release-repository-declared",
+      "inventoryWireSha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim"
+      ]
+    },
+    {
+      "feed": "weekly_rosters",
+      "season": 2025,
+      "name": "roster_weekly_2025.csv.gz",
+      "sha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+      "license_id": "CC-BY-4.0",
+      "attribution": "nflverse contributors",
+      "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+      "license_qualification": "release-repository-declared",
+      "inventoryWireSha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim"
+      ]
+    },
+    {
+      "feed": "stats_player",
+      "season": 2021,
+      "name": "stats_player_week_2021.csv.gz",
+      "sha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+      "license_id": "CC-BY-4.0",
+      "attribution": "nflverse contributors",
+      "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+      "license_qualification": "release-repository-declared",
+      "inventoryWireSha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim"
+      ]
+    },
+    {
+      "feed": "stats_player",
+      "season": 2022,
+      "name": "stats_player_week_2022.csv.gz",
+      "sha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+      "license_id": "CC-BY-4.0",
+      "attribution": "nflverse contributors",
+      "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+      "license_qualification": "release-repository-declared",
+      "inventoryWireSha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim"
+      ]
+    },
+    {
+      "feed": "stats_player",
+      "season": 2023,
+      "name": "stats_player_week_2023.csv.gz",
+      "sha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+      "license_id": "CC-BY-4.0",
+      "attribution": "nflverse contributors",
+      "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+      "license_qualification": "release-repository-declared",
+      "inventoryWireSha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim"
+      ]
+    },
+    {
+      "feed": "stats_player",
+      "season": 2024,
+      "name": "stats_player_week_2024.csv.gz",
+      "sha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+      "license_id": "CC-BY-4.0",
+      "attribution": "nflverse contributors",
+      "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+      "license_qualification": "release-repository-declared",
+      "inventoryWireSha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim"
+      ]
+    },
+    {
+      "feed": "stats_player",
+      "season": 2025,
+      "name": "stats_player_week_2025.csv.gz",
+      "sha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+      "license_id": "CC-BY-4.0",
+      "attribution": "nflverse contributors",
+      "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+      "license_qualification": "release-repository-declared",
+      "inventoryWireSha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+      "changedFromInitialInventory": false,
+      "qualification": "published-license-declaration-verified",
+      "releasePermission": "not-approved-by-this-research",
+      "obligations": [
+        "retain source, credit and license link",
+        "record modifications; no endorsement claim"
+      ]
+    }
+  ],
+  "summary": {
+    "fileCount": 16,
+    "declaredLicenseVerified": 16,
+    "upstreamGrantBlocked": 1,
+    "permissionForRedistributionOrDeployment": "schedule release-use scope qualified subject to CC-BY-4.0; full dataset/product not approved",
+    "historicalAvailability": "historical-availability-unverified",
+    "populationCompleteness": "not-established; owned by #54",
+    "directUpstreamRepositoryGrant": "unresolved; excluded from qualified release-use scope",
+    "scheduleReleaseUseBlocked": 0
+  },
+  "neon": {
+    "postgresDocumentedStatementTimeoutDefault": "0 (disabled)",
+    "postgresSource": "https://www.postgresql.org/docs/18/runtime-config-client.html",
+    "neonDocumentedOverrideTable": "https://neon.com/docs/reference/compatibility",
+    "neonSpecificExplicitStatementTimeoutGuarantee": "not-found in reviewed compatibility/pooling pages; no provider-wide guarantee inferred",
+    "actualProjectSetting": "blocked; no explicitly owner-designated non-production read-only connection",
+    "connectionPerformed": false,
+    "poolingCaveat": "transaction pooling does not preserve arbitrary session SET state",
+    "poolingSource": "https://neon.com/docs/connect/connection-pooling"
+  },
+  "scheduleGap": {
+    "licenseRequest": "https://github.com/nflverse/nfldata/issues/33",
+    "commercialClarification": "https://github.com/nflverse/nfldata/issues/35",
+    "finding": "Superseded release-use block: first-party org statement explicitly covers nflverse-data releases except FTN; upstream issues still do not establish direct nfldata permission.",
+    "nextOwnerDecision": "Review scoped release qualification and attribution; no maintainer outreach or replacement required for that scope."
+  },
+  "followUp": {
+    "datePacific": "2026-10-19",
+    "publicParticipationDecisionIssue": "https://github.com/ven2dev/dfs-ev-demo/issues/197",
+    "hostedCatalogObservation": {
+      "authorization": "separate owner-approved read-only Preview/Production comparison",
+      "transport": "Vercel integration Query editor, Read-only checked",
+      "resources": [
+        "dfs-ev-preview",
+        "neon-cordovan-nest"
+      ],
+      "role": "neondb_owner",
+      "database": "neondb",
+      "serverVersion": "18.6 (653b019)",
+      "statementTimeout": "0",
+      "hostedWrites": 0,
+      "qualification": "console-role connection only; pipeline role/driver configuration unverified"
+    },
+    "scheduleReplacement": {
+      "candidate": "nflverse play-by-play game_date and start_time",
+      "status": "not-qualified-as-independent-replacement",
+      "reason": "Pinned current add_game_data loads schedules and sets game_date from gameday; exact historical release lineage and source permission remain unverified",
+      "dictionary": "https://github.com/nflverse/nflreadr/blob/23f915a5be30415aeaa0c5c80cd23b2c69cda122/data-raw/dictionary_pbp.csv",
+      "producer": "https://github.com/nflverse/nflfastR/blob/701bbf38bc1c030ff9f1f4825a23191287d3903c/R/helper_add_game_data.R",
+      "rawKickoffParser": "https://github.com/nflverse/nflfastR/blob/701bbf38bc1c030ff9f1f4825a23191287d3903c/R/helper_scrape_nfl.R",
+      "dataReleaseLicense": "https://github.com/nflverse/nflverse-pbp/blob/cd7bfd9bbf9251529bf5e0283ae84f10e11e7d17/LICENSE.md",
+      "newRawDataDownloads": 0
+    },
+    "timeoutFollowUp": "Per-role application/pipeline statement_timeout decision belongs in #190 or #95; no ALTER/SET performed",
+    "scheduleResolution": {
+      "datePacific": "2026-10-20",
+      "priorScheduleQualification": {
+        "feed": "schedules",
+        "season": null,
+        "name": "games.csv.gz",
+        "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+        "license_id": "CC-BY-4.0",
+        "attribution": "Lee Sharpe / nflverse",
+        "license_evidence_url": "https://github.com/nflverse/nflverse-data/blob/a78da18ca93f167bd0a2af274df48f539fa4153c/LICENSE.md",
+        "license_qualification": "release-repository-declared",
+        "inventoryWireSha256": "6983084aff35e6ea9228440cfb5bba70b23625b9b2799eaff5b03eb808f1498e",
+        "changedFromInitialInventory": true,
+        "qualification": "blocked-upstream-grant",
+        "releasePermission": "not-approved-by-this-research",
+        "obligations": [
+          "retain source, credit and license link",
+          "record modifications; no endorsement claim"
+        ]
+      },
+      "policyPublishedAtUtc": "2026-10-13T17:29:19Z",
+      "publisher": "nflverse organization",
+      "policyCommit": "74a492cc87123142279c83d2d543e822e81a879c",
+      "policyUrl": "https://github.com/nflverse/.github/blob/74a492cc87123142279c83d2d543e822e81a879c/profile/README.md#licensing",
+      "release": "https://github.com/nflverse/nflverse-data/releases/tag/schedules",
+      "releaseId": 251386473,
+      "license": "CC-BY-4.0",
+      "scope": "nflverse-data release-distributed schedule dataset; commercial reuse with attribution subject to licence terms",
+      "exclusions": [
+        "direct nfldata downloads",
+        "warranty of all third-party rights",
+        "unassessed betting-line/unrelated fields",
+        "participation/FTN public-serving decision",
+        "product/dataset release approval"
+      ],
+      "hashSpecificAttestation": false,
+      "currentMutableAssetMetadata": {
+        "assetId": 659823874,
+        "sha256": "8d272f16ceae09e30cc533c47b39bab5929bcd1b1764db9d520829af25187c4d",
+        "updatedAtUtc": "2026-10-20T16:16:34Z",
+        "rawBytesDownloaded": false
+      },
+      "upstreamRepositoryObservation": {
+        "commit": "6e3fd8d3f003cf06f133daf5805c934effdcb242",
+        "repositoryLicense": null
+      },
+      "thirdPartyMessages": 0,
+      "newRawDataDownloads": 0
+    },
+    "participationAssessment": {
+      "datePacific": "2026-10-20",
+      "status": "owner compliance direction approved; output-specific classification and serving implementation pending in #197",
+      "issue": "https://github.com/ven2dev/dfs-ev-demo/issues/197",
+      "specificDeclarationAppliesToSeasons": [
+        2021,
+        2022,
+        2023,
+        2024,
+        2025
+      ],
+      "declaration": "https://github.com/nflverse/nflreadr/blob/23f915a5be30415aeaa0c5c80cd23b2c69cda122/R/load_participation.R",
+      "generalNonFtnScopeConflict": "do not silently replace feed-specific BY-SA declaration with broad org BY summary for 2021\u20132022",
+      "legalTerms": "https://creativecommons.org/licenses/by-sa/4.0/legalcode.en",
+      "ccFaq": "https://creativecommons.org/faq/",
+      "publisherInterpretation": "https://github.com/nflverse/.github/blob/74a492cc87123142279c83d2d543e822e81a879c/profile/README.md#licensing",
+      "observedCodeBase": "edb5981",
+      "lineage": [
+        "raw participation",
+        "normalized offense_play_count",
+        "positive-offense eligibility selection",
+        "feature history and label/dataset selection",
+        "research empirical support/probabilities/pricing",
+        "potential trained/evaluation/report artifacts"
+      ],
+      "recommendation": "superseded by owner-approved ShareAlike compliance direction",
+      "publicServingApproved": false,
+      "ownerDispositionApproved": true,
+      "codeLicenceChanged": false,
+      "dataOrModelReleased": false,
+      "sourceIdentitiesChanged": false,
+      "ownerDecision": {
+        "datePacific": "2026-10-20",
+        "option": 1,
+        "direction": "comply with applicable ShareAlike obligations for shared participation-derived outputs",
+        "algorithmAndSourceCode": "remain proprietary; no application relicensing authorized",
+        "predictionClassification": "not automatically Adapted Material because of computational dependency; assess specific outputs",
+        "servingImplementationApprovedByThisRecord": false,
+        "remainingIssue": 197
+      }
+    }
+  }
+}
