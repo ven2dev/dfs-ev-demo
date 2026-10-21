@@ -193,6 +193,51 @@ byte-identical. Root command names and arguments are unchanged.
   and no `pg`, `@types/pg` or DB tooling; tooling executes with 103 packages and
   no Next or web. Caches remain unflushed; timings are diagnostic only.
 
-Step 3 awaits owner commit approval. Step 4's full application checkpoint,
-both PostgreSQL suites (including all 79 feature-store cases), independent
-review, separately approved push and real Vercel Preview remain pending.
+Step 3 was committed with owner approval as `603f3a7`
+(`refactor(db): root integration coordination and enforce boundaries`). Its
+receipt retains the preapproval checkpoint status.
+
+## Step 4 evidence and status
+
+The [final local verification receipt](evidence/database-190/step-4-verification.json)
+verifies the implementation at `603f3a7`; Step 4 changes only documentation and
+this compact receipt. All local checks pass:
+
+- Full default-concurrency application tests: 919 browser and 290 Node cases.
+  Typechecks, full lint with 10 boundary probes, 13 CI/layout checks and the
+  demo-project Firestore emulator rules check pass. The production-dependency
+  audit reports zero vulnerabilities.
+- Full database checks: 74 required Node cases, 25 PostgreSQL cases, all 79
+  feature-store cases, 12 catalog contracts and the readiness checks pass.
+  Guard and failure-cleanup checks pass. Both suites use the standard 512 MiB
+  fixture, without the spike override; no cases are skipped or cancelled and
+  the disposable database is removed afterwards.
+- Fresh web-only installation: 379 packages with `pg`, `@types/pg`,
+  `@dfs-ev/db-tooling`, ESLint and Firebase tooling absent. Native runtime
+  import, the workspace Next build and the supported root build all pass with
+  routes manifests present. Root dev/start argument forwarding is exercised
+  with `--help`, without launching servers.
+- Fresh tooling-only installation: 103 packages with neither Next nor web.
+  Migration/readiness checks, all 11 migrations and 12 catalog contracts,
+  target refusals and all 20 root guard cases execute successfully. These
+  isolation probes open no database connections; real integration is proved
+  separately by the two PostgreSQL suites.
+- All 34 immutable hashes, including every proposal and
+  `163_effective_rights.sql`, match the baseline. The CI workflow is unchanged;
+  all 44 root command names and argument strings match after explicit path
+  relocation. Required-case identities and dynamic test inventories match.
+  Existing external lockfile versions, resolutions and integrities are
+  unchanged; the 14 dependency-classification changes are the Step 1 declared
+  tooling graph. No implementation edits were needed for Step 4.
+
+The checks use a minimal environment, the public disposable database URL and
+the explicit Firestore demo emulator, with no application credentials. Separate
+clean exports omit app environment files, dependencies and build outputs.
+Caches remain unflushed; independent checks partly overlap, so elapsed times
+are diagnostic rather than performance claims. Full logs remain off git.
+
+Step 4's local checkpoint is ready for owner commit approval. The issue remains
+open until independent review and a real Vercel Preview after a separately
+approved push; successful local builds do not replace that deployment gate.
+The Preview should confirm compilation/tracing of the runtime workspace and
+the database readiness route. No push or deployment has been performed.
