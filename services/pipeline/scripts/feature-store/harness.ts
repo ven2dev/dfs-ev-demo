@@ -9,7 +9,7 @@ import { createScratchHarness } from "../../../../packages/db/tests/scratch.mjs"
 import { parseTestDatabaseUrl } from "../../../../packages/db/tests/target.mts";
 
 export const withFeatureStoreDatabase = async <T>(run: (context: {
-  admin: Client; writer: Client; reader: Client; openWriter: () => Promise<Client>; createWriterConfig: () => Promise<ClientConfig>; queryCounts: { writer: number; reader: number };
+  admin: Client; writer: Client; reader: Client; openWriter: () => Promise<Client>; createWriterConfig: () => Promise<ClientConfig>; createReaderConfig: () => Promise<ClientConfig>; queryCounts: { writer: number; reader: number };
 }) => Promise<T>): Promise<T> => {
   const harness = await createScratchHarness(process.env);
   const names: string[] = [];
@@ -49,7 +49,7 @@ export const withFeatureStoreDatabase = async <T>(run: (context: {
             };
           } });
         };
-        return await run({ admin, writer: await login("writer"), reader: await login("reader"), openWriter: () => login("writer"), createWriterConfig: () => loginConfig("writer"), queryCounts });
+        return await run({ admin, writer: await login("writer"), reader: await login("reader"), openWriter: () => login("writer"), createWriterConfig: () => loginConfig("writer"), createReaderConfig: () => loginConfig("reader"), queryCounts });
       } finally { await Promise.all(clients.map((client) => client.end())); }
     });
   } finally {

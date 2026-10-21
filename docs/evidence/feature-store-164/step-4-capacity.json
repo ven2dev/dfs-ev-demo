@@ -1,0 +1,160 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 4,
+  "recordedAt": "2026-10-21T04:08:34.606Z",
+  "code": {
+    "gitSha": "ff87274f3edddb978e55f3e721ab06492ca56687",
+    "contentSha256": "d31548cddf7eb898096a287a4735675e42d6f6d7cb4d91f470b5be6373efeb7c"
+  },
+  "codeHashes": {
+    "package-lock.json": "76b11cf6b543cc6d084f3c86ac9ab9a5610dcae6dbd09d6260dfe639de8d62a9",
+    "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "packages/domain/package.json": "1981ff8b9d068c2150ec8abe14401d0f01ee682408a2c35042cd9255b0f70f4c",
+    "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "packages/domain/src/projection/evaluation.ts": "0852560f81b50968d83088f3de661c07611a9ba852c896aa8527f807a5046fe6",
+    "packages/domain/src/projection/qb-evaluation.ts": "a6c6536b85bf98633b05af1528b212a15cce0d7a0c3227cbce5b0c1a9625e489",
+    "services/pipeline/package.json": "49b750026343da9cfffdc0d2aa6558a2cf0c97878b847586501792f6bfdf694e",
+    "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "9a1ebf1e7a476e4359f0a8e359bafdbadb1c3c4d929caa380ceda351fdd94057",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "6acc51becdf54518f15ebe930f8628f3fa7b109c22404b7c9d3bf44686521021",
+    "services/pipeline/scripts/feature-store/evaluation-measure.ts": "53e7917c1e695f0701ca1aa6d83da61efdfdf32952a39d4f64ddd42bac0ce3ea",
+    "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts": "9668b4ff3c7fde1a3de7f18c3ac96a7dbebe0f7e23e769debb92be2a78f3dbcf",
+    "services/pipeline/scripts/feature-store/evaluation-run.ts": "2042463914c76d33d2c4a426637e0091251e523e93a4ddb5ec3b3f0f5b9754eb",
+    "services/pipeline/scripts/feature-store/evaluation-worker.ts": "ec7adf737d3bcaabdc93a8fd87a0a954f51d505d7b5cf248c4e427c06c711a7f",
+    "services/pipeline/scripts/feature-store/harness.ts": "fedfc23c25d0c776cdeeb93224ef4e3ece82dd8b92aaf11cd537e6f29c25059a",
+    "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+    "services/pipeline/src/featureStore/datasets.ts": "33d71b86b80f38b8129a9738483eb85415b3e52a275005ac9b5a29953748bde3",
+    "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "086863c08215e74282e0665bc20affc0ddc6cc21c7b599e92025b5867e51e98f",
+    "services/pipeline/src/featureStore/governance.ts": "5e3b72fdf6583dc2c920ba5a60d8cc2b07346db917365304dca4f4e00ad9da2b",
+    "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+    "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "services/pipeline/src/featureStore/objectStore.ts": "d6a9f26c2fd8f54eef161ce5e8dcf8c127a284e90bc6a0e6051355ffc6e737e9",
+    "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7"
+  },
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin"
+  },
+  "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164-data/objects",
+  "rounds": 10,
+  "verdict": "pass",
+  "targetMs": 7000,
+  "deadlineMs": 10000,
+  "gate": "every completed request <=7000 ms, including fresh restricted connection for cold; any error/deadline miss fails; report nearest-rank p50/p95 and maximum by mode/temperature",
+  "boundary": "request connection (cold) plus pinned input reads, three SQL statements, full scoring/serialization, private ObjectStore report write and pre-delivery rights/status recheck; fixture reconstruction excluded",
+  "cacheState": "ten alternating rounds, cold/warm order reversed on even rounds; fresh native Node process and connection per cold; existing connection/process per warm; OS/file/PostgreSQL caches unflushed; no scored-result reuse; immutable output address may already exist (put-if-absent validates existing bytes)",
+  "disclosures": [
+    "cold Node startup and ObjectStore initialization measured separately; full local end-to-end disclosed, not gated",
+    "no optimization comparison: absolute repeated targets, not ABBA",
+    "local probes do not model Vercel boot or Neon compute wake",
+    "revocation after the final SQL snapshot and before bytes leave the process remains the accepted delivery window"
+  ],
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "inputPinsArtifact": {
+    "objectKey": "audits/03c09dd47f8ec519360a3e265dd659c4f2b0116974824d10392cde7180a9c4d3",
+    "sha256": "03c09dd47f8ec519360a3e265dd659c4f2b0116974824d10392cde7180a9c4d3",
+    "byteSize": 36913
+  },
+  "preregistration": {
+    "commit": "6aa7953dfd0df0c9bf879c2be64e94eaa2c55a3f",
+    "path": "docs/feature-store-spike-preregistration.md",
+    "sha256": "dc6bf2e044bcbdd6de4b1d6f91db9c623f630ad1eaf7bf1b8abdfe1f3c05c97d",
+    "approved": true
+  },
+  "versions": {
+    "model": "empirical-integer-v1",
+    "adapter": {
+      "id": "qb-passing-yards-materialized",
+      "version": "empirical-feature-adapter-v1"
+    },
+    "feature": "qb-passing-yards-feature-v1",
+    "label": "qb-passing-yards-label-v1",
+    "history": "prior-eligible-reg-max16-min2-cutoff1h-v1"
+  },
+  "cohorts": [
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "fileSha256": "39d1310df5a22eac53bd83e69fa3c783d49d2d3f69c593fdb7085be7da3e7d83",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+      "count": 2504
+    },
+    {
+      "mode": "strict-point-in-time-v1",
+      "fileSha256": "3ed690824d13b49678ffe0bffad316996b0780921803fa48c4a0fbb66a8425ce",
+      "contentSha256": "7858bc13cfd59085549e3c61fc1d42685f5a9134114316bbb623e79aaff43caf",
+      "count": 0
+    }
+  ],
+  "logicalHashes": {
+    "retrospective-reconstruction-v1": "e46c856c8efcff008e6b8d2fadd1291994cc7678a3c3b384d6852871810ba3d3",
+    "strict-point-in-time-v1": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e"
+  },
+  "cohortsMeasured": [
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "temperature": "cold",
+      "attempted": 10,
+      "completed": 10,
+      "failed": 0,
+      "p50Ms": 548.247542,
+      "p95Ms": 574.6695000000001,
+      "maximumMs": 574.6695000000001,
+      "processStartP95Ms": 73.26304099999834,
+      "endToEndP95Ms": 653.6005409999925,
+      "verdict": "pass"
+    },
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "temperature": "warm",
+      "attempted": 10,
+      "completed": 10,
+      "failed": 0,
+      "p50Ms": 481.3100829999894,
+      "p95Ms": 512.2454589999979,
+      "maximumMs": 512.2454589999979,
+      "processStartP95Ms": null,
+      "endToEndP95Ms": null,
+      "verdict": "pass"
+    },
+    {
+      "mode": "strict-point-in-time-v1",
+      "temperature": "cold",
+      "attempted": 10,
+      "completed": 10,
+      "failed": 0,
+      "p50Ms": 918.374416,
+      "p95Ms": 943.2965839999999,
+      "maximumMs": 943.2965839999999,
+      "processStartP95Ms": 61.0277919999935,
+      "endToEndP95Ms": 1009.6789169999975,
+      "verdict": "pass"
+    },
+    {
+      "mode": "strict-point-in-time-v1",
+      "temperature": "warm",
+      "attempted": 10,
+      "completed": 10,
+      "failed": 0,
+      "p50Ms": 896.1280410000036,
+      "p95Ms": 920.445584000001,
+      "maximumMs": 920.445584000001,
+      "processStartP95Ms": null,
+      "endToEndP95Ms": null,
+      "verdict": "pass"
+    }
+  ],
+  "fullReceipt": {
+    "objectKey": "audits/2dd400fa25d48d3832b393f1d710a423448d1b837034ba8e076196451473590f",
+    "sha256": "2dd400fa25d48d3832b393f1d710a423448d1b837034ba8e076196451473590f",
+    "byteSize": 57312
+  },
+  "originalStorageRoot": "/private/tmp/dfs164-final-Uy3Ntf"
+}

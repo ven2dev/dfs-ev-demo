@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 3,
+  "refreshedAfterReviewOf": "ff87274",
+  "verdict": "pass",
+  "measuredImplementation": {
+    "gitSha": "ff87274f3edddb978e55f3e721ab06492ca56687",
+    "contentSha256": "d31548cddf7eb898096a287a4735675e42d6f6d7cb4d91f470b5be6373efeb7c"
+  },
+  "evidence": {
+    "step-3-evaluation.json": {
+      "sha256": "6c596fd4ad1c2fa310d01dc93c62e265ed9112717ce4e13831b427046cfb2298",
+      "byteSize": 19223,
+      "lines": 478
+    },
+    "step-3-score-summary.json": {
+      "sha256": "c46d4a715d041f4ac9a46cd08ebf7341f5da836dbe8d75952b144ca89d4a089b",
+      "byteSize": 21028,
+      "lines": 56
+    },
+    "calibration-correction.json": {
+      "sha256": "22a5a4c9b4c17bb3bf84607a274aa410ed39795c46850c07e02585a32d12e48c",
+      "byteSize": 5679,
+      "lines": 109
+    }
+  },
+  "logicalHashes": {
+    "retrospective-reconstruction-v1": "e46c856c8efcff008e6b8d2fadd1291994cc7678a3c3b384d6852871810ba3d3",
+    "strict-point-in-time-v1": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e"
+  },
+  "sourceFiles": 16,
+  "examples": 2504,
+  "thresholdCases": 12520,
+  "naturalContentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+  "warmTrials": 6,
+  "misses": 0,
+  "calibrationCorrection": {
+    "placementsChecked": 25040,
+    "overMoved": 353,
+    "underMoved": 16,
+    "allNonCalibrationFieldsIdentical": true,
+    "reference": "calibration-correction.json"
+  },
+  "checks": [
+    {"command": "projection Vitest suite", "passed": 78, "verdict": "pass"},
+    {"command": "npm run typecheck", "verdict": "pass"},
+    {"command": "npm run typecheck --workspace @dfs-ev/domain", "verdict": "pass"},
+    {"command": "npm run lint", "boundaryProbes": 7, "verdict": "pass"},
+    {"command": "npm run test:ci-gate", "passed": 12, "verdict": "pass"},
+    {"command": "npm test", "applicationPassed": 909, "nodePassed": 290, "defaultConcurrency": true, "skipped": 0, "verdict": "pass"},
+    {"command": "npm run test:feature-store:db", "passed": 79, "skipped": 0, "cancelled": 0, "dataTmpfsMiB": 512, "verdict": "pass"}
+  ],
+  "finalCapacityGate": "step-4-capacity.json",
+  "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164-data/objects",
+  "fullReceipt": {
+    "objectKey": "audits/6a04ebed79970e9c56c4905b7091b246fcf421968f904b141f12758175b3ee65",
+    "sha256": "6a04ebed79970e9c56c4905b7091b246fcf421968f904b141f12758175b3ee65",
+    "byteSize": 135726
+  }
+}

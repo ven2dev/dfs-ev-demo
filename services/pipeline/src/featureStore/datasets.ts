@@ -155,15 +155,24 @@ export const buildDataset = async (client: Database, store: ObjectStore, spec: D
     work:{statements:8,rightsQueries:2,pointInTimeJoins:1,perRowQueries:0,objectWrites:1,sourceByteReads:0}};
 };
 
-export const readDataset = async (client: Database, store: ObjectStore, datasetId: string) => {
+// Trusted pipeline callback: stage calculation/private artifacts here, and expose
+// its result only after this promise resolves. No transaction or reader locks are
+// held. The final check covers rights/status changes during calculation and I/O.
+// Revocation after that SQL snapshot and before delivery remains an accepted gap.
+export const withDatasetRead = async <T>(client: Database, store: ObjectStore, datasetId: string,
+  consume: (bytes: Buffer) => T | Promise<T>) => {
   const manifest = (await client.query<{object_key:string;file_sha256:string;snapshots:string[]}>(`SELECT d.object_key,d.file_sha256,
    ARRAY(SELECT snapshot_id FROM fs138.dataset_inputs i WHERE i.dataset_id=d.dataset_id ORDER BY snapshot_id) AS snapshots
    FROM fs138.dataset_manifests d WHERE dataset_id=$1`,[datasetId])).rows[0];
   if (!manifest) throw new Error("dataset-missing");
-  await authorize(client,manifest.snapshots,datasetId);
+  const authorization = await authorize(client,manifest.snapshots,datasetId);
   const bytes = await store.get(manifest.object_key);
-  await authorize(client,manifest.snapshots,datasetId);
+  const value = await consume(bytes);
+  const delivery = await authorize(client,manifest.snapshots,datasetId);
   // Ingestion/build verified content; scheduled audits own storage-integrity
   // rehashing. No per-row or per-file source reconstruction on ordinary reads.
-  return bytes;
+  return { value, authorization, delivery };
 };
+
+export const readDataset = async (client: Database, store: ObjectStore, datasetId: string) =>
+  (await withDatasetRead(client, store, datasetId, bytes => bytes)).value;

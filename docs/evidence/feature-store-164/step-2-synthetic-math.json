@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 2,
+  "realDataEvaluationRun": false,
+  "runtime": "v24.18.1",
+  "fixture": "synthetic-only: 2504 folds, 12520 cases, four seasons and n=2/5/9/16 crossed",
+  "codeHashes": {
+    "packages/domain/src/projection/qb-evaluation.ts": "230f6d4a5774ede04b43dcb178845a3b1ab0a7b8a4ed8a01fd662e6ac874d654",
+    "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "packages/domain/src/projection/evaluation.ts": "7fa42bc43cfd36f4366bab60c07c6c6756434833ee478b10ba90de3dcfc3e643",
+    "packages/domain/package.json": "1981ff8b9d068c2150ec8abe14401d0f01ee682408a2c35042cd9255b0f70f4c",
+    "services/pipeline/scripts/feature-store/evaluation-math-spike.ts": "cea5123c984eb2921f7d43f90dfef56b8a874aa5f7b79f323b483dc6c9b38e3f"
+  },
+  "boundary": "pure evaluation plus logical JSON serialization; no database, source reads, connection setup or ObjectStore writes in timing",
+  "cacheState": "six repeated in-process runs; first run has unprimed scorer/JIT; OS caches unflushed; no result reuse",
+  "interpretation": "partial-path feasibility and deterministic output only; not the completed-report timing gate",
+  "work": {
+    "statements": 0,
+    "databaseReads": 0,
+    "rawEvidenceReads": 0,
+    "folds": 2504,
+    "cases": 12520,
+    "groups": 25
+  },
+  "trials": [
+    {
+      "trial": 1,
+      "calculationMs": 150.39375,
+      "serializationMs": 27.306708000000015,
+      "totalMs": 177.70045800000003,
+      "logicalSha256": "18a7c758ea49583e62cd43e97799a4fb8302ad1509fb3e7e811af3e7260c9654",
+      "byteSize": 7468308
+    },
+    {
+      "trial": 2,
+      "calculationMs": 128.58466699999997,
+      "serializationMs": 26.777458000000024,
+      "totalMs": 155.362125,
+      "logicalSha256": "18a7c758ea49583e62cd43e97799a4fb8302ad1509fb3e7e811af3e7260c9654",
+      "byteSize": 7468308
+    },
+    {
+      "trial": 3,
+      "calculationMs": 119.06970799999999,
+      "serializationMs": 25.616750000000025,
+      "totalMs": 144.68645800000002,
+      "logicalSha256": "18a7c758ea49583e62cd43e97799a4fb8302ad1509fb3e7e811af3e7260c9654",
+      "byteSize": 7468308
+    },
+    {
+      "trial": 4,
+      "calculationMs": 115.39279099999999,
+      "serializationMs": 26.258166999999958,
+      "totalMs": 141.65095799999995,
+      "logicalSha256": "18a7c758ea49583e62cd43e97799a4fb8302ad1509fb3e7e811af3e7260c9654",
+      "byteSize": 7468308
+    },
+    {
+      "trial": 5,
+      "calculationMs": 154.8810420000001,
+      "serializationMs": 26.42716699999994,
+      "totalMs": 181.30820900000003,
+      "logicalSha256": "18a7c758ea49583e62cd43e97799a4fb8302ad1509fb3e7e811af3e7260c9654",
+      "byteSize": 7468308
+    },
+    {
+      "trial": 6,
+      "calculationMs": 116.11983399999986,
+      "serializationMs": 25.76808300000016,
+      "totalMs": 141.88791700000002,
+      "logicalSha256": "18a7c758ea49583e62cd43e97799a4fb8302ad1509fb3e7e811af3e7260c9654",
+      "byteSize": 7468308
+    }
+  ],
+  "storageRoot": "/private/tmp/dfs164-math-zFFS9S",
+  "fullReport": {
+    "objectKey": "audits/5a6b2b9b7a12da99e181511c138e3414dd3e8884b02d0c3efc79ec5d4643ec51",
+    "sha256": "5a6b2b9b7a12da99e181511c138e3414dd3e8884b02d0c3efc79ec5d4643ec51",
+    "byteSize": 7468347
+  },
+  "verdict": "synthetic-reproducibility-pass"
+}

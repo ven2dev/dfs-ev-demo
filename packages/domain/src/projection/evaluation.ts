@@ -1,6 +1,16 @@
 import { fitBaseline, instant, probabilityAt, validateTriple, type Input, type Market, type Observation, type Triple, MODEL_VERSION } from "./baseline.ts";
 export type Outcome = "over" | "under" | "push";
 const keys = { over: "overProbability", under: "underProbability", push: "pushProbability" } as const;
+/** Qualified nonempty equal-mass history: exact counts decide half-open bins.
+ * Accumulated masses/complements can round an exact tenth into the lower bin.
+ * Forecast probabilities and score arithmetic deliberately remain unchanged.
+ */
+export const empiricalCalibrationBins = (values: readonly number[], line: number): Record<Outcome, number> => {
+  const counts = { over: 0, under: 0, push: 0 };
+  for (const value of values) counts[value > line ? "over" : value < line ? "under" : "push"]++;
+  const bin = (count: number) => Math.min(9, Math.floor(10 * count / values.length));
+  return { over: bin(counts.over), under: bin(counts.under), push: bin(counts.push) };
+};
 export function score(p: Triple, outcome: Outcome) {
   validateTriple(p);
   if (!(outcome in keys)) throw new Error("invalid outcome class");
@@ -29,6 +39,7 @@ export function evaluate(cases: readonly EvaluationCase[], options: { evaluatedA
     if (Object.values(partition).some(n => !Number.isSafeInteger(n) || n < 0)) throw new Error("invalid coverage counts");
   }
   const seen = new Set<string>();
+  const calibrationByCase = new Map<string, Record<Outcome, number>>();
   const rows = cases.map(item => {
     const { input, label } = item;
     if (!label.id) throw new Error("missing evaluation label identity");
@@ -46,6 +57,7 @@ export function evaluate(cases: readonly EvaluationCase[], options: { evaluatedA
     const model = fitBaseline(input);
     const p = probabilityAt(model, item.line);
     if (!p) return { ...manifest, market: input.market, model, scores: null, outcome: null, probabilities: null, comparison: null, cutoff: input.cutoff };
+    calibrationByCase.set(key, empiricalCalibrationBins(input.history.map(row => row.value), item.line));
     const outcome: Outcome = label.value > item.line ? "over" : label.value < item.line ? "under" : "push";
     return { ...manifest, market: input.market, model, scores: score(p, outcome), outcome, probabilities: p,
       comparison: item.comparison ? { version: item.comparison.version, ...score(item.comparison.probabilities, outcome) } : null, cutoff: input.cutoff };
@@ -54,7 +66,7 @@ export function evaluate(cases: readonly EvaluationCase[], options: { evaluatedA
     const selected = rows.filter(row => row.market === market);
     const scored = selected.filter(row => row.scores !== null);
     const calibration = (Object.keys(keys) as Outcome[]).flatMap(side => Array.from({ length: 10 }, (_, bin) => {
-      const members = scored.filter(row => Math.min(9, Math.floor(row.probabilities![keys[side]] * 10)) === bin);
+      const members = scored.filter(row => calibrationByCase.get(JSON.stringify([row.market, row.eventId, row.line]))![side] === bin);
       return { side, lower: bin / 10, upper: (bin + 1) / 10, count: members.length,
         meanProbability: members.length ? members.reduce((sum, row) => sum + row.probabilities![keys[side]], 0) / members.length : null,
         outcomeRate: members.length ? members.filter(row => row.outcome === side).length / members.length : null };
