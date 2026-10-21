@@ -1,6 +1,6 @@
 import { equalMassSupport, probabilityAt } from "./empirical.ts";
 import { MODEL_VERSION } from "./baseline.ts";
-import { score } from "./evaluation.ts";
+import { empiricalCalibrationBins, score } from "./evaluation.ts";
 
 export const QB_THRESHOLDS = [199.5, 224.5, 249.5, 274.5, 299.5] as const;
 export const QB_EVALUATOR_VERSION = "qb-empirical-evaluation-v1";
@@ -125,13 +125,16 @@ export const evaluateQbBaseline = (examples: readonly QbExample[], options: QbEv
     evaluated.add(foldId);
     return { foldId, ...row, stratum: stratum(row.sampleSize), rps: integerRps(row.history.map(h => h.yards), row.label), previouslyEvaluatedGames };
   });
+  const calibrationByCase = new Map<string, ReturnType<typeof empiricalCalibrationBins>>();
   const cases = folds.flatMap(fold => {
     const support = equalMassSupport(fold.history.map(h => h.yards));
     return QB_THRESHOLDS.map(threshold => {
       const probabilities = probabilityAt(support, threshold)!;
       const outcome = fold.label > threshold ? "over" as const : "under" as const;
       const scored = score(probabilities, outcome);
-      return { caseId: JSON.stringify([fold.playerId, fold.gameId, threshold]), foldId: fold.foldId,
+      const caseId = JSON.stringify([fold.playerId, fold.gameId, threshold]);
+      calibrationByCase.set(caseId, empiricalCalibrationBins(fold.history.map(h => h.yards), threshold));
+      return { caseId, foldId: fold.foldId,
         season: fold.season, stratum: fold.stratum, threshold, probabilities, outcome,
         brierThreeClass: scored.brier, brierBinaryOver: (probabilities.overProbability - Number(outcome === "over")) ** 2,
         logLoss: scored.logLoss };
@@ -154,7 +157,7 @@ export const evaluateQbBaseline = (examples: readonly QbExample[], options: QbEv
           underOne: rows.filter(r => r.probabilities.underProbability === 1).length },
         calibration: (["over", "under"] as const).flatMap(side => Array.from({ length: 10 }, (_, bin) => {
           const probability = (r: typeof rows[number]) => r.probabilities[side === "over" ? "overProbability" : "underProbability"];
-          const members = rows.filter(r => Math.min(9, Math.floor(probability(r) * 10)) === bin);
+          const members = rows.filter(r => calibrationByCase.get(r.caseId)![side] === bin);
           return { side, lower: bin / 10, upper: (bin + 1) / 10, count: members.length,
             meanProbability: mean(members.map(probability)), outcomeRate: mean(members.map(r => Number(r.outcome === side))) };
         })), marketComparison: marketComparison() };

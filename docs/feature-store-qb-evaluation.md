@@ -1,7 +1,7 @@
 # Preregistered QB baseline evaluation (#164)
 
-Status: step 4 complete, ready for owner and independent review. Local targets
-pass; hosted CI and merge remain pending.
+Status: the calibration review correction is complete and ready for focused
+review. Local targets pass; commit approval, hosted CI and merge remain pending.
 The [owner-approved roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/164#issuecomment-6296073750)
 sets a five-hour engineering cap. Each atomic commit and every push needs owner
 approval. This follows merged #189; database/pipeline extraction remains later work.
@@ -164,12 +164,12 @@ node services/pipeline/scripts/feature-store/evaluation-math-spike.ts
 ## Step 3 checkpoint
 
 The [evaluation receipt](evidence/feature-store-164/step-3-evaluation.json)
-records the first registered evaluation of the pinned real cohort. Exact input
-pins (including the preregistration and an aggregate identity over 26
-runtime/setup code hashes) were written before scoring. Two independent fixture rebuilds retained the same
-natural cohort hash and logical report hashes. The first run's detailed receipt
-is retained in local ObjectStore; the compact checkpoint records its reference.
-No scoring policy, threshold or smoothing changed after observing results.
+now records the corrected evaluation of the pinned real cohort. Exact input
+pins, preregistration and all 29 runtime/setup file hashes were written before
+scoring. Independent evaluation and capacity fixture rebuilds retain the same
+natural cohort hash and corrected logical report hashes. Full corrected reports
+and logs are retained in the durable local ObjectStore below. No scoring policy,
+threshold, probability calculation or smoothing changed after observing results.
 
 The flagged retrospective report contains 2,504 chronological player-game folds
 and 12,520 fixed-threshold cases. Season counts are 595 / 632 / 644 / 633;
@@ -228,91 +228,87 @@ snapshot and bytes leaving the process is the accepted delivery-window limit.
 There is no report-serving endpoint in this issue.
 
 Three alternating warm rounds per mode on the standard 512 MiB PostgreSQL
-fixture completed in 485–504 ms (retrospective) and 880–927 ms (strict). The
-boundary includes pin/coverage/dataset reads, three SQL statements, scoring,
-serialization, report upload and final rights/status check. Each trial measured
-exactly two batched checks, three object reads and one report write, with zero
-raw-source or per-example queries. Setup/reconstruction and connection setup
-are excluded; caches were unflushed and no scored result was reused. These are
-warm checkpoint measurements, not the final cold/warm latency verdict. Fresh
-restricted-connection trials, percentiles and both full database suites remain
-step 4. Local probes cannot represent Vercel boot or Neon compute wake.
+fixture completed in 501–521 ms (retrospective) and
+854–951 ms (strict). Each trial used three SQL statements,
+two batched checks, three object reads and one report write, with zero raw-source
+or per-example queries. Setup/reconstruction and connection setup are excluded;
+caches were unflushed and no scored result was reused. The final cold/warm gate
+is below. See the [refreshed checkpoint](evidence/feature-store-164/step-3-checkpoint.json).
+Reproduce using the clean environment shown for preparation, substituting
+`evaluation-run.ts` for `evaluation-prepare.ts`.
 
-The [validation checkpoint](evidence/feature-store-164/step-3-checkpoint.json)
-records 17 focused PostgreSQL cases, 56 projection tests, typecheck, lint,
-boundaries and layout/CI checks. Scratch databases and the disposable container
-were removed. Reproduce using the clean environment shown for preparation,
-substituting `evaluation-run.ts` for `evaluation-prepare.ts`.
+## Step 4 checkpoint and calibration correction
 
+Independent review found that accumulated floating-point masses could round an
+exact tenth below its registered calibration boundary. Both evaluators now use
+the same exact-count helper: `min(9, floor(10 * count / n))`. The ten half-open
+bins and all scoring policies remain unchanged. Boundary regressions cover
+n=5, 10 and 15, both Over/Under, plus push in the older shared scorer; n=16
+controls prove nearby non-boundary fractions stay in their correct bins.
 
-## Step 4 checkpoint
+The [correction receipt](evidence/feature-store-164/calibration-correction.json)
+records a comparison against the actual pre-fix scorer extracted from `ff87274`.
+It reproduces the original report hashes on identical inputs, then proves every
+field outside calibration is identical. Of 25,040 pooled Over/Under placements,
+369 move to their correct bin (353 Over, 16 Under). All 5,000 calibration cells
+across both modes are checked against an independent integer-boundary oracle.
+Brier, log loss, RPS, probabilities, identities, coverage and every total remain
+unchanged. The compact score-summary file is byte-identical to the reviewed one.
 
-The [capacity receipt](evidence/feature-store-164/step-4-capacity.json) records
-40 completed reports across ten alternating rounds of cold/warm and both evidence
-modes. Every request completed below the 7,000 ms target and 10,000 ms deadline;
-no errors, misses or censored observations were removed. This is an absolute
-target probe, not an optimization comparison. Cold/warm order reverses every
-other round, with no scored-result reuse. OS, file and PostgreSQL caches remain
-unflushed. Repeated immutable writes can find the existing report address and
-validate its bytes; the first report of each mode also exercises creation.
+The [refreshed capacity receipt](evidence/feature-store-164/step-4-capacity.json)
+records 40 completed reports across ten alternating cold/warm rounds per mode.
+Every request completes below 7,000 ms against the 10,000 ms deadline; no failures
+or censored observations are omitted. This is an absolute-target probe, without
+an optimization comparison. No scored result is reused; OS/file/PG caches are
+unflushed, and repeated immutable writes validate existing report bytes.
 
 | Evidence mode | Request state | Runs | p50 | p95 / maximum |
 | --- | --- | --- | --- | --- |
-| Retrospective | Fresh process and connection | 10 | 513 ms | 537 ms |
-| Retrospective | Existing process and connection | 10 | 474 ms | 507 ms |
-| Strict PIT | Fresh process and connection | 10 | 941 ms | 962 ms |
-| Strict PIT | Existing process and connection | 10 | 893 ms | 931 ms |
+| Retrospective | cold | 10 | 548 ms | 575 ms |
+| Retrospective | warm | 10 | 481 ms | 512 ms |
+| Strict PIT | cold | 10 | 918 ms | 943 ms |
+| Strict PIT | warm | 10 | 896 ms | 920 ms |
 
-The cold gate starts before opening the fresh restricted connection and ends
-after report persistence and the pre-delivery check. Node startup and ObjectStore
-initialization are recorded separately; local end-to-end p95 including those
-stages is 616 ms retrospectively and 1,020 ms strictly. Every query, calculation,
-serialization and object-write duration is retained in the full ObjectStore
-receipt. Ten observations make nearest-rank p95 equal the maximum: these establish
-ample local headroom, not a precise production tail estimate. Local Node boot
-does not model Vercel boot or a Neon compute waking from scale-to-zero.
+Cold starts timing before opening a fresh restricted connection and ends after
+report persistence and the pre-delivery recheck. Node startup and ObjectStore
+initialization are measured separately. Full local end-to-end cold p95 is
+654 ms retrospectively and 1010 ms strictly.
+Ten observations make nearest-rank p95 equal the maximum; this proves local
+headroom, not a production-tail estimate. Vercel boot and Neon compute wake
+are outside this local measurement.
 
-All 40 reports used exactly three SQL statements, two batched rights/status
-checks, three object reads and one report write. No query reads normalized raw
-evidence, feature rows or label rows during report execution. The same work
-budget now runs in CI at 2 and 130 examples; the opt-in probe proves it at 2,504.
-The restricted connection factory issues only reader membership. Each cold
-trial starts a native Node 24 process, using generated scratch credentials over
-IPC and no application configuration. Process startup is measured separately
-from the gated connection-plus-request path.
+All 40 reports use exactly three SQL statements, two batched rights/status
+checks, three object reads and one report write, with zero raw/per-example reads.
+The work-budget regression still covers 2 and 130 examples; the real cohort is
+2,504. Fresh pre-score pins bind the same 29 measured file hashes in both fixture
+rebuilds. All trials reproduce these corrected logical hashes:
 
-Fresh input pins bind the exact file/content hashes, versions, preregistration
-and aggregate of 29 setup/runtime file hashes before scoring. The logical hashes
-match step 3 across all trials and this independent fixture rebuild:
-
-- Retrospective: `e8bf09a84fda43f2c19fc28e5a7c78be430ec74eadec660a80270590bc532dfa`.
-- Strict PIT: `5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e`.
-
-The registered scores and coverage are unchanged. Infinity remains visible;
-strict PIT still has no forecast-qualified historical evidence. No smoothing,
-calibration, market-price substitution or policy tuning was added.
+- Retrospective: `e46c856c8efcff008e6b8d2fadd1291994cc7678a3c3b384d6852871810ba3d3`.
+- Strict PIT: `5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e` (unchanged: no eligible forecasts).
 
 The [final checkpoint](evidence/feature-store-164/step-4-checkpoint.json) maps each
-acceptance criterion to a verdict. Both full PostgreSQL suites passed on the
-standard 512 MiB fixture: 79 feature-store cases; aggregate migration/catalog,
-readiness, lease and corpus checks, including 25 PostgreSQL Vitest cases and
-74 required Node cases. Guards, lifecycle and 12 catalog contracts passed.
-Disposable databases and the container were removed. No frozen database asset,
-legacy fitter, existing empirical adapter, UI, workflow or lockfile changed.
+acceptance target to the corrected evidence. Fresh validation passes 78 projection
+tests, repository/domain typechecks, lint, seven boundary probes, 12 layout/CI
+checks, and all 79 feature-store PostgreSQL cases on the standard 512 MiB database.
+Default-concurrency `npm test` now passes 909 application and 290 Node tests,
+without changing timeouts or application code. The four timeouts in the original
+run remain recorded in Git history. The full aggregate database job passed at
+reviewed `ff87274`, including the reviewer's independent run; this correction
+changes no database asset or pipeline code. Both fixture rebuilds also verify
+the unchanged migration/catalog chain. Disposable databases/container are removed.
 
-The initial default-concurrency application run recorded four existing
-5-second test timeouts (AuthStatus, ConnectionIndicator, creator capture-store
-concurrency and creator CLI). The complete retry with two workers passed all
-909 tests, and the Node lane passed 268, including the 56 projection tests.
-No timeout, assertion or application code changed. Both outcomes and full log
-hashes are retained; hosted CI still needs to pass at its configured concurrency.
-Repository/domain typechecks, lint, seven boundary probes and 12 layout/CI
-checks pass. Full reports/traces/logs remain local ObjectStore artifacts; Git
-receives compact verdict/hash/count/timing receipts.
+Full corrected reports, datasets, pins, traces, verifier and logs are archived
+through ObjectStore at `/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164-data/objects`.
+The original temporary pre-reboot dumps were lost; earlier step-1/2 receipts are
+historical. The corrected step-3/4 receipts point to durable artifacts and retain
+their original execution-directory metadata. Git contains compact receipts only.
 
-Reproduce the opt-in capacity matrix with the clean local environment above,
-using `evaluation-benchmark.ts`. The full CI database sequence is
-`test:db:guard`, `test:db:lifecycle`, `test:db:local`, then a fresh standard
-container for `test:feature-store:db` and cleanup. This completes implementation
-and local acceptance proof; owner approval precedes the final commit, fresh
-consent precedes pushing/opening the PR, and independent review precedes merge.
+Accepted local limit: report jobs run one at a time. Concurrent identical runs
+can share a content address that a refused creator removes after another run has
+returned it. Coordinate report-object ownership before adding concurrency or a
+serving endpoint. No such endpoint exists here. Archived report delivery also
+requires fresh dataset authorization, and the final-SQL-to-delivery window remains.
+
+Reproduce with `evaluation-run.ts` and `evaluation-benchmark.ts` under the clean
+local environment above. Focused review and commit approval remain; fresh consent
+precedes pushing/opening the PR, and hosted CI precedes owner merge.

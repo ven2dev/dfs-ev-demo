@@ -130,6 +130,27 @@ describe("preregistered materialized QB evaluation", () => {
     expect(group(r).thresholds[0].extremeProbabilities).toEqual({ overZero: 0, overOne: 1, underZero: 1, underOne: 0 });
     expect(group(r).thresholds[0].calibration.find(b => b.side === "over" && b.lower === .9)?.count).toBe(1);
   });
+  it.each([
+    { n: 5, count: 1, bin: 2 }, { n: 5, count: 4, bin: 8 },
+    { n: 10, count: 1, bin: 1 }, { n: 10, count: 2, bin: 2 },
+    { n: 10, count: 3, bin: 3 }, { n: 10, count: 7, bin: 7 },
+    { n: 15, count: 3, bin: 2 }, { n: 15, count: 9, bin: 6 },
+    { n: 15, count: 12, bin: 8 }, { n: 16, count: 3, bin: 1 },
+    { n: 16, count: 4, bin: 2 },
+  ])("bins count=$count of n=$n in $bin using exact empirical counts", ({ n, count, bin }) => {
+    for (const side of ["over", "under"] as const) {
+      const e = example({ sampleSize: n, label: side === "over" ? 400 : 100,
+        history: Array.from({ length: n }, (_, i) => ({ gameId: `prior-${i}`, kickoff: "2021-09-01T18:00:00Z",
+          yards: (i < count) === (side === "under") ? 200 - i : 250 + i })) });
+      const report = evaluateQbBaseline([e], options([e]));
+      const threshold = group(report).thresholds.find(t => t.threshold === 224.5)!;
+      const bins = threshold.calibration.filter(b => b.side === side);
+      expect(bins.map(b => b.count)).toEqual(Array.from({ length: 10 }, (_, i) => Number(i === bin)));
+      expect(bins[bin].meanProbability).toBeCloseTo(count / n, 14);
+      expect(bins[bin].outcomeRate).toBe(1);
+      expect(threshold.count).toBe(1);
+    }
+  });
   it("includes every season/sample cell, empty denominators and explicit unavailable comparisons", () => {
     const r = evaluateQbBaseline([], options([]));
     expect(r.groups).toHaveLength(25);

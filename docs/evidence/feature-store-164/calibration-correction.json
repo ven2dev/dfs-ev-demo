@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "reviewedCommit": "ff87274",
+  "verdict": "ready-for-focused-review",
+  "correction": "Both scorers select bins by min(9,floor(10*count/n)); probabilities and every non-calibration report field are unchanged",
+  "policyChange": false,
+  "boundaryCases": {
+    "sampleSizes": [
+      5,
+      10,
+      15
+    ],
+    "nearBoundaryControlSampleSize": 16,
+    "qbSides": [
+      "over",
+      "under"
+    ],
+    "legacySides": [
+      "over",
+      "under",
+      "push"
+    ],
+    "newParameterizedCases": 22,
+    "preFix": {
+      "failed": 12,
+      "passed": 60
+    },
+    "postFixProjectionSuite": {
+      "passed": 78,
+      "failed": 0
+    }
+  },
+  "measuredImplementation": {
+    "gitSha": "ff87274f3edddb978e55f3e721ab06492ca56687",
+    "contentSha256": "d31548cddf7eb898096a287a4735675e42d6f6d7cb4d91f470b5be6373efeb7c"
+  },
+  "testFileSha256": {
+    "packages/domain/tests/projection/baseline.test.ts": "38a14779269a3b28154416c6f143287727cb2f5c411e29589dd9f95fc7fde072",
+    "packages/domain/tests/projection/qb-evaluation.test.ts": "fab1fada57c3201e838dce6d2b7a3ad3ec837cccabc67a8c94137b776877d808",
+    "services/pipeline/tests/feature-store/datasets.check.mts": "9265385eca8c37324d648cf07b5be00ecf087002d00b086d77d49808f7a914ca"
+  },
+  "comparisons": [
+    {"mode": "retrospective-reconstruction-v1", "originalLogicalSha256": "e8bf09a84fda43f2c19fc28e5a7c78be430ec74eadec660a80270590bc532dfa", "correctedLogicalSha256": "e46c856c8efcff008e6b8d2fadd1291994cc7678a3c3b384d6852871810ba3d3", "unchangedReportWithoutCalibrationSha256": "5a84887d0e9ef64b51bb91ebfddd272cbef56b7a44687ade546b9138b1fd17f3", "allNonCalibrationFieldsIdentical": true, "placementsChecked": 25040, "movedPlacements": {"over": 353, "under": 16, "total": 369}, "calibrationCellsChecked": 2500, "changedCalibrationCells": 492, "folds": 2504, "cases": 12520},
+    {"mode": "strict-point-in-time-v1", "originalLogicalSha256": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e", "correctedLogicalSha256": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e", "unchangedReportWithoutCalibrationSha256": "3f36dbaca31aef59befbe131534b0af6834b799dd1d992df04933a16d5805e68", "allNonCalibrationFieldsIdentical": true, "placementsChecked": 0, "movedPlacements": {"over": 0, "under": 0, "total": 0}, "calibrationCellsChecked": 2500, "changedCalibrationCells": 0, "folds": 0, "cases": 0}
+  ],
+  "proof": {
+    "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164-data/objects",
+    "fullProofArtifact": {
+      "objectKey": "audits/c6f1e18c3426b0917f456101de04534ae78995ccbffcdf3f5eef5adfd80fda56",
+      "sha256": "c6f1e18c3426b0917f456101de04534ae78995ccbffcdf3f5eef5adfd80fda56",
+      "byteSize": 9783
+    },
+    "verifierArtifact": {
+      "objectKey": "audits/05a8a4cf9c906c234e7be7501f1c07778de3403dd7587bd8409cfa9aa917baf4",
+      "sha256": "05a8a4cf9c906c234e7be7501f1c07778de3403dd7587bd8409cfa9aa917baf4",
+      "byteSize": 11498
+    },
+    "method": "pre-fix scorer from Git on identical real inputs; exact original hashes reproduced; equality of all report fields after removing calibration arrays",
+    "calibrationOracle": "integer comparisons against each rational tenth, independent of production division/floor",
+    "capacityTrialsVerified": 40
+  },
+  "evidence": {
+    "step-3-evaluation.json": {
+      "sha256": "6c596fd4ad1c2fa310d01dc93c62e265ed9112717ce4e13831b427046cfb2298",
+      "byteSize": 19223,
+      "lines": 478
+    },
+    "step-3-score-summary.json": {
+      "sha256": "c46d4a715d041f4ac9a46cd08ebf7341f5da836dbe8d75952b144ca89d4a089b",
+      "byteSize": 21028,
+      "lines": 56
+    },
+    "step-4-capacity.json": {
+      "sha256": "4a291157b2f70c80083f379626260f43f5f9fc2fc15aadbac73857b0729f7a63",
+      "byteSize": 8635,
+      "lines": 160
+    }
+  },
+  "checks": [
+    {"command": "projection Vitest suite", "passed": 78, "verdict": "pass"},
+    {"command": "npm run typecheck", "verdict": "pass"},
+    {"command": "npm run typecheck --workspace @dfs-ev/domain", "verdict": "pass"},
+    {"command": "npm run lint", "boundaryProbes": 7, "verdict": "pass"},
+    {"command": "npm run test:ci-gate", "passed": 12, "verdict": "pass"},
+    {"command": "npm test", "applicationPassed": 909, "nodePassed": 290, "defaultConcurrency": true, "skipped": 0, "verdict": "pass"},
+    {"command": "npm run test:feature-store:db", "passed": 79, "skipped": 0, "cancelled": 0, "dataTmpfsMiB": 512, "verdict": "pass"},
+    {"check": "Both real fixture reconstructions apply unchanged migrations and verify catalog contracts before proposals", "verdict": "pass"},
+    {"check": "All 29 measured file hashes, six warm reports and 40 capacity-trial work budgets/logical hashes verified", "verdict": "pass"},
+    {"check": "All 5,000 calibration cells verified using independent integer-boundary comparisons", "verdict": "pass"},
+    {"check": "Pre-fix report hashes reproduced; every non-calibration field identical after correction", "verdict": "pass"},
+    {"check": "Disposable database and container cleanup", "verdict": "pass"}
+  ],
+  "artifactRetention": {
+    "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164-data/objects",
+    "namespaces": [
+      "audits",
+      "datasets"
+    ],
+    "originalRawFiles": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-138-data/objects",
+    "note": "Original pre-reboot full artifacts were lost; corrected reports, traces, verifier and logs are archived durably through ObjectStore"
+  },
+  "remaining": [
+    "owner approval before commit",
+    "focused independent review",
+    "fresh push/PR consent",
+    "hosted CI and owner merge"
+  ]
+}

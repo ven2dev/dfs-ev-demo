@@ -2,125 +2,60 @@
   "schemaVersion": 1,
   "issue": 164,
   "step": 3,
-  "baseCommit": "2d6927a54f9c1a0269e1faad04d90619cbf1f128",
-  "codeHashes": {
-    "services/pipeline/src/featureStore/datasets.ts": "33d71b86b80f38b8129a9738483eb85415b3e52a275005ac9b5a29953748bde3",
-    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "337c7254299a2c354b8f5992fa0efefa4222b0bfb2345615bf420954e0555564",
-    "services/pipeline/scripts/feature-store/evaluation-report.ts": "9668b4ff3c7fde1a3de7f18c3ac96a7dbebe0f7e23e769debb92be2a78f3dbcf",
-    "services/pipeline/scripts/feature-store/evaluation-run.ts": "2042463914c76d33d2c4a426637e0091251e523e93a4ddb5ec3b3f0f5b9754eb",
-    "services/pipeline/tests/feature-store/datasets.check.mts": "58f13874cc140a0274c99ff604e8188b0e3d8bbc6980cc4a04c53e96d276b1a8"
+  "refreshedAfterReviewOf": "ff87274",
+  "verdict": "pass",
+  "measuredImplementation": {
+    "gitSha": "ff87274f3edddb978e55f3e721ab06492ca56687",
+    "contentSha256": "d31548cddf7eb898096a287a4735675e42d6f6d7cb4d91f470b5be6373efeb7c"
   },
   "evidence": {
     "step-3-evaluation.json": {
-      "sha256": "93118484f6cd3763e92a1515ebe92c63f48c1327dd099ce27ea6c858aacfc428",
-      "byteSize": 18713,
-      "lines": 474
+      "sha256": "6c596fd4ad1c2fa310d01dc93c62e265ed9112717ce4e13831b427046cfb2298",
+      "byteSize": 19223,
+      "lines": 478
     },
     "step-3-score-summary.json": {
       "sha256": "c46d4a715d041f4ac9a46cd08ebf7341f5da836dbe8d75952b144ca89d4a089b",
       "byteSize": 21028,
       "lines": 56
+    },
+    "calibration-correction.json": {
+      "sha256": "22a5a4c9b4c17bb3bf84607a274aa410ed39795c46850c07e02585a32d12e48c",
+      "byteSize": 5679,
+      "lines": 109
     }
+  },
+  "logicalHashes": {
+    "retrospective-reconstruction-v1": "e46c856c8efcff008e6b8d2fadd1291994cc7678a3c3b384d6852871810ba3d3",
+    "strict-point-in-time-v1": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e"
+  },
+  "sourceFiles": 16,
+  "examples": 2504,
+  "thresholdCases": 12520,
+  "naturalContentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+  "warmTrials": 6,
+  "misses": 0,
+  "calibrationCorrection": {
+    "placementsChecked": 25040,
+    "overMoved": 353,
+    "underMoved": 16,
+    "allNonCalibrationFieldsIdentical": true,
+    "reference": "calibration-correction.json"
   },
   "checks": [
-    {
-      "command": "node --test services/pipeline/tests/feature-store/datasets.check.mts",
-      "passed": 17,
-      "skipped": 0,
-      "cancelled": 0,
-      "verdict": "pass"
-    },
-    {
-      "command": "npx vitest run --config vitest.node.config.ts packages/domain/tests/projection",
-      "passed": 56,
-      "files": 3,
-      "skipped": 0,
-      "cancelled": 0,
-      "verdict": "pass"
-    },
-    {
-      "command": "npm run typecheck",
-      "verdict": "pass"
-    },
-    {
-      "command": "npm run lint",
-      "boundaryProbesPassed": 7,
-      "verdict": "pass"
-    },
-    {
-      "command": "npm run test:ci-gate",
-      "passed": 12,
-      "verdict": "pass"
-    },
-    {
-      "check": "26 measured code hashes, input/preregistration pins, full report/file hashes, logical hashes, coverage partitions, calibration denominators, Brier conventions, infinity, event-time/history policy and measured work counts",
-      "verdict": "pass"
-    },
-    {
-      "check": "standard disposable PostgreSQL data tmpfs is 512 MiB; scratch database query empty after cleanup",
-      "verdict": "pass"
-    },
-    {
-      "check": "legacy strict fitter, empirical kernel and step-2 scoring code unchanged; frozen database artifacts unchanged",
-      "verdict": "pass"
-    }
+    {"command": "projection Vitest suite", "passed": 78, "verdict": "pass"},
+    {"command": "npm run typecheck", "verdict": "pass"},
+    {"command": "npm run typecheck --workspace @dfs-ev/domain", "verdict": "pass"},
+    {"command": "npm run lint", "boundaryProbes": 7, "verdict": "pass"},
+    {"command": "npm run test:ci-gate", "passed": 12, "verdict": "pass"},
+    {"command": "npm test", "applicationPassed": 909, "nodePassed": 290, "defaultConcurrency": true, "skipped": 0, "verdict": "pass"},
+    {"command": "npm run test:feature-store:db", "passed": 79, "skipped": 0, "cancelled": 0, "dataTmpfsMiB": 512, "verdict": "pass"}
   ],
-  "targets": [
-    {
-      "target": "2504 logical examples and preregistered natural content hash",
-      "verdict": "pass"
-    },
-    {
-      "target": "chronological 2022\u20132025, 2021 warm-up only, player-aware identities and history reuse",
-      "verdict": "pass"
-    },
-    {
-      "target": "all registered metrics and season/sample strata, infinity and empty cells",
-      "verdict": "pass"
-    },
-    {
-      "target": "strict and retrospective separate; captured market comparison unavailable",
-      "verdict": "pass"
-    },
-    {
-      "target": "three SQL statements/two batched rights checks through report staging/delivery, no raw or per-example reads",
-      "verdict": "pass"
-    },
-    {
-      "target": "repeat logical hash per evidence mode",
-      "verdict": "pass"
-    },
-    {
-      "target": "completed report <=7000 ms against 10000 ms deadline",
-      "warm": "pass, six trials; 485\u2013927 ms",
-      "cold": "pending step 4",
-      "verdict": "pending-final-cold-warm-gate"
-    }
-  ],
-  "initialRun": {
-    "storageRoot": "/private/tmp/dfs164-scored-ch26bb",
-    "fullReceipt": {
-      "objectKey": "audits/34d9a428cb30d795739c7ae109c10c5cd3d6bf80feb4b520f3f6e2e641f02463",
-      "sha256": "34d9a428cb30d795739c7ae109c10c5cd3d6bf80feb4b520f3f6e2e641f02463",
-      "byteSize": 135158
-    },
-    "retrospectiveMs": [
-      507.259583,
-      523.022875,
-      489.603041
-    ],
-    "strictMs": [
-      891.625625,
-      885.384708,
-      891.331
-    ],
-    "verdict": "pass",
-    "logicalHashesMatchFinalRun": true,
-    "changeBeforeFinalRun": "compact rights receipt formatting and fixture-only unmatched-roster diagnostics; no scorer/model changes"
-  },
-  "remaining": [
-    "step 4 repeated cold/warm completed-report gate and percentiles",
-    "both full PostgreSQL suites and final review checkpoint"
-  ],
-  "verdict": "step-3-ready-for-owner-review"
+  "finalCapacityGate": "step-4-capacity.json",
+  "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164-data/objects",
+  "fullReceipt": {
+    "objectKey": "audits/6a04ebed79970e9c56c4905b7091b246fcf421968f904b141f12758175b3ee65",
+    "sha256": "6a04ebed79970e9c56c4905b7091b246fcf421968f904b141f12758175b3ee65",
+    "byteSize": 135726
+  }
 }
