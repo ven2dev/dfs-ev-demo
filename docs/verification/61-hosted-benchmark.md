@@ -58,7 +58,7 @@ Owner approved this experiment and the corrected ceiling of **16,040 explicit SQ
 statements / 8,020 HTTP round trips**. Each measured HTTP transaction contains one
 transaction-local timeout setup statement and one baseline/deduction statement.
 The benchmark's synthetic control row reserves conservative action budgets and
-records each enumerated action once; this bounds retries and avoids re-running
+records each workload action once; this bounds retries and avoids re-running
 an ambiguous write. These bookkeeping transactions are counted but excluded
 from individual warm-sample durations. No application accounting schema is frozen.
 
@@ -89,3 +89,44 @@ TypeScript and targeted ESLint passed, and the production build passed after
 removing Next 16.4's deprecated `preferredRegion` export. The operator page at
 localhost returned 404 “Denied before SQL” with no token. The ordinary API block
 is limited to this disposable branch. No remote benchmark has run.
+
+
+## Local review corrections — October 21, 2026
+
+**Pattern:** retryable, ownership-validated teardown and explicit action activity
+state. This follows the owner review rather than consuming a one-shot cleanup
+claim. Alternatives rejected: allowing a stale cleanup claim to replay without
+revalidating ownership could drop a replacement schema; retaining the preceding
+success timestamp after new or failed queries could produce false idle evidence.
+
+Cleanup now treats the exact schema's absence as confirmed success. For a
+present schema, it first validates ownership and persists unknown idle eligibility.
+A second transaction revalidates the current control-row owner, drops the schema,
+and checks absence atomically. A rolled-back drop remains retryable; a committed
+drop whose response was lost is confirmed absent on retry. Cleanup does not use
+or consume the one-shot workload claim. Its two transactions use six explicit
+SQL statements total, within the existing conservative ceiling.
+
+A nullable completion timestamp and active-action field represent activity.
+Workload requests clear the timestamp before work, including rejected/replayed
+requests that nevertheless contact the database. An active action cannot be
+replaced by another claim. Only a successful final completion query restores a
+known timestamp and clears the active action. Catalog and cold actions also
+finish this way. A failed warm run leaves eligibility unknown. The cold sample
+still times its first database transaction; its final completion transaction is
+counted but excluded from the sample duration. Unknown completion or less than
+six minutes of idle time rejects the sample. A rejected sample leaves eligibility
+unknown; the operator cleans up rather than treating it as usable cold evidence.
+
+Seven focused tests pass on the local PostgreSQL 18.6 / 512 MiB fixture. Added
+regressions cover interruption before drop, rollback after drop, lost commit
+reply, repeated cleanup after absence, different ownership, catalog resetting
+idle eligibility, unknown completion, and failure after concurrent warm queries.
+No hosted database, push or deployment was used. These corrections remain local
+for another owner review.
+
+Repeated setup is covered too: its preflight invalidates an existing owned run
+before refusing to recreate it, so that query cannot leave old idle evidence
+usable. Initial setup now uses nine statements / two round trips; reservations
+subtract this overhead from the unchanged 16,040 / 8,020 ceiling. The local
+regression verifies that a repeated setup leaves completion unknown.

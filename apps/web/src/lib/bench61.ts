@@ -49,7 +49,25 @@ export const executeBenchmark = async (action: BenchAction) => {
     sha: process.env.VERCEL_GIT_COMMIT_SHA, host: config.host, schema: config.schema,
     transport: "Neon HTTP transaction; timeout setup + measured statement", timestamp: new Date().toISOString() };
   if (action === "setup") {
-    // CREATE without IF NOT EXISTS refuses an existing schema; the transaction rolls back on failure.
+    // A repeated setup also contacts compute. Invalidate an existing owned run
+    // before refusing it; never adopt or alter a schema with a different owner.
+    const preflight = await sql.transaction([
+      sql.query("SELECT set_config('statement_timeout','5000',true), set_config('lock_timeout','2000',true)"),
+      sql.query("SELECT set_config('bench61.owner',$1,true)", [owner]),
+      sql.query(`DO $setup$
+        DECLARE actual_owner text;
+        BEGIN
+          IF to_regnamespace('bench61_20261019') IS NULL THEN RETURN; END IF;
+          SELECT r.owner INTO actual_owner FROM ${schema}.run r WHERE id=1 FOR UPDATE;
+          IF actual_owner IS DISTINCT FROM current_setting('bench61.owner') THEN
+            RAISE EXCEPTION 'Benchmark schema ownership mismatch';
+          END IF;
+          UPDATE ${schema}.run SET last_query_at=NULL,active_action=COALESCE(active_action,'setup') WHERE id=1;
+        END $setup$`),
+      sql.query("SELECT to_regnamespace('bench61_20261019') IS NULL AS absent"),
+    ], { fetchOptions: { signal: AbortSignal.timeout(10000) } });
+    assert(preflight[3][0].absent,"setup refuses an existing schema");
+    // CREATE without IF NOT EXISTS also refuses a concurrent schema creation.
     const result = await sql.transaction([
       sql.query("SELECT set_config('statement_timeout','5000',true), set_config('lock_timeout','2000',true)"),
       sql.query(`CREATE SCHEMA ${schema}`),
@@ -58,58 +76,89 @@ export const executeBenchmark = async (action: BenchAction) => {
       sql.query(`CREATE TABLE ${schema}.run(id integer PRIMARY KEY CHECK(id=1), owner text NOT NULL,
         started_at timestamptz NOT NULL DEFAULT clock_timestamp(), operations text[] NOT NULL DEFAULT '{}',
         reserved_statements integer NOT NULL DEFAULT 0, reserved_round_trips integer NOT NULL DEFAULT 0,
-        last_query_at timestamptz NOT NULL DEFAULT clock_timestamp())`),
-      sql.query(`INSERT INTO ${schema}.run(id,owner) VALUES(1,$1)`, [owner]),
+        last_query_at timestamptz, active_action text)`),
+      sql.query(`INSERT INTO ${schema}.run(id,owner,last_query_at) VALUES(1,$1,clock_timestamp())`, [owner]),
     ], { fetchOptions: { signal: AbortSignal.timeout(10000) } });
-    return { ...meta, setup: result.length === 5, roundTrips: 1, statements: 5 };
+    return { ...meta, setup: result.length === 5, roundTrips: 2, statements: 9 };
   }
-  // Reservation includes measurement, setup and claim overhead, and prevents replay of an action.
+  if (action === "cleanup") {
+    // Idempotent teardown: absence is success; a present schema is dropped only
+    // after its current control-row owner is validated in the same transaction.
+    const cleanupStep = async (drop: boolean) => sql.transaction([
+      sql.query("SELECT set_config('statement_timeout','5000',true), set_config('lock_timeout','2000',true)"),
+      sql.query("SELECT set_config('bench61.owner',$1,true)", [owner]),
+      sql.query(`DO $cleanup$
+        DECLARE actual_owner text;
+        BEGIN
+          IF to_regnamespace('bench61_20261019') IS NULL THEN RETURN; END IF;
+          SELECT r.owner INTO actual_owner FROM ${schema}.run r WHERE id=1 FOR UPDATE;
+          IF actual_owner IS DISTINCT FROM current_setting('bench61.owner') THEN
+            RAISE EXCEPTION 'Benchmark schema ownership mismatch';
+          END IF;
+          UPDATE ${schema}.run SET last_query_at=NULL,active_action='cleanup' WHERE id=1;
+          ${drop ? `DROP SCHEMA ${schema} CASCADE;
+          IF to_regnamespace('bench61_20261019') IS NOT NULL THEN
+            RAISE EXCEPTION 'Benchmark schema remains';
+          END IF;` : ""}
+        END $cleanup$`),
+    ], { fetchOptions: { signal: AbortSignal.timeout(10000) } });
+    // Persist unknown eligibility before attempting teardown, so a failed drop
+    // cannot leave the old completion timestamp eligible for a cold sample.
+    await cleanupStep(false);
+    await cleanupStep(true);
+    return { ...meta, schemaAbsent: true, roundTrips: 2, statements: 6 };
+  }
+
+  // Start makes idle eligibility unknown, including a rejected/replayed request:
+  // even a rejected query wakes compute. An active action cannot be overwritten.
   const reservedTrips = action === "run" ? 7200 : 10;
   const reservedStatements = reservedTrips * 2;
   if (reservedStatements > config.maxStatements) {
     return { ...meta, blocked: "Statement cap too small for approved sample counts plus timeout statements",
       requiredStatementReservation: reservedStatements, configuredCap: config.maxStatements };
   }
-  if (action.startsWith("cold")) {
+  const cold = action.startsWith("cold");
+  const claimSql = `WITH previous AS MATERIALIZED (
+    SELECT *, (active_action IS NULL AND NOT ($2=ANY(operations))
+      AND reserved_statements+$3 <= $5 AND reserved_round_trips+$4 <= $6
+      AND (clock_timestamp()-started_at < interval '30 minutes' OR $2='catalog')
+      ${cold ? "AND last_query_at IS NOT NULL AND clock_timestamp()-last_query_at >= interval '6 minutes'" : ""}
+    ) AS eligible FROM ${schema}.run WHERE id=1 AND owner=$1 FOR UPDATE
+  ), claim AS (
+    UPDATE ${schema}.run r SET last_query_at=NULL,
+      active_action=COALESCE(previous.active_action,$2),
+      operations=CASE WHEN previous.eligible THEN array_append(previous.operations,$2) ELSE previous.operations END,
+      reserved_statements=previous.reserved_statements+CASE WHEN previous.eligible THEN $3 ELSE 0 END,
+      reserved_round_trips=previous.reserved_round_trips+CASE WHEN previous.eligible THEN $4 ELSE 0 END
+    FROM previous WHERE r.id=previous.id
+    RETURNING previous.eligible,extract(epoch FROM (clock_timestamp()-previous.last_query_at))*1000 AS idle_ms
+  )`;
+  const params = [owner,action,reservedStatements,reservedTrips,config.maxStatements-9,config.maxRoundTrips-2];
+  const complete = async () => {
+    const result = await query(`UPDATE ${schema}.run SET last_query_at=clock_timestamp(),active_action=NULL
+      WHERE id=1 AND owner=$1 AND active_action=$2 RETURNING id`, [owner,action]);
+    assert(result.length===1,"owned action completion");
+  };
+  if (cold) {
     const start = performance.now();
-    const sample = await query(`WITH previous AS MATERIALIZED (
-      SELECT last_query_at FROM ${schema}.run WHERE id=1 AND owner=$1
-    ), claim AS (
-      UPDATE ${schema}.run SET operations=array_append(operations,$2),
-        reserved_statements=reserved_statements+20,reserved_round_trips=reserved_round_trips+10,
-        last_query_at=clock_timestamp()
-      FROM previous WHERE id=1 AND owner=$1 AND NOT ($2=ANY(operations))
-        AND reserved_statements+20 <= $3 AND reserved_round_trips+10 <= $4
-        AND clock_timestamp()-previous.last_query_at >= interval '6 minutes'
-      RETURNING extract(epoch FROM (clock_timestamp()-previous.last_query_at))*1000 AS idle_ms
-    ), budget AS (
+    const sample = await query(`${claimSql}, budget AS (
       UPDATE ${budgets} SET balance=balance-3 FROM claim
-      WHERE account='cold' AND active AND observed_at<=clock_timestamp()
+      WHERE claim.eligible AND account='cold' AND active AND observed_at<=clock_timestamp()
         AND observed_at>=clock_timestamp()-interval '5 minutes' AND balance-3>=floor RETURNING balance
-    ) SELECT idle_ms,(SELECT balance FROM budget) AS admitted_balance FROM claim`,
-      [owner,action,config.maxStatements-5,config.maxRoundTrips-1]);
+    ) SELECT eligible,idle_ms,(SELECT balance FROM budget) AS admitted_balance FROM claim`, params);
     const measured_ms=performance.now()-start;
-    assert(sample.length===1,"owned non-replayed cold sample, six-minute idle interval and cap");
+    assert(sample.length===1 && sample[0].eligible,"owned non-replayed cold sample, known six-minute idle interval and cap");
+    await complete();
     return { ...meta, idle_ms:Number(sample[0].idle_ms), measured_ms,
       admitted:sample[0].admitted_balance!==null, roundTrips,statements,
       qualification:"Idle-first-request budget check; suspension must be confirmed independently. Synthetic quota may be stale after idle." };
   }
-  const claim = await query(`UPDATE ${schema}.run SET operations=array_append(operations,$2),
-    reserved_statements=reserved_statements+$3, reserved_round_trips=reserved_round_trips+$4
-    WHERE id=1 AND owner=$1 AND NOT ($2=ANY(operations)) AND
-    reserved_statements+$3 <= $5 AND reserved_round_trips+$4 <= $6
-    AND (clock_timestamp()-started_at < interval '30 minutes' OR $2 IN ('catalog','cleanup'))
-    RETURNING extract(epoch FROM (clock_timestamp()-last_query_at))*1000 AS idle_ms`,
-    [owner, action, reservedStatements, reservedTrips, config.maxStatements-5, config.maxRoundTrips-1]);
-  assert(claim.length === 1, "owned run, non-replayed action, resource cap and active deadline");
-  if (action === "cleanup") {
-    await query(`DROP SCHEMA ${schema} CASCADE`);
-    const absent = await query("SELECT to_regnamespace($1) IS NULL AS absent", [config.schema]);
-    return { ...meta, schemaAbsent: absent[0].absent, roundTrips, statements };
-  }
+  const claim = await query(`${claimSql} SELECT eligible FROM claim`, params);
+  assert(claim.length===1 && claim[0].eligible,"owned run, non-replayed action, resource cap and active deadline");
   if (action === "catalog") {
     const inventory = await query(`SELECT (SELECT count(*)::int FROM ${budgets}) AS synthetic_rows,
       pg_total_relation_size('${budgets}') AS bytes, current_setting('server_version') AS version`);
+    await complete();
     return { ...meta, inventory, roundTrips, statements };
   }
   const at = new Date().toISOString();
@@ -156,7 +205,7 @@ export const executeBenchmark = async (action: BenchAction) => {
     }
     trials.push(pair);
   }
-  await query(`UPDATE ${schema}.run SET last_query_at=clock_timestamp() WHERE id=1`);
+  await complete();
   return { ...meta, correctness:{attempts:1000,concurrency:20,admitted,collected,remaining:1},trials,
     headroomPassed:trials.every(t=>t.budget.p95_ms<=35),roundTrips,statements };
 };

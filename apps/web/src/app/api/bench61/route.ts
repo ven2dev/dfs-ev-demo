@@ -12,5 +12,7 @@ export const POST = async (request: Request) => {
   } catch { return new Response(null,{status:404,headers}); }
   if (!body || !authorizeBenchmark(body.token,body.action)) return new Response(null,{status:404,headers});
   try { return Response.json(await executeBenchmark(body.action as BenchAction),{headers}); }
-  catch { return Response.json({error:"Benchmark stopped. Do not retry ambiguous writes; inspect the owned schema before cleanup."},{status:503,headers}); }
+  catch { return Response.json({error: body.action === "cleanup"
+    ? "Cleanup was not confirmed. Retry cleanup to revalidate ownership or confirm absence."
+    : "Benchmark stopped. Do not retry ambiguous workload writes; idle eligibility is unknown until cleanup."},{status:503,headers}); }
 };
