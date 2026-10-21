@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DB_READINESS_MANIFEST } from "./dbReadinessManifest";
-import { DB_READINESS_DEADLINE_MS, DB_READINESS_HISTORY_LIMIT, DB_READINESS_HISTORY_SQL,
-  DB_READINESS_RELATIONS_SQL, DB_READINESS_SETTINGS_SQL } from "./dbReadiness";
+import { DB_READINESS_MANIFEST, DB_READINESS_DEADLINE_MS, DB_READINESS_HISTORY_LIMIT, DB_READINESS_HISTORY_SQL,
+  DB_READINESS_RELATIONS_SQL, DB_READINESS_SETTINGS_SQL } from "@dfs-ev/db/runtime";
 
 const queryMock = vi.fn((text: string, params?: unknown[]) => ({ text, params }));
 const transactionMock = vi.fn();

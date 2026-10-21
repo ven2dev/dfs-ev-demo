@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { NextRequest } from "next/server";
-import { DB_READINESS_MANIFEST } from "./dbReadinessManifest";
+import { DB_READINESS_MANIFEST } from "@dfs-ev/db/runtime";
 
 const snapshotMock = vi.fn();
 vi.mock("./dbReadinessRepo", () => ({ getDatabaseReadinessSnapshot: snapshotMock }));

@@ -35,7 +35,7 @@ test("DB report validation refuses partial, failed, skipped, duplicate and wrong
     (r) => { r.testResults[0].status = "failed"; },
     (r) => { r.testResults[0].assertionResults[0].status = "pending"; },
     (r) => { r.testResults[0].name = r.testResults[1].name; },
-    (r) => { r.testResults[0].name = resolve("packages/db/tests/unexpected.test.ts"); },
+    (r) => { r.testResults[0].name = resolve("packages/db/tooling/tests/unexpected.test.ts"); },
     (r) => { r.testResults[1].assertionResults[0].fullName = r.testResults[0].assertionResults[0].fullName; },
     (r) => { r.testResults[0].assertionResults = []; },
   ];
@@ -48,7 +48,7 @@ test("DB report validation refuses partial, failed, skipped, duplicate and wrong
 
 
 test("every retained DB test file belongs to the serial suite", async () => {
-  const directories = ["packages/db/tests", "apps/web/tests/db", "services/pipeline/tests/creator"];
+  const directories = ["packages/db/tooling/tests", "apps/web/tests/db", "services/pipeline/tests/creator"];
   const files = (await Promise.all(directories.map(async (directory) =>
     (await readdir(directory, { recursive: true })).filter((file) => file.endsWith(".test.ts"))
       .map((file) => directory + "/" + file)))).flat().sort();

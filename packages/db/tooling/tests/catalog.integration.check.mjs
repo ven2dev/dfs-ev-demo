@@ -76,7 +76,7 @@ test("exports authentic eight-table pre-41 and seventeen-table current candidate
 
 test("exports preserve synthetic rows and exclude row values and sequence progress", async () => {
   await withScratch(async (client, config) => {
-    await client.query(await readFile(new URL("../schema.sql", import.meta.url), "utf8"));
+    await client.query(await readFile(new URL("../../schema.sql", import.meta.url), "utf8"));
     await client.query("INSERT INTO creators (channel_name) VALUES ('synthetic-private-row-one')");
     const first = await readCatalog(client, config);
     await client.query("INSERT INTO creators (channel_name) VALUES ('synthetic-private-row-two')");

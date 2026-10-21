@@ -1,12 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Client, type ClientConfig } from "pg";
-import { createCatalogVerifier, loadCatalogContracts } from "../../../../packages/db/scripts/db-migrations/contracts.mjs";
-import { runScratchMigrations } from "../../../../packages/db/scripts/db-migrations/core.mjs";
-import { checkMigrationArtifacts } from "../../../../packages/db/scripts/db-migrations/files.mjs";
-import { prepareMigrationContext } from "../../../../packages/db/scripts/db-migrations/plans.mjs";
-import { createScratchHarness } from "../../../../packages/db/tests/scratch.mjs";
-import { parseTestDatabaseUrl } from "../../../../packages/db/tests/target.mts";
+import { createCatalogVerifier, loadCatalogContracts } from "@dfs-ev/db-tooling/migrations/contracts";
+import { runScratchMigrations } from "@dfs-ev/db-tooling/migrations/core";
+import { checkMigrationArtifacts } from "@dfs-ev/db-tooling/migrations/files";
+import { prepareMigrationContext } from "@dfs-ev/db-tooling/migrations/plans";
+import { createScratchHarness } from "@dfs-ev/db-tooling/test-support/scratch";
+import { parseTestDatabaseUrl } from "@dfs-ev/db-tooling/test-support/target";
 
 export const withFeatureStoreDatabase = async <T>(run: (context: {
   admin: Client; writer: Client; reader: Client; openWriter: () => Promise<Client>; createWriterConfig: () => Promise<ClientConfig>; createReaderConfig: () => Promise<ClientConfig>; queryCounts: { writer: number; reader: number };

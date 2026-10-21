@@ -1,11 +1,12 @@
+import { databaseAssets } from "@dfs-ev/db/assets";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkMigrationArtifacts, buildManifest } from "./db-migrations/files.mjs";
 import { loadCatalogContracts } from "./db-migrations/contracts.mjs";
 
-const policyFile = new URL("../readiness.json", import.meta.url);
-const outputFile = new URL("../../../apps/web/src/lib/dbReadinessManifest.ts", import.meta.url);
+const policyFile = databaseAssets.readinessPolicy;
+const outputFile = databaseAssets.readinessManifest;
 
 export function buildReadinessManifest(manifest, contracts, policy) {
   const minimumVersion = policy?.minimumVersion;

@@ -3,11 +3,11 @@ import { createHash, randomBytes } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { test } from "node:test";
 import { Client, type ClientConfig } from "pg";
-import { createCatalogVerifier, loadCatalogContracts } from "../../../../packages/db/scripts/db-migrations/contracts.mjs";
-import { runScratchMigrations } from "../../../../packages/db/scripts/db-migrations/core.mjs";
-import { checkMigrationArtifacts } from "../../../../packages/db/scripts/db-migrations/files.mjs";
-import { prepareMigrationContext } from "../../../../packages/db/scripts/db-migrations/plans.mjs";
-import { createScratchHarness } from "../../../../packages/db/tests/scratch.mjs";
+import { createCatalogVerifier, loadCatalogContracts } from "@dfs-ev/db-tooling/migrations/contracts";
+import { runScratchMigrations } from "@dfs-ev/db-tooling/migrations/core";
+import { checkMigrationArtifacts } from "@dfs-ev/db-tooling/migrations/files";
+import { prepareMigrationContext } from "@dfs-ev/db-tooling/migrations/plans";
+import { createScratchHarness } from "@dfs-ev/db-tooling/test-support/scratch";
 import { finishJob, startJob } from "../../src/featureStore/jobs.ts";
 
 // This opt-in suite never bootstraps a hosted target or mutates the shared test
@@ -184,7 +184,7 @@ test("#138 proposal: main isolation, trusted writer, database clocks and idempot
     finally {
       // The scratch database has already been dropped by withDatabase, so these
       // throwaway login roles have no owned objects/dependencies left.
-      const { parseTestDatabaseUrl } = await import("../../../../packages/db/tests/target.mts");
+      const { parseTestDatabaseUrl } = await import("@dfs-ev/db-tooling/test-support/target");
       const cleanup = new Client(parseTestDatabaseUrl(process.env.TEST_DATABASE_URL));
       try {
         await cleanup.connect();

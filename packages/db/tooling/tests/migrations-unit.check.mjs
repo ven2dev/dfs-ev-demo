@@ -89,10 +89,10 @@ test("manual status requires explicit matching targets and up requires approval 
     [args.slice(0, -2), { TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL }], [["down"], {}], [["up"], {}]]) {
     assert.throws(() => parseMigrationCommand(input, environment));
   }
-  const refused = spawnSync(process.execPath, ["packages/db/scripts/db-migrate.mjs", "up"], { encoding: "utf8", env: {} });
+  const refused = spawnSync(process.execPath, ["packages/db/tooling/scripts/db-migrate.mjs", "up"], { encoding: "utf8", env: {} });
   assert.equal(refused.status, 1);
   assert.equal(refused.stderr, "db-migrate: approved-plan-fingerprint-required\n");
-  const malformed = spawnSync(process.execPath, ["packages/db/scripts/db-migrate.mjs", "status", "--environment", "production"],
+  const malformed = spawnSync(process.execPath, ["packages/db/tooling/scripts/db-migrate.mjs", "status", "--environment", "production"],
     { encoding: "utf8", env: { MIGRATION_DATABASE_URL: "postgresql://synthetic-secret@bad" } });
   assert.equal(malformed.status, 1);
   assert.equal(malformed.stderr, "db-migrate: direct-neon-url-required\n");

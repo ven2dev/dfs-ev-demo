@@ -1,8 +1,8 @@
 import { setTimeout as delay } from "node:timers/promises";
 import type { Client } from "pg";
 import { expect } from "vitest";
-import type { LivePropCacheKey, LivePropInputs } from "../../../apps/web/src/lib/livePropCache";
-import { createLivePropCacheStore } from "../../../apps/web/src/lib/livePropCacheStore";
+import type { LivePropCacheKey, LivePropInputs } from "../../../../apps/web/src/lib/livePropCache";
+import { createLivePropCacheStore } from "../../../../apps/web/src/lib/livePropCacheStore";
 import { openTestClient } from "./harness";
 
 export const key: LivePropCacheKey = {

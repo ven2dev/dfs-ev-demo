@@ -1,8 +1,8 @@
 import { setTimeout as delay } from "node:timers/promises";
 import { expect, it, vi } from "vitest";
 import { getOrRefreshLivePropInputs, type LivePropInputs } from "../../src/lib/livePropCache";
-import { openTestClient } from "../../../../packages/db/tests/harness";
-import { cacheState, freshAfter, key, leaseMs, openContenders, payload, testStore } from "../../../../packages/db/tests/leaseSupport";
+import { openTestClient } from "@dfs-ev/db-tooling/test-support/clients";
+import { cacheState, freshAfter, key, leaseMs, openContenders, payload, testStore } from "@dfs-ev/db-tooling/test-support/leases";
 
 it("25 database-backed consumers wait for one fetch and receive the same persisted payload", async () => {
   const monitor = await openTestClient();

@@ -13,7 +13,7 @@ import { buildReadinessGate } from "../../scripts/creator-corpus/readinessGate.t
 import { generateCorpusReadinessReport, PICK_METRICS_PENDING } from "../../scripts/creator-corpus/readinessReport.ts";
 import { expireCorpusApiEvidence } from "../../scripts/creator-corpus/apiExpiry.ts";
 import { NOW, discoveryFor, record, vid } from "../../scripts/creator-corpus/testSupport.ts";
-import { withMigratedDatabase } from "../../../../packages/db/tests/migrated.mts";
+import { withMigratedDatabase } from "@dfs-ev/db-tooling/test-support/migrated";
 
 const decision = (n: number): DecisionEvent => ({
   videoId: vid(n),

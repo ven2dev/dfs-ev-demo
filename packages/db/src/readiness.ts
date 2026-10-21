@@ -1,4 +1,4 @@
-import { DB_READINESS_MANIFEST } from "./dbReadinessManifest";
+import { DB_READINESS_MANIFEST } from "./dbReadinessManifest.ts";
 
 export const DB_READINESS_HISTORY_LIMIT = 1_024;
 export const DB_READINESS_DEADLINE_MS = 5_000;

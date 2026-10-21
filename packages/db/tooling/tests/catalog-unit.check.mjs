@@ -78,7 +78,7 @@ test("snapshot destinations must be outside the repo, including symlinked parent
 });
 
 test("CLI refuses malformed configuration without printing parser errors or URL values", () => {
-  const result = spawnSync(process.execPath, ["packages/db/scripts/db-catalog.mjs", ...remoteArgs], {
+  const result = spawnSync(process.execPath, ["packages/db/tooling/scripts/db-catalog.mjs", ...remoteArgs], {
     encoding: "utf8", env: { MIGRATION_DATABASE_URL: "postgresql://synthetic-private-value@bad" },
   });
   assert.equal(result.status, 1);

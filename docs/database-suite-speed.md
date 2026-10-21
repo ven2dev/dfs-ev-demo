@@ -74,7 +74,7 @@ repetitions. Shared-primary and cluster-role-sensitive tests remain serial.
 
 ## A: verified run-scoped template chain
 
-`packages/db/tests/templates.mts` reads and freezes the checked migration inputs and
+`packages/db/tooling/tests/templates.mts` reads and freezes the checked migration inputs and
 reviewed catalog contracts. It verifies the connected disposable target before
 DDL. An empty run-owned builder advances through the ordered migrations using
 the existing migration runner. Every advance enforces `executed === [version]`.

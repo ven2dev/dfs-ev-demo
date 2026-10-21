@@ -5,8 +5,8 @@ export default defineConfig({
   envDir: false,
   test: {
     environment: "node",
-    include: ["packages/db/tests/**/*.test.ts", "apps/web/tests/db/**/*.test.ts", "services/pipeline/tests/creator/**/*.test.ts"],
-    setupFiles: ["./packages/db/tests/setup.ts"],
+    include: ["packages/db/tooling/tests/**/*.test.ts", "apps/web/tests/db/**/*.test.ts", "services/pipeline/tests/creator/**/*.test.ts"],
+    setupFiles: ["./packages/db/tooling/tests/setup.ts"],
     fileParallelism: false,
     passWithNoTests: false,
     testTimeout: 30_000,

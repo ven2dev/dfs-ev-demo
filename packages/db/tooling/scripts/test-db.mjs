@@ -14,10 +14,10 @@ import {
   parseTestDatabaseUrl,
 } from "../tests/target.mts";
 
-const root = fileURLToPath(new URL("../../../", import.meta.url));
+const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const composeArgs = [
   "compose", "--env-file", "/dev/null", "--project-name", "dfs-ev-demo-test",
-  "-f", fileURLToPath(new URL("../../../compose.test.yml", import.meta.url)),
+  "-f", fileURLToPath(new URL("../../../../compose.test.yml", import.meta.url)),
 ];
 const stop = new AbortController();
 const activeChildren = new Set();
@@ -54,11 +54,11 @@ async function runSuite(environment, filters, leaseSignal) {
   let templates;
   let failure;
   try {
-    let code = await run(process.execPath, ["packages/db/scripts/db-migration-artifacts.mjs", "check"], environment);
+    let code = await run(process.execPath, ["packages/db/tooling/scripts/db-migration-artifacts.mjs", "check"], environment);
     if (code !== 0 || interrupted) return code || 1;
-    code = await run(process.execPath, ["packages/db/scripts/db-readiness-manifest.mjs", "check"], environment);
+    code = await run(process.execPath, ["packages/db/tooling/scripts/db-readiness-manifest.mjs", "check"], environment);
     if (code !== 0 || interrupted) return code || 1;
-    code = await run(process.execPath, ["--test", "--test-timeout=60000", "packages/db/tests/templates.integration.check.mjs"], environment, leaseSignal);
+    code = await run(process.execPath, ["--test", "--test-timeout=60000", "packages/db/tooling/tests/templates.integration.check.mjs"], environment, leaseSignal);
     if (code !== 0 || interrupted) return code || 1;
     const templateDirectory = join(reportDir, "templates");
     await mkdir(templateDirectory, { mode: 0o700 });
@@ -76,13 +76,13 @@ async function runSuite(environment, filters, leaseSignal) {
     const nodeReportPath = join(reportDir, "node-results.json");
     const reportPath = join(reportDir, "vitest-results.json");
     await checked(["--test", "--test-concurrency=" + workers.nodeWorkers, "--test-timeout=60000",
-      "--test-reporter=spec", "--test-reporter=./packages/db/scripts/db-test-reporter.mjs",
+      "--test-reporter=spec", "--test-reporter=./packages/db/tooling/scripts/db-test-reporter.mjs",
       "--test-reporter-destination=stdout", "--test-reporter-destination=" + nodeReportPath,
       ...Object.keys(NODE_REQUIRED_CASES)]);
     const nodeRequiredCases = validateNodeDbReport(JSON.parse(await readFile(nodeReportPath, "utf8")));
-    await checked(["packages/db/scripts/db-catalog-contracts.mjs", "check"]);
+    await checked(["packages/db/tooling/scripts/db-catalog-contracts.mjs", "check"]);
     await checked([
-      fileURLToPath(new URL("../../../node_modules/vitest/vitest.mjs", import.meta.url)),
+      fileURLToPath(new URL("../../../../node_modules/vitest/vitest.mjs", import.meta.url)),
       "run", "--config", "vitest.db.config.mts", "--reporter=default", "--reporter=json", "--outputFile.json=" + reportPath, ...filters,
     ]);
     const report = validateDatabaseReport(JSON.parse(await readFile(reportPath, "utf8")));

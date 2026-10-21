@@ -35,7 +35,7 @@ test("workspace relative imports fail in runtime, type-only, re-export, dynamic 
     ["apps/web/src/boundary-probe.jsx", "../../../packages/domain/src/computeEV.ts"],
     ["apps/web/src/app/api/boundary-probe.ts", "../../../../../packages/domain/src/projection/empirical.ts"],
     ["services/pipeline/src/boundary-probe.ts", "../../../packages/domain/src/devig.ts"],
-    ["packages/domain/src/boundary-probe.ts", "../../db/tests/harness.ts"],
+    ["packages/domain/src/boundary-probe.ts", "../../db/tooling/tests/harness.ts"],
     ["apps/web/src/boundary-probe.ts", "../../../services/pipeline/src/featureStore/objectStore.ts"],
   ]) for (const code of forms(source)) await refuses(file, code, "import/no-relative-packages");
 });

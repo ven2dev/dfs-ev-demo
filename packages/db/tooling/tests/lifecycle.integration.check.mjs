@@ -17,12 +17,12 @@ test("a non-contention startup failure still removes the disposable service", { 
   try {
     await execute("docker", [...compose, "up", "-d", "--wait", "--wait-timeout", "60"]);
     // Run the real startup regressions before intentionally breaking login.
-    await execute(process.execPath, ["--test", "--test-timeout=60000", "packages/db/tests/startup.integration.check.mjs"],
+    await execute(process.execPath, ["--test", "--test-timeout=60000", "packages/db/tooling/tests/startup.integration.check.mjs"],
       { env: environment, timeout: 60000 });
     await admin.connect();
     await admin.query("ALTER ROLE dfs_ev_test PASSWORD 'startup-failure-test-only'");
     await admin.end();
-    await assert.rejects(execute(process.execPath, ["packages/db/scripts/test-db.mjs", "local"], { env: environment, timeout: 60000 }), (error) => {
+    await assert.rejects(execute(process.execPath, ["packages/db/tooling/scripts/test-db.mjs", "local"], { env: environment, timeout: 60000 }), (error) => {
       assert.equal(error.code, 1);
       assert.match(error.stderr, /password authentication failed/);
       assert.doesNotMatch(error.stderr, /another DB test run is active/);

@@ -1,3 +1,4 @@
+import { databaseAssets } from "@dfs-ev/db/assets";
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,12 +8,12 @@ import { ledgerSql } from "./core.mjs";
 import { RUNNER_VERSION } from "./files.mjs";
 import { MigrationError, refuse } from "./errors.mjs";
 
-export const contractDirectory = fileURLToPath(new URL("../../catalog-contracts/", import.meta.url));
+export const contractDirectory = fileURLToPath(databaseAssets.contracts);
 export const contractFilename = (version) => String(version).padStart(4, "0") + ".json";
 export const contractText = (contract) => JSON.stringify(JSON.parse(canonicalJson(contract)), null, 2) + "\n";
 
 export async function contractSources(files) {
-  const catalogSqlSha256 = fingerprint(await readFile(new URL("../../catalog.sql", import.meta.url)));
+  const catalogSqlSha256 = fingerprint(await readFile(databaseAssets.catalog));
   return {
     ledger: { catalogSqlSha256, ledgerSqlSha256: fingerprint(ledgerSql), runnerVersion: RUNNER_VERSION },
     migrations: files.map((file, index) => ({ catalogSqlSha256,

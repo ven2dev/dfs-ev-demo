@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { CORPUS_REQUIRED_CASES, LEASE_REQUIRED_CASES, READINESS_REQUIRED_CASES, validateCorpusDbReport,
   validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport } from "../scripts/db-test-contract.mjs";
 
-const root = fileURLToPath(new URL("../../../", import.meta.url));
+const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const reporter = fileURLToPath(new URL("../scripts/db-test-reporter.mjs", import.meta.url));
 const fixtureNames = ["required first", "required second"];
 

@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import type { Client } from "pg";
 import { expect, it } from "vitest";
-import { DB_READINESS_MANIFEST } from "../../../apps/web/src/lib/dbReadinessManifest";
+import { DB_READINESS_MANIFEST } from "@dfs-ev/db/runtime";
 import { DB_READINESS_HISTORY_LIMIT, DB_READINESS_HISTORY_SQL, DB_READINESS_RELATIONS_SQL,
-  DB_READINESS_SETTINGS_SQL, evaluateDatabaseReadiness, readinessRelations } from "../../../apps/web/src/lib/dbReadiness";
+  DB_READINESS_SETTINGS_SQL, evaluateDatabaseReadiness, readinessRelations } from "@dfs-ev/db/runtime";
 import { insertLedgerRow, ledgerSql } from "../scripts/db-migrations/core.mjs";
 import { checkMigrationArtifacts } from "../scripts/db-migrations/files.mjs";
 import { createScratchHarness } from "./scratch.mjs";

@@ -16,7 +16,7 @@ const fs = require("node:fs");
 fs.appendFileSync(process.env.DB_TEST_LIFECYCLE_LOG, JSON.stringify(process.argv.slice(2)) + "\\n");
 process.exit(process.argv.includes("up") ? 7 : 0);
 `, { mode: 0o700 });
-    await assert.rejects(execute(process.execPath, ["packages/db/scripts/test-db.mjs", "local"], {
+    await assert.rejects(execute(process.execPath, ["packages/db/tooling/scripts/test-db.mjs", "local"], {
       env: { HOME: process.env.HOME, PATH: directory + ":" + process.env.PATH, DB_TEST_LIFECYCLE_LOG: log }, timeout: 10000,
     }), (error) => error.code === 1);
     const calls = (await readFile(log, "utf8")).trim().split("\n").map((line) => JSON.parse(line));

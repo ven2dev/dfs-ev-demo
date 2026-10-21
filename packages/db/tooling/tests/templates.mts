@@ -211,7 +211,7 @@ export async function createTemplateRun(environment: Environment, directory: str
           // Keep TS role-module loading out of the raw scratch/CLI path: those
           // commands intentionally have exact stderr contracts.
           const { ensureLegacyPredictiveRoles } = await import("./legacyRoles.ts");
-          const { ensureCorpusImporterRole } = await import("../../../services/pipeline/scripts/creator-corpus/dbHarness.ts");
+          const { ensureCorpusImporterRole } = await import("./corpusRoles.ts");
           await ensureLegacyPredictiveRoles(client);
           await ensureCorpusImporterRole(client);
         }

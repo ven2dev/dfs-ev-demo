@@ -569,7 +569,7 @@ the authentic current catalog, data/ledger-preserving no-op reruns, read-only
 status, refusal of unversioned schemas, two-file failure rollback, verification
 rollback, independently connected lock contention and concurrent runners,
 corrupt-ledger rejection and scratch target/cleanup guards. The committed
-`packages/db/tests/fixtures/` schemas retain source-object provenance and SHA-256 anchors;
+`packages/db/tooling/tests/fixtures/` schemas retain source-object provenance and SHA-256 anchors;
 tests use those immutable independent copies without needing Git history. Run it with
 the explicit `TEST_DATABASE_URL` while the Compose service is running.
 `npm run test:db:local` now requires all catalog/contract/migration/plan unit and

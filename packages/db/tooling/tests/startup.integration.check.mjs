@@ -49,7 +49,7 @@ test("a held session lock refuses a concurrent runner before it sweeps or starts
     await assert.rejects(startDatabaseTestRun(process.env), (error) =>
       error instanceof DatabaseTestRunActiveError && error.code === "DB_TEST_RUN_ACTIVE");
     for (const mode of ["run", "local"]) await assert.rejects(execute(process.execPath,
-      ["packages/db/scripts/test-db.mjs", mode], { env: process.env, timeout: 20000 }), (error) => {
+      ["packages/db/tooling/scripts/test-db.mjs", mode], { env: process.env, timeout: 20000 }), (error) => {
       assert.equal(error.code, 1);
       assert.match(error.stderr, /another DB test run is active on this target/);
       assert.equal(error.stdout, "");

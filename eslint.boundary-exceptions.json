@@ -1,29 +1,9 @@
 [
   {
-    "file": "apps/web/tests/db/orchestrator.test.ts",
+    "file": "packages/db/tooling/tests/leaseSupport.ts",
     "imports": {
-      "../../../../packages/db/tests/harness": 190,
-      "../../../../packages/db/tests/leaseSupport": 190
-    }
-  },
-  {
-    "file": "packages/db/tests/leaseSupport.ts",
-    "imports": {
-      "../../../apps/web/src/lib/livePropCache": 190,
-      "../../../apps/web/src/lib/livePropCacheStore": 190
-    }
-  },
-  {
-    "file": "packages/db/tests/readiness.test.ts",
-    "imports": {
-      "../../../apps/web/src/lib/dbReadinessManifest": 190,
-      "../../../apps/web/src/lib/dbReadiness": 190
-    }
-  },
-  {
-    "file": "packages/db/tests/templates.mts",
-    "imports": {
-      "../../../services/pipeline/scripts/creator-corpus/dbHarness.ts": 190
+      "../../../../apps/web/src/lib/livePropCache": 190,
+      "../../../../apps/web/src/lib/livePropCacheStore": 190
     }
   },
   {
@@ -206,51 +186,10 @@
     }
   },
   {
-    "file": "services/pipeline/scripts/feature-store/dataset-cold.ts",
-    "imports": {
-      "../../../../packages/db/tests/target.mts": 190
-    }
-  },
-  {
-    "file": "services/pipeline/scripts/feature-store/derived-cold.ts",
-    "imports": {
-      "../../../../packages/db/tests/target.mts": 190
-    }
-  },
-  {
-    "file": "services/pipeline/scripts/feature-store/empirical-startup.ts",
-    "imports": {
-      "../../../../packages/db/tests/target.mts": 190
-    }
-  },
-  {
-    "file": "services/pipeline/scripts/feature-store/harness.ts",
-    "imports": {
-      "../../../../packages/db/scripts/db-migrations/contracts.mjs": 190,
-      "../../../../packages/db/scripts/db-migrations/core.mjs": 190,
-      "../../../../packages/db/scripts/db-migrations/files.mjs": 190,
-      "../../../../packages/db/scripts/db-migrations/plans.mjs": 190,
-      "../../../../packages/db/tests/scratch.mjs": 190,
-      "../../../../packages/db/tests/target.mts": 190
-    }
-  },
-  {
     "file": "services/pipeline/tests/creator/corpusImport.test.ts",
     "imports": {
       "../../../../apps/web/src/lib/creatorCaptures.ts": 191,
-      "../../../../apps/web/src/lib/creatorDecisions.ts": 191,
-      "../../../../packages/db/tests/migrated.mts": 190
-    }
-  },
-  {
-    "file": "services/pipeline/tests/feature-store/schema.check.mts",
-    "imports": {
-      "../../../../packages/db/scripts/db-migrations/contracts.mjs": 190,
-      "../../../../packages/db/scripts/db-migrations/core.mjs": 190,
-      "../../../../packages/db/scripts/db-migrations/files.mjs": 190,
-      "../../../../packages/db/scripts/db-migrations/plans.mjs": 190,
-      "../../../../packages/db/tests/scratch.mjs": 190,
-      "../../../../packages/db/tests/target.mts": 190
+      "../../../../apps/web/src/lib/creatorDecisions.ts": 191
     }
   }
 ]

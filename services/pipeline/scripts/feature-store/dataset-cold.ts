@@ -2,7 +2,7 @@ import { Client,type ClientConfig } from "pg";
 import { buildDataset,type DatasetSpec } from "../../src/featureStore/datasets.ts";
 import type { CodeIdentity } from "../../src/featureStore/derived.ts";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
-import { assertNoApplicationCredentials } from "../../../../packages/db/tests/target.mts";
+import { assertNoApplicationCredentials } from "@dfs-ev/db-tooling/test-support/target";
 assertNoApplicationCredentials(process.env);
 const chunks:Buffer[]=[];
 for await(const chunk of process.stdin)chunks.push(Buffer.from(chunk));

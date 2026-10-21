@@ -34,26 +34,26 @@ export const CORPUS_REQUIRED_CASES = Object.freeze([
 ]);
 
 export const NODE_REQUIRED_CASES = Object.freeze({
-  "packages/db/tests/target.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/target.check.mjs": Object.freeze([
     "accepts only explicit loopback test connections",
     "rejects missing, external, production, ambiguous, and overridden targets without exposing the URL",
     "rejects application credentials and ambient pg configuration",
   ]),
-  "packages/db/tests/bootstrap-unit.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/bootstrap-unit.check.mjs": Object.freeze([
     "primary migration bootstrap refuses unsafe targets and remote credentials before database access",
   ]),
-  "packages/db/tests/report-unit.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/report-unit.check.mjs": Object.freeze([
     "Node DB report requires each named case in its original file and a complete successful summary",
     "actual Node reports refuse zero, filtered, missing, skipped, todo and failed cases",
     "Vitest DB report preserves all required lease cases and refuses missing, skipped, todo or failed results",
     "Vitest DB report requires the readiness cases independently of the existing 13 lease cases",
     "Vitest DB report requires every corpus schema case independently of the other DB suites",
   ]),
-  "packages/db/tests/readiness-manifest-unit.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/readiness-manifest-unit.check.mjs": Object.freeze([
     "readiness generation binds the explicit minimum to validated migration and table contracts",
     "readiness artifact checks reject missing or stale runtime manifests without rewriting them",
   ]),
-  "packages/db/tests/catalog-unit.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/catalog-unit.check.mjs": Object.freeze([
     "catalog requires explicit credentials, environment and matching expected target",
     "catalog rejects pooled, non-Neon and URL overrides without reflecting credentials",
     "catalog test mode retains the existing strict disposable guard",
@@ -62,13 +62,13 @@ export const NODE_REQUIRED_CASES = Object.freeze({
     "CLI refuses malformed configuration without printing parser errors or URL values",
     "catalog comparison reports every missing, unexpected and changed definition",
   ]),
-  "packages/db/tests/contracts-unit.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/contracts-unit.check.mjs": Object.freeze([
     "contracts bind every immutable prefix, ledger DDL and inventory query and omit environment metadata",
     "contract drift check reports all changed, missing and unexpected artifacts without writing",
     "contract CLI refuses missing or remote targets and unsupported options without connecting or leaking values",
     "regeneration refuses catalog classes that lack complete definition coverage",
   ]),
-  "packages/db/tests/migrations-unit.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/migrations-unit.check.mjs": Object.freeze([
     "candidate artifacts preserve the authentic historical boundary and all schema comments",
     "manifest rejects edited bytes, missing files, extra fields and unsupported runner versions",
     "migration files refuse gaps, down files, CRLF, empty content and symlinked SQL",
@@ -77,13 +77,13 @@ export const NODE_REQUIRED_CASES = Object.freeze({
     "manual status requires explicit matching targets and up requires approval before any connection",
     "manifest generation never rewrites known migration checksums",
   ]),
-  "packages/db/tests/plans-unit.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/plans-unit.check.mjs": Object.freeze([
     "planning context freezes validated source and refuses edited bytes, contracts and forged contexts",
     "fingerprints bind facts while remaining independent of object key order and their own stored value",
     "plan requires private output, explicit matching target and read-only command options",
     "up cannot bypass fingerprint approval, scratch registration or pending owner evidence",
   ]),
-  "packages/db/tests/catalog.integration.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/catalog.integration.check.mjs": Object.freeze([
     "empty export creates neither application objects nor migration ledger",
     "exports authentic eight-table pre-41 and seventeen-table current candidates",
     "exports preserve synthetic rows and exclude row values and sequence progress",
@@ -92,7 +92,7 @@ export const NODE_REQUIRED_CASES = Object.freeze({
     "collector refuses noncanonical and shadow search paths before inventory without changing transaction boundaries",
     "extension inventory covers members by exact dependency ownership and retains unrelated objects",
   ]),
-  "packages/db/tests/contracts.integration.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/contracts.integration.check.mjs": Object.freeze([
     "both generated contracts match independent historical fixtures without a ledger",
     "full verifier reports every real column, key, check, FK, index, sequence and unexpected-object mismatch without repair",
     "unenforced foreign keys and disabled internal enforcement triggers are detected independently of validation",
@@ -103,7 +103,7 @@ export const NODE_REQUIRED_CASES = Object.freeze({
     "contract generation refuses unsupported managed objects and cleans up its scratch databases",
     "an extension can be explicitly contracted without its members hiding application drift",
   ]),
-  "packages/db/tests/migrations.integration.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/migrations.integration.check.mjs": Object.freeze([
     "empty installation matches the authentic current catalog and reruns preserve ledger and relational rows",
     "read-only status creates no ledger and unversioned application schemas cannot be adopted",
     "recorded baseline upgrades preserve seeded relationships and working sequence defaults",
@@ -114,7 +114,7 @@ export const NODE_REQUIRED_CASES = Object.freeze({
     "empty, partial, hole, checksum and unknown-runner ledgers fail without repair",
     "scratch target guards refuse primary, external, overridden and released database names",
   ]),
-  "packages/db/tests/plans.integration.check.mjs": Object.freeze([
+  "packages/db/tooling/tests/plans.integration.check.mjs": Object.freeze([
     "read-only plans are deterministic, create no ledger and fresh approvals install then no-op",
     "verified seeded current adoption changes only ledger metadata and never replays application SQL",
     "verified seeded pre-41 adoption records its baseline and executes additions while preserving rows and sequences",

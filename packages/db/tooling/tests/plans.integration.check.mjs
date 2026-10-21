@@ -378,7 +378,7 @@ test("owner plan CLI writes a private exclusive artifact outside Git without cha
     await client.connect();
     const original = await readCatalog(client, expected);
     const output = join(directory, "plan.json");
-    const args = ["packages/db/scripts/db-migrate.mjs", "plan", "--environment", "test", "--expected-host-fingerprint",
+    const args = ["packages/db/tooling/scripts/db-migrate.mjs", "plan", "--environment", "test", "--expected-host-fingerprint",
       fingerprint(expected.host).slice(0, 12), "--expected-database", expected.database, "--output", output];
     const result = await runCli(process.execPath, args, { env: process.env });
     const artifact = await readFile(output, "utf8");

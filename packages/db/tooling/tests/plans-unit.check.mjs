@@ -55,7 +55,7 @@ test("plan requires private output, explicit matching target and read-only comma
     assert.throws(() => parseMigrationCommand(invalid, { TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL }));
   }
   assert.throws(() => parseMigrationCommand(args, { DATABASE_URL: LOCAL_TEST_DATABASE_URL }));
-  const result = spawnSync(process.execPath, ["packages/db/scripts/db-migrate.mjs", ...argsFor("plan"), "--output", "packages/db/owner-plan.json"],
+  const result = spawnSync(process.execPath, ["packages/db/tooling/scripts/db-migrate.mjs", ...argsFor("plan"), "--output", "packages/db/owner-plan.json"],
     { encoding: "utf8", env: { TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL } });
   assert.equal(result.status, 1);
   assert.equal(result.stdout, "");
@@ -67,7 +67,7 @@ test("up cannot bypass fingerprint approval, scratch registration or pending own
     assert.throws(() => parseMigrationCommand(["up", ...(approval ? ["--approved-plan-fingerprint", approval] : [])], {}), /approved-plan-fingerprint-required/);
   }
   for (const [environment, code] of [["test", "scratch-up-only"], ["preview", "owner-rollout-evidence-pending"], ["production", "owner-rollout-evidence-pending"]]) {
-    const result = spawnSync(process.execPath, ["packages/db/scripts/db-migrate.mjs", "up", "--environment", environment,
+    const result = spawnSync(process.execPath, ["packages/db/tooling/scripts/db-migrate.mjs", "up", "--environment", environment,
       "--approved-plan-fingerprint", "a".repeat(64)], { encoding: "utf8", env: { MIGRATION_DATABASE_URL: "synthetic-private-url" } });
     assert.equal(result.status, 1);
     assert.equal(result.stdout, "");

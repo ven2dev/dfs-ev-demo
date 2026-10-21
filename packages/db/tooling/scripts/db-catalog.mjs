@@ -1,3 +1,4 @@
+import { databaseAssets } from "@dfs-ev/db/assets";
 import { createHash } from "node:crypto";
 import { readFile, realpath, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve, sep } from "node:path";
@@ -73,7 +74,7 @@ export function parseCatalogOptions(args, environment) {
 // Require exactly pg_catalog, public as the effective lookup path (public with
 // implicit pg_catalog is equivalent). This also refuses temp/shadow schemas.
 export async function collectCatalog(client, expected) {
-  const sql = await readFile(new URL("../catalog.sql", import.meta.url), "utf8");
+  const sql = await readFile(databaseAssets.catalog, "utf8");
   const { rows: [server] } = await client.query(
     `SELECT pg_catalog.current_database() AS database, current_user AS role,
       pg_catalog.current_setting('server_version_num')::integer AS version,
@@ -108,7 +109,7 @@ export async function readCatalog(client, expected) {
 
 export async function validateOutputPath(output) {
   const path = resolve(output);
-  const root = await realpath(fileURLToPath(new URL("../../../", import.meta.url)));
+  const root = await realpath(fileURLToPath(new URL("../../../../", import.meta.url)));
   const parent = await realpath(dirname(path));
   const within = relative(root, parent);
   if (within === "" || (within !== ".." && !within.startsWith(".." + sep) && !within.startsWith(sep))) {

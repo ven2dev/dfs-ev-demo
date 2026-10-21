@@ -66,7 +66,7 @@ test("contract CLI refuses missing or remote targets and unsupported options wit
     [["generate"], { MIGRATION_DATABASE_URL: "synthetic-private-url" }],
     [["check", "--environment", "production"], { MIGRATION_DATABASE_URL: "synthetic-private-url" }],
   ]) {
-    const result = spawnSync(process.execPath, ["packages/db/scripts/db-catalog-contracts.mjs", ...args], { encoding: "utf8", env });
+    const result = spawnSync(process.execPath, ["packages/db/tooling/scripts/db-catalog-contracts.mjs", ...args], { encoding: "utf8", env });
     assert.equal(result.status, 1);
     assert.equal(result.stdout, "");
     assert.match(result.stderr, /^db-catalog-contracts: (contract-command-failed|invalid-contract-command)\n$/);
