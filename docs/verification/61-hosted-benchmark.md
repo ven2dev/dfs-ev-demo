@@ -130,3 +130,27 @@ before refusing to recreate it, so that query cannot leave old idle evidence
 usable. Initial setup now uses nine statements / two round trips; reservations
 subtract this overhead from the unchanged 16,040 / 8,020 ceiling. The local
 regression verifies that a repeated setup leaves completion unknown.
+
+## Preview dependency correction — October 21, 2026
+
+Deployment `dpl_9LA2eHeptHfUvmLA1Coqy5Yr1SG1` built reviewed SHA `d3f0ff9`
+but failed web TypeScript checking because the web-source opt-in fixture imported
+`pg`, which was unavailable in the deployment's dependency installation.
+
+Moved the four unchanged PostgreSQL behavior regressions to
+`tests/bench61-postgres.test.ts`, outside the web TypeScript project. The three
+access-control tests remain in `apps/web/src/lib/bench61.server.test.ts` with no
+`pg` import. A dedicated root `vitest.bench61.config.ts` selects only the local
+fixture. Run it with:
+
+```sh
+BENCH61_LOCAL_TEST=1 npx vitest run --config vitest.bench61.config.ts
+```
+
+All three boundary tests and all four local PostgreSQL tests pass. Root typecheck,
+targeted ESLint and import-boundary checks pass. A clean web TypeScript check
+(`tsc --noEmit -p apps/web/tsconfig.json --incremental false`) also passes with
+both `pg` and `@types/pg` temporarily unavailable; both modules were restored.
+The full build attempt was blocked by this environment's Turbopack loopback-helper
+restriction before TypeScript. No runtime code, dependencies, lockfile, CI or
+project settings changed. This local correction has not been committed or pushed.
