@@ -1,0 +1,182 @@
+{
+  "issue": 190,
+  "step": 2,
+  "status": "pass; awaiting owner commit approval",
+  "recordedAt": "2026-10-21T22:15:13.405634+00:00",
+  "baselineCommit": "e1f956824602ae302af0e250e6a496cda104900b",
+  "candidateNonDocumentationManifestSha256": "73f8b580a906132d32a025457a5a2271ebbef02317bf3afa3f48aa0dbc968029",
+  "identityBoundary": "SHA-256 of sorted compact JSON mapping every current tracked/nonignored non-doc file to its SHA-256; missing/deleted files omitted; dependencies and ignored outputs excluded",
+  "node": "v24.18.1",
+  "scope": "Extract existing driver-injected lease SQL and natural key into @dfs-ev/db/runtime; specialize generic JSON payload at consumer boundary; no new query path or SQL behavior",
+  "parity": {
+    "statementCount": 5,
+    "sqlAndParameterExpressions": "identical",
+    "sqlSha256": [
+      "7002d361166fedf7e6974f5b3304744899242d936ce881074b12704fd4d56ce3",
+      "89615321abeeead1513750b2ac4bd7c58759c2ae1edab855ed4c6a8dd278bec6",
+      "115a5185b276afa6fa20119a17b6a45a87335ec8934921df8b2e4d635fff4de0",
+      "c3b208d0ac65aa2464e84de0c87cd66ec7da2d4d18bbcbc3f12a02422de47242",
+      "21c9175733174fe0796a5e9d1d361990945c69faeb2e92e52080e16caa321682"
+    ],
+    "emittedStoreJavascriptSha256": "d4d45a967f3939c68d6b97b0fa0478ffac037bee259179a4771d257fdc3e8780",
+    "emittedRefreshJavascriptSha256": "f16d0db6e8c770f55485c760f7cc00fc189cc10ffd471a412d61089eadb55fb5",
+    "emittedJavascript": "store and refresh match pre-extraction byte for byte",
+    "refreshExecutionSha256": "5202faf1e8e9a15cdfd509476366d32464e6e1cf7877b8bab808857586d1e309",
+    "immutableFiles": 34,
+    "immutableBytes": "identical",
+    "workflow": "byte-identical",
+    "rootCommandsLockfileAndRequiredContracts": "byte-identical"
+  },
+  "executedCounts": {
+    "webCacheAndStore": 9,
+    "webRepository": 8,
+    "boundary": 7,
+    "ciAndLayout": 13,
+    "nodeDatabase": 74,
+    "postgresql": 25,
+    "leaseRequired": 13,
+    "readinessRequired": 4,
+    "corpusRequired": 8,
+    "catalogContracts": 12,
+    "templateLifecycle": 2,
+    "isolatedToolingGuards": 20,
+    "isolatedToolingLeaseSmoke": 1
+  },
+  "checks": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "verdict": "pass",
+      "seconds": 1.957,
+      "stdoutSha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "runtime-types": {
+      "command": "npm run typecheck --workspace @dfs-ev/db",
+      "verdict": "pass",
+      "seconds": 0.374,
+      "stdoutSha256": "6fe62d25c6df5f41564c7b479813bc699f54145ba3df95498c5c0fb89fb31098",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lint": {
+      "command": "npm run lint",
+      "verdict": "pass",
+      "seconds": 9.191,
+      "stdoutSha256": "c0853cbfca5edfa55fc73354b5782f6f12c297b8e3bd01c09b207549d799914f",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "gates": {
+      "command": "npm run test:ci-gate",
+      "verdict": "pass",
+      "seconds": 3.171,
+      "stdoutSha256": "8229ff18105f4e6080f5b60c13d985836987a7779164a8c970b4a9ef7a49ca93",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "cache-tests": {
+      "command": "node node_modules/vitest/vitest.mjs run --config vitest.config.ts apps/web/src/lib/livePropCache.test.ts apps/web/src/lib/livePropCacheStore.test.ts",
+      "verdict": "pass",
+      "seconds": 1.116,
+      "stdoutSha256": "4a47c3573e1513caeb0e246b86a45188da88a16eeb80c3e6af6e4e606784b8b4",
+      "stderrSha256": "5bde46c1c183bd3d1aa4417828e2ad18dc1256bbd9f0e1fbd4f6acd4abcd2676"
+    },
+    "repo-tests": {
+      "command": "node node_modules/vitest/vitest.mjs run --config vitest.node.config.ts apps/web/src/lib/livePropCacheRepo.server.test.ts",
+      "verdict": "pass",
+      "seconds": 0.355,
+      "stdoutSha256": "5861200439b917745ebc3732d1ee1e31aeaa0168b3b34330e79b2ed7786d6f6c",
+      "stderrSha256": "f3215e1c6e7cc1b12228c6b15d01851ae4ba29064996092d9fcdd51024a78968"
+    },
+    "database": {
+      "command": "npm run test:db:local",
+      "verdict": "pass",
+      "seconds": 35.085,
+      "stdoutSha256": "a8b7b9c339c6832ca86fd8790f70100e657367f8e26ccc1d209af2bba29cb334",
+      "stderrSha256": "4bec2425a3cd80f901a943134c436a8a139e4305286c3ff1a0a23705fbd817e7"
+    },
+    "tooling-lease-fixture": {
+      "command": "node node_modules/vitest/vitest.mjs run --config dfs190-lease-smoke.config.mts",
+      "verdict": "pass",
+      "seconds": 0.979,
+      "stdoutSha256": "896a92120f1ef9723dbdbf4d3a3f17732cf7b991d469bb17e3792fec5eb3a549",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "databaseFixture": {
+    "command": "npm run test:db:local",
+    "compose": "compose.test.yml",
+    "composeSha256": "57a19ced9e5892293f353b95456ea4e07544d467d5843634f508773496b4418e",
+    "envFile": "/dev/null",
+    "postgresMajor": 18,
+    "dataTmpfsMiB": 512,
+    "spikeOverride": false,
+    "environment": "PATH and HOME only; runner adds public disposable local test URL",
+    "applicationCredentialsLoaded": false,
+    "requiredContracts": "74 Node / 25 PostgreSQL; exact-case report validation passed; no skipped, cancelled or todo cases",
+    "cleanup": "runner exit 0; disposable container absent after run"
+  },
+  "cleanWebOnly": {
+    "workspace": "@dfs-ev/web",
+    "node": "v24.18.1",
+    "installSeconds": 5.612,
+    "packagesAdded": 379,
+    "boundary": "fresh source export of tracked plus nonignored candidate files; no node_modules, build outputs or app env copied; no root install; npm cache unflushed",
+    "databaseConnectionsOpened": 0,
+    "absent": [
+      "pg",
+      "@types/pg",
+      "eslint",
+      "firebase-tools",
+      "@dfs-ev/db-tooling"
+    ],
+    "independentlyWebOwned": [
+      "@neondatabase/serverless",
+      "typescript",
+      "vitest",
+      "@types/node"
+    ],
+    "runtimeImport": "actual web consumer and native Node import pass",
+    "build": "pass",
+    "buildSeconds": 9.566,
+    "routesManifest": true
+  },
+  "cleanToolingOnly": {
+    "workspace": "@dfs-ev/db-tooling",
+    "node": "v24.18.1",
+    "installSeconds": 1.533,
+    "packagesAdded": 103,
+    "boundary": "fresh source export of tracked plus nonignored candidate files; no node_modules, build outputs or app env copied; no root install; npm cache unflushed",
+    "databaseConnectionsOpened": 0,
+    "absent": [
+      "next",
+      "@dfs-ev/web"
+    ],
+    "execution": [
+      "migration artifact check",
+      "readiness artifact check",
+      "12 catalog contracts loaded",
+      "target guard native import/refusals",
+      "20 existing DB guard cases"
+    ],
+    "native": {
+      "migrations": 11,
+      "catalogContracts": 12,
+      "guard": "pass",
+      "databaseConnectionsOpened": 0
+    },
+    "leaseSupportExecution": "public fixtures import and injected read pass under Vitest; no web workspace or Next installed; zero DB connections"
+  },
+  "correctedAttempts": [
+    {
+      "check": "initial root typecheck",
+      "failure": "Tooling fixture inference made oddsObservation required, narrowing the store write payload beyond the web contract",
+      "correction": "testStore and openContenders accept a payload type parameter; web specializes it with LivePropInputs; no web type import in tooling",
+      "rerun": "typecheck, affected tests, clean web build and full local database suite pass"
+    }
+  ],
+  "measurementLimits": "Elapsed times are diagnostics, not performance claims; tests and installs partly overlapped; caches unflushed; no hosted or Production operations",
+  "remainingGates": [
+    "Step 3 root integration coordinator/adapters and final runtime-only lint boundary",
+    "Step 4 full application checkpoint and feature-store 79-case PostgreSQL suite",
+    "Real Vercel Preview after owner-approved push"
+  ],
+  "fullLogs": "Off git in /private/tmp/dfs190-step2-logs; only compact receipt committed"
+}

@@ -6,7 +6,7 @@ import { cacheState, freshAfter, key, leaseMs, openContenders, payload, testStor
 
 it("25 database-backed consumers wait for one fetch and receive the same persisted payload", async () => {
   const monitor = await openTestClient();
-  const consumers = await openContenders();
+  const consumers = await openContenders<LivePropInputs>();
   // Align the application clock with the DB clock; actual lifecycle timers
   // remain real. No explicit transaction wraps the orchestration.
   const startedAt = (await freshAfter(monitor)) + 90_000;

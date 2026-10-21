@@ -1,30 +1,51 @@
-import type {
-  LivePropCacheDeps,
-  LivePropCacheEntry,
-  LivePropCacheKey,
-  LivePropInputs,
-} from "./livePropCache";
+export type LivePropCacheKey = {
+  sportKey: string;
+  eventId: string;
+  marketKey: string;
+  playerName: string;
+};
+
+export type LivePropCacheEntry<Payload> = {
+  payload: Payload;
+  fetchedAtMs: number;
+};
+
+export type LivePropCacheStore<Payload> = {
+  read: (key: LivePropCacheKey) => Promise<LivePropCacheEntry<Payload> | null>;
+  tryAcquireRefresh: (
+    key: LivePropCacheKey,
+    ownerId: string,
+    freshAfterMs: number,
+    leaseMs: number
+  ) => Promise<boolean>;
+  renew: (
+    key: LivePropCacheKey,
+    ownerId: string,
+    leaseMs: number
+  ) => Promise<boolean>;
+  write: (
+    key: LivePropCacheKey,
+    ownerId: string,
+    payload: Payload
+  ) => Promise<void>;
+  release: (key: LivePropCacheKey, ownerId: string) => Promise<void>;
+};
 
 export type LivePropCacheQuery = (
   text: string,
   params: (string | number)[]
 ) => Promise<Record<string, unknown>[]>;
 
-export type LivePropCacheStore = Pick<
-  LivePropCacheDeps,
-  "read" | "tryAcquireRefresh" | "renew" | "write" | "release"
->;
-
-type CacheRow = {
-  payload: LivePropInputs | null;
+type CacheRow<Payload> = {
+  payload: Payload | null;
   fetched_at: string | Date | null;
 };
 
 // Both production and integration tests execute these same statements.
 // The caller owns driver initialization and the connection lifecycle.
-export const createLivePropCacheStore = (
+export const createLivePropCacheStore = <Payload>(
   query: LivePropCacheQuery
-): LivePropCacheStore => {
+): LivePropCacheStore<Payload> => {
   const keyParams = (key: LivePropCacheKey) => [
     key.sportKey,
     key.eventId,
@@ -32,13 +53,13 @@ export const createLivePropCacheStore = (
     key.playerName,
   ];
 
-  const read = async (key: LivePropCacheKey): Promise<LivePropCacheEntry | null> => {
+  const read = async (key: LivePropCacheKey): Promise<LivePropCacheEntry<Payload> | null> => {
     const rows = (await query(
       `SELECT payload, fetched_at
        FROM live_prop_inputs_cache
        WHERE sport_key = $1 AND event_id = $2 AND market_key = $3 AND player_name = $4`,
       keyParams(key)
-    )) as CacheRow[];
+    )) as CacheRow<Payload>[];
     const row = rows[0];
     if (!row?.payload || !row.fetched_at) return null;
     return {
@@ -100,7 +121,7 @@ export const createLivePropCacheStore = (
   const write = async (
     key: LivePropCacheKey,
     ownerId: string,
-    payload: LivePropInputs
+    payload: Payload
   ): Promise<void> => {
     const rows = await query(
       `UPDATE live_prop_inputs_cache

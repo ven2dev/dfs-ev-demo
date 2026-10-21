@@ -122,5 +122,42 @@ not a new performance claim; neither probe opened a database connection.
 
 Corrected working attempts remain summarized in the receipts. Full application
 and PostgreSQL execution, final boundary enforcement, lease extraction and the
-real Preview are later gates. Step 1 is ready for owner commit review; no commit
-or push is authorized by the architecture approval.
+real Preview are later gates. Step 1 was committed with owner approval as
+`e1f9568` (`refactor(db): separate runtime assets from database tooling`).
+
+
+## Step 2 evidence and status
+
+The [lease-extraction receipt](evidence/database-190/step-2-leases.json) records the
+driver-injected lease store moving into `@dfs-ev/db/runtime`, with a generic
+payload contract. Provider payload types, lazy Neon initialization and refresh
+orchestration stay web-owned. Both production and database tests call the same
+store. The lease fixtures no longer import web; their #190 boundary exception
+has been removed. Web consumers import the DB key contract directly, with no
+temporary type re-exports.
+
+All five SQL statements and parameter expressions match the original. Emitted
+JavaScript for both the store and refresh orchestrator is byte-identical to the
+pre-extraction versions after TypeScript erasure. All 34 frozen artifacts, the
+root commands, lockfile, required-case contract and CI workflow stay unchanged.
+
+- Typecheck, the runtime's independent typecheck, full lint, 7 import-boundary
+  probes and 13 CI/layout checks pass.
+- All 17 affected cache/store/repository tests pass. The complete local database
+  command passes: 74 required Node cases, 25 PostgreSQL cases (including the
+  13 required lease cases), 12 catalog contracts and template lifecycle probes.
+  It uses the standard 512 MiB disposable fixture with no spike override, loads
+  no application credentials and removes the container afterwards.
+- A fresh web-only install/build passes with 379 packages and no `pg`,
+  `@types/pg` or DB tooling installed. A fresh tooling-only install has 103
+  packages with neither Next nor web; the actual public lease fixtures import
+  and execute an injected read under Vitest without opening a DB connection.
+  The 20 isolated tooling guard cases also pass. Caches were not flushed, and
+  overlapping diagnostic timings make no new speed claim.
+
+The initial typecheck caught a fixture inferred more narrowly than the web
+payload. Generic fixture specialization at the consumer boundary corrected it;
+the passing reruns and failure summary are retained in the compact receipt.
+Full logs stay off git. Step 2 awaits separate owner commit approval; Step 3's
+root integration coordination, the final full-suite checkpoint and a real
+Vercel Preview remain pending. No push has been approved or performed.

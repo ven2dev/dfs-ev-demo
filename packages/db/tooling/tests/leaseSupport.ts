@@ -1,8 +1,7 @@
 import { setTimeout as delay } from "node:timers/promises";
 import type { Client } from "pg";
 import { expect } from "vitest";
-import type { LivePropCacheKey, LivePropInputs } from "../../../../apps/web/src/lib/livePropCache";
-import { createLivePropCacheStore } from "../../../../apps/web/src/lib/livePropCacheStore";
+import { createLivePropCacheStore, type LivePropCacheKey } from "@dfs-ev/db/runtime";
 import { openTestClient } from "./harness";
 
 export const key: LivePropCacheKey = {
@@ -13,10 +12,10 @@ export const key: LivePropCacheKey = {
 };
 export const keyValues = [key.sportKey, key.eventId, key.marketKey, key.playerName];
 export const leaseMs = 60_000;
-export const payload: LivePropInputs = {
+export const payload = {
   oddsByBookmaker: [{ bookmakerKey: "fixture-book", overPrice: 1.91, underPrice: 1.89, point: 214.5 }],
   oddsObservation: {
-    origin: "upstream",
+    origin: "upstream" as const,
     observationId: "fixture-observation",
     persisted: true,
     capturedAt: "2026-10-04T12:00:00.000Z",
@@ -25,18 +24,18 @@ export const payload: LivePropInputs = {
   weather: { temperatureF: 62, windSpeedMph: 8, precipitationMm: 0 },
 };
 
-export function testStore(client: Client) {
-  return createLivePropCacheStore(async (text, params) => (await client.query(text, params)).rows);
+export function testStore<Payload = typeof payload>(client: Client) {
+  return createLivePropCacheStore<Payload>(async (text, params) => (await client.query(text, params)).rows);
 }
 
 export async function backendPid(client: Client): Promise<number> {
   return (await client.query<{ pid: number }>("SELECT pg_backend_pid() AS pid")).rows[0].pid;
 }
 
-export async function openContenders(count = 25) {
+export async function openContenders<Payload = typeof payload>(count = 25) {
   const participants = await Promise.all(Array.from({ length: count }, async (_, index) => {
     const client = await openTestClient();
-    return { client, store: testStore(client), pid: await backendPid(client), owner: `contender-${index}` };
+    return { client, store: testStore<Payload>(client), pid: await backendPid(client), owner: `contender-${index}` };
   }));
   expect(new Set(participants.map((participant) => participant.pid)).size).toBe(count);
   return participants;
@@ -72,7 +71,7 @@ export async function seedStaleRow(client: Client) {
 }
 
 export type CacheState = {
-  payload: LivePropInputs | null;
+  payload: typeof payload | null;
   fetched_at: Date | null;
   refresh_owner: string | null;
   refresh_lease_until: Date | null;

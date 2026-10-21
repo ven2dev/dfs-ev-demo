@@ -1,12 +1,6 @@
+import type { LivePropCacheEntry, LivePropCacheKey, LivePropCacheStore } from "@dfs-ev/db/runtime";
 import type { OddsApiQuota, PlayerPropBookmakerLine } from "./oddsApi";
 import type { WeatherSnapshot } from "./weather";
-
-export type LivePropCacheKey = {
-  sportKey: string;
-  eventId: string;
-  marketKey: string;
-  playerName: string;
-};
 
 export type LivePropInputs = {
   oddsByBookmaker: PlayerPropBookmakerLine[];
@@ -20,30 +14,7 @@ export type LivePropInputs = {
   weather: WeatherSnapshot;
 };
 
-export type LivePropCacheEntry = {
-  payload: LivePropInputs;
-  fetchedAtMs: number;
-};
-
-export type LivePropCacheDeps = {
-  read: (key: LivePropCacheKey) => Promise<LivePropCacheEntry | null>;
-  tryAcquireRefresh: (
-    key: LivePropCacheKey,
-    ownerId: string,
-    freshAfterMs: number,
-    leaseMs: number
-  ) => Promise<boolean>;
-  renew: (
-    key: LivePropCacheKey,
-    ownerId: string,
-    leaseMs: number
-  ) => Promise<boolean>;
-  write: (
-    key: LivePropCacheKey,
-    ownerId: string,
-    payload: LivePropInputs
-  ) => Promise<void>;
-  release: (key: LivePropCacheKey, ownerId: string) => Promise<void>;
+export type LivePropCacheDeps = LivePropCacheStore<LivePropInputs> & {
   fetchFresh: (
     key: LivePropCacheKey,
     signal: AbortSignal
@@ -70,9 +41,9 @@ const DEFAULT_WAIT_INTERVAL_MS = 250;
 const DEFAULT_MAX_WAIT_MS = 45_000;
 
 const isFresh = (
-  entry: LivePropCacheEntry | null,
+  entry: LivePropCacheEntry<LivePropInputs> | null,
   freshAfterMs: number
-): entry is LivePropCacheEntry => entry !== null && entry.fetchedAtMs > freshAfterMs;
+): entry is LivePropCacheEntry<LivePropInputs> => entry !== null && entry.fetchedAtMs > freshAfterMs;
 
 // Cross-instance singleflight. Postgres owns the refresh lease, so two
 // serverless instances racing on the same prop cannot both call the

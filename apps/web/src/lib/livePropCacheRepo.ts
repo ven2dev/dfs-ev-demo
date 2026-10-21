@@ -1,13 +1,12 @@
 import "server-only";
 
+import { createLivePropCacheStore, type LivePropCacheKey } from "@dfs-ev/db/runtime";
 import { randomUUID } from "node:crypto";
 import { getSql } from "./db";
 import {
   getOrRefreshLivePropInputs,
-  type LivePropCacheKey,
   type LivePropInputs,
 } from "./livePropCache";
-import { createLivePropCacheStore } from "./livePropCacheStore";
 import { fetchPlayerPropMarketOdds } from "./oddsApi";
 import { persistOddsObservation } from "./oddsSnapshotRepo";
 import { POLL_INTERVAL_MS } from "./streamConfig";
@@ -22,7 +21,7 @@ export type LivePropFetchContext = {
 };
 
 // Keep Neon initialization lazy: importing the repository does not open a client.
-const cacheStore = createLivePropCacheStore((text, params) =>
+const cacheStore = createLivePropCacheStore<LivePropInputs>((text, params) =>
   getSql().query(text, params)
 );
 

@@ -1,12 +1,5 @@
 [
   {
-    "file": "packages/db/tooling/tests/leaseSupport.ts",
-    "imports": {
-      "../../../../apps/web/src/lib/livePropCache": 190,
-      "../../../../apps/web/src/lib/livePropCacheStore": 190
-    }
-  },
-  {
     "file": "services/pipeline/scripts/creator-corpus/apiExpiry.ts",
     "imports": {
       "../../../../apps/web/src/lib/creatorCorpusManifest.ts": 191
