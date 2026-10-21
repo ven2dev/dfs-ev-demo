@@ -21,6 +21,29 @@ const show = (value: WatchedProp | undefined = snapshot) => render(
 );
 
 describe("AnalysisSummary presentation", () => {
+  it("leads the three sections with the available edge and its estimate/market basis", () => {
+    show();
+    const summary = screen.getByLabelText("Result summary");
+    expect(summary).toHaveTextContent("Illustrative edge +6.5 pts (Over 245.5 at draftkings): estimate 56.5% vs market 50.0%.");
+    expect(summary.querySelector("strong")).toHaveTextContent("+6.5 pts");
+    for (const section of screen.getAllByRole("region")) {
+      expect(summary.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
+  it.each([
+    { ...snapshot, marketConsensus: undefined },
+    { ...snapshot, stages: undefined },
+    { ...snapshot, evScore: { ...snapshot.evScore!, edge: NaN } },
+  ])("leads with an unavailable edge without any number when its inputs are invalid", value => {
+    show(value);
+    const summary = screen.getByLabelText("Result summary");
+    expect(summary).toHaveTextContent("Illustrative edge unavailable.");
+    expect(summary.textContent).not.toMatch(/\d/);
+    expect(screen.getByRole("region", { name: "Edge" })).toHaveTextContent("Edge unavailable");
+    expect(summary.compareDocumentPosition(screen.getByRole("region", { name: "Estimate" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("separates estimate, watched offer, market consensus and edge with honest units", () => {
     show();
     expect(screen.getAllByRole("heading").map(h => h.textContent)).toEqual(["Estimate", "Market", "Edge"]);

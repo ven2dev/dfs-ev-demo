@@ -35,6 +35,13 @@ export const AnalysisSummary = ({ snapshot, selection, requestedWindow, connecti
       {snapshot && (
         <ResultFreshness snapshot={snapshot} requestedWindow={requestedWindow} connectionStatus={connectionStatus} />
       )}
+      <p aria-label="Result summary" className="min-w-0 break-words text-lg">
+        {edgeAvailable && score ? <>
+          Illustrative edge <strong className="tabular-nums">{formatEdgePoints(score.edge)}</strong>{" "}
+          ({selection.direction === "over" ? "Over" : "Under"} {line} at {selection.bookmakerKey}):{" "}
+          estimate {(score.modelProb * 100).toFixed(1)}% vs market {(score.impliedProb * 100).toFixed(1)}%.
+        </> : "Illustrative edge unavailable. A valid estimate and same-line market consensus are needed."}
+      </p>
       <div className="grid min-w-0 gap-4 lg:grid-cols-3">
         <section aria-label="Estimate" className="min-w-0 rounded-lg bg-zinc-100 p-4 dark:bg-zinc-900">
           <h3 className="font-medium">Estimate</h3>

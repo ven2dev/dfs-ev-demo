@@ -52,3 +52,12 @@ The browser was in dark mode. This is not a new Lighthouse audit or an
 authenticated-page verification. Local Firebase sign-in reports an invalid API
 key; guest fixture watching was sufficient for this slice. No auth configuration,
 database, pipeline, or domain changes were made.
+
+## Owner review amendment — 2026-10-21
+
+Added an edge-first result sentence above the unchanged Estimate / Market / Edge
+sections, using `formatEdgePoints` and the Edge section's availability predicate.
+Unavailable results show no numeric value in this sentence. All 13 AnalysisSummary
+tests pass, including available/unavailable summary ordering; targeted ESLint and
+whitespace checks pass. At 375 px, document width is 375 px and the summary ends
+16 px above Estimate. Screenshot `edge-headline-375.jpg` remains outside git.
