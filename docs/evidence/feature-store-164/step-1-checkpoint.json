@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 1,
+  "baselineCommit": "edb5981c7561f12a6777a4ab7b7dd65b991815a1",
+  "scoringRun": false,
+  "inputPinsReceipt": {
+    "path": "docs/evidence/feature-store-164/step-1-input-pins.json",
+    "sha256": "b84660b2043f533615ca4d36ae43a64711cd7169d2bde9ea7c62063216325cae",
+    "byteSize": 10329
+  },
+  "fixture": {
+    "exactWireFiles": 16,
+    "retrospectiveExamples": 2504,
+    "naturalContentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+    "strictEligibleForecasts": 0,
+    "historicalAvailability": "unverified",
+    "databaseTmpfsBytes": 536870912,
+    "scratchDatabasesAfterRun": 0,
+    "containerRemoved": true
+  },
+  "checks": [
+    {
+      "command": "npm run typecheck",
+      "verdict": "pass"
+    },
+    {
+      "command": "npx eslint services/pipeline/scripts/feature-store/evaluation-fixture.ts services/pipeline/scripts/feature-store/evaluation-prepare.ts",
+      "verdict": "pass"
+    },
+    {
+      "command": "npm run test:import-boundaries",
+      "passed": 7,
+      "skipped": 0,
+      "cancelled": 0,
+      "verdict": "pass"
+    },
+    {
+      "command": "node packages/db/scripts/db-migration-artifacts.mjs check",
+      "verdict": "pass"
+    },
+    {
+      "check": "actual files match receipt implementation hashes",
+      "files": 22,
+      "verdict": "pass"
+    },
+    {
+      "check": "saved pin/receipt/dataset/coverage artifact SHA-256s match",
+      "artifacts": 6,
+      "verdict": "pass"
+    },
+    {
+      "check": "frozen migrations, catalog contracts, schema and migration manifest unchanged from baseline",
+      "files": 25,
+      "verdict": "pass"
+    }
+  ],
+  "remaining": {
+    "scoring": "not implemented; no real evaluation run",
+    "completedReportTiming": "not run; approved limit is 7000 ms against 10000 ms, excluding fixture rebuild",
+    "fullDatabaseSuites": "scheduled for step 4"
+  },
+  "verdict": "step-1-input-reproduction-pass"
+}

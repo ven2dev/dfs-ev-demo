@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 2,
+  "baseCommit": "6e2fe45e9082eab40492d88f171a069c81067aa2",
+  "realDataEvaluationRun": false,
+  "codeHashes": {
+    "packages/domain/package.json": "1981ff8b9d068c2150ec8abe14401d0f01ee682408a2c35042cd9255b0f70f4c",
+    "packages/domain/src/projection/qb-evaluation.ts": "230f6d4a5774ede04b43dcb178845a3b1ab0a7b8a4ed8a01fd662e6ac874d654",
+    "packages/domain/tests/projection/qb-evaluation.test.ts": "196125c1b37f003b7a84e27bb55ddd90db1d32b9a9536470b532b8ef4ecc941a",
+    "services/pipeline/scripts/feature-store/evaluation-math-spike.ts": "cea5123c984eb2921f7d43f90dfef56b8a874aa5f7b79f323b483dc6c9b38e3f"
+  },
+  "syntheticEvidenceReceipt": {
+    "path": "docs/evidence/feature-store-164/step-2-synthetic-math.json",
+    "sha256": "fecd82370c0a6ed0c6f8e572f93cb7bae20f7a2175e975a6b9b2c58b377b69ee",
+    "byteSize": 3432
+  },
+  "checks": [
+    {
+      "command": "npx vitest run --config vitest.node.config.ts packages/domain/tests/projection",
+      "files": 3,
+      "passed": 56,
+      "skipped": 0,
+      "cancelled": 0,
+      "verdict": "pass"
+    },
+    {
+      "command": "npm run typecheck --workspace @dfs-ev/domain",
+      "verdict": "pass"
+    },
+    {
+      "command": "npm run typecheck",
+      "verdict": "pass"
+    },
+    {
+      "command": "npm run lint",
+      "boundaryProbesPassed": 7,
+      "verdict": "pass"
+    },
+    {
+      "command": "npm run test:ci-gate",
+      "passed": 12,
+      "skipped": 0,
+      "cancelled": 0,
+      "verdict": "pass"
+    },
+    {
+      "command": "node services/pipeline/scripts/feature-store/evaluation-math-spike.ts",
+      "runtime": "v24.18.1",
+      "verdict": "synthetic-reproducibility-pass"
+    },
+    {
+      "check": "legacy empirical/baseline/evaluation/report implementations and lockfile unchanged from origin/main",
+      "files": 5,
+      "verdict": "pass"
+    },
+    {
+      "check": "synthetic report and six implementation hashes verified",
+      "verdict": "pass"
+    }
+  ],
+  "guaranteesProven": [
+    "integer RPS hand fixtures and independent CDF/pairwise parity",
+    "fixed thresholds and Brier conventions",
+    "player/game/policy folds and player/game/threshold cases",
+    "opposing QBs distinct; duplicate folds refused",
+    "no target label in probability math",
+    "event-time filtering in both modes including microsecond boundary",
+    "positive infinity retained in cases and all affected aggregates",
+    "fixed calibration bins, extreme counts, empty season/stratum cells",
+    "explicit unavailable/excluded/warm-up counts",
+    "chronological history reuse and deterministic logical serialization"
+  ],
+  "remaining": [
+    "real-cohort evaluation after this checkpoint",
+    "complete report delivery rights/status checks and work counts",
+    "repeated completed-report cold/warm latency gate",
+    "integrated PostgreSQL suites"
+  ],
+  "verdict": "step-2-synthetic-scoring-pass"
+}

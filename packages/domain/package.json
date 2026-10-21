@@ -12,7 +12,8 @@
     "./baseline": "./src/projection/baseline.ts",
     "./devig": "./src/devig.ts",
     "./consensus-devig": "./src/consensusDevig.ts",
-    "./ev": "./src/computeEV.ts"
+    "./ev": "./src/computeEV.ts",
+    "./qb-evaluation": "./src/projection/qb-evaluation.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"

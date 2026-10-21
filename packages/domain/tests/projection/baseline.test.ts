@@ -47,6 +47,33 @@ describe("independent empirical projection", () => {
     expect(score({ overProbability: .5, underProbability: .25, pushProbability: .25 }, "push")).toEqual({ brier: .875, logLoss: -Math.log(.25) });
     expect(score({ overProbability: 1, underProbability: 0, pushProbability: 0 }, "push").logLoss).toBe(Infinity);
   });
+  it.each([
+    { n: 5, count: 1, bin: 2 }, { n: 5, count: 4, bin: 8 },
+    { n: 10, count: 1, bin: 1 }, { n: 10, count: 2, bin: 2 },
+    { n: 10, count: 3, bin: 3 }, { n: 10, count: 7, bin: 7 },
+    { n: 15, count: 3, bin: 2 }, { n: 15, count: 9, bin: 6 },
+    { n: 15, count: 12, bin: 8 }, { n: 16, count: 3, bin: 1 },
+    { n: 16, count: 4, bin: 2 },
+  ])("calibrates count=$count of n=$n in bin $bin without floating-point boundary drift", ({ n, count, bin }) => {
+    for (const side of ["over", "under", "push"] as const) {
+      const values = Array.from({ length: n }, (_, i) => i < count
+        ? side === "push" ? 0 : side === "over" ? i + 1 : -i - 1
+        : side === "over" ? -i - 1 : i + 1);
+      const a = { ...input(), history: values.map((value, i) => ({ ...row(value, 0), id: `r${i}`, eventId: `e${i}` })) };
+      const label = { ...row(side === "over" ? 100 : side === "under" ? -100 : 0, 0),
+        eventId: a.targetEventId, eventTime: a.targetEventTime, labelAvailableAt: "2026-10-03T00:00:00Z" };
+      const partition = { covered: n, excluded: 0, unresolved: 0 };
+      const report = evaluate([{ input: a, label, line: 0 }], { evaluatedAt: "2026-10-04T00:00:00Z",
+        codeArtifactId: "exact-calibration-counts", coverage: { training: partition, evaluation: { ...partition, covered: 1 },
+          featureHistory: partition, qualifiedLedgerVersion: null } });
+      const bins = report.groups[0].calibration.filter(b => b.side === side);
+      expect(bins.map(b => b.count)).toEqual(Array.from({ length: 10 }, (_, i) => Number(i === bin)));
+      expect(bins[bin].meanProbability).toBeCloseTo(count / n, 14);
+      expect(bins[bin].outcomeRate).toBe(1);
+      expect(report.rows[0].probabilities).toEqual(probabilityAt(fitBaseline(a), 0));
+      expect(report.rows[0].scores).toEqual(score(report.rows[0].probabilities!, side));
+    }
+  });
   it("records walk-forward metrics, calibration and unresolved coverage", () => {
     const a = input();
     const label = { ...row(0, 0), eventId: "target", eventTime: a.targetEventTime, labelAvailableAt: "2026-10-03T00:00:00Z" };

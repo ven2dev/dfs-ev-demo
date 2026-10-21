@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 4,
+  "baseCommit": "edb5981c7561f12a6777a4ab7b7dd65b991815a1",
+  "refreshedAfterReviewOf": "ff87274",
+  "verdict": "ready-for-focused-review",
+  "benchmarkReceipt": {
+    "path": "docs/evidence/feature-store-164/step-4-capacity.json",
+    "sha256": "4a291157b2f70c80083f379626260f43f5f9fc2fc15aadbac73857b0729f7a63",
+    "byteSize": 8635,
+    "lines": 160
+  },
+  "measuredImplementation": {
+    "gitSha": "ff87274f3edddb978e55f3e721ab06492ca56687",
+    "contentSha256": "d31548cddf7eb898096a287a4735675e42d6f6d7cb4d91f470b5be6373efeb7c"
+  },
+  "testFileSha256": {
+    "packages/domain/tests/projection/baseline.test.ts": "38a14779269a3b28154416c6f143287727cb2f5c411e29589dd9f95fc7fde072",
+    "packages/domain/tests/projection/qb-evaluation.test.ts": "fab1fada57c3201e838dce6d2b7a3ad3ec837cccabc67a8c94137b776877d808",
+    "services/pipeline/tests/feature-store/datasets.check.mts": "9265385eca8c37324d648cf07b5be00ecf087002d00b086d77d49808f7a914ca"
+  },
+  "artifacts": {
+    "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164-data/objects",
+    "fullBenchmark": {
+      "objectKey": "audits/2dd400fa25d48d3832b393f1d710a423448d1b837034ba8e076196451473590f",
+      "sha256": "2dd400fa25d48d3832b393f1d710a423448d1b837034ba8e076196451473590f",
+      "byteSize": 57312
+    },
+    "fullCorrectionProof": {
+      "objectKey": "audits/c6f1e18c3426b0917f456101de04534ae78995ccbffcdf3f5eef5adfd80fda56",
+      "sha256": "c6f1e18c3426b0917f456101de04534ae78995ccbffcdf3f5eef5adfd80fda56",
+      "byteSize": 9783
+    },
+    "logs": [
+      {
+        "name": "typecheck",
+        "objectKey": "audits/99692f5da0a9684baf6c6a200a96eef646840fc3745fa37da10bf2199c74e3ed",
+        "sha256": "99692f5da0a9684baf6c6a200a96eef646840fc3745fa37da10bf2199c74e3ed",
+        "byteSize": 306
+      },
+      {
+        "name": "domain-typecheck",
+        "objectKey": "audits/9aa479d7f5f06057c08995bb34cb364a4a0078b43442d3fa60a484bfb22550c9",
+        "sha256": "9aa479d7f5f06057c08995bb34cb364a4a0078b43442d3fa60a484bfb22550c9",
+        "byteSize": 67
+      },
+      {
+        "name": "lint",
+        "objectKey": "audits/8ab2e29f55770d954e6d58f87d647184337bbb840e32a21f30ebc1cb57d86ee2",
+        "sha256": "8ab2e29f55770d954e6d58f87d647184337bbb840e32a21f30ebc1cb57d86ee2",
+        "byteSize": 986
+      },
+      {
+        "name": "ci-gate",
+        "objectKey": "audits/09e6701489fe68da254a628e94d727bad15ea3c397cdaacf77d0e1179d2772bc",
+        "sha256": "09e6701489fe68da254a628e94d727bad15ea3c397cdaacf77d0e1179d2772bc",
+        "byteSize": 1569
+      },
+      {
+        "name": "application",
+        "objectKey": "audits/4ae00ef578c8d13093e0e7cc4bc96d0de418d7f5aa375198963e24303bc996ef",
+        "sha256": "4ae00ef578c8d13093e0e7cc4bc96d0de418d7f5aa375198963e24303bc996ef",
+        "byteSize": 106425
+      },
+      {
+        "name": "database-up",
+        "objectKey": "audits/b06354f02491479c42b9a038b632e5908de799a7c47a5a3707a6914e034a43cd",
+        "sha256": "b06354f02491479c42b9a038b632e5908de799a7c47a5a3707a6914e034a43cd",
+        "byteSize": 689
+      },
+      {
+        "name": "evaluation",
+        "objectKey": "audits/0fc796be87da043ff0a66f064a850c9176e9caa1eefc5747e591a4e514e9eb11",
+        "sha256": "0fc796be87da043ff0a66f064a850c9176e9caa1eefc5747e591a4e514e9eb11",
+        "byteSize": 5740
+      },
+      {
+        "name": "capacity",
+        "objectKey": "audits/e43965163b226a767a04edf027544cbdfddc26c91741cff6a41e6e2ed30a89ac",
+        "sha256": "e43965163b226a767a04edf027544cbdfddc26c91741cff6a41e6e2ed30a89ac",
+        "byteSize": 10207
+      },
+      {
+        "name": "feature-db",
+        "objectKey": "audits/606d027489a4df44e13518d3c665c1286637cc7e14c7962a212905af8bd998b3",
+        "sha256": "606d027489a4df44e13518d3c665c1286637cc7e14c7962a212905af8bd998b3",
+        "byteSize": 8494
+      },
+      {
+        "name": "database-down",
+        "objectKey": "audits/245767f772556372924fec53cee4f6f801b18285fbf18bde734530dd7a12c17e",
+        "sha256": "245767f772556372924fec53cee4f6f801b18285fbf18bde734530dd7a12c17e",
+        "byteSize": 281
+      },
+      {
+        "name": "before",
+        "objectKey": "audits/41504448f659e4f78e8aa8e21dbd5d5bd46b3bd6e0d76c60cb40240c4967fb2c",
+        "sha256": "41504448f659e4f78e8aa8e21dbd5d5bd46b3bd6e0d76c60cb40240c4967fb2c",
+        "byteSize": 10435
+      },
+      {
+        "name": "domain",
+        "objectKey": "audits/829d0b3900899ec81d1ef2d3e298c959cb3eb29bdc49efee4f14391cd9b71f22",
+        "sha256": "829d0b3900899ec81d1ef2d3e298c959cb3eb29bdc49efee4f14391cd9b71f22",
+        "byteSize": 823
+      }
+    ]
+  },
+  "targets": [
+    {"criterion": "Pin dataset/file/content hashes, code, all input versions and preregistration before scoring", "verdict": "pass", "evidence": "Fresh correction-run pre-score pins bind preregistration and all 29 measured files"},
+    {"criterion": "Reproduce exactly 2504 logical examples and the registered natural content hash", "verdict": "pass", "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"},
+    {"criterion": "2022–2025 chronological targets; 2021 warm-up; latest <=16 prior games, minimum 2, kickoff-minus-one-hour cutoff", "verdict": "pass", "scored": 2504, "warmupCandidates": 1916},
+    {"criterion": "Player/game/policy folds; player/game/threshold cases; duplicate refusals, opposing QBs and recorded history reuse", "verdict": "pass", "evidence": "78 domain projection tests plus unchanged full real report identities and history-reuse fields"},
+    {"criterion": "Registered thresholds, both Brier conventions, natural log loss, ten-bin Over/Under calibration and integer RPS", "verdict": "pass", "evidence": "Existing hand/CDF RPS proofs and full non-calibration report equality against ff87274"},
+    {"criterion": "Every metric pooled/per-season and by n=2–4/5–8/9–16, with empty cells, coverage, exclusions and extreme counts; preserve infinity", "verdict": "pass", "groupsPerMode": 25, "infiniteCases": 183, "aggregateLogLoss": "positive-infinity"},
+    {"criterion": "Separate strict PIT and flagged retrospective reports; unavailable market comparison; repeated logical hashes", "verdict": "pass", "strictForecasts": 0, "retrospectiveForecasts": 2504, "logicalHashes": {"retrospective-reconstruction-v1": "e46c856c8efcff008e6b8d2fadd1291994cc7678a3c3b384d6852871810ba3d3", "strict-point-in-time-v1": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e"}},
+    {"criterion": "Fixed SQL work through delivery, two batched rights/status checks and no raw/per-example reads", "verdict": "pass", "statementsPerReport": 3, "rightsChecksPerReport": 2, "objectReadsPerReport": 3, "objectWritesPerReport": 1, "rawSourceReads": 0, "perExampleQueries": 0, "totalStatements": 120, "totalRightsChecks": 80, "ciCohortSizes": [2, 130], "realCohortSize": 2504},
+    {"criterion": "Completed report <=7000 ms against a 10000 ms deadline, repeated cold/warm", "verdict": "pass", "attempted": 40, "completed": 40, "misses": 0, "cohorts": [{"mode": "retrospective-reconstruction-v1", "temperature": "cold", "attempted": 10, "completed": 10, "failed": 0, "p50Ms": 548.247542, "p95Ms": 574.6695000000001, "maximumMs": 574.6695000000001, "processStartP95Ms": 73.26304099999834, "endToEndP95Ms": 653.6005409999925, "verdict": "pass"}, {"mode": "retrospective-reconstruction-v1", "temperature": "warm", "attempted": 10, "completed": 10, "failed": 0, "p50Ms": 481.3100829999894, "p95Ms": 512.2454589999979, "maximumMs": 512.2454589999979, "processStartP95Ms": null, "endToEndP95Ms": null, "verdict": "pass"}, {"mode": "strict-point-in-time-v1", "temperature": "cold", "attempted": 10, "completed": 10, "failed": 0, "p50Ms": 918.374416, "p95Ms": 943.2965839999999, "maximumMs": 943.2965839999999, "processStartP95Ms": 61.0277919999935, "endToEndP95Ms": 1009.6789169999975, "verdict": "pass"}, {"mode": "strict-point-in-time-v1", "temperature": "warm", "attempted": 10, "completed": 10, "failed": 0, "p50Ms": 896.1280410000036, "p95Ms": 920.445584000001, "maximumMs": 920.445584000001, "processStartP95Ms": null, "endToEndP95Ms": null, "verdict": "pass"}]},
+    {"criterion": "Domain/boundary tests, current feature-store PostgreSQL suite and unchanged migration/catalog setup", "verdict": "pass", "evidence": "Fresh checks below; full aggregate DB job also passed at reviewed ff87274, without changes to its DB assets"}
+  ],
+  "checks": [
+    {"command": "projection Vitest suite", "passed": 78, "verdict": "pass"},
+    {"command": "npm run typecheck", "verdict": "pass"},
+    {"command": "npm run typecheck --workspace @dfs-ev/domain", "verdict": "pass"},
+    {"command": "npm run lint", "boundaryProbes": 7, "verdict": "pass"},
+    {"command": "npm run test:ci-gate", "passed": 12, "verdict": "pass"},
+    {"command": "npm test", "applicationPassed": 909, "nodePassed": 290, "defaultConcurrency": true, "skipped": 0, "verdict": "pass"},
+    {"command": "npm run test:feature-store:db", "passed": 79, "skipped": 0, "cancelled": 0, "dataTmpfsMiB": 512, "verdict": "pass"},
+    {"check": "Both real fixture reconstructions apply unchanged migrations and verify catalog contracts before proposals", "verdict": "pass"},
+    {"check": "All 29 measured file hashes, six warm reports and 40 capacity-trial work budgets/logical hashes verified", "verdict": "pass"},
+    {"check": "All 5,000 calibration cells verified using independent integer-boundary comparisons", "verdict": "pass"},
+    {"check": "Pre-fix report hashes reproduced; every non-calibration field identical after correction", "verdict": "pass"},
+    {"check": "Disposable database and container cleanup", "verdict": "pass"}
+  ],
+  "unchangedSinceReviewedCommit": [
+    "packages/db",
+    "apps/web",
+    ".github",
+    "package-lock.json",
+    "services/pipeline/src",
+    "packages/domain/src/projection/baseline.ts",
+    "packages/domain/src/projection/empirical.ts"
+  ],
+  "historicalValidation": {
+    "commit": "ff87274",
+    "aggregateDbJob": "pass, including guard/lifecycle, 12 contracts, 74 required Node cases and 25 PostgreSQL cases; independently rerun by reviewer",
+    "originalDefaultApplicationRun": "four timeouts, followed by a passing bounded-worker retry; corrected run now passes normal concurrency"
+  },
+  "limitations": [
+    "Ten requests per mode/temperature: nearest-rank p95 equals maximum; local headroom proof, not a tail-population estimate",
+    "OS/file/PG caches unflushed; cold connection plus complete request gated, Node startup disclosed separately",
+    "No hosted writes, production, Vercel boot or Neon compute-wake measurements",
+    "Archived reports require fresh authorization before later delivery; final-SQL-to-delivery window remains",
+    "One-at-a-time local report jobs only: concurrent identical runs can share an address that a refused creator deletes; address lifecycle needs coordination before any serving endpoint"
+  ],
+  "remaining": [
+    "owner approval before commit",
+    "focused independent review",
+    "fresh push/PR consent",
+    "hosted CI and owner merge"
+  ]
+}

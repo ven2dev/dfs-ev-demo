@@ -1,0 +1,478 @@
+{
+  "schemaVersion": 1,
+  "issue": 164,
+  "step": 3,
+  "recordedAt": "2026-10-21T04:05:07.219Z",
+  "code": {
+    "gitSha": "ff87274f3edddb978e55f3e721ab06492ca56687",
+    "contentSha256": "d31548cddf7eb898096a287a4735675e42d6f6d7cb4d91f470b5be6373efeb7c"
+  },
+  "codeHashes": {
+    "package-lock.json": "76b11cf6b543cc6d084f3c86ac9ab9a5610dcae6dbd09d6260dfe639de8d62a9",
+    "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "packages/domain/package.json": "1981ff8b9d068c2150ec8abe14401d0f01ee682408a2c35042cd9255b0f70f4c",
+    "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "packages/domain/src/projection/evaluation.ts": "0852560f81b50968d83088f3de661c07611a9ba852c896aa8527f807a5046fe6",
+    "packages/domain/src/projection/qb-evaluation.ts": "a6c6536b85bf98633b05af1528b212a15cce0d7a0c3227cbce5b0c1a9625e489",
+    "services/pipeline/package.json": "49b750026343da9cfffdc0d2aa6558a2cf0c97878b847586501792f6bfdf694e",
+    "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "9a1ebf1e7a476e4359f0a8e359bafdbadb1c3c4d929caa380ceda351fdd94057",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "6acc51becdf54518f15ebe930f8628f3fa7b109c22404b7c9d3bf44686521021",
+    "services/pipeline/scripts/feature-store/evaluation-measure.ts": "53e7917c1e695f0701ca1aa6d83da61efdfdf32952a39d4f64ddd42bac0ce3ea",
+    "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts": "9668b4ff3c7fde1a3de7f18c3ac96a7dbebe0f7e23e769debb92be2a78f3dbcf",
+    "services/pipeline/scripts/feature-store/evaluation-run.ts": "2042463914c76d33d2c4a426637e0091251e523e93a4ddb5ec3b3f0f5b9754eb",
+    "services/pipeline/scripts/feature-store/evaluation-worker.ts": "ec7adf737d3bcaabdc93a8fd87a0a954f51d505d7b5cf248c4e427c06c711a7f",
+    "services/pipeline/scripts/feature-store/harness.ts": "fedfc23c25d0c776cdeeb93224ef4e3ece82dd8b92aaf11cd537e6f29c25059a",
+    "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+    "services/pipeline/src/featureStore/datasets.ts": "33d71b86b80f38b8129a9738483eb85415b3e52a275005ac9b5a29953748bde3",
+    "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "086863c08215e74282e0665bc20affc0ddc6cc21c7b599e92025b5867e51e98f",
+    "services/pipeline/src/featureStore/governance.ts": "5e3b72fdf6583dc2c920ba5a60d8cc2b07346db917365304dca4f4e00ad9da2b",
+    "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+    "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "services/pipeline/src/featureStore/objectStore.ts": "d6a9f26c2fd8f54eef161ce5e8dcf8c127a284e90bc6a0e6051355ffc6e737e9",
+    "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7"
+  },
+  "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164-data/objects",
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin"
+  },
+  "verdict": "step-3-warm-pass",
+  "targetMs": 7000,
+  "deadlineMs": 10000,
+  "boundary": "report execution: pinned inputs, three restricted SQL queries, three object reads, scoring, serialization, private report write, final rights/status recheck; excludes fixture reconstruction and connection setup",
+  "cacheState": "three alternating rounds per evidence mode; existing restricted connection; OS/database/file caches unflushed; no scored-result reuse",
+  "limitation": "warm-path checkpoint only; repeated fresh-connection cold trials and integrated suites remain step 4; local timings omit Vercel boot and Neon wake",
+  "deliveryLimit": "a revocation after the final SQL snapshot and before bytes leave the process cannot be prevented; archived reports require fresh authorization before later delivery",
+  "trials": [
+    {
+      "round": 1,
+      "mode": "retrospective-reconstruction-v1",
+      "elapsedMs": 521.1891250000044,
+      "calculation": 361.55941699999676,
+      "serialization": 65.09908300000825,
+      "objectWrite": 33.61458300000231,
+      "logicalSha256": "e46c856c8efcff008e6b8d2fadd1291994cc7678a3c3b384d6852871810ba3d3",
+      "artifact": {
+        "objectKey": "audits/07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+        "sha256": "07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+        "byteSize": 9290168
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:14.174887+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:14.691045+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    },
+    {
+      "round": 1,
+      "mode": "strict-point-in-time-v1",
+      "elapsedMs": 870.4526659999974,
+      "calculation": 709.9003340000054,
+      "serialization": 2.747457999998005,
+      "objectWrite": 8.88116699999955,
+      "logicalSha256": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e",
+      "artifact": {
+        "objectKey": "audits/40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+        "sha256": "40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+        "byteSize": 306544
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:14.696381+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:15.561858+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    },
+    {
+      "round": 2,
+      "mode": "retrospective-reconstruction-v1",
+      "elapsedMs": 517.6250830000063,
+      "calculation": 358.02895900000294,
+      "serialization": 60.96112500000163,
+      "objectWrite": 40.09595799999079,
+      "logicalSha256": "e46c856c8efcff008e6b8d2fadd1291994cc7678a3c3b384d6852871810ba3d3",
+      "artifact": {
+        "objectKey": "audits/07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+        "sha256": "07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+        "byteSize": 9290168
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:15.567292+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:16.078976+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    },
+    {
+      "round": 2,
+      "mode": "strict-point-in-time-v1",
+      "elapsedMs": 854.1930420000135,
+      "calculation": 695.9982089999976,
+      "serialization": 2.7317909999983385,
+      "objectWrite": 9.290124999999534,
+      "logicalSha256": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e",
+      "artifact": {
+        "objectKey": "audits/40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+        "sha256": "40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+        "byteSize": 306544
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:16.084079+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:16.933198+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    },
+    {
+      "round": 3,
+      "mode": "retrospective-reconstruction-v1",
+      "elapsedMs": 501.4213330000057,
+      "calculation": 326.76129100000253,
+      "serialization": 59.80137499999546,
+      "objectWrite": 55.62370899999223,
+      "logicalSha256": "e46c856c8efcff008e6b8d2fadd1291994cc7678a3c3b384d6852871810ba3d3",
+      "artifact": {
+        "objectKey": "audits/07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+        "sha256": "07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+        "byteSize": 9290168
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:16.939422+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:17.434708+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    },
+    {
+      "round": 3,
+      "mode": "strict-point-in-time-v1",
+      "elapsedMs": 951.353792000009,
+      "calculation": 797.1543749999983,
+      "serialization": 3.2867089999926975,
+      "objectWrite": 7.675916000007419,
+      "logicalSha256": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e",
+      "artifact": {
+        "objectKey": "audits/40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+        "sha256": "40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+        "byteSize": 306544
+      },
+      "authorization": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:17.438486+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "delivery": {
+        "allowed": true,
+        "checkedAt": "2026-10-21 04:06:18.386138+00",
+        "decisions": 16,
+        "decisionsSha256": "3df4782d17c2ebd169ea21510b5831661dcc0d25ef8dba49fdd27ba28f53b506"
+      },
+      "work": {
+        "statements": 3,
+        "rightsChecks": 2,
+        "objectReads": 3,
+        "objectWrites": 1,
+        "rawSourceReads": 0,
+        "perExampleQueries": 0
+      },
+      "verdict": "pass"
+    }
+  ],
+  "reports": [
+    {
+      "artifact": {
+        "objectKey": "audits/07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+        "sha256": "07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+        "byteSize": 9290168
+      },
+      "logicalSha256": "e46c856c8efcff008e6b8d2fadd1291994cc7678a3c3b384d6852871810ba3d3",
+      "evidenceMode": "retrospective-reconstruction-v1",
+      "designation": "uncalibrated-interim-hit-rate",
+      "historicalAvailability": "unverified",
+      "folds": 2504,
+      "cases": 12520,
+      "warmup": {
+        "candidates": 1916,
+        "availableForecasts": 780,
+        "usableLabels": 655,
+        "scoredFolds": 0,
+        "excludedFolds": 1916,
+        "missingFeatures": 1136,
+        "missingLabels": 1261,
+        "distinctPlayers": 124,
+        "distinctGames": 272,
+        "exclusions": {
+          "warm-up-only": 1916
+        },
+        "policyExclusionReasons": {},
+        "reasons": {
+          "feature:insufficient-history": 1136,
+          "label:positive-offense-participation-missing": 1222,
+          "label:stats-missing": 1261
+        },
+        "flagCounts": {
+          "historical-availability-unverified": 1916
+        },
+        "historyGaps": {
+          "candidates": 1423,
+          "records": 9738,
+          "reasons": {
+            "positive-offense-participation-missing": 9466,
+            "stats-missing": 9738
+          }
+        },
+        "zeroOpportunity": {
+          "zeroAttemptGames": 41,
+          "unknownAttemptStatus": 1261
+        }
+      },
+      "walkForward": {
+        "independentFolds": false,
+        "historyReferences": 34166,
+        "uniqueHistoryPlayerGames": 3092,
+        "historyPlayerGamesReusedAcrossFolds": 2949,
+        "foldsWithPriorEvaluationReuse": 2387,
+        "priorEvaluationHistoryReferences": 27758
+      },
+      "marketComparison": {
+        "status": "unavailable",
+        "reason": "no-genuine-captured-market-lines",
+        "count": 0
+      }
+    },
+    {
+      "artifact": {
+        "objectKey": "audits/40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+        "sha256": "40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+        "byteSize": 306544
+      },
+      "logicalSha256": "5e7673b10b88f945bc7cfdd2a0d062de9217ecf2d8ecd00ae69b9a9a6bdd2d0e",
+      "evidenceMode": "strict-point-in-time-v1",
+      "designation": "uncalibrated-interim-hit-rate",
+      "historicalAvailability": "snapshot-qualified",
+      "folds": 0,
+      "cases": 0,
+      "warmup": {
+        "candidates": 1916,
+        "availableForecasts": 0,
+        "usableLabels": 655,
+        "scoredFolds": 0,
+        "excludedFolds": 1916,
+        "missingFeatures": 1916,
+        "missingLabels": 1261,
+        "distinctPlayers": 124,
+        "distinctGames": 272,
+        "exclusions": {
+          "warm-up-only": 1916
+        },
+        "policyExclusionReasons": {},
+        "reasons": {
+          "feature:insufficient-history": 1916,
+          "feature:target-identity-missing": 1916,
+          "feature:target-schedule-missing": 1916,
+          "label:positive-offense-participation-missing": 1222,
+          "label:stats-missing": 1261
+        },
+        "flagCounts": {},
+        "historyGaps": {
+          "candidates": 1792,
+          "records": 14971,
+          "reasons": {
+            "completion-unavailable": 14971,
+            "identity-missing": 14971,
+            "positive-offense-participation-missing": 14971,
+            "schedule-missing": 14971,
+            "stats-missing": 14971
+          }
+        },
+        "zeroOpportunity": {
+          "zeroAttemptGames": 41,
+          "unknownAttemptStatus": 1261
+        }
+      },
+      "walkForward": {
+        "independentFolds": false,
+        "historyReferences": 0,
+        "uniqueHistoryPlayerGames": 0,
+        "historyPlayerGamesReusedAcrossFolds": 0,
+        "foldsWithPriorEvaluationReuse": 0,
+        "priorEvaluationHistoryReferences": 0
+      },
+      "marketComparison": {
+        "status": "unavailable",
+        "reason": "no-genuine-captured-market-lines",
+        "count": 0
+      }
+    }
+  ],
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "inputPinsArtifact": {
+    "objectKey": "audits/5863b27424d9bd995a8670727e903fcc25cf0618d2398e82915774c6bac57d82",
+    "sha256": "5863b27424d9bd995a8670727e903fcc25cf0618d2398e82915774c6bac57d82",
+    "byteSize": 36920
+  },
+  "preregistration": {
+    "commit": "6aa7953dfd0df0c9bf879c2be64e94eaa2c55a3f",
+    "path": "docs/feature-store-spike-preregistration.md",
+    "sha256": "dc6bf2e044bcbdd6de4b1d6f91db9c623f630ad1eaf7bf1b8abdfe1f3c05c97d",
+    "approved": true
+  },
+  "versions": {
+    "model": "empirical-integer-v1",
+    "adapter": {
+      "id": "qb-passing-yards-materialized",
+      "version": "empirical-feature-adapter-v1"
+    },
+    "feature": "qb-passing-yards-feature-v1",
+    "label": "qb-passing-yards-label-v1",
+    "history": "prior-eligible-reg-max16-min2-cutoff1h-v1"
+  },
+  "populationDiagnostics": [
+    {
+      "season": 2021,
+      "observedQbStats": 655,
+      "statsWithoutMatchingRoster": 0,
+      "rosterRowsWithoutScheduledGame": 0,
+      "zeroAttempts": 41,
+      "unknownAttempts": 0
+    },
+    {
+      "season": 2022,
+      "observedQbStats": 633,
+      "statsWithoutMatchingRoster": 0,
+      "rosterRowsWithoutScheduledGame": 6,
+      "zeroAttempts": 16,
+      "unknownAttempts": 0
+    },
+    {
+      "season": 2023,
+      "observedQbStats": 663,
+      "statsWithoutMatchingRoster": 0,
+      "rosterRowsWithoutScheduledGame": 0,
+      "zeroAttempts": 30,
+      "unknownAttempts": 0
+    },
+    {
+      "season": 2024,
+      "observedQbStats": 664,
+      "statsWithoutMatchingRoster": 0,
+      "rosterRowsWithoutScheduledGame": 0,
+      "zeroAttempts": 33,
+      "unknownAttempts": 0
+    },
+    {
+      "season": 2025,
+      "observedQbStats": 664,
+      "statsWithoutMatchingRoster": 0,
+      "rosterRowsWithoutScheduledGame": 0,
+      "zeroAttempts": 36,
+      "unknownAttempts": 0
+    }
+  ],
+  "cohorts": [
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "fileSha256": "16ac51c0189103637abf6f3d124c9148422bc99375a43d6e2239f150848744fd",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+      "count": 2504
+    },
+    {
+      "mode": "strict-point-in-time-v1",
+      "fileSha256": "eeae319fefa4b876880732fa132fbff016c7962f258fa0726b5e1b379489feee",
+      "contentSha256": "7858bc13cfd59085549e3c61fc1d42685f5a9134114316bbb623e79aaff43caf",
+      "count": 0
+    }
+  ],
+  "peakRssBytes": 1006026752,
+  "fullReceipt": {
+    "objectKey": "audits/6a04ebed79970e9c56c4905b7091b246fcf421968f904b141f12758175b3ee65",
+    "sha256": "6a04ebed79970e9c56c4905b7091b246fcf421968f904b141f12758175b3ee65",
+    "byteSize": 135726
+  },
+  "originalStorageRoot": "/private/tmp/dfs164-scored-7z9kRo"
+}
