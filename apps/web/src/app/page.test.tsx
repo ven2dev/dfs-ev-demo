@@ -34,6 +34,15 @@ afterEach(() => {
 });
 
 describe("Home honest interim labels", () => {
+  it("removes the pipeline stepper and presents Estimate, Market and Edge", () => {
+    render(<Home />);
+    expect(screen.queryByRole("list", { name: "Analysis pipeline" })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Estimate" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Market" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Edge" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Last 5" })).toHaveAttribute("aria-pressed", "true");
+  });
+
   it("gives a single per-side Watch instruction inside the empty tracker", () => {
     useAppStore.setState({ primaryWatch: null, secondaryWatch: null, watchlist: {} });
     render(<Home />);
