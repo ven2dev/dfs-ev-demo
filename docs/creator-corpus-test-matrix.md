@@ -19,5 +19,5 @@ is present in the repository or test output.
 | Import target checks happen before private corpus sources are opened | `services/pipeline/tests/creator/corpusImport.test.ts` — `corpus importer verifies the connected local role before loading any private source`; `services/pipeline/scripts/creator-corpus/cli.test.ts` — `rejects hosted and ambient database configuration before opening private corpus files` |
 
 The mandatory database report registers each PostgreSQL case independently in
-`packages/db/tooling/scripts/db-test-contract.mjs`; removing or skipping one fails the suite. Run
+`scripts/db/db-test-contract.mjs`; removing or skipping one fails the suite. Run
 the complete matrix with `npm test` and `npm run test:db:local`.

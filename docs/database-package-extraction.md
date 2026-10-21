@@ -71,11 +71,11 @@ paths follow relocated files; names and argument behavior stay the same. If a
 workflow edit becomes unavoidable, present it as a decision at commit approval
 to prevent an incidental CI behavior change.
 
-The final web boundary is `@dfs-ev/db/runtime` only, enforced with negative checks
-in Step 3. Repository-level integration adapters provide fixtures to web-owned
-scenarios, removing web's temporary test-support imports. Step 1 already checks
-the package manifests and runtime source graph, including negative dependency
-probes; it does not claim the final boundary is complete.
+The web boundary is `@dfs-ev/db/runtime` only, enforced with negative checks.
+Repository-level integration adapters provide fixtures to web-owned scenarios,
+removing web's temporary test-support imports. Both DB packages reject consumer
+imports, and runtime rejects tooling. Step 3 completes these source boundaries;
+the package-manifest and clean-install checks also verify dependency isolation.
 
 All proposal SQL stays together unchanged, especially `163_effective_rights.sql`
 with the #138 proposals required by dataset reads. No schema, SQL semantics,
@@ -158,6 +158,41 @@ root commands, lockfile, required-case contract and CI workflow stay unchanged.
 The initial typecheck caught a fixture inferred more narrowly than the web
 payload. Generic fixture specialization at the consumer boundary corrected it;
 the passing reruns and failure summary are retained in the compact receipt.
-Full logs stay off git. Step 2 awaits separate owner commit approval; Step 3's
-root integration coordination, the final full-suite checkpoint and a real
-Vercel Preview remain pending. No push has been approved or performed.
+Full logs stay off git. Step 2 was committed with owner approval as `3300cc2`
+(`refactor(db): move lease store into runtime package`). Its receipt preserves
+the preapproval checkpoint status. No push has been approved or performed.
+
+## Step 3 evidence and status
+
+The [coordination receipt](evidence/database-190/step-3-coordination.json) records
+the combined DB runner, exact-case inventories and their coordination guards
+moving to repository root. Infrastructure fixtures and schema cases remain in
+DB tooling. A root integration adapter injects those fixtures into the web-owned
+refresh scenario; the scenario has no driver or test-support dependency.
+
+The five coordinator files are byte-identical after explicit path and public
+import substitutions. The web scenario's emitted callback is byte-identical
+after type erasure. All 34 frozen artifacts, the lockfile and CI workflow remain
+byte-identical. Root command names and arguments are unchanged.
+
+- Typecheck, full lint, 10 boundary probes, 13 CI/layout checks and 20 runner
+  guards pass. Negative probes enforce web's runtime-only entry point, prohibit
+  DB-to-consumer and runtime-to-tooling dependencies, and retain only the
+  unchanged #191 transition exceptions.
+- The complete local DB command passes: 74 required Node cases, 25 PostgreSQL
+  cases, 12 catalog contracts and two template lifecycle cases. The relocated
+  startup/recovery command passes all three cases; lifecycle cleanup passes.
+  Both real database runs use the standard 512 MiB fixture, load no app
+  credentials and remove their disposable container afterwards.
+- Dynamic collection matches the baseline exactly: browser 919/68 files, Node
+  290/25 files and DB 25/6 files, with only the root adapter's path normalized.
+  Browser and Node counts here are collected, not full-suite execution results.
+  The initial default static collector miscounted dynamic registrations; the
+  receipt records the corrected `--no-staticParse` method.
+- Separate clean workspace installs still pass: web builds with 379 packages
+  and no `pg`, `@types/pg` or DB tooling; tooling executes with 103 packages and
+  no Next or web. Caches remain unflushed; timings are diagnostic only.
+
+Step 3 awaits owner commit approval. Step 4's full application checkpoint,
+both PostgreSQL suites (including all 79 feature-store cases), independent
+review, separately approved push and real Vercel Preview remain pending.

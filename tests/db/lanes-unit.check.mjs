@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { test } from "node:test";
-import { databaseTestWorkers } from "../scripts/db-test-workers.mjs";
-import { validateDatabaseReport, SERIAL_FILES } from "../scripts/db-test-lanes.mjs";
+import { databaseTestWorkers } from "../../scripts/db/db-test-workers.mjs";
+import { validateDatabaseReport, SERIAL_FILES } from "../../scripts/db/db-test-lanes.mjs";
 
 const report = (files) => ({ success: true, numTotalTests: files.length, numPassedTests: files.length,
   numFailedTests: 0, numPendingTests: 0, numTodoTests: 0,
@@ -48,7 +48,7 @@ test("DB report validation refuses partial, failed, skipped, duplicate and wrong
 
 
 test("every retained DB test file belongs to the serial suite", async () => {
-  const directories = ["packages/db/tooling/tests", "apps/web/tests/db", "services/pipeline/tests/creator"];
+  const directories = ["packages/db/tooling/tests", "tests/db", "apps/web/tests/db", "services/pipeline/tests/creator"];
   const files = (await Promise.all(directories.map(async (directory) =>
     (await readdir(directory, { recursive: true })).filter((file) => file.endsWith(".test.ts"))
       .map((file) => directory + "/" + file)))).flat().sort();

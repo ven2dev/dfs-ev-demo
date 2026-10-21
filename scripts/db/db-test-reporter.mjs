@@ -1,7 +1,7 @@
 import { relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = fileURLToPath(new URL("../../../../", import.meta.url));
+const root = fileURLToPath(new URL("../../", import.meta.url));
 
 // Consume Node's documented events, never parse the human-readable reporter.
 // A truncated stream lacks the final summary and cannot pass the report gate.

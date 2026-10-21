@@ -2,8 +2,8 @@ import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 
 export const SERIAL_FILES = Object.freeze(["packages/db/tooling/tests/bootstrap.test.ts", "packages/db/tooling/tests/lease.test.ts",
-  "apps/web/tests/db/orchestrator.test.ts", "packages/db/tooling/tests/readiness.test.ts", "packages/db/tooling/tests/corpus.test.ts", "services/pipeline/tests/creator/corpusImport.test.ts"]);
-const root = fileURLToPath(new URL("../../../../", import.meta.url));
+  "tests/db/orchestrator.test.ts", "packages/db/tooling/tests/readiness.test.ts", "packages/db/tooling/tests/corpus.test.ts", "services/pipeline/tests/creator/corpusImport.test.ts"]);
+const root = fileURLToPath(new URL("../../", import.meta.url));
 
 // Every retained file must execute. Missing/failed/skipped/duplicated results
 // cannot be hidden by a successful summary or another suite.

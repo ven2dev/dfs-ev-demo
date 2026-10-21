@@ -1,5 +1,5 @@
-import { DatabaseTestRunActiveError, startDatabaseTestRun } from "../tests/startup.mts";
-import { createTemplateRun } from "../tests/templates.mts";
+import { DatabaseTestRunActiveError, startDatabaseTestRun } from "@dfs-ev/db-tooling/test-support/lifecycle";
+import { createTemplateRun } from "@dfs-ev/db-tooling/test-support/templates";
 import { databaseTestWorkers } from "./db-test-workers.mjs";
 import { validateDatabaseReport } from "./db-test-lanes.mjs";
 import { spawn } from "node:child_process";
@@ -12,12 +12,12 @@ import {
   assertNoApplicationCredentials,
   LOCAL_TEST_DATABASE_URL,
   parseTestDatabaseUrl,
-} from "../tests/target.mts";
+} from "@dfs-ev/db-tooling/test-support/target";
 
-const root = fileURLToPath(new URL("../../../../", import.meta.url));
+const root = fileURLToPath(new URL("../../", import.meta.url));
 const composeArgs = [
   "compose", "--env-file", "/dev/null", "--project-name", "dfs-ev-demo-test",
-  "-f", fileURLToPath(new URL("../../../../compose.test.yml", import.meta.url)),
+  "-f", fileURLToPath(new URL("../../compose.test.yml", import.meta.url)),
 ];
 const stop = new AbortController();
 const activeChildren = new Set();
@@ -76,13 +76,13 @@ async function runSuite(environment, filters, leaseSignal) {
     const nodeReportPath = join(reportDir, "node-results.json");
     const reportPath = join(reportDir, "vitest-results.json");
     await checked(["--test", "--test-concurrency=" + workers.nodeWorkers, "--test-timeout=60000",
-      "--test-reporter=spec", "--test-reporter=./packages/db/tooling/scripts/db-test-reporter.mjs",
+      "--test-reporter=spec", "--test-reporter=./scripts/db/db-test-reporter.mjs",
       "--test-reporter-destination=stdout", "--test-reporter-destination=" + nodeReportPath,
       ...Object.keys(NODE_REQUIRED_CASES)]);
     const nodeRequiredCases = validateNodeDbReport(JSON.parse(await readFile(nodeReportPath, "utf8")));
     await checked(["packages/db/tooling/scripts/db-catalog-contracts.mjs", "check"]);
     await checked([
-      fileURLToPath(new URL("../../../../node_modules/vitest/vitest.mjs", import.meta.url)),
+      fileURLToPath(new URL("../../node_modules/vitest/vitest.mjs", import.meta.url)),
       "run", "--config", "vitest.db.config.mts", "--reporter=default", "--reporter=json", "--outputFile.json=" + reportPath, ...filters,
     ]);
     const report = validateDatabaseReport(JSON.parse(await readFile(reportPath, "utf8")));

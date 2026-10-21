@@ -1,0 +1,203 @@
+{
+  "issue": 190,
+  "step": 3,
+  "status": "pass; awaiting owner commit approval",
+  "recordedAt": "2026-10-21T22:55:46.896288+00:00",
+  "baselineCommit": "3300cc2e410883723a53db394d778b6f155d6a77",
+  "candidateNonDocumentationManifestSha256": "35f2633c965b2c958e3bb96a03084f8054d0a50dc453a2cd85d46cb781c541c5",
+  "identityBoundary": "SHA-256 of sorted compact JSON mapping all current tracked/nonignored non-doc file paths to SHA-256; removed files omitted; dependencies and ignored outputs excluded",
+  "node": "v24.18.1",
+  "scope": "Root-owned combined DB coordinator/inventories/guards and integration adapter; web-owned scenario uses injected fixtures; DB packages remain independent of consumers",
+  "parity": {
+    "requiredNodeCases": 74,
+    "requiredLeaseCases": 13,
+    "requiredReadinessCases": 4,
+    "requiredCorpusCases": 8,
+    "coordinator": {
+      "db-test-contract.mjs": "byte-identical after path and public-import substitution",
+      "db-test-lanes.mjs": "byte-identical after path and public-import substitution",
+      "db-test-workers.mjs": "byte-identical after path and public-import substitution",
+      "db-test-reporter.mjs": "byte-identical after path and public-import substitution",
+      "test-db.mjs": "byte-identical after path and public-import substitution"
+    },
+    "scenarioEmittedCallbackSha256": "cec1251ece76de0ad0f9a89a0ee83f80eedaab054a2c12b7686fddcf9d8ffbc4",
+    "scenario": "emitted JavaScript callback byte-identical after TypeScript erasure",
+    "immutableFiles": 34,
+    "immutableBytes": "identical",
+    "workflow": "byte-identical",
+    "rootCommands": "all names, arguments and behavior retained; only relocation paths changed",
+    "lockfile": "byte-identical"
+  },
+  "collectedInventories": {
+    "browser": {
+      "cases": 919,
+      "files": 68,
+      "normalizedSha256": "9c074fda1b7b18c36f8b274ac3332cfffe649929742c49bdbd6be83e9026e977",
+      "method": "Vitest list --no-staticParse; collection only",
+      "verdict": "identical after the explicit orchestrator adapter path mapping"
+    },
+    "node": {
+      "cases": 290,
+      "files": 25,
+      "normalizedSha256": "2ae6ac300baf1252158d87064a534d2c995a215716f200f8efd8473e649530dc",
+      "method": "Vitest list --no-staticParse; collection only",
+      "verdict": "identical after the explicit orchestrator adapter path mapping"
+    },
+    "db": {
+      "cases": 25,
+      "files": 6,
+      "normalizedSha256": "2339ae4062192957a4edb96d2ce9e8dd796832326ba2a75ab782e6e2633cd1a0",
+      "method": "Vitest list --no-staticParse; collection only",
+      "verdict": "identical after the explicit orchestrator adapter path mapping"
+    }
+  },
+  "executedCounts": {
+    "importBoundary": 10,
+    "ciAndLayout": 13,
+    "rootAndToolingGuards": 20,
+    "lifecycle": 1,
+    "startupRecovery": 3,
+    "nodeDatabase": 74,
+    "postgresql": 25,
+    "leaseRequired": 13,
+    "readinessRequired": 4,
+    "corpusRequired": 8,
+    "catalogContracts": 12,
+    "templateLifecycle": 2,
+    "isolatedToolingGuards": 20
+  },
+  "checks": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "verdict": "pass",
+      "seconds": 2.649,
+      "stdoutSha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lint": {
+      "command": "npm run lint",
+      "verdict": "pass",
+      "seconds": 9.109,
+      "stdoutSha256": "80fc03a3fd4a1e76854efdd1d65d3f4c6802cc9df7841da31f2c0551016ea394",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "gates": {
+      "command": "npm run test:ci-gate",
+      "verdict": "pass",
+      "seconds": 2.126,
+      "stdoutSha256": "4f84b913a5d253f4b7325cef137a1232d431f50dcf3a80768b7bad46aca9a8c6",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "guards": {
+      "command": "npm run test:db:guard",
+      "verdict": "pass",
+      "seconds": 1.038,
+      "stdoutSha256": "05ddc094c3a5f2ce805ad96dae13a746eb45607278c19377d057048ea76668cc",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "lifecycle": {
+      "command": "npm run test:db:lifecycle",
+      "verdict": "pass",
+      "seconds": 6.671,
+      "stdoutSha256": "269f4307c8734d99057efafd94282aa9d15158097749f14fa93267a1e01929ba",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "database": {
+      "command": "npm run test:db:local",
+      "verdict": "pass",
+      "seconds": 29.699,
+      "stdoutSha256": "c0304efdbc6d27a3b6c90744e07f891518ef651c88964d6ef9684103e5b67aae",
+      "stderrSha256": "affb8140b68cd8596d61ac3694deb87abe43b311938e10e3f83a1ee07111016b"
+    },
+    "startup": {
+      "command": "npm run test:db:startup",
+      "verdict": "pass",
+      "seconds": 3.297,
+      "stdoutSha256": "2dc25f721c2bc2c5033c336924edda6c69e828c3f365b0512a3af711579e4311",
+      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "boundaries": [
+    "Web runtime and tests may import only @dfs-ev/db/runtime; tooling, assets, unknown/private subpaths and relative cross-package imports refused",
+    "Both DB packages refuse web/pipeline consumers; runtime additionally refuses tooling; tooling may import public runtime/assets",
+    "Negative probes cover static, type-only, re-export, dynamic, require and TypeScript inline-import forms",
+    "No #190 exceptions remain; exact existing #191 pipeline/web exceptions retained unchanged"
+  ],
+  "databaseFixture": {
+    "compose": "compose.test.yml",
+    "composeSha256": "57a19ced9e5892293f353b95456ea4e07544d467d5843634f508773496b4418e",
+    "envFile": "/dev/null",
+    "postgresMajor": 18,
+    "dataTmpfsMiB": 512,
+    "spikeOverride": false,
+    "environment": "PATH and HOME only; public local TEST_DATABASE_URL supplied by runner/startup probe",
+    "applicationCredentialsLoaded": false,
+    "requiredContracts": "Exact-case validation passed; no skipped, cancelled, todo, missing or duplicate cases",
+    "cleanup": "Local suite and startup/recovery fixture both removed the disposable service; no running container afterwards"
+  },
+  "cleanWebOnly": {
+    "workspace": "@dfs-ev/web",
+    "node": "v24.18.1",
+    "installSeconds": 4.977,
+    "packagesAdded": 379,
+    "boundary": "fresh source export of tracked plus nonignored candidate files; no node_modules, build outputs or app env copied; no root install; npm cache unflushed",
+    "databaseConnectionsOpened": 0,
+    "absent": [
+      "pg",
+      "@types/pg",
+      "eslint",
+      "firebase-tools",
+      "@dfs-ev/db-tooling"
+    ],
+    "independentlyWebOwned": [
+      "@neondatabase/serverless",
+      "typescript",
+      "vitest",
+      "@types/node"
+    ],
+    "runtimeImport": "actual web consumer and native Node import pass",
+    "build": "pass",
+    "buildSeconds": 8.343,
+    "routesManifest": true
+  },
+  "cleanToolingOnly": {
+    "workspace": "@dfs-ev/db-tooling",
+    "node": "v24.18.1",
+    "installSeconds": 1.364,
+    "packagesAdded": 103,
+    "boundary": "fresh source export of tracked plus nonignored candidate files; no node_modules, build outputs or app env copied; no root install; npm cache unflushed",
+    "databaseConnectionsOpened": 0,
+    "absent": [
+      "next",
+      "@dfs-ev/web"
+    ],
+    "execution": [
+      "migration artifact check",
+      "readiness artifact check",
+      "12 catalog contracts loaded",
+      "target guard native import/refusals",
+      "20 existing DB guard cases"
+    ],
+    "native": {
+      "migrations": 11,
+      "catalogContracts": 12,
+      "guard": "pass",
+      "databaseConnectionsOpened": 0
+    },
+    "integrationBoundary": "Root coordinator and root-owned report/lifecycle guards execute without Next or web; consumer scenario passes in the integrated root PostgreSQL suite."
+  },
+  "correctedAttempts": [
+    {
+      "check": "inventory collection",
+      "finding": "Default Vitest static parsing miscounted dynamically registered tests; collection only, no execution failure",
+      "correction": "Recollected all three inventories with the baseline method: Vitest list --no-staticParse; exact normalized inventories match"
+    }
+  ],
+  "measurementLimits": "Diagnostic durations only; some checks/install proofs overlapped; npm/OS/database caches unflushed; no new performance claim or hosted/Production operation",
+  "remainingGates": [
+    "Step 4 full application checkpoint and both PostgreSQL suites, including 79 feature-store cases",
+    "Independent owner review and separately approved push",
+    "Real Vercel Preview before merge"
+  ],
+  "fullLogs": "Off git in /private/tmp/dfs190-step3-logs; compact receipts only"
+}

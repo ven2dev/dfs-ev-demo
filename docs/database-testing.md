@@ -184,7 +184,7 @@ contracts and validate the v3 tip. Genuine v2 remains application-ready.
 Synthetic pending/ahead migration scenarios append beyond the current tip;
 they do not redefine the historical v2 adoption evidence.
 
-`packages/db/tooling/scripts/db-test-contract.mjs` contains the reviewed static list of required
+`scripts/db/db-test-contract.mjs` contains the reviewed static list of required
 cases. The mandatory Node suite covers target/bootstrap/report guards and every
 catalog, contract, migration, plan and readiness-artifact unit/integration case.
 A custom reporter

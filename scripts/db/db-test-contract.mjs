@@ -42,7 +42,7 @@ export const NODE_REQUIRED_CASES = Object.freeze({
   "packages/db/tooling/tests/bootstrap-unit.check.mjs": Object.freeze([
     "primary migration bootstrap refuses unsafe targets and remote credentials before database access",
   ]),
-  "packages/db/tooling/tests/report-unit.check.mjs": Object.freeze([
+  "tests/db/report-unit.check.mjs": Object.freeze([
     "Node DB report requires each named case in its original file and a complete successful summary",
     "actual Node reports refuse zero, filtered, missing, skipped, todo and failed cases",
     "Vitest DB report preserves all required lease cases and refuses missing, skipped, todo or failed results",

@@ -68,10 +68,10 @@ test("public package exports, local imports and external inline types remain val
   assert.deepEqual(await lint("services/pipeline/src/boundary-probe.ts", 'type Value = import("pg").QueryResultRow;'), []);
 });
 
-test("transition exceptions are exact existing file/import pairs, ticket-assigned and never apply to domain", async () => {
+test("transition exceptions are exact existing file/import pairs, assigned to #191 and never apply to domain or DB", async () => {
   const seen = new Set();
   for (const { file, imports } of boundaryExceptions) {
-    assert.ok(!file.startsWith("packages/domain/"));
+    assert.ok(!file.startsWith("packages/domain/") && !file.startsWith("packages/db/"));
     assert.ok(!/[*?{}!]/.test(file));
     const text = readFileSync(resolve(root, file), "utf8");
     const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
@@ -83,13 +83,13 @@ test("transition exceptions are exact existing file/import pairs, ticket-assigne
     };
     visit(source);
     for (const [specifier, ticket] of Object.entries(imports)) {
-      assert.ok([190, 191].includes(ticket));
+      assert.equal(ticket, 191);
       const key = file + ":" + specifier;
       assert.ok(!seen.has(key), key);
       seen.add(key);
       assert.ok(used.has(specifier), `Remove stale exception: ${key}`);
       const target = relative(root, resolve(root, dirname(file), specifier));
-      assert.equal(ticket, file.startsWith("packages/db/") || target.startsWith("packages/db/") ? 190 : 191);
+      assert.ok(!target.startsWith("packages/db/"));
       assert.deepEqual(await lint(file, `import "${specifier}";`), [], key);
       const neighbor = file.replace(/[^/]+$/, "boundary-probe.ts");
       await refuses(neighbor, `import "${specifier}";`, "import/no-relative-packages");
@@ -106,4 +106,44 @@ test("root lint runs the negative boundary probes in the CI lint step", () => {
   assert.equal(pkg.scripts["test:import-boundaries"], "node --test tests/import-boundaries.check.mjs");
   const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
   assert.match(workflow, /name: Lint\n\s+run: npm run lint/);
+});
+
+
+test("database runtime and tooling cannot import consumers through any supported import form", async () => {
+  for (const [file, sources] of [
+    ["packages/db/src/boundary-probe.ts", ["../../../apps/web/src/lib/livePropCache.ts", "../../../services/pipeline/src/featureStore/objectStore.ts"]],
+    ["packages/db/tooling/tests/boundary-probe.ts", ["../../../../apps/web/src/lib/livePropCache.ts", "../../../../services/pipeline/src/featureStore/objectStore.ts"]],
+  ]) {
+    for (const source of sources) for (const code of forms(source)) await refuses(file, code, "import/no-restricted-paths");
+    for (const source of ["@dfs-ev/web", "@dfs-ev/web/src/lib/livePropCache", "@dfs-ev/pipeline", "@dfs-ev/pipeline/src/featureStore/objectStore", "@/lib/livePropCache"])
+      for (const code of forms(source)) await refuses(file, code, code.includes("require(") || code.includes("= import(") ? "no-restricted-syntax" : "no-restricted-imports");
+  }
+});
+
+test("runtime cannot import tooling but tooling can import runtime and public assets", async () => {
+  for (const source of ["../tooling/tests/harness.ts", "../tooling/scripts/db-migrations/files.mjs"])
+    for (const code of forms(source)) await refuses("packages/db/src/boundary-probe.ts", code, "import/no-restricted-paths");
+  for (const source of ["@dfs-ev/db-tooling", "@dfs-ev/db-tooling/test-support/clients", "@dfs-ev/db-tooling/migrations/files"])
+    for (const code of forms(source)) await refuses("packages/db/src/boundary-probe.ts", code, code.includes("require(") || code.includes("= import(") ? "no-restricted-syntax" : "no-restricted-imports");
+  const runtime = JSON.parse(readFileSync(new URL("../packages/db/package.json", import.meta.url), "utf8"));
+  for (const subpath of Object.keys(runtime.exports)) {
+    const source = runtime.name + subpath.slice(1);
+    for (const code of forms(source)) assert.deepEqual(await lint("packages/db/tooling/tests/boundary-probe.ts", code), [], code);
+  }
+});
+
+test("web source and tests may import only the runtime database entry point", async () => {
+  for (const file of ["apps/web/src/boundary-probe.ts", "apps/web/tests/db/boundary-probe.ts"]) {
+    for (const source of ["@dfs-ev/db", "@dfs-ev/db/assets", "@dfs-ev/db/proposals/138_feature_store.sql", "@dfs-ev/db/src/readiness.ts", "@dfs-ev/db/runtime/../assets", "@dfs-ev/db/unknown", "@dfs-ev/db-tooling", "@dfs-ev/db-tooling/test-support/clients", "@dfs-ev/db-tooling/migrations/files"])
+      for (const code of forms(source)) await refuses(file, code, code.includes("require(") || code.includes("= import(") ? "no-restricted-syntax" : "no-restricted-imports");
+    for (const code of forms("@dfs-ev/db/runtime")) assert.deepEqual(await lint(file, code), [], code);
+  }
+  for (const [file, source] of [
+    ["apps/web/src/boundary-probe.ts", "../../../packages/db/tooling/tests/harness.ts"],
+    ["apps/web/tests/db/boundary-probe.ts", "../../../../packages/db/src/readiness.ts"],
+    ["packages/db/tooling/tests/boundary-probe.ts", "../../src/readiness.ts"],
+  ]) for (const code of forms(source)) await refuses(file, code, "import/no-relative-packages");
+  for (const file of ["apps/web/src/boundary-probe.ts", "packages/db/src/boundary-probe.ts", "packages/db/tooling/tests/boundary-probe.ts"])
+    for (const source of ["@dfs-ev/db-tooling/test-support/clients", "@dfs-ev/web", "../../../apps/web/src/lib/livePropCache.ts"])
+      await refuses(file, `type Value = import("${source}").Value;`, "no-restricted-syntax");
 });
