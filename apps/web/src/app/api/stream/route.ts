@@ -311,6 +311,10 @@ export async function GET(request: NextRequest) {
             timestamp: Date.now(),
             line: oddsLine.point,
             direction: selectedDirection,
+            quote: {
+              bookmakerKey: oddsLine.bookmakerKey,
+              price: selectedDirection === "over" ? oddsLine.overPrice : oddsLine.underPrice,
+            },
             marketConsensus: {
               method: consensus.method,
               version: consensus.version,

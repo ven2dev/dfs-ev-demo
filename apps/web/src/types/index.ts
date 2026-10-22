@@ -9,6 +9,16 @@ export type AuthStatus = "loading" | "signed-in" | "signed-out" | "unavailable";
 export type EVHistoryEntry = {
   timestamp: number;
   evScore: number;
+  context?: {
+    propId: string;
+    bookmakerKey?: string;
+    direction: PlayerPropDirection;
+    sampleWindow: 3 | 5 | 7;
+    dataSource?: OddsDataSource;
+    line?: number;
+    price?: number;
+    marketProbability?: number;
+  };
 };
 
 export type EVHistory = EVHistoryEntry[];
@@ -61,6 +71,9 @@ export type WatchedProp = {
   // refreshing; a placeholder without stages is not a calculated result.
   evScore?: EVScore;
   evHistory: EVHistory;
+  // Ephemeral identity of the page session that observed this history.
+  historySessionId?: string;
+  quote?: { bookmakerKey: string; price: number; line: number; timestamp: number; dataSource?: OddsDataSource };
   // Present after a valid tick. Window/count belong to this snapshot, not
   // the currently requested window. Older saved entries may lack metadata.
   sampleWindow?: 3 | 5 | 7;
