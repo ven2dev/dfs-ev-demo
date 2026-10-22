@@ -1,0 +1,124 @@
+{
+  "issue": 191,
+  "step": 3,
+  "verdict": "pass: package boundaries, paths and private-output preservation; full acceptance gates remain Step 4",
+  "recordedAt": "2026-10-22T17:26:34.827141+00:00",
+  "baseline": "f46d9306df9506448d4209c4bd24d3769c552e11",
+  "parent": "2adb5cd7c80806950e2e26243114f86d48092574",
+  "node": "24.21.0",
+  "scope": {
+    "boundaries": "pipeline cannot import web; exported runtime source cannot import DB tooling; scripts/tests may use public development harnesses",
+    "probes": "static/type imports, re-exports, dynamic imports, require, inline types, private/relative paths and manifest-graph mutations",
+    "exceptions": "empty transitional exception file and loader removed; no pipeline exceptions remain",
+    "sqlAssets": "six consumer files use named public DB asset exports; SQL bytes and statement ordering unchanged",
+    "runtimeFlow": "no new request flow, timing policy or SQL behavior"
+  },
+  "preservation": {
+    "rootFiles": {
+      "package.json": "f9581826dabe35d9141b118659ec9e4ff6aacd1cc478152d43721f77140bcb42",
+      ".github/workflows/ci.yml": "6a6cbc83ecc0a2d22e1f3d1dd0eefd86f7fe98940442db51822355079e8d31e5"
+    },
+    "proposalSql": {
+      "138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+      "138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+      "163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+      "163_empirical_authorize.sql": "5b2940582548aea025c08133dbb356bcb8055de85e57738a16c09d511d3e37a3",
+      "163_empirical_history.sql": "f6c43d4a16504e4b9ce8e60a4adaa027712323276937dced6867b4c44859d0e2",
+      "163_empirical_reader.sql": "91f534bb874d4d08f1ec32a62f9d3b9bd9ccea926fedb578824d41a18c796593"
+    },
+    "frozenArtifactsVerified": 34,
+    "publicSqlResolution": "six named DB assets resolve to the identical baseline SHA-256 digests",
+    "pipelineDbTestOwnership": {
+      "featureStoreSuiteFiles": 7,
+      "creatorIntegration": "services/pipeline/tests/creator/corpusImport.test.ts",
+      "placement": "consumer suites remain pipeline-owned; infrastructure suites remain DB-owned",
+      "harness": "public @dfs-ev/db-tooling test-support and migration exports"
+    }
+  },
+  "validation": {
+    "creatorPreservation": {
+      "passed": 139,
+      "failed": 0,
+      "pending": 0,
+      "scope": "private reads/writes, real multiprocess locks, CLI and both review server suites"
+    },
+    "featureStoreUnits": {
+      "passed": 18,
+      "failed": 0,
+      "pending": 0
+    },
+    "nativeContracts": {
+      "passedPerCwd": 8,
+      "failed": 0,
+      "skipped": 0,
+      "cwd": [
+        "repository root",
+        "services/pipeline"
+      ],
+      "ciWiring": "existing Node-lane wrapper invokes both contracts from both working directories; no extra Vitest case",
+      "checks": [
+        "16 public exports resolve through real workspace TypeScript paths; private paths refuse",
+        "public adapter loads SQL and refuses invalid input with zero SQL reads",
+        "root/workspace creator commands produce byte-identical synthetic screen output and unchanged resolve refusal",
+        "registration loads; four loopback HTTP review assets match their source bytes",
+        "private reads/writes/locks refuse root plus web/domain/DB/DB-tooling/pipeline; protected callback never enters",
+        "evaluation child announces IPC readiness; three cold children retain pre-connection target refusals"
+      ]
+    },
+    "layoutAndBoundaries": {
+      "layout": 10,
+      "boundaries": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    "typecheck": "pass: root typecheck, readiness manifest and Next route type generation",
+    "lint": {
+      "result": "pass",
+      "files": [
+        "eslint.boundaries.mjs",
+        "services/pipeline/scripts/feature-store/empirical-prototype.ts",
+        "services/pipeline/scripts/feature-store/empirical-spike.ts",
+        "services/pipeline/scripts/feature-store/harness.ts",
+        "services/pipeline/src/featureStore/empiricalAdapter.ts",
+        "services/pipeline/tests/feature-store/domainPackage.test.ts",
+        "services/pipeline/tests/feature-store/empirical-adapter.check.mts",
+        "services/pipeline/tests/feature-store/schema.check.mts",
+        "tests/import-boundaries.check.mjs",
+        "tests/monorepo-layout.check.mjs",
+        "services/pipeline/tests/paths-contract.check.mjs"
+      ]
+    }
+  },
+  "runtimeOnlyRecheck": {
+    "installation": "reuse Step 2 isolated runtime-only install; copy current candidate adapter and package contract into it",
+    "proof": "4/4 native contract tests pass with the development-only DB-tooling workspace link disabled and then restored",
+    "adapterSha256": "8bddf06f546033ba1714224ec26a8b60c623e5fd8d0d4af54a0ff9658f65187b",
+    "limitations": "not a new install; npm omit-dev linking limitation from Step 2 still applies; no database or network access exercised"
+  },
+  "offGitLogs": {
+    "dfs191-step3-creator.json": "393eab3af93fc2c9061b76afcf54d0ce87b4acae0f37d1ce3ce66048c9574a9e",
+    "dfs191-step3-feature-unit.json": "81202107f08db19359b4e5533c63ce348020896b7cd46232e02b9b6a06e2961f",
+    "dfs191-step3-native.log": "84ad4f6e5cc40a0e961695f28d16467faeed3dae1f580ace16fc9d95b1ae52a7",
+    "dfs191-step3-runtime.log": "723d97e5e22a9c39b54a85455bdc71bab280dbffeaa3d6a1e0a42f979afe3deb",
+    "dfs191-step3-layout.log": "59be88f461ccecfd7ca0014f7ca0551bddde68ce4e02e4c69f6d88e30a731e8e",
+    "dfs191-step3-typecheck.log": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+    "dfs191-step3-lint.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "failuresAndCorrections": [
+    "Sandbox refused loopback listen (EPERM); native contract passed with authorized local server access.",
+    "Initial wrapper edit left stale closing lines; corrected before passing typecheck/lint/unit runs.",
+    "Initial worker test disconnected IPC but the unchanged worker retains a message listener; harness now terminates it after readiness and verifies SIGTERM.",
+    "Initial pipeline-cwd lint emitted the Next pages-directory warning; changed-file lint from repository root passes.",
+    "Sandbox refused a read-only Docker socket query; no Step 3 database execution or Docker-state claim is made."
+  ],
+  "remaining": [
+    "owner Step 3 commit approval",
+    "Step 4 full unit/lint/typecheck/build, inventory, catalog/readiness and both PostgreSQL suites on the standard 512 MiB fixture",
+    "independent review and fresh push approval"
+  ],
+  "claimsNotMade": [
+    "new latency evidence",
+    "hosted database, GCS or deployment proof",
+    "complete issue acceptance"
+  ]
+}

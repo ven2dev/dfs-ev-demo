@@ -13,7 +13,7 @@ import { finishJob, startJob } from "../../src/featureStore/jobs.ts";
 // This opt-in suite never bootstraps a hosted target or mutates the shared test
 // schema. Each run applies main + the proposal in its own registered scratch DB.
 const digest = (value: string) => createHash("sha256").update(value).digest("hex");
-const proposal = await readFile(new URL("../../../../packages/db/proposals/138_feature_store.sql", import.meta.url), "utf8");
+const proposal = await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/138_feature_store.sql")), "utf8");
 const tables = ["source_profiles", "rights_decisions", "job_runs", "source_snapshots", "job_inputs",
   "norm_schedule", "norm_player_game_stats", "norm_identity", "norm_participation",
   "feature_values", "feature_inputs", "outcome_labels", "label_inputs",
@@ -46,11 +46,11 @@ test("#138 proposal: main isolation, trusted writer, database clocks and idempot
 
         await check("proposal application rolls back cleanly and leaves main unchanged", async () => {
           await admin.query("BEGIN");
-          try { await admin.query(proposal); await admin.query(await readFile(new URL("../../../../packages/db/proposals/138_dataset_governance.sql", import.meta.url), "utf8")); } finally { await admin.query("ROLLBACK"); }
+          try { await admin.query(proposal); await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/138_dataset_governance.sql")), "utf8")); } finally { await admin.query("ROLLBACK"); }
           assert.equal((await admin.query("SELECT to_regnamespace('fs138') AS schema")).rows[0].schema, null);
           await verify(admin, files.length);
           await admin.query("BEGIN");
-          try { await admin.query(proposal); await admin.query(await readFile(new URL("../../../../packages/db/proposals/138_dataset_governance.sql", import.meta.url), "utf8")); await admin.query("COMMIT"); }
+          try { await admin.query(proposal); await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/138_dataset_governance.sql")), "utf8")); await admin.query("COMMIT"); }
           catch (error) { await admin.query("ROLLBACK"); throw error; }
           await verify(admin, files.length);
           return { orderedMigrations: files.length, proposalSha256: digest(proposal), server };

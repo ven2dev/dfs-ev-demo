@@ -1,7 +1,6 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-export const boundaryExceptions = JSON.parse(readFileSync(new URL("./eslint.boundary-exceptions.json", import.meta.url), "utf8"));
 const domain = JSON.parse(readFileSync(new URL("./packages/domain/package.json", import.meta.url), "utf8"));
 const publicSubpaths = Object.keys(domain.exports).filter(key => key !== ".").map(key => key.slice(2));
 const files = ["apps/*/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}", "packages/*/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}", "services/*/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"];
@@ -16,6 +15,8 @@ const typeSyntax = [
 const reversePackage = String.raw`^(?:@dfs-ev\/(?:web|pipeline)(?:\/|$)|@\/)`;
 
 const runtimeReversePackage = String.raw`^(?:@dfs-ev\/(?:web|pipeline|db-tooling)(?:\/|$)|@\/)`;
+const pipelineRuntimeForbidden = String.raw`^(?:@dfs-ev\/(?:web|db-tooling)(?:\/|$)|@\/)`;
+const pipelineWebForbidden = String.raw`^(?:@dfs-ev\/web(?:\/|$)|@\/)`;
 const nonRuntimeDatabase = String.raw`^@dfs-ev\/(?:db(?:$|\/(?!runtime$))|db-tooling(?:$|\/))`;
 
 const boundaries = [
@@ -30,15 +31,6 @@ const boundaries = [
       "no-restricted-syntax": ["error", ...typeSyntax],
     },
   },
-  ...boundaryExceptions.map(({ file, imports }) => ({
-    files: [file],
-    rules: {
-      "import/no-relative-packages": ["error", {
-        commonjs: true,
-        ignore: Object.keys(imports).map(value => "^" + value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$"),
-      }],
-    },
-  })),
   {
     files: ["packages/domain/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
     rules: {
@@ -83,6 +75,28 @@ const boundaries = [
       "no-restricted-syntax": ["error", ...typeSyntax,
         { selector: `ImportExpression[source.value=/${runtimeReversePackage}/]`, message: "Database runtime cannot depend on tooling or consumers." },
         { selector: `CallExpression[callee.name='require'] > Literal[value=/${runtimeReversePackage}/]`, message: "Database runtime cannot depend on tooling or consumers." },
+      ],
+    },
+  },
+  {
+    files: ["services/pipeline/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [{ regex: pipelineWebForbidden, message: "Pipeline cannot depend on the web app." }] }],
+      "no-restricted-syntax": ["error", ...typeSyntax,
+        { selector: `ImportExpression[source.value=/${pipelineWebForbidden}/]`, message: "Pipeline cannot depend on the web app." },
+        { selector: `CallExpression[callee.name='require'] > Literal[value=/${pipelineWebForbidden}/]`, message: "Pipeline cannot depend on the web app." },
+      ],
+    },
+  },
+  {
+    files: ["services/pipeline/src/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
+    rules: {
+      // Disposable scripts/tests can use the development harness; exported
+      // runtime source cannot acquire that dependency through an import.
+      "no-restricted-imports": ["error", { patterns: [{ regex: pipelineRuntimeForbidden, message: "Pipeline runtime cannot depend on web or DB tooling." }] }],
+      "no-restricted-syntax": ["error", ...typeSyntax,
+        { selector: `ImportExpression[source.value=/${pipelineRuntimeForbidden}/]`, message: "Pipeline runtime cannot depend on web or DB tooling." },
+        { selector: `CallExpression[callee.name='require'] > Literal[value=/${pipelineRuntimeForbidden}/]`, message: "Pipeline runtime cannot depend on web or DB tooling." },
       ],
     },
   },

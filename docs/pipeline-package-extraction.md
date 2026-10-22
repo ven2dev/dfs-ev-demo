@@ -88,3 +88,34 @@ runtime files have identical bodies after removing import declarations. Root
 commands, CI and frozen database assets are unchanged. Full build/database
 gates remain Step 4; permanent pipeline boundaries and private-path/CLI probes
 remain Step 3. Nothing has been pushed.
+
+## Step 3 checkpoint
+
+The [boundary/path receipt](evidence/pipeline-191/step-3-boundaries.json) records
+139 passing creator preservation cases, 18 feature-store unit cases, 11 boundary
+checks and 10 layout checks. Eight native package/path checks pass from both the
+repository root and pipeline directory through the existing Node-lane wrapper.
+Root typecheck and ESLint on all 11 changed source/config/test files pass.
+
+Pipeline-to-web imports and runtime-to-DB-tooling imports are refused across
+static/type imports, re-exports, dynamic imports and require. The obsolete
+transition-exception mechanism is removed. Disposable scripts and consumer
+tests retain their public development-only DB harness imports. Seven
+feature-store PostgreSQL suite files and the creator database integration suite
+remain pipeline-owned; no infrastructure test is moved into a consumer.
+
+Consumers now resolve SQL through named DB asset exports. All six SQL hashes,
+34 frozen artifacts, root commands and CI workflow retain their baseline bytes.
+The updated adapter also passes the isolated runtime-only contract with the
+DB-tooling link disabled; this reuses Step 2's clean install rather than claiming
+a new installation.
+
+Path probes execute the unchanged root/workspace creator command strings,
+compare successful synthetic outputs, serve all four review assets over
+loopback and start native child workers without opening a database. Private
+reads, writes and locks refuse the repository root and every sibling workspace,
+including DB tooling. Existing multiprocess lock tests also pass. These checks
+use synthetic temporary files only; full logs stay outside Git.
+
+This checkpoint awaits Step 3 commit approval. Full build, unit and database
+acceptance gates remain Step 4. No push or deployment is authorized.

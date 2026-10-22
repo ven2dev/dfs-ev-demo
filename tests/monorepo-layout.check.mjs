@@ -255,3 +255,36 @@ test("database runtime and tooling have separate one-way dependency graphs", asy
     }
   }
 });
+
+
+const assertPipelinePackageGraph = (pipeline, infrastructure) => {
+  for (const manifest of infrastructure) {
+    for (const group of ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])
+      assert.ok(!manifest[group]?.[pipeline.name], `${manifest.name} cannot depend on pipeline`);
+  }
+  for (const group of ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"])
+    assert.ok(!pipeline[group]?.["@dfs-ev/web"], "pipeline cannot depend on web");
+  for (const group of ["dependencies", "peerDependencies", "optionalDependencies"])
+    assert.ok(!pipeline[group]?.["@dfs-ev/db-tooling"], "pipeline tooling is development-only");
+  assert.equal(pipeline.devDependencies?.["@dfs-ev/db-tooling"], infrastructure.find(pkg => pkg.name === "@dfs-ev/db-tooling").version, "pipeline tests declare public DB tooling");
+  assert.ok(!Object.keys(pipeline.exports).some(path => /src|scripts|tests|\*/.test(path)), "pipeline exports only named runtime subpaths");
+};
+
+test("pipeline declares one-way runtime dependencies with development-only DB test support", async () => {
+  const [pipeline, ...infrastructure] = await Promise.all([
+    "services/pipeline/package.json", "packages/domain/package.json", "packages/db/package.json", "packages/db/tooling/package.json",
+  ].map(async path => JSON.parse(await readFile(new URL(path, root), "utf8"))));
+  assertPipelinePackageGraph(pipeline, infrastructure);
+  const runtimeTooling = structuredClone(pipeline);
+  runtimeTooling.dependencies["@dfs-ev/db-tooling"] = "0.1.0";
+  assert.throws(() => assertPipelinePackageGraph(runtimeTooling, infrastructure), /tooling is development-only/);
+  const web = structuredClone(pipeline);
+  web.dependencies["@dfs-ev/web"] = "0.1.0";
+  assert.throws(() => assertPipelinePackageGraph(web, infrastructure), /cannot depend on web/);
+  for (const index of [0, 1, 2]) {
+    const reverse = structuredClone(infrastructure);
+    reverse[index].dependencies ??= {};
+    reverse[index].dependencies[pipeline.name] = pipeline.version;
+    assert.throws(() => assertPipelinePackageGraph(pipeline, reverse), /cannot depend on pipeline/);
+  }
+});

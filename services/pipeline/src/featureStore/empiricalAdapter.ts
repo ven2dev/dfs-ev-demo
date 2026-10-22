@@ -93,8 +93,8 @@ const qualifiedValues = (history: unknown, feature: Feature): number[] => {
  */
 export const createEmpiricalAdapter = async () => {
   const [authorizeSql, historySql] = await Promise.all([
-    readFile(new URL("../../../../packages/db/proposals/163_empirical_authorize.sql", import.meta.url), "utf8"),
-    readFile(new URL("../../../../packages/db/proposals/163_empirical_history.sql", import.meta.url), "utf8"),
+    readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/163_empirical_authorize.sql")), "utf8"),
+    readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/163_empirical_history.sql")), "utf8"),
   ]);
   return async (client: Connection, request: EmpiricalRequest, options: Options = {}): Promise<EmpiricalRead> => {
     const started = performance.now();
