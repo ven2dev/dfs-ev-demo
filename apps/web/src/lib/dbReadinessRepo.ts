@@ -1,10 +1,9 @@
 import "server-only";
 
 import { getSql } from "./db";
-import { DB_READINESS_MANIFEST } from "./dbReadinessManifest";
-import { DB_READINESS_DEADLINE_MS, DB_READINESS_HISTORY_LIMIT, DB_READINESS_HISTORY_SQL,
+import { DB_READINESS_MANIFEST, DB_READINESS_DEADLINE_MS, DB_READINESS_HISTORY_LIMIT, DB_READINESS_HISTORY_SQL,
   DB_READINESS_RELATIONS_SQL, DB_READINESS_SETTINGS_SQL, readinessRelations,
-  type DatabaseReadinessSnapshot } from "./dbReadiness";
+  type DatabaseReadinessSnapshot } from "@dfs-ev/db/runtime";
 
 export async function getDatabaseReadinessSnapshot(): Promise<DatabaseReadinessSnapshot> {
   const sql = getSql();

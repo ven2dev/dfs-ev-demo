@@ -1,0 +1,97 @@
+{
+  "formatVersion": 1,
+  "issue": 190,
+  "stage": "step 1 packaging decision checkpoint",
+  "baselineCommit": "c59cff11e4f8e92f8e68d16fb5c97ea8296f4c32",
+  "candidateIdentity": {
+    "kind": "uncommitted draft",
+    "files": {
+      "package.json": "f0a28a04f9c4084eb773d0baf686c5008049eced91c118e5ab0107b0b252b739",
+      "package-lock.json": "8bad4fbe779bb5708b04c0a02c153329fa82e14b0cb952e3a09c00a178acc82d",
+      "apps/web/package.json": "4710042b10559fca88777dad42599fd8673ade4939f1032dbb3986bc2e8e7c6e",
+      "services/pipeline/package.json": "5d9c9ca571ea9f2d2db4b78236a034ac9321af8134d5a379045e4b51cda7c3ad",
+      "packages/db/package.json": "5c73b5863ea0b516e1d650ce6417ab3e8269dd5aca17c342323826fb914bae12",
+      "tests/monorepo-layout.check.mjs": "172642823951ba72f88c986221de9c72d73cc6df573d3bdef64052069db4c4d8"
+    }
+  },
+  "verdict": "blocked: owner decision on runtime/tooling package separation",
+  "checks": {
+    "frozenArtifacts": {
+      "verdict": "pass",
+      "files": 34
+    },
+    "rootCommands": "all names and command values unchanged",
+    "ciWorkflow": "byte-identical",
+    "existingLockedPackageRecords": "byte-equivalent JSON records; no version/resolution changes",
+    "nativeNodeExports": {
+      "verdict": "pass",
+      "exports": 18,
+      "privateRefusals": 5,
+      "databaseConnectionsOpened": 0
+    },
+    "rootAndPackageChecksAndArgumentRefusals": "pass",
+    "typecheck": "pass",
+    "lint": "pass",
+    "importBoundaries": {
+      "pass": 7
+    },
+    "ciAndLayout": {
+      "pass": 12
+    },
+    "dbGuardUnitCases": {
+      "pass": 20
+    },
+    "testInventoryComparison": "all three collected inventories unchanged",
+    "databaseExecution": "not run; integrated checkpoint remains pending"
+  },
+  "packagingProbes": [
+    {
+      "design": "one DB workspace with driver devDependencies",
+      "install": "npm ci --workspace @dfs-ev/web",
+      "verdict": "fail",
+      "pgInstalled": true,
+      "typesPgInstalled": true,
+      "packagesAdded": 394
+    },
+    {
+      "design": "same workspace with optional driver peers",
+      "install": "npm ci --workspace @dfs-ev/web",
+      "verdict": "fail",
+      "pgInstalled": true,
+      "typesPgInstalled": true,
+      "packagesAdded": 394
+    },
+    {
+      "design": "runtime/assets workspace plus nested tooling workspace",
+      "install": "npm ci --workspace @dfs-ev/web",
+      "verdict": "pass in metadata-only scratch",
+      "pgInstalled": false,
+      "typesPgInstalled": false,
+      "packagesAdded": 379,
+      "runtimeImport": "pass",
+      "toolingOnlyInstall": {
+        "packagesAdded": 103,
+        "driverImport": "pass"
+      },
+      "databaseConnectionsOpened": 0
+    }
+  ],
+  "probeBoundary": {
+    "node": "v24.18.1",
+    "cleanSourceAndDependencies": true,
+    "rootInstallInWebProbe": false,
+    "applicationEnvironmentCopied": false,
+    "npmCache": "not flushed",
+    "elapsedTimes": "diagnostic only; no new latency target",
+    "fullExtractionAndWebBuild": "not proven by metadata-only probe"
+  },
+  "correctedWorkingAidAttempts": [
+    "Initial shell install used Node 22; repeated under required Node 24 before collection and checks.",
+    "Static collector initially omitted six literal t.test subtests; corrected to include them and repeated baseline collection.",
+    "Native eval flag check initially inspected the eval source; corrected to compare flag arguments."
+  ],
+  "requestedDecision": "Approve @dfs-ev/db runtime/assets plus nested @dfs-ev/db-tooling exports/commands/test support, preserving asset bytes and root command names. This changes the approved single-workspace assumption.",
+  "evidencePolicy": "Compact receipts only; temporary full logs and source are working aids, reconstructable from baseline and probe description.",
+  "commit": "not approved or created",
+  "push": "not approved or performed"
+}

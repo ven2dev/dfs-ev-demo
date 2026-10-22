@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createLivePropCacheStore } from "./livePropCacheStore";
+import { createLivePropCacheStore } from "@dfs-ev/db/runtime";
 
 const key = {
   sportKey: "americanfootball_nfl",
@@ -20,8 +20,8 @@ describe("createLivePropCacheStore", () => {
     ]);
     const secondQuery = vi.fn().mockResolvedValue([]);
 
-    const firstStore = createLivePropCacheStore(firstQuery);
-    const secondStore = createLivePropCacheStore(secondQuery);
+    const firstStore = createLivePropCacheStore<typeof payload>(firstQuery);
+    const secondStore = createLivePropCacheStore<typeof payload>(secondQuery);
     expect(firstQuery).not.toHaveBeenCalled();
     expect(secondQuery).not.toHaveBeenCalled();
 

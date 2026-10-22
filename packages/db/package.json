@@ -1,0 +1,26 @@
+{
+  "name": "@dfs-ev/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "exports": {
+    "./runtime": "./src/runtime.ts",
+    "./assets": "./src/assets.mjs",
+    "./assets/138_dataset_governance.sql": "./proposals/138_dataset_governance.sql",
+    "./assets/138_feature_store.sql": "./proposals/138_feature_store.sql",
+    "./assets/163_effective_rights.sql": "./proposals/163_effective_rights.sql",
+    "./assets/163_empirical_authorize.sql": "./proposals/163_empirical_authorize.sql",
+    "./assets/163_empirical_history.sql": "./proposals/163_empirical_history.sql",
+    "./assets/163_empirical_reader.sql": "./proposals/163_empirical_reader.sql",
+    "./assets/schema.sql": "./schema.sql"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

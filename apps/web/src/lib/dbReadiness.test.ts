@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { DB_READINESS_MANIFEST } from "./dbReadinessManifest";
-import { DB_READINESS_HISTORY_LIMIT, evaluateDatabaseReadiness, readinessRelations } from "./dbReadiness";
+import { DB_READINESS_MANIFEST } from "@dfs-ev/db/runtime";
+import { DB_READINESS_HISTORY_LIMIT, evaluateDatabaseReadiness, readinessRelations } from "@dfs-ev/db/runtime";
 
 const history = () => DB_READINESS_MANIFEST.migrations.map((migration) => ({
   ...migration, runner_version: 1, provenance: "adopted", applied_at: "2026-10-07T05:46:23.019Z",

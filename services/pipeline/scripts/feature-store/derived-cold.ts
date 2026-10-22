@@ -1,6 +1,6 @@
 import { Client,type ClientConfig } from "pg";
 import { runDerivedJob,type DerivedRequest,type CodeIdentity } from "../../src/featureStore/derived.ts";
-import { assertNoApplicationCredentials } from "../../../../packages/db/tests/target.mts";
+import { assertNoApplicationCredentials } from "@dfs-ev/db-tooling/test-support/target";
 
 // Test-only worker: stdin avoids placing even throwaway credentials in argv.
 assertNoApplicationCredentials(process.env);

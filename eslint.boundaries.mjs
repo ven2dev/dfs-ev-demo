@@ -15,6 +15,9 @@ const typeSyntax = [
 ];
 const reversePackage = String.raw`^(?:@dfs-ev\/(?:web|pipeline)(?:\/|$)|@\/)`;
 
+const runtimeReversePackage = String.raw`^(?:@dfs-ev\/(?:web|pipeline|db-tooling)(?:\/|$)|@\/)`;
+const nonRuntimeDatabase = String.raw`^@dfs-ev\/(?:db(?:$|\/(?!runtime$))|db-tooling(?:$|\/))`;
+
 const boundaries = [
   {
     files,
@@ -49,6 +52,49 @@ const boundaries = [
       "no-restricted-syntax": ["error", ...typeSyntax,
         { selector: `ImportExpression[source.value=/${reversePackage}/]`, message: "Domain cannot depend on its app/service consumers." },
         { selector: `CallExpression[callee.name='require'] > Literal[value=/${reversePackage}/]`, message: "Domain cannot depend on its app/service consumers." },
+      ],
+    },
+  },
+  {
+    files: ["packages/db/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
+    rules: {
+      "import/no-restricted-paths": ["error", {
+        basePath: fileURLToPath(new URL(".", import.meta.url)),
+        zones: [{ target: "packages/db", from: ["apps", "services"], message: "Database infrastructure cannot depend on its consumers." }],
+      }],
+      "no-restricted-imports": ["error", { patterns: [{ regex: reversePackage, message: "Database infrastructure cannot depend on its consumers." }] }],
+      "no-restricted-syntax": ["error", ...typeSyntax,
+        { selector: `ImportExpression[source.value=/${reversePackage}/]`, message: "Database infrastructure cannot depend on its consumers." },
+        { selector: `CallExpression[callee.name='require'] > Literal[value=/${reversePackage}/]`, message: "Database infrastructure cannot depend on its consumers." },
+      ],
+    },
+  },
+  {
+    files: ["packages/db/src/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
+    rules: {
+      "import/no-restricted-paths": ["error", {
+        basePath: fileURLToPath(new URL(".", import.meta.url)),
+        zones: [
+          { target: "packages/db/src", from: ["apps", "services"], message: "Database runtime cannot depend on its consumers." },
+          { target: "packages/db/src", from: "packages/db/tooling", message: "Database runtime cannot depend on tooling." },
+        ],
+      }],
+      "no-restricted-imports": ["error", { patterns: [{ regex: runtimeReversePackage, message: "Database runtime cannot depend on tooling or consumers." }] }],
+      "no-restricted-syntax": ["error", ...typeSyntax,
+        { selector: `ImportExpression[source.value=/${runtimeReversePackage}/]`, message: "Database runtime cannot depend on tooling or consumers." },
+        { selector: `CallExpression[callee.name='require'] > Literal[value=/${runtimeReversePackage}/]`, message: "Database runtime cannot depend on tooling or consumers." },
+      ],
+    },
+  },
+  {
+    files: ["apps/web/**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
+    rules: {
+      // Checking unresolved/private subpaths too keeps web's build independent
+      // of tooling and test-harness dependencies, including in colocated tests.
+      "no-restricted-imports": ["error", { patterns: [{ regex: nonRuntimeDatabase, message: "Web may import only @dfs-ev/db/runtime from the database packages." }] }],
+      "no-restricted-syntax": ["error", ...typeSyntax,
+        { selector: `ImportExpression[source.value=/${nonRuntimeDatabase}/]`, message: "Web may import only @dfs-ev/db/runtime from the database packages." },
+        { selector: `CallExpression[callee.name='require'] > Literal[value=/${nonRuntimeDatabase}/]`, message: "Web may import only @dfs-ev/db/runtime from the database packages." },
       ],
     },
   },

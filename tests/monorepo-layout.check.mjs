@@ -3,7 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isBuiltin } from "node:module";
 import ts from "typescript";
@@ -18,7 +18,7 @@ const digest = bytes => createHash("sha256").update(bytes).digest("hex");
 test("relocation preserves every frozen database artifact and the runtime readiness manifest", async () => {
   const baseline = JSON.parse(await readFile(new URL("docs/evidence/monorepo-148/baseline.json", root)));
   for (const [old, hash] of Object.entries(baseline.immutableFiles)) {
-    const current = old.startsWith("db/") ? "packages/" + old : "apps/web/" + old;
+    const current = old.startsWith("db/") ? "packages/" + old : "packages/db/src/dbReadinessManifest.ts";
     assert.equal(digest(await readFile(new URL(current, root))), hash, current);
   }
   const pkg = JSON.parse(await readFile(new URL("package.json", root)));
@@ -173,9 +173,11 @@ test("web dependency discovery covers scoped subpaths, re-exports, runtime and t
 const assertWorkspaceVersions = manifests => {
   const local = new Map(manifests.map(manifest => [manifest.name, manifest.version]));
   const domainVersion = local.get("@dfs-ev/domain");
+  const databaseVersion = local.get("@dfs-ev/db");
   for (const name of ["@dfs-ev/web", "@dfs-ev/pipeline"]) {
     const consumer = manifests.find(manifest => manifest.name === name);
     assert.equal(consumer?.dependencies?.["@dfs-ev/domain"], domainVersion, `${name} must declare its domain dependency`);
+    assert.equal(consumer?.dependencies?.["@dfs-ev/db"], databaseVersion, `${name} must declare its database dependency`);
   }
   const declared = new Map();
   for (const manifest of manifests) {
@@ -188,7 +190,7 @@ const assertWorkspaceVersions = manifests => {
 };
 
 test("shared versions and workspace dependency declarations stay identical, including Next internals and React", async () => {
-  const manifests = await Promise.all(["package.json", "apps/web/package.json", "packages/domain/package.json", "services/pipeline/package.json"]
+  const manifests = await Promise.all(["package.json", "apps/web/package.json", "packages/domain/package.json", "services/pipeline/package.json", "packages/db/package.json", "packages/db/tooling/package.json"]
     .map(async path => JSON.parse(await readFile(new URL(path, root), "utf8"))));
   assertWorkspaceVersions(manifests);
   const [repository, web] = manifests;
@@ -201,6 +203,9 @@ test("shared versions and workspace dependency declarations stay identical, incl
     const changed = structuredClone(manifests);
     delete changed[index].dependencies["@dfs-ev/domain"];
     assert.throws(() => assertWorkspaceVersions(changed), /must declare its domain dependency/);
+    const missingDatabase = structuredClone(manifests);
+    delete missingDatabase[index].dependencies["@dfs-ev/db"];
+    assert.throws(() => assertWorkspaceVersions(missingDatabase), /must declare its database dependency/);
   }
   for (const [index, name, group] of [[2, "typescript", "devDependencies"], [1, "@dfs-ev/domain", "dependencies"], [3, "@dfs-ev/domain", "dependencies"]]) {
     const changed = structuredClone(manifests);
@@ -210,9 +215,43 @@ test("shared versions and workspace dependency declarations stay identical, incl
 });
 
 test("workspace scripts and test process exclude preserve-symlinks so native TypeScript resolves real package paths", async () => {
-  for (const path of ["package.json", "apps/web/package.json", "packages/domain/package.json", "services/pipeline/package.json"]) {
+  for (const path of ["package.json", "apps/web/package.json", "packages/domain/package.json", "services/pipeline/package.json", "packages/db/package.json", "packages/db/tooling/package.json"]) {
     const manifest = JSON.parse(await readFile(new URL(path, root), "utf8"));
     assert.doesNotMatch(JSON.stringify(manifest.scripts ?? {}), /--preserve-symlinks/);
   }
   assert.doesNotMatch(process.execArgv.join(" ") + " " + (process.env.NODE_OPTIONS ?? ""), /--preserve-symlinks/);
+});
+
+const assertDatabasePackageGraph = (runtime, tooling, web) => {
+  assert.equal(tooling.dependencies?.["@dfs-ev/db"], runtime.version, "tooling declares runtime");
+  for (const group of ["dependencies", "devDependencies", "peerDependencies", "optionalDependencies"]) {
+    assert.ok(!runtime[group]?.["@dfs-ev/db-tooling"], "runtime cannot depend on tooling");
+    assert.ok(!web[group]?.["@dfs-ev/db-tooling"], "web cannot depend on tooling");
+  }
+  assert.deepEqual(Object.keys(runtime.dependencies ?? {}), [], "runtime has no driver or harness dependencies");
+  assert.ok(!Object.keys(runtime.exports).some(path => /tooling|test-support/.test(path)), "runtime cannot export tooling");
+};
+
+test("database runtime and tooling have separate one-way dependency graphs", async () => {
+  const [runtime, tooling, web] = await Promise.all([
+    "packages/db/package.json", "packages/db/tooling/package.json", "apps/web/package.json",
+  ].map(async path => JSON.parse(await readFile(new URL(path, root), "utf8"))));
+  assertDatabasePackageGraph(runtime, tooling, web);
+  const reversed = structuredClone(runtime);
+  reversed.devDependencies["@dfs-ev/db-tooling"] = tooling.version;
+  assert.throws(() => assertDatabasePackageGraph(reversed, tooling, web), /runtime cannot depend on tooling/);
+  const contaminated = structuredClone(web);
+  contaminated.dependencies["@dfs-ev/db-tooling"] = tooling.version;
+  assert.throws(() => assertDatabasePackageGraph(runtime, tooling, contaminated), /web cannot depend on tooling/);
+  const undeclared = structuredClone(tooling);
+  delete undeclared.dependencies["@dfs-ev/db"];
+  assert.throws(() => assertDatabasePackageGraph(runtime, undeclared, web), /tooling declares runtime/);
+  // Check the actual runtime source graph, including re-exports and type imports.
+  for (const file of ts.sys.readDirectory(fileURLToPath(new URL("packages/db/src", root)), [".ts", ".mjs"])) {
+    const source = await readFile(file, "utf8");
+    for (const reference of ts.preProcessFile(source, true, true).importedFiles) {
+      assert.match(reference.fileName, /^\.\//, `${file}: runtime imports stay within its source folder`);
+      assert.ok(resolve(dirname(file), reference.fileName).startsWith(fileURLToPath(new URL("packages/db/src/", root))), file);
+    }
+  }
 });

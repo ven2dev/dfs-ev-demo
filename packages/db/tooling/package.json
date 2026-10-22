@@ -1,0 +1,47 @@
+{
+  "name": "@dfs-ev/db-tooling",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "exports": {
+    "./catalog": "./scripts/db-catalog.mjs",
+    "./catalog-comparison": "./scripts/compare-db-catalog.mjs",
+    "./migrations/files": "./scripts/db-migrations/files.mjs",
+    "./migrations/contracts": "./scripts/db-migrations/contracts.mjs",
+    "./migrations/core": "./scripts/db-migrations/core.mjs",
+    "./migrations/plans": "./scripts/db-migrations/plans.mjs",
+    "./test-support/target": "./tests/target.mts",
+    "./test-support/scratch": "./tests/scratch.mjs",
+    "./test-support/migrated": "./tests/migrated.mts",
+    "./test-support/clients": "./tests/harness.ts",
+    "./test-support/leases": "./tests/leaseSupport.ts",
+    "./test-support/lifecycle": "./tests/startup.mts",
+    "./test-support/templates": "./tests/templates.mts"
+  },
+  "scripts": {
+    "db:catalog": "node scripts/db-catalog.mjs",
+    "db:catalog:diff": "node scripts/compare-db-catalog.mjs",
+    "db:contracts:generate": "node scripts/db-catalog-contracts.mjs generate",
+    "db:contracts:check": "node scripts/db-catalog-contracts.mjs check",
+    "db:migrations:generate": "node scripts/db-migration-artifacts.mjs generate",
+    "db:migrations:check": "node scripts/db-migration-artifacts.mjs check",
+    "db:readiness:generate": "node scripts/db-readiness-manifest.mjs generate",
+    "db:readiness:check": "node scripts/db-readiness-manifest.mjs check",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:migrate:dev": "node scripts/db-migrate-dev.mjs"
+  },
+  "dependencies": {
+    "@dfs-ev/db": "0.1.0",
+    "@neondatabase/serverless": "1.2.0",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/pg": "8.23.1",
+    "typescript": "^5",
+    "vitest": "5.0.5"
+  }
+}

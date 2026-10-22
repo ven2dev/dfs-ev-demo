@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthorizedCronHeader } from "@/lib/cronAuth";
-import { evaluateDatabaseReadiness } from "@/lib/dbReadiness";
+import { evaluateDatabaseReadiness } from "@dfs-ev/db/runtime";
 import { getDatabaseReadinessSnapshot } from "@/lib/dbReadinessRepo";
 
 export const dynamic = "force-dynamic";

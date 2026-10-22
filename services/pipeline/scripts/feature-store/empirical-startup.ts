@@ -1,5 +1,5 @@
 import { Client, type ClientConfig } from "pg";
-import { assertNoApplicationCredentials } from "../../../../packages/db/tests/target.mts";
+import { assertNoApplicationCredentials } from "@dfs-ev/db-tooling/test-support/target";
 import { createEmpiricalAdapter, type EmpiricalRequest } from "../../src/featureStore/empiricalAdapter.ts";
 
 assertNoApplicationCredentials(process.env);

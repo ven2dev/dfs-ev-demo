@@ -1,9 +1,8 @@
+import type { LivePropCacheEntry, LivePropCacheKey } from "@dfs-ev/db/runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getOrRefreshLivePropInputs,
   type LivePropCacheDeps,
-  type LivePropCacheEntry,
-  type LivePropCacheKey,
   type LivePropInputs,
 } from "./livePropCache";
 
@@ -28,7 +27,7 @@ const payload: LivePropInputs = {
 
 const createMemoryDeps = (options: {
   now?: number;
-  entry?: LivePropCacheEntry | null;
+  entry?: LivePropCacheEntry<LivePropInputs> | null;
   leaseOwner?: string | null;
   leaseUntilMs?: number;
   fetchFresh?: (signal: AbortSignal) => Promise<LivePropInputs>;

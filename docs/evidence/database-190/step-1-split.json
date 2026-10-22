@@ -1,0 +1,182 @@
+{
+  "formatVersion": 1,
+  "issue": 190,
+  "stage": "step 1 actual runtime/tooling split",
+  "baselineCommit": "c59cff11e4f8e92f8e68d16fb5c97ea8296f4c32",
+  "branch": "feature/dfsEV-190-db-package-extraction",
+  "candidateIdentity": {
+    "kind": "uncommitted candidate",
+    "changedOrAddedOrRemovedNonDocPaths": 135,
+    "manifestSha256": "f838fc706edda8e8b17b6ae311638eb0d9daaa1f6cb7d926e1c6718b62e96356",
+    "method": "sorted JSON records of path and SHA256 (null for removal), excluding docs; compact UTF-8, sorted keys"
+  },
+  "verdict": "pass for Step 1; commit review requested; later issue gates remain pending",
+  "approvedArchitecture": {
+    "runtimeAssets": "@dfs-ev/db",
+    "toolsTestSupport": "@dfs-ev/db-tooling",
+    "dependencyDirection": "tooling -> runtime; no reverse edge",
+    "deviation": "owner-approved replacement of the single-workspace assumption after measured install-isolation failures"
+  },
+  "supersedes": "step-1-packaging.json pending-decision status; historical failures retained there",
+  "cleanWebOnly": {
+    "workspace": "@dfs-ev/web",
+    "node": "v24.18.1",
+    "installSeconds": 4.771,
+    "packagesAdded": 379,
+    "boundary": "fresh source export of tracked plus nonignored candidate files; no node_modules, build outputs or app env copied; no root install; npm cache unflushed",
+    "databaseConnectionsOpened": 0,
+    "absent": [
+      "pg",
+      "@types/pg",
+      "eslint",
+      "firebase-tools",
+      "@dfs-ev/db-tooling"
+    ],
+    "independentlyWebOwned": [
+      "@neondatabase/serverless",
+      "typescript",
+      "vitest",
+      "@types/node"
+    ],
+    "runtimeImport": "actual web consumer and native Node import pass",
+    "build": "pass",
+    "buildSeconds": 8.566,
+    "routesManifest": true
+  },
+  "cleanToolingOnly": {
+    "workspace": "@dfs-ev/db-tooling",
+    "node": "v24.18.1",
+    "installSeconds": 1.224,
+    "packagesAdded": 103,
+    "boundary": "fresh source export of tracked plus nonignored candidate files; no node_modules, build outputs or app env copied; no root install; npm cache unflushed",
+    "databaseConnectionsOpened": 0,
+    "absent": [
+      "next",
+      "@dfs-ev/web"
+    ],
+    "execution": [
+      "migration artifact check",
+      "readiness artifact check",
+      "12 catalog contracts loaded",
+      "target guard native import/refusals",
+      "20 existing DB guard cases"
+    ],
+    "native": {
+      "migrations": 11,
+      "catalogContracts": 12,
+      "guard": "pass",
+      "databaseConnectionsOpened": 0
+    },
+    "pending": "lease-support still has approved #190 consumer imports pending Step 2; integrated suites pending Step 4"
+  },
+  "rootChecks": {
+    "typecheck": "pass",
+    "eslint": "pass",
+    "importBoundaryProbes": {
+      "passed": 7
+    },
+    "ciLayoutChecks": {
+      "passed": 13
+    },
+    "readinessTests": {
+      "browserPassed": 4,
+      "serverPassed": 9
+    },
+    "databaseConnectionsOpened": 0
+  },
+  "additionalChecks": [
+    {
+      "check": "runtime workspace typecheck",
+      "verdict": "pass",
+      "seconds": 0.348
+    },
+    {
+      "check": "db:migrations:check root/tooling execution and argument refusal parity",
+      "verdict": "pass"
+    },
+    {
+      "check": "db:readiness:check root/tooling execution and argument refusal parity",
+      "verdict": "pass"
+    },
+    {
+      "check": "readiness-browser",
+      "verdict": "pass",
+      "seconds": 0.982
+    },
+    {
+      "check": "readiness-server",
+      "verdict": "pass",
+      "seconds": 0.344
+    },
+    {
+      "check": "actual native public resolution and private refusals",
+      "verdict": "pass",
+      "exportsResolved": 22,
+      "privateRefusals": 6,
+      "connectionsOpened": 0
+    }
+  ],
+  "invariants": {
+    "frozenFiles": 34,
+    "allFrozenBytes": "identical",
+    "ciWorkflow": "byte-identical",
+    "rootCommands": "all names and argument strings preserved; only relocated path prefixes changed",
+    "existingExternalLockRecords": 1229,
+    "externalRecords": "identical except dev classification on the newly declared tooling driver graph; versions/resolutions/integrities unchanged",
+    "driverDevClassificationRemoved": [
+      "node_modules/pg",
+      "node_modules/pg-cloudflare",
+      "node_modules/pg-connection-string",
+      "node_modules/pg-int8",
+      "node_modules/pg-pool",
+      "node_modules/pg-protocol",
+      "node_modules/pg-types",
+      "node_modules/pgpass",
+      "node_modules/postgres-array",
+      "node_modules/postgres-bytea",
+      "node_modules/postgres-date",
+      "node_modules/postgres-interval",
+      "node_modules/split2",
+      "node_modules/xtend"
+    ],
+    "collections": {
+      "browser": {
+        "files": 68,
+        "cases": 919,
+        "baselineNormalizedInventory": "identical; collection only"
+      },
+      "node": {
+        "files": 25,
+        "cases": 290,
+        "baselineNormalizedInventory": "identical; collection only"
+      },
+      "database": {
+        "files": 6,
+        "cases": 25,
+        "baselineNormalizedInventory": "identical; collection only"
+      }
+    },
+    "requiredNodeCases": 74,
+    "postgresCases": 25,
+    "featureStoreCases": 79,
+    "requiredContracts": "identical after path mapping; not execution"
+  },
+  "correctedWorkingAttempts": [
+    "Earlier single-package devDependency and optional-peer probes failed web isolation; owner approved package split rather than changing the target.",
+    "First actual tooling guard run passed 19/20: inventory unit check still used the old tests path; corrected the path and repeated the full clean tooling proof, 20/20.",
+    "First actual boundary run passed 6/7: its negative fixture referenced the old harness path; corrected it and repeated full lint, 7/7.",
+    "Overstrict lock comparison flagged npm dev classification changes in 14 driver records; all other record fields, including versions/resolutions/integrities, match.",
+    "Earlier Node version, collector and native-flag working-aid corrections remain recorded in step-1-packaging.json."
+  ],
+  "installWarnings": "Existing npm deprecation and pending install-script approval warnings retained in off-git logs; install/build proof succeeded without changing dependency versions or script approvals.",
+  "pending": [
+    "remaining lease-support reverse imports and root integration adapters",
+    "final web-runtime-only boundary enforcement",
+    "full application suites",
+    "complete database checkpoint and both PostgreSQL suites on standard 512 MiB fixture",
+    "real Vercel Preview after separately approved push"
+  ],
+  "evidencePolicy": "Compact receipts only; full source exports, inventories and logs remain off git. Clean install/build timings are diagnostic; no cache-flush or new latency claim.",
+  "commit": "not approved or created",
+  "push": "not approved or performed"
+}
