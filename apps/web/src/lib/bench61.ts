@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import { performance } from "node:perf_hooks";
 import { neon } from "@neondatabase/serverless";
 import config from "./bench61-config.json";
@@ -51,22 +51,24 @@ const distribution = (values: number[]) => {
 export const executeBenchmark = async (action: BenchAction) => {
   const sql = neon(process.env.DATABASE_URL!);
   let roundTrips = 0, statements = 0;
+  const requestId = randomUUID();
   // Two SQL statements, one HTTP round trip. Timeouts are transaction-local.
-  const query = async (text: string, params: unknown[] = []) => {
+  const query = async (text: string, params: unknown[] = [], claim = false) => {
     // Enforced before dispatch, including diagnostic observations and timeout SQL.
     if (roundTrips+1 > config.maxRoundTrips || statements+2 > config.maxStatements) {
       throw new Error("Benchmark resource cap reached before dispatch");
     }
     roundTrips++; statements += 2;
     const result = await sql.transaction([
-      sql.query("SELECT set_config('statement_timeout','5000',true), set_config('lock_timeout','2000',true)"),
+      sql.query(`SELECT set_config('statement_timeout','5000',true), set_config('lock_timeout','2000',true),
+        ${schema}.guard($1,$2,$3)`, [owner,requestId,claim]),
       sql.query(text, params),
     ], { fetchOptions: { signal: AbortSignal.timeout(10000) } });
     return result[1];
   };
   const meta = { region: process.env.VERCEL_REGION, environment: process.env.VERCEL_ENV,
     sha: process.env.VERCEL_GIT_COMMIT_SHA, host: config.host, schema: config.schema,
-    transport: "Neon HTTP transaction; timeout setup + measured statement", timestamp: new Date().toISOString() };
+    transport: "Neon HTTP transaction; timeout setup + lease/fence check + measured statement", timestamp: new Date().toISOString() };
   if (action === "setup") {
     // A repeated setup also contacts compute. Invalidate an existing owned run
     // before refusing it; never adopt or alter a schema with a different owner.
@@ -76,6 +78,7 @@ export const executeBenchmark = async (action: BenchAction) => {
       sql.query(`DO $setup$
         DECLARE actual_owner text;
         BEGIN
+          PERFORM pg_advisory_xact_lock_shared(610206,20261022);
           IF to_regnamespace('bench61_206_20261022') IS NULL THEN RETURN; END IF;
           SELECT r.owner INTO actual_owner FROM ${schema}.run r WHERE id=1 FOR UPDATE;
           IF actual_owner IS DISTINCT FROM current_setting('bench61.owner') THEN
@@ -95,10 +98,24 @@ export const executeBenchmark = async (action: BenchAction) => {
       sql.query(`CREATE TABLE ${schema}.run(id integer PRIMARY KEY CHECK(id=1), owner text NOT NULL,
         started_at timestamptz NOT NULL DEFAULT clock_timestamp(), operations text[] NOT NULL DEFAULT '{}',
         reserved_statements integer NOT NULL DEFAULT 0, reserved_round_trips integer NOT NULL DEFAULT 0,
-        last_query_at timestamptz, active_action text)`),
+        last_query_at timestamptz, active_action text, lease_request uuid, lease_until timestamptz)`),
       sql.query(`INSERT INTO ${schema}.run(id,owner,last_query_at) VALUES(1,$1,clock_timestamp())`, [owner]),
+      sql.query(`CREATE FUNCTION ${schema}.guard(expected_owner text, expected_request uuid, claiming boolean)
+        RETURNS void LANGUAGE plpgsql SET lock_timeout='2s' AS $guard$
+        DECLARE control record;
+        BEGIN
+          PERFORM pg_advisory_xact_lock_shared(610206,20261022);
+          SELECT * INTO control FROM ${schema}.run WHERE id=1;
+          IF control.owner IS DISTINCT FROM expected_owner THEN
+            RAISE EXCEPTION 'Benchmark schema ownership mismatch';
+          END IF;
+          IF NOT claiming AND (control.lease_request IS DISTINCT FROM expected_request
+            OR control.lease_until IS NULL OR control.lease_until<=clock_timestamp()) THEN
+            RAISE EXCEPTION 'Benchmark workload lease expired or does not match';
+          END IF;
+        END $guard$`),
     ], { fetchOptions: { signal: AbortSignal.timeout(10000) } });
-    return { ...meta, setup: result.length === 5, roundTrips: 2, statements: 9 };
+    return { ...meta, setup: result.length === 6, roundTrips: 2, statements: 10 };
   }
   if (action === "cleanup") {
     // Idempotent teardown: absence is success; a present schema is dropped only
@@ -107,14 +124,21 @@ export const executeBenchmark = async (action: BenchAction) => {
       sql.query("SELECT set_config('statement_timeout','5000',true), set_config('lock_timeout','2000',true)"),
       sql.query("SELECT set_config('bench61.owner',$1,true)", [owner]),
       sql.query(`DO $cleanup$
-        DECLARE actual_owner text;
+        DECLARE actual_owner text; live_until timestamptz;
         BEGIN
+          -- Same lock order as every workload transaction: fence, then control row.
+          IF NOT pg_try_advisory_xact_lock(610206,20261022) THEN
+            RAISE EXCEPTION 'Benchmark workload transaction still in flight; cleanup refused';
+          END IF;
           IF to_regnamespace('bench61_206_20261022') IS NULL THEN RETURN; END IF;
-          SELECT r.owner INTO actual_owner FROM ${schema}.run r WHERE id=1 FOR UPDATE;
+          SELECT r.owner,r.lease_until INTO actual_owner,live_until FROM ${schema}.run r WHERE id=1 FOR UPDATE;
           IF actual_owner IS DISTINCT FROM current_setting('bench61.owner') THEN
             RAISE EXCEPTION 'Benchmark schema ownership mismatch';
           END IF;
-          UPDATE ${schema}.run SET last_query_at=NULL,active_action='cleanup' WHERE id=1;
+          IF live_until>clock_timestamp() THEN
+            RAISE EXCEPTION 'Benchmark workload lease still live; cleanup refused';
+          END IF;
+          UPDATE ${schema}.run SET last_query_at=NULL,active_action='cleanup',lease_request=NULL,lease_until=NULL WHERE id=1;
           ${drop ? `DROP SCHEMA ${schema} CASCADE;
           IF to_regnamespace('bench61_206_20261022') IS NOT NULL THEN
             RAISE EXCEPTION 'Benchmark schema remains';
@@ -148,14 +172,16 @@ export const executeBenchmark = async (action: BenchAction) => {
       active_action=COALESCE(previous.active_action,$2),
       operations=CASE WHEN previous.eligible THEN array_append(previous.operations,$2) ELSE previous.operations END,
       reserved_statements=previous.reserved_statements+CASE WHEN previous.eligible THEN $3 ELSE 0 END,
-      reserved_round_trips=previous.reserved_round_trips+CASE WHEN previous.eligible THEN $4 ELSE 0 END
+      reserved_round_trips=previous.reserved_round_trips+CASE WHEN previous.eligible THEN $4 ELSE 0 END,
+      lease_request=CASE WHEN previous.eligible THEN $7::uuid ELSE previous.lease_request END,
+      lease_until=CASE WHEN previous.eligible THEN clock_timestamp()+interval '300 seconds' ELSE previous.lease_until END
     FROM previous WHERE r.id=previous.id
     RETURNING previous.eligible,extract(epoch FROM (clock_timestamp()-previous.last_query_at))*1000 AS idle_ms
   )`;
-  const params = [owner,action,reservedStatements,reservedTrips,config.maxStatements-9,config.maxRoundTrips-2];
+  const params = [owner,action,reservedStatements,reservedTrips,config.maxStatements-10,config.maxRoundTrips-2,requestId];
   const complete = async () => {
-    const result = await query(`UPDATE ${schema}.run SET last_query_at=clock_timestamp(),active_action=NULL
-      WHERE id=1 AND owner=$1 AND active_action=$2 RETURNING id`, [owner,action]);
+    const result = await query(`UPDATE ${schema}.run SET last_query_at=clock_timestamp(),active_action=NULL,lease_request=NULL,lease_until=NULL
+      WHERE id=1 AND owner=$1 AND active_action=$2 AND lease_request=$3 RETURNING id`, [owner,action,requestId]);
     assert(result.length===1,"owned action completion");
   };
   if (cold) {
@@ -164,7 +190,7 @@ export const executeBenchmark = async (action: BenchAction) => {
       UPDATE ${budgets} SET balance=balance-3 FROM claim
       WHERE claim.eligible AND account='cold' AND active AND observed_at<=clock_timestamp()
         AND observed_at>=clock_timestamp()-interval '5 minutes' AND balance-3>=floor RETURNING balance
-    ) SELECT eligible,idle_ms,(SELECT balance FROM budget) AS admitted_balance FROM claim`, params);
+    ) SELECT eligible,idle_ms,(SELECT balance FROM budget) AS admitted_balance FROM claim`, params,true);
     const measured_ms=performance.now()-start;
     assert(sample.length===1 && sample[0].eligible,"owned non-replayed cold sample, known six-minute idle interval and cap");
     await complete();
@@ -172,7 +198,7 @@ export const executeBenchmark = async (action: BenchAction) => {
       admitted:sample[0].admitted_balance!==null, roundTrips,statements,
       qualification:"Idle-first-request budget check; suspension must be confirmed independently. Synthetic quota may be stale after idle." };
   }
-  const claim = await query(`${claimSql} SELECT eligible FROM claim`, params);
+  const claim = await query(`${claimSql} SELECT eligible FROM claim`, params,true);
   assert(claim.length===1 && claim[0].eligible,"owned run, non-replayed action, resource cap and active deadline");
   if (action === "catalog") {
     const inventory = await query(`SELECT (SELECT count(*)::int FROM ${budgets}) AS synthetic_rows,
@@ -257,7 +283,7 @@ export const executeBenchmark = async (action: BenchAction) => {
   }
   await complete();
   return { ...meta, correctness:{attempts:1000,concurrency:20,admitted,collected,remaining:1},trials,diagnostics,
-    interpretation:"Executor clock includes row-lock waiting, excludes planning/timeout setup/commit. Residual is paired client minus executor time, not pure transport. Lock snapshots are diagnostic, not a complete wait-time census. Single-worker results are not capacity acceptance.",
+    interpretation:"Executor clock includes row-lock waiting, excludes planning/timeout setup/lease-fence check/commit. Residual is paired client minus executor time, not pure transport. Lock snapshots are diagnostic, not a complete wait-time census. Single-worker results are not capacity acceptance.",
     targetPassed:trials.every(t=>t.pair.budget.client.p95_ms<=50),
     headroomPassed:trials.every(t=>t.pair.budget.client.p95_ms<=35),roundTrips,statements };
 };

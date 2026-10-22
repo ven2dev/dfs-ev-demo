@@ -19,10 +19,15 @@ type Fault = "before-drop" | "after-drop" | "after-commit" | "warm" | "profile";
 const useLocalAdapter = () => {
   let fault: Fault | undefined;
   let inFlight=0;
+  const executed: string[]=[];
+  let pause: {entered:()=>void;resumed:Promise<void>} | undefined;
   const query=(text:string,params:unknown[]=[])=>({text,params});
   const transaction=async (queries:ReturnType<typeof query>[])=>{
-    inFlight++;
+    if(pause && queries.some(q=>q.text.startsWith("INSERT INTO") && q.params[0]==="cold")) {
+      const held=pause;pause=undefined;held.entered();await held.resumed;
+    }
     const client=await pool!.connect();
+    inFlight++;
     const cleanup=queries.some(q=>q.text.includes("DROP SCHEMA"));
     const currentFault=fault;
     try {
@@ -38,6 +43,7 @@ const useLocalAdapter = () => {
         if(currentFault==="profile" && q.text.startsWith("WITH bench61_clock") && String(q.params[0]).startsWith("trial-20")) {
           fault=undefined;throw new Error("injected profile failure");
         }
+        executed.push(q.text);
         results.push((await client.query(q.text,q.params)).rows);
       }
       if(cleanup && currentFault==="after-drop") {fault=undefined;throw new Error("injected rollback after drop");}
@@ -47,13 +53,81 @@ const useLocalAdapter = () => {
     }catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();inFlight--;}
   };
   vi.mocked(neon).mockReturnValue({query,transaction} as unknown as ReturnType<typeof neon>);
-  return { pending:()=>inFlight, failNext: (value:Fault)=>{fault=value;} };
+  return { pending:()=>inFlight, executed, failNext: (value:Fault)=>{fault=value;}, pauseNextSeed:()=>{
+    let entered!:()=>void,release!:()=>void;
+    const waiting=new Promise<void>(resolve=>{entered=resolve;});
+    const resumed=new Promise<void>(resolve=>{release=resolve;});
+    pause={entered,resumed};return {entered:waiting,release};
+  } };
 };
 const control = async () => (await pool!.query('SELECT last_query_at,active_action FROM "bench61_206_20261022".run')).rows[0];
 const ageCompletion = () => pool!.query('UPDATE "bench61_206_20261022".run SET last_query_at=clock_timestamp()-interval \'7 minutes\'');
-const cleanup = async () => {expect(await executeBenchmark("cleanup")).toMatchObject({schemaAbsent:true});};
+const cleanup = async () => {
+  // Tests call this only after their request has settled. Age a failed request's
+  // lease instead of waiting five minutes; the real endpoint never changes it.
+  await pool!.query(`DO $fixture$ BEGIN
+    IF to_regnamespace('bench61_206_20261022') IS NOT NULL THEN
+      UPDATE "bench61_206_20261022".run SET lease_until=clock_timestamp()-interval '1 second' WHERE lease_until IS NOT NULL;
+    END IF;
+  END $fixture$`);
+  expect(await executeBenchmark("cleanup")).toMatchObject({schemaAbsent:true});
+};
 
 describe.skipIf(!local)("local PostgreSQL regressions",()=>{
+  it("refuses a separate cleanup between a live run's transactions without changing its control state",async()=>{
+    const adapter=useLocalAdapter();await executeBenchmark("setup");
+    const pause=adapter.pauseNextSeed();
+    const running=executeBenchmark("run").then(value=>({value}),error=>({error}));
+    try {
+      await pause.entered;
+      const before=(await pool!.query('SELECT * FROM "bench61_206_20261022".run')).rows[0];
+      expect(before).toMatchObject({active_action:"run",lease_request:expect.any(String),lease_until:expect.any(Date)});
+      await expect(executeBenchmark("cleanup")).rejects.toThrow("lease still live");
+      const after=(await pool!.query('SELECT * FROM "bench61_206_20261022".run')).rows[0];
+      expect(after).toEqual(before);
+      pause.release();const result=await running;
+      if("error" in result) throw result.error;
+      expect(result.value).toMatchObject({correctness:{admitted:26,collected:7}});
+      expect((await pool!.query('SELECT lease_request,lease_until FROM "bench61_206_20261022".run')).rows[0]).toEqual({lease_request:null,lease_until:null});
+      expect(await executeBenchmark("cleanup")).toMatchObject({schemaAbsent:true});
+    }finally{pause.release();await running;await cleanup();}
+  },120000);
+
+  it("recovers an abandoned lease and fences the paused request if it later resumes",async()=>{
+    const adapter=useLocalAdapter();await executeBenchmark("setup");
+    const pause=adapter.pauseNextSeed();
+    const running=executeBenchmark("run").then(value=>({value}),error=>({error}));
+    try {
+      await pause.entered;
+      await pool!.query(`UPDATE "bench61_206_20261022".run SET lease_until=clock_timestamp()-interval '1 second'`);
+      expect(await executeBenchmark("cleanup")).toMatchObject({schemaAbsent:true});
+      const at=adapter.executed.length;
+      pause.release();expect(await running).toHaveProperty("error");
+      expect(adapter.executed.slice(at).some(text=>text.startsWith("INSERT INTO"))).toBe(false);
+      expect(adapter.pending()).toBe(0);
+      expect(await executeBenchmark("cleanup")).toMatchObject({schemaAbsent:true});
+    }finally{pause.release();await running;await cleanup();}
+  });
+
+  it("keeps expired in-flight transactions fenced from cleanup until commit, and rejects late transactions",async()=>{
+    useLocalAdapter();await executeBenchmark("setup");
+    const client=await pool!.connect();
+    try {
+      const owner=(await pool!.query('SELECT owner FROM "bench61_206_20261022".run')).rows[0].owner;
+      const request="00000000-0000-4000-8000-000000000001";
+      await pool!.query(`UPDATE "bench61_206_20261022".run SET active_action='run',lease_request=$1,lease_until=clock_timestamp()+interval '300 seconds'`,[request]);
+      await client.query("BEGIN");
+      await client.query('SELECT "bench61_206_20261022".guard($1,$2,false)',[owner,request]);
+      await expect(pool!.query('SELECT "bench61_206_20261022".guard($1,$2,false)',[owner,"00000000-0000-4000-8000-000000000002"])).rejects.toThrow("does not match");
+      await pool!.query(`UPDATE "bench61_206_20261022".run SET lease_until=clock_timestamp()-interval '1 second'`);
+      await expect(executeBenchmark("cleanup")).rejects.toThrow("transaction still in flight");
+      expect(await control()).toMatchObject({active_action:"run"});
+      await expect(pool!.query('SELECT "bench61_206_20261022".guard($1,$2,false)',[owner,request])).rejects.toThrow("lease expired");
+      await client.query("COMMIT");
+      expect(await executeBenchmark("cleanup")).toMatchObject({schemaAbsent:true});
+    }finally{await client.query("ROLLBACK");client.release();await cleanup();}
+  });
+
   it("executor timing includes a held row lock and wait snapshots see that synthetic waiter",async()=>{
     useLocalAdapter();await executeBenchmark("setup");
     const blocker=await pool!.connect();
@@ -150,6 +224,7 @@ describe.skipIf(!local)("local PostgreSQL regressions",()=>{
     try {
       await ageCompletion();adapter.failNext("warm");
       await expect(executeBenchmark("run")).rejects.toThrow("injected warm failure");
+      await expect(executeBenchmark("cleanup")).rejects.toThrow("lease still live");
       expect(await control()).toMatchObject({last_query_at:null,active_action:"run"});
       await expect(executeBenchmark("cold1")).rejects.toThrow("known six-minute idle");
       expect(await control()).toMatchObject({last_query_at:null,active_action:"run"});

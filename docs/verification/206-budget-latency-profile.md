@@ -1,6 +1,6 @@
 # #61 follow-up: bounded latency profiling proposal
 
-Status: owner approved 2026-10-22; not yet implemented or deployed. Separate <=2-hour child scope under #61, so profiling does not silently expand the original benchmark into application implementation.
+Status: owner approved 2026-10-22; initial harness committed as e3838d6, local review correction pending commit/review; nothing deployed. Separate <=2-hour child scope under #61, so profiling does not silently expand the original benchmark into application implementation.
 
 ## Design basis
 
@@ -35,11 +35,11 @@ Three 100-sample-per-mode single-worker diagnostic pairs precede three 1,000-sam
 
 During each 20-worker budget trial, at most ten additional transactions sample pg_stat_activity at >=20 ms intervals. Only counts of matching synthetic-schema queries and Lock/IO/LWLock waiters leave PostgreSQL. Sampling can perturb contention and is a diagnostic, not exact per-request lock time. A zero observation does not prove absence of contention. Compare single-worker and 20-worker executor distributions alongside these snapshots. No other role privileges or settings are changed.
 
-The workload reserves 7,900 HTTP round trips / 15,800 explicit SQL statements before starting. Its maximum successful path is 7,761 / 15,522 (including <=30 sampler transactions); setup is 2 / 9, catalog 3 / 6, cleanup 2 / 6. Total planned maximum: 7,768 / 15,543, below 8,020 / 16,040. Every generic query checks its counters before dispatch; all claims reserve against shared control-row caps. Transaction protocol BEGIN/COMMIT is implicit in the Neon HTTP transaction and not counted as explicit submitted statements. No automatic retries. Failed workers and samplers are drained before failure is returned, leaving activity unknown and preventing a premature cleanup race.
+The workload reserves 7,900 HTTP round trips / 15,800 explicit SQL statements before starting. Its maximum successful path is 7,761 / 15,522 (including <=30 sampler transactions); setup is 2 / 10, catalog 3 / 6, cleanup 2 / 6. Total planned maximum: 7,768 / 15,544, below 8,020 / 16,040. Every generic query checks its counters before dispatch; all claims reserve against shared control-row caps. Transaction protocol BEGIN/COMMIT is implicit in the Neon HTTP transaction and not counted as explicit submitted statements. No automatic retries. Failed workers and samplers are drained before failure is returned, leaving activity unknown. Cross-request cleanup coordination is described below.
 
 No idle/cold sample is offered by this operator page; retained internal idle regressions protect the previous fixes. Any future idle observations remain idle-first-request unless suspension is independently established.
 
-## Local verification
+## Initial verification (e3838d6, before coordination correction)
 
 Passed on Node 24.18.1: 951 application tests + 294 Node tests (5 default opt-in skips), 6/6 fixed PostgreSQL integration tests, root/web typechecks, full lint including 10 import-boundary probes, and the production Turbopack build. Without opt-in all six integration tests skip without constructing a pool. Sandbox-only localhost listen failures cleared on the full-suite rerun with loopback enabled.
 
@@ -52,3 +52,25 @@ Fixed opt-in fixture: PostgreSQL 18.6, 512 MiB, 127.0.0.1:54361 only. The integr
 Stop after local validation for owner commit approval, then independent owner-run review. Fresh push approval precedes deployment. Recheck Vercel protection, runtime iad1, designated Preview hostname/resource and token expiry before setup. Only after the approved hosted run, save sanitized evidence, run owned-schema cleanup and verify absence, then remove the exact disposable deployment and verify its URL is unavailable. Permanent #61 implementation remains blocked on the missed original target.
 
 References: PostgreSQL 18 [clock_timestamp](https://www.postgresql.org/docs/18/functions-datetime.html#FUNCTIONS-DATETIME-CURRENT) and [pg_stat_activity](https://www.postgresql.org/docs/18/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW). Installed Next.js route/proxy guides read before implementation.
+
+## Review correction: live-run cleanup coordination (design basis)
+
+Pattern: a fixed-duration, per-request database lease with transaction-scoped shared/exclusive fencing. Each admitted action gets a random request identity and a database-clock expiry of 300 seconds, matching the function duration cap. Every workload transaction acquires the same shared advisory lock and checks the exact owner/request identity and unexpired lease before running its measured statement. Cleanup tries the exclusive form of that lock without queueing (refusing any in-flight transaction immediately), validates ownership and refuses a live lease before changing activity or dropping anything. The lock is scoped to this experiment's fixed pair of integer keys, not an application account lock. The nonblocking cleanup attempt avoids introducing an exclusive-lock queue into live benchmark timings.
+
+Alternatives: process-local busy flags do not coordinate Vercel instances; checking only active_action makes abandoned runs permanently block cleanup; expiry without a transaction fence allows an in-flight or resumed writer to overlap a drop. A long transaction around the entire benchmark would require a persistent connection and change the HTTP request experiment, so it is rejected. We follow the lease/fencing pattern without a new service or production schema.
+
+Reasons: the shared lock stays held until the measured transaction commits/rolls back, preventing teardown of an admitted in-flight transaction; the per-request check rejects later transactions after lease expiry or ownership change, preventing a paused process from resuming after cleanup. A failed/abandoned action retains its lease until the original 300-second expiry, after which cleanup can recover; there is no heartbeat extension or automatic retry. Successful completion clears the lease. Cleanup remains idempotent and revalidates ownership under its exclusive fence on every retry. Failed or ambiguous work leaves idle eligibility unknown.
+
+Targets/assumptions: unchanged 20 workers, 50 ms p95, 35 ms headroom, 8,020 round trips and 16,040 explicit submitted SQL statements; fixed PostgreSQL 18.6/512 MiB local fixture. The guard is folded into the existing timeout-setup SELECT, so two submitted statements / one HTTP round trip remain per workload transaction. It adds one control-row check plus a shared advisory lock per transaction to both modes, included in client elapsed/residual and excluded from the executor interval; that overhead will be disclosed rather than called pure transport. One additional setup CREATE FUNCTION statement increases setup to 10 statements and total maximum to 15,544; no production assets or package boundaries change.
+
+Validation before correction commit: overlap a paused run with a separate cleanup request; reject cleanup with lease and activity unchanged; resume and complete the run; clean up successfully. Simulate abandoned expiry, retain an in-flight fenced transaction, reject teardown while it is held, then permit teardown after it drains; reject a late transaction from the expired identity. Retain prior ownership, interruption, lost-response, idle-state and workload-count regressions. Owner review repeats before any push/deploy.
+
+### Correction verification
+
+Local correction: 9/9 PostgreSQL regressions passed, including the three overlapping-request/expiry tests; 4/4 access-control tests passed. Full application suite: 951 passing, 9 opt-in skips; Node suite: 294 passing. Typecheck, full lint (including all 10 import-boundary probes), production build and whitespace checks passed. The opt-in suite skips all nine tests without constructing a pool when BENCH61_LOCAL_TEST is absent. No source outside the disposable web harness and its root fixture/documentation/evidence changed; no dependency, lockfile, database-package, pipeline or CI edits.
+
+Updated receipt: `docs/evidence/206-profile/local-coordination-receipt.json`; initial receipt retained separately. Workload count remains 7,761 round trips / 15,522 submitted statements; planned total with setup, catalog and cleanup is 7,768 / 15,544. The guard introduces internal PostgreSQL work (one control-row read and shared fence per workload transaction), despite leaving the submitted-statement count unchanged. The revised client timings include it; do not compare them to the original unguarded hosted timings as if the operations were identical. The hosted 50 ms gate remains failed/unresolved.
+
+Failed/abandoned operation procedure: do not retry the workload. Retry cleanup after the original five-minute lease deadline (or after successful completion); an in-flight guarded transaction causes immediate cleanup refusal without queueing behind it. After it drains, retry cleanup, which revalidates owner and absence under the exclusive fence. New work from an expired request fails before its measured statement. No lease is forcibly expired by the production handler; only fixed local tests advance that state to avoid five-minute test waits.
+
+Repeat review is required against e3838d6 plus this uncommitted correction. Commit, push and deployment remain separate owner gates. This correction does not grant push or deployment consent.
