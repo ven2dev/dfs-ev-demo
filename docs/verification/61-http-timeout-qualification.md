@@ -1,7 +1,8 @@
-# #61 HTTP timeout qualification — local components, steps 1–2
+# #61 HTTP timeout qualification — local components, steps 1–3
 
 These are components of the disposable experiment, not a deployable
-candidate. Step 1 was committed as `3afed44`; step 2 awaits commit approval.
+candidate. Step 1 was committed as `3afed44`, step 2 as `0f53155`;
+step 3 awaits commit approval.
 No HTTP qualification has run. The new module is not connected to a
 route. Existing profiling routes/configuration are historical and are not approved
 for another deployment. No new credential or hosted role exists.
@@ -76,8 +77,9 @@ defaults were independently queried before the fixture was stopped. See
    its local SQL/error regressions are now established. Preserve the previously
    reviewed lease and transaction fence.
 3. Wire a qualification-only route/UI, remove performance/old profiling action
-   admission, and regenerate the expiring deployment token. The partial module's
-   `performanceEnabled: false` is descriptive; it is not the route gate.
+   admission, and regenerate the expiring deployment token. Performance/idle
+   admission is now closed (step 3 below); qualification itself is not wired.
+   The partial module's `performanceEnabled: false` remains descriptive.
 4. Verify integration, counts and production compilation; obtain local candidate
    review and fresh push/deployment consent. Do not deploy this partial step.
 5. Run actual managed HTTP qualification. Only a complete pass can support a
@@ -85,3 +87,18 @@ defaults were independently queried before the fixture was stopped. See
 
 No provider requests, database-package, pipeline, CI, dependency or lockfile
 changes are included. The disposable experiment is never merged into main.
+
+## Step 3 — close performance admission and verify the suite
+
+The HTTP authorizer now accepts only setup, catalog and cleanup. The page no
+longer offers run or idle-sample actions. Even a valid token in the correct
+Preview environment cannot admit run, cold1–3 or the not-yet-wired qualify
+action: route tests assert 404 before database-client construction. Historical
+profiling functions remain solely for opt-in regressions, not HTTP admission.
+
+Validation on Node 24: 12 focused tests pass; the full suite passes with 951
+application tests and 302 Node tests (10 opt-in tests skipped). Web typecheck,
+targeted ESLint and whitespace checks pass. The first sandboxed full-suite run
+failed existing loopback-server tests with listen EPERM; the rerun with loopback
+permission passed. No database fixture, hosted request, new credential or
+performance run was used in this step.

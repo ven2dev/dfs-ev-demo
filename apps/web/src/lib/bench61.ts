@@ -7,11 +7,14 @@ import config from "./bench61-config.json";
 const schema = '"bench61_206_20261022"';
 const budgets = `${schema}.budgets`;
 const owner = config.tokenHash;
-const actions = ["setup", "run", "cold1", "cold2", "cold3", "catalog", "cleanup"] as const;
-export type BenchAction = typeof actions[number];
+export type BenchAction = "setup" | "run" | "cold1" | "cold2" | "cold3" | "catalog" | "cleanup";
+// Only control actions are exposed while the functional candidate is prepared.
+// Retained profiling code supports historical regressions, never HTTP admission.
+const admittedActions: readonly string[] = ["setup", "catalog", "cleanup"];
 export const authorizeBenchmark = (token: unknown, action: unknown, env: Record<string, string | undefined> = process.env, now = Date.now()) => {
   if (env.VERCEL_ENV !== "preview" || env.VERCEL_REGION !== "iad1" || now >= Date.parse(config.expiresAt)
-    || typeof token !== "string" || token.length !== 64 || !actions.includes(action as BenchAction)) return false;
+    || typeof token !== "string" || token.length !== 64 || typeof action !== "string"
+    || !admittedActions.includes(action)) return false;
   try {
     if (new URL(env.DATABASE_URL ?? "").hostname !== config.host) return false;
   } catch { return false; }

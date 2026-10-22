@@ -11,7 +11,7 @@ import { authorizeBenchmark, executeBenchmark } from "./bench61";
 import benchmarkConfig from "./bench61-config.json";
 import { POST } from "@/app/api/bench61/route";
 const env = { VERCEL_ENV:"preview",VERCEL_REGION:"iad1",DATABASE_URL:`postgres://user:local@${fixture.host}/fixture` };
-beforeEach(()=>{vi.mocked(neon).mockReset();});
+beforeEach(()=>{vi.unstubAllEnvs();vi.mocked(neon).mockReset();});
 describe("disposable benchmark boundary",()=>{
   it("accepts only the designated Preview, region, unexpired token and enumerated action",()=>{
     expect(authorizeBenchmark(fixture.token,"setup",env)).toBe(true);
@@ -25,6 +25,17 @@ describe("disposable benchmark boundary",()=>{
   it("rejects invalid POSTs before constructing a database client",async()=>{
     for(const body of ["null","not json",JSON.stringify({token:"wrong",action:"setup"}),"x".repeat(1025)]) {
       const response=await POST(new Request("https://fixture.invalid/api/bench61",{method:"POST",body}));
+      expect(response.status).toBe(404);
+    }
+    expect(neon).not.toHaveBeenCalled();
+  });
+  it("refuses performance and idle-sample actions even with a valid Preview token",async()=>{
+    for(const [name,value] of Object.entries(env))vi.stubEnv(name,value);
+    for(const action of ["run","cold1","cold2","cold3","qualify"]) {
+      expect(authorizeBenchmark(fixture.token,action,env)).toBe(false);
+      const response=await POST(new Request("https://fixture.invalid/api/bench61",{
+        method:"POST",body:JSON.stringify({token:fixture.token,action}),
+      }));
       expect(response.status).toBe(404);
     }
     expect(neon).not.toHaveBeenCalled();
