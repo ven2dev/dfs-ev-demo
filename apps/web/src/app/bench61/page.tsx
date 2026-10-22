@@ -6,8 +6,8 @@ export default function BenchmarkPage() {
   const [busy,setBusy]=useState(false);
   const [results,setResults]=useState<string[]>([]);
   return <main className="mx-auto max-w-3xl space-y-4 p-6">
-    <h1>Disposable #61 functional qualification preparation</h1>
-    <p>Synthetic Preview data only. No provider calls. Performance and idle-sample actions are disabled. HTTP qualification is not wired yet. Cleanup is retryable.</p>
+    <h1>Disposable #61 functional qualification</h1>
+    <p>Synthetic Preview data only. No provider calls. Performance and idle-sample actions are disabled. Qualification runs once; cleanup is retryable. A pass does not establish latency acceptance.</p>
     <form className="space-y-4" onSubmit={async event=>{
       event.preventDefault();setBusy(true);
       try {
@@ -22,7 +22,7 @@ export default function BenchmarkPage() {
     }}>
       <label className="block">Benchmark token <input type="password" autoComplete="off" className="block min-h-11 border p-2" value={token} onChange={e=>setToken(e.target.value)} /></label>
       <label className="block">Operation <select className="block min-h-11 border p-2" value={action} onChange={e=>setAction(e.target.value)}>
-        {["setup","catalog","cleanup"].map(value=><option key={value}>{value}</option>)}
+        {["setup","qualify","catalog","cleanup"].map(value=><option key={value}>{value}</option>)}
       </select></label>
       <button disabled={busy} className="min-h-11 rounded border px-4">{busy?"Running…":"Run selected operation"}</button>
     </form>

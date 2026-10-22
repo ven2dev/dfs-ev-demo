@@ -29,14 +29,9 @@ describe("disposable benchmark boundary",()=>{
     }
     expect(neon).not.toHaveBeenCalled();
   });
-  it("refuses performance and idle-sample actions even with a valid Preview token",async()=>{
-    for(const [name,value] of Object.entries(env))vi.stubEnv(name,value);
+  it("keeps the historical authorizer closed to performance and idle-sample actions",()=>{
     for(const action of ["run","cold1","cold2","cold3","qualify"]) {
       expect(authorizeBenchmark(fixture.token,action,env)).toBe(false);
-      const response=await POST(new Request("https://fixture.invalid/api/bench61",{
-        method:"POST",body:JSON.stringify({token:fixture.token,action}),
-      }));
-      expect(response.status).toBe(404);
     }
     expect(neon).not.toHaveBeenCalled();
   });

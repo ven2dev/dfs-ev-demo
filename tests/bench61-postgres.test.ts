@@ -111,7 +111,7 @@ describe.skipIf(!local)("local PostgreSQL regressions",()=>{
       vi.mocked(neon).mockReturnValue({query:transportQuery} as unknown as ReturnType<typeof neon>);
       const result=await qualifyHttpTimeout(`postgres://${timeoutRole}:test-only@${fixture.host}/bench61`,fixture.host,"bench61",
         {schema:'"bench61_206_20261022"',owner,request},async(text,params=[]) => (await pool!.query(text,params)).rows);
-      expect(result).toMatchObject({serverStatementCancellation:true,debitRolledBack:true,performanceEnabled:false,roundTrips:8});
+      expect(result).toMatchObject({serverStatementCancellation:true,debitRolledBack:true,performanceEnabled:false,roundTrips:10});
       expect(adapter.pending()).toBe(0);
       useLocalAdapter();
       const holder=await pool!.connect();

@@ -1,0 +1,178 @@
+{
+  "scope": "Direct local PostgreSQL via transport adapter; not Neon HTTP evidence",
+  "result": {
+    "host": "fixture.neon.tech",
+    "database": "bench61",
+    "schema": "bench61_http_role_20261022",
+    "role": "bench61_http_timeout_20261022",
+    "ownerFingerprint": "91f4f463ae48778e25b4dadf71f12fdd43fb0288db2bbeec866d28e9f97cfeff",
+    "performanceEnabled": false,
+    "qualification": "functional probes passed; no performance acceptance",
+    "identities": [
+      {
+        "session_user": "bench61_http_timeout_20261022",
+        "current_user": "bench61_http_timeout_20261022",
+        "database": "bench61",
+        "statement": "5s",
+        "lock": "2s",
+        "isolation": "read committed",
+        "pid": 37
+      },
+      {
+        "session_user": "bench61_http_timeout_20261022",
+        "current_user": "bench61_http_timeout_20261022",
+        "database": "bench61",
+        "statement": "5s",
+        "lock": "2s",
+        "isolation": "read committed",
+        "pid": 37
+      },
+      {
+        "session_user": "bench61_http_timeout_20261022",
+        "current_user": "bench61_http_timeout_20261022",
+        "database": "bench61",
+        "statement": "5s",
+        "lock": "2s",
+        "isolation": "read committed",
+        "pid": 37
+      },
+      {
+        "session_user": "bench61_http_timeout_20261022",
+        "current_user": "bench61_http_timeout_20261022",
+        "database": "bench61",
+        "statement": "5s",
+        "lock": "2s",
+        "isolation": "read committed",
+        "pid": 39
+      },
+      {
+        "session_user": "bench61_http_timeout_20261022",
+        "current_user": "bench61_http_timeout_20261022",
+        "database": "bench61",
+        "statement": "5s",
+        "lock": "2s",
+        "isolation": "read committed",
+        "pid": 38
+      },
+      {
+        "session_user": "bench61_http_timeout_20261022",
+        "current_user": "bench61_http_timeout_20261022",
+        "database": "bench61",
+        "statement": "5s",
+        "lock": "2s",
+        "isolation": "read committed",
+        "pid": 40
+      }
+    ],
+    "transactionStateIsolatedOnReusedBackend": true,
+    "backendReuse": {
+      "markerPid": 38,
+      "reused": true
+    },
+    "statementProbeMs": 5004.573,
+    "debitRollbackProbeMs": 5006.088208,
+    "lockProbeMs": 2017.1561249999995,
+    "statementTimeout": true,
+    "rollback": true,
+    "lockTimeout": true,
+    "cleanupFence": true,
+    "lateAdmissionRefused": true,
+    "mismatchedIdentityRefused": true,
+    "roundTrips": 45,
+    "statements": 85,
+    "remaining": [
+      "separate independent review of evidence before any performance decision"
+    ]
+  },
+  "parentCommit": "42cf489",
+  "date": "2026-10-22",
+  "fixture": {
+    "host": "127.0.0.1",
+    "port": 54361,
+    "database": "bench61",
+    "postgresVersion": "18.6",
+    "memoryMiB": 512,
+    "stoppedAfterTesting": true
+  },
+  "cleanup": {
+    "postgresVersion": "18.6",
+    "schemaAbsent": true,
+    "roleAbsent": true,
+    "priorFixtureSchemaAbsent": true,
+    "priorFixtureRoleAbsent": true,
+    "aclProbeAbsent": true,
+    "operatorStatementTimeout": "0",
+    "operatorLockTimeout": "0"
+  },
+  "verification": {
+    "applicationTestsPassed": 951,
+    "nodeTestsPassed": 307,
+    "defaultIntegrationTestsSkipped": 13,
+    "functionalPostgresRegressionsPassed": 3,
+    "priorFiniteRoleRegressionPassed": 1,
+    "deploymentHelperTestsPassed": 3,
+    "rootAndWebTypecheck": "pass",
+    "targetedLint": "pass",
+    "importBoundaryTestsPassed": 10,
+    "productionBuild": "pass",
+    "functionalPostgresSuiteDurationSeconds": 18.54
+  },
+  "scopeLimits": {
+    "managedHttpProven": false,
+    "hostedChanges": false,
+    "pushed": false,
+    "deployed": false,
+    "performanceRun": false,
+    "targetsUnchanged": {
+      "workers": 20,
+      "p95Ms": 50,
+      "headroomMs": 35
+    }
+  },
+  "sourceSha256": {
+    "apps/web/src/lib/bench61-functional.ts": "e6d3a8826a4e39b4f39fc347d3601c68e44845b0c0b572069b20a4937e52817b",
+    "apps/web/src/lib/bench61-timeout.ts": "09722ca8573f3144fd38f0b16a02d82f82a23abe257cd380d9c1c5a227d0d9f6",
+    "apps/web/src/lib/bench61-config.json": "d08d9710bfe4079d9b872a8eda02ce498d32cc7d4e254d8269ea780929d87727",
+    "apps/web/src/app/api/bench61/route.ts": "a418ce81a282f70970afb7e47ea539474ad1ea47b45610f74cffdae6fe91ec49",
+    "apps/web/src/app/bench61/page.tsx": "296716aa427c822a41f684b80a238677961d857ba9ab5b34c4466238cae667ac",
+    "apps/web/src/proxy.ts": "368423ffb0eb0bbe476a3e244d2e80d4bc7c1d8f69f048f5e48f67917c885025",
+    "scripts/bench61-deploy.mjs": "91e90e35bd8abfb1ecd40b6bba9c3d383d829cc8a313f19fb2d2040328eb22ad",
+    "tests/bench61-functional-postgres.test.ts": "9cace1a7b945a7f8a313337987fa2187d381a02863f34b56f664e304c52c445d",
+    "tests/bench61-postgres.test.ts": "e65f98b0d943728b54575e4e8ad2cc155b7774cfa0367577f080273e0620e9f9",
+    "apps/web/src/lib/bench61-functional.server.test.ts": "aa5e46d9224405b170fba68e6bc93fd84d311f65e8a300bcddd7049cb3b657f2",
+    "apps/web/src/lib/bench61-timeout.server.test.ts": "9ccf96a1c576702b712f9e12cb8ef4ff770185fd4dd22e03de3a25e71ef5f24e",
+    "tests/bench61-deploy.check.mjs": "62fa74e27c823d7c28e1c38ada534ff0305a5e96893c1d6b27b42043be01faae",
+    "vitest.bench61.config.ts": "0ffb3d857e33c118f77d50601f8b7f88a87063d1a872331dfad1d26d9e84550b",
+    "apps/web/src/lib/bench61.ts": "2d412a22c26436b501e69721fffaeb1ee3cbb39e22f24312368b5d6c2592c719"
+  },
+  "functionalCleanup": {
+    "host": "fixture.neon.tech",
+    "database": "bench61",
+    "schema": "bench61_http_role_20261022",
+    "role": "bench61_http_timeout_20261022",
+    "ownerFingerprint": "91f4f463ae48778e25b4dadf71f12fdd43fb0288db2bbeec866d28e9f97cfeff",
+    "performanceEnabled": false,
+    "schemaAbsent": true,
+    "roleAbsent": true,
+    "workerSessionsBeforeDrop": 1,
+    "workerOidBeforeDrop": 20341,
+    "sessionsTerminated": false,
+    "roundTrips": 1,
+    "statements": 3
+  },
+  "functionalCleanupReplay": {
+    "host": "fixture.neon.tech",
+    "database": "bench61",
+    "schema": "bench61_http_role_20261022",
+    "role": "bench61_http_timeout_20261022",
+    "ownerFingerprint": "91f4f463ae48778e25b4dadf71f12fdd43fb0288db2bbeec866d28e9f97cfeff",
+    "performanceEnabled": false,
+    "schemaAbsent": true,
+    "roleAbsent": true,
+    "workerSessionsBeforeDrop": null,
+    "workerOidBeforeDrop": null,
+    "sessionsTerminated": false,
+    "roundTrips": 1,
+    "statements": 3
+  }
+}
