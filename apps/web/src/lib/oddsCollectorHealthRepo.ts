@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getSql } from "./db";
-import { getCurrentNflSlateWindow } from "./nflWeek";
+import { getCurrentNflSlateWindow } from "@dfs-ev/domain/nfl-week";
 import type { OddsCollectorHealthSnapshot } from "./oddsCollectorHealth";
 
 type HealthSnapshotRow = {

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { buildCaptureEvent, type CaptureEvent } from "../../../../apps/web/src/lib/creatorCaptures.ts";
-import type { DecisionEvent, DecisionsFile } from "../../../../apps/web/src/lib/creatorDecisions.ts";
+import { buildCaptureEvent, type CaptureEvent } from "../../src/creator/creatorCaptures.ts";
+import type { DecisionEvent, DecisionsFile } from "../../src/creator/creatorDecisions.ts";
 import { buildReadinessGate } from "./readinessGate.ts";
 import {
   planCorpusImport,

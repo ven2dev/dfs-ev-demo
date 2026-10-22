@@ -1,5 +1,5 @@
-import { activeCaptures, captureKey, type CaptionKind, type CaptureEvent } from "../../../../apps/web/src/lib/creatorCaptures.ts";
-import type { DecisionsFile } from "../../../../apps/web/src/lib/creatorDecisions.ts";
+import { activeCaptures, captureKey, type CaptionKind, type CaptureEvent } from "../../src/creator/creatorCaptures.ts";
+import type { DecisionsFile } from "../../src/creator/creatorDecisions.ts";
 import type { DiscoveryFile } from "./discoveryFile.ts";
 import { buildReviewState, type ReviewVideo } from "./reviewState.ts";
 

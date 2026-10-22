@@ -5,6 +5,16 @@ import type { EVScore, PlayerPropDirection } from "@dfs-ev/domain";
 import { computeEV, type EVPipelineInput, type EVPipelineResult } from "@dfs-ev/domain/ev";
 
 describe("domain package consumer contract", () => {
+  it("runs the pipeline public-package contract in the regular Node test lane", () => {
+    for (const cwd of [new URL("../../../../", import.meta.url), new URL("../../", import.meta.url)]) {
+      const result = spawnSync(process.execPath, ["--test", fileURLToPath(new URL("../package-contract.check.mjs", import.meta.url)), fileURLToPath(new URL("../paths-contract.check.mjs", import.meta.url))], {
+        cwd: fileURLToPath(cwd),
+        env: { PATH: process.env.PATH, NODE_ENV: "test" }, encoding: "utf8", timeout: 15000,
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.status, result.stderr + result.stdout).toBe(0);
+    }
+  });
   it("shares the leaf types directly with calculation consumers", () => {
     expectTypeOf<EVPipelineInput["direction"]>().toEqualTypeOf<PlayerPropDirection>();
     expectTypeOf<EVPipelineResult["evScore"]>().toEqualTypeOf<EVScore>();

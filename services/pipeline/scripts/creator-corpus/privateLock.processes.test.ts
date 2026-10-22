@@ -5,7 +5,7 @@ import { mkdtemp, readFile, readdir, rm, stat, utimes, writeFile } from "node:fs
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { parseCaptureLog } from "../../../../apps/web/src/lib/creatorCaptures.ts";
+import { parseCaptureLog } from "../../src/creator/creatorCaptures.ts";
 import { NOW, discoveryFor, record } from "./testSupport.ts";
 
 // Real, separate processes against one lock, released together by a barrier

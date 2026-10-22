@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { CaptureError, activeCaptures, buildCaptureEvent, captureKey, transitionProblem, type CaptureEvent, type CaptureRequest } from "../../../../apps/web/src/lib/creatorCaptures.ts";
+import { CaptureError, activeCaptures, buildCaptureEvent, captureKey, transitionProblem, type CaptureEvent, type CaptureRequest } from "../../src/creator/creatorCaptures.ts";
 import { buildCaptureQueue, type QueueScope } from "./captureQueue.ts";
 import { buildReviewState } from "./reviewState.ts";
 import { NOW, discoveryFor, record, vid } from "./testSupport.ts";

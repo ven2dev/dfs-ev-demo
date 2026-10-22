@@ -41,7 +41,7 @@ test("#163 versioned materialized research adapter", { timeout: 120_000 }, async
   });
   try {
     await withFeatureStoreDatabase(async ({ admin, writer, createWriterConfig }) => {
-      await admin.query(await readFile(new URL("../../../../packages/db/proposals/163_empirical_reader.sql", import.meta.url), "utf8"));
+      await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/163_empirical_reader.sql")), "utf8"));
       const config = await createWriterConfig(); assert.match(String(config.user), /^fs138_job_[a-f0-9]{16}$/);
       await admin.query(`REVOKE fs138_pipeline_writer FROM ${config.user}`);
       await admin.query(`GRANT fs163_research_reader TO ${config.user}`);

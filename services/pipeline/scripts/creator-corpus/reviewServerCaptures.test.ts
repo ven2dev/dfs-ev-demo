@@ -4,7 +4,7 @@ import { chmod, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { MAX_TRANSCRIPT_BYTES, parseCaptureLog } from "../../../../apps/web/src/lib/creatorCaptures.ts";
+import { MAX_TRANSCRIPT_BYTES, parseCaptureLog } from "../../src/creator/creatorCaptures.ts";
 import { MAX_BODY_BYTES, MAX_CAPTURE_BODY_BYTES, startReviewServer, type ReviewServer } from "./reviewServer.ts";
 import { NOW, discoveryFor, record, vid } from "./testSupport.ts";
 

@@ -1,0 +1,152 @@
+# Pipeline workspace extraction (#191)
+
+## Design basis
+
+- Pattern: a private server-side job workspace with explicit source exports,
+  declared runtime dependencies and consumer-owned tests. Pipeline depends on
+  domain and DB runtime; disposable harnesses depend on DB tooling in development.
+- Alternatives: jobs importing the web app couple non-UI work to deployment;
+  DB-owned consumer tests reverse the dependency graph; a separate repository
+  adds publishing and coordinated releases. Duplicating the shared calendar
+  would let web and creator policy disagree, so its existing implementation
+  belongs to domain.
+- Targets: preserve outputs, CLI arguments, empirical three-statement/two-rights
+  budget, all 34 frozen hashes and readiness contracts; 74 Node DB, 25 PostgreSQL
+  and 79 feature-store cases; both DB suites on the standard 512 MiB fixture.
+  Root command names and CI remain unchanged. No new performance claim is made.
+- Requirement reasons: explicit exports prevent private-source coupling;
+  one-way dependencies keep infrastructure independent of consumers; test
+  inventory comparison prevents dropped cases; repository-wide private-output
+  protection prevents creator material leaking into another workspace; unchanged
+  ObjectStore, rights, lineage and knowledge clocks preserve evidence integrity.
+- Assumptions: Node 24, npm workspaces, one lockfile, local storage and disposable
+  databases. No new runtime flow or performance-sensitive redesign is approved.
+
+## Approved roadmap
+
+The owner approved inventory first, behavior preservation and branch/worktree
+creation from fresh main. Engineering work is capped at five hours; report and
+split remaining scope before exceeding it. Owner/review waiting is separate.
+Each step needs commit approval; pushes need fresh consent; the owner merges.
+
+1. Inventory actual ownership/dependencies. Already correctly located files stay
+   in place. The [inventory receipt](evidence/pipeline-191/step-1-inventory.json)
+   records 90 pipeline files and 51 imports from 27 files into web. It describes
+   the target dependency direction, not a completed implementation.
+2. Complete package exports/dependencies and remove pipeline's dependency on web.
+   Creator-only policies and tests move to pipeline; the pure shared NFL week
+   module moves unchanged to domain. Do not retain compatibility re-exports.
+3. Prove owner-local integration tests, package boundaries, supported CLI/asset/
+   child-process paths and repository-wide private-output/lock protections.
+   DB harness imports use DB tooling's public test-support exports.
+4. Run the full typecheck/lint/unit/build, inventory, frozen/catalog/readiness
+   and both PostgreSQL gates. Retain compact receipts and stop for review.
+
+No SQL behavior changes, frozen migrations, hosted writes, Production, GCS, UI
+product integration, deployment or scheduling belong here. Turborepo CI is #192.
+
+## Package ownership
+
+All feature-store source, scripts and integration tests were already correctly
+placed, so they do not move. The five creator-only policy modules and their
+tests leave web. Their historical calendar uses the shared pure `nflWeek.ts`:
+that module and its existing tests move to domain, byte-identical. Web and
+pipeline use `@dfs-ev/domain/nfl-week`. This closes a transitive web dependency
+without duplicating date arithmetic or introducing a new runtime flow.
+
+`@dfs-ev/pipeline/feature-store/*` exports the existing job, adapter, storage and
+governance modules through named subpaths. `@dfs-ev/pipeline/creator/*` exports
+the creator policy contracts. There is no broad wildcard/private-source export.
+Runtime declares domain, DB, pg and csv-parse. DB tooling is development-only;
+existing disposable spike/harness scripts require the development installation.
+Production source imports no tooling or test support.
+
+Root commands retain their names and exact node/argument strings. Workspace
+commands expose the same creator and three feature-store spike entry points;
+their module-relative asset and child paths continue resolving from either cwd.
+Full creator browser tests still run in their existing jsdom lane, including the
+two review-client suites. Consumer DB tests remain separate from infrastructure.
+
+## Step 2 checkpoint
+
+The [compact package receipt](evidence/pipeline-191/step-2-package.json) records
+the public exports and runtime/development split. All 621 creator/calendar
+tests and 18 feature-store unit tests pass, including a native Node package
+contract. Typecheck, ESLint and 19 existing layout/boundary checks pass.
+Discovery preserves all 951 browser and 290 existing Node cases; one Node test
+is added to invoke the four native contract checks in CI.
+
+The clean pipeline runtime install adds 27 packages without Next, React or
+browser/test tooling. npm retains a link to the development-only DB-tooling
+workspace even with `--omit=dev`; its absence is not claimed. Public exports
+and the creator argument-refusal path also pass with that link disabled.
+No application environment files or private creator data enter the clean export.
+
+Thirteen files relocate: eleven are byte-identical and the historical calendar
+source/test change only their shared-domain import. All 21 edited existing
+runtime files have identical bodies after removing import declarations. Root
+commands, CI and frozen database assets are unchanged. Full build/database
+gates remain Step 4; permanent pipeline boundaries and private-path/CLI probes
+remain Step 3. Nothing has been pushed.
+
+## Step 3 checkpoint
+
+The [boundary/path receipt](evidence/pipeline-191/step-3-boundaries.json) records
+139 passing creator preservation cases, 18 feature-store unit cases, 11 boundary
+checks and 10 layout checks. Eight native package/path checks pass from both the
+repository root and pipeline directory through the existing Node-lane wrapper.
+Root typecheck and ESLint on all 11 changed source/config/test files pass.
+
+Pipeline-to-web imports and runtime-to-DB-tooling imports are refused across
+static/type imports, re-exports, dynamic imports and require. The obsolete
+transition-exception mechanism is removed. Disposable scripts and consumer
+tests retain their public development-only DB harness imports. Seven
+feature-store PostgreSQL suite files and the creator database integration suite
+remain pipeline-owned; no infrastructure test is moved into a consumer.
+
+Consumers now resolve SQL through named DB asset exports. All six SQL hashes,
+34 frozen artifacts, root commands and CI workflow retain their baseline bytes.
+The updated adapter also passes the isolated runtime-only contract with the
+DB-tooling link disabled; this reuses Step 2's clean install rather than claiming
+a new installation.
+
+Path probes execute the unchanged root/workspace creator command strings,
+compare successful synthetic outputs, serve all four review assets over
+loopback and start native child workers without opening a database. Private
+reads, writes and locks refuse the repository root and every sibling workspace,
+including DB tooling. Existing multiprocess lock tests also pass. These checks
+use synthetic temporary files only; full logs stay outside Git.
+
+Step 3 was owner-approved and committed as `b3669b6`. Full acceptance
+validation follows below.
+
+## Step 4 checkpoint
+
+The [integration receipt](evidence/pipeline-191/step-4-verification.json) records
+passing full-repository typecheck, lint, build, unit tests, local Firestore demo
+rules and production dependency audit. All 951 browser and 291 Node tests pass.
+Inventory comparison retains every baseline case after the approved renames,
+with one added package-contract wrapper and no newly duplicated cases.
+
+The complete database job passes: 74 required Node cases, 25 PostgreSQL cases,
+12 catalog contracts, and the independent lease/readiness/corpus inventories.
+The separate feature-store suite passes 79/79, including constant three-SQL/
+two-rights-check predictions, label/raw-read refusals, real knowledge clocks,
+source deletion, queue progress and restricted-writer probes. Both suites use
+the standard disposable fixture. The feature-store container's observed data
+mount is 512 MiB; no spike override is used, and cleanup is confirmed.
+
+All 34 frozen artifacts, every DB package file, root command strings and CI
+workflow retain their baseline bytes. The only lockfile change is pipeline
+workspace metadata. Existing source/evidence/code-hash paths resolve; the
+29-file evaluation identity and committed preregistration verify from both root
+and pipeline working directories. The successful web build produces its routes
+manifest. These are behavior-preservation checks; historical capacity evidence
+has not been rerun or presented as new timing proof.
+
+Full logs remain outside Git; the receipt keeps counts, verdicts, timings and
+hashes. The runtime-only npm workspace-link caveat from Step 2 remains recorded.
+No precise cumulative hands-on total was logged, so none is claimed; no scope
+was added beyond the approved extraction. Local acceptance gates are complete.
+This checkpoint awaits Step 4 commit approval, then independent branch review
+and fresh push consent. Hosted CI and the owner merge remain outstanding.

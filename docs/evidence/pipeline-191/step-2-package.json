@@ -1,0 +1,112 @@
+{
+  "issue": 191,
+  "step": 2,
+  "verdict": "PASS \u2014 package extraction checkpoint; full integration gates remain step 4",
+  "recordedAt": "2026-10-22T16:55:11.684293+00:00",
+  "baseline": "f46d9306df9506448d4209c4bd24d3769c552e11",
+  "parent": "c64098ea44900202e47e3365cf68ad199e69f51e",
+  "node": "24.21.0",
+  "scope": {
+    "publicPipelineExports": 16,
+    "movedCreatorModules": 5,
+    "movedCreatorTests": 5,
+    "sharedCalendar": "nflWeek source and existing test move byte-identical to domain; web/pipeline use one public export",
+    "fixture": "one byte-identical calendar fixture moved to pipeline",
+    "exceptions": "all 51 pipeline-to-web relative import exceptions removed; permanent pipeline boundary probes are step 3",
+    "runtimeSource": "16 non-test modules; external source imports are declared domain, csv-parse and pg; no web or tooling imports"
+  },
+  "preservation": {
+    "renames": 13,
+    "byteIdenticalMoves": 11,
+    "otherMoves": "historical calendar source/test change only their shared-domain import specifier",
+    "editedRuntimeFiles": 21,
+    "runtimeComparison": "TypeScript AST comparison after removing import declarations: identical bodies for all 21 edited pre-existing runtime files",
+    "lockfile": "only services/pipeline workspace metadata changes; no external dependency versions/integrities change",
+    "rootCommandsAndCI": "byte-identical",
+    "immutableAssets": "all 34 frozen artifacts and readiness manifest pass existing layout check",
+    "testInventory": {
+      "browser": {
+        "before": 951,
+        "after": 951,
+        "removed": 0,
+        "added": 0,
+        "duplicatesAdded": 0
+      },
+      "node": {
+        "before": 290,
+        "after": 291,
+        "removed": 0,
+        "added": [
+          [
+            "services/pipeline/tests/feature-store/domainPackage.test.ts",
+            "domain package consumer contract > runs the pipeline public-package contract in the regular Node test lane"
+          ]
+        ],
+        "duplicatesAdded": 0
+      }
+    }
+  },
+  "validation": {
+    "creatorAndCalendar": {
+      "passed": 621,
+      "failed": 0,
+      "pending": 0,
+      "success": true,
+      "fullLogSha256": "71ea975edc78d2fe345aa4d511a8bc0671d30f898e0bee471877d13fbbb9c93b"
+    },
+    "featureStoreUnits": {
+      "passed": 18,
+      "failed": 0,
+      "pending": 0,
+      "success": true,
+      "fullLogSha256": "ea8f7fbe56600b51f765186b7de77d5f7c52f8d95ed517d02f66698f89ac1e62"
+    },
+    "nativePackageContract": {
+      "passed": 4,
+      "failed": 0,
+      "scope": "16 public exports load through real workspace paths; private paths refuse; invalid adapter request uses zero SQL; creator calendar behavior"
+    },
+    "ciWiring": "new native contract is invoked by one added test in the existing Node unit lane",
+    "layoutAndBoundaries": {
+      "passed": 19,
+      "failed": 0
+    },
+    "domainTypecheck": "pass",
+    "repositoryTypecheck": "pass, including readiness manifest and Next route type generation",
+    "lint": "full repository pass; both subsequently added/edited contract files also pass targeted ESLint",
+    "diffCheck": "pass"
+  },
+  "cleanRuntimeInstall": {
+    "source": "clean tracked/candidate source export; no environment files, node_modules, Git directory or build outputs",
+    "command": "npm ci --workspace @dfs-ev/pipeline --omit=dev --ignore-scripts --no-audit --no-fund",
+    "installedPackages": 27,
+    "absent": [
+      "next",
+      "react",
+      "@dfs-ev/web",
+      "vitest",
+      "jsdom",
+      "typescript"
+    ],
+    "runtimeDependencies": "pg, csv-parse, DB runtime and domain resolve",
+    "nativeContract": "4/4 pass both normally and with the DB-tooling workspace link temporarily disabled",
+    "creatorCLI": "native workspace-cwd resolve command refuses missing arguments with creators-and-output-required; no network/database required",
+    "limitation": "npm still links the dev-only DB-tooling workspace under --omit=dev and installs some extraneous shared packages; absence of that workspace is not claimed. Its link was disabled for the independent runtime proof, then restored.",
+    "installScripts": "disabled; no install-hook behavior is claimed"
+  },
+  "failuresAndCorrections": [
+    "Initial move-comparison helper incorrectly normalized the unchanged nflWeek test import. Fixed the helper; source was already byte-identical.",
+    "Initial isolated-install assertion assumed --omit=dev would omit the DB-tooling workspace link. Observed npm retained it; recorded limitation and repeated runtime contract with that link disabled."
+  ],
+  "notRunAtThisCheckpoint": [
+    "full application unit run",
+    "Next production build",
+    "both PostgreSQL suites and catalog checks; scheduled for step 4"
+  ],
+  "claimsNotMade": [
+    "new latency benchmark",
+    "changed SQL/runtime behavior",
+    "deployment or hosted database proof"
+  ],
+  "next": "owner Step 2 commit approval; Step 3 boundary, CLI/asset/child-path and private-output preservation proofs; no push authorized"
+}

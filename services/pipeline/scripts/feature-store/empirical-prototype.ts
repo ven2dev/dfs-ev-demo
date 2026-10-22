@@ -16,8 +16,8 @@ type History = { gameId: string; kickoff: string; yards: number }[];
 export type ProbeTiming = { connection: number; authorization: number; history: number; calculation: number; recheck: number; serialization: number; request: number };
 
 export const loadProbeSql = async (): Promise<ProbeSql> => ({
-  authorize: await readFile(new URL("../../../../packages/db/proposals/163_empirical_authorize.sql", import.meta.url), "utf8"),
-  history: await readFile(new URL("../../../../packages/db/proposals/163_empirical_history.sql", import.meta.url), "utf8"),
+  authorize: await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/163_empirical_authorize.sql")), "utf8"),
+  history: await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/163_empirical_history.sql")), "utf8"),
 });
 
 export const prototypePrediction = async (client: Pick<Client, "query">, sql: ProbeSql, request: ProbeRequest,

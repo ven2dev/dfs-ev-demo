@@ -1,6 +1,6 @@
-import type { CreatorManifest } from "../../../../apps/web/src/lib/creatorCorpusManifest.ts";
-import type { VideoRecord } from "../../../../apps/web/src/lib/creatorVideoRule.ts";
-import { isCreatorKey } from "../../../../apps/web/src/lib/creatorDecisions.ts";
+import type { CreatorManifest } from "../../src/creator/creatorCorpusManifest.ts";
+import type { VideoRecord } from "../../src/creator/creatorVideoRule.ts";
+import { isCreatorKey } from "../../src/creator/creatorDecisions.ts";
 import type { CreatorDiscovery } from "./commands.ts";
 import { InputError, parseRegistration, type Registration } from "./creatorInputs.ts";
 import { isVideoId } from "./youtubeApi.ts";

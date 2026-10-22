@@ -3,7 +3,7 @@ import { fetchSlateEvents } from "@/lib/oddsApi";
 import { DEFAULT_SPORT_KEY, isSupportedOddsSport } from "@/lib/oddsRequestInputs";
 import { resolveOddsDataSource } from "@/lib/oddsDataSource";
 import { getFixtureSlateEvents } from "@/lib/oddsFixtures";
-import { getCurrentNflSlateWindow } from "@/lib/nflWeek";
+import { getCurrentNflSlateWindow } from "@dfs-ev/domain/nfl-week";
 
 // The bare game list -- zero Odds API credit cost (see fetchSlateEvents),
 // so unlike /api/slate/[eventId]/props this has no caching layer of its

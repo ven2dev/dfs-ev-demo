@@ -4,7 +4,7 @@ import {
   nflCalendarDateToDayNumber,
   nflDayNumberToCalendarDate,
   nflLocalDateTimeToInstant,
-} from "./nflWeek";
+} from "@dfs-ev/domain/nfl-week";
 import type { SlateEvent } from "./oddsApi";
 
 export const ODDS_COLLECTION_PROFILES = [

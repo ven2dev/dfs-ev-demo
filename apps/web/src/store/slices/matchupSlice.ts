@@ -5,7 +5,7 @@ import { mockCoverageFilters } from "@/lib/mockCoverage";
 import type { SlateEvent } from "@/lib/oddsApi";
 import type { DiscoveredPlayer } from "@/lib/discoveredProps";
 import type { PlayerPropMarketKey } from "@/lib/playerPropMarkets";
-import type { NflSlateWindow } from "@/lib/nflWeek";
+import type { NflSlateWindow } from "@dfs-ev/domain/nfl-week";
 
 export type RealSlateStatus = "idle" | "loading" | "loaded" | "error";
 export type DiscoveryStatus = "idle" | "loading" | "loaded" | "error";

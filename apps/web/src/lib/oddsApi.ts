@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { getCurrentNflSlateWindow, isEventInNflSlateWindow } from "./nflWeek";
+import { getCurrentNflSlateWindow, isEventInNflSlateWindow } from "@dfs-ev/domain/nfl-week";
 import {
   recordOddsApiRequest,
   type OddsApiRequestSource,

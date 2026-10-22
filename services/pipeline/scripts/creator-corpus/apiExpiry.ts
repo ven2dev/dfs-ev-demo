@@ -1,5 +1,5 @@
 import { Client } from "pg";
-import { API_DATA_MAX_AGE_DAYS } from "../../../../apps/web/src/lib/creatorCorpusManifest.ts";
+import { API_DATA_MAX_AGE_DAYS } from "../../src/creator/creatorCorpusManifest.ts";
 import {
   assertConnectedCorpusTarget,
   CORPUS_LOCK_KEY,

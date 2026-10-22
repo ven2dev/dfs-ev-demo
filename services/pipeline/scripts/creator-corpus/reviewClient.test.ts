@@ -2,7 +2,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DecisionEvent } from "../../../../apps/web/src/lib/creatorDecisions.ts";
+import type { DecisionEvent } from "../../src/creator/creatorDecisions.ts";
 import { buildReviewState, type ReviewState } from "./reviewState.ts";
 import { NOW, discoveryFor, record, vid } from "./testSupport.ts";
 

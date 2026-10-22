@@ -73,7 +73,7 @@ registered before any data was pulled (see the registration comments on #88):
   Playoffs and the preseason are excluded. Extending the window, adding a
   creator or changing the rule is a new, separately recorded registration. It is
   not an edit made after looking at results.
-- **Inclusion rule v1** (`apps/web/src/lib/creatorVideoRule.ts`): a video is a *candidate*
+- **Inclusion rule v1** (`services/pipeline/src/creator/creatorVideoRule.ts`): a video is a *candidate*
   when its title has a clear prop signal (props, DFS, player TDs) and a football
   signal (NFL, TNF/SNF/MNF, or "Week N"), and it was published inside a
   registered week. Fantasy-football titles, other leagues, videos under two
@@ -82,7 +82,7 @@ registered before any data was pulled (see the registration comments on #88):
   title week that disagrees with the publish week, an unknown length) is
   **flagged for your review** and never decided automatically. Week and season
   always come from the publish date, using the nflverse-derived calendar in
-  `apps/web/src/lib/nflSeasonCalendar.ts`.
+  `services/pipeline/src/creator/nflSeasonCalendar.ts`.
 
 Each registered week for each creator becomes one **slot**: *included* (at least
 one video counts), *needs review* (only flagged videos), or *missing* (nothing

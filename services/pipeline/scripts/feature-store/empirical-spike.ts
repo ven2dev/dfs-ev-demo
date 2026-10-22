@@ -23,8 +23,8 @@ const reportPath = new URL("docs/evidence/feature-store-163/review-1-hot-path.js
 const storageRoot = await realpath(await mkdtemp(join(tmpdir(), "dfs163-spike-")));
 const store = await openLocalObjectStore(storageRoot);
 const predict = await createEmpiricalAdapter();
-const sql = { authorize: await readFile(new URL("packages/db/proposals/163_empirical_authorize.sql", root), "utf8"),
-  history: await readFile(new URL("packages/db/proposals/163_empirical_history.sql", root), "utf8") };
+const sql = { authorize: await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/163_empirical_authorize.sql")), "utf8"),
+  history: await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/163_empirical_history.sql")), "utf8") };
 const files = ["packages/db/proposals/163_effective_rights.sql","packages/db/proposals/163_empirical_reader.sql", "packages/db/proposals/163_empirical_authorize.sql", "packages/db/proposals/163_empirical_history.sql",
   "services/pipeline/src/featureStore/empiricalAdapter.ts", "services/pipeline/scripts/feature-store/empirical-startup.ts", "services/pipeline/scripts/feature-store/empirical-spike.ts",
   "services/pipeline/scripts/feature-store/harness.ts", "packages/domain/package.json", "services/pipeline/package.json",
@@ -95,7 +95,7 @@ const startup = async (config: ClientConfig, request: EmpiricalRequest) => new P
 try {
   await withFeatureStoreDatabase(async ({ admin, writer, createWriterConfig }) => {
     report.database = (await admin.query("SELECT version() AS version")).rows[0].version;
-    await admin.query(await readFile(new URL("packages/db/proposals/163_empirical_reader.sql", root), "utf8"));
+    await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/163_empirical_reader.sql")), "utf8"));
     const config = { ...await createWriterConfig(), application_name: "dfs-ev-163-probe", connectionTimeoutMillis: 300,
       statement_timeout: 300, query_timeout: 300 };
     // Harness owns cleanup of this temporary login. Remove its writer membership

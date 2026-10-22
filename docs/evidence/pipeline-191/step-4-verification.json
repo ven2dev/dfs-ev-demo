@@ -1,0 +1,224 @@
+{
+  "issue": 191,
+  "step": 4,
+  "verdict": "PASS: all local implementation acceptance gates; awaiting owner commit approval and independent review",
+  "recordedAt": "2026-10-22T18:47:42.033005+00:00",
+  "baseline": "f46d9306df9506448d4209c4bd24d3769c552e11",
+  "candidate": "b3669b67dbf1b346ac15df0fbeed06072cd23aaf",
+  "node": "24.21.0",
+  "boundary": {
+    "execution": "local Node 24, existing full workspace install, minimal PATH/HOME/TMPDIR/JAVA_HOME environment for final CI-equivalent jobs",
+    "fixture": "fresh standard compose.test.yml only; PostgreSQL 18; observed tmpfs /var/lib/postgresql=rw,size=512m; shm=128 MiB",
+    "isolation": "no running Docker containers before fixture creation; no spike override; feature-store receives only public throwaway TEST_DATABASE_URL; Firebase demo emulator only",
+    "cache": "existing dependency/emulator caches and unflushed OS/Docker caches; no cold/warm latency claim",
+    "cleanup": "test:db:local removed its fixture; feature-store used a second fresh fixture; test:db:down removed it; final docker ps empty"
+  },
+  "acceptance": {
+    "prerequisites": {
+      "verdict": "pass",
+      "evidence": "fresh merged #190 baseline; prior extractions, roadmap and branch approved"
+    },
+    "ownershipAndExports": {
+      "verdict": "pass",
+      "evidence": "16 named pipeline exports; creator policies moved; already-correct job/test ownership retained; Step 2 runtime-only install"
+    },
+    "dependencyDirection": {
+      "verdict": "pass",
+      "evidence": "11 passing boundary probes and full lint; pipeline -> domain/DB; DB-tooling development-only; infrastructure imports no consumers"
+    },
+    "testOwnershipAndInventory": {
+      "verdict": "pass",
+      "evidence": "all baseline identities retained after explicit rename normalization; one new Node wrapper; required DB inventories verified"
+    },
+    "runtimeAndWorkBudgets": {
+      "verdict": "pass",
+      "evidence": "79 PostgreSQL cases preserve ObjectStore, rights, queue progress, lineage, clocks, unavailable values; empirical 3 SQL/exactly 2 rights checks; predicted-game labels inaccessible"
+    },
+    "sqlAssetsAndPaths": {
+      "verdict": "pass",
+      "evidence": "all packages/db bytes and six proposal hashes unchanged; native CLI/assets/workers pass from both cwds; code-hash and evidence paths resolve"
+    },
+    "privateOutputAndEnvironment": {
+      "verdict": "pass",
+      "evidence": "synthetic private read/write/lock refusals cover repository and all workspaces; real multiprocess locks pass; clean runtime proof excludes application environment files"
+    },
+    "integration": {
+      "verdict": "pass",
+      "evidence": "root commands and CI byte-identical; full typecheck/lint/unit/build, Firestore demo rules, audit and both PostgreSQL suites pass"
+    }
+  },
+  "unitInventory": {
+    "browser": {
+      "before": 951,
+      "after": 951,
+      "removed": 0,
+      "added": 0,
+      "duplicatesAdded": 0,
+      "existingRepeatedTitles": 2,
+      "normalizedIdentitySha256": "20e04f89a5e7616989886c4a504865b8eaf9a0390dfde0418a9bc02fd67888fc"
+    },
+    "node": {
+      "before": 290,
+      "after": 291,
+      "removed": 0,
+      "added": 1,
+      "duplicatesAdded": 0,
+      "existingRepeatedTitles": 0,
+      "normalizedIdentitySha256": "1a0675102d05df69c2c9df0aeef62a794d225d2ae1e00cf9eea55b71e28b404c"
+    },
+    "addedCase": "domain package consumer contract > runs the pipeline public-package contract in the regular Node test lane",
+    "repeatedTitleNote": "three pre-existing parameterized AnalysisSummary cases share one title; multiset comparison preserves all three; no duplicate added",
+    "fullRun": {
+      "command": "npm test",
+      "exitCode": 0,
+      "browserFiles": 70,
+      "browserCases": 951,
+      "nodeFiles": 25,
+      "nodeCases": 291,
+      "firebaseAdminRuntimeSmoke": "pass",
+      "logSha256": "f75abe7426a998e23bf4a06e3db7adb26bfe98f74f21183118b29dca48c70b51"
+    }
+  },
+  "databaseInventory": {
+    "requiredNode": 74,
+    "postgresql": 25,
+    "catalogContracts": 12,
+    "requiredLease": 13,
+    "requiredReadiness": 4,
+    "requiredCorpus": 8,
+    "featureStore": 79,
+    "failed": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "preservation": {
+    "frozenArtifacts": 34,
+    "databaseTree": "byte-identical to baseline including migrations, proposals, catalog, readiness and tooling",
+    "rootPackageSha256": "f9581826dabe35d9141b118659ec9e4ff6aacd1cc478152d43721f77140bcb42",
+    "ciSha256": "6a6cbc83ecc0a2d22e1f3d1dd0eefd86f7fe98940442db51822355079e8d31e5",
+    "externalLockEntries": "unchanged; only services/pipeline metadata differs",
+    "proposalHashReceipt": "step-3-boundaries.json#/preservation/proposalSql",
+    "sourceProof": "Steps 2/3 import-only runtime changes; unchanged projection math and eight evaluation scripts",
+    "codeHashListFiles": {
+      "ingest-spike": 11,
+      "derived-spike": 9,
+      "dataset-spike": 14,
+      "empirical-spike": 19
+    },
+    "evaluationIdentity": {
+      "cwd": [
+        "root",
+        "pipeline"
+      ],
+      "filesPerCwd": 29,
+      "sha256": "dc5a494b6ccac64579be3733075919c6a1859f30f3852a7057d02dc7da67b377",
+      "preregistration": "verified from committed bytes in both cwds",
+      "sqlQueries": 0
+    },
+    "routesManifest": "apps/web/.next/routes-manifest.json exists after successful build",
+    "detailSha256": "a54e993416942621c1984bdb61ed8ef748904f15bd2ca7b354af2011d665645c"
+  },
+  "commands": {
+    "gates": {
+      "command": "npm run test:ci-gate",
+      "exitCode": 0,
+      "seconds": 1.544,
+      "logSha256": "1c23e0c917c52dabe35a5f146e2e99e5506e30c7ea459b76792241418daccd56"
+    },
+    "guards": {
+      "command": "npm run test:db:guard",
+      "exitCode": 0,
+      "seconds": 0.733,
+      "logSha256": "8c8d1a3a029a0212c327ba723860d8cb22068ab1411d02d046960d2629e864d1"
+    },
+    "lifecycle": {
+      "command": "npm run test:db:lifecycle",
+      "exitCode": 0,
+      "seconds": 8.998,
+      "logSha256": "83de46e0ee2c96bbb1d404d22bb6d351eae3a1eefe2acb3ff3ffd8aeb00bdeb6"
+    },
+    "database": {
+      "command": "npm run test:db:local",
+      "exitCode": 0,
+      "seconds": 36.145,
+      "logSha256": "4b33203bef416d9cafc186f0135f346c0fe6081add5d36f87572710fbac691c8"
+    },
+    "feature-store": {
+      "command": "npm run test:feature-store:db",
+      "exitCode": 0,
+      "seconds": 56.94,
+      "logSha256": "844f2a603fe405778c50d4644a04e36db7f98e27cff87eef51252f63f30c204a"
+    },
+    "cleanup": {
+      "command": "npm run test:db:down",
+      "exitCode": 0,
+      "seconds": 0.797,
+      "logSha256": "bfb13d9c5323557f1bcb03bfa99c36eaf1112cbde84978cbe3c7835c84a32135"
+    },
+    "build": {
+      "command": "npm run build",
+      "exitCode": 0,
+      "seconds": 6.666,
+      "logSha256": "79b855f464263200c8816de95034ca43dac3bc54a9562ca73fffb37af397da7d"
+    },
+    "rules": {
+      "command": "npm run test:firestore-rules",
+      "exitCode": 0,
+      "seconds": 5.347,
+      "logSha256": "5363991fc7db36d58f51b0bb2e9ae965217a9b14c39bd10641415dccbcef7651"
+    },
+    "domain-types": {
+      "command": "npm run typecheck --workspace @dfs-ev/domain",
+      "exitCode": 0,
+      "seconds": 0.435,
+      "logSha256": "9aa479d7f5f06057c08995bb34cb364a4a0078b43442d3fa60a484bfb22550c9"
+    },
+    "db-types": {
+      "command": "npm run typecheck --workspace @dfs-ev/db",
+      "exitCode": 0,
+      "seconds": 0.371,
+      "logSha256": "6fe62d25c6df5f41564c7b479813bc699f54145ba3df95498c5c0fb89fb31098"
+    },
+    "audit": {
+      "command": "npm audit --omit=dev --audit-level=critical --json",
+      "exitCode": 0,
+      "seconds": 0.753,
+      "logSha256": "6557ec040437bd21aae6b8b37fc8eda53f236813e52b79941d4569c0daebb9bc"
+    }
+  },
+  "additionalCommands": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "scope": "readiness manifest, Next route types, complete root TypeScript project",
+      "logSha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e"
+    },
+    "lint": {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "boundaryCases": 11,
+      "logSha256": "1411fd17336a804a8663af9a27385a915ba3782e4c89340aa676825a6b02ca54"
+    },
+    "diffCheck": {
+      "command": "git diff --check f46d9306df9506448d4209c4bd24d3769c552e11",
+      "exitCode": 0
+    },
+    "audit": {
+      "productionVulnerabilities": 0
+    }
+  },
+  "failuresAndLimits": [
+    "No application or database assertion failures in final runs. Read-only Docker socket access initially hit sandbox permission; repeated with approved local access.",
+    "Inventory helper initially assumed unique test titles; corrected to preserve baseline multiplicity. A stale helper-only evaluation.ts filename was replaced by the actual eight evaluation scripts; no repository code fix was needed.",
+    "Existing Vite native-config and tsconfig-path plugin advisories remain; no test failure or scope expansion.",
+    "Step 2 npm omit-dev workspace-link limitation remains documented; Step 3 runtime contract passed with DB-tooling link disabled.",
+    "No cumulative hands-on time log was captured, so no precise engineering-hour total is claimed. Scope remained the approved behavior-preserving extraction.",
+    "No new capacity benchmark, hosted database, GCS, deployment or Production claim. Detailed logs remain outside Git under /private/tmp."
+  ],
+  "remaining": [
+    "owner Step 4 commit approval",
+    "owner independent branch review",
+    "fresh push approval, PR and hosted CI",
+    "owner merge"
+  ]
+}

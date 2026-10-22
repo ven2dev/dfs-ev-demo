@@ -1,0 +1,104 @@
+{
+  "issue": 191,
+  "step": 1,
+  "status": "inventory-complete",
+  "baseline": "f46d9306df9506448d4209c4bd24d3769c552e11",
+  "workspace": "services/pipeline",
+  "fileCounts": {
+    "total": 90,
+    "creatorCorpus": 45,
+    "featureStoreScripts": 20,
+    "featureStoreSource": 11,
+    "testAndSupportFiles": 13,
+    "packageManifest": 1
+  },
+  "alreadyPlaced": [
+    "services/pipeline/src/featureStore",
+    "services/pipeline/scripts/feature-store",
+    "services/pipeline/tests/feature-store",
+    "services/pipeline/scripts/creator-corpus",
+    "services/pipeline/tests/creator"
+  ],
+  "remainingBoundaryFindings": [
+    {
+      "path": "services/pipeline/scripts/creator-corpus",
+      "finding": "creator policies and contracts still import from apps/web",
+      "imports": [
+        "apps/web/src/lib/creatorCorpusManifest.ts",
+        "apps/web/src/lib/creatorCaptures.ts",
+        "apps/web/src/lib/creatorDecisions.ts",
+        "apps/web/src/lib/creatorVideoRule.ts",
+        "apps/web/src/lib/nflSeasonCalendar.ts"
+      ],
+      "resolution": "move or extract the pure creator policies/contracts into the pipeline workspace; keep web routes and adapters out of pipeline",
+      "affectedPipelineFiles": 27,
+      "importPaths": 51
+    },
+    {
+      "path": "services/pipeline/package.json",
+      "finding": "database tooling is currently a runtime dependency and no public pipeline exports or scripts are declared",
+      "resolution": "make @dfs-ev/db runtime a runtime dependency, move @dfs-ev/db-tooling to devDependencies for test/support entry points, and add explicit package exports/scripts"
+    },
+    {
+      "path": "services/pipeline/scripts/feature-store",
+      "finding": "scripts use pg, csv-parse and database tooling through the root install",
+      "resolution": "declare every runtime script dependency explicitly and retain tooling-only imports in test/dev paths"
+    }
+  ],
+  "testOwnership": {
+    "pipeline": [
+      "services/pipeline/tests/feature-store",
+      "services/pipeline/tests/creator"
+    ],
+    "database": [
+      "packages/db/tooling/tests",
+      "tests/db",
+      "apps/web/tests/db"
+    ],
+    "browserOrNodeApplication": [
+      "apps/web/src",
+      "packages/domain/tests"
+    ]
+  },
+  "preservationScope": {
+    "frozenSqlOrSchemas": "unchanged",
+    "rootCliNames": "unchanged",
+    "ciWorkflow": "unchanged",
+    "runtimeBehavior": "no new flow or performance redesign permitted"
+  },
+  "nextStep": "implement only the approved boundary and manifest corrections; do not redesign runtime behavior",
+  "targetDependencyDirection": {
+    "pipeline": [
+      "@dfs-ev/domain",
+      "@dfs-ev/db/runtime",
+      "@dfs-ev/db-tooling (development/test only)"
+    ],
+    "domain": [],
+    "dbRuntime": [],
+    "dbTooling": [
+      "@dfs-ev/db/runtime"
+    ],
+    "web": [
+      "@dfs-ev/domain",
+      "@dfs-ev/db/runtime"
+    ]
+  },
+  "validation": {
+    "scope": "static inventory only; no runtime or correctness claim",
+    "fileCounts": "verified from the filesystem",
+    "webBoundaryCrossings": "27 files and 51 import paths, matching the existing #191 boundary exceptions",
+    "json": "parsed successfully",
+    "earlierProbeAttempts": [
+      {
+        "command": "npm run test:repo-layout",
+        "result": "not executed: fresh worktree has no installed typescript dependency"
+      },
+      {
+        "command": "npm run test:import-boundaries",
+        "result": "not executed: fresh worktree has no installed eslint dependency"
+      }
+    ],
+    "runtimeForEarlierProbeAttempts": "Node 22.23.2; implementation validation requires Node 24",
+    "dependenciesInstalled": false
+  }
+}

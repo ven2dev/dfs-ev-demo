@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { INCLUSION_RULE_VERSION, assertValidWindow, type RegisteredWindow } from "../../../../apps/web/src/lib/creatorVideoRule.ts";
-import { getNflRegularSeasonWeekWindow } from "../../../../apps/web/src/lib/nflSeasonCalendar.ts";
+import { INCLUSION_RULE_VERSION, assertValidWindow, type RegisteredWindow } from "../../src/creator/creatorVideoRule.ts";
+import { getNflRegularSeasonWeekWindow } from "../../src/creator/nflSeasonCalendar.ts";
 import { isVideoId } from "./youtubeApi.ts";
 
 export class InputError extends Error {

@@ -5,9 +5,9 @@ import {
   isApiDataStale,
   type CreatorManifest,
   type ReviewDecision,
-} from "../../../../apps/web/src/lib/creatorCorpusManifest.ts";
-import { effectiveDecisions, eventsFor, type DecisionsFile } from "../../../../apps/web/src/lib/creatorDecisions.ts";
-import type { RegisteredWindow, VideoRecord } from "../../../../apps/web/src/lib/creatorVideoRule.ts";
+} from "../../src/creator/creatorCorpusManifest.ts";
+import { effectiveDecisions, eventsFor, type DecisionsFile } from "../../src/creator/creatorDecisions.ts";
+import type { RegisteredWindow, VideoRecord } from "../../src/creator/creatorVideoRule.ts";
 import { windowEnd, windowStart, type CreatorInput } from "./creatorInputs.ts";
 import { parseDiscoveryFile, type DecisionNotApplied, type DiscoveryFile } from "./discoveryFile.ts";
 import {

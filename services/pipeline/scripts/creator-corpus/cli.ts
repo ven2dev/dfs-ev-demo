@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs, type ParseArgsOptionsConfig } from "node:util";
-import type { CreatorManifest } from "../../../../apps/web/src/lib/creatorCorpusManifest.ts";
+import type { CreatorManifest } from "../../src/creator/creatorCorpusManifest.ts";
 import {
   CommandError,
   confirmCreators,
@@ -16,13 +16,13 @@ import {
   screenManifests,
   type CreatorDiscovery,
 } from "./commands.ts";
-import { DecisionsFileError, effectiveDecisions, eventsFor, parseDecisionsFile } from "../../../../apps/web/src/lib/creatorDecisions.ts";
-import { CaptureLogError, parseCaptureLog } from "../../../../apps/web/src/lib/creatorCaptures.ts";
+import { DecisionsFileError, effectiveDecisions, eventsFor, parseDecisionsFile } from "../../src/creator/creatorDecisions.ts";
+import { CaptureLogError, parseCaptureLog } from "../../src/creator/creatorCaptures.ts";
 import { InputError, isEndWeekClosed, loadRegistration, parseCreatorsFile, parseRegistration } from "./creatorInputs.ts";
 import { parseDiscoveryFile } from "./discoveryFile.ts";
 import { readCapturesFile } from "./captureStore.ts";
 import { readDecisionsFile } from "./decisionStore.ts";
-import { isApiDataStale } from "../../../../apps/web/src/lib/creatorCorpusManifest.ts";
+import { isApiDataStale } from "../../src/creator/creatorCorpusManifest.ts";
 import { PrivateFileError, assertPrivateOutputAvailable, deletePrivateFile, readPrivateJson, readPrivateJsonSource, readPrivateText, writePrivateJson } from "./privateOutput.ts";
 import { startReviewServer } from "./reviewServer.ts";
 import { YoutubeApiError, createQuotaMeter, createYoutubeClient, type FetchLike } from "./youtubeApi.ts";

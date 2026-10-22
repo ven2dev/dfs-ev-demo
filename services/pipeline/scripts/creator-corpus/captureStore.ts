@@ -1,4 +1,4 @@
-import { getStaleVideoIds } from "../../../../apps/web/src/lib/creatorCorpusManifest.ts";
+import { getStaleVideoIds } from "../../src/creator/creatorCorpusManifest.ts";
 import {
   CaptureError,
   CaptureLogError,
@@ -9,8 +9,8 @@ import {
   transitionProblem,
   type CaptureEvent,
   type CaptureRequest,
-} from "../../../../apps/web/src/lib/creatorCaptures.ts";
-import type { DecisionsFile } from "../../../../apps/web/src/lib/creatorDecisions.ts";
+} from "../../src/creator/creatorCaptures.ts";
+import type { DecisionsFile } from "../../src/creator/creatorDecisions.ts";
 import { CommandError } from "./commands.ts";
 import type { DiscoveryFile } from "./discoveryFile.ts";
 import { appendPrivateLine, readPrivateTextOptional, withPrivateFileLock } from "./privateOutput.ts";
