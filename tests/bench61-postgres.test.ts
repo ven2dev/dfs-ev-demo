@@ -1,6 +1,8 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { neon } from "@neondatabase/serverless";
 import { Pool } from "pg";
+import { randomUUID } from "node:crypto";
+import { proveServerLockCancellation, qualifyHttpTimeout, timeoutRole } from "@/lib/bench61-timeout";
 const fixture = vi.hoisted(() => ({ token: "a".repeat(64), host: "fixture.neon.tech" }));
 vi.mock("@/lib/bench61-config.json", async () => {
   const { createHash } = await import("node:crypto");
@@ -74,6 +76,86 @@ const cleanup = async () => {
 };
 
 describe.skipIf(!local)("local PostgreSQL regressions",()=>{
+  it("qualifies role-default cancellation and single-command fencing on the fixed local fixture",async()=>{
+    const role="bench61_local_probe_20261022",password=randomUUID();
+    let madeRole=false,worker:Pool|undefined;
+    const adapter=useLocalAdapter();
+    expect((await pool!.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount).toBe(0);
+    await executeBenchmark("setup");
+    const request=randomUUID();
+    const owner=(await pool!.query('SELECT owner FROM "bench61_206_20261022".run')).rows[0].owner;
+    const statement=`WITH guard AS MATERIALIZED (SELECT "bench61_206_20261022".guard($1,$2,false)),
+      debit AS (UPDATE "bench61_206_20261022".budgets SET balance=balance-3 FROM guard
+        WHERE account='timeout-proof' AND active AND balance-3>=floor RETURNING balance)
+      SELECT balance FROM debit`;
+    try {
+      await pool!.query(`CREATE ROLE ${role} LOGIN PASSWORD '${password}' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS CONNECTION LIMIT 8`);madeRole=true;
+      await pool!.query(`ALTER ROLE ${role} IN DATABASE bench61 SET statement_timeout='5s'`);
+      await pool!.query(`ALTER ROLE ${role} IN DATABASE bench61 SET lock_timeout='2s'`);
+      await pool!.query(`GRANT USAGE ON SCHEMA "bench61_206_20261022" TO ${role}`);
+      await pool!.query(`GRANT SELECT ON "bench61_206_20261022".run TO ${role}`);
+      await pool!.query(`GRANT SELECT,UPDATE ON "bench61_206_20261022".budgets TO ${role}`);
+      await pool!.query(`GRANT EXECUTE ON FUNCTION "bench61_206_20261022".guard(text,uuid,boolean) TO ${role}`);
+      await pool!.query(`INSERT INTO "bench61_206_20261022".budgets VALUES('timeout-proof',100,20,clock_timestamp(),true)`);
+      await pool!.query(`UPDATE "bench61_206_20261022".run SET active_action='qualify',lease_request=$1,lease_until=clock_timestamp()+interval '300 seconds'`,[request]);
+      worker=new Pool({host:"127.0.0.1",port:54361,database:"bench61",user:role,password,max:3,connectionTimeoutMillis:3000});
+      const query=async(text:string,params:unknown[]=[]) => (await worker!.query(text,params)).rows;
+      // Transport adapter only: actual PostgreSQL role/defaults, SQL and errors.
+      // Normalize solely the test identity expected by the HTTP credential check.
+      // This is direct local PostgreSQL, never evidence of Neon HTTP behavior.
+      const transportQuery=async(text:string,params:unknown[]=[]) => {
+        const rows=await query(text,params);
+        return text.includes("session_user") ? rows.map(r=>({...r,session_user:r.session_user===role?timeoutRole:r.session_user,
+          current_user:r.current_user===role?timeoutRole:r.current_user})) : rows;
+      };
+      vi.mocked(neon).mockReturnValue({query:transportQuery} as unknown as ReturnType<typeof neon>);
+      const result=await qualifyHttpTimeout(`postgres://${timeoutRole}:test-only@${fixture.host}/bench61`,fixture.host,"bench61",
+        {schema:'"bench61_206_20261022"',owner,request},async(text,params=[]) => (await pool!.query(text,params)).rows);
+      expect(result).toMatchObject({serverStatementCancellation:true,debitRolledBack:true,performanceEnabled:false,roundTrips:8});
+      expect(adapter.pending()).toBe(0);
+      useLocalAdapter();
+      const holder=await pool!.connect();
+      try {
+        await holder.query("BEGIN");
+        await holder.query("SET LOCAL idle_in_transaction_session_timeout='10s'");
+        await holder.query(`SELECT * FROM "bench61_206_20261022".budgets WHERE account='timeout-proof' FOR UPDATE`);
+        await proveServerLockCancellation(query,statement,[owner,request]);
+      }finally{await holder.query("ROLLBACK");holder.release();}
+      expect((await query(`SELECT balance FROM "bench61_206_20261022".budgets WHERE account='timeout-proof'`))[0].balance).toBe(100);
+      await expect(query(statement,["wrong-owner",request])).rejects.toThrow("ownership mismatch");
+      await expect(query(statement,[owner,randomUUID()])).rejects.toThrow("does not match");
+      await pool!.query(`UPDATE "bench61_206_20261022".run SET lease_until=clock_timestamp()+interval '500 milliseconds'`);
+      const pending=query(statement.replace('SELECT balance FROM debit','SELECT balance,pg_sleep(1.5) FROM debit'),[owner,request])
+        .then(value=>({value}),error=>({error}));
+      try {
+        let held=false;
+        for(let i=0;i<40;i++){
+          held=(await pool!.query(`SELECT EXISTS(SELECT 1 FROM pg_locks l JOIN pg_stat_activity a ON a.pid=l.pid
+            WHERE a.usename=$1 AND l.locktype='advisory' AND l.granted) AS held`,[role])).rows[0].held;
+          if(held)break;
+          await new Promise(resolve=>setTimeout(resolve,5));
+        }
+        expect(held).toBe(true);
+        await new Promise(resolve=>setTimeout(resolve,600));
+        const before=(await pool!.query('SELECT * FROM "bench61_206_20261022".run')).rows[0];
+        expect(before.lease_until.getTime()).toBeLessThan(Date.now());
+        await expect(executeBenchmark("cleanup")).rejects.toThrow("transaction still in flight");
+        expect((await pool!.query('SELECT * FROM "bench61_206_20261022".run')).rows[0]).toEqual(before);
+        await expect(query(statement,[owner,request])).rejects.toThrow("lease expired");
+      }finally{
+        const outcome=await pending;
+        if("error" in outcome)throw outcome.error;
+        expect(outcome.value[0].balance).toBe(97);
+      }
+      expect(await executeBenchmark("cleanup")).toMatchObject({schemaAbsent:true});
+      expect(await executeBenchmark("cleanup")).toMatchObject({schemaAbsent:true});
+    }finally{
+      await worker?.end();useLocalAdapter();await cleanup();
+      if(madeRole)await pool!.query(`DROP ROLE ${role}`);
+      expect((await pool!.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount).toBe(0);
+    }
+  },30000);
+
   it("refuses a separate cleanup between a live run's transactions without changing its control state",async()=>{
     const adapter=useLocalAdapter();await executeBenchmark("setup");
     const pause=adapter.pauseNextSeed();

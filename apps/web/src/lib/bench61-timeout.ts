@@ -15,6 +15,17 @@ export const proveServerCancellation = async (query: Query, statement: string, p
   throw new Error("Server failed to cancel finite statement");
 };
 
+export const proveServerLockCancellation = async (query: Query, statement: string, params: unknown[] = []) => {
+  try { await query(statement, params); }
+  catch (error) {
+    const e = error as {code?: string; message?: string};
+    requireTrue(e.code === "55P03" && /lock timeout/i.test(e.message ?? ""),
+      "Expected PostgreSQL lock timeout, not NOWAIT, statement or client cancellation");
+    return;
+  }
+  throw new Error("Server failed to cancel blocked statement");
+};
+
 export const qualifyHttpTimeout = async (
   url: string, host: string, database: string,
   context: {schema: string; owner: string; request: string},
