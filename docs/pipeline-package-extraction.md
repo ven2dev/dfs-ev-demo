@@ -117,5 +117,36 @@ reads, writes and locks refuse the repository root and every sibling workspace,
 including DB tooling. Existing multiprocess lock tests also pass. These checks
 use synthetic temporary files only; full logs stay outside Git.
 
-This checkpoint awaits Step 3 commit approval. Full build, unit and database
-acceptance gates remain Step 4. No push or deployment is authorized.
+Step 3 was owner-approved and committed as `b3669b6`. Full acceptance
+validation follows below.
+
+## Step 4 checkpoint
+
+The [integration receipt](evidence/pipeline-191/step-4-verification.json) records
+passing full-repository typecheck, lint, build, unit tests, local Firestore demo
+rules and production dependency audit. All 951 browser and 291 Node tests pass.
+Inventory comparison retains every baseline case after the approved renames,
+with one added package-contract wrapper and no newly duplicated cases.
+
+The complete database job passes: 74 required Node cases, 25 PostgreSQL cases,
+12 catalog contracts, and the independent lease/readiness/corpus inventories.
+The separate feature-store suite passes 79/79, including constant three-SQL/
+two-rights-check predictions, label/raw-read refusals, real knowledge clocks,
+source deletion, queue progress and restricted-writer probes. Both suites use
+the standard disposable fixture. The feature-store container's observed data
+mount is 512 MiB; no spike override is used, and cleanup is confirmed.
+
+All 34 frozen artifacts, every DB package file, root command strings and CI
+workflow retain their baseline bytes. The only lockfile change is pipeline
+workspace metadata. Existing source/evidence/code-hash paths resolve; the
+29-file evaluation identity and committed preregistration verify from both root
+and pipeline working directories. The successful web build produces its routes
+manifest. These are behavior-preservation checks; historical capacity evidence
+has not been rerun or presented as new timing proof.
+
+Full logs remain outside Git; the receipt keeps counts, verdicts, timings and
+hashes. The runtime-only npm workspace-link caveat from Step 2 remains recorded.
+No precise cumulative hands-on total was logged, so none is claimed; no scope
+was added beyond the approved extraction. Local acceptance gates are complete.
+This checkpoint awaits Step 4 commit approval, then independent branch review
+and fresh push consent. Hosted CI and the owner merge remain outstanding.
