@@ -1,0 +1,514 @@
+{
+  "scope": "Local instrumentation and correctness proof only; not hosted latency acceptance",
+  "base": "f46d930",
+  "fixture": {
+    "postgres": "18.6",
+    "memoryMiB": 512,
+    "host": "127.0.0.1",
+    "port": 54361,
+    "maxClients": 20
+  },
+  "heldLock": {
+    "server_ms": 90.382,
+    "client_ms": 93.581208,
+    "observedLock": true
+  },
+  "run": {
+    "host": "fixture.neon.tech",
+    "schema": "bench61_206_20261022",
+    "transport": "Local pg TCP transaction adapter; not Neon HTTP",
+    "timestamp": "2026-10-22T16:38:13.241Z",
+    "correctness": {
+      "attempts": 1000,
+      "concurrency": 20,
+      "admitted": 26,
+      "collected": 7,
+      "remaining": 1
+    },
+    "trials": [
+      {
+        "workers": 20,
+        "samplesPerMode": 1000,
+        "pair": {
+          "baseline": {
+            "client": {
+              "samples": 1000,
+              "p50_ms": 3.757333000000017,
+              "p95_ms": 20.492292000000134,
+              "max_ms": 92.35179099999982
+            },
+            "server_executor_including_row_wait": {
+              "samples": 1000,
+              "p50_ms": 0.001,
+              "p95_ms": 0.002,
+              "max_ms": 0.027
+            },
+            "residual": {
+              "samples": 1000,
+              "p50_ms": 3.757333000000017,
+              "p95_ms": 20.491292000000133,
+              "max_ms": 92.34979099999983
+            },
+            "lockObservations": []
+          },
+          "budget": {
+            "client": {
+              "samples": 1000,
+              "p50_ms": 11.818458000000192,
+              "p95_ms": 52.56379199999992,
+              "max_ms": 163.4949160000001
+            },
+            "server_executor_including_row_wait": {
+              "samples": 1000,
+              "p50_ms": 9.472,
+              "p95_ms": 49.751,
+              "max_ms": 161.348
+            },
+            "residual": {
+              "samples": 1000,
+              "p50_ms": 2.3076249999997236,
+              "p95_ms": 3.981250000000042,
+              "max_ms": 7.227584000000213
+            },
+            "lockObservations": [
+              {
+                "active": 17,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 17,
+                "lock_waiters": 15,
+                "io_waiters": 0,
+                "lwlock_waiters": 1
+              },
+              {
+                "active": 17,
+                "lock_waiters": 13,
+                "io_waiters": 0,
+                "lwlock_waiters": 3
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 17,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 17,
+                "lock_waiters": 7,
+                "io_waiters": 0,
+                "lwlock_waiters": 7
+              },
+              {
+                "active": 17,
+                "lock_waiters": 17,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "workers": 20,
+        "samplesPerMode": 1000,
+        "pair": {
+          "budget": {
+            "client": {
+              "samples": 1000,
+              "p50_ms": 10.279125000000022,
+              "p95_ms": 54.28604200000018,
+              "max_ms": 180.71220900000026
+            },
+            "server_executor_including_row_wait": {
+              "samples": 1000,
+              "p50_ms": 7.927,
+              "p95_ms": 50.615,
+              "max_ms": 177.679
+            },
+            "residual": {
+              "samples": 1000,
+              "p50_ms": 2.038041000000204,
+              "p95_ms": 4.281834000000018,
+              "max_ms": 39.34174999999995
+            },
+            "lockObservations": [
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 17,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 17,
+                "lock_waiters": 15,
+                "io_waiters": 0,
+                "lwlock_waiters": 2
+              },
+              {
+                "active": 16,
+                "lock_waiters": 14,
+                "io_waiters": 0,
+                "lwlock_waiters": 2
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 17,
+                "lock_waiters": 17,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 17,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              }
+            ]
+          },
+          "baseline": {
+            "client": {
+              "samples": 1000,
+              "p50_ms": 3.0067089999997734,
+              "p95_ms": 4.137208000000101,
+              "max_ms": 6.1304589999999735
+            },
+            "server_executor_including_row_wait": {
+              "samples": 1000,
+              "p50_ms": 0.001,
+              "p95_ms": 0.002,
+              "max_ms": 0.065
+            },
+            "residual": {
+              "samples": 1000,
+              "p50_ms": 3.0061250000002913,
+              "p95_ms": 4.137208000000101,
+              "max_ms": 6.1304589999999735
+            },
+            "lockObservations": []
+          }
+        }
+      },
+      {
+        "workers": 20,
+        "samplesPerMode": 1000,
+        "pair": {
+          "baseline": {
+            "client": {
+              "samples": 1000,
+              "p50_ms": 3.0660000000002583,
+              "p95_ms": 4.055375000000367,
+              "max_ms": 5.014208000000053
+            },
+            "server_executor_including_row_wait": {
+              "samples": 1000,
+              "p50_ms": 0.001,
+              "p95_ms": 0.002,
+              "max_ms": 0.051
+            },
+            "residual": {
+              "samples": 1000,
+              "p50_ms": 3.0660000000002583,
+              "p95_ms": 4.053832999999893,
+              "max_ms": 5.0122080000000535
+            },
+            "lockObservations": []
+          },
+          "budget": {
+            "client": {
+              "samples": 1000,
+              "p50_ms": 10.138249999999971,
+              "p95_ms": 48.40599999999995,
+              "max_ms": 97.85529200000019
+            },
+            "server_executor_including_row_wait": {
+              "samples": 1000,
+              "p50_ms": 7.929,
+              "p95_ms": 46.009,
+              "max_ms": 95.765
+            },
+            "residual": {
+              "samples": 1000,
+              "p50_ms": 2.083083000000066,
+              "p95_ms": 3.400375000000203,
+              "max_ms": 7.875499999999862
+            },
+            "lockObservations": [
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 17,
+                "lock_waiters": 17,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 17,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 16,
+                "lock_waiters": 8,
+                "io_waiters": 0,
+                "lwlock_waiters": 8
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 17,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 16,
+                "lock_waiters": 16,
+                "io_waiters": 0,
+                "lwlock_waiters": 0
+              },
+              {
+                "active": 16,
+                "lock_waiters": 11,
+                "io_waiters": 0,
+                "lwlock_waiters": 4
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "diagnostics": [
+      {
+        "workers": 1,
+        "samplesPerMode": 100,
+        "pair": {
+          "baseline": {
+            "client": {
+              "samples": 100,
+              "p50_ms": 1.0079580000000306,
+              "p95_ms": 2.031541999999945,
+              "max_ms": 3.0455840000000762
+            },
+            "server_executor_including_row_wait": {
+              "samples": 100,
+              "p50_ms": 0.001,
+              "p95_ms": 0.001,
+              "max_ms": 0.002
+            },
+            "residual": {
+              "samples": 100,
+              "p50_ms": 1.0079580000000306,
+              "p95_ms": 2.030541999999945,
+              "max_ms": 3.0445840000000763
+            },
+            "lockObservations": []
+          },
+          "budget": {
+            "client": {
+              "samples": 100,
+              "p50_ms": 1.350208000000066,
+              "p95_ms": 2.269125000000031,
+              "max_ms": 2.916041000000064
+            },
+            "server_executor_including_row_wait": {
+              "samples": 100,
+              "p50_ms": 0.012,
+              "p95_ms": 0.022,
+              "max_ms": 0.03
+            },
+            "residual": {
+              "samples": 100,
+              "p50_ms": 1.334208000000066,
+              "p95_ms": 2.242125000000031,
+              "max_ms": 2.888041000000064
+            },
+            "lockObservations": []
+          }
+        }
+      },
+      {
+        "workers": 1,
+        "samplesPerMode": 100,
+        "pair": {
+          "budget": {
+            "client": {
+              "samples": 100,
+              "p50_ms": 1.4077079999999569,
+              "p95_ms": 3.055499999999938,
+              "max_ms": 3.9191660000000184
+            },
+            "server_executor_including_row_wait": {
+              "samples": 100,
+              "p50_ms": 0.013,
+              "p95_ms": 0.02,
+              "max_ms": 0.025
+            },
+            "residual": {
+              "samples": 100,
+              "p50_ms": 1.394707999999957,
+              "p95_ms": 3.0304999999999382,
+              "max_ms": 3.8961660000000182
+            },
+            "lockObservations": []
+          },
+          "baseline": {
+            "client": {
+              "samples": 100,
+              "p50_ms": 1.0329999999999018,
+              "p95_ms": 1.9604159999998956,
+              "max_ms": 4.293583000000012
+            },
+            "server_executor_including_row_wait": {
+              "samples": 100,
+              "p50_ms": 0.001,
+              "p95_ms": 0.001,
+              "max_ms": 0.002
+            },
+            "residual": {
+              "samples": 100,
+              "p50_ms": 1.0319999999999019,
+              "p95_ms": 1.9594159999998957,
+              "max_ms": 4.292583000000012
+            },
+            "lockObservations": []
+          }
+        }
+      },
+      {
+        "workers": 1,
+        "samplesPerMode": 100,
+        "pair": {
+          "baseline": {
+            "client": {
+              "samples": 100,
+              "p50_ms": 1.0360419999999522,
+              "p95_ms": 1.4339580000000751,
+              "max_ms": 2.824957999999924
+            },
+            "server_executor_including_row_wait": {
+              "samples": 100,
+              "p50_ms": 0.001,
+              "p95_ms": 0.001,
+              "max_ms": 0.002
+            },
+            "residual": {
+              "samples": 100,
+              "p50_ms": 1.0350419999999523,
+              "p95_ms": 1.4329580000000752,
+              "max_ms": 2.8229579999999244
+            },
+            "lockObservations": []
+          },
+          "budget": {
+            "client": {
+              "samples": 100,
+              "p50_ms": 1.300666000000092,
+              "p95_ms": 2.012000000000171,
+              "max_ms": 2.544791000000032
+            },
+            "server_executor_including_row_wait": {
+              "samples": 100,
+              "p50_ms": 0.012,
+              "p95_ms": 0.017,
+              "max_ms": 0.04
+            },
+            "residual": {
+              "samples": 100,
+              "p50_ms": 1.2896660000000921,
+              "p95_ms": 2.001000000000171,
+              "max_ms": 2.527791000000032
+            },
+            "lockObservations": []
+          }
+        }
+      }
+    ],
+    "interpretation": "Executor clock includes row-lock waiting, excludes planning/timeout setup/commit. Residual is paired client minus executor time, not pure transport. Lock snapshots are diagnostic, not a complete wait-time census. Single-worker results are not capacity acceptance.",
+    "targetPassed": false,
+    "headroomPassed": false,
+    "roundTrips": 7761,
+    "statements": 15522
+  },
+  "cleanup": {
+    "schemaAbsent": true,
+    "verifiedWith": "SELECT version(), to_regnamespace(exact_owned_schema) IS NULL",
+    "fixtureStopped": true
+  }
+}
