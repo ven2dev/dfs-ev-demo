@@ -1,6 +1,7 @@
 # #61 finite HTTP timeout qualification
 
-Status: complete local candidate, awaiting commit approval and independent review.
+Status: local corrections to the reviewed candidate 4e1d18d, awaiting correction
+commit approval and independent re-review. Hosted testing remains unapproved.
 No hosted role, credential file, push or deployment exists for this candidate.
 It is a throwaway branch: no PR or merge. Permanent implementation and performance
 execution remain blocked. Review this step against 42cf489; earlier approved
@@ -30,6 +31,9 @@ commits are 3afed44 (probes), 0f53155 (role regression), and 42cf489 (admission 
 ## Fixed target and setup
 
 Host: ep-broad-mouse-b773hf6f-pooler.c-13.us-east-1.aws.neon.tech; region iad1.
+Database: neondb. Both runtime validation and deployment preparation read the
+expected host/database from bench61-config.json. URI-decoded database names
+must match that reviewed value; agreement between two wrong URLs is insufficient.
 Schema: bench61_http_role_20261022. Login: bench61_http_timeout_20261022,
 connection limit eight (functional testing only, not authorization for 20 workers).
 
@@ -42,7 +46,8 @@ control row carry the owner's token fingerprint.
 
 Grants allow only schema usage, control-row reads, synthetic budget reads/updates
 and guard execution. PUBLIC execution is revoked only on the new guard.
-A metadata-only audit refuses inherited foreign table access, schema creation,
+A metadata-only audit refuses inherited foreign table access, including column-only
+SELECT/INSERT/UPDATE/REFERENCES grants checked with has_any_column_privilege, schema creation,
 foreign sequences, database CREATE, foreign security-definer execution, memberships
 or elevated attributes. It reads
 no application rows and never changes shared ACLs. Ordinary PUBLIC CONNECT/TEMP
@@ -156,7 +161,8 @@ connection is hardcoded to it; external DATABASE_URL is never used for test
 connections. Opt-in PG tests remain outside the web compilation graph. No pg
 dependency, CI, database-package, pipeline or application-feature changes.
 
-Evidence: docs/evidence/206-profile/local-functional-candidate-receipt.json.
+Original-candidate evidence: docs/evidence/206-profile/local-functional-candidate-receipt.json.
+Correction evidence: docs/evidence/206-profile/local-review-fixes-receipt.json.
 Local transport-adapter results are not managed Neon HTTP evidence.
 The fixture role/schema are removed and absence checked after testing.
 
@@ -172,3 +178,25 @@ Turbopack build pass. Later catalog-audit SQL hardening was revalidated by the t
 real PostgreSQL tests and production compilation. Operator defaults remain 0/0;
 test role, both fixture schemas and the synthetic ACL-probe table are absent;
 the 512 MiB fixture is stopped. No operational credential file was generated.
+
+## Review corrections after 4e1d18d
+
+P1: the foreign-table audit now checks table privileges OR any column privileges.
+The PostgreSQL regression grants only SELECT(secret) to PUBLIC, verifies table
+SELECT is false while column SELECT and a direct synthetic diagnostic read work,
+and requires qualification to stop before any worker probe. The unchanged
+synthetic balance and inherited grant confirm no probe writes or ACL rewrites.
+
+P2: database neondb is pinned in the reviewed JSON alongside the host. Both
+createRuntimeSpec and validateRuntimeSpec check the decoded database, as does
+functionalIdentity for each runtime URL. Tests reject consistently matching
+ordinary_app_db URLs before client construction or credential preparation and
+accept percent-encoded spelling of the expected name.
+
+The full-suite/build counts above describe the original candidate. Correction
+checks are recorded separately: 18 focused server tests, four deployment-helper
+tests, four finite PostgreSQL regressions, root/web typechecks, targeted ESLint,
+import-boundary probes and whitespace checks. The ten older PostgreSQL tests
+containing profiling workloads are deliberately unselected. No hosted mutation,
+credential-file preparation, push, deployment or performance run is authorized
+by these fixes.

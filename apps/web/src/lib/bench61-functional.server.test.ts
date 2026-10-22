@@ -2,7 +2,7 @@ import {beforeEach,expect,it,vi} from "vitest";
 import {createHash} from "node:crypto";
 import {neon} from "@neondatabase/serverless";
 vi.mock("@neondatabase/serverless",()=>({neon:vi.fn()}));
-vi.mock("./bench61-config.json",()=>({default:{host:"fixture.neon.tech"}}));
+vi.mock("./bench61-config.json",()=>({default:{host:"fixture.neon.tech",database:"fixture"}}));
 import {authorizeFunctional,executeFunctional,functionalIdentity} from "./bench61-functional";
 import {POST} from "@/app/api/bench61/route";
 const token="a".repeat(64),hash=createHash("sha256").update(token).digest("hex");
@@ -51,4 +51,15 @@ it("rejects performance POSTs with fully valid functional credentials before SQL
 it("rejects a direct unrecognized action before constructing a client",async()=>{
   await expect(executeFunctional("run" as never)).rejects.toThrow("Unknown functional action");
   expect(neon).not.toHaveBeenCalled();
+});
+it("pins the reviewed database even when both URLs consistently name the same wrong database",async()=>{
+  const wrong={...env,DATABASE_URL:env.DATABASE_URL.replace("/fixture","/ordinary_app_db"),
+    BENCH61_DATABASE_URL:env.BENCH61_DATABASE_URL.replace("/fixture","/ordinary_app_db")};
+  for(const action of ["setup","qualify","catalog","cleanup"])
+    expect(authorizeFunctional(token,action,wrong,now)).toBe(false);
+  for(const [key,value] of Object.entries(wrong))vi.stubEnv(key,value);
+  await expect(executeFunctional("setup")).rejects.toThrow("Operator target mismatch");
+  expect(neon).not.toHaveBeenCalled();
+  expect(functionalIdentity({...env,DATABASE_URL:env.DATABASE_URL.replace("/fixture","/%66ixture")},true))
+    .toEqual({host:"fixture.neon.tech",database:"fixture"});
 });

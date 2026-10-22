@@ -13,19 +13,20 @@ const actions: readonly string[] = ["setup","qualify","catalog","cleanup"];
 const ensure = (value: unknown, reason: string) => {if(!value)throw new Error(reason);};
 export const functionalIdentity = (env: Record<string,string|undefined>, workerRequired: boolean) => {
   const operator = new URL(env.DATABASE_URL ?? "");
+  const database = decodeURIComponent(operator.pathname.slice(1));
   ensure(["postgres:","postgresql:"].includes(operator.protocol) && operator.hostname === config.host
-    && operator.pathname.length>1,"Operator target mismatch");
+    && database === config.database,"Operator target mismatch");
   ensure([...operator.searchParams.keys()].every(key=>["sslmode","channel_binding"].includes(key)),
     "Unsupported operator connection options");
   if(workerRequired) {
     const worker = new URL(env.BENCH61_DATABASE_URL ?? "");
     ensure(worker.protocol === operator.protocol && worker.port === operator.port
-      && worker.hostname === operator.hostname && worker.pathname === operator.pathname
+      && worker.hostname === operator.hostname && decodeURIComponent(worker.pathname.slice(1)) === config.database
       && decodeURIComponent(worker.username) === timeoutRole && worker.password.length>=32,
     "Dedicated worker target mismatch");
     ensure(worker.search === operator.search,"Worker connection options differ");
   }
-  return {host:operator.hostname,database:decodeURIComponent(operator.pathname.slice(1))};
+  return {host:operator.hostname,database};
 };
 export const authorizeFunctional = (token: unknown,action: unknown,env: Record<string,string|undefined> = process.env,now=Date.now()) => {
   if(env.VERCEL_ENV!=="preview" || env.VERCEL_REGION!=="iad1" || typeof action!=="string" || !actions.includes(action)
@@ -160,7 +161,9 @@ export const executeFunctional = async (action: FunctionalAction) => {
     EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid) AS memberships,
     EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
       WHERE n.nspname NOT IN ('pg_catalog','information_schema',$1) AND n.nspname NOT LIKE 'pg_toast%'
-      AND c.relkind IN ('r','p','v','m','f') AND has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')) AS foreign_table_access,
+      AND CASE WHEN c.relkind IN ('r','p','v','m','f') THEN
+        (has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+          OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES')) ELSE false END) AS foreign_table_access,
     EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
       WHERE n.nspname NOT IN ('pg_catalog','information_schema',$1) AND n.nspname NOT LIKE 'pg_toast%'
       AND CASE WHEN c.relkind='S' THEN has_sequence_privilege(r.oid,c.oid,'SELECT,USAGE,UPDATE') ELSE false END) AS foreign_sequence_access,

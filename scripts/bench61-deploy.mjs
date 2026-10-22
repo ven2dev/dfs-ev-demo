@@ -4,8 +4,9 @@ import {lstat,readFile,realpath,writeFile} from "node:fs/promises";
 import {dirname,isAbsolute,relative,resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import {spawnSync} from "node:child_process";
+import config from "../apps/web/src/lib/bench61-config.json" with {type:"json"};
 const root=fileURLToPath(new URL("../",import.meta.url));
-const host="ep-broad-mouse-b773hf6f-pooler.c-13.us-east-1.aws.neon.tech";
+const {host,database}=config;
 const project="prj_GLXDEeScMKPAeDAUoYIoiNknwKJd",org="team_s66WXM6S37xvFRoA68265CFl";
 const scope="vernon-neillys-projects";
 const keys=["BENCH61_DATABASE_URL","BENCH61_TOKEN_HASH","BENCH61_ISSUED_AT","BENCH61_EXPIRES_AT","BENCH61_REVIEWED_SHA"];
@@ -15,7 +16,8 @@ const readJson=value=>{try{return JSON.parse(value);}catch{throw new Error("Inva
 export const createRuntimeSpec=(operatorUrl,reviewedSha,now=Date.now())=>{
   ensure(/^[a-f0-9]{40}$/.test(reviewedSha),"Invalid reviewed SHA");
   const url=readUrl(operatorUrl);
-  ensure(["postgres:","postgresql:"].includes(url.protocol) && url.hostname===host && url.pathname.length>1,"Wrong Preview target");
+  ensure(["postgres:","postgresql:"].includes(url.protocol) && url.hostname===host
+    && decodeURIComponent(url.pathname.slice(1))===database,"Wrong Preview target");
   ensure([...url.searchParams.keys()].every(key=>["sslmode","channel_binding"].includes(key)),"Unsupported connection options");
   url.username="bench61_http_timeout_20261022";
   url.password=randomBytes(32).toString("hex");
@@ -46,7 +48,8 @@ export const validateRuntimeSpec=(spec,head,link,clean,now=Date.now())=>{
   ensure(keys.length===Object.keys(spec.runtime).length && keys.every(k=>typeof spec.runtime[k]==="string"),"Unexpected runtime keys");
   const {runtime:r}=spec,url=readUrl(r.BENCH61_DATABASE_URL);
   ensure(["postgres:","postgresql:"].includes(url.protocol) && url.hostname===host
-    && url.username==="bench61_http_timeout_20261022" && url.pathname.length>1 && url.password.length===64,"Wrong worker credential");
+    && url.username==="bench61_http_timeout_20261022" && decodeURIComponent(url.pathname.slice(1))===database
+    && url.password.length===64,"Wrong worker credential");
   ensure([...url.searchParams.keys()].every(key=>["sslmode","channel_binding"].includes(key)),"Unsupported connection options");
   ensure(/^[a-f0-9]{64}$/.test(spec.token) && createHash("sha256").update(spec.token).digest("hex")===r.BENCH61_TOKEN_HASH,"Token fingerprint mismatch");
   const issued=Date.parse(r.BENCH61_ISSUED_AT),expires=Date.parse(r.BENCH61_EXPIRES_AT);

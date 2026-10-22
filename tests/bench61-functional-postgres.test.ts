@@ -4,7 +4,7 @@ import {writeFile} from "node:fs/promises";
 import {Pool} from "pg";
 import {neon} from "@neondatabase/serverless";
 vi.mock("@neondatabase/serverless",()=>({neon:vi.fn()}));
-vi.mock("@/lib/bench61-config.json",()=>({default:{host:"fixture.neon.tech"}}));
+vi.mock("@/lib/bench61-config.json",()=>({default:{host:"fixture.neon.tech",database:"bench61"}}));
 import {executeFunctional,functionalSchema} from "@/lib/bench61-functional";
 import {timeoutRole} from "@/lib/bench61-timeout";
 const local=process.env.BENCH61_LOCAL_TEST==="1";
@@ -13,10 +13,11 @@ const target={host:"127.0.0.1",port:54361,database:"bench61",user:"bench61",pass
 const operator=local?new Pool({...target,max:6}):undefined;
 const password="local-only-functional-role-password-20261022";
 const owner=createHash("sha256").update("local-functional-fixture").digest("hex");
-let workers:Pool|undefined,owned=false,lostCleanupReply=false,rollbackCleanup=false;
+let workers:Pool|undefined,owned=false,lostCleanupReply=false,rollbackCleanup=false,workerQueries=0;
 afterAll(async()=>{await operator?.end();});
 beforeEach(async()=>{
   if(!local)return;
+  workerQueries=0;
   vi.stubEnv("DATABASE_URL","postgres://operator:local@fixture.neon.tech/bench61");
   vi.stubEnv("BENCH61_DATABASE_URL",`postgres://${timeoutRole}:${password}@fixture.neon.tech/bench61`);
   vi.stubEnv("BENCH61_TOKEN_HASH",owner);
@@ -27,8 +28,10 @@ beforeEach(async()=>{
     const pool=new URL(url).username===timeoutRole?workers!:operator!;
     const query=(text:string,params:unknown[]=[])=>({
       text,params,
-      then:(resolve:(value:unknown)=>unknown,reject:(error:unknown)=>unknown)=>
-        pool.query(text,params).then(result=>result.rows).then(resolve,reject),
+      then:(resolve:(value:unknown)=>unknown,reject:(error:unknown)=>unknown)=>{
+        if(pool===workers)workerQueries++;
+        return pool.query(text,params).then(result=>result.rows).then(resolve,reject);
+      },
     });
     const transaction=async(queries:ReturnType<typeof query>[])=>{
       const c=await pool.connect();
@@ -107,6 +110,32 @@ describe.skipIf(!local)("local functional candidate",()=>{
       await expect(executeFunctional("qualify")).rejects.toThrow("Worker effective privileges exceed scope");
       expect((await operator!.query(`SELECT balance FROM "${functionalSchema}".budgets`)).rows).toEqual([{balance:100}]);
       expect((await operator!.query("SELECT has_table_privilege($1,$2,'SELECT') AS allowed",[timeoutRole,"public."+table])).rows[0].allowed).toBe(true);
+    }finally{await operator!.query(`DROP TABLE public.${table}`);}
+  });
+  it("rejects a PUBLIC column-only grant before any worker probe",async()=>{
+    const table="bench61_column_privilege_probe_20261022";
+    expect((await operator!.query("SELECT to_regclass($1) IS NULL AS absent",["public."+table])).rows[0].absent).toBe(true);
+    await setup();
+    await operator!.query(`CREATE TABLE public.${table}(secret text,ungranted text)`);
+    try {
+      await operator!.query(`INSERT INTO public.${table} VALUES('synthetic-column-value','not-granted')`);
+      await operator!.query(`GRANT SELECT(secret) ON public.${table} TO PUBLIC`);
+      const access=(await operator!.query("SELECT has_table_privilege($1,$2,'SELECT') AS table_access,has_any_column_privilege($1,$2,'SELECT') AS column_access",
+        [timeoutRole,"public."+table])).rows[0];
+      expect(access).toEqual({table_access:false,column_access:true});
+      // Direct diagnostic read proves the inherited access exists. It is not a
+      // harness probe; the adapter counter below tracks only harness SQL.
+      const diagnosticRead=(await workers!.query(`SELECT secret FROM public.${table}`)).rows;
+      expect(diagnosticRead).toEqual([{secret:"synthetic-column-value"}]);
+      await expect(executeFunctional("qualify")).rejects.toThrow("Worker effective privileges exceed scope");
+      expect(workerQueries).toBe(0);
+      const balance=(await operator!.query(`SELECT balance FROM "${functionalSchema}".budgets`)).rows;
+      expect(balance).toEqual([{balance:100}]);
+      const publicGrantRemains=(await operator!.query("SELECT has_any_column_privilege($1,$2,'SELECT') AS allowed",[timeoutRole,"public."+table])).rows[0].allowed;
+      expect(publicGrantRemains).toBe(true);
+      if(process.env.BENCH61_LOCAL_RECEIPT==="1")await writeFile("/private/tmp/dfs61-column-privilege-receipt.json",
+        JSON.stringify({scope:"Synthetic local PostgreSQL column-only PUBLIC grant",access,diagnosticRead,
+          qualificationRejected:true,workerProbeQueries:workerQueries,balance,publicGrantRemains},null,2)+"\n");
     }finally{await operator!.query(`DROP TABLE public.${table}`);}
   });
 });

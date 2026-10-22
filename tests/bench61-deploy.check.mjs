@@ -33,6 +33,14 @@ test("refuses wrong target, dirty/unreviewed checkout, project, extra env, or sh
   assert.throws(()=>validateRuntimeSpec(spec,sha,link,true,now),/Unexpected runtime/);
   assert.throws(()=>validateRuntimeSpec(createRuntimeSpec(url,sha,now),sha,link,true,now+85500000),/cleanup headroom/);
 });
+test("pins the reviewed database during preparation and validation, including normalized URI names",()=>{
+  assert.throws(()=>createRuntimeSpec(url.replace("/neondb","/ordinary_app_db"),sha,now),/Wrong Preview target/);
+  const spec=createRuntimeSpec(url,sha,now);
+  spec.runtime.BENCH61_DATABASE_URL=spec.runtime.BENCH61_DATABASE_URL.replace("/neondb","/ordinary_app_db");
+  assert.throws(()=>validateRuntimeSpec(spec,sha,link,true,now),/Wrong worker credential/);
+  const normalized=createRuntimeSpec(url.replace("/neondb","/%6Eeondb"),sha,now);
+  assert.doesNotThrow(()=>validateRuntimeSpec(normalized,sha,link,true,now));
+});
 test("private preparation refuses checkout paths and overwrite; unsafe permissions stop before deployment",async()=>{
   const folder=await mkdtemp(join(tmpdir(),"bench61-deploy-unit-")),file=join(folder,"credential.json");
   try {
