@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { buildCaptureEvent, type CaptureEvent, type CaptureRequest } from "../../../../apps/web/src/lib/creatorCaptures.ts";
-import type { DecisionEvent } from "../../../../apps/web/src/lib/creatorDecisions.ts";
+import { buildCaptureEvent, type CaptureEvent, type CaptureRequest } from "../../src/creator/creatorCaptures.ts";
+import type { DecisionEvent } from "../../src/creator/creatorDecisions.ts";
 import { PREVIEW_LENGTH, buildCaptureQueue, type QueueScope } from "./captureQueue.ts";
 import { NOW, discoveryFor, record, vid } from "./testSupport.ts";
 

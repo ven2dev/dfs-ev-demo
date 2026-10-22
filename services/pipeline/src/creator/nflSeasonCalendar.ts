@@ -5,7 +5,7 @@ import {
   nflDayNumberToCalendarDate,
   nflLocalDateTimeToInstant,
   type NflCalendarDate,
-} from "./nflWeek.ts";
+} from "@dfs-ev/domain/nfl-week";
 
 export const NFL_REGULAR_SEASON_WEEKS = 18;
 

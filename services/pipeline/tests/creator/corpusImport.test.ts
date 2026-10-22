@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import type { Client } from "pg";
-import { buildCaptureEvent } from "../../../../apps/web/src/lib/creatorCaptures.ts";
-import type { DecisionEvent } from "../../../../apps/web/src/lib/creatorDecisions.ts";
+import { buildCaptureEvent } from "../../src/creator/creatorCaptures.ts";
+import type { DecisionEvent } from "../../src/creator/creatorDecisions.ts";
 import {
   CORPUS_LOCK_KEY,
   CORPUS_LOCK_NAMESPACE,

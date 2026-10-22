@@ -2,8 +2,8 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { access, link, open, readFile, rm } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { isCreatorKey } from "../../../../apps/web/src/lib/creatorDecisions.ts";
-import { assertValidWindow } from "../../../../apps/web/src/lib/creatorVideoRule.ts";
+import { isCreatorKey } from "../../src/creator/creatorDecisions.ts";
+import { assertValidWindow } from "../../src/creator/creatorVideoRule.ts";
 import { loadRegistration, parseCreatorsFile, windowStart } from "./creatorInputs.ts";
 import {
   readPrivateJson,

@@ -32,7 +32,7 @@ import {
 } from "./oddsApi";
 import { persistOddsObservation } from "./oddsSnapshotRepo";
 import { TRACKABLE_PLAYER_PROP_MARKET_KEYS } from "./playerPropMarkets";
-import { getCurrentNflSlateWindow } from "./nflWeek";
+import { getCurrentNflSlateWindow } from "@dfs-ev/domain/nfl-week";
 
 export type OddsCollectorConfig = {
   profile: OddsCollectionProfile;

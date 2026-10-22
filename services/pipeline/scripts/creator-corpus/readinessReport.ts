@@ -1,6 +1,6 @@
 import { Client, type ClientBase } from "pg";
-import { API_DATA_MAX_AGE_DAYS, isApiDataStale } from "../../../../apps/web/src/lib/creatorCorpusManifest.ts";
-import { listWindowWeeks } from "../../../../apps/web/src/lib/creatorVideoRule.ts";
+import { API_DATA_MAX_AGE_DAYS, isApiDataStale } from "../../src/creator/creatorCorpusManifest.ts";
+import { listWindowWeeks } from "../../src/creator/creatorVideoRule.ts";
 import { assertConnectedCorpusTarget, CorpusImportDatabaseError } from "./importPublisher.ts";
 import type {
   CorpusApiVideoProjection,

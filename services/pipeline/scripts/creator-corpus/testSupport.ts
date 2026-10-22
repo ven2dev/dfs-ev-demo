@@ -1,5 +1,5 @@
-import { buildCreatorManifest } from "../../../../apps/web/src/lib/creatorCorpusManifest.ts";
-import type { VideoRecord } from "../../../../apps/web/src/lib/creatorVideoRule.ts";
+import { buildCreatorManifest } from "../../src/creator/creatorCorpusManifest.ts";
+import type { VideoRecord } from "../../src/creator/creatorVideoRule.ts";
 import type { DiscoveryFile } from "./discoveryFile.ts";
 
 // Shared synthetic data for the creator-corpus tests. Nothing here is real

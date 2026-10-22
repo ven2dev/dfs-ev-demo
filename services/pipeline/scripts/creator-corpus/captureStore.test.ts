@@ -3,8 +3,8 @@ import { mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from "node:f
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { MAX_TRANSCRIPT_BYTES, hashTranscript, parseCaptureLog } from "../../../../apps/web/src/lib/creatorCaptures.ts";
-import type { DecisionsFile } from "../../../../apps/web/src/lib/creatorDecisions.ts";
+import { MAX_TRANSCRIPT_BYTES, hashTranscript, parseCaptureLog } from "../../src/creator/creatorCaptures.ts";
+import type { DecisionsFile } from "../../src/creator/creatorDecisions.ts";
 import { createCaptureStore, readCapturesFile } from "./captureStore.ts";
 import { NOW, discoveryFor, record, vid } from "./testSupport.ts";
 

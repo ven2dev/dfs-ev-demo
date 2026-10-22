@@ -5,7 +5,7 @@ import type {
   PlayerPropBookmakerLine,
   SlateEvent,
 } from "./oddsApi";
-import { getCurrentNflSlateWindow } from "./nflWeek";
+import { getCurrentNflSlateWindow } from "@dfs-ev/domain/nfl-week";
 import type { PlayerPropMarketKey } from "./playerPropMarkets";
 import type { WeatherSnapshot } from "./weather";
 

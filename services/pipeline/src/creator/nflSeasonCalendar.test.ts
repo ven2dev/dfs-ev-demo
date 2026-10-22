@@ -12,7 +12,7 @@ import {
   nflCalendarDateToDayNumber,
   nflDayNumberToCalendarDate,
   nflLocalDateTimeToInstant,
-} from "./nflWeek.ts";
+} from "@dfs-ev/domain/nfl-week";
 
 // "2024-09-05T20:20" is Eastern wall-clock time, as published by nflverse.
 const kickoffInstant = (local: string): Date => {

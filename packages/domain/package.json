@@ -13,7 +13,8 @@
     "./devig": "./src/devig.ts",
     "./consensus-devig": "./src/consensusDevig.ts",
     "./ev": "./src/computeEV.ts",
-    "./qb-evaluation": "./src/projection/qb-evaluation.ts"
+    "./qb-evaluation": "./src/projection/qb-evaluation.ts",
+    "./nfl-week": "./src/nflWeek.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json"

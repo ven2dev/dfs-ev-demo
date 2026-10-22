@@ -3,7 +3,7 @@ import { mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promise
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { DecisionsFile } from "../../../../apps/web/src/lib/creatorDecisions.ts";
+import type { DecisionsFile } from "../../src/creator/creatorDecisions.ts";
 import { createDecisionStore } from "./decisionStore.ts";
 import { NOW, discoveryFor, record, vid } from "./testSupport.ts";
 

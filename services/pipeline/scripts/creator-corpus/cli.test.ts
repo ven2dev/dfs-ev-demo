@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runCli, type CliDeps } from "./cli.ts";
 import type { FetchLike } from "./youtubeApi.ts";
 import { discoveryFor, record as supportRecord, vid as supportVid } from "./testSupport.ts";
-import { buildCaptureEvent } from "../../../../apps/web/src/lib/creatorCaptures.ts";
+import { buildCaptureEvent } from "../../src/creator/creatorCaptures.ts";
 import { buildReadinessGate } from "./readinessGate.ts";
 
 const KEY = "SECRET-KEY-VALUE-123";

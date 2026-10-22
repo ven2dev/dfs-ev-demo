@@ -6,8 +6,8 @@ import {
   type DecisionEvent,
   type DecisionKind,
   type DecisionsFile,
-} from "../../../../apps/web/src/lib/creatorDecisions.ts";
-import { getStaleVideoIds } from "../../../../apps/web/src/lib/creatorCorpusManifest.ts";
+} from "../../src/creator/creatorDecisions.ts";
+import { getStaleVideoIds } from "../../src/creator/creatorCorpusManifest.ts";
 import { CommandError } from "./commands.ts";
 import type { DiscoveryFile } from "./discoveryFile.ts";
 import { readPrivateJsonOptional, replacePrivateJson, withPrivateFileLock } from "./privateOutput.ts";

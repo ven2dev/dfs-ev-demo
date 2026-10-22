@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import type { RegisteredWindow } from "../../../../apps/web/src/lib/creatorVideoRule.ts";
+import type { RegisteredWindow } from "../../src/creator/creatorVideoRule.ts";
 import {
   CommandError,
   applyDecisions,
@@ -15,7 +15,7 @@ import {
   screenManifests,
   type RegistryEntry,
 } from "./commands.ts";
-import type { DecisionEvent } from "../../../../apps/web/src/lib/creatorDecisions.ts";
+import type { DecisionEvent } from "../../src/creator/creatorDecisions.ts";
 import { YoutubeApiError, type ApiVideo, type UploadItem, type YoutubeClient } from "./youtubeApi.ts";
 import { discoveryFor, record, vid as supportVid } from "./testSupport.ts";
 

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import type { DecisionEvent } from "../../../../apps/web/src/lib/creatorDecisions.ts";
+import type { DecisionEvent } from "../../src/creator/creatorDecisions.ts";
 import { DESCRIPTION_SNIPPET_LENGTH, REASON_LABELS, buildReviewState } from "./reviewState.ts";
 import { NOW, discoveryFor, record, vid } from "./testSupport.ts";
 

@@ -4,9 +4,9 @@ import {
   getStaleVideoIds,
   type ManifestSlot,
   type CreatorManifest,
-} from "../../../../apps/web/src/lib/creatorCorpusManifest.ts";
-import { effectiveDecisions, eventsFor, type DecisionEvent, type DecisionsFile } from "../../../../apps/web/src/lib/creatorDecisions.ts";
-import type { ReasonCode, RegisteredWindow } from "../../../../apps/web/src/lib/creatorVideoRule.ts";
+} from "../../src/creator/creatorCorpusManifest.ts";
+import { effectiveDecisions, eventsFor, type DecisionEvent, type DecisionsFile } from "../../src/creator/creatorDecisions.ts";
+import type { ReasonCode, RegisteredWindow } from "../../src/creator/creatorVideoRule.ts";
 import type { DiscoveryFile } from "./discoveryFile.ts";
 
 // Plain-language explanation of every reason the rule can give. Typed as a

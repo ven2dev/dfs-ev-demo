@@ -2,7 +2,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { API_DATA_MAX_AGE_DAYS } from "../../../../apps/web/src/lib/creatorCorpusManifest.ts";
+import { API_DATA_MAX_AGE_DAYS } from "../../src/creator/creatorCorpusManifest.ts";
 import { loadRegistration } from "./creatorInputs.ts";
 
 // The runbook is only useful while it matches the tools, so these checks fail
@@ -15,7 +15,7 @@ const source = (path: string) => readFileSync(resolve(root, path), "utf8");
 const toolSources = readdirSync(TOOL_DIRECTORY)
   .filter((name) => name.endsWith(".ts") && !name.endsWith(".test.ts"))
   .map((name) => source(`services/pipeline/scripts/creator-corpus/${name}`))
-  .concat(source("apps/web/src/lib/creatorDecisions.ts"));
+  .concat(source("services/pipeline/src/creator/creatorDecisions.ts"));
 const CLI = source("services/pipeline/scripts/creator-corpus/cli.ts");
 
 const COMMANDS = ["resolve", "confirm", "discover", "review", "rebuild", "screen", "purge", "gate-register", "import", "readiness", "expire-api"];
@@ -48,7 +48,7 @@ describe("creator corpus runbook", () => {
 
   it("refers only to repository files that exist", () => {
     const paths = [...RUNBOOK.matchAll(/`((?:apps|packages|services|docs)\/[A-Za-z0-9_./-]+)`/g)].map((match) => match[1]);
-    expect(paths).toEqual(expect.arrayContaining(["services/pipeline/scripts/creator-corpus/registration.json", "apps/web/src/lib/creatorVideoRule.ts", "apps/web/src/lib/nflSeasonCalendar.ts"]));
+    expect(paths).toEqual(expect.arrayContaining(["services/pipeline/scripts/creator-corpus/registration.json", "services/pipeline/src/creator/creatorVideoRule.ts", "services/pipeline/src/creator/nflSeasonCalendar.ts"]));
     for (const path of paths) expect(existsSync(resolve(root, path)), path).toBe(true);
   });
 

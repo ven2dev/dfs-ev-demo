@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
-import type { CaptureEvent, CaptionKind } from "../../../../apps/web/src/lib/creatorCaptures.ts";
-import type { DecisionEvent, DecisionsFile } from "../../../../apps/web/src/lib/creatorDecisions.ts";
-import type { ClassificationStatus, ReasonCode } from "../../../../apps/web/src/lib/creatorVideoRule.ts";
+import type { CaptureEvent, CaptionKind } from "../../src/creator/creatorCaptures.ts";
+import type { DecisionEvent, DecisionsFile } from "../../src/creator/creatorDecisions.ts";
+import type { ClassificationStatus, ReasonCode } from "../../src/creator/creatorVideoRule.ts";
 import { CommandError, rebuildDiscovery } from "./commands.ts";
 import type { Registration } from "./creatorInputs.ts";
 import type { DecisionNotApplied, DiscoveryFile } from "./discoveryFile.ts";

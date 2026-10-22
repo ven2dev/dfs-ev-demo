@@ -8,7 +8,40 @@
   },
   "dependencies": {
     "@dfs-ev/domain": "0.1.0",
+    "@dfs-ev/db": "0.1.0",
+    "csv-parse": "7.0.3",
+    "pg": "8.23.1"
+  },
+  "exports": {
+    "./feature-store/as-of": "./src/featureStore/asOf.ts",
+    "./feature-store/datasets": "./src/featureStore/datasets.ts",
+    "./feature-store/derived": "./src/featureStore/derived.ts",
+    "./feature-store/empirical-adapter": "./src/featureStore/empiricalAdapter.ts",
+    "./feature-store/governance": "./src/featureStore/governance.ts",
+    "./feature-store/ingest": "./src/featureStore/ingest.ts",
+    "./feature-store/jobs": "./src/featureStore/jobs.ts",
+    "./feature-store/local-object-store": "./src/featureStore/localObjectStore.ts",
+    "./feature-store/normalize": "./src/featureStore/normalize.ts",
+    "./feature-store/object-store": "./src/featureStore/objectStore.ts",
+    "./feature-store/source": "./src/featureStore/source.ts",
+    "./creator/manifest": "./src/creator/creatorCorpusManifest.ts",
+    "./creator/captures": "./src/creator/creatorCaptures.ts",
+    "./creator/decisions": "./src/creator/creatorDecisions.ts",
+    "./creator/video-rule": "./src/creator/creatorVideoRule.ts",
+    "./creator/season-calendar": "./src/creator/nflSeasonCalendar.ts"
+  },
+  "scripts": {
+    "creators": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/creator-corpus/cli.ts",
+    "feature-store:ingest:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/ingest-spike.ts",
+    "feature-store:derived:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/derived-spike.ts",
+    "feature-store:dataset:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/dataset-spike.ts"
+  },
+  "devDependencies": {
     "@dfs-ev/db-tooling": "0.1.0",
-    "@dfs-ev/db": "0.1.0"
+    "@types/node": "^24.19.2",
+    "@types/pg": "8.23.1",
+    "jsdom": "30.1.3",
+    "typescript": "^5",
+    "vitest": "5.0.5"
   }
 }
