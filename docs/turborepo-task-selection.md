@@ -42,7 +42,7 @@ to execute their existing implementations and preserve CLI argument forwarding.
 | `@dfs-ev/domain` | Existing browser math tests and Node projection tests | None |
 | `@dfs-ev/db` | Existing root DB harness unit checks | None |
 | `@dfs-ev/db-tooling` | Existing tooling unit checks | `test:db:local` delegates to the complete protected root runner |
-| `@dfs-ev/pipeline` | Existing browser and Node pipeline tests | `test:feature-store:db` delegates to the existing root command |
+| `@dfs-ev/pipeline` | Existing browser and Node pipeline tests | `test:db:local` selects the ordinary suite containing creator integration; `test:feature-store:db` selects the separate feature-store suite |
 
 Workspace test/tooling commands first change to the repository root, preserving
 the existing root-based test configuration and child-process assumptions.
@@ -119,10 +119,10 @@ summarized there rather than discarded.
 
 ## Atomic adoption stops and remaining gates
 
-1. **Graph and executable guards (current):** pin Turbo, declare package tasks,
+1. **Graph and executable guards (committed `00592be`):** pin Turbo, declare package tasks,
    prove the matrix under Node 24, preserve unit coverage and record compact
-   evidence. Stop for the owner's Step 1 commit approval. CI is unchanged here.
-2. **CI adoption:** supply full history and explicit event base/head; run the
+   evidence. Owner-approved Step 1 was committed before CI edits; its receipt records that unchanged-workflow boundary.
+2. **CI adoption (current):** supply full history and explicit event base/head; run the
    selection proof in hosted Node 24 CI; preserve full checks on main and at
    integration checkpoints. Keep root command names, CodeQL protection, serial
    fixture ownership and always-run cleanup. Stop for commit approval.
@@ -143,3 +143,60 @@ local matrix success does not authorize CI adoption or merge.
 References: [Turborepo task filtering](https://turborepo.dev/docs/reference/run),
 [global inputs](https://turborepo.dev/docs/reference/configuration#globaldependencies),
 and the version-pinned documentation shipped in `node_modules/turbo/docs/`.
+
+## Step 2 CI wiring
+
+Both upstream jobs always start. The required `CI` job remains unchanged and
+requires `App checks` and `DB integration` to finish successfully; a skipped or
+cancelled upstream job cannot pass. CodeQL's workflow is untouched.
+
+For PRs, both checkouts fetch full history. The selection range is the explicit
+PR target SHA through `github.sha`, the merge commit that GitHub checks out for
+`pull_request`. This tests the integrated tree without confusing it with the
+PR source SHA. A disposable merge probe advances the target with a domain edit,
+merges a UI-only PR, and verifies that only web tests are selected against that
+target base. [GitHub's event documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request)
+defines this merge-commit checkout contract.
+
+Main pushes and `workflow_dispatch` integration checkpoints set
+`TURBO_FORCE_FULL=1`. Even an unchanged/UI-only range then runs all requested
+work. Full mode still validates complete history and checkout identity; it is
+not a bypass for missing source. PR typecheck, lint, CI/layout guards, Firestore
+rules, web build and dependency audit remain full. Only package unit tests and
+the two expensive DB suites use affected selection.
+
+The DB job first runs the affected runner with `TURBO_PLAN_ONLY=1`. It writes a
+new, exclusive `TURBO_PLAN_FILE` containing explicit SHAs, task IDs, cache state
+and an intentional-empty marker. No task executes during planning. A small
+translator validates that exact contract and emits only `db_local`,
+`feature_store` and `mode` outputs. It neither examines paths nor walks package
+dependencies. Unknown, stale, duplicate, cached or incomplete full plans fail.
+The workflow also executes a guard requiring both selection booleans to be
+exactly `true` or `false` before any conditional suite; its executable test covers
+all 16 valid/invalid output combinations.
+
+The cheap target/bootstrap/report guards always execute. Startup lifecycle tests
+run if either DB suite is selected. Ordinary DB integration runs before the
+feature-store suite; each retains its existing root command. The feature-store
+step still starts the standard 512 MiB fixture with `--env-file /dev/null` and
+the public throwaway URL. The outer `always()` cleanup remains mandatory even
+when planning or a suite fails. No 2 GiB override or app credentials are loaded.
+
+The full disposable matrix runs in the hosted Node 24 App checks job on every
+event and prints a compact JSON receipt to its log. Its inner environments reset
+inherited selection flags so a main/manual full run still proves the affected
+cases. Local evidence is in the
+[Step 2 receipt](evidence/turborepo-192/step-2-ci.json). Actual hosted success is
+pending a separately approved push; this local checkpoint does not claim it.
+
+Step 3 adds detailed selection/execution accounting to the aggregate gate.
+Step 2 preserves the original success/success aggregate while enforcing explicit
+selection before conditional work. Stop for the owner's Step 2 commit approval
+before continuing that next atomic step.
+
+The pipeline also declares an uncached `test:db:local` alias, because its creator
+PostgreSQL cases are executed by the protected ordinary runner. Domain and
+pipeline edits therefore select both DB suites. The DB tooling and pipeline task
+IDs can both request that same ordinary suite; the CI plan translator emits one
+boolean, and the workflow runs it once. This is declared consumer ownership, not
+an infrastructure dependency on pipeline or a custom dependency traversal.

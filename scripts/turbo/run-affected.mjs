@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 
@@ -9,6 +9,12 @@ const separator = args.indexOf("--");
 const tasks = separator === -1 ? args : args.slice(0, separator);
 const taskArgs = separator === -1 ? [] : args.slice(separator);
 const refuse = message => { console.error(message); process.exit(2); };
+for (const name of ["TURBO_FORCE_FULL", "TURBO_PLAN_ONLY"]) {
+  if (![undefined, "", "0", "1"].includes(process.env[name])) refuse(`${name} must be 0 or 1.`);
+}
+if (process.env.TURBO_PLAN_ONLY === "1" && !process.env.TURBO_PLAN_FILE) {
+  refuse("TURBO_PLAN_FILE is required for a plan-only invocation.");
+}
 if (!tasks.length || tasks.some(task => !/^[a-zA-Z0-9:_-]+$/.test(task))) {
   refuse("Usage: npm run turbo:affected -- <task> [<task> ...] [-- ...task arguments]; Turbo override flags are refused.");
 }
@@ -56,22 +62,31 @@ const dryRun = parameters => {
   return plan;
 };
 
-let plan = dryRun(filtered);
+let plan = dryRun(process.env.TURBO_FORCE_FULL === "1" ? common : filtered);
 // Turbo owns the package/dependency analysis. Its root marker means shared or
 // unowned input: use the whole graph even if a known edit is in the same diff.
-const full = plan.packages.includes("//");
+const full = process.env.TURBO_FORCE_FULL === "1" || plan.packages.includes("//");
 const execution = full ? common : filtered;
-if (full) plan = dryRun(common);
+if (full && process.env.TURBO_FORCE_FULL !== "1") plan = dryRun(common);
 // A configured task without a package script is a Turbo transit node. It does
 // not execute and cannot count as selected coverage (notably UI-only DB plans).
 const executable = plan.tasks.filter(task => task.command !== "<NONEXISTENT>");
-console.log(`TURBO_SELECTION ${JSON.stringify({ base, head, mode: full ? "full" : "affected", packages: plan.packages, tasks: executable.map(t => t.taskId), cache: Object.fromEntries(executable.map(t => [t.taskId, t.resolvedTaskDefinition.cache])) })}`);
-if (executable.length === 0) {
-  if (!full && process.env.TURBO_ALLOW_EMPTY === "1") {
-    console.log("Intentional empty task selection; no task was skipped or executed.");
-    process.exit(0);
-  }
+const intentionalEmpty = !full && executable.length === 0 && process.env.TURBO_ALLOW_EMPTY === "1";
+if (executable.length === 0 && !intentionalEmpty) {
   refuse("Turbo selected no tasks; explicit TURBO_ALLOW_EMPTY=1 is required for an intentional empty selection.");
+}
+const selection = { schemaVersion: 1, base, head, requestedTasks: tasks,
+  mode: full ? "full" : "affected", packages: plan.packages,
+  tasks: executable.map(t => t.taskId), intentionalEmpty,
+  cache: Object.fromEntries(executable.map(t => [t.taskId, t.resolvedTaskDefinition.cache])) };
+console.log(`TURBO_SELECTION ${JSON.stringify(selection)}`);
+if (process.env.TURBO_PLAN_ONLY === "1") {
+  writeFileSync(process.env.TURBO_PLAN_FILE, JSON.stringify(selection) + "\n", { flag: "wx" });
+  process.exit(0);
+}
+if (intentionalEmpty) {
+  console.log("Intentional empty task selection; no task was skipped or executed.");
+  process.exit(0);
 }
 
 const result = spawnSync(process.execPath, [turbo, ...execution, ...taskArgs], { cwd: root, stdio: "inherit" });

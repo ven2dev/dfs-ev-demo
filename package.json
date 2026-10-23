@@ -50,7 +50,7 @@
     "feature-store:dataset:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON services/pipeline/scripts/feature-store/dataset-spike.ts",
     "test:repo-layout": "node --test tests/monorepo-layout.check.mjs",
     "test:import-boundaries": "node --test tests/import-boundaries.check.mjs",
-    "test:turbo-layout": "node --test tests/turbo-layout.check.mjs tests/turbo-selection.check.mjs",
+    "test:turbo-layout": "node --test tests/turbo-layout.check.mjs tests/turbo-selection.check.mjs tests/turbo-ci-selection.check.mjs",
     "turbo:affected": "node scripts/turbo/run-affected.mjs"
   },
   "dependencies": {

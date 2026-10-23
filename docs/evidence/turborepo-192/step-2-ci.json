@@ -1,0 +1,582 @@
+{
+  "issue": 192,
+  "step": 2,
+  "verdict": "pass-local-ci-wiring; hosted pending",
+  "sourceBase": "00592be9b21ad04b2bbf79ad0f9b1b3ff1bef0c2",
+  "branch": "feature/dfsEV-192-turborepo-affected",
+  "uncommittedCheckpoint": true,
+  "versions": {
+    "node": "v24.18.1",
+    "npm": "11.16.0",
+    "turbo": "2.11.10",
+    "actionlint": "1.7.12"
+  },
+  "sourceFileSha256": {
+    ".github/workflows/ci.yml": "8ca149d135b86785f214884696100a1b12e9cc4a1c1cb9c31ec5bfb5baf1447a",
+    "scripts/turbo/run-affected.mjs": "20d54463d7589b4a49094ea84d39b4db7accdc61a3f0d7cf4f9f49902e7baa44",
+    "scripts/turbo/ci-db-selection.mjs": "9ebb4c157f314b8c20a0dc63ea752475c816e0b0f38d92f96e2ebd5fa6479773",
+    "tests/turbo-ci-selection.check.mjs": "7577088164d8e17ce39ae805b283c905fd8f236c0ca5fef9d7bb950ffa813de9",
+    "tests/turbo-selection.check.mjs": "da146b415da96064e545cb103134562fc32aca62127532d4592801da047279db",
+    "tests/turbo-layout.check.mjs": "574e7d7cf31e7df1d8030af5dbcd1fc7b4988dd92a9e859f9da5c4d956ae6751",
+    "tests/ciGate.check.mjs": "f94de7f0f6f5f20ed6acb1aed973e5f65a1b8bed383b63e94b71503f193b869d",
+    "services/pipeline/package.json": "9350a3dfebc2ca0c5b1d8a4cf5c1000f32d6731b77cc5719a43e1b55b3c74bca",
+    "package.json": "c9e642790c193b1afe2e96d04404f089237f8708913da1b04e4f5902a691dabb",
+    "docs/turborepo-task-selection.md": "8c8193badcbf7dba5f1edfd30f8009e6feb91a27ad576edbb82bfe3f1bfbd846"
+  },
+  "workflowContract": {
+    "prBase": "github.event.pull_request.base.sha",
+    "testedHead": "github.sha (default merge checkout)",
+    "fetchDepth": 0,
+    "mainAndManual": "forced full checks; manual workflow_dispatch is an integration checkpoint",
+    "alwaysFullAppChecks": [
+      "typecheck",
+      "lint/boundaries",
+      "CI/layout guards",
+      "Node 24 matrix",
+      "Firestore rules",
+      "build",
+      "production audit"
+    ],
+    "affectedAppChecks": "package tests; Firebase admin runtime probe retained",
+    "db": "validated plan-only Turbo task IDs mapped to explicit booleans; both jobs run; expensive suites conditional",
+    "pipelineCreatorOwnership": "Pipeline and DB tooling both declare ordinary-DB ownership; CI ORs those task IDs and executes the suite once.",
+    "aggregateJobUnchanged": true,
+    "codeqlWorkflowUnchanged": true,
+    "databaseAndMutationCache": false,
+    "serialFixture": "ordinary DB then feature-store; standard 512 MiB; always cleanup; no spike override or application credentials"
+  },
+  "matrix": {
+    "node": "v24.18.1",
+    "turbo": "2.11.10",
+    "boundary": "Disposable Git repository using the actual workspace manifests, lockfile, Turbo configuration and runner; task bodies replaced with execution markers. Real workspace tests are verified separately.",
+    "cache": "All configured tasks uncached; remote caching disabled; no database or mutation is performed by these marker probes.",
+    "probes": [
+      {
+        "name": "ui",
+        "path": "apps/web/src/probe.ts",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "1acc25b5ace610c1a67397c951e9e7391de76972",
+        "mode": "affected",
+        "selected": [
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "19ac2c6593942458d9c93f33888ac05711f268fb31622e54e01482964e0b1c9a",
+        "verdict": "pass"
+      },
+      {
+        "name": "domain",
+        "path": "packages/domain/src/probe.ts",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "96f3637fe114ac431d01685e7cdfc718ea54e17f",
+        "mode": "affected",
+        "selected": [
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "706878f9539cde6c0ab495db20e859feeb95597cb230d23665ef073b75945598",
+        "verdict": "pass"
+      },
+      {
+        "name": "db-proposal",
+        "path": "packages/db/proposals/probe.sql",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "003d409e85be22f7c41092c6f2a1d598d05f7941",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "371beb1e0c33c8aa96d75e575231470a15099aa0923bdf3666cd3333ae1f86d8",
+        "verdict": "pass"
+      },
+      {
+        "name": "pipeline",
+        "path": "services/pipeline/src/probe.ts",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "b0b063f113ae96af355ffedd816cec8a26917172",
+        "mode": "affected",
+        "selected": [
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db"
+        ],
+        "executed": [
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db"
+        ],
+        "outputHash": "c74f04ce6b9f80014733d9d2cb4d62ee0e87b66e6824006927cc960b04e1a7df",
+        "verdict": "pass"
+      },
+      {
+        "name": "runbook",
+        "path": "docs/probe.md",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "12fb3cbaa57bcf1691a649cceee1b822c6b51e42",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "845ef3df5833ce042397f109df85f00dd6d713729a7a7a3acb059bb2066633b3",
+        "verdict": "pass"
+      },
+      {
+        "name": "root-config",
+        "path": "tsconfig.json",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "564b4249ecea068c963d733b0dc4a278a9a24bcf",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "3e92c339f88e4d643466f52dc5e73261165eb4080d3c606a4d3a28cd998837d4",
+        "verdict": "pass"
+      },
+      {
+        "name": "toolchain",
+        "path": ".nvmrc",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "5ea2d7efcc6ec1458e10a739a50c10575b2d902e",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "bcc4c2e2058a77c9984c0ceb26599f72b71072efdfefb8ee0f73d3cf3506851d",
+        "verdict": "pass"
+      },
+      {
+        "name": "workflow",
+        "path": ".github/workflows/probe.yml",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "f5d61ec0e8c7796bd3cfc555ca6ade7aefb2a10f",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "8ac046d38d40bb158b658770c0b2cf22f785e019f41804af21cb60d8f670ffb4",
+        "verdict": "pass"
+      },
+      {
+        "name": "unknown",
+        "path": "unclassified/probe.txt",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "19794130fd53b49130823d179a6da02b80dac037",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "0589c03c14de2b4136be7bcc244db7679e2ba52e881f731410a8428f0a2d3518",
+        "verdict": "pass"
+      },
+      {
+        "name": "mixed-unknown-ui",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "670297e1fc092d099e1fa4fb3f2393bbac76fe4d",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "2fb63b2a4400a2344f0a0f6623ed4e0b0a9308abc74ee6ffec655acc5694715c",
+        "verdict": "pass"
+      },
+      {
+        "name": "lockfile",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "080d1277972cb04f93dc4bcc1d45ea5159640403",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "81e61d3974e28ce736b1126dc9a0025834db310b860c907fae06f3b054720473",
+        "verdict": "pass"
+      },
+      {
+        "name": "dependency-lockfile",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "7a628434e75e4ba0659a7b2ba7483973cada05ff",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "c2bb1e99216a428be8d3c0dc1451711f8c727939b840f086be018a6622ac77b2",
+        "verdict": "pass"
+      },
+      {
+        "name": "PR merge checkout",
+        "base": "88b6086c08db396b4ed489f88a5bb1ddba12d869",
+        "head": "c3d28a9f4831f20578e1afefffa378962d974d35",
+        "mode": "affected",
+        "selected": [
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "93288c2f6329aa720e019e9cda85844d127c903c6bc2ec17c6aafccd897be584",
+        "verdict": "pass"
+      }
+    ],
+    "guards": [
+      {
+        "name": "ui: actual plan-only runner maps explicit CI booleans without task execution",
+        "verdict": "pass"
+      },
+      {
+        "name": "UI DB tasks: refused without opt-in; explicit empty succeeds without execution",
+        "verdict": "pass"
+      },
+      {
+        "name": "main/manual forced-full mode executes all tasks even on UI-only input",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "1acc25b5ace610c1a67397c951e9e7391de76972",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "verdict": "pass"
+      },
+      {
+        "name": "domain: actual plan-only runner maps explicit CI booleans without task execution",
+        "verdict": "pass"
+      },
+      {
+        "name": "db-proposal: actual plan-only runner maps explicit CI booleans without task execution",
+        "verdict": "pass"
+      },
+      {
+        "name": "pipeline: actual plan-only runner maps explicit CI booleans without task execution",
+        "verdict": "pass"
+      },
+      {
+        "name": "missing SHA",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "implicit ref",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "unavailable commit",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "checkout mismatch",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "Turbo bypass flag",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "invalid full-mode flag",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "plan-only without destination",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "selected task failure",
+        "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+        "head": "5069f41993e8ac27dadb7ac6ddea894c5ce3b545",
+        "exitCode": 23,
+        "verdict": "pass"
+      },
+      {
+        "name": "shallow checkout even with empty opt-in",
+        "exitCode": 2,
+        "verdict": "pass"
+      }
+    ],
+    "base": "c7f6f87f45da21c3b9f87bf36e91860be7f56b93",
+    "verdict": "pass"
+  },
+  "finalRealDbPlan": {
+    "schemaVersion": 1,
+    "base": "bd52ec77b56a588443b9a9e1c3095c4bc6353834",
+    "head": "00592be9b21ad04b2bbf79ad0f9b1b3ff1bef0c2",
+    "requestedTasks": [
+      "test:db:local",
+      "test:feature-store:db"
+    ],
+    "mode": "full",
+    "packages": [
+      "@dfs-ev/db",
+      "@dfs-ev/db-tooling",
+      "@dfs-ev/domain",
+      "@dfs-ev/pipeline",
+      "@dfs-ev/web"
+    ],
+    "tasks": [
+      "@dfs-ev/db-tooling#test:db:local",
+      "@dfs-ev/pipeline#test:db:local",
+      "@dfs-ev/pipeline#test:feature-store:db"
+    ],
+    "intentionalEmpty": false,
+    "cache": {
+      "@dfs-ev/db-tooling#test:db:local": false,
+      "@dfs-ev/pipeline#test:db:local": false,
+      "@dfs-ev/pipeline#test:feature-store:db": false
+    }
+  },
+  "finalRealDbOutputs": [
+    "db_local=true",
+    "feature_store=true",
+    "mode=full"
+  ],
+  "actualWorkflowCommandExecution": {
+    "boundary": "Local Node 24 executing the exact current YAML command bodies; hosted action orchestration is not simulated. Files are the uncommitted Step 2 worktree over sourceBase.",
+    "app": {
+      "head": "00592be9b21ad04b2bbf79ad0f9b1b3ff1bef0c2",
+      "mode": "app",
+      "steps": [
+        {
+          "name": "actual PR Test step",
+          "exitCode": 0,
+          "signal": null,
+          "ms": 29355.759583000003
+        }
+      ],
+      "verdict": "pass"
+    },
+    "database": {
+      "head": "00592be9b21ad04b2bbf79ad0f9b1b3ff1bef0c2",
+      "mode": "db",
+      "steps": [
+        {
+          "name": "actual plan step",
+          "exitCode": 0,
+          "signal": null,
+          "ms": 339.67787500000003
+        },
+        {
+          "name": "actual explicit-selection guard",
+          "exitCode": 0,
+          "signal": null,
+          "ms": 1.831583999999964
+        },
+        {
+          "name": "target bootstrap report guards",
+          "exitCode": 0,
+          "signal": null,
+          "ms": 823.5257079999999
+        },
+        {
+          "name": "startup recovery failure cleanup",
+          "exitCode": 0,
+          "signal": null,
+          "ms": 6128.726707999999
+        },
+        {
+          "name": "protected ordinary DB suite",
+          "exitCode": 0,
+          "signal": null,
+          "ms": 30647.379666999997
+        },
+        {
+          "name": "standard feature-store suite",
+          "exitCode": 0,
+          "signal": null,
+          "ms": 58840.64604099999
+        },
+        {
+          "name": "always-run cleanup",
+          "exitCode": 0,
+          "signal": null,
+          "ms": 606.9881250000035
+        }
+      ],
+      "verdict": "pass"
+    },
+    "verifiedCounts": {
+      "application": 1242,
+      "additionalHarnessUnit": 39,
+      "databaseGuard": 20,
+      "catalogContracts": 12,
+      "requiredNodeDbCases": 74,
+      "postgresqlCases": 25,
+      "featureStoreCases": 79
+    },
+    "postCleanupDockerInventory": "empty (confirmed docker ps)"
+  },
+  "otherChecks": {
+    "selectionLayoutAndCiMatrix": "25/25 pass including inherited forced-full environment",
+    "ciAndMonorepoLayout": "14/14 pass; aggregate rejects all failure/skipped/cancelled/missing results",
+    "databaseGuard": "20/20 pass",
+    "fullEslintAndBoundaries": "pass (11 boundary probes)",
+    "actionlint": "pass for CI and CodeQL",
+    "diffCheck": "pass",
+    "originalRootCommands": "44 preserved byte-for-byte"
+  },
+  "correctedFindings": [
+    {
+      "finding": "Pipeline creator PostgreSQL cases belong to the ordinary DB runner, so feature-store-only selection would omit them.",
+      "resolution": "Pipeline owns an ordinary DB task alias; domain/pipeline matrix now selects both DB suites; CI deduplicates execution by task identity."
+    },
+    {
+      "finding": "A temporary local verifier extracted command blocks past their step boundary, causing missing test URL and incorrect cleanup.",
+      "resolution": "Verifier fixed; disposable fixture explicitly removed; exact command sequence rerun successfully. Failure log hash retained; no runtime code changed."
+    }
+  ],
+  "offRepositoryLogSha256": {
+    "dfs192-step2-turbo.log": "92e85dccd0c0538364092c8fef531b3ba2f65b888b87a55b90eae688668f63f2",
+    "dfs192-step2-gate.log": "750ca04676781ca5f6126ec9e47188f0d287402c41f6f0cd2d1231194cfb6573",
+    "dfs192-step2-lint.log": "98405c7022a24f90f4be7371a55698d15fb9366462f16d2cc60b0372d7347de2",
+    "dfs192-step2-db-guard.log": "62d6e4fbbdc3626f067e99ac6d38dde4014418a10505cfac662601f7c7283c88",
+    "dfs192-step2-app-workflow.log": "56fac170d98d8a978047613d619e61dccea4dfede05f5924026280b71b74c86c",
+    "dfs192-step2-db-workflow.log": "9c0a98676b389659a27c130e5f2e16d493567504cd084494c6fdde67ecf66a42",
+    "dfs192-step2-db-workflow-harness-failure.log": "03854e86c215f492c7b9cde6ea16ef22ec2c2b42cbacfc5203506b6a455685ec"
+  },
+  "remainingGates": [
+    "Owner Step 2 commit approval before Step 3",
+    "Step 3 detailed selection/execution accounting in required aggregate gate",
+    "Final combined checkpoint and independent review",
+    "Fresh owner push approval; actual hosted Node 24 matrix and complete checks before merge approval"
+  ],
+  "noRemoteActions": "No push, PR, merge, workflow dispatch, hosted database write or Production action."
+}

@@ -8,8 +8,19 @@ on:
     branches:
       - main
 
+  # Manual runs are full integration checkpoints, never affected-only runs.
+  workflow_dispatch:
+
 permissions:
   contents: read
+
+# The default PR checkout is GitHub's tested merge commit. Its explicit SHA
+# matches the checked-out source, while the base is the PR target commit.
+env:
+  TURBO_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+  TURBO_HEAD_SHA: ${{ github.sha }}
+  TURBO_FORCE_FULL: ${{ github.event_name != 'pull_request' && '1' || '0' }}
+  TURBO_TELEMETRY_DISABLED: "1"
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
@@ -53,7 +64,7 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
@@ -73,8 +84,22 @@ jobs:
       - name: Verify aggregate CI gate
         run: npm run test:ci-gate
 
+      - name: Prove affected task selection on Node 24
+        env:
+          TURBO_MATRIX_RECEIPT: ${{ runner.temp }}/turbo-matrix.json
+        run: |
+          npm run test:turbo-layout
+          cat "$TURBO_MATRIX_RECEIPT"
+
       - name: Test
-        run: npm test
+        shell: bash
+        run: |
+          if [[ "$TURBO_FORCE_FULL" == "1" ]]; then
+            npm test
+          else
+            npm run test:firebase-admin-runtime
+            TURBO_ALLOW_EMPTY=1 npm run turbo:affected -- test
+          fi
 
       - name: Test Firestore security rules
         run: npm run test:firestore-rules
@@ -94,6 +119,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Node.js
@@ -105,16 +131,42 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Plan affected database suites
+        id: selection
+        env:
+          TURBO_PLAN_ONLY: "1"
+          TURBO_ALLOW_EMPTY: "1"
+          TURBO_PLAN_FILE: ${{ runner.temp }}/turbo-db-plan.json
+        run: |
+          npm run turbo:affected -- test:db:local test:feature-store:db
+          node scripts/turbo/ci-db-selection.mjs "$TURBO_PLAN_FILE"
+
+      - name: Require explicit database selection
+        shell: bash
+        env:
+          DB_LOCAL: ${{ steps.selection.outputs.db_local }}
+          FEATURE_STORE: ${{ steps.selection.outputs.feature_store }}
+        run: |
+          for selected in "$DB_LOCAL" "$FEATURE_STORE"; do
+            if [[ "$selected" != "true" && "$selected" != "false" ]]; then
+              echo "Missing or invalid database selection; refusing silent skips."
+              exit 1
+            fi
+          done
+
       - name: Check database target, bootstrap and report guards
         run: npm run test:db:guard
 
       - name: Verify startup recovery and failure cleanup
+        if: ${{ steps.selection.outputs.db_local == 'true' || steps.selection.outputs.feature_store == 'true' }}
         run: npm run test:db:lifecycle
 
       - name: Verify migration artifacts, catalog contracts and PostgreSQL behavior
+        if: ${{ steps.selection.outputs.db_local == 'true' }}
         run: npm run test:db:local
 
       - name: Verify feature-store PostgreSQL behavior on standard fixture
+        if: ${{ steps.selection.outputs.feature_store == 'true' }}
         shell: bash
         env:
           TEST_DATABASE_URL: postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test

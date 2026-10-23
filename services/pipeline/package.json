@@ -36,7 +36,8 @@
     "feature-store:derived:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/derived-spike.ts",
     "feature-store:dataset:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/dataset-spike.ts",
     "test": "cd ../.. && vitest run --root . --config vitest.config.ts services/pipeline/src services/pipeline/scripts && vitest run --root . --config vitest.node.config.ts services/pipeline/tests/feature-store",
-    "test:feature-store:db": "cd ../.. && npm run test:feature-store:db"
+    "test:feature-store:db": "cd ../.. && npm run test:feature-store:db",
+    "test:db:local": "cd ../.. && npm run test:db:local"
   },
   "devDependencies": {
     "@dfs-ev/db-tooling": "0.1.0",

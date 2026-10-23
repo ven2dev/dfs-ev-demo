@@ -12,9 +12,9 @@ const workspaceFiles = ["apps/web/package.json", "packages/domain/package.json",
 const names = workspaceFiles.map(file => JSON.parse(readFileSync(join(root, file))).name);
 const tasks = ["test", "test:db:local", "test:feature-store:db"];
 const unit = name => `${name}#test`;
-const all = [...names.map(unit), "@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:feature-store:db"].sort();
-const domain = ["@dfs-ev/domain", "@dfs-ev/web", "@dfs-ev/pipeline"].map(unit).concat("@dfs-ev/pipeline#test:feature-store:db").sort();
-const pipeline = ["@dfs-ev/pipeline#test", "@dfs-ev/pipeline#test:feature-store:db"];
+const all = [...names.map(unit), "@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db"].sort();
+const domain = ["@dfs-ev/domain", "@dfs-ev/web", "@dfs-ev/pipeline"].map(unit).concat("@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db").sort();
+const pipeline = ["@dfs-ev/pipeline#test", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db"];
 const sha256 = bytes => createHash("sha256").update(bytes).digest("hex");
 
 test("Node 24 reproduces affected selection, conservative fallback and execution failures", { timeout: 120_000 }, async t => {
@@ -22,7 +22,7 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
   const directory = mkdtempSync(join(tmpdir(), "dfs192-matrix-"));
   const run = (command, args, cwd = directory, extraEnv = {}) => spawnSync(command, args, {
     cwd, encoding: "utf8", timeout: 30_000, maxBuffer: 8 * 1024 * 1024,
-    env: { ...process.env, TURBO_TELEMETRY_DISABLED: "1", TURBO_CACHE_DIR: join(directory, ".turbo/cache"), TURBO_ALLOW_EMPTY: "", ...extraEnv },
+    env: { ...process.env, TURBO_TELEMETRY_DISABLED: "1", TURBO_CACHE_DIR: join(directory, ".turbo/cache"), TURBO_ALLOW_EMPTY: "", TURBO_FORCE_FULL: "0", TURBO_PLAN_ONLY: "", TURBO_PLAN_FILE: "", ...extraEnv },
   });
   const git = (...args) => {
     const result = run("git", args);
@@ -50,7 +50,7 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
     boundary: "Disposable Git repository using the actual workspace manifests, lockfile, Turbo configuration and runner; task bodies replaced with execution markers. Real workspace tests are verified separately.",
     cache: "All configured tasks uncached; remote caching disabled; no database or mutation is performed by these marker probes.", probes: [], guards: [] };
   try {
-    for (const file of ["package.json", "package-lock.json", "turbo.json", "scripts/turbo/run-affected.mjs", ...workspaceFiles]) {
+    for (const file of ["package.json", "package-lock.json", "turbo.json", "scripts/turbo/run-affected.mjs", "scripts/turbo/ci-db-selection.mjs", ...workspaceFiles]) {
       write(file, readFileSync(join(root, file)));
     }
     for (const file of workspaceFiles) {
@@ -93,6 +93,21 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
       assert.ok(Object.values(plan.cache).every(value => value === false));
       const executions = [...result.stdout.matchAll(/EXEC:([^\r\n]+)/g)].map(match => match[1].trim()).sort();
       assert.deepEqual(executions, expected);
+      if (["ui", "domain", "db-proposal", "pipeline"].includes(name)) {
+        const planFile = join(directory, ".turbo", `${name}-db-plan.json`);
+        const outputs = join(directory, ".turbo", `${name}-outputs.txt`);
+        const planOnly = runner(base, head, ["test:db:local", "test:feature-store:db"],
+          { TURBO_ALLOW_EMPTY: "1", TURBO_PLAN_ONLY: "1", TURBO_PLAN_FILE: planFile });
+        assert.equal(planOnly.status, 0, planOnly.stdout + planOnly.stderr);
+        assert.doesNotMatch(planOnly.stdout, /EXEC:/);
+        const mapped = run(process.execPath, ["scripts/turbo/ci-db-selection.mjs", planFile], directory,
+          { TURBO_BASE_SHA: base, TURBO_HEAD_SHA: head, TURBO_FORCE_FULL: "0", GITHUB_OUTPUT: outputs });
+        assert.equal(mapped.status, 0, mapped.stdout + mapped.stderr);
+        const values = readFileSync(outputs, "utf8");
+        assert.match(values, new RegExp(`db_local=${expected.some(id => id.endsWith("#test:db:local"))}\\n`));
+        assert.match(values, new RegExp(`feature_store=${expected.includes("@dfs-ev/pipeline#test:feature-store:db")}\\n`));
+        receipt.guards.push({ name: `${name}: actual plan-only runner maps explicit CI booleans without task execution`, verdict: "pass" });
+      }
       if (name === "ui") {
         const empty = runner(base, head, ["test:db:local", "test:feature-store:db"]);
         assert.notEqual(empty.status, 0);
@@ -101,6 +116,12 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
         assert.deepEqual(selection(intentional).tasks, []);
         assert.doesNotMatch(intentional.stdout, /EXEC:/);
         receipt.guards.push({ name: "UI DB tasks: refused without opt-in; explicit empty succeeds without execution", verdict: "pass" });
+        const full = runner(base, head, tasks, { TURBO_FORCE_FULL: "1" });
+        assert.equal(full.status, 0, full.stdout + full.stderr);
+        assert.equal(selection(full).mode, "full");
+        assert.deepEqual(selection(full).tasks.sort(), all);
+        assert.deepEqual([...full.stdout.matchAll(/EXEC:([^\r\n]+)/g)].map(match => match[1].trim()).sort(), all);
+        receipt.guards.push({ name: "main/manual forced-full mode executes all tasks even on UI-only input", base, head, selected: all, verdict: "pass" });
       }
       receipt.probes.push({ name, path, base, head, mode, selected: plan.tasks, executed: executions, outputHash: sha256(result.stdout), verdict: "pass" });
     });
@@ -123,6 +144,22 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
       assert.equal(plan.mode, "full");
       receipt.probes.push({ name: kind, base, head, mode: plan.mode, selected: plan.tasks, outputHash: sha256(result.stdout), verdict: "pass" });
     });
+    await t.test("PR merge checkout compares against its explicit target base", () => {
+      git("checkout", "-q", "-b", "pr-source", base);
+      write("apps/web/src/probe.ts", "// PR source edit\n");
+      commit("test(spike): PR UI edit");
+      git("checkout", "-q", "-b", "target-source", base);
+      write("packages/domain/src/probe.ts", "// advanced target base\n");
+      const targetBase = commit("test(spike): target advances before merge");
+      git("-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", "merge", "--no-ff", "--no-edit", "pr-source");
+      const mergeHead = git("rev-parse", "HEAD");
+      const result = runner(targetBase, mergeHead);
+      assert.equal(result.status, 0, result.stdout + result.stderr);
+      const selected = selection(result);
+      assert.deepEqual(selected.tasks, ["@dfs-ev/web#test"]);
+      receipt.probes.push({ name: "PR merge checkout", base: targetBase, head: mergeHead,
+        mode: selected.mode, selected: selected.tasks, outputHash: sha256(result.stdout), verdict: "pass" });
+    });
     await t.test("history, task flags, genuine empty selection and failure propagation", () => {
       git("checkout", "-q", "--detach", base);
       const guards = [
@@ -131,6 +168,8 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
         ["unavailable commit", runner("f".repeat(40), base)],
         ["checkout mismatch", runner(base, receipt.probes[0].head)],
         ["Turbo bypass flag", runner(base, base, ["test", "--dry=json"])],
+        ["invalid full-mode flag", runner(base, base, ["test"], { TURBO_FORCE_FULL: "unknown" })],
+        ["plan-only without destination", runner(base, base, ["test"], { TURBO_PLAN_ONLY: "1" })],
       ];
       for (const [name, result] of guards) {
         assert.notEqual(result.status, 0, name);

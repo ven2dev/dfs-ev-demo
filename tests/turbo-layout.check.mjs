@@ -33,6 +33,7 @@ test("workspace test commands retain both environments and protected DB runners"
   assert.match(domain, /vitest\.node\.config\.ts packages\/domain\/tests\/projection/);
   assert.match(pipeline.test, /vitest\.config\.ts services\/pipeline\/src services\/pipeline\/scripts/);
   assert.match(pipeline.test, /vitest\.node\.config\.ts services\/pipeline\/tests\/feature-store/);
+  assert.equal(pipeline["test:db:local"], "cd ../.. && npm run test:db:local");
   assert.equal(pipeline["test:feature-store:db"], "cd ../.. && npm run test:feature-store:db");
   assert.equal(tooling["test:db:local"], "cd ../../.. && npm run test:db:local");
   assert.equal(json("packages/db/package.json").scripts["test:db"], undefined);
@@ -45,9 +46,9 @@ test("affected runner validates history without reimplementing dependency discov
   assert.doesNotMatch(source, /git diff|git log|readFile.*\.git|from ["']typescript/);
 });
 
-test("Step 1 retains the aggregate CI gate and its upstream jobs", () => {
+test("affected adoption retains the aggregate CI gate and full-history upstream jobs", () => {
   const workflow = read(".github/workflows/ci.yml");
-  assert.match(workflow, /fetch-depth: 0/);
+  assert.equal([...workflow.matchAll(/fetch-depth: 0/g)].length, 2);
   assert.match(workflow, /^  ci:/m);
   assert.match(workflow, /name: CI/);
   assert.match(workflow, /needs: \[app, db\]/);
