@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { test } from "node:test";
@@ -22,7 +22,7 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
   const directory = mkdtempSync(join(tmpdir(), "dfs192-matrix-"));
   const run = (command, args, cwd = directory, extraEnv = {}) => spawnSync(command, args, {
     cwd, encoding: "utf8", timeout: 30_000, maxBuffer: 8 * 1024 * 1024,
-    env: { ...process.env, TURBO_TELEMETRY_DISABLED: "1", TURBO_CACHE_DIR: join(directory, ".turbo/cache"), TURBO_ALLOW_EMPTY: "", TURBO_FORCE_FULL: "0", TURBO_PLAN_ONLY: "", TURBO_PLAN_FILE: "", ...extraEnv },
+    env: { ...process.env, TURBO_TELEMETRY_DISABLED: "1", TURBO_CACHE_DIR: join(directory, ".turbo/cache"), TURBO_ALLOW_EMPTY: "", TURBO_FORCE_FULL: "0", TURBO_PLAN_ONLY: "", TURBO_PLAN_FILE: "", GITHUB_OUTPUT: "", ...extraEnv },
   });
   const git = (...args) => {
     const result = run("git", args);
@@ -85,7 +85,10 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
       git("checkout", "-q", "--detach", base);
       write(path, contents);
       const head = commit(`test(spike): ${name}`);
-      const result = runner(base, head);
+      const completionFile = join(directory, ".turbo", `${name}-completion.txt`);
+      mkdirSync(dirname(completionFile), { recursive: true });
+      const result = runner(base, head, tasks, { GITHUB_OUTPUT: completionFile });
+      assert.equal(readFileSync(completionFile, "utf8"), `mode=${mode}\nwork=executed\n`);
       assert.equal(result.status, 0, result.stdout + result.stderr);
       const plan = selection(result);
       assert.deepEqual(plan.tasks.sort(), expected);
@@ -96,10 +99,12 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
       if (["ui", "domain", "db-proposal", "pipeline"].includes(name)) {
         const planFile = join(directory, ".turbo", `${name}-db-plan.json`);
         const outputs = join(directory, ".turbo", `${name}-outputs.txt`);
+        const planCompletion = join(directory, ".turbo", `${name}-plan-completion.txt`);
         const planOnly = runner(base, head, ["test:db:local", "test:feature-store:db"],
-          { TURBO_ALLOW_EMPTY: "1", TURBO_PLAN_ONLY: "1", TURBO_PLAN_FILE: planFile });
+          { TURBO_ALLOW_EMPTY: "1", TURBO_PLAN_ONLY: "1", TURBO_PLAN_FILE: planFile, GITHUB_OUTPUT: planCompletion });
         assert.equal(planOnly.status, 0, planOnly.stdout + planOnly.stderr);
         assert.doesNotMatch(planOnly.stdout, /EXEC:/);
+        assert.equal(existsSync(planCompletion), false, "planning is not completed execution");
         const mapped = run(process.execPath, ["scripts/turbo/ci-db-selection.mjs", planFile], directory,
           { TURBO_BASE_SHA: base, TURBO_HEAD_SHA: head, TURBO_FORCE_FULL: "0", GITHUB_OUTPUT: outputs });
         assert.equal(mapped.status, 0, mapped.stdout + mapped.stderr);
@@ -175,7 +180,10 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
         assert.notEqual(result.status, 0, name);
         receipt.guards.push({ name, exitCode: result.status, verdict: "pass" });
       }
-      const empty = runner(base, base, ["test"], { TURBO_ALLOW_EMPTY: "1" });
+      const emptyCompletion = join(directory, ".turbo", "empty-completion.txt");
+      const empty = runner(base, base, ["test"], { TURBO_ALLOW_EMPTY: "1", GITHUB_OUTPUT: emptyCompletion });
+      assert.equal(readFileSync(emptyCompletion, "utf8"), "mode=affected\nwork=intentional-empty\n");
+      receipt.guards.push({ name: "Genuine empty range emits intentional-empty completion, never executed coverage", verdict: "pass" });
       assert.equal(empty.status, 0, empty.stderr);
       assert.deepEqual(selection(empty).tasks, []);
       assert.doesNotMatch(empty.stdout, /EXEC:/);
@@ -183,9 +191,11 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
       manifest.scripts.test = "node -e 'process.exit(23)'";
       write("apps/web/package.json", JSON.stringify(manifest, null, 2) + "\n");
       const head = commit("test(spike): deliberate task failure");
-      const failure = runner(base, head, ["test"]);
+      const failureCompletion = join(directory, ".turbo", "failure-completion.txt");
+      const failure = runner(base, head, ["test"], { GITHUB_OUTPUT: failureCompletion });
+      assert.equal(existsSync(failureCompletion), false, "failed execution cannot publish success");
       assert.notEqual(failure.status, 0, failure.stdout + failure.stderr);
-      receipt.guards.push({ name: "selected task failure", base, head, exitCode: failure.status, verdict: "pass" });
+      receipt.guards.push({ name: "selected task failure emits no completion", base, head, exitCode: failure.status, verdict: "pass" });
       const shallow = join(directory, "shallow");
       const clone = run("git", ["clone", "-q", "--depth=1", `file://${directory}`, shallow]);
       assert.equal(clone.status, 0, clone.stderr);

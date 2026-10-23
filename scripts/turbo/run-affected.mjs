@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { existsSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 
@@ -84,11 +84,19 @@ if (process.env.TURBO_PLAN_ONLY === "1") {
   writeFileSync(process.env.TURBO_PLAN_FILE, JSON.stringify(selection) + "\n", { flag: "wx" });
   process.exit(0);
 }
+// Publish completion only after successful execution (or an explicit empty
+// selection). Planning alone and failed tasks cannot manufacture a receipt.
+const complete = () => {
+  if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT,
+    `mode=${selection.mode}\nwork=${intentionalEmpty ? "intentional-empty" : "executed"}\n`);
+};
 if (intentionalEmpty) {
+  complete();
   console.log("Intentional empty task selection; no task was skipped or executed.");
   process.exit(0);
 }
 
 const result = spawnSync(process.execPath, [turbo, ...execution, ...taskArgs], { cwd: root, stdio: "inherit" });
 if (result.error) console.error(result.error.message);
+if (result.status === 0) complete();
 process.exit(result.status ?? 1);

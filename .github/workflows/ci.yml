@@ -31,6 +31,11 @@ jobs:
     name: App checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      test_result: ${{ steps.tests.outcome }}
+      test_mode: ${{ steps.tests.outputs.mode }}
+      test_work: ${{ steps.tests.outputs.work }}
+      matrix_result: ${{ steps.matrix.outcome }}
 
     steps:
       - name: Check out repository
@@ -85,6 +90,7 @@ jobs:
         run: npm run test:ci-gate
 
       - name: Prove affected task selection on Node 24
+        id: matrix
         env:
           TURBO_MATRIX_RECEIPT: ${{ runner.temp }}/turbo-matrix.json
         run: |
@@ -92,10 +98,12 @@ jobs:
           cat "$TURBO_MATRIX_RECEIPT"
 
       - name: Test
+        id: tests
         shell: bash
         run: |
           if [[ "$TURBO_FORCE_FULL" == "1" ]]; then
             npm test
+            printf 'mode=full\nwork=executed\n' >> "$GITHUB_OUTPUT"
           else
             npm run test:firebase-admin-runtime
             TURBO_ALLOW_EMPTY=1 npm run turbo:affected -- test
@@ -114,6 +122,17 @@ jobs:
     name: DB integration
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      plan_result: ${{ steps.selection.outcome }}
+      selection_guard_result: ${{ steps.selection_guard.outcome }}
+      guard_result: ${{ steps.guard.outcome }}
+      mode: ${{ steps.selection.outputs.mode }}
+      db_local: ${{ steps.selection.outputs.db_local }}
+      feature_store: ${{ steps.selection.outputs.feature_store }}
+      lifecycle_result: ${{ steps.lifecycle.outcome }}
+      db_local_result: ${{ steps.db_local.outcome }}
+      feature_store_result: ${{ steps.feature_store.outcome }}
+      cleanup_result: ${{ steps.cleanup.outcome }}
 
     steps:
       - name: Check out repository
@@ -142,6 +161,7 @@ jobs:
           node scripts/turbo/ci-db-selection.mjs "$TURBO_PLAN_FILE"
 
       - name: Require explicit database selection
+        id: selection_guard
         shell: bash
         env:
           DB_LOCAL: ${{ steps.selection.outputs.db_local }}
@@ -155,17 +175,21 @@ jobs:
           done
 
       - name: Check database target, bootstrap and report guards
+        id: guard
         run: npm run test:db:guard
 
       - name: Verify startup recovery and failure cleanup
+        id: lifecycle
         if: ${{ steps.selection.outputs.db_local == 'true' || steps.selection.outputs.feature_store == 'true' }}
         run: npm run test:db:lifecycle
 
       - name: Verify migration artifacts, catalog contracts and PostgreSQL behavior
+        id: db_local
         if: ${{ steps.selection.outputs.db_local == 'true' }}
         run: npm run test:db:local
 
       - name: Verify feature-store PostgreSQL behavior on standard fixture
+        id: feature_store
         if: ${{ steps.selection.outputs.feature_store == 'true' }}
         shell: bash
         env:
@@ -175,6 +199,7 @@ jobs:
           npm run test:feature-store:db
 
       - name: Remove disposable PostgreSQL
+        id: cleanup
         if: ${{ always() }}
         timeout-minutes: 2
         run: npm run test:db:down
@@ -189,14 +214,71 @@ jobs:
     timeout-minutes: 2
 
     steps:
-      - name: Require every upstream job to succeed
+      - name: Require successful jobs and accounted execution
         shell: bash
         env:
           APP_RESULT: ${{ needs.app.result }}
           DB_RESULT: ${{ needs.db.result }}
+          FORCE_FULL: ${{ env.TURBO_FORCE_FULL }}
+          APP_TEST_RESULT: ${{ needs.app.outputs.test_result }}
+          APP_TEST_MODE: ${{ needs.app.outputs.test_mode }}
+          APP_TEST_WORK: ${{ needs.app.outputs.test_work }}
+          APP_MATRIX_RESULT: ${{ needs.app.outputs.matrix_result }}
+          DB_PLAN_RESULT: ${{ needs.db.outputs.plan_result }}
+          DB_SELECTION_GUARD_RESULT: ${{ needs.db.outputs.selection_guard_result }}
+          DB_GUARD_RESULT: ${{ needs.db.outputs.guard_result }}
+          DB_MODE: ${{ needs.db.outputs.mode }}
+          DB_LOCAL_SELECTED: ${{ needs.db.outputs.db_local }}
+          FEATURE_STORE_SELECTED: ${{ needs.db.outputs.feature_store }}
+          DB_LIFECYCLE_RESULT: ${{ needs.db.outputs.lifecycle_result }}
+          DB_LOCAL_RESULT: ${{ needs.db.outputs.db_local_result }}
+          FEATURE_STORE_RESULT: ${{ needs.db.outputs.feature_store_result }}
+          DB_CLEANUP_RESULT: ${{ needs.db.outputs.cleanup_result }}
         run: |
           echo "App checks: $APP_RESULT; DB integration: $DB_RESULT"
           if [[ "$APP_RESULT" != "success" || "$DB_RESULT" != "success" ]]; then
             echo "CI requires both App checks and DB integration to succeed."
             exit 1
           fi
+          refuse() { echo "$1"; exit 1; }
+          require_outcome() {
+            if [[ "$2" != "$3" ]]; then
+              refuse "$1: expected $3, received '$2'."
+            fi
+          }
+          # Raw outcomes retain failures even if continue-on-error is introduced.
+          for outcome in "$APP_TEST_RESULT" "$APP_MATRIX_RESULT" "$DB_PLAN_RESULT" "$DB_SELECTION_GUARD_RESULT" "$DB_GUARD_RESULT" "$DB_CLEANUP_RESULT"; do
+            require_outcome "Mandatory execution" "$outcome" "success"
+          done
+          for mode in "$APP_TEST_MODE" "$DB_MODE"; do
+            if [[ "$mode" != "full" && "$mode" != "affected" ]]; then
+              refuse "Missing or invalid selection mode."
+            fi
+          done
+          if [[ "$FORCE_FULL" != "0" && "$FORCE_FULL" != "1" ]]; then
+            refuse "Missing or invalid full-check requirement."
+          fi
+          if [[ "$FORCE_FULL" == "1" && ( "$APP_TEST_MODE" != "full" || "$DB_MODE" != "full" ) ]]; then
+            refuse "Main and integration checkpoints require full work."
+          fi
+          if [[ "$APP_TEST_WORK" != "executed" && !( "$APP_TEST_MODE" == "affected" && "$APP_TEST_WORK" == "intentional-empty" ) ]]; then
+            refuse "Application work was not executed or explicitly empty."
+          fi
+          require_selected() {
+            case "$2" in
+              true) require_outcome "$1" "$3" "success" ;;
+              false) require_outcome "$1 intentionally unselected" "$3" "skipped" ;;
+              *) refuse "$1: missing or invalid selection." ;;
+            esac
+          }
+          require_selected "Ordinary DB suite" "$DB_LOCAL_SELECTED" "$DB_LOCAL_RESULT"
+          require_selected "Feature-store DB suite" "$FEATURE_STORE_SELECTED" "$FEATURE_STORE_RESULT"
+          if [[ "$DB_MODE" == "full" && ( "$DB_LOCAL_SELECTED" != "true" || "$FEATURE_STORE_SELECTED" != "true" ) ]]; then
+            refuse "Full database selection cannot omit a suite."
+          fi
+          if [[ "$DB_LOCAL_SELECTED" == "true" || "$FEATURE_STORE_SELECTED" == "true" ]]; then
+            require_outcome "DB lifecycle" "$DB_LIFECYCLE_RESULT" "success"
+          else
+            require_outcome "DB lifecycle intentionally unselected" "$DB_LIFECYCLE_RESULT" "skipped"
+          fi
+          echo "Execution accounted: app=$APP_TEST_MODE/$APP_TEST_WORK; DB=$DB_MODE, ordinary=$DB_LOCAL_SELECTED, feature-store=$FEATURE_STORE_SELECTED; cleanup succeeded."

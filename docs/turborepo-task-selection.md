@@ -122,7 +122,7 @@ summarized there rather than discarded.
 1. **Graph and executable guards (committed `00592be`):** pin Turbo, declare package tasks,
    prove the matrix under Node 24, preserve unit coverage and record compact
    evidence. Owner-approved Step 1 was committed before CI edits; its receipt records that unchanged-workflow boundary.
-2. **CI adoption (current):** supply full history and explicit event base/head; run the
+2. **CI adoption (committed `bad427c`):** supply full history and explicit event base/head; run the
    selection proof in hosted Node 24 CI; preserve full checks on main and at
    integration checkpoints. Keep root command names, CodeQL protection, serial
    fixture ownership and always-run cleanup. Stop for commit approval.
@@ -146,9 +146,10 @@ and the version-pinned documentation shipped in `node_modules/turbo/docs/`.
 
 ## Step 2 CI wiring
 
-Both upstream jobs always start. The required `CI` job remains unchanged and
-requires `App checks` and `DB integration` to finish successfully; a skipped or
-cancelled upstream job cannot pass. CodeQL's workflow is untouched.
+Both upstream jobs always start. Step 2 preserved the original required `CI`
+job; Step 3 adds the execution accounting below. Both versions require
+`App checks` and `DB integration` to finish successfully; a skipped or cancelled
+upstream job cannot pass. CodeQL's workflow is untouched.
 
 For PRs, both checkouts fetch full history. The selection range is the explicit
 PR target SHA through `github.sha`, the merge commit that GitHub checks out for
@@ -189,10 +190,9 @@ cases. Local evidence is in the
 [Step 2 receipt](evidence/turborepo-192/step-2-ci.json). Actual hosted success is
 pending a separately approved push; this local checkpoint does not claim it.
 
-Step 3 adds detailed selection/execution accounting to the aggregate gate.
-Step 2 preserves the original success/success aggregate while enforcing explicit
-selection before conditional work. Stop for the owner's Step 2 commit approval
-before continuing that next atomic step.
+Step 2 was committed with owner approval as `bad427c` before Step 3 began.
+It preserved the original success/success aggregate while enforcing explicit
+selection before conditional work.
 
 The pipeline also declares an uncached `test:db:local` alias, because its creator
 PostgreSQL cases are executed by the protected ordinary runner. Domain and
@@ -200,3 +200,50 @@ pipeline edits therefore select both DB suites. The DB tooling and pipeline task
 IDs can both request that same ordinary suite; the CI plan translator emits one
 boolean, and the workflow runs it once. This is declared consumer ownership, not
 an infrastructure dependency on pipeline or a custom dependency traversal.
+
+## Step 3 required-gate execution accounting
+
+The established pattern is an aggregate required check over explicit job outputs
+and raw step outcomes. Depending only on successful job conclusions would lose
+the distinction between deliberately unselected integrations and selected steps
+that did not run. Parsing logs or duplicating Turbo's dependency analysis in the
+gate is rejected: logs are not a typed completion contract, and a second graph
+would drift. The gate interprets execution metadata only.
+
+`CI` keeps its name, unconditional `always()`, both upstream dependencies, empty
+permissions and no checkout. It first requires successful app and DB jobs. It
+then requires the Node 24 selection matrix, application tests, DB plan, explicit
+selection guard, target guards and outer cleanup to have raw `success` outcomes.
+GitHub distinguishes a step's raw `outcome` from its conclusion after
+`continue-on-error`; checking the former prevents a suppressed failure from
+passing. [GitHub's context reference](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#steps-context)
+and [job-output contract](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/pass-job-outputs)
+define these fields. Missing outputs resolve to empty strings and fail the gate.
+
+The application test step publishes `mode=full|affected` and
+`work=executed|intentional-empty` only after successful work. Full root `npm test`
+publishes full/executed after its unchanged command succeeds. The affected
+runner publishes after Turbo exits successfully, or after explicitly validating
+an empty selection; plan-only invocations and failed tasks publish no completion.
+An empty app selection still requires a successful test step and matrix.
+
+For each DB suite, exactly `true` requires raw `success`; exactly `false`
+requires raw `skipped`. The lifecycle step requires success if either suite is
+selected and skipped otherwise. An unexpected execution is rejected too. Cleanup
+is required even for an empty DB selection, because failed planning or partial
+setup may otherwise leave disposable state behind. Full DB mode requires both
+suites; main and manual integration checkpoints require full app and DB modes.
+Missing, malformed, unknown, failed or cancelled metadata cannot mean no work.
+
+The executable gate tests run the actual inline Bash across all 16 job-result
+pairs, every DB selection/suite/lifecycle outcome combination, explicit empty
+selections, missing/unknown outputs, raw failures with successful jobs and
+incomplete full checkpoints. The disposable Turbo matrix checks real completion
+outputs for selected execution, intentional empty work, planning and failures.
+Its child environments isolate `GITHUB_OUTPUT` so scratch probes cannot emit
+completion metadata for the hosted matrix step itself.
+
+The [Step 3 receipt](evidence/turborepo-192/step-3-gate.json) records the local
+proof boundary and hashes. It does not simulate GitHub's orchestration: hosted
+Node 24 reproduction remains a required gate after a separately approved push.
+Stop for owner commit approval before the combined Step 4 checkpoint.
