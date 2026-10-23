@@ -9,6 +9,7 @@ const root=fileURLToPath(new URL("../",import.meta.url));
 const {host,database}=config;
 const project="prj_GLXDEeScMKPAeDAUoYIoiNknwKJd",org="team_s66WXM6S37xvFRoA68265CFl";
 const scope="vernon-neillys-projects";
+const ref="feature/dfsEV-206-budget-latency-profile",repoId="1350991998";
 const keys=["BENCH61_DATABASE_URL","BENCH61_TOKEN_HASH","BENCH61_ISSUED_AT","BENCH61_EXPIRES_AT","BENCH61_REVIEWED_SHA"];
 const ensure=(ok,message)=>{if(!ok)throw new Error(message);};
 const readUrl=value=>{try{return new URL(value);}catch{throw new Error("Invalid connection URL");}};
@@ -54,25 +55,43 @@ export const validateRuntimeSpec=(spec,head,link,clean,now=Date.now())=>{
   ensure(/^[a-f0-9]{64}$/.test(spec.token) && createHash("sha256").update(spec.token).digest("hex")===r.BENCH61_TOKEN_HASH,"Token fingerprint mismatch");
   const issued=Date.parse(r.BENCH61_ISSUED_AT),expires=Date.parse(r.BENCH61_EXPIRES_AT);
   ensure(issued<=now && expires-now>=1800000 && expires-issued<=86400000,"Token window does not leave cleanup headroom");
-  return ["deploy","--scope",scope,"--yes",...keys.flatMap(key=>["--env",key]),
-    "--meta","bench61ReviewedSha="+head];
+  // Omit target: this fixed non-production branch receives a Preview. No files,
+  // settings overrides, system variables, or mutable latest-commit option.
+  return {name:"dfs-ev-demo",project,gitSource:{type:"github",repoId,ref,sha:head},
+    env:Object.fromEntries(keys.map(key=>[key,r[key]])),meta:{bench61ReviewedSha:head}};
 };
-export const deployPreparedPreview=async file=>{
+export const deployPreparedPreview=async (file,accessToken)=>{
   await privatePath(file);
   const stat=await lstat(file);
   ensure(stat.isFile() && (stat.mode&0o077)===0 && stat.uid===process.getuid(),"Credential file is not private and owned");
   const spec=readJson(await readFile(file,"utf8"));
   const git=args=>{const r=spawnSync("git",args,{cwd:root,encoding:"utf8",timeout:5000});ensure(r.status===0,"Git preflight failed");return r.stdout.trim();};
   const link=readJson(await readFile(resolve(root,".vercel/project.json"),"utf8"));
-  const args=validateRuntimeSpec(spec,git(["rev-parse","HEAD"]),link,git(["status","--porcelain","--untracked-files=all"])==="");
-  const env={...process.env,...spec.runtime};
-  delete env.DATABASE_URL;delete env.BENCH61_TOKEN;
-  // Installed CLI 59.10 resolves key-only --env flags from this child environment.
-  // No shell, --prod, project env updates, raw secret arguments, or build-env.
-  const result=spawnSync(process.execPath,["/Users/vernonneilly/.nvm/versions/node/v22.23.2/bin/vercel",...args],
-    {cwd:root,env,encoding:"utf8",timeout:60000,maxBuffer:4*1024*1024});
-  ensure(result.status===0,"Deployment completion unconfirmed; inspect Preview before retrying");
-  const urls=(result.stdout ?? "").match(/https:\/\/dfs-ev-demo-[a-z0-9]{6,}-vernon-neillys-projects\.vercel\.app/g);
-  ensure(urls?.length,"Deployment URL unconfirmed; inspect Preview before retrying");
-  return {url:urls.at(-1),reviewedSha:spec.runtime.BENCH61_REVIEWED_SHA,expiresAt:spec.runtime.BENCH61_EXPIRES_AT};
+  const head=git(["rev-parse","HEAD"]);
+  const request=validateRuntimeSpec(spec,head,link,git(["status","--porcelain","--untracked-files=all"])==="");
+  return {...await submitGitPreview(request,head,accessToken),expiresAt:spec.runtime.BENCH61_EXPIRES_AT};
+};
+// Injectable HTTP boundary permits offline tests without hosted mutations.
+export const submitGitPreview=async(request,reviewedSha,accessToken,send=fetch)=>{
+  ensure(typeof accessToken==="string" && accessToken.length>0,"Missing Vercel access credential");
+  let deployment;
+  try {
+    // CLI `api` retries POSTs internally. A direct single fetch preserves the
+    // one-attempt rule. Credentials exist only in memory and encrypted transport.
+    const response=await send("https://api.vercel.com/v13/deployments?teamId="+org,{
+      method:"POST",redirect:"error",signal:AbortSignal.timeout(60000),
+      headers:{Authorization:"Bearer "+accessToken,"Content-Type":"application/json"},
+      body:JSON.stringify(request),
+    });
+    if(!response.ok)throw new Error();
+    deployment=await response.json();
+  }catch{throw new Error("Deployment completion unconfirmed; inspect Preview before retrying");}
+  ensure(/^dpl_[a-zA-Z0-9]+$/.test(deployment?.id ?? "")
+    && /^dfs-ev-demo-[a-z0-9]{6,}-vernon-neillys-projects\.vercel\.app$/.test(deployment.url ?? "")
+    && deployment.projectId===project && deployment.target==null
+    && deployment.meta?.githubCommitSha===reviewedSha,
+    "Deployment identity unconfirmed; inspect Preview before retrying");
+  // Creation is not readiness or runtime qualification. Independently inspect
+  // the deployment's protection/region/SHA and require catalog before setup.
+  return {id:deployment.id,url:"https://"+deployment.url,reviewedSha,ready:false};
 };

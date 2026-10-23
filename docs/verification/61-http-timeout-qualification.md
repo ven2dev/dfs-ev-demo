@@ -1,11 +1,12 @@
 # #61 finite HTTP timeout qualification
 
-Status: local corrections to the reviewed candidate 4e1d18d, awaiting correction
-commit approval and independent re-review. Hosted testing remains unapproved.
-No hosted role, credential file, push or deployment exists for this candidate.
-It is a throwaway branch: no PR or merge. Permanent implementation and performance
-execution remain blocked. Review this step against 42cf489; earlier approved
-commits are 3afed44 (probes), 0f53155 (role regression), and 42cf489 (admission gate).
+Status: local Git-source deployment correction after 9f3091c, awaiting commit
+approval and independent review. The prior approved Preview attempt returned an
+admission 404 before SQL; it did not qualify managed HTTP behavior. Both temporary
+deployments were removed, schema/role absence was confirmed, and the generated
+credential file was deleted. The exact rejected admission condition is unproven.
+No further push or deployment is approved. This branch never opens a PR or merges.
+Permanent implementation and performance execution remain blocked.
 
 ## Design basis
 
@@ -131,28 +132,58 @@ Failed qualification may require the original five-minute lease to expire.
 If permissions or token expiry block recovery, stop for owner-validated operator
 cleanup rather than widening permissions.
 
-## Private deployment helper (not executed)
+## Private deployment helper (local correction, not executed)
 
-scripts/bench61-deploy.mjs does nothing on import. After separate consent, a
-private parent can read the approved Preview URL without printing it and call
-writeRuntimeSpec with an outside-checkout absolute path and reviewed SHA. It
-replaces the operator login/password, preserves target/options, and creates a
-new mode-0600 file containing only the new worker credential, token and public
-metadata. It refuses overwrite. No operational credential has been generated.
+Pattern: provider-backed Git-source deployment pinned to an immutable reviewed SHA.
+The fixed GitHub repository is 1350991998 and the fixed non-production branch is
+feature/dfsEV-206-budget-latency-profile. The deployment request specifies both
+ref and SHA, so a later branch update cannot silently substitute source.
+Alternatives: injecting VERCEL_GIT_COMMIT_SHA would self-assert provenance;
+removing that guard would permit unreviewed setup; repeating an opaque CLI upload
+provides no diagnostic improvement. All three are rejected. This transport change
+does not establish which admission condition rejected the previous deployment.
 
-deployPreparedPreview checks private-file ownership/mode, the exact linked
-project/org, clean reviewed HEAD, and at least 30 minutes of cleanup headroom.
-CLI 59.10 receives key-only --env flags, resolved from its child environment:
-BENCH61_DATABASE_URL, BENCH61_TOKEN_HASH, BENCH61_ISSUED_AT,
-BENCH61_EXPIRES_AT and BENCH61_REVIEWED_SHA. No DATABASE_URL override, project
-environment update, build-env, raw secret argument, shell, production flag or
-alias change is used. Captured output yields only a verified Preview URL/SHA/
-expiry; unconfirmed completion stops without retry.
+scripts/bench61-deploy.mjs does nothing on import. A private parent may call
+writeRuntimeSpec with the approved Preview operator URL and reviewed SHA. The
+new mode-0600 outside-checkout file contains only the generated worker credential,
+benchmark token and public metadata. Preparation refuses overwrite and retains
+all target/database/TLS checks. No credential has been generated for this correction.
 
-The helper is tested offline; preparing code is not consent to execute it.
-Before hosted setup, independently verify deployment SHA, protection, function/
-database region and designated resource. Missing Git metadata needs a supported
-deployment-provenance decision, not a fabricated system environment variable.
+deployPreparedPreview(file, accessToken) requires a caller-supplied existing
+Vercel access credential in memory. The helper does not obtain, store, return or
+log that credential. It checks file ownership/mode, exact linked project/org,
+clean reviewed HEAD and at least 30 minutes of cleanup headroom. It sends exactly
+one POST to https://api.vercel.com/v13/deployments with the fixed teamId. Only the
+five existing BENCH61 runtime keys are in the deployment env body; DATABASE_URL
+is inherited without override. No system SHA, project settings, project env,
+production target, alias, source upload, or mutable latest-commit field is sent.
+The API's deployment-level env follows the installed official CLI's create payload.
+The project remains Git-linked and system-variable exposure is already enabled;
+no setting change is part of this correction.
+
+The POST uses direct fetch, a 60-second AbortSignal and redirect:error. The
+installed CLI59.10 api command uses a retrying client, so it is deliberately not
+used for this create. No create retry occurs on timeout, transport failure,
+non-success response, malformed JSON, or unexpected response identity. Such
+ambiguity requires read-only inspection before any separately approved retry.
+Credentials travel only through memory and TLS, never argv or operational logs.
+
+The response must identify the designated project, a disposable URL/id,
+non-production target and githubCommitSha equal to the reviewed SHA. The returned
+receipt explicitly says ready:false: creation is not build readiness or successful
+runtime qualification. Inspect actual SHA, protection, function/database region
+and deployment status before using it. Enter the benchmark token with paste/type
+input so the controlled React field receives input events. Require catalog success
+before setup. If admission still fails, stop without SQL, clean up and investigate;
+do not fabricate a system SHA or weaken admission. No public diagnostic route added.
+
+Sources: [Vercel create-deployment API](https://vercel.com/docs/rest-api/deployments/create-a-new-deployment),
+[system variables](https://vercel.com/docs/environment-variables/system-environment-variables),
+and installed CLI59.10 deploy/api source. Offline tests cover exact source/env
+scope, private files, deadline/redirect policy, one attempt, redacted failures and
+response provenance. The unchanged functional budgets are 220 trips/440 submitted
+SQL statements per action; performance remains disabled and 50/35 ms future targets
+remain unchanged.
 
 ## Validation and next gates
 
@@ -200,3 +231,11 @@ import-boundary probes and whitespace checks. The ten older PostgreSQL tests
 containing profiling workloads are deliberately unselected. No hosted mutation,
 credential-file preparation, push, deployment or performance run is authorized
 by these fixes.
+
+## Git-source correction validation
+
+Six offline deployment-helper tests pass on Node24. The correction changes only
+the helper, its offline tests and this runbook. It does not modify application
+admission, database SQL, timeouts, cleanup fencing, dependencies or CI. No hosted
+request or operational credential preparation was used to validate the correction.
+Commit, independent review, push and hosted deployment remain separate gates.
