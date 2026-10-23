@@ -18,7 +18,8 @@
     "./assets/schema.sql": "./schema.sql"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "cd ../.. && node --test tests/db/*unit.check.mjs"
   },
   "devDependencies": {
     "typescript": "^5"

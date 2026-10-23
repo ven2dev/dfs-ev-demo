@@ -22,16 +22,18 @@
     "./test-support/templates": "./tests/templates.mts"
   },
   "scripts": {
-    "db:catalog": "node scripts/db-catalog.mjs",
-    "db:catalog:diff": "node scripts/compare-db-catalog.mjs",
-    "db:contracts:generate": "node scripts/db-catalog-contracts.mjs generate",
-    "db:contracts:check": "node scripts/db-catalog-contracts.mjs check",
-    "db:migrations:generate": "node scripts/db-migration-artifacts.mjs generate",
-    "db:migrations:check": "node scripts/db-migration-artifacts.mjs check",
-    "db:readiness:generate": "node scripts/db-readiness-manifest.mjs generate",
-    "db:readiness:check": "node scripts/db-readiness-manifest.mjs check",
-    "db:migrate": "node scripts/db-migrate.mjs",
-    "db:migrate:dev": "node scripts/db-migrate-dev.mjs"
+    "db:catalog": "cd ../../.. && node packages/db/tooling/scripts/db-catalog.mjs",
+    "db:catalog:diff": "cd ../../.. && node packages/db/tooling/scripts/compare-db-catalog.mjs",
+    "db:contracts:generate": "cd ../../.. && node packages/db/tooling/scripts/db-catalog-contracts.mjs generate",
+    "db:contracts:check": "cd ../../.. && node packages/db/tooling/scripts/db-catalog-contracts.mjs check",
+    "db:migrations:generate": "cd ../../.. && node packages/db/tooling/scripts/db-migration-artifacts.mjs generate",
+    "db:migrations:check": "cd ../../.. && node packages/db/tooling/scripts/db-migration-artifacts.mjs check",
+    "db:readiness:generate": "cd ../../.. && node packages/db/tooling/scripts/db-readiness-manifest.mjs generate",
+    "db:readiness:check": "cd ../../.. && node packages/db/tooling/scripts/db-readiness-manifest.mjs check",
+    "db:migrate": "cd ../../.. && node packages/db/tooling/scripts/db-migrate.mjs",
+    "db:migrate:dev": "cd ../../.. && node packages/db/tooling/scripts/db-migrate-dev.mjs",
+    "test": "cd ../../.. && node --test packages/db/tooling/tests/*unit.check.mjs",
+    "test:db:local": "cd ../../.. && npm run test:db:local"
   },
   "dependencies": {
     "@dfs-ev/db": "0.1.0",

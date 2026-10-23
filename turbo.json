@@ -1,0 +1,113 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    ".nvmrc",
+    "package.json",
+    "package-lock.json",
+    "turbo.json",
+    "AGENTS.md",
+    "*.md",
+    "docs/**",
+    ".github/workflows/**",
+    "scripts/**",
+    "compose.test.yml",
+    "eslint.config.*",
+    "vitest.config.*",
+    "vitest.*.config.*",
+    "tsconfig*.json"
+  ],
+  "globalEnv": [
+    "CI",
+    "NODE_ENV",
+    "TEST_DATABASE_URL",
+    "DATABASE_URL"
+  ],
+  "tasks": {
+    "test": {
+      "outputs": [],
+      "cache": false
+    },
+    "typecheck": {
+      "dependsOn": [
+        "^typecheck"
+      ],
+      "outputs": [],
+      "cache": false
+    },
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**",
+        "dist/**"
+      ],
+      "cache": false
+    },
+    "test:db:local": {
+      "cache": false,
+      "outputs": []
+    },
+    "test:db:repeat": {
+      "cache": false,
+      "outputs": []
+    },
+    "test:db:down": {
+      "cache": false,
+      "outputs": []
+    },
+    "test:db:lifecycle": {
+      "cache": false,
+      "outputs": []
+    },
+    "test:db:startup": {
+      "cache": false,
+      "outputs": []
+    },
+    "test:feature-store:db": {
+      "cache": false,
+      "outputs": []
+    },
+    "db:migrate": {
+      "cache": false,
+      "outputs": []
+    },
+    "db:migrate:dev": {
+      "cache": false,
+      "outputs": []
+    },
+    "db:catalog": {
+      "cache": false,
+      "outputs": []
+    },
+    "db:catalog:diff": {
+      "cache": false,
+      "outputs": []
+    },
+    "db:contracts:generate": {
+      "cache": false,
+      "outputs": []
+    },
+    "db:contracts:check": {
+      "cache": false,
+      "outputs": []
+    },
+    "db:migrations:generate": {
+      "cache": false,
+      "outputs": []
+    },
+    "db:migrations:check": {
+      "cache": false,
+      "outputs": []
+    },
+    "db:readiness:generate": {
+      "cache": false,
+      "outputs": []
+    },
+    "db:readiness:check": {
+      "cache": false,
+      "outputs": []
+    }
+  }
+}

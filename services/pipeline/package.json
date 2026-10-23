@@ -34,7 +34,9 @@
     "creators": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/creator-corpus/cli.ts",
     "feature-store:ingest:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/ingest-spike.ts",
     "feature-store:derived:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/derived-spike.ts",
-    "feature-store:dataset:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/dataset-spike.ts"
+    "feature-store:dataset:spike": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/feature-store/dataset-spike.ts",
+    "test": "cd ../.. && vitest run --root . --config vitest.config.ts services/pipeline/src services/pipeline/scripts && vitest run --root . --config vitest.node.config.ts services/pipeline/tests/feature-store",
+    "test:feature-store:db": "cd ../.. && npm run test:feature-store:db"
   },
   "devDependencies": {
     "@dfs-ev/db-tooling": "0.1.0",
