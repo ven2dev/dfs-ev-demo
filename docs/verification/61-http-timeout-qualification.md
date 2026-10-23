@@ -1,7 +1,8 @@
 # #61 finite HTTP timeout qualification
 
-Status: local Git-source deployment correction after 9f3091c (2e1c12f) plus its
-review hardening, awaiting commit approval and independent review. The prior approved Preview attempt returned an
+Status: local Git-source deployment correction after 9f3091c (2e1c12f), its
+review hardening (bc062f6) and the readiness split after the env-timing canary,
+awaiting commit approval and independent review. The prior approved Preview attempt returned an
 admission 404 before SQL; it did not qualify managed HTTP behavior. Both temporary
 deployments were removed, schema/role absence was confirmed, and the generated
 credential file was deleted. The exact rejected admission condition is unproven.
@@ -164,7 +165,7 @@ production target, alias, source upload, or mutable latest-commit field is sent.
 The request-body env field is not in the published v13 schema; it follows the
 installed official CLI59.10 create payload, which spreads its options (including
 env) into the body. Whether it applies to Git-source deployments is checked by the
-response env-name list below, not assumed. The project remains Git-linked and
+env-name list at READY below, not assumed. The project remains Git-linked and
 system-variable exposure is already enabled; no setting change is part of this correction.
 
 Pushing the reviewed SHA starts a second, push-triggered Preview through the Git
@@ -193,16 +194,35 @@ the fixed repoId. The published response schema requires only gitSource type and
 repoId, and documents automatic meta only for Cursor-origin sources. So at least
 one of gitSource.sha and meta.githubCommitSha must be reported, every reported SHA
 must equal the reviewed SHA, and a reported ref must equal the fixed branch. The
-response env-name list must contain all five BENCH61 keys; a deduplicated or
-push-triggered deployment fails this check. The returned
-receipt explicitly says ready:false: creation is not build readiness or successful
-runtime qualification. Inspect actual SHA, protection, function/database region
-and deployment status before using it. Enter the benchmark token with paste/type
+creation receipt says ready:false and does not check env names.
+
+Readiness is a separate step, using the standard create-then-poll pattern.
+A canary deployment showed both env-name lists empty while building and
+containing its marker at READY, so env names at creation are not evidence either
+way. Alternatives rejected: checking env at creation (proven to false-fail);
+dropping the env check (loses the deduplication and push-triggered-Preview
+guard); vercel inspect --wait (opaque text output). awaitPreviewReady(receipt,
+accessToken) polls GET /v13/deployments/{id} with the fixed teamId and
+withGitRepoInfo=true (needed for gitSource), redirect:error, a 15-second
+per-request timeout, a 5-second interval and a 15-minute overall deadline. GET is
+read-only, so 408/429/5xx, transport and malformed-JSON failures are re-polled
+until the deadline; a provider rejection (other 4xx) stops at once. The POST is
+never repeated. Every observation must keep the creation identity, id and URL;
+any change stops. QUEUED, INITIALIZING and BUILDING keep polling. ERROR, CANCELED,
+BLOCKED or an unknown state stops. At READY the env-name list must contain all
+five BENCH61 keys, or it stops as "configuration unconfirmed". The ready receipt
+adds readyState and the reported regions (public metadata, not gated).
+
+ready:true means build readiness and finalized deployment configuration only. It
+does not prove runtime delivery of the values to functions, the iad1 function
+region, protection settings or admission, and it does not justify build-time
+secrets. Inspect protection and region before use. Enter the benchmark token with paste/type
 input so the controlled React field receives input events. Require catalog success
 before setup. If admission still fails, stop without SQL, clean up and investigate;
 do not fabricate a system SHA or weaken admission. No public diagnostic route added.
 
 Sources: [Vercel create-deployment API](https://vercel.com/docs/rest-api/deployments/create-a-new-deployment),
+[get-deployment API](https://vercel.com/docs/rest-api/deployments/get-a-deployment-by-id-or-url),
 [system variables](https://vercel.com/docs/environment-variables/system-environment-variables),
 and installed CLI59.10 deploy/api source. Offline tests cover exact source/env
 scope, private files, deadline/redirect policy, one attempt, redacted failures and
@@ -282,3 +302,21 @@ does not establish which admission condition rejected the previous deployment;
 a non-secret server log of the failing admission condition is a separate owner
 decision outside this scope. Commit, independent review, push and hosted
 deployment remain separate gates.
+
+## Readiness split after bc062f6
+
+A canary deployment found that env-name lists are empty while building and
+populated at READY, so bc062f6's creation-time env check would false-fail. The
+canary deployment was deleted and its API and URL return 404. No credentials,
+database queries or other provider calls were used.
+
+Creation now validates identity only and returns ready:false. awaitPreviewReady
+separately polls readiness and checks the finalized env names, as described in
+the helper section. Eleven offline deployment-helper tests pass on Node24,
+covering empty env while building, transient 503 and transport failures,
+configuration missing at READY, terminal states, identity changes, provider
+rejection, the deadline and redaction. Runtime delivery remains unproven: only
+a hosted catalog call can show that the functions received the values.
+Application admission, database SQL, timeouts, cleanup fencing, dependencies
+and CI are unchanged. Commit, independent review, push and hosted deployment
+remain separate gates.

@@ -106,19 +106,63 @@ export const submitGitPreview=async(request,reviewedSha,accessToken,send=fetch)=
     else deployment=await response.json();
   }catch{throw new Error("Deployment completion unconfirmed; inspect Preview before retrying");}
   ensure(!rejected,rejected);
-  // The documented response requires only gitSource type/repoId. At least one
-  // provider-reported SHA must exist and none may differ; a reported ref must match.
-  // Env names (a documented array) prove this request's keys landed.
+  // Creation proves identity only. The canary showed env names empty while
+  // building and present at READY, so configuration is checked by awaitPreviewReady.
+  ensure(identityMatches(deployment,reviewedSha),"Deployment identity unconfirmed; inspect Preview before retrying");
+  return {id:deployment.id,url:"https://"+deployment.url,reviewedSha,ready:false};
+};
+// The documented response requires only gitSource type/repoId. At least one
+// provider-reported SHA must exist and none may differ; a reported ref must match.
+const identityMatches=(deployment,reviewedSha)=>{
   const source=deployment?.gitSource;
   const shas=[source?.sha,deployment?.meta?.githubCommitSha].filter(value=>value!==undefined);
-  ensure(/^dpl_[a-zA-Z0-9]+$/.test(deployment?.id ?? "")
+  return /^dpl_[a-zA-Z0-9]+$/.test(deployment?.id ?? "")
     && /^dfs-ev-demo-[a-z0-9]{6,}-vernon-neillys-projects\.vercel\.app$/.test(deployment.url ?? "")
     && deployment.projectId===project && deployment.target===null && deployment.customEnvironment==null
     && source?.type==="github" && String(source.repoId)===repoId && (source.ref===undefined || source.ref===ref)
-    && shas.length>0 && shas.every(value=>value===reviewedSha)
-    && Array.isArray(deployment.env) && keys.every(key=>deployment.env.includes(key)),
-    "Deployment identity unconfirmed; inspect Preview before retrying");
-  // Creation is not readiness or runtime qualification. Independently inspect
-  // the deployment's protection/region/SHA and require catalog before setup.
-  return {id:deployment.id,url:"https://"+deployment.url,reviewedSha,ready:false};
+    && shas.length>0 && shas.every(value=>value===reviewedSha);
+};
+const pending=["QUEUED","INITIALIZING","BUILDING"];
+const sleep=ms=>new Promise(done=>setTimeout(done,ms));
+// Standard create-then-poll. GET is read-only, so transient failures are re-polled
+// until the deadline; the POST is never repeated. READY is build readiness plus
+// finalized configuration, not runtime delivery or qualification.
+export const awaitPreviewReady=async(receipt,accessToken,{send=fetch,wait=sleep,now=Date.now,deadlineMs=900000,intervalMs=5000}={})=>{
+  ensure(typeof accessToken==="string" && accessToken.length>0,"Missing Vercel access credential");
+  ensure(/^dpl_[a-zA-Z0-9]+$/.test(receipt?.id ?? ""),"Invalid deployment receipt");
+  const endpoint="https://api.vercel.com/v13/deployments/"+receipt.id+"?teamId="+org+"&withGitRepoInfo=true";
+  const deadline=now()+deadlineMs;
+  let last="no response";
+  while(now()<deadline) {
+    let deployment;
+    try {
+      const response=await send(endpoint,{method:"GET",redirect:"error",signal:AbortSignal.timeout(15000),
+        headers:{Authorization:"Bearer "+accessToken}});
+      if(response.ok)deployment=await response.json();
+      else {
+        const message=await failure(response);
+        // A provider rejection (e.g. 403/404) will not resolve by polling.
+        ensure(!message.startsWith("Deployment rejected"),message.replace("Deployment rejected","Readiness check rejected"));
+        last=message.match(/\(HTTP [^)]*\)/)[0];
+      }
+    }catch(error){
+      if(error.message.startsWith("Readiness check rejected"))throw error;
+      last="transport failure";
+    }
+    if(deployment) {
+      ensure(identityMatches(deployment,receipt.reviewedSha) && "https://"+deployment.url===receipt.url && deployment.id===receipt.id,
+        "Deployment identity changed; inspect Preview before use");
+      const state=deployment.readyState;
+      if(state==="READY") {
+        ensure(Array.isArray(deployment.env) && keys.every(key=>deployment.env.includes(key)),
+          "Deployment configuration unconfirmed at READY; inspect Preview before use");
+        const regions=Array.isArray(deployment.regions)?deployment.regions.filter(region=>typeof region==="string"):[];
+        return {...receipt,ready:true,readyState:state,regions};
+      }
+      ensure(pending.includes(state),"Deployment did not become ready ("+(/^[A-Z_]{1,32}$/.test(state ?? "")?state:"unknown state")+"); inspect Preview before use");
+      last=state;
+    }
+    await wait(intervalMs);
+  }
+  throw new Error("Readiness unconfirmed by deadline (last: "+last+"); inspect Preview before use");
 };
