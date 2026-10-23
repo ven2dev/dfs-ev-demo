@@ -126,7 +126,7 @@ summarized there rather than discarded.
    selection proof in hosted Node 24 CI; preserve full checks on main and at
    integration checkpoints. Keep root command names, CodeQL protection, serial
    fixture ownership and always-run cleanup. Stop for commit approval.
-3. **Required-gate proof:** distinguish deliberate empty selections from skipped,
+3. **Required-gate proof (committed `d874c50`):** distinguish deliberate empty selections from skipped,
    failed, cancelled, missing or malformed results. Preserve the required `CI`
    check name and demonstrate negative outcomes before adoption approval. Stop
    for commit approval.
@@ -137,8 +137,8 @@ summarized there rather than discarded.
 
 The issue remains capped at five engineering hours; review/approval waiting is
 reported separately. If discovery exceeds that cap, stop and split remaining
-work. Hosted reproduction and full integration checks remain pending at Step 1;
-local matrix success does not authorize CI adoption or merge.
+work. The full local checkpoint below completes the local integration proof. Hosted
+reproduction remains pending; local success does not authorize merge.
 
 References: [Turborepo task filtering](https://turborepo.dev/docs/reference/run),
 [global inputs](https://turborepo.dev/docs/reference/configuration#globaldependencies),
@@ -246,4 +246,61 @@ completion metadata for the hosted matrix step itself.
 The [Step 3 receipt](evidence/turborepo-192/step-3-gate.json) records the local
 proof boundary and hashes. It does not simulate GitHub's orchestration: hosted
 Node 24 reproduction remains a required gate after a separately approved push.
-Stop for owner commit approval before the combined Step 4 checkpoint.
+Step 3 was committed with owner approval as `d874c50` before Step 4 began.
+
+
+## Step 4 combined local checkpoint
+
+The combined run used a clean root `npm ci`, Node 24.18.1 and the committed
+implementation at `d874c50`. It executed the current workflow's shell command
+bodies in full-checkpoint mode, including the real root `npm test`. The local
+build used the launcher's hosted-environment boundary to avoid root dotenv
+loading; this was a local build, with no deployment or hosted database action.
+
+All local checks passed: 951 browser tests, 291 Node tests, 25 selection checks,
+20 CI/layout checks, 11 import-boundary checks, typecheck, lint, demo Firestore
+rules, build, production-dependency audit and actionlint. The ordinary DB suite
+verified 74 required Node cases, 25 PostgreSQL tests and 12 catalog contracts,
+including readiness. The separate feature-store suite passed all 79 cases.
+Both suites ran in order on the unchanged standard 512 MiB fixture; the final
+cleanup succeeded and left no disposable project containers. No suite was
+skipped or cancelled.
+
+The actual aggregate gate script then accepted the completion metadata collected
+from those successful local commands. This verifies the shell contract, not
+GitHub's output transport or scheduling. The negative gate proofs remain in the
+earlier executable tests. The [compact checkpoint receipt](evidence/turborepo-192/step-4-checkpoint.json)
+records explicit base/head SHAs, the fresh matrix selections, cache policy,
+counts, command timings and hashes; full logs remain off main.
+
+Preservation checks confirm all 44 original root npm command bodies, all 82
+non-manifest DB files (including 21 SQL files), frozen hashes, DB inventories,
+test configurations, CodeQL workflow and standard fixture are unchanged. All
+1,229 existing external lock entries retain their recorded metadata, versions,
+resolutions and integrity values; only Turbo and its platform binaries were added. Runtime application/library code is unchanged.
+
+To reproduce the integration checkpoint with Node 24 and Docker, run the full
+root commands used by CI: `typecheck`, `lint`, `test:ci-gate`,
+`test:turbo-layout`, `test`, `test:firestore-rules`, and `build`; then
+`test:db:guard`, `test:db:lifecycle`, and `test:db:local`. For the feature-store
+suite, start only `compose.test.yml` with `--env-file /dev/null`, supply its public
+throwaway `TEST_DATABASE_URL`, and run `test:feature-store:db`. Run
+`test:db:down` in a final cleanup even if a previous command fails, because a
+partial fixture setup can survive a failed suite. The CI workflow contains the
+exact commands and owns this sequencing.
+
+| Acceptance area | Local result | Remaining gate |
+| --- | --- | --- |
+| Approved predecessors, pattern and separate issue scope | Pass; base is #191 merge `bd52ec77`; roadmap/branch approvals are in the owner session | Independent review |
+| Scratch graph proof, explicit history and selected execution | Pass; fresh Node 24 matrix and earlier spike receipts | Same matrix in hosted CI |
+| UI exclusion, consumer coverage and global fallback | Pass; UI selects no DB tasks, dependent work expands through Turbo, unknown/shared inputs run full or refuse | Hosted parity |
+| Pinned graph, uncached tasks and standard serial DB fixture | Pass; no remote cache; cleanup and all preserved inventories verified | Hosted DB suites |
+| Reliable event SHAs, full checkpoints, required gate and CodeQL | Pass locally; full actual commands and gate shell contract | Actual GitHub scheduling/output propagation and CodeQL |
+| Root commands, application/build and frozen DB checks | Pass | Hosted completion |
+| Compact receipts and disclosed limits | Pass | Owner review/commit approval |
+
+No manual Vercel Preview verification is introduced for this CI-only behavior
+change: app routes, package exports and runtime tracing did not change. Any
+existing deployment check still applies after push. Independent review, fresh
+push/PR consent and hosted Node 24 success remain separate gates. Do not mark
+hosted verification complete or merge based on this local receipt.
