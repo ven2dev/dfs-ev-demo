@@ -18,7 +18,7 @@ test("generates independent credentials and pins a Git-source Preview with deplo
   assert.notEqual(spec.runtime.BENCH61_DATABASE_URL,other.runtime.BENCH61_DATABASE_URL);
   assert(!JSON.stringify(spec).includes("never-copied"));
   const request=validateRuntimeSpec(spec,sha,link,true,now);
-  assert.deepEqual(Object.keys(request).sort(),["env","gitSource","meta","name","project"]);
+  assert.deepEqual(Object.keys(request).sort(),["build","env","gitSource","meta","name","project"]);
   assert.deepEqual(request.gitSource,{type:"github",repoId:"1350991998",ref:"feature/dfsEV-206-budget-latency-profile",sha});
   assert.equal(request.project,link.projectId);
   assert.deepEqual(request.env,spec.runtime);
@@ -26,6 +26,22 @@ test("generates independent credentials and pins a Git-source Preview with deplo
   assert(!("VERCEL_GIT_COMMIT_SHA" in request.env));
   assert(!Object.keys(spec.runtime).includes("DATABASE_URL"));
   assert.equal(new URL(spec.runtime.BENCH61_DATABASE_URL).search,"?sslmode=require");
+});
+test("build and deployment scopes contain exactly the approved five values and reject extra secrets",()=>{
+  const spec=createRuntimeSpec(url,sha,now),request=validateRuntimeSpec(spec,sha,link,true,now);
+  const allowed=["BENCH61_DATABASE_URL","BENCH61_TOKEN_HASH","BENCH61_ISSUED_AT","BENCH61_EXPIRES_AT","BENCH61_REVIEWED_SHA"].sort();
+  assert.deepEqual(Object.keys(request.build),["env"]);
+  assert.deepEqual(Object.keys(request.env).sort(),allowed);
+  assert.deepEqual(Object.keys(request.build.env).sort(),allowed);
+  assert.deepEqual(request.build.env,request.env);
+  assert.notEqual(request.build.env,request.env);
+  for(const forbidden of ["DATABASE_URL","BENCH61_TOKEN","VERCEL_GIT_COMMIT_SHA","NEXT_PUBLIC_BENCH61_TOKEN"]){
+    const invalid=createRuntimeSpec(url,sha,now);invalid.runtime[forbidden]="must-not-transmit";
+    assert.throws(()=>validateRuntimeSpec(invalid,sha,link,true,now),/Unexpected runtime keys/);
+  }
+  const body=JSON.stringify(request);
+  assert(!body.includes(spec.token));assert(!body.includes("never-copied"));
+  assert(!body.includes("operator:"));
 });
 test("refuses wrong target, dirty/unreviewed checkout, project, extra env, or short cleanup window",()=>{
   assert.throws(()=>createRuntimeSpec("invalid-secret-input",sha,now),error=>error.message==="Invalid connection URL" && !JSON.stringify(error).includes("invalid-secret-input"));

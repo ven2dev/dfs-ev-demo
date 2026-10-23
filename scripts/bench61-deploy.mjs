@@ -58,8 +58,11 @@ export const validateRuntimeSpec=(spec,head,link,clean,now=Date.now())=>{
   ensure(issued<=now && expires-now>=1800000 && expires-issued<=86400000,"Token window does not leave cleanup headroom");
   // Omit target: this fixed non-production branch receives a Preview. No files,
   // settings overrides, system variables, or mutable latest-commit option.
+  const env=Object.fromEntries(keys.map(key=>[key,r[key]]));
+  // Owner-approved build scope: only these five experiment values. The raw
+  // benchmark token and operator credential never enter this deployment body.
   return {name:"dfs-ev-demo",project,gitSource:{type:"github",repoId,ref,sha:head},
-    env:Object.fromEntries(keys.map(key=>[key,r[key]])),meta:{bench61ReviewedSha:head}};
+    env,build:{env:{...env}},meta:{bench61ReviewedSha:head}};
 };
 export const deployPreparedPreview=async (file,accessToken)=>{
   await privatePath(file);

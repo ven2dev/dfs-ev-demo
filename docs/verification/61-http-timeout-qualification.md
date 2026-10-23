@@ -1,8 +1,8 @@
 # #61 finite HTTP timeout qualification
 
 Status: local Git-source deployment correction after 9f3091c (2e1c12f), its
-review hardening (bc062f6) and the readiness split after the env-timing canary,
-awaiting commit approval and independent review. The prior approved Preview attempt returned an
+review hardening (bc062f6), readiness split (b54a8a4), and the local owner-approved
+build-env correction, awaiting commit approval and independent review. The prior approved Preview attempt returned an
 admission 404 before SQL; it did not qualify managed HTTP behavior. Both temporary
 deployments were removed, schema/role absence was confirmed, and the generated
 credential file was deleted. The exact rejected admission condition is unproven.
@@ -159,12 +159,16 @@ clean reviewed HEAD and at least 30 minutes of cleanup headroom. A read-only
 branch tip, so an unpushed commit stops locally instead of looking like an
 ambiguous provider failure. It sends exactly one POST to
 https://api.vercel.com/v13/deployments with the fixed teamId and forceNew=1. Only the
-five existing BENCH61 runtime keys are in the deployment env body; DATABASE_URL
-is inherited without override. No system SHA, project settings, project env,
+five existing BENCH61 runtime keys are mirrored in deployment env and build.env;
+DATABASE_URL is inherited without override. The owner approved this build-scope
+expansion after the READY env-only attempt failed. Build steps can now read the
+temporary limited worker credential. The raw benchmark token is not transmitted. No system SHA, project settings, project env,
 production target, alias, source upload, or mutable latest-commit field is sent.
 The request-body env field is not in the published v13 schema; it follows the
 installed official CLI59.10 create payload, which spreads its options (including
-env) into the body. Whether it applies to Git-source deployments is checked by the
+env) into the body. Vercel's maintained Terraform provider mirrors deployment env
+into build.env; this correction follows that pattern without changing the v13
+endpoint. Whether it applies to our Git-source deployments is checked by the
 env-name list at READY below, not assumed. The project remains Git-linked and
 system-variable exposure is already enabled; no setting change is part of this correction.
 
@@ -215,8 +219,8 @@ adds readyState and the reported regions (public metadata, not gated).
 
 ready:true means build readiness and finalized deployment configuration only. It
 does not prove runtime delivery of the values to functions, the iad1 function
-region, protection settings or admission, and it does not justify build-time
-secrets. Inspect protection and region before use. Enter the benchmark token with paste/type
+region, protection settings or admission. Build-time experiment values require
+the separate owner approval recorded below. Inspect protection and region before use. Enter the benchmark token with paste/type
 input so the controlled React field receives input events. Require catalog success
 before setup. If admission still fails, stop without SQL, clean up and investigate;
 do not fabricate a system SHA or weaken admission. No public diagnostic route added.
@@ -320,3 +324,45 @@ a hosted catalog call can show that the functions received the values.
 Application admission, database SQL, timeouts, cleanup fencing, dependencies
 and CI are unchanged. Commit, independent review, push and hosted deployment
 remain separate gates.
+
+## Owner-approved build-env correction after b54a8a4
+
+The env-only b54a8a4 deployment reached READY with163 names in both environment
+lists and none of the five BENCH61 keys. The marker canary supplied env plus
+build.env and reached READY with164 names including its marker. Unlike the
+creation-time observation, this finalized env-only receipt establishes the
+configuration check failed after readiness. No catalog or setup ran. Both
+b54a8a4 Previews were removed (API/URL404 verified); schema/role were absent and
+the generated private credential was removed.
+
+Pattern: deployment-scoped configuration shared between build and runtime,
+following Vercel's maintained Terraform deployment client. Owner approved copying
+the five experiment values into build.env before this code change. This is an
+explicit exception to the prior no-build-env scope: build steps can read the
+generated worker credential, token fingerprint, timestamps and reviewed SHA.
+The raw benchmark token, operator URL override, access token and system-SHA
+injection remain excluded to avoid credential disclosure or fabricated provenance.
+No NEXT_PUBLIC variable is added, so no browser bundling is requested.
+
+Alternatives rejected: another env-only attempt repeats the observed failure;
+branch-scoped project variables break the no-project-env-change guardrail;
+weakening provenance/receipt checks would admit unqualified configuration.
+Assumptions: the reviewed build is trusted, the worker role is synthetic-only,
+and cleanup retains the existing owner/lease/fence protections. The canary is
+control-plane evidence, not proof of runtime injection or managed HTTP behavior.
+
+The request contains independent env/build.env objects with exactly the same
+five allowed keys and values. Input validation rejects all additional runtime
+keys before request construction. Existing one-POST, no-redirect, private-file,
+SHA/source/target, bounded readiness, finalized configuration and redaction guards
+remain unchanged. Provider code is at
+https://github.com/vercel/terraform-provider-vercel/blob/main/client/deployment.go.
+
+Twelve offline helper tests pass on Node24, including exact scopes, rejection of
+operator/raw-token/system/public-variable additions and exclusion of raw tokens
+and operator credentials from the serialized request. Targets stay5s/2s server
+cancellation and220 trips/440 statements per action; future50ms/35ms performance
+targets are unchanged. Actual runtime delivery still requires a separately
+approved Preview and successful catalog before setup. Local commit, independent
+review, push and deployment retain their separate gates. No generated credential,
+hosted mutation, role creation, qualification or performance run occurred here.
