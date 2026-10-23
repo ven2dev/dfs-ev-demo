@@ -1,8 +1,9 @@
 # #61 finite HTTP timeout qualification
 
 Status: local Git-source deployment correction after 9f3091c (2e1c12f), its
-review hardening (bc062f6), readiness split (b54a8a4), and the local owner-approved
-build-env correction, awaiting commit approval and independent review. The prior approved Preview attempt returned an
+review hardening (bc062f6), readiness split (b54a8a4), and the owner-approved
+build-env correction (7c49de8) with its runbook review fixes, awaiting commit
+approval and independent review. The prior approved Preview attempt returned an
 admission 404 before SQL; it did not qualify managed HTTP behavior. Both temporary
 deployments were removed, schema/role absence was confirmed, and the generated
 credential file was deleted. The exact rejected admission condition is unproven.
@@ -283,7 +284,7 @@ by these fixes.
 
 ## Git-source correction validation
 
-Six offline deployment-helper tests pass on Node24. The correction changes only
+Six offline deployment-helper tests pass on Node 24. The correction changes only
 the helper, its offline tests and this runbook. It does not modify application
 admission, database SQL, timeouts, cleanup fencing, dependencies or CI. No hosted
 request or operational credential preparation was used to validate the correction.
@@ -300,7 +301,7 @@ repoId, a strict null target and absent customEnvironment are checked. (4) Error
 carry the HTTP status and a code word, rejected versus unconfirmed, and a
 read-only ls-remote preflight stops an unpushed SHA locally.
 
-Eight offline deployment-helper tests pass on Node24. Application admission,
+Eight offline deployment-helper tests pass on Node 24. Application admission,
 database SQL, timeouts, cleanup fencing, dependencies and CI are unchanged. This
 does not establish which admission condition rejected the previous deployment;
 a non-secret server log of the failing admission condition is a separate owner
@@ -316,7 +317,7 @@ database queries or other provider calls were used.
 
 Creation now validates identity only and returns ready:false. awaitPreviewReady
 separately polls readiness and checks the finalized env names, as described in
-the helper section. Eleven offline deployment-helper tests pass on Node24,
+the helper section. Eleven offline deployment-helper tests pass on Node 24,
 covering empty env while building, transient 503 and transport failures,
 configuration missing at READY, terminal states, identity changes, provider
 rejection, the deadline and redaction. Runtime delivery remains unproven: only
@@ -327,13 +328,26 @@ remain separate gates.
 
 ## Owner-approved build-env correction after b54a8a4
 
-The env-only b54a8a4 deployment reached READY with163 names in both environment
-lists and none of the five BENCH61 keys. The marker canary supplied env plus
-build.env and reached READY with164 names including its marker. Unlike the
+The env-only b54a8a4 deployment reached READY with 163 names in both the
+top-level env list and the build.env list, and none of the five BENCH61 keys in
+either. The marker canary supplied env plus build.env and reached READY with 164
+names; its marker was in both lists (both were empty while building). Unlike the
 creation-time observation, this finalized env-only receipt establishes the
 configuration check failed after readiness. No catalog or setup ran. Both
-b54a8a4 Previews were removed (API/URL404 verified); schema/role were absent and
+b54a8a4 Previews were removed (API/URL 404 verified); schema/role were absent and
 the generated private credential was removed.
+
+The two lists changed together in both observations, so they do not separate
+build-time from runtime configuration. With build.env mirrored, a passing READY
+check shows only that Vercel accepted the deployment configuration. It does not
+show that functions receive the values: the route reads them at runtime through
+process.env, nothing is inlined at build, and Vercel does not document build.env
+as runtime configuration. The Terraform provider's mirror comment ("as project
+environment variables are") reads as env for runtime and build.env for build,
+which leaves the earlier env-only result unexplained. If runtime delivery still
+fails, admission returns the same undifferentiated 404. Whether to add a
+non-secret log of the failing admission condition before the next deployment is
+an open owner decision outside this helper's scope.
 
 Pattern: deployment-scoped configuration shared between build and runtime,
 following Vercel's maintained Terraform deployment client. Owner approved copying
@@ -351,6 +365,16 @@ Assumptions: the reviewed build is trusted, the worker role is synthetic-only,
 and cleanup retains the existing owner/lease/fence protections. The canary is
 control-plane evidence, not proof of runtime injection or managed HTTP behavior.
 
+Build steps include dependency installation, so every install lifecycle script in
+the lockfile can read the five values, along with the framework build. The
+exception is acceptable because the worker credential is inert during the build:
+the role does not exist until the runtime setup action creates it with the
+generated password (apps/web/src/lib/bench61-functional.ts, setup action), and
+cleanup drops it. The token fingerprint, timestamps and reviewed SHA are not
+secrets. The deployment's stored build.env keeps the credential after the role
+exists. So never redeploy, rebuild or promote this deployment: any of these
+would run a new build that can read a live credential. Delete it during cleanup.
+
 The request contains independent env/build.env objects with exactly the same
 five allowed keys and values. Input validation rejects all additional runtime
 keys before request construction. Existing one-POST, no-redirect, private-file,
@@ -358,10 +382,10 @@ SHA/source/target, bounded readiness, finalized configuration and redaction guar
 remain unchanged. Provider code is at
 https://github.com/vercel/terraform-provider-vercel/blob/main/client/deployment.go.
 
-Twelve offline helper tests pass on Node24, including exact scopes, rejection of
+Twelve offline helper tests pass on Node 24, including exact scopes, rejection of
 operator/raw-token/system/public-variable additions and exclusion of raw tokens
-and operator credentials from the serialized request. Targets stay5s/2s server
-cancellation and220 trips/440 statements per action; future50ms/35ms performance
+and operator credentials from the serialized request. Targets stay 5 s/2 s server
+cancellation and 220 trips/440 statements per action; future 50 ms/35 ms performance
 targets are unchanged. Actual runtime delivery still requires a separately
 approved Preview and successful catalog before setup. Local commit, independent
 review, push and deployment retain their separate gates. No generated credential,
