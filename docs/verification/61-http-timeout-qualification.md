@@ -1,7 +1,7 @@
 # #61 finite HTTP timeout qualification
 
-Status: local Git-source deployment correction after 9f3091c, awaiting commit
-approval and independent review. The prior approved Preview attempt returned an
+Status: local Git-source deployment correction after 9f3091c (2e1c12f) plus its
+review hardening, awaiting commit approval and independent review. The prior approved Preview attempt returned an
 admission 404 before SQL; it did not qualify managed HTTP behavior. Both temporary
 deployments were removed, schema/role absence was confirmed, and the generated
 credential file was deleted. The exact rejected admission condition is unproven.
@@ -127,7 +127,8 @@ sessions and wait for normal expiry. Closing only the owned identity needs
 separate consent; never flush pools, kill foreign sessions or use DROP OWNED.
 
 After hosted testing, confirm schema/role absence, delete the exact Preview and
-verify URL/control-plane absence, and remove generated credential files.
+the push-triggered Preview of the same SHA (see below), verify URL/control-plane
+absence for both, and remove generated credential files.
 Failed qualification may require the original five-minute lease to expire.
 If permissions or token expiry block recovery, stop for owner-validated operator
 cleanup rather than widening permissions.
@@ -152,24 +153,48 @@ all target/database/TLS checks. No credential has been generated for this correc
 deployPreparedPreview(file, accessToken) requires a caller-supplied existing
 Vercel access credential in memory. The helper does not obtain, store, return or
 log that credential. It checks file ownership/mode, exact linked project/org,
-clean reviewed HEAD and at least 30 minutes of cleanup headroom. It sends exactly
-one POST to https://api.vercel.com/v13/deployments with the fixed teamId. Only the
+clean reviewed HEAD and at least 30 minutes of cleanup headroom. A read-only
+`git ls-remote` against the fixed GitHub URL must show the reviewed SHA as the
+branch tip, so an unpushed commit stops locally instead of looking like an
+ambiguous provider failure. It sends exactly one POST to
+https://api.vercel.com/v13/deployments with the fixed teamId and forceNew=1. Only the
 five existing BENCH61 runtime keys are in the deployment env body; DATABASE_URL
 is inherited without override. No system SHA, project settings, project env,
 production target, alias, source upload, or mutable latest-commit field is sent.
-The API's deployment-level env follows the installed official CLI's create payload.
-The project remains Git-linked and system-variable exposure is already enabled;
-no setting change is part of this correction.
+The request-body env field is not in the published v13 schema; it follows the
+installed official CLI59.10 create payload, which spreads its options (including
+env) into the body. Whether it applies to Git-source deployments is checked by the
+response env-name list below, not assumed. The project remains Git-linked and
+system-variable exposure is already enabled; no setting change is part of this correction.
+
+Pushing the reviewed SHA starts a second, push-triggered Preview through the Git
+integration, because vercel.json does not disable Git deployments and no setting
+change is approved. That Preview has the project's ordinary Preview environment
+and none of the five BENCH61 keys, so functional admission refuses it
+(BENCH61_REVIEWED_SHA is absent) and it never reaches SQL. It is still live code
+from this branch: record its deployment id at push time and delete it with the
+helper's Preview during cleanup. forceNew=1 prevents the API create from being
+deduplicated onto it; forceNew bypasses deduplication only and is not a retry.
 
 The POST uses direct fetch, a 60-second AbortSignal and redirect:error. The
 installed CLI59.10 api command uses a retrying client, so it is deliberately not
 used for this create. No create retry occurs on timeout, transport failure,
-non-success response, malformed JSON, or unexpected response identity. Such
-ambiguity requires read-only inspection before any separately approved retry.
+non-success response, malformed JSON, or unexpected response identity. Errors
+report the HTTP status and, when it is a plain code word, the provider's
+error.code; message text and body are never surfaced. A 4xx other than 408/429
+reads "rejected" (the provider refused the request); 408, 429, 5xx, transport
+failure and timeout read "unconfirmed". Both require read-only inspection before
+any separately approved retry.
 Credentials travel only through memory and TLS, never argv or operational logs.
 
-The response must identify the designated project, a disposable URL/id,
-non-production target and githubCommitSha equal to the reviewed SHA. The returned
+The response must identify the designated project, a disposable URL/id, a target
+of exactly null (Preview) with no customEnvironment, and a GitHub gitSource with
+the fixed repoId. The published response schema requires only gitSource type and
+repoId, and documents automatic meta only for Cursor-origin sources. So at least
+one of gitSource.sha and meta.githubCommitSha must be reported, every reported SHA
+must equal the reviewed SHA, and a reported ref must equal the fixed branch. The
+response env-name list must contain all five BENCH61 keys; a deduplicated or
+push-triggered deployment fails this check. The returned
 receipt explicitly says ready:false: creation is not build readiness or successful
 runtime qualification. Inspect actual SHA, protection, function/database region
 and deployment status before using it. Enter the benchmark token with paste/type
@@ -239,3 +264,21 @@ the helper, its offline tests and this runbook. It does not modify application
 admission, database SQL, timeouts, cleanup fencing, dependencies or CI. No hosted
 request or operational credential preparation was used to validate the correction.
 Commit, independent review, push and hosted deployment remain separate gates.
+
+## Review hardening after 2e1c12f
+
+Four review findings are addressed in the helper, its offline tests and this
+runbook only. (1) The push-triggered Preview is named above and included in
+cleanup. (2) The create sends forceNew=1 and the receipt requires all five BENCH61
+names in the response env list. (3) SHA provenance accepts gitSource.sha or
+meta.githubCommitSha but requires at least one and rejects any disagreement; ref,
+repoId, a strict null target and absent customEnvironment are checked. (4) Errors
+carry the HTTP status and a code word, rejected versus unconfirmed, and a
+read-only ls-remote preflight stops an unpushed SHA locally.
+
+Eight offline deployment-helper tests pass on Node24. Application admission,
+database SQL, timeouts, cleanup fencing, dependencies and CI are unchanged. This
+does not establish which admission condition rejected the previous deployment;
+a non-secret server log of the failing admission condition is a separate owner
+decision outside this scope. Commit, independent review, push and hosted
+deployment remain separate gates.
