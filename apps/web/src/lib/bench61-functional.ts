@@ -28,18 +28,44 @@ export const functionalIdentity = (env: Record<string,string|undefined>, workerR
   }
   return {host:operator.hostname,database};
 };
-export const authorizeFunctional = (token: unknown,action: unknown,env: Record<string,string|undefined> = process.env,now=Date.now()) => {
-  if(env.VERCEL_ENV!=="preview" || env.VERCEL_REGION!=="iad1" || typeof action!=="string" || !actions.includes(action)
-    || typeof token!=="string" || token.length!==64) return false;
-  if(!/^[a-f0-9]{40}$/.test(env.BENCH61_REVIEWED_SHA ?? "")
-    || env.VERCEL_GIT_COMMIT_SHA!==env.BENCH61_REVIEWED_SHA)return false;
-  const issued=Date.parse(env.BENCH61_ISSUED_AT ?? ""),expires=Date.parse(env.BENCH61_EXPIRES_AT ?? "");
-  const hash=env.BENCH61_TOKEN_HASH ?? "";
-  if(!/^[a-f0-9]{64}$/.test(hash) || !Number.isFinite(issued) || !Number.isFinite(expires)
-    || now<issued || now>=expires || expires<=issued || expires-issued>86400000)return false;
-  try {functionalIdentity(env,action==="setup" || action==="qualify");}catch{return false;}
-  return timingSafeEqual(createHash("sha256").update(token).digest(),Buffer.from(hash,"hex"));
+const identityReasons: Record<string,string> = {"Operator target mismatch":"operator_target_mismatch",
+  "Unsupported operator connection options":"operator_options_unsupported",
+  "Dedicated worker target mismatch":"worker_target_mismatch","Worker connection options differ":"worker_options_differ"};
+// Every failed condition as a fixed code, never a value, so one refused request
+// diagnoses delivery (missing vs mismatched) without a public diagnostic response.
+export const admissionRefusals = (token: unknown,action: unknown,env: Record<string,string|undefined> = process.env,now=Date.now()) => {
+  const reasons: string[] = [];
+  if(env.VERCEL_ENV!=="preview")reasons.push("not_preview");
+  if(env.VERCEL_REGION!=="iad1")reasons.push("region_not_iad1");
+  if(typeof action!=="string" || !actions.includes(action))reasons.push("action_not_admitted");
+  if(typeof token!=="string" || token.length!==64)reasons.push("token_malformed");
+  const reviewed=env.BENCH61_REVIEWED_SHA,commit=env.VERCEL_GIT_COMMIT_SHA;
+  if(!reviewed)reasons.push("reviewed_sha_missing");
+  else if(!/^[a-f0-9]{40}$/.test(reviewed))reasons.push("reviewed_sha_invalid");
+  if(!commit)reasons.push("commit_sha_missing");
+  else if(reviewed && commit!==reviewed)reasons.push("commit_sha_mismatch");
+  if(!env.BENCH61_ISSUED_AT || !env.BENCH61_EXPIRES_AT)reasons.push("token_window_missing");
+  else {
+    const issued=Date.parse(env.BENCH61_ISSUED_AT),expires=Date.parse(env.BENCH61_EXPIRES_AT);
+    if(!Number.isFinite(issued) || !Number.isFinite(expires) || expires<=issued || expires-issued>86400000)reasons.push("token_window_invalid");
+    else if(now<issued)reasons.push("token_not_yet_valid");
+    else if(now>=expires)reasons.push("token_expired");
+  }
+  const hash=env.BENCH61_TOKEN_HASH;
+  if(!hash)reasons.push("token_hash_missing");
+  else if(!/^[a-f0-9]{64}$/.test(hash))reasons.push("token_hash_invalid");
+  const workerRequired=action==="setup" || action==="qualify";
+  if(!env.DATABASE_URL)reasons.push("operator_url_missing");
+  else if(workerRequired && !env.BENCH61_DATABASE_URL)reasons.push("worker_url_missing");
+  else try {functionalIdentity(env,workerRequired);}
+  catch(error){reasons.push(identityReasons[(error as Error).message] ?? "connection_url_invalid");}
+  // Compared only when every other condition passes, as before.
+  if(reasons.length===0 && !timingSafeEqual(createHash("sha256").update(token as string).digest(),Buffer.from(hash!,"hex")))
+    reasons.push("token_mismatch");
+  return reasons;
 };
+export const authorizeFunctional = (token: unknown,action: unknown,env: Record<string,string|undefined> = process.env,now=Date.now()) =>
+  admissionRefusals(token,action,env,now).length===0;
 
 export const executeFunctional = async (action: FunctionalAction) => {
   ensure(actions.includes(action),"Unknown functional action");

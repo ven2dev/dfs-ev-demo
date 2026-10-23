@@ -2,8 +2,8 @@
 
 Status: local Git-source deployment correction after 9f3091c (2e1c12f), its
 review hardening (bc062f6), readiness split (b54a8a4), and the owner-approved
-build-env correction (7c49de8) with its runbook review fixes, awaiting commit
-approval and independent review. The prior approved Preview attempt returned an
+build-env correction (7c49de8) with its runbook review fixes (e77532b), and the
+admission refusal log, awaiting commit approval and independent review. The prior approved Preview attempt returned an
 admission 404 before SQL; it did not qualify managed HTTP behavior. Both temporary
 deployments were removed, schema/role absence was confirmed, and the generated
 credential file was deleted. The exact rejected admission condition is unproven.
@@ -62,6 +62,10 @@ Only setup, qualify, catalog and cleanup are admitted. Run, idle samples and
 arbitrary actions return 404 before client construction with fully valid
 functional credentials. The route imports the new functional module, not the
 historical profiler. Proxy still blocks every ordinary application API.
+Every refusal writes one server log line,
+{"event":"bench61_admission_refused","reasons":[...]}, listing every failed
+condition as a fixed code (see "Admission refusal log" below). The response is
+unchanged: an empty 404.
 
 Authorization requires Preview, iad1, a constant-time checked random-token hash,
 an issued/expires window of at most 24 hours, and platform VERCEL_GIT_COMMIT_SHA
@@ -224,7 +228,8 @@ region, protection settings or admission. Build-time experiment values require
 the separate owner approval recorded below. Inspect protection and region before use. Enter the benchmark token with paste/type
 input so the controlled React field receives input events. Require catalog success
 before setup. If admission still fails, stop without SQL, clean up and investigate;
-do not fabricate a system SHA or weaken admission. No public diagnostic route added.
+do not fabricate a system SHA or weaken admission. No public diagnostic route added;
+read the refusal codes from the Preview's runtime logs.
 
 Sources: [Vercel create-deployment API](https://vercel.com/docs/rest-api/deployments/create-a-new-deployment),
 [get-deployment API](https://vercel.com/docs/rest-api/deployments/get-a-deployment-by-id-or-url),
@@ -345,9 +350,8 @@ process.env, nothing is inlined at build, and Vercel does not document build.env
 as runtime configuration. The Terraform provider's mirror comment ("as project
 environment variables are") reads as env for runtime and build.env for build,
 which leaves the earlier env-only result unexplained. If runtime delivery still
-fails, admission returns the same undifferentiated 404. Whether to add a
-non-secret log of the failing admission condition before the next deployment is
-an open owner decision outside this helper's scope.
+fails, admission returns the same undifferentiated 404. The owner approved a
+non-secret refusal log for this (see "Admission refusal log" below).
 
 Pattern: deployment-scoped configuration shared between build and runtime,
 following Vercel's maintained Terraform deployment client. Owner approved copying
@@ -390,3 +394,43 @@ targets are unchanged. Actual runtime delivery still requires a separately
 approved Preview and successful catalog before setup. Local commit, independent
 review, push and deployment retain their separate gates. No generated credential,
 hosted mutation, role creation, qualification or performance run occurred here.
+
+## Admission refusal log after e77532b
+
+Pattern: structured server-side audit logging of authorization denials with
+fixed reason codes, as used for access-denied events. The public response stays
+an undifferentiated 404, so a caller learns nothing new. Alternatives rejected:
+a public diagnostic response or route (discloses which control failed to any
+caller); logging environment or request values (could disclose the credential,
+token, fingerprint or attacker-supplied text); another undiagnosed deployment
+(would repeat the ambiguous 404 a third time).
+
+admissionRefusals evaluates every admission condition independently and returns
+fixed codes; authorizeFunctional is true only when the list is empty. The
+conditions and their order are unchanged. The token is compared only when every
+other condition passes, as before. The route logs one line per refused request
+and nothing for admitted requests. Codes are fixed strings chosen by the server;
+request fields, environment values, URLs, hashes and SHAs are never logged.
+
+Codes: body_too_large, body_unparseable, not_preview, region_not_iad1,
+action_not_admitted, token_malformed, reviewed_sha_missing, reviewed_sha_invalid,
+commit_sha_missing, commit_sha_mismatch, token_window_missing,
+token_window_invalid, token_not_yet_valid, token_expired, token_hash_missing,
+token_hash_invalid, operator_url_missing, worker_url_missing,
+operator_target_mismatch, operator_options_unsupported, worker_target_mismatch,
+worker_options_differ, connection_url_invalid, token_mismatch.
+
+Reading the result: reviewed_sha_missing with token_window_missing and
+token_hash_missing (plus worker_url_missing for setup) means the five values did
+not reach the function at runtime. commit_sha_missing means Vercel exposed no
+Git SHA. region_not_iad1 means the function ran outside iad1. token_mismatch
+alone means delivery worked and the entered token was wrong. Send the first
+request as catalog, which needs no worker credential, and read the line from the
+Preview's runtime logs before any setup.
+
+Requirement reasons: unauthenticated callers can create log lines, which is
+acceptable for a short-lived protected Preview; codes are bounded, so a line
+cannot carry caller data. Two vitest server tests cover every code, the
+undelivered-values case and a refused POST whose single log line contains none of
+the token, fingerprint, credentials or URLs. Application SQL, timeouts, cleanup
+fencing, the deployment helper, dependencies and CI are unchanged.
