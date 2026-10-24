@@ -3,7 +3,9 @@
 Status: local Git-source deployment correction after 9f3091c (2e1c12f), its
 review hardening (bc062f6), readiness split (b54a8a4), and the owner-approved
 build-env correction (7c49de8) with its runbook review fixes (e77532b), and the
-admission refusal log, awaiting commit approval and independent review. The prior approved Preview attempt returned an
+admission refusal log (b09b7bf). b09b7bf was pushed and its hosted finite
+qualification passed (see "Hosted qualification review after b09b7bf"); this
+runbook correction awaits commit approval. An earlier approved Preview attempt returned an
 admission 404 before SQL; it did not qualify managed HTTP behavior. Both temporary
 deployments were removed, schema/role absence was confirmed, and the generated
 credential file was deleted. The exact rejected admission condition is unproven.
@@ -97,7 +99,12 @@ These counts are not latency claims.
    sequential and three concurrent requests; drain all started work on failure.
 3. Write a transaction-local synthetic nonce, then require the same backend PID
    without the nonce within five reads. Failure to observe reuse is incomplete
-   evidence, not a pass. No worker timeout setting is changed.
+   evidence, not a pass. No worker timeout setting is changed. Scope: each HTTP
+   request is its own transaction, so PostgreSQL clears a transaction-local value
+   at commit whether or not the pool resets the connection. This probe confirms
+   transaction-local scope and backend reuse only. It does not test whether
+   connection-level state (`set_config(..., false)` or plain `SET`) carries over
+   between pooled requests. The harness relies only on transaction-local state.
 4. Require server 57014 with statement-timeout reason on a finite six-second
    sleep. Debit and sleep in one statement, require the same cancellation, and
    verify rollback. Probe elapsed times corroborate server errors; no CI speed
@@ -226,8 +233,9 @@ ready:true means build readiness and finalized deployment configuration only. It
 does not prove runtime delivery of the values to functions, the iad1 function
 region, protection settings or admission. Build-time experiment values require
 the separate owner approval recorded below. Inspect protection and region before use. Enter the benchmark token with paste/type
-input so the controlled React field receives input events. Require catalog success
-before setup. If admission still fails, stop without SQL, clean up and investigate;
+input so the controlled React field receives input events. Run setup, then
+catalog, qualify and cleanup: catalog calls the guard function that setup creates,
+so it cannot run first. Setup is itself admission-gated. If admission still fails, stop without SQL, clean up and investigate;
 do not fabricate a system SHA or weaken admission. No public diagnostic route added;
 read the refusal codes from the Preview's runtime logs.
 
@@ -391,7 +399,7 @@ operator/raw-token/system/public-variable additions and exclusion of raw tokens
 and operator credentials from the serialized request. Targets stay 5 s/2 s server
 cancellation and 220 trips/440 statements per action; future 50 ms/35 ms performance
 targets are unchanged. Actual runtime delivery still requires a separately
-approved Preview and successful catalog before setup. Local commit, independent
+approved Preview and successful setup followed by catalog. Local commit, independent
 review, push and deployment retain their separate gates. No generated credential,
 hosted mutation, role creation, qualification or performance run occurred here.
 
@@ -424,9 +432,9 @@ Reading the result: reviewed_sha_missing with token_window_missing and
 token_hash_missing (plus worker_url_missing for setup) means the five values did
 not reach the function at runtime. commit_sha_missing means Vercel exposed no
 Git SHA. region_not_iad1 means the function ran outside iad1. token_mismatch
-alone means delivery worked and the entered token was wrong. Send the first
-request as catalog, which needs no worker credential, and read the line from the
-Preview's runtime logs before any setup.
+alone means delivery worked and the entered token was wrong. Read the line from
+the Preview's runtime logs after any 404. Setup is the first action (see
+"Hosted qualification review after b09b7bf"); a refused setup changes nothing.
 
 Requirement reasons: unauthenticated callers can create log lines, which is
 acceptable for a short-lived protected Preview; codes are bounded, so a line
@@ -434,3 +442,45 @@ cannot carry caller data. Two vitest server tests cover every code, the
 undelivered-values case and a refused POST whose single log line contains none of
 the token, fingerprint, credentials or URLs. Application SQL, timeouts, cleanup
 fencing, the deployment helper, dependencies and CI are unchanged.
+
+## Hosted qualification review after b09b7bf
+
+b09b7bf was pushed and qualified on a disposable protected Git-source Preview
+(`dpl_8xTy1wrYE8DiRJdHKFyZgBgByknC`, iad1, neondb). Setup, catalog, qualify and
+cleanup returned 200. Qualify used 45 round trips and 85 statements, under the
+220/440 caps. The evidence remains outside git pending review:
+`b09b7bf-hosted-report.md`, `b09b7bf-functional-results.json`,
+`b09b7bf-cleanup-receipt.json` and `b09b7bf-residual-sessions.json`. An
+independent read-only review checked each pass flag against the code at b09b7bf.
+This is a functional pass, not performance acceptance.
+
+Sequence correction. The earlier runbook text said to require catalog success
+before setup, and the admission-log section said to send catalog first. Both were
+wrong: catalog claims its lease through the guard function, which only setup
+creates. The first hosted catalog therefore returned 503. That request was a
+single transaction that failed before writing anything. Because refused requests
+return 404, the 503 also showed admission had passed at runtime. It is recorded
+as a failed request, not as a successful pre-setup check. The working order is
+setup, catalog, qualify, cleanup.
+
+Isolation claim scope. The hosted report says backend isolation held. The probe
+supports a narrower statement: transaction-local state did not appear on a later
+request to the same backend (PID 1192). PostgreSQL guarantees that at commit, so
+it does not show that the pool resets connection-level state. Every value the
+harness sets is transaction-local, so the harness result stands. A permanent #61
+design that relies on connection-level state needs its own probe that sets such
+a value and requires a later pooled request not to see it.
+
+Evidence timing gap. None of the three JSON files records when its observations
+were made. The residual-sessions follow-up does not record how long the wait was,
+so "normal expiry not yet observed" cannot be compared with the pool's idle
+timeout. The cleanup receipt does not record when deletion and the URL 404s were
+checked. The functional results do not name the deployment id; only the report
+links them to `dpl_8xTy1wrYE8DiRJdHKFyZgBgByknC`. Future receipts record an
+observation time for every check, the wait duration for follow-ups and the
+deployment id. Evidence JSON is committed under docs/evidence once reviewed, per
+the measurement rules.
+
+Residual sessions. Two idle sessions for the removed role (OID 40960) remained at
+both observations, with none active or unknown and none terminated. Do not claim
+zero residual sessions until a timestamped observation shows them gone.
