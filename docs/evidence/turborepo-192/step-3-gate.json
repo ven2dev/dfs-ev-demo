@@ -1,0 +1,257 @@
+{
+  "issue": 192,
+  "step": 3,
+  "verdict": "pass-local-execution-accounting; hosted pending",
+  "sourceBase": "bad427ca6be935f0f7257ac7f7f6d5fe2af0ad95",
+  "branch": "feature/dfsEV-192-turborepo-affected",
+  "uncommittedCheckpoint": true,
+  "versions": {
+    "node": "v24.18.1",
+    "turbo": "2.11.10",
+    "actionlint": "1.7.12"
+  },
+  "sourceFileSha256": {
+    ".github/workflows/ci.yml": "50c76d498071dbae82cbacd0553f7fd670cbf88d63a3bb913ffaad466446367b",
+    "scripts/turbo/run-affected.mjs": "1280c2ec2173a95688d70aafa030ee3d786702ca03fdfdcb649993a31e0c84a7",
+    "tests/ciGate.check.mjs": "ba1fbd835435c8cb7b275f57de9245149bdeb28b5c9e549ecbda1de2922ca7b6",
+    "tests/turbo-selection.check.mjs": "680537aea54eb2c2d0299c33f2544baf3b0a66f787fc560f984c1d1b39b9adbd",
+    "docs/turborepo-task-selection.md": "4b469c000f44f63652972d1002d11ecc4a650a48bf1379fbb2046db33fcede4f"
+  },
+  "proofBoundary": {
+    "gate": "Executes actual inline workflow Bash with explicit job/step inputs; does not simulate GitHub orchestration.",
+    "matrix": "Disposable Git repository using the actual workspace manifests, lockfile, Turbo configuration and runner; task bodies replaced with execution markers. Real workspace tests are verified separately.",
+    "cache": "All configured tasks uncached; remote caching disabled; no database or mutation is performed by these marker probes.",
+    "application": "Actual workflow Test command with real workspace suites; full selection because this branch changes shared/root inputs.",
+    "database": "DB command bodies unchanged since Step 2; not rerun for this metadata-only step. Full combined run remains Step 4."
+  },
+  "targetVerdicts": {
+    "uiOnlyZeroDbTasks": "pass; ui task set contains web test only",
+    "declaredConsumerCoverage": "pass; domain and pipeline task sets include required consumers and integrations",
+    "unknownAndGlobalInputs": "pass; full task set for unknown, mixed, runbook, SQL, config, toolchain, workflow and lock changes",
+    "explicitHistory": "pass; missing, implicit, unavailable, mismatched and shallow history refused",
+    "requiredCiJobIdentity": "pass; CI, needs app/db, always(), empty permissions and no checkout retained",
+    "jobStatusProtection": "pass; all 16 status pairs, only success/success with valid accounting accepted",
+    "selectedAndUnselectedOutcomes": "pass; all 256 DB selection/suite/lifecycle combinations, exactly 4 accepted",
+    "missingMetadataAndHiddenFailures": "pass; missing/unknown values and raw failures refused even with successful jobs",
+    "cleanup": "pass; raw success mandatory even for empty DB selection",
+    "fullCheckpoints": "pass; full modes and both DB suites required, empty full work refused",
+    "completionPublication": "pass; selected success and explicit empty emit distinct outputs; plans and failures emit no completion",
+    "node24Local": "pass; 25 selection probes, 20 CI/layout checks, 11 boundary tests",
+    "hostedNode24AndOrchestration": "pending separately approved push; no hosted claim"
+  },
+  "gateChecks": {
+    "jobStatusPairs": 16,
+    "dbSelectionOutcomeCombinations": 256,
+    "validDbSelectionOutcomeCombinations": 4,
+    "missingOrUnknownExecutionFields": 30,
+    "rawNonSuccessFieldProbes": 27,
+    "explicitEmptyAppAndDbCombinations": 8,
+    "rawOutcomeSources": "steps.<id>.outcome; job-output wiring checked against workflow",
+    "fullCommandSequenceProbe": "Actual full app Bash with only npm test stubbed: exit 0 emits full/executed; exit 23 propagates and emits nothing."
+  },
+  "matrix": {
+    "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+    "taskSets": {
+      "ui": [
+        "@dfs-ev/web#test"
+      ],
+      "domain": [
+        "@dfs-ev/domain#test",
+        "@dfs-ev/pipeline#test",
+        "@dfs-ev/pipeline#test:db:local",
+        "@dfs-ev/pipeline#test:feature-store:db",
+        "@dfs-ev/web#test"
+      ],
+      "full": [
+        "@dfs-ev/db#test",
+        "@dfs-ev/db-tooling#test",
+        "@dfs-ev/db-tooling#test:db:local",
+        "@dfs-ev/domain#test",
+        "@dfs-ev/pipeline#test",
+        "@dfs-ev/pipeline#test:db:local",
+        "@dfs-ev/pipeline#test:feature-store:db",
+        "@dfs-ev/web#test"
+      ],
+      "pipeline": [
+        "@dfs-ev/pipeline#test",
+        "@dfs-ev/pipeline#test:db:local",
+        "@dfs-ev/pipeline#test:feature-store:db"
+      ]
+    },
+    "probes": [
+      {
+        "name": "ui",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "f13196b550c798a7dd62b87a2ccd48ac9dfefa9c",
+        "mode": "affected",
+        "outputHash": "c3f61f410ce42435bd330ffdc55151171ef64a62bd4616e45321c58c9c6e952a",
+        "verdict": "pass",
+        "taskSet": "ui"
+      },
+      {
+        "name": "domain",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "5c62b01a9a487745cd2350580e4cb2331bc1fbb4",
+        "mode": "affected",
+        "outputHash": "d68bba1f2e74d750110cf382a87b0450866aa9685cbbe83071067622cbd55f35",
+        "verdict": "pass",
+        "taskSet": "domain"
+      },
+      {
+        "name": "db-proposal",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "77648d1d794958d34b7c2f112cca6a082c11a777",
+        "mode": "full",
+        "outputHash": "0d4f8a77ffca204e68db87831e422f2010d307741b1b4bc808fd5545f2234aff",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "pipeline",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "22ea189bcd9fd8a976bc281f1d4ee143365fc0b7",
+        "mode": "affected",
+        "outputHash": "4e330c7700bd01ab14f8952acce20f7f2703101ebb4069674538a4c72488e9df",
+        "verdict": "pass",
+        "taskSet": "pipeline"
+      },
+      {
+        "name": "runbook",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "52fdb80ab654ac44eeb50a13e49e915082471330",
+        "mode": "full",
+        "outputHash": "4fa17dff594bd8b5bc13b25274789ecd6710b063fb5a999581ce2aaf93946918",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "root-config",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "08f81a35457989a3314f4afb438903d97476a962",
+        "mode": "full",
+        "outputHash": "1879c428569c847f1da7677ed099308248551b4188195a9a5c53607e06ff4157",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "toolchain",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "e010c96662a5bb97ca52aa117ab6a689dc9220a6",
+        "mode": "full",
+        "outputHash": "8cb0c8dbd902e02241ef2df6b64255f540b19ff83cdf3107c4578078ecee11c8",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "workflow",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "62ff3e211b1ecbe36c8c1cd333a6fbb5e555e739",
+        "mode": "full",
+        "outputHash": "7ecb80d95e6e02c1b5547c513859d66ebe046418fdbd1e2aaff40478a5afec9f",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "unknown",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "850314456488b3f1f034f144adcd46c3be5bcebd",
+        "mode": "full",
+        "outputHash": "2a4f05e9b6963ffb617de03d03abc42ed72f2d38fd10c922ce0c95b72dc3faa2",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "mixed-unknown-ui",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "39baae2288d304258eb096a4e47b683dcd1f6e66",
+        "mode": "full",
+        "outputHash": "be4db4e8789f58d0bdd51d1ce4e6414eea0703e88a551c64bb7dfa49de5d7ca7",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "lockfile",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "6b1bf3df0841ada8644391bf228b48311cc281a6",
+        "mode": "full",
+        "outputHash": "a3d2756c0fe707addc615135cbbe2a54381af8085ba772a91635a43d63705e90",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "dependency-lockfile",
+        "base": "57572faaa1871da8ab0df57b394f43ad15c7ef1c",
+        "head": "00fe4880a309dcfeb5ce8af94af9e09c30f6f931",
+        "mode": "full",
+        "outputHash": "bcbecdb6b4ba1fc202ae0f584591f57fd26ee5eff545524887abd4d2d2281a0b",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "PR merge checkout",
+        "base": "fe3059387db849f82c86975aa2b24f88451848c9",
+        "head": "1c10bd4d2ec89916f5d75a4e13363fce10b58f5a",
+        "mode": "affected",
+        "outputHash": "a538c4f2ea99ff35627e381354124fb1f2fedcfaa825a3cccef152e184591610",
+        "verdict": "pass",
+        "taskSet": "ui"
+      }
+    ],
+    "guardVerdict": "all pass",
+    "guards": [
+      "ui: actual plan-only runner maps explicit CI booleans without task execution",
+      "UI DB tasks: refused without opt-in; explicit empty succeeds without execution",
+      "main/manual forced-full mode executes all tasks even on UI-only input",
+      "domain: actual plan-only runner maps explicit CI booleans without task execution",
+      "db-proposal: actual plan-only runner maps explicit CI booleans without task execution",
+      "pipeline: actual plan-only runner maps explicit CI booleans without task execution",
+      "missing SHA",
+      "implicit ref",
+      "unavailable commit",
+      "checkout mismatch",
+      "Turbo bypass flag",
+      "invalid full-mode flag",
+      "plan-only without destination",
+      "Genuine empty range emits intentional-empty completion, never executed coverage",
+      "selected task failure emits no completion",
+      "shallow checkout even with empty opt-in"
+    ]
+  },
+  "realApplicationExecution": {
+    "sourceBase": "bad427ca6be935f0f7257ac7f7f6d5fe2af0ad95",
+    "boundary": "Exact current YAML PR Test command body over uncommitted Step 3 files. Real application/workspace tests, no stubs. GitHub orchestration is not simulated.",
+    "eventMode": "PR; initial base through Step 2 head selects full via shared inputs",
+    "exitCode": 0,
+    "elapsedMs": 27481.993,
+    "completion": [
+      "mode=full",
+      "work=executed"
+    ],
+    "logSha256": "120db7100f55215ff751b8cf2323c25ba30cfada8b0cbb598955fbbff3f5ea27",
+    "verdict": "pass",
+    "applicationCases": 1242,
+    "additionalHarnessUnitCases": 39,
+    "turboTasks": 5,
+    "cachedTasks": 0
+  },
+  "otherChecks": {
+    "fullEslintAndBoundaries": "pass; final added gate test also checked separately with ESLint",
+    "actionlint": "pass for CI and CodeQL",
+    "diffCheck": "pass",
+    "originalRootCommands": "44 unchanged",
+    "runtimeAndFrozenAssets": "unchanged from Step 2, including every DB/pipeline/web file and lockfile"
+  },
+  "offRepositoryLogSha256": {
+    "dfs192-step3-turbo.log": "50974a23fa8a5a39c0b64992b8540b2d1412426b7e5dd3c5f6fee2315a95d5eb",
+    "dfs192-step3-gate.log": "e0a45ee220ad3f7d59b974d80a2faae2bc6390770bd39a1231a1093fe9727e42",
+    "dfs192-step3-lint.log": "ed1bb430716422378f2c9523c1ee3817d9ba035dc1480996958f8848b7194b14",
+    "dfs192-step3-app-workflow.log": "120db7100f55215ff751b8cf2323c25ba30cfada8b0cbb598955fbbff3f5ea27"
+  },
+  "remainingGates": [
+    "Owner Step 3 commit approval",
+    "Step 4 combined full application/build and both standard-fixture DB suites",
+    "Independent review; fresh push/PR consent",
+    "Actual hosted Node 24 matrix and complete checks before owner merge decision"
+  ],
+  "remoteActions": "No push, PR, merge, workflow dispatch, hosted database write or Production action."
+}

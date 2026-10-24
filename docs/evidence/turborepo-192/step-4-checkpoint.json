@@ -1,0 +1,378 @@
+{
+  "issue": 192,
+  "step": 4,
+  "verdict": "pass-local-combined-checkpoint; hosted pending",
+  "base": "bd52ec77b56a588443b9a9e1c3095c4bc6353834",
+  "head": "d874c50cbbd5ff1a7ee51860d3b1a9c180cc2777",
+  "branch": "feature/dfsEV-192-turborepo-affected",
+  "boundary": "Committed Step 3 implementation. Local Node 24 executes exact workflow shell bodies after clean root npm ci; no hosted orchestration claim. Step 4 adds only docs/receipt.",
+  "versions": {
+    "node": "v24.18.1",
+    "npm": "11.16.0",
+    "turbo": "2.11.10",
+    "actionlint": "1.7.12"
+  },
+  "cachePolicy": "Every Turbo task cache:false; remote caching disabled; no DB/mutation cache. OS/DB caches not flushed; timings informational, no wall-clock gate for this issue.",
+  "targetVerdicts": {
+    "uiOnlyZeroDbTasks": "pass locally; fresh ui task set is web test only",
+    "dependencyConsumerCoverage": "pass locally; domain and pipeline expand through declared Turbo graph",
+    "sharedGlobalUnknownInputs": "pass locally; full selections or explicit refusals",
+    "historyAndCheckoutGuards": "pass locally; explicit SHAs, full history, shallow/missing/implicit/unavailable/mismatched inputs refused",
+    "selectedExecutionAndIntentionalEmpty": "pass locally; executable markers and completion outputs match; full root suites also pass",
+    "requiredAggregateGate": "pass locally; actual gate script accepts collected completion metadata; negative state matrix passes",
+    "serialStandardDatabaseSuites": "pass; ordinary before feature-store, 512 MiB, credential guards and final cleanup",
+    "rootCliAndFrozenArtifacts": "pass; original commands, arguments and artifacts preserved",
+    "appBuildAndDatabaseCoverage": "pass locally; counts below, none skipped or cancelled",
+    "hostedNode24MatrixAndChecks": "pending separately approved push; not claimed"
+  },
+  "counts": {
+    "browser": 951,
+    "node": 291,
+    "selectionChecks": 25,
+    "ciAndLayoutChecks": 20,
+    "importBoundaryChecks": 11,
+    "databaseGuard": 20,
+    "catalogContracts": 12,
+    "requiredNodeDatabaseCases": 74,
+    "postgresqlCases": 25,
+    "featureStoreCases": 79
+  },
+  "commandResults": {
+    "app": [
+      {
+        "name": "Check types",
+        "exitCode": 0,
+        "ms": 3342.858
+      },
+      {
+        "name": "Lint",
+        "exitCode": 0,
+        "ms": 9526.405
+      },
+      {
+        "name": "Verify aggregate CI gate",
+        "exitCode": 0,
+        "ms": 1891.197
+      },
+      {
+        "name": "Prove affected task selection on Node 24",
+        "exitCode": 0,
+        "ms": 22358.589
+      },
+      {
+        "name": "Test",
+        "exitCode": 0,
+        "ms": 22860.639
+      },
+      {
+        "name": "Test Firestore security rules",
+        "exitCode": 0,
+        "ms": 5102.121
+      },
+      {
+        "name": "Build",
+        "exitCode": 0,
+        "ms": 6983.501
+      },
+      {
+        "name": "Audit production dependencies",
+        "exitCode": 0,
+        "ms": 902.78
+      }
+    ],
+    "db": [
+      {
+        "name": "Plan affected database suites",
+        "exitCode": 0,
+        "ms": 357.057
+      },
+      {
+        "name": "Require explicit database selection",
+        "exitCode": 0,
+        "ms": 1.632
+      },
+      {
+        "name": "Check database target, bootstrap and report guards",
+        "exitCode": 0,
+        "ms": 843.956
+      },
+      {
+        "name": "Verify startup recovery and failure cleanup",
+        "exitCode": 0,
+        "ms": 9361.826
+      },
+      {
+        "name": "Verify migration artifacts, catalog contracts and PostgreSQL behavior",
+        "exitCode": 0,
+        "ms": 31672.774
+      },
+      {
+        "name": "Verify feature-store PostgreSQL behavior on standard fixture",
+        "exitCode": 0,
+        "ms": 57903.435
+      },
+      {
+        "name": "Inspect standard fixture tmpfs",
+        "exitCode": 0,
+        "ms": 28.935
+      },
+      {
+        "name": "Remove disposable PostgreSQL",
+        "exitCode": 0,
+        "ms": 653.032
+      },
+      {
+        "name": "Confirm disposable fixture removed",
+        "exitCode": 0,
+        "ms": 23.213
+      }
+    ],
+    "aggregate": [
+      {
+        "name": "Require successful jobs and accounted execution",
+        "exitCode": 0,
+        "ms": 1.648
+      }
+    ]
+  },
+  "selectionAndCompletion": {
+    "app": {
+      "test_result": "success",
+      "test_mode": "full",
+      "test_work": "executed",
+      "matrix_result": "success"
+    },
+    "db": {
+      "plan_result": "success",
+      "db_local": "true",
+      "feature_store": "true",
+      "mode": "full",
+      "selection_guard_result": "success",
+      "guard_result": "success",
+      "lifecycle_result": "success",
+      "db_local_result": "success",
+      "feature_store_result": "success",
+      "cleanup_result": "success"
+    },
+    "dbTaskIds": [
+      "@dfs-ev/db-tooling#test:db:local",
+      "@dfs-ev/pipeline#test:db:local",
+      "@dfs-ev/pipeline#test:feature-store:db"
+    ],
+    "dbTaskCache": {
+      "@dfs-ev/db-tooling#test:db:local": false,
+      "@dfs-ev/pipeline#test:db:local": false,
+      "@dfs-ev/pipeline#test:feature-store:db": false
+    }
+  },
+  "fixture": {
+    "tmpfs": {
+      "/var/lib/postgresql": "rw,size=512m"
+    },
+    "remainingProjectContainers": [],
+    "cleanup": "pass"
+  },
+  "preservation": {
+    "base": "bd52ec77b56a588443b9a9e1c3095c4bc6353834",
+    "head": "d874c50cbbd5ff1a7ee51860d3b1a9c180cc2777",
+    "verdict": "pass",
+    "unchangedRootCommands": 44,
+    "changedRuntimeOrLibraryFiles": [],
+    "unchangedDatabaseFilesExcludingManifests": 82,
+    "databaseFilesLogicalHash": "2c8d65ff932fb0cff7dedbf47c0fb424433016268c57e56405c5c2f6d3102835",
+    "sqlFilesUnchanged": 21,
+    "unchangedExternalLockEntries": 1229,
+    "addedExternalPackages": [
+      "node_modules/@turbo/darwin-64",
+      "node_modules/@turbo/darwin-arm64",
+      "node_modules/@turbo/linux-64",
+      "node_modules/@turbo/linux-arm64",
+      "node_modules/@turbo/windows-64",
+      "node_modules/@turbo/windows-arm64",
+      "node_modules/turbo"
+    ],
+    "CodeQLFixtureDbRunnerInventoriesAndVitestConfigs": "unchanged",
+    "rootCliArguments": "covered by actual CI layout checks; root commands unchanged",
+    "noAttributionTrailers": true
+  },
+  "freshMatrix": {
+    "base": "53e97654e5a118761d4311d25af1317073febe03",
+    "taskSets": {
+      "ui": [
+        "@dfs-ev/web#test"
+      ],
+      "domain": [
+        "@dfs-ev/domain#test",
+        "@dfs-ev/pipeline#test",
+        "@dfs-ev/pipeline#test:db:local",
+        "@dfs-ev/pipeline#test:feature-store:db",
+        "@dfs-ev/web#test"
+      ],
+      "full": [
+        "@dfs-ev/db#test",
+        "@dfs-ev/db-tooling#test",
+        "@dfs-ev/db-tooling#test:db:local",
+        "@dfs-ev/domain#test",
+        "@dfs-ev/pipeline#test",
+        "@dfs-ev/pipeline#test:db:local",
+        "@dfs-ev/pipeline#test:feature-store:db",
+        "@dfs-ev/web#test"
+      ],
+      "pipeline": [
+        "@dfs-ev/pipeline#test",
+        "@dfs-ev/pipeline#test:db:local",
+        "@dfs-ev/pipeline#test:feature-store:db"
+      ]
+    },
+    "probes": [
+      {
+        "name": "ui",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "36da12b202620148a79da6ef8e44d6d28cf47faa",
+        "mode": "affected",
+        "verdict": "pass",
+        "taskSet": "ui"
+      },
+      {
+        "name": "domain",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "e1f66fdc0d21de376644e3ff2c7eeec22f628992",
+        "mode": "affected",
+        "verdict": "pass",
+        "taskSet": "domain"
+      },
+      {
+        "name": "db-proposal",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "306741ae65e29b67140936dfb8578170fd61cd82",
+        "mode": "full",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "pipeline",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "779a5500ffb48e5e2576eac2336aefb0365a2cee",
+        "mode": "affected",
+        "verdict": "pass",
+        "taskSet": "pipeline"
+      },
+      {
+        "name": "runbook",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "73ea6ec0d61b64f2ea98d4577ec60d85fab72bfe",
+        "mode": "full",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "root-config",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "cd94ba50e639f4b413bb60a42ea61711f784c300",
+        "mode": "full",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "toolchain",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "f3f3f00f213dee02f65ae2aa1fe4a4a676cbf96d",
+        "mode": "full",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "workflow",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "475b57db96ad2e299b13a1b5bfa70a181d02c306",
+        "mode": "full",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "unknown",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "18d1bb1429b1026027f756e60e30c88bae395c76",
+        "mode": "full",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "mixed-unknown-ui",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "ba62ad5b5289c3b4c9f85fb0acab55382e86ea11",
+        "mode": "full",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "lockfile",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "6d2b871115566be46349aaa6352cac0571f62ffd",
+        "mode": "full",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "dependency-lockfile",
+        "base": "53e97654e5a118761d4311d25af1317073febe03",
+        "head": "c5afeffeaf1a0ba8e229e6b145ed4f65d9995484",
+        "mode": "full",
+        "verdict": "pass",
+        "taskSet": "full"
+      },
+      {
+        "name": "PR merge checkout",
+        "base": "772a63ab92bdf96e7b2df2545c0747357f79cdc4",
+        "head": "6e69bf1e41d3047218e21992cea1e02a4f86a15e",
+        "mode": "affected",
+        "verdict": "pass",
+        "taskSet": "ui"
+      }
+    ],
+    "guards": 16,
+    "receiptSha256": "89d0618c0621672a0967990a2493887294792e16ef8b38a668d1d2c73dd35a1f"
+  },
+  "sourceFileSha256": {
+    ".github/workflows/ci.yml": "50c76d498071dbae82cbacd0553f7fd670cbf88d63a3bb913ffaad466446367b",
+    ".gitignore": "8052d073d8acb57210d0b387b2711e7e7a2e136db3284f07b2189622becb067f",
+    "apps/web/package.json": "8ee37e028049d383db2e328f6f4edd05303bab3f9cd9f1a0011bada131067c7e",
+    "docs/turborepo-task-selection.md": "2416334e377e07a33d5a3da4f6f2b3469d98a1e2710982ad56b1feb821752562",
+    "package-lock.json": "c39c13b1086575dd4244e17ca7e7452a41966f848a97c299a6fef8bfac19ca67",
+    "package.json": "c9e642790c193b1afe2e96d04404f089237f8708913da1b04e4f5902a691dabb",
+    "packages/db/package.json": "18c7ce2e19317804e80d2ba672750cc5498b0e4d596e90cd57513020df1d8573",
+    "packages/db/tooling/package.json": "b46dfa19d575c289d0a4b3d73cefbe7c1fdc54bffbeb45c0a35ffea9c81ad23f",
+    "packages/domain/package.json": "34e81b6f0dcc082e7b3a47f0e5a53b2b667e8da166e3f98b4f1c97f358c72144",
+    "scripts/turbo/ci-db-selection.mjs": "9ebb4c157f314b8c20a0dc63ea752475c816e0b0f38d92f96e2ebd5fa6479773",
+    "scripts/turbo/run-affected.mjs": "1280c2ec2173a95688d70aafa030ee3d786702ca03fdfdcb649993a31e0c84a7",
+    "services/pipeline/package.json": "9350a3dfebc2ca0c5b1d8a4cf5c1000f32d6731b77cc5719a43e1b55b3c74bca",
+    "tests/ciGate.check.mjs": "ba1fbd835435c8cb7b275f57de9245149bdeb28b5c9e549ecbda1de2922ca7b6",
+    "tests/turbo-ci-selection.check.mjs": "7577088164d8e17ce39ae805b283c905fd8f236c0ca5fef9d7bb950ffa813de9",
+    "tests/turbo-layout.check.mjs": "574e7d7cf31e7df1d8030af5dbcd1fc7b4988dd92a9e859f9da5c4d956ae6751",
+    "tests/turbo-selection.check.mjs": "680537aea54eb2c2d0299c33f2544baf3b0a66f787fc560f984c1d1b39b9adbd",
+    "turbo.json": "3f656f191071ba6b989d531727be2234a06fcc7e3c61ee0407dea31e5d194ea0"
+  },
+  "offRepositoryLogSha256": {
+    "dfs192-step4-install.log": "b320491997d266c1332b8e8f18a45d3f623970f554c492318bf5b96d281449e4",
+    "dfs192-step4-app.log": "cc1105a5942bd4dd82a08ac811a747309573d4878248aa2a6d4d4f7172533f22",
+    "dfs192-step4-db.log": "339d391c67964323f80a7491e9934b8aa4c96f501636339813145dd16a923eb7",
+    "dfs192-step4-gate.log": "ae0bb60be3515bfa229586fefc1eff6c29c9fe6d1f1546fc4f747a97f9e496ec"
+  },
+  "findings": {
+    "codeDefects": 0,
+    "scopeExpansion": false,
+    "cleanInstallNotes": "npm ci reports existing dev dependency advisories (4 moderate, 2 high) and install-script warnings; configured production audit finds zero vulnerabilities. No dependencies beyond approved Turbo addition changed."
+  },
+  "limits": [
+    "Local execution does not simulate GitHub action scheduling, output propagation or hosted performance.",
+    "Hosted Node 24 matrix, full checks and CodeQL remain required after fresh push approval.",
+    "No deployed Preview/Production, hosted DB, GCS or remote cache was used.",
+    "Complete cumulative active-engineering time is not available from the inherited session; no precise overall LOE claim is made. The five-hour cap remains the owner limit; no new implementation scope was added in Step 4."
+  ],
+  "remaining": [
+    "Owner Step 4 commit approval",
+    "Independent review",
+    "Fresh push and PR approval",
+    "Hosted checks before owner merge decision"
+  ]
+}

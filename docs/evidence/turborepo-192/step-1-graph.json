@@ -1,0 +1,435 @@
+{
+  "issue": 192,
+  "step": 1,
+  "verdict": "pass-local-step-1",
+  "sourceBase": "bd52ec77b56a588443b9a9e1c3095c4bc6353834",
+  "branch": "feature/dfsEV-192-turborepo-affected",
+  "uncommittedCheckpoint": true,
+  "versions": {
+    "node": "v24.18.1",
+    "npm": "11.16.0",
+    "turbo": "2.11.10"
+  },
+  "sourceFileSha256": {
+    ".gitignore": "8052d073d8acb57210d0b387b2711e7e7a2e136db3284f07b2189622becb067f",
+    "package.json": "44ec568e9113dff307167d80075e869a7573d76c65496bf85969ad05e85aada5",
+    "package-lock.json": "c39c13b1086575dd4244e17ca7e7452a41966f848a97c299a6fef8bfac19ca67",
+    "turbo.json": "3f656f191071ba6b989d531727be2234a06fcc7e3c61ee0407dea31e5d194ea0",
+    "apps/web/package.json": "8ee37e028049d383db2e328f6f4edd05303bab3f9cd9f1a0011bada131067c7e",
+    "packages/domain/package.json": "34e81b6f0dcc082e7b3a47f0e5a53b2b667e8da166e3f98b4f1c97f358c72144",
+    "packages/db/package.json": "18c7ce2e19317804e80d2ba672750cc5498b0e4d596e90cd57513020df1d8573",
+    "packages/db/tooling/package.json": "b46dfa19d575c289d0a4b3d73cefbe7c1fdc54bffbeb45c0a35ffea9c81ad23f",
+    "services/pipeline/package.json": "157472e4744f44257806ce0e525aed32c0f3a8f3fe99097a7a1fc096962da9c0",
+    "scripts/turbo/run-affected.mjs": "be6d3c77c7dae72003f952b51cc93d38c1cc111664a55ca32fc71d1e2db1a3f4",
+    "tests/turbo-layout.check.mjs": "6bff15dd2b511440384e199add91f452b5ee05fb6f10258378e3f8fe49545f54",
+    "tests/turbo-selection.check.mjs": "a1ff563f07d1b4c7ba0039245d5fb3310db70e1d599bac4b379b36d4e812a2f1"
+  },
+  "selectionProof": {
+    "node": "v24.18.1",
+    "turbo": "2.11.10",
+    "boundary": "Disposable Git repository using the actual workspace manifests, lockfile, Turbo configuration and runner; task bodies replaced with execution markers. Real workspace tests are verified separately.",
+    "cache": "All configured tasks uncached; remote caching disabled; no database or mutation is performed by these marker probes.",
+    "probes": [
+      {
+        "name": "ui",
+        "path": "apps/web/src/probe.ts",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "d22a38450d12ae64b592d6af50ebdc9ab15c8187",
+        "mode": "affected",
+        "selected": [
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "dcaa4688706afd86e34717f9d79395cd631f0e4e82543dde9c4e5b07e019074d",
+        "verdict": "pass"
+      },
+      {
+        "name": "domain",
+        "path": "packages/domain/src/probe.ts",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "ec96a8b78928cc4be63901a7073070790f989516",
+        "mode": "affected",
+        "selected": [
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "6b688002fe5ee065db46b9662b2603bdd3c652fa7178f5dd3f8742bdd3c719f8",
+        "verdict": "pass"
+      },
+      {
+        "name": "db-proposal",
+        "path": "packages/db/proposals/probe.sql",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "114513d13e310113e431f94ba4dc29fd0b83aad2",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "6f24e08b1b7e7976d439b8fa64d229c2c4e135fb767369b6537e675ae33aad94",
+        "verdict": "pass"
+      },
+      {
+        "name": "pipeline",
+        "path": "services/pipeline/src/probe.ts",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "c136c6ad6ff97ef5bb822fc11159dc8ddbf41cd5",
+        "mode": "affected",
+        "selected": [
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db"
+        ],
+        "executed": [
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db"
+        ],
+        "outputHash": "b89bfaf5aa891a1ea9d0195e97f8e3388a43b0a5adf4447876c88388ee099b7b",
+        "verdict": "pass"
+      },
+      {
+        "name": "runbook",
+        "path": "docs/probe.md",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "4b3a01d385b001ddc5f45d3d51a2655c101898a7",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "d2c5451e22365ca9ce6bb1b0a0937cff17d0f1b8d621580d626bad786c89bdbb",
+        "verdict": "pass"
+      },
+      {
+        "name": "root-config",
+        "path": "tsconfig.json",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "24f50c79de9e96c8ec68900b3f4d5f323db53549",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "4c1bea4a8a84e2f283526df142c6144c276200a05b70b6d9a7f75032b38dd78d",
+        "verdict": "pass"
+      },
+      {
+        "name": "toolchain",
+        "path": ".nvmrc",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "0bd813c66f0ab43ae7da577cecd708a1645fcbeb",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "a3989bfcfa8c2dd7329b0009074175bb526813567e3d8d750a8ecb0f7d3fb009",
+        "verdict": "pass"
+      },
+      {
+        "name": "workflow",
+        "path": ".github/workflows/probe.yml",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "e92600f0cdfb3232db8f7eb07ced4a62591fc295",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "d8338f6e08edf3f9cd9bc7353d82fa7ae967dc6744488b148fb2cebcfe3547e5",
+        "verdict": "pass"
+      },
+      {
+        "name": "unknown",
+        "path": "unclassified/probe.txt",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "6b45b5e887d41f5a2481af96125c777e5ba290c4",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "executed": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "3dfa178a2c0630bad14a24f940aaaae0b87721e8447bccb787031d5cfe4defe8",
+        "verdict": "pass"
+      },
+      {
+        "name": "mixed-unknown-ui",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "d65f0b93eea97d50ac428b107a386919783ebe26",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "9af00b65237f92f9b95888447eaf2432814fa8c279169f4dcee17dc2ce4799e9",
+        "verdict": "pass"
+      },
+      {
+        "name": "lockfile",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "7a0ddcd877dcb44d3ebd3d97dba03fc4ff1bc4c4",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "3d343776c6cc518d570528e8f441d0382fd4a975b94d0cca90bd35be5c93fe69",
+        "verdict": "pass"
+      },
+      {
+        "name": "dependency-lockfile",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "11b59c4f3a17eb55fab914ee787e46e56ab73272",
+        "mode": "full",
+        "selected": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ],
+        "outputHash": "a3677f4c18c90c8a1784bf58cad0e0812124e8482e0cba0355f114d29a16bd18",
+        "verdict": "pass"
+      }
+    ],
+    "guards": [
+      {
+        "name": "UI DB tasks: refused without opt-in; explicit empty succeeds without execution",
+        "verdict": "pass"
+      },
+      {
+        "name": "missing SHA",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "implicit ref",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "unavailable commit",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "checkout mismatch",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "Turbo bypass flag",
+        "exitCode": 2,
+        "verdict": "pass"
+      },
+      {
+        "name": "selected task failure",
+        "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+        "head": "3e5335233e7956d97c35fb1ae1049c5288b5bf0b",
+        "exitCode": 23,
+        "verdict": "pass"
+      },
+      {
+        "name": "shallow checkout even with empty opt-in",
+        "exitCode": 2,
+        "verdict": "pass"
+      }
+    ],
+    "base": "4f8e2d717dd9a284ea1847b1fd27805e0f7e20a9",
+    "verdict": "pass"
+  },
+  "realWorkspaceTests": {
+    "verdict": "pass",
+    "browser": 951,
+    "node": 291,
+    "dbHarnessAndToolingUnit": 39,
+    "failed": 0,
+    "workspaceCounts": {
+      "web": 508,
+      "domain": 108,
+      "pipeline": 626,
+      "dbHarness": 9,
+      "dbTooling": 30
+    }
+  },
+  "completeCaseInventory": {
+    "verdict": "pass",
+    "expected": 1242,
+    "actual": 1242,
+    "counts": {
+      "apps/web": 508,
+      "packages/domain": 108,
+      "services/pipeline": 626
+    },
+    "missing": 0,
+    "duplicateIntroductions": 0,
+    "logicalHash": "d5349a6d0cf85eab508f6183b860a73778d67ee7abd39dad6c6ac4c6e6c3179b"
+  },
+  "preservation": {
+    "baseline": "bd52ec77b56a588443b9a9e1c3095c4bc6353834",
+    "rootCommandsPreserved": 44,
+    "changedExistingCommands": [],
+    "changedExistingExternalDependencies": [],
+    "newExternalPackages": [
+      "node_modules/@turbo/darwin-64",
+      "node_modules/@turbo/darwin-arm64",
+      "node_modules/@turbo/linux-64",
+      "node_modules/@turbo/linux-arm64",
+      "node_modules/@turbo/windows-64",
+      "node_modules/@turbo/windows-arm64",
+      "node_modules/turbo"
+    ]
+  },
+  "unchangedBoundaries": {
+    "ciWorkflowSha256": "6a6cbc83ecc0a2d22e1f3d1dd0eefd86f7fe98940442db51822355079e8d31e5",
+    "ciWorkflowChanged": false,
+    "databaseAssetsChanged": false,
+    "existingRootRunnerChanged": false,
+    "runtimeSourceChanged": false
+  },
+  "otherChecks": {
+    "turboLayoutAndExecutableMatrix": "19/19 pass",
+    "ciAndMonorepoLayout": "14/14 pass (includes all 16 upstream result combinations)",
+    "importBoundaries": "11/11 pass",
+    "fullEslint": "pass",
+    "typecheckAndReadinessManifest": "pass",
+    "diffCheck": "pass"
+  },
+  "correctedFindings": [
+    {
+      "finding": "An empty-only guard could miss unknown root inputs when a UI edit made the plan nonempty.",
+      "resolution": "Turbo root-package marker now requests an unfiltered plan; mixed and unknown probes execute all tasks."
+    },
+    {
+      "finding": "Turbo reports missing package scripts as NONEXISTENT transit nodes in multi-task plans.",
+      "resolution": "Only commands that execute count as coverage; UI-only DB tasks produce an explicit intentional empty selection."
+    },
+    {
+      "finding": "The initial domain workspace test command omitted 30 browser math tests.",
+      "resolution": "Both test environments restored; complete 1242-case inventory matches exactly with no missing or newly duplicated cases."
+    },
+    {
+      "finding": "Initial raw workspace DB scripts would bypass complete runner inventories/lifecycle.",
+      "resolution": "Task aliases now delegate to existing protected root DB commands; DB suites are not replaced."
+    }
+  ],
+  "environmentalRetries": "Sandbox denied local generated-file/cache writes and loopback fixture access. Approved reruns passed; these were not code defects.",
+  "offRepositoryLogSha256": {
+    "workspaceTests": "f0f3f0e85ec8fa5ff625d6acc9eeb40bc73fcf31c290cedd667a467428f20ad5",
+    "matrix": "e330f71915f688e3f1bf84d1e4b3c0ddd364a1163034bd0bedeaef4d0e4739d6",
+    "lint": "699aa598e2486cfc6f5f638b3689ab12cc8a7851a96c7d4937ffda46403d3773",
+    "typecheck": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e"
+  },
+  "limitationsAndRemainingGates": [
+    "Selection matrix uses real manifests/configuration with marker task bodies. It performs no database or mutation work.",
+    "Real unit commands ran separately; full build and both PostgreSQL suites remain final combined-checkpoint work.",
+    "CI workflow is unchanged. Hosted Node 24 matrix reproduction and selection-aware aggregate gate adoption remain pending approved later steps and push.",
+    "Disposable commits are local fixture identities; reruns record fresh explicit SHAs rather than assuming stable implicit refs.",
+    "No real commit, push, PR, merge, hosted DB write or Production action performed."
+  ]
+}
