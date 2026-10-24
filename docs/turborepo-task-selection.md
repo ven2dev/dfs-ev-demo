@@ -10,8 +10,9 @@
   shared inputs, so none of it is ported. Running all integrations for every UI
   edit would forfeit the selection target. Nx is viable but adds machinery beyond
   this repository's chosen Turborepo approach.
-- **Targets:** UI-only changes select zero executable tasks from either DB
-  suite; domain changes select domain, web and pipeline tests; DB and pipeline
+- **Targets:** web changes, including UI-only edits, select the ordinary DB
+  suite but not the feature-store suite (owner-amended after review; see "Review
+  correction after 49e6f08"); domain changes select domain, web and pipeline tests; DB and pipeline
   changes select affected integrations. Docs/runbooks and root/config/toolchain/
   lock/workflow changes select full work or refuse visibly. Main and integration
   checkpoints retain full checks. There is no invented wall-clock threshold.
@@ -38,7 +39,7 @@ to execute their existing implementations and preserve CLI argument forwarding.
 
 | Workspace | Unit-test entry | Integration entry |
 | --- | --- | --- |
-| `@dfs-ev/web` | Existing browser and server tests | Existing root DB runner owns app/DB integration |
+| `@dfs-ev/web` | Existing browser and server tests | `test:db:local` selects the ordinary suite containing the lease/cache orchestrator integration |
 | `@dfs-ev/domain` | Existing browser math tests and Node projection tests | None |
 | `@dfs-ev/db` | Existing root DB harness unit checks | None |
 | `@dfs-ev/db-tooling` | Existing tooling unit checks | `test:db:local` delegates to the complete protected root runner |
@@ -74,8 +75,7 @@ on DB infrastructure also make DB changes conservatively repository-wide.
 
 Turbo dry runs include `<NONEXISTENT>` transit nodes for tasks that have no
 package script. They are not executable coverage. `TURBO_ALLOW_EMPTY=1` permits
-an explicitly intentional empty executable set, such as UI-only DB work or an
-unchanged range; it cannot bypass the root/shared fallback. Malformed plans and
+an explicitly intentional empty executable set, such as an unchanged range; it cannot bypass the root/shared fallback. Malformed plans and
 Turbo errors refuse visibly. The wrapper accepts task names and task arguments
 after `--`; caller-supplied Turbo override flags are refused to protect the plan.
 
@@ -155,8 +155,8 @@ For PRs, both checkouts fetch full history. The selection range is the explicit
 PR target SHA through `github.sha`, the merge commit that GitHub checks out for
 `pull_request`. This tests the integrated tree without confusing it with the
 PR source SHA. A disposable merge probe advances the target with a domain edit,
-merges a UI-only PR, and verifies that only web tests are selected against that
-target base. [GitHub's event documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request)
+merges a UI-only PR, and verifies that only web's unit and DB tasks are selected
+against that target base. [GitHub's event documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request)
 defines this merge-commit checkout contract.
 
 Main pushes and `workflow_dispatch` integration checkpoints set
@@ -196,8 +196,9 @@ selection before conditional work.
 
 The pipeline also declares an uncached `test:db:local` alias, because its creator
 PostgreSQL cases are executed by the protected ordinary runner. Domain and
-pipeline edits therefore select both DB suites. The DB tooling and pipeline task
-IDs can both request that same ordinary suite; the CI plan translator emits one
+pipeline edits therefore select both DB suites. Web declares the same alias for
+its lease/cache orchestrator cases (added after review). The DB tooling, pipeline
+and web task IDs can all request that same ordinary suite; the CI plan translator emits one
 boolean, and the workflow runs it once. This is declared consumer ownership, not
 an infrastructure dependency on pipeline or a custom dependency traversal.
 
@@ -293,7 +294,7 @@ exact commands and owns this sequencing.
 | --- | --- | --- |
 | Approved predecessors, pattern and separate issue scope | Pass; base is #191 merge `bd52ec77`; roadmap/branch approvals are in the owner session | Independent review |
 | Scratch graph proof, explicit history and selected execution | Pass; fresh Node 24 matrix and earlier spike receipts | Same matrix in hosted CI |
-| UI exclusion, consumer coverage and global fallback | Pass; UI selects no DB tasks, dependent work expands through Turbo, unknown/shared inputs run full or refuse | Hosted parity |
+| UI exclusion, consumer coverage and global fallback | Superseded by the review correction: web edits now select the ordinary DB suite; dependent work expands through Turbo, unknown/shared inputs run full or refuse | Hosted parity |
 | Pinned graph, uncached tasks and standard serial DB fixture | Pass; no remote cache; cleanup and all preserved inventories verified | Hosted DB suites |
 | Reliable event SHAs, full checkpoints, required gate and CodeQL | Pass locally; full actual commands and gate shell contract | Actual GitHub scheduling/output propagation and CodeQL |
 | Root commands, application/build and frozen DB checks | Pass | Hosted completion |
@@ -304,3 +305,55 @@ change: app routes, package exports and runtime tracing did not change. Any
 existing deployment check still applies after push. Independent review, fresh
 push/PR consent and hosted Node 24 success remain separate gates. Do not mark
 hosted verification complete or merge based on this local receipt.
+
+## Review correction after 49e6f08
+
+The independent review found a confirmed fail-open defect. The lease/cache
+orchestrator DB test (`tests/db/orchestrator.test.ts`, which imports
+`apps/web/tests/db/orchestrator.ts` and `apps/web/src/lib/livePropCache.ts`)
+runs only in the root ordinary suite, but `@dfs-ev/web` declared no
+`test:db:local` task. An edit to that web code produced an empty DB plan, and the
+required gate passed without running the suite. The Step 4 claim "UI selects no
+DB tasks" was true only because web DB code was never selected.
+
+Correction: `@dfs-ev/web` declares the same uncached `test:db:local` alias as the
+pipeline, and the CI translator accepts `@dfs-ev/web#test:db:local` as a
+local-suite task. Every web change now selects the ordinary DB suite; the
+feature-store suite is unaffected. This fails closed and adds no mechanism.
+
+Trade-off (owner decision, 2026-10-24): UI-only web edits now run the ordinary DB
+suite. The original target "UI-only changes select zero executable tasks from
+either DB suite" is relaxed until the database-backed web server code is
+extracted into its own workspace package, so Turbo's package graph can separate
+it from UI. That extraction is not yet scheduled in the roadmap or tracked by an
+issue.
+
+Alternatives rejected for #192:
+- `futureFlags.affectedUsingTaskInputs`: applies only to `--affected`, not the
+  explicit `--filter=...[BASE...HEAD]` range this runner uses. With `--affected`
+  it also dropped dependent packages and the `//` full-mode signal.
+- `futureFlags.filterUsingTasks` (spiked as dry runs in a scratch clone): separates
+  UI from DB-backed web code, but changes `...` to follow task dependencies
+  repo-wide. Without a synthetic `^test:graph` edge on every test task, a domain
+  edit silently dropped web and pipeline tests and the pipeline DB suites. Exact
+  file inputs fail open on new imports; directory inputs need an import-boundary
+  lint rule. It is a future flag, and each piece is easy to break.
+- Hand-maintained input lists: these would revive a custom selector inside
+  `turbo.json`.
+
+The review also found that the runner's task-name check accepted names starting
+with a dash, so Turbo flags such as `--parallel`, `--continue` and `--force`
+passed as task names. `--parallel` would override `--concurrency=1`. Task names
+must now start with a letter or digit.
+
+Test changes: the matrix adds a `web-db` probe for `livePropCache.ts`, expects
+web's DB alias for UI, domain, merge and full selections, moves the empty-DB
+opt-in guard to a genuinely unchanged range, and refuses `--parallel`,
+`--continue` and `--force` as task names. The translator test covers every subset
+of the four DB task IDs and requires full mode to select all four. Reverting
+either fix makes the matrix fail.
+
+The Step 4 receipt is unchanged and describes `d874c50`; it does not cover this
+correction. The ordinary and feature-store suites, their commands and fixtures
+are unchanged, so their recorded case counts still apply. Hosted Node 24
+verification of this correction remains pending a separately approved push.

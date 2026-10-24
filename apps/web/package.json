@@ -10,7 +10,8 @@
     "build": "next build",
     "start": "next start",
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-dfs-ev-preview-rules \"node tests/firestoreRules.mjs\"",
-    "test": "cd ../.. && vitest run --root . --config vitest.config.ts apps/web/src && vitest run --root . --config vitest.node.config.ts apps/web/src/lib/*.server.test.ts"
+    "test": "cd ../.. && vitest run --root . --config vitest.config.ts apps/web/src && vitest run --root . --config vitest.node.config.ts apps/web/src/lib/*.server.test.ts",
+    "test:db:local": "cd ../.. && npm run test:db:local"
   },
   "dependencies": {
     "@dfs-ev/domain": "0.1.0",

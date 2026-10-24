@@ -5,18 +5,23 @@ import { spawnSync } from "node:child_process";
 import { databaseSelection } from "../scripts/turbo/ci-db-selection.mjs";
 
 const base = "a".repeat(40), head = "b".repeat(40);
-const ids = ["@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db"];
+const ids = ["@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db", "@dfs-ev/web#test:db:local"];
+const local = [ids[0], ids[1], ids[3]];
 const context = { base, head, forceFull: "0" };
 const plan = (tasks, mode = "affected") => ({ schemaVersion: 1, base, head, requestedTasks: ["test:db:local", "test:feature-store:db"],
-  mode, packages: ["@dfs-ev/db-tooling", "@dfs-ev/pipeline"], tasks,
+  mode, packages: ["@dfs-ev/db-tooling", "@dfs-ev/pipeline", "@dfs-ev/web"], tasks,
   intentionalEmpty: tasks.length === 0 && mode === "affected", cache: Object.fromEntries(tasks.map(id => [id, false])) });
 
 test("CI translates only executable Turbo database task IDs and explicit empty selections", () => {
-  for (const tasks of [[], [ids[0]], [ids[1]], [ids[2]], [ids[0], ids[1]], [ids[0], ids[2]], [ids[1], ids[2]], ids]) {
+  // Every subset of the four executable DB task IDs.
+  for (let mask = 0; mask < 1 << ids.length; mask++) {
+    const tasks = ids.filter((_, index) => mask & (1 << index));
     const output = databaseSelection(plan(tasks), context);
-    assert.equal(output.db_local, String(tasks.includes(ids[0]) || tasks.includes(ids[1])));
+    assert.equal(output.db_local, String(tasks.some(id => local.includes(id))));
     assert.equal(output.feature_store, String(tasks.includes(ids[2])));
   }
+  // A web-only change (the lease/cache orchestrator) must select the local DB suite.
+  assert.equal(databaseSelection(plan([ids[3]]), context).db_local, "true");
   assert.deepEqual(databaseSelection(plan(ids, "full"), { ...context, forceFull: "1" }),
     { db_local: "true", feature_store: "true", mode: "full" });
 });

@@ -12,8 +12,10 @@ const workspaceFiles = ["apps/web/package.json", "packages/domain/package.json",
 const names = workspaceFiles.map(file => JSON.parse(readFileSync(join(root, file))).name);
 const tasks = ["test", "test:db:local", "test:feature-store:db"];
 const unit = name => `${name}#test`;
-const all = [...names.map(unit), "@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db"].sort();
-const domain = ["@dfs-ev/domain", "@dfs-ev/web", "@dfs-ev/pipeline"].map(unit).concat("@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db").sort();
+const all = [...names.map(unit), "@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db", "@dfs-ev/web#test:db:local"].sort();
+const domain = ["@dfs-ev/domain", "@dfs-ev/web", "@dfs-ev/pipeline"].map(unit).concat("@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db", "@dfs-ev/web#test:db:local").sort();
+// Turbo selects by package: any web change, UI or lease/cache code, selects web's DB suite.
+const web = ["@dfs-ev/web#test", "@dfs-ev/web#test:db:local"];
 const pipeline = ["@dfs-ev/pipeline#test", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db"];
 const sha256 = bytes => createHash("sha256").update(bytes).digest("hex");
 
@@ -71,7 +73,8 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
     const base = commit("chore(spike): declare disposable task graph");
     receipt.base = base;
     const probes = [
-      ["ui", "apps/web/src/probe.ts", "// UI probe\n", ["@dfs-ev/web#test"], "affected"],
+      ["ui", "apps/web/src/probe.ts", "// UI probe\n", web, "affected"],
+      ["web-db", "apps/web/src/lib/livePropCache.ts", "// lease/cache probe\n", web, "affected"],
       ["domain", "packages/domain/src/probe.ts", "// domain probe\n", domain, "affected"],
       ["db-proposal", "packages/db/proposals/probe.sql", "-- SQL probe\n", all, "full"],
       ["pipeline", "services/pipeline/src/probe.ts", "// pipeline probe\n", pipeline, "affected"],
@@ -96,7 +99,7 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
       assert.ok(Object.values(plan.cache).every(value => value === false));
       const executions = [...result.stdout.matchAll(/EXEC:([^\r\n]+)/g)].map(match => match[1].trim()).sort();
       assert.deepEqual(executions, expected);
-      if (["ui", "domain", "db-proposal", "pipeline"].includes(name)) {
+      if (["ui", "web-db", "domain", "db-proposal", "pipeline"].includes(name)) {
         const planFile = join(directory, ".turbo", `${name}-db-plan.json`);
         const outputs = join(directory, ".turbo", `${name}-outputs.txt`);
         const planCompletion = join(directory, ".turbo", `${name}-plan-completion.txt`);
@@ -114,13 +117,6 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
         receipt.guards.push({ name: `${name}: actual plan-only runner maps explicit CI booleans without task execution`, verdict: "pass" });
       }
       if (name === "ui") {
-        const empty = runner(base, head, ["test:db:local", "test:feature-store:db"]);
-        assert.notEqual(empty.status, 0);
-        const intentional = runner(base, head, ["test:db:local", "test:feature-store:db"], { TURBO_ALLOW_EMPTY: "1" });
-        assert.equal(intentional.status, 0, intentional.stderr);
-        assert.deepEqual(selection(intentional).tasks, []);
-        assert.doesNotMatch(intentional.stdout, /EXEC:/);
-        receipt.guards.push({ name: "UI DB tasks: refused without opt-in; explicit empty succeeds without execution", verdict: "pass" });
         const full = runner(base, head, tasks, { TURBO_FORCE_FULL: "1" });
         assert.equal(full.status, 0, full.stdout + full.stderr);
         assert.equal(selection(full).mode, "full");
@@ -161,7 +157,7 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
       const result = runner(targetBase, mergeHead);
       assert.equal(result.status, 0, result.stdout + result.stderr);
       const selected = selection(result);
-      assert.deepEqual(selected.tasks, ["@dfs-ev/web#test"]);
+      assert.deepEqual(selected.tasks.sort(), web);
       receipt.probes.push({ name: "PR merge checkout", base: targetBase, head: mergeHead,
         mode: selected.mode, selected: selected.tasks, outputHash: sha256(result.stdout), verdict: "pass" });
     });
@@ -173,6 +169,9 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
         ["unavailable commit", runner("f".repeat(40), base)],
         ["checkout mismatch", runner(base, receipt.probes[0].head)],
         ["Turbo bypass flag", runner(base, base, ["test", "--dry=json"])],
+        ["Turbo parallel flag as task name", runner(base, base, ["test", "--parallel"], { TURBO_ALLOW_EMPTY: "1" })],
+        ["Turbo continue flag as task name", runner(base, base, ["--continue"], { TURBO_ALLOW_EMPTY: "1" })],
+        ["Turbo force flag as task name", runner(base, base, ["test", "--force"], { TURBO_ALLOW_EMPTY: "1" })],
         ["invalid full-mode flag", runner(base, base, ["test"], { TURBO_FORCE_FULL: "unknown" })],
         ["plan-only without destination", runner(base, base, ["test"], { TURBO_PLAN_ONLY: "1" })],
       ];
@@ -187,6 +186,13 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
       assert.equal(empty.status, 0, empty.stderr);
       assert.deepEqual(selection(empty).tasks, []);
       assert.doesNotMatch(empty.stdout, /EXEC:/);
+      const dbTasks = ["test:db:local", "test:feature-store:db"];
+      assert.notEqual(runner(base, base, dbTasks).status, 0, "empty DB selection needs explicit opt-in");
+      const dbEmpty = runner(base, base, dbTasks, { TURBO_ALLOW_EMPTY: "1" });
+      assert.equal(dbEmpty.status, 0, dbEmpty.stderr);
+      assert.deepEqual(selection(dbEmpty).tasks, []);
+      assert.doesNotMatch(dbEmpty.stdout, /EXEC:/);
+      receipt.guards.push({ name: "DB tasks on an empty range: refused without opt-in; explicit empty succeeds without execution", verdict: "pass" });
       const manifest = JSON.parse(readFileSync(join(directory, "apps/web/package.json")));
       manifest.scripts.test = "node -e 'process.exit(23)'";
       write("apps/web/package.json", JSON.stringify(manifest, null, 2) + "\n");

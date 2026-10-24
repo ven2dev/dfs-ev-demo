@@ -1,7 +1,9 @@
 import { appendFileSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-const localTaskIds = ["@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local"];
+// Web owns the lease/cache orchestrator DB tests (apps/web/tests/db). Turbo
+// selects by package, so every web change selects the shared local DB suite.
+const localTaskIds = ["@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/web#test:db:local"];
 const featureTaskId = "@dfs-ev/pipeline#test:feature-store:db";
 const taskIds = [...localTaskIds, featureTaskId];
 

@@ -15,7 +15,8 @@ for (const name of ["TURBO_FORCE_FULL", "TURBO_PLAN_ONLY"]) {
 if (process.env.TURBO_PLAN_ONLY === "1" && !process.env.TURBO_PLAN_FILE) {
   refuse("TURBO_PLAN_FILE is required for a plan-only invocation.");
 }
-if (!tasks.length || tasks.some(task => !/^[a-zA-Z0-9:_-]+$/.test(task))) {
+// A leading letter or digit keeps Turbo flags such as --parallel out of task names.
+if (!tasks.length || tasks.some(task => !/^[a-zA-Z0-9][a-zA-Z0-9:_-]*$/.test(task))) {
   refuse("Usage: npm run turbo:affected -- <task> [<task> ...] [-- ...task arguments]; Turbo override flags are refused.");
 }
 
