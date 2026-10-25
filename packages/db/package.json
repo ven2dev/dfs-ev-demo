@@ -19,7 +19,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "cd ../.. && node --test tests/db/*unit.check.mjs"
+    "test": "cd ../.. && node --test tests/db/*unit.check.mjs",
+    "test:db:local": "cd ../.. && npm run test:db:local"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

@@ -36,6 +36,8 @@ test("workspace test commands retain both environments and protected DB runners"
   assert.equal(pipeline["test:db:local"], "cd ../.. && npm run test:db:local");
   assert.equal(pipeline["test:feature-store:db"], "cd ../.. && npm run test:feature-store:db");
   assert.equal(tooling["test:db:local"], "cd ../../.. && npm run test:db:local");
+  assert.equal(json("packages/db/package.json").scripts["test:db:local"], "cd ../.. && npm run test:db:local");
+  assert.equal(json("apps/web/package.json").scripts["test:db:local"], undefined);
   assert.equal(json("packages/db/package.json").scripts["test:db"], undefined);
 });
 

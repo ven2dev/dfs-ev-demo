@@ -368,8 +368,8 @@ DB ownership. `livePropCacheRepo.ts`, provider types and provider/history
 composition remain web-owned; its fake wiring sentinel checks the lazy query,
 TTL, identifiers, clock and fetch bindings. Generic DB tooling units are
 explicitly excluded from PostgreSQL discovery and run exactly once in the Node
-unit lane. Web temporarily retains its ordinary-DB alias until Step 3 switches
-task ownership atomically with the task matrix and strict translator. The
-generic kernel has no provider policy, so DB's normal root/full fallback selects
+unit lane. Step 3 makes DB the ordinary-suite task owner and removes web's
+temporary alias, so UI and remaining web-composition edits skip both DB suites.
+The generic kernel has no provider policy, so DB's normal root/full fallback selects
 both DB suites for a kernel edit; the accepted over-selection avoids a custom
 selector.

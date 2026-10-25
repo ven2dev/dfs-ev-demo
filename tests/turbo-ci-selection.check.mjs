@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { databaseSelection } from "../scripts/turbo/ci-db-selection.mjs";
 
 const base = "a".repeat(40), head = "b".repeat(40);
-const ids = ["@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db", "@dfs-ev/web#test:db:local"];
+const ids = ["@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db", "@dfs-ev/db#test:db:local"];
 const local = [ids[0], ids[1], ids[3]];
 const context = { base, head, forceFull: "0" };
 const plan = (tasks, mode = "affected") => ({ schemaVersion: 1, base, head, requestedTasks: ["test:db:local", "test:feature-store:db"],
@@ -20,8 +20,11 @@ test("CI translates only executable Turbo database task IDs and explicit empty s
     assert.equal(output.db_local, String(tasks.some(id => local.includes(id))));
     assert.equal(output.feature_store, String(tasks.includes(ids[2])));
   }
-  // Until #209 Step 3 switches ownership, web's conservative alias remains active.
+  // A DB-owned kernel task selects the ordinary suite. A web-only range has an
+  // intentionally empty DB plan; an undeclared web unit task is refused.
   assert.equal(databaseSelection(plan([ids[3]]), context).db_local, "true");
+  assert.deepEqual(databaseSelection(plan([]), context), { db_local: "false", feature_store: "false", mode: "affected" });
+  assert.throws(() => databaseSelection(plan(["@dfs-ev/web#test"]), context));
   assert.deepEqual(databaseSelection(plan(ids, "full"), { ...context, forceFull: "1" }),
     { db_local: "true", feature_store: "true", mode: "full" });
 });

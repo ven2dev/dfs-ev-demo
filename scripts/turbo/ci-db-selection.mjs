@@ -1,10 +1,10 @@
 import { appendFileSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-// #209 keeps web's alias temporarily while its generic cache scenario moves
-// into DB tooling. Step 3 switches this identity only after the real DB and
-// selection proofs pass, preventing an intermediate silent skip.
-const localTaskIds = ["@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/web#test:db:local"];
+// Generic cache kernel and its real consumer scenario are DB-owned. Turbo
+// therefore selects the protected ordinary suite for DB changes, while web
+// UI and composition-only changes need only web unit coverage.
+const localTaskIds = ["@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/db#test:db:local"];
 const featureTaskId = "@dfs-ev/pipeline#test:feature-store:db";
 const taskIds = [...localTaskIds, featureTaskId];
 
