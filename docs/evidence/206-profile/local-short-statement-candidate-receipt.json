@@ -1,0 +1,85 @@
+{
+  "scope": "fixed local PostgreSQL only; not Neon HTTP or performance acceptance",
+  "sourceParent": "21a401174a972e25bbd6f975cda26296d972e7bb",
+  "runtime": "Node24",
+  "fixture": {
+    "host": "127.0.0.1",
+    "port": 54361,
+    "database": "bench61",
+    "postgres": "18.6",
+    "memoryMiB": 512,
+    "finalState": "stopped"
+  },
+  "tests": {
+    "passed": 11,
+    "failed": 0,
+    "cases": [
+      {
+        "name": "caps work and refuses invalid amount before dispatch",
+        "status": "passed"
+      },
+      {
+        "name": "drains started requests after the first failure without retrying",
+        "status": "passed"
+      },
+      {
+        "name": "fixed local short-statement candidate uses pre-login server defaults on20 simultaneous worker logins",
+        "status": "passed"
+      },
+      {
+        "name": "fixed local short-statement candidate preserves interactive floor and total budget with1000 attempts at20 workers",
+        "status": "passed"
+      },
+      {
+        "name": "fixed local short-statement candidate baseline leaves balance intact and invalid/stale/retired inputs never debit",
+        "status": "passed"
+      },
+      {
+        "name": "fixed local short-statement candidate quota corrections only lower balance and reject old/future/retired observations",
+        "status": "passed"
+      },
+      {
+        "name": "fixed local short-statement candidate handles concurrent debit and downward correction work with20 total workers",
+        "status": "passed"
+      },
+      {
+        "name": "fixed local short-statement candidate an uncertain committed debit is not retried by the worker runner",
+        "status": "passed"
+      },
+      {
+        "name": "fixed local short-statement candidate requires real statement cancellation and rolls back a cancelled candidate debit",
+        "status": "passed"
+      },
+      {
+        "name": "fixed local short-statement candidate requires a real lock timeout while another transaction holds the account row",
+        "status": "passed"
+      },
+      {
+        "name": "fixed local short-statement candidate fences exclusive cleanup during admitted work and refuses late or wrong identities",
+        "status": "passed"
+      }
+    ]
+  },
+  "candidateSha256": "70a840cb753bd93cfc41d7629a115830395c431b259a6219f97b0521a8a7f7c3",
+  "cleanup": {
+    "schemaAbsent": true,
+    "roleAbsent": true,
+    "operatorStatementTimeout": "0",
+    "operatorLockTimeout": "0"
+  },
+  "limits": {
+    "maximumBatchAttempts": 1000,
+    "maximumWorkers": 20,
+    "localRoleConnectionLimit": 24,
+    "serverStatementTimeout": "5s",
+    "serverLockTimeout": "2s"
+  },
+  "hostedActions": 0,
+  "providerCalls": 0,
+  "performanceRoutesEnabled": false,
+  "hostedTargetsUnchanged": {
+    "workers": 20,
+    "p95Ms": 50,
+    "headroomMs": 35
+  }
+}
