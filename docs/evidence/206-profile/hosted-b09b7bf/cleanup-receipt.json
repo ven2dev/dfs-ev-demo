@@ -1,0 +1,27 @@
+{
+  "sha": "b09b7bfca7c5322a37a348238b42f5f98e3a6560",
+  "pushed": true,
+  "qualification": "functional probes passed; performance not run",
+  "schemaAbsent": true,
+  "roleAbsent": true,
+  "privateCredentialRemoved": true,
+  "performanceRun": false,
+  "checks": [
+    {
+      "id": "dpl_8xTy1wrYE8DiRJdHKFyZgBgByknC",
+      "absent": true
+    },
+    {
+      "id": "dpl_3hDrndPDJcghskmVEXobSeHkrxTS",
+      "absent": true
+    },
+    {
+      "url": "https://dfs-ev-demo-iyprs6mv1-vernon-neillys-projects.vercel.app/bench61",
+      "status": 404
+    },
+    {
+      "url": "https://dfs-ev-demo-e2j1dbpdm-vernon-neillys-projects.vercel.app/bench61",
+      "status": 404
+    }
+  ]
+}

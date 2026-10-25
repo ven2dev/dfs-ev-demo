@@ -1,0 +1,172 @@
+[
+  {
+    "action": "catalog",
+    "status": 503,
+    "browser_round_trip_ms": 1253.0999999940395,
+    "result": {
+      "error": "Qualification stopped. Do not retry ambiguous writes. Wait for the owned lease to expire, then clean up."
+    }
+  },
+  {
+    "action": "setup",
+    "status": 200,
+    "browser_round_trip_ms": 487.29999999701977,
+    "result": {
+      "host": "ep-broad-mouse-b773hf6f-pooler.c-13.us-east-1.aws.neon.tech",
+      "database": "neondb",
+      "schema": "bench61_http_role_20261022",
+      "role": "bench61_http_timeout_20261022",
+      "region": "iad1",
+      "sha": "b09b7bfca7c5322a37a348238b42f5f98e3a6560",
+      "reviewedSha": "b09b7bfca7c5322a37a348238b42f5f98e3a6560",
+      "expiresAt": "2026-10-25T03:59:02.936Z",
+      "ownerFingerprint": "a3a237cdf9dd27230e531fb5db15384b140a180ca58fe112263181b71ac70432",
+      "performanceEnabled": false,
+      "setup": true,
+      "roundTrips": 1,
+      "statements": 13
+    }
+  },
+  {
+    "action": "catalog",
+    "status": 200,
+    "browser_round_trip_ms": 341.29999999701977,
+    "result": {
+      "host": "ep-broad-mouse-b773hf6f-pooler.c-13.us-east-1.aws.neon.tech",
+      "database": "neondb",
+      "schema": "bench61_http_role_20261022",
+      "role": "bench61_http_timeout_20261022",
+      "region": "iad1",
+      "sha": "b09b7bfca7c5322a37a348238b42f5f98e3a6560",
+      "reviewedSha": "b09b7bfca7c5322a37a348238b42f5f98e3a6560",
+      "expiresAt": "2026-10-25T03:59:02.936Z",
+      "ownerFingerprint": "a3a237cdf9dd27230e531fb5db15384b140a180ca58fe112263181b71ac70432",
+      "performanceEnabled": false,
+      "rows": [
+        {
+          "version": "18.6 (fd34222)",
+          "synthetic_rows": "1"
+        }
+      ],
+      "roundTrips": 3,
+      "statements": 9
+    }
+  },
+  {
+    "action": "qualify",
+    "status": 200,
+    "browser_round_trip_ms": 18625.60000000894,
+    "result": {
+      "host": "ep-broad-mouse-b773hf6f-pooler.c-13.us-east-1.aws.neon.tech",
+      "database": "neondb",
+      "schema": "bench61_http_role_20261022",
+      "role": "bench61_http_timeout_20261022",
+      "region": "iad1",
+      "sha": "b09b7bfca7c5322a37a348238b42f5f98e3a6560",
+      "reviewedSha": "b09b7bfca7c5322a37a348238b42f5f98e3a6560",
+      "expiresAt": "2026-10-25T03:59:02.936Z",
+      "ownerFingerprint": "a3a237cdf9dd27230e531fb5db15384b140a180ca58fe112263181b71ac70432",
+      "performanceEnabled": false,
+      "qualification": "functional probes passed; no performance acceptance",
+      "identities": [
+        {
+          "session_user": "bench61_http_timeout_20261022",
+          "current_user": "bench61_http_timeout_20261022",
+          "database": "neondb",
+          "statement": "5s",
+          "lock": "2s",
+          "isolation": "read committed",
+          "pid": 1192
+        },
+        {
+          "session_user": "bench61_http_timeout_20261022",
+          "current_user": "bench61_http_timeout_20261022",
+          "database": "neondb",
+          "statement": "5s",
+          "lock": "2s",
+          "isolation": "read committed",
+          "pid": 1192
+        },
+        {
+          "session_user": "bench61_http_timeout_20261022",
+          "current_user": "bench61_http_timeout_20261022",
+          "database": "neondb",
+          "statement": "5s",
+          "lock": "2s",
+          "isolation": "read committed",
+          "pid": 1192
+        },
+        {
+          "session_user": "bench61_http_timeout_20261022",
+          "current_user": "bench61_http_timeout_20261022",
+          "database": "neondb",
+          "statement": "5s",
+          "lock": "2s",
+          "isolation": "read committed",
+          "pid": 1192
+        },
+        {
+          "session_user": "bench61_http_timeout_20261022",
+          "current_user": "bench61_http_timeout_20261022",
+          "database": "neondb",
+          "statement": "5s",
+          "lock": "2s",
+          "isolation": "read committed",
+          "pid": 1192
+        },
+        {
+          "session_user": "bench61_http_timeout_20261022",
+          "current_user": "bench61_http_timeout_20261022",
+          "database": "neondb",
+          "statement": "5s",
+          "lock": "2s",
+          "isolation": "read committed",
+          "pid": 1192
+        }
+      ],
+      "transactionStateIsolatedOnReusedBackend": true,
+      "backendReuse": {
+        "markerPid": 1192,
+        "reused": true
+      },
+      "statementProbeMs": 5007.545509999982,
+      "debitRollbackProbeMs": 5010.691886000015,
+      "lockProbeMs": 2011.499152000004,
+      "statementTimeout": true,
+      "rollback": true,
+      "lockTimeout": true,
+      "cleanupFence": true,
+      "lateAdmissionRefused": true,
+      "mismatchedIdentityRefused": true,
+      "roundTrips": 45,
+      "statements": 85,
+      "remaining": [
+        "separate independent review of evidence before any performance decision"
+      ]
+    }
+  },
+  {
+    "action": "cleanup",
+    "status": 200,
+    "browser_round_trip_ms": 296.79999999701977,
+    "result": {
+      "host": "ep-broad-mouse-b773hf6f-pooler.c-13.us-east-1.aws.neon.tech",
+      "database": "neondb",
+      "schema": "bench61_http_role_20261022",
+      "role": "bench61_http_timeout_20261022",
+      "region": "iad1",
+      "sha": "b09b7bfca7c5322a37a348238b42f5f98e3a6560",
+      "reviewedSha": "b09b7bfca7c5322a37a348238b42f5f98e3a6560",
+      "expiresAt": "2026-10-25T03:59:02.936Z",
+      "ownerFingerprint": "a3a237cdf9dd27230e531fb5db15384b140a180ca58fe112263181b71ac70432",
+      "performanceEnabled": false,
+      "schemaAbsent": true,
+      "roleAbsent": true,
+      "workerSessionsBeforeDrop": 2,
+      "workerOidBeforeDrop": 40960,
+      "sessionsTerminated": false,
+      "roundTrips": 1,
+      "statements": 3
+    }
+  }
+]

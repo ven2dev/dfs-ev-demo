@@ -1,0 +1,16 @@
+{
+  "roleOid": 40960,
+  "roleAbsent": true,
+  "initial": {
+    "remainingSessions": 2,
+    "activeSessions": 0,
+    "unknownSessions": 0
+  },
+  "followUpAfterWait": {
+    "remainingSessions": 2,
+    "activeSessions": 0,
+    "unknownSessions": 0
+  },
+  "sessionsTerminated": false,
+  "normalExpiryNotYetObserved": true
+}
