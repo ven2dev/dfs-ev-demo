@@ -3,6 +3,8 @@ import {performance} from "node:perf_hooks";
 import {neon} from "@neondatabase/serverless";
 import {proveServerLockCancellation,qualifyHttpTimeout,timeoutRole} from "./bench61-timeout";
 import config from "./bench61-config.json";
+import {candidateRole} from "./bench61-candidate";
+import {isProbeAction,probeWorkerRequired} from "./bench61-probe-policy";
 
 // Disposable, fixed synthetic target; no provider or application imports.
 export const functionalSchema = "bench61_http_role_20261022";
@@ -11,7 +13,7 @@ const fence = "610061,20261024";
 export type FunctionalAction = "setup" | "qualify" | "catalog" | "cleanup";
 const actions: readonly string[] = ["setup","qualify","catalog","cleanup"];
 const ensure = (value: unknown, reason: string) => {if(!value)throw new Error(reason);};
-export const functionalIdentity = (env: Record<string,string|undefined>, workerRequired: boolean) => {
+export const functionalIdentity = (env: Record<string,string|undefined>, workerRequired: boolean, role: string = timeoutRole) => {
   const operator = new URL(env.DATABASE_URL ?? "");
   const database = decodeURIComponent(operator.pathname.slice(1));
   ensure(["postgres:","postgresql:"].includes(operator.protocol) && operator.hostname === config.host
@@ -22,7 +24,7 @@ export const functionalIdentity = (env: Record<string,string|undefined>, workerR
     const worker = new URL(env.BENCH61_DATABASE_URL ?? "");
     ensure(worker.protocol === operator.protocol && worker.port === operator.port
       && worker.hostname === operator.hostname && decodeURIComponent(worker.pathname.slice(1)) === config.database
-      && decodeURIComponent(worker.username) === timeoutRole && worker.password.length>=32,
+      && decodeURIComponent(worker.username) === role && worker.password.length>=32,
     "Dedicated worker target mismatch");
     ensure(worker.search === operator.search,"Worker connection options differ");
   }
@@ -33,11 +35,12 @@ const identityReasons: Record<string,string> = {"Operator target mismatch":"oper
   "Dedicated worker target mismatch":"worker_target_mismatch","Worker connection options differ":"worker_options_differ"};
 // Every failed condition as a fixed code, never a value, so one refused request
 // diagnoses delivery (missing vs mismatched) without a public diagnostic response.
+// This SHA admits only the hold-probe actions, with the candidate role as worker.
 export const admissionRefusals = (token: unknown,action: unknown,env: Record<string,string|undefined> = process.env,now=Date.now()) => {
   const reasons: string[] = [];
   if(env.VERCEL_ENV!=="preview")reasons.push("not_preview");
   if(env.VERCEL_REGION!=="iad1")reasons.push("region_not_iad1");
-  if(typeof action!=="string" || !actions.includes(action))reasons.push("action_not_admitted");
+  if(!isProbeAction(action))reasons.push("action_not_admitted");
   if(typeof token!=="string" || token.length!==64)reasons.push("token_malformed");
   const reviewed=env.BENCH61_REVIEWED_SHA,commit=env.VERCEL_GIT_COMMIT_SHA;
   if(!reviewed)reasons.push("reviewed_sha_missing");
@@ -54,10 +57,10 @@ export const admissionRefusals = (token: unknown,action: unknown,env: Record<str
   const hash=env.BENCH61_TOKEN_HASH;
   if(!hash)reasons.push("token_hash_missing");
   else if(!/^[a-f0-9]{64}$/.test(hash))reasons.push("token_hash_invalid");
-  const workerRequired=action==="setup" || action==="qualify";
+  const workerRequired=probeWorkerRequired(action);
   if(!env.DATABASE_URL)reasons.push("operator_url_missing");
   else if(workerRequired && !env.BENCH61_DATABASE_URL)reasons.push("worker_url_missing");
-  else try {functionalIdentity(env,workerRequired);}
+  else try {functionalIdentity(env,workerRequired,candidateRole);}
   catch(error){reasons.push(identityReasons[(error as Error).message] ?? "connection_url_invalid");}
   // Compared only when every other condition passes, as before.
   if(reasons.length===0 && !timingSafeEqual(createHash("sha256").update(token as string).digest(),Buffer.from(hash!,"hex")))
@@ -66,6 +69,26 @@ export const admissionRefusals = (token: unknown,action: unknown,env: Record<str
 };
 export const authorizeFunctional = (token: unknown,action: unknown,env: Record<string,string|undefined> = process.env,now=Date.now()) =>
   admissionRefusals(token,action,env,now).length===0;
+
+// Effective privileges of a worker role outside its own schema ($1 = schema, $2 = role).
+// Metadata only; every column must be false.
+export const privilegeAuditSql = `SELECT r.rolsuper,r.rolcreatedb,r.rolcreaterole,r.rolreplication,r.rolbypassrls,
+    EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid) AS memberships,
+    EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname NOT IN ('pg_catalog','information_schema',$1) AND n.nspname NOT LIKE 'pg_toast%'
+      AND CASE WHEN c.relkind IN ('r','p','v','m','f') THEN
+        (has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+          OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES')) ELSE false END) AS foreign_table_access,
+    EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname NOT IN ('pg_catalog','information_schema',$1) AND n.nspname NOT LIKE 'pg_toast%'
+      AND CASE WHEN c.relkind='S' THEN has_sequence_privilege(r.oid,c.oid,'SELECT,USAGE,UPDATE') ELSE false END) AS foreign_sequence_access,
+    has_database_privilege(r.oid,(SELECT oid FROM pg_database WHERE datname=current_database()),'CREATE') AS database_create,
+    EXISTS(SELECT 1 FROM pg_namespace n WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname<>'information_schema'
+      AND has_schema_privilege(r.oid,n.oid,'CREATE')) AS schema_create,
+    EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+      WHERE p.prosecdef AND n.nspname NOT IN ('pg_catalog','information_schema',$1)
+      AND has_function_privilege(r.oid,p.oid,'EXECUTE')) AS foreign_definer_access
+    FROM pg_roles r WHERE r.rolname=$2`;
 
 export const executeFunctional = async (action: FunctionalAction) => {
   ensure(actions.includes(action),"Unknown functional action");
@@ -183,23 +206,7 @@ export const executeFunctional = async (action: FunctionalAction) => {
     return await workerSql.query(text,params,{fetchOptions:{signal:AbortSignal.timeout(10000)}});
   };
   // Metadata only: no application rows. Stop rather than alter shared ACLs.
-  const audit=await admin(`SELECT r.rolsuper,r.rolcreatedb,r.rolcreaterole,r.rolreplication,r.rolbypassrls,
-    EXISTS(SELECT 1 FROM pg_auth_members WHERE member=r.oid) AS memberships,
-    EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-      WHERE n.nspname NOT IN ('pg_catalog','information_schema',$1) AND n.nspname NOT LIKE 'pg_toast%'
-      AND CASE WHEN c.relkind IN ('r','p','v','m','f') THEN
-        (has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
-          OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES')) ELSE false END) AS foreign_table_access,
-    EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-      WHERE n.nspname NOT IN ('pg_catalog','information_schema',$1) AND n.nspname NOT LIKE 'pg_toast%'
-      AND CASE WHEN c.relkind='S' THEN has_sequence_privilege(r.oid,c.oid,'SELECT,USAGE,UPDATE') ELSE false END) AS foreign_sequence_access,
-    has_database_privilege(r.oid,(SELECT oid FROM pg_database WHERE datname=current_database()),'CREATE') AS database_create,
-    EXISTS(SELECT 1 FROM pg_namespace n WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname<>'information_schema'
-      AND has_schema_privilege(r.oid,n.oid,'CREATE')) AS schema_create,
-    EXISTS(SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
-      WHERE p.prosecdef AND n.nspname NOT IN ('pg_catalog','information_schema',$1)
-      AND has_function_privilege(r.oid,p.oid,'EXECUTE')) AS foreign_definer_access
-    FROM pg_roles r WHERE r.rolname=$2`,[functionalSchema,timeoutRole]);
+  const audit=await admin(privilegeAuditSql,[functionalSchema,timeoutRole]);
   ensure(audit.length===1 && Object.values(audit[0]).every(value=>value===false),"Worker effective privileges exceed scope");
   const timeout=await qualifyHttpTimeout(env.BENCH61_DATABASE_URL!,identity.host,identity.database,
     {schema:s,owner,request},fenced);

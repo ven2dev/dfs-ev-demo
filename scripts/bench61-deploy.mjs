@@ -21,7 +21,7 @@ export const createRuntimeSpec=(operatorUrl,reviewedSha,now=Date.now())=>{
   ensure(["postgres:","postgresql:"].includes(url.protocol) && url.hostname===host
     && decodeURIComponent(url.pathname.slice(1))===database,"Wrong Preview target");
   ensure([...url.searchParams.keys()].every(key=>["sslmode","channel_binding"].includes(key)),"Unsupported connection options");
-  url.username="bench61_http_timeout_20261022";
+  url.username="bench61_candidate_worker_20261024";
   url.password=randomBytes(32).toString("hex");
   const token=randomBytes(32).toString("hex");
   return {project,org,scope,token,runtime:{
@@ -50,7 +50,7 @@ export const validateRuntimeSpec=(spec,head,link,clean,now=Date.now())=>{
   ensure(keys.length===Object.keys(spec.runtime).length && keys.every(k=>typeof spec.runtime[k]==="string"),"Unexpected runtime keys");
   const {runtime:r}=spec,url=readUrl(r.BENCH61_DATABASE_URL);
   ensure(["postgres:","postgresql:"].includes(url.protocol) && url.hostname===host
-    && url.username==="bench61_http_timeout_20261022" && decodeURIComponent(url.pathname.slice(1))===database
+    && url.username==="bench61_candidate_worker_20261024" && decodeURIComponent(url.pathname.slice(1))===database
     && url.password.length===64,"Wrong worker credential");
   ensure([...url.searchParams.keys()].every(key=>["sslmode","channel_binding"].includes(key)),"Unsupported connection options");
   ensure(/^[a-f0-9]{64}$/.test(spec.token) && createHash("sha256").update(spec.token).digest("hex")===r.BENCH61_TOKEN_HASH,"Token fingerprint mismatch");

@@ -153,19 +153,28 @@ debits, so 250 debits per shape:
 | --- | --- | ---: | ---: |
 | batch | One Neon HTTP transaction: timeout settings, guard, debit | 250 | 750 |
 | single | One statement | 250 | 250 |
-| single-async | One statement, `synchronous_commit=off` at login | 250 | 250 |
+| batch-async | The batch transaction with `set_config('synchronous_commit','off',true)` in its settings statement | 250 | 750 |
 
 The hosted batch shape is the one #206 measured: one HTTP transaction carrying three
 statements, with begin and commit done on the server. It is not the local spike's
-five client round trips per debit, which no hosted caller uses. `single-async`
-changes durability and runs only with the owner's explicit approval.
+five client round trips per debit, which no hosted caller uses.
 
-Workload: 500 round trips and 1,000 statements without `single-async`, or 750 and
-1,250 with it. Add at most 220 round trips/440 statements for finite qualification
-of the candidate role and at most 20 admin round trips of at most four statements
-(setup, per-run reset and balance check, snapshots, cleanup). Totals: 740 round
-trips/1,520 statements without `single-async`, or 990/1,770 with it. Caps are those
-totals plus 5% (777/1,596, or 1,040/1,859), enforced before any workload.
+Owner decision (2026-10-25): `synchronous_commit=off` is measured as `batch-async`
+on the same candidate role, as a measurement only. The Neon HTTP driver (1.2.0)
+cannot pass login settings, so the local spike's `single-async` shape would need a
+second role and a sixth deployment setting holding its credential; that was
+rejected to avoid widening credential exposure. batch versus batch-async shows the
+commit-durability share of the hold; batch versus single shows the post-update
+round-trip share. A single-async figure can only be estimated from those two and
+must be labelled as an estimate.
+
+Workload: 750 round trips and 1,750 statements. Add at most 220 round trips/440
+statements for finite qualification of the candidate role and at most 20 admin
+round trips of at most four statements (setup, per-run reset and balance check,
+snapshots, cleanup). Totals: 990 round trips/2,270 statements. Caps are those
+totals plus 5% (1,040/2,384), enforced before any workload. Option B raises the
+statement count by 500 over the plan in 1545ce1, because batch-async carries three
+statements per debit rather than one.
 
 Decision rule. The probe measures the 20-worker p95 of each shape directly. Step 2
 runs only if the single statement's measured 20-worker p95 is within 50 ms, or close
@@ -177,6 +186,53 @@ between `synchronous_commit=off` (if Neon supports it and it is approved),
 escrow/credit leasing, or a target or hosting decision. The implied hold time and
 the p95/hold ratio are recorded as diagnostics that explain the result, never as
 the cutoff on their own.
+
+## Hosted probe implementation (local, not deployed)
+
+This SHA admits only four actions, in order: `probe-setup`, `probe-qualify`,
+`probe-run`, `probe-cleanup` (`apps/web/src/lib/bench61-probe-policy.ts`). The
+earlier functional actions stay in code for their fixture regressions but are
+refused at admission (`action_not_admitted`). The worker credential must name the
+candidate role (`bench61_candidate_worker_20261024`); the deploy helper now issues
+that role's credential. Setup and cleanup run the module-owned SQL from
+`bench61-candidate.ts`.
+
+- `probe-setup`: one operator transaction of the 13 setup statements; refuses an
+  existing schema or role.
+- `probe-qualify` and `probe-run`: one-shot. Each claims the run row with an
+  `operations` and `active_action` record and a renewed five-minute lease, so a
+  replay or an overlapping action is refused. A failed action keeps its claim, so
+  only cleanup can follow. Qualify checks the login defaults (five identity probes,
+  three of them concurrent), the privilege audit, statement-timeout cancellation and
+  rollback, lock timeout, wrong owner and request, the shared/exclusive cleanup fence
+  with exactly-once commit, and whether Neon applies `synchronous_commit=off` inside
+  a transaction.
+- `probe-run`: the three shapes, each at 20 workers × 200 and 1 worker × 50, funded
+  so every debit succeeds; balance arithmetic is checked after every run. Every
+  statement returns `pg_backend_pid()`, and each 20-worker run takes one
+  `pg_stat_activity` snapshot. Every batch-async debit must report
+  `synchronous_commit=off`; if Neon refuses the setting, that shape is skipped and
+  reported. An error stops new dispatches; every started debit drains; nothing is
+  retried. A 45-second deadline invalidates the run rather than extending it.
+- `probe-cleanup`: counts worker sessions, then the exclusive fence, ownership
+  checks, drop and confirmed absence in one transaction. A retry after a lost reply
+  reports `alreadyAbsent`; a partial state refuses and needs operator cleanup.
+
+Per-action caps are counted before each dispatch: setup 2/20, qualify 220/440, run
+770/1,830, cleanup 2/8 round trips/statements, 994/2,298 in total, within the
+1,040/2,384 caps. The fixed run plan is 768 round trips/1,768 statements. Each
+result records `observedAt`, the deployment id (`VERCEL_DEPLOYMENT_ID`), the SHAs,
+region and work totals.
+
+Local validation (Node 24.21.0, 2026-10-25T05:48:01Z–05:49:01Z on the fixed
+fixture, through a local stand-in for the Neon HTTP driver): 13/13 candidate and
+probe cases, including the full setup → qualify → run → cleanup sequence with
+replay, overlap and repeat-cleanup refusals; the four earlier functional fixture
+regressions; 312 Node tests including the updated admission and cap tests; 12
+deploy-helper and 10 import-boundary checks; root typecheck and ESLint. Afterwards
+both candidate and functional schemas and roles were absent, operator defaults
+were 0/0 and the fixture was stopped. The stand-in proves orchestration and SQL
+behavior, not managed Neon HTTP timing or pooling.
 
 Step 2, full experiment, only if Step 1 passes. One bounded 20-worker experiment
 on the designated Preview/Neon target, with all provider APIs disabled. Three

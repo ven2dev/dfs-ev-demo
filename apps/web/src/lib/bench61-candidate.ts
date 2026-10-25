@@ -53,8 +53,10 @@ export const candidateSetupStatements = (context:CandidateContext,password:strin
     EXECUTE format('COMMENT ON ROLE %I IS %L','${candidateRole}',current_setting('bench61.candidate_owner'));
    END $role$`},
   {text:`CREATE SCHEMA ${s}`},
-  {text:`CREATE TABLE ${s}.run(owner text NOT NULL,request uuid NOT NULL,lease_until timestamptz NOT NULL)`},
-  {text:`INSERT INTO ${s}.run VALUES($1,$2,clock_timestamp()+interval '5 minutes')`,params:[context.owner,context.request]},
+  // operations/active_action let multi-request hosted actions refuse replays and overlap.
+  {text:`CREATE TABLE ${s}.run(owner text NOT NULL,request uuid NOT NULL,lease_until timestamptz NOT NULL,
+    operations text[] NOT NULL DEFAULT '{}',active_action text)`},
+  {text:`INSERT INTO ${s}.run(owner,request,lease_until) VALUES($1,$2,clock_timestamp()+interval '5 minutes')`,params:[context.owner,context.request]},
   {text:`CREATE TABLE ${s}.budgets(account text PRIMARY KEY,period text NOT NULL,balance bigint NOT NULL CHECK(balance>=0),
     floor bigint NOT NULL CHECK(floor>=0),observed_at timestamptz NOT NULL,active boolean NOT NULL)`},
   {text:`INSERT INTO ${s}.budgets VALUES($1,$2,100,20,clock_timestamp(),true)`,params:[context.account,context.period]},
