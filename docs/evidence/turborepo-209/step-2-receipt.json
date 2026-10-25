@@ -1,0 +1,145 @@
+{
+  "formatVersion": 1,
+  "issue": 209,
+  "stage": "Step 2 \u2014 DB-owned tests and web wiring",
+  "baselineStep1Commit": "9f3f9c1",
+  "branch": "feature/dfsEV-209-generic-cache-kernel",
+  "candidateIdentity": {
+    "kind": "uncommitted candidate pending owner commit approval",
+    "changedTrackedPaths": [
+      "apps/web/src/lib/livePropCache.test.ts",
+      "apps/web/src/lib/livePropCacheStore.test.ts",
+      "apps/web/tests/db/orchestrator.ts",
+      "packages/db/tooling/package.json",
+      "scripts/db/db-test-lanes.mjs",
+      "scripts/turbo/ci-db-selection.mjs",
+      "tests/db/lanes-unit.check.mjs",
+      "tests/db/orchestrator.test.ts",
+      "tests/monorepo-layout.check.mjs",
+      "tests/turbo-ci-selection.check.mjs",
+      "vitest.db.config.mts",
+      "vitest.node.config.ts"
+    ],
+    "newPaths": [
+      "packages/db/tooling/tests/unit/livePropCache.test.ts",
+      "packages/db/tooling/tests/unit/livePropCacheStore.test.ts",
+      "packages/db/tooling/tests/orchestrator.ts",
+      "packages/db/tooling/tests/orchestrator.test.ts",
+      "apps/web/src/lib/livePropCacheRepo.wiring.server.test.ts",
+      "docs/evidence/turborepo-209/step-2-receipt.json"
+    ]
+  },
+  "ownership": {
+    "movedUnits": {
+      "oldPaths": [
+        "apps/web/src/lib/livePropCache.test.ts",
+        "apps/web/src/lib/livePropCacheStore.test.ts"
+      ],
+      "newPaths": [
+        "packages/db/tooling/tests/unit/livePropCache.test.ts",
+        "packages/db/tooling/tests/unit/livePropCacheStore.test.ts"
+      ],
+      "retainedNames": "all 8 getOrRefreshLivePropInputs + 1 createLivePropCacheStore names retained",
+      "addedGenericCase": "getOrRefreshLivePropInputs accepts an opaque payload without provider fields"
+    },
+    "movedPostgresScenario": {
+      "oldPaths": [
+        "apps/web/tests/db/orchestrator.ts",
+        "tests/db/orchestrator.test.ts"
+      ],
+      "newPaths": [
+        "packages/db/tooling/tests/orchestrator.ts",
+        "packages/db/tooling/tests/orchestrator.test.ts"
+      ],
+      "webImports": false,
+      "payloadType": "generic Payload"
+    },
+    "webWiring": {
+      "path": "apps/web/src/lib/livePropCacheRepo.wiring.server.test.ts",
+      "case": "getSharedLivePropInputs wiring binds the lazy query, TTL, id, clock and fetch callbacks to the generic kernel",
+      "coverage": "mock-only; no DB alias removal yet"
+    },
+    "explicitPostgresExclusion": "packages/db/tooling/tests/unit/** in vitest.db.config.mts"
+  },
+  "inventory": {
+    "rootBrowserCases": 942,
+    "rootNodeCases": 302,
+    "movedNodeUnitCases": 10,
+    "webWiringCases": 1,
+    "postgresCases": 25,
+    "postgresFiles": [
+      "packages/db/tooling/tests/bootstrap.test.ts",
+      "packages/db/tooling/tests/corpus.test.ts",
+      "packages/db/tooling/tests/lease.test.ts",
+      "packages/db/tooling/tests/orchestrator.test.ts",
+      "packages/db/tooling/tests/readiness.test.ts",
+      "services/pipeline/tests/creator/corpusImport.test.ts"
+    ],
+    "unitAppearsInPostgres": false,
+    "ordinarySuiteObserved": {
+      "nodeRequiredCases": 74,
+      "postgresCases": 25,
+      "catalogContracts": 12,
+      "movedScenarioName": "25 database-backed consumers wait for one fetch and receive the same persisted payload"
+    }
+  },
+  "checks": [
+    {
+      "command": "targeted Node units + web wiring",
+      "result": "pass: 11 cases"
+    },
+    {
+      "command": "npm test --workspace @dfs-ev/db-tooling",
+      "result": "pass: 30 native tooling checks + 10 moved Vitest units"
+    },
+    {
+      "command": "npm run test:db:local",
+      "fixture": "standard 512 MiB",
+      "result": "pass: 74 Node / 25 PostgreSQL / 12 catalog; cleanup completed"
+    },
+    {
+      "command": "npm test",
+      "execution": "outside sandbox only to permit existing loopback review-server test",
+      "result": "pass: 942 browser/jsdom + 302 Node"
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "pass"
+    },
+    {
+      "command": "npm run lint",
+      "result": "pass: 11 boundary probes"
+    },
+    {
+      "command": "npm run test:db:guard",
+      "result": "pass: 21 checks"
+    },
+    {
+      "command": "npm run test:repo-layout",
+      "result": "pass: 12 checks"
+    },
+    {
+      "command": "npm run test:turbo-layout",
+      "runtime": "Node 24.18.1",
+      "result": "pass: 26 checks"
+    }
+  ],
+  "preservation": {
+    "frozenSqlModified": false,
+    "rootCommandNamesChanged": false,
+    "workflowChanged": false,
+    "step3TaskOwnership": "not changed; web alias and translator identity intentionally remain until owner approves Step 3"
+  },
+  "limits": {
+    "webCompositionRealDbCoverage": "still absent by design; fake wiring sentinel verifies bindings, DB scenario verifies lease/SQL concurrency, Preview read-only driver proof remains a pre-merge gate",
+    "sandboxNotes": [
+      "first ordinary DB attempt lacked Docker socket permission; repeated with standard disposable fixture and passed",
+      "first root suite sandbox could not bind existing localhost review server; repeated outside sandbox and passed"
+    ]
+  },
+  "activeEngineeringTimeHours": 3.1,
+  "timeCapHours": 5,
+  "verdict": "pass for Step 2 commit review; task ownership switch remains Step 3",
+  "commit": "not approved or created",
+  "push": "not approved or performed"
+}

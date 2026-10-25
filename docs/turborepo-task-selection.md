@@ -361,11 +361,15 @@ verification of this correction remains pending a separately approved push.
 
 ## #209 generic-kernel extraction status
 
-#209 begins from the #192 conservative correction and moves only the opaque
-lease/singleflight kernel to @dfs-ev/db/runtime. livePropCacheRepo.ts,
-provider types and provider/history composition remain web-owned. Web retains
-its ordinary-DB alias until the DB-owned unit and 25-contender scenario checks
-have passed; only then may #209 replace that alias with the DB-runtime task.
-This preserves fail-closed selection during the intermediate steps. The generic
-kernel has no provider policy, so DB's normal root/full fallback selects both DB
-suites for a kernel edit; the accepted over-selection avoids a custom selector.
+The preceding #192 correction records the historical web-owned paths at that
+commit. #209 Step 2 has now moved the opaque lease/singleflight kernel's eight
+retained unit names, store-adapter unit and generic 25-contender scenario into
+DB ownership. `livePropCacheRepo.ts`, provider types and provider/history
+composition remain web-owned; its fake wiring sentinel checks the lazy query,
+TTL, identifiers, clock and fetch bindings. Generic DB tooling units are
+explicitly excluded from PostgreSQL discovery and run exactly once in the Node
+unit lane. Web temporarily retains its ordinary-DB alias until Step 3 switches
+task ownership atomically with the task matrix and strict translator. The
+generic kernel has no provider policy, so DB's normal root/full fallback selects
+both DB suites for a kernel edit; the accepted over-selection avoids a custom
+selector.

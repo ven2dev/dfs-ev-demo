@@ -1,25 +1,23 @@
 import { setTimeout as delay } from "node:timers/promises";
 import { expect, it, vi } from "vitest";
-import { getOrRefresh as getOrRefreshLivePropInputs } from "@dfs-ev/db/runtime";
-import type { LivePropInputs } from "../../src/lib/livePropCacheRepo";
-import type { LivePropCacheKey, LivePropCacheStore } from "@dfs-ev/db/runtime";
+import { getOrRefresh, type LivePropCacheKey, type LivePropCacheStore } from "@dfs-ev/db/runtime";
 
 // The root integration adapter supplies infrastructure fixtures. This scenario
 // owns web refresh behavior without depending on a DB driver or test harness.
-type OrchestratorFixtures<Client> = {
+type OrchestratorFixtures<Client, Payload> = {
   openTestClient: () => Promise<Client>;
   cacheState: (client: Client) => Promise<{ refresh_owner: string | null } | undefined>;
   freshAfter: (client: Client) => Promise<number>;
   key: LivePropCacheKey;
   leaseMs: number;
-  openContenders: () => Promise<{ store: LivePropCacheStore<LivePropInputs>; owner: string }[]>;
-  payload: LivePropInputs;
-  testStore: (client: Client) => LivePropCacheStore<LivePropInputs>;
+  openContenders: () => Promise<{ store: LivePropCacheStore<Payload>; owner: string }[]>;
+  payload: Payload;
+  testStore: (client: Client) => LivePropCacheStore<Payload>;
 };
 
-export const registerOrchestratorDatabaseTest = <Client>({
+export const registerOrchestratorDatabaseTest = <Client, Payload>({
   openTestClient, cacheState, freshAfter, key, leaseMs, openContenders, payload, testStore,
-}: OrchestratorFixtures<Client>) => {
+}: OrchestratorFixtures<Client, Payload>) => {
 
   it("25 database-backed consumers wait for one fetch and receive the same persisted payload", async () => {
     const monitor = await openTestClient();
@@ -27,7 +25,7 @@ export const registerOrchestratorDatabaseTest = <Client>({
     // Align the application clock with the DB clock; actual lifecycle timers
     // remain real. No explicit transaction wraps the orchestration.
     const startedAt = (await freshAfter(monitor)) + 90_000;
-    const fetchResult = Promise.withResolvers<LivePropInputs>();
+    const fetchResult = Promise.withResolvers<Payload>();
     const followersCanRead = Promise.withResolvers<void>();
     const allFirstAttempts = Promise.withResolvers<void>();
     const allFollowersWaiting = Promise.withResolvers<void>();
@@ -47,7 +45,7 @@ export const registerOrchestratorDatabaseTest = <Client>({
     });
     const results = Promise.allSettled(consumers.map(async ({ store, owner }, index) => {
       await start.promise;
-      return getOrRefreshLivePropInputs(key, {
+      return getOrRefresh(key, {
         ...store,
         tryAcquireRefresh: async (...args) => {
           const acquired = await store.tryAcquireRefresh(...args);

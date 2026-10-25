@@ -20,7 +20,7 @@ test("CI translates only executable Turbo database task IDs and explicit empty s
     assert.equal(output.db_local, String(tasks.some(id => local.includes(id))));
     assert.equal(output.feature_store, String(tasks.includes(ids[2])));
   }
-  // A web-only change (the lease/cache orchestrator) must select the local DB suite.
+  // Until #209 Step 3 switches ownership, web's conservative alias remains active.
   assert.equal(databaseSelection(plan([ids[3]]), context).db_local, "true");
   assert.deepEqual(databaseSelection(plan(ids, "full"), { ...context, forceFull: "1" }),
     { db_local: "true", feature_store: "true", mode: "full" });

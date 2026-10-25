@@ -1,8 +1,9 @@
 import { appendFileSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-// Web owns the lease/cache orchestrator DB tests (apps/web/tests/db). Turbo
-// selects by package, so every web change selects the shared local DB suite.
+// #209 keeps web's alias temporarily while its generic cache scenario moves
+// into DB tooling. Step 3 switches this identity only after the real DB and
+// selection proofs pass, preventing an intermediate silent skip.
 const localTaskIds = ["@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/web#test:db:local"];
 const featureTaskId = "@dfs-ev/pipeline#test:feature-store:db";
 const taskIds = [...localTaskIds, featureTaskId];

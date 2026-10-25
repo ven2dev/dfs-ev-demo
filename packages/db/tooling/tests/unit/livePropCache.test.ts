@@ -14,17 +14,7 @@ const key: LivePropCacheKey = {
   playerName: "Jalen Hurts",
 };
 
-const payload = {
-  oddsByBookmaker: [
-    {
-      bookmakerKey: "draftkings",
-      overPrice: 1.91,
-      underPrice: 1.89,
-      point: 214.5,
-    },
-  ],
-  weather: { temperatureF: 62, windSpeedMph: 8, precipitationMm: 0 },
-};
+const payload = { revision: 1 };
 
 const createMemoryDeps = (options: {
   now?: number;

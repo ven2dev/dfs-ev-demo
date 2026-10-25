@@ -12,7 +12,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["apps/web/src/lib/*.server.test.ts", "services/pipeline/tests/feature-store/**/*.test.ts", "packages/domain/tests/projection/**/*.test.ts"],
+    include: ["apps/web/src/lib/*.server.test.ts", "services/pipeline/tests/feature-store/**/*.test.ts", "packages/domain/tests/projection/**/*.test.ts", "packages/db/tooling/tests/unit/**/*.test.ts"],
   },
   ssr: {
     resolve: {
