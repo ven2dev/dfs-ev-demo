@@ -99,12 +99,14 @@ export const executeProbe = async (action: ProbeAction) => {
   }
 
   // Qualify and run: one-shot, never overlapping, under a renewed five-minute lease.
+  // A successful completion marker gates run atomically, preventing unqualified workloads.
   const [claim] = await admin([
     {text:`UPDATE ${s}.run SET active_action=$2,operations=array_append(operations,$2),
       lease_until=clock_timestamp()+interval '5 minutes'
-      WHERE owner=$1 AND active_action IS NULL AND NOT ($2=ANY(operations)) RETURNING request::text AS request`,params:[owner,action]},
+      WHERE owner=$1 AND active_action IS NULL AND NOT ($2=ANY(operations))
+      AND ($2<>'probe-run' OR 'probe-qualified'=ANY(operations)) RETURNING request::text AS request`,params:[owner,action]},
   ]);
-  ensure(claim.length===1,"Probe action replay or active workload refused");
+  ensure(claim.length===1,"Probe action replay, active workload refused, or successful qualification required");
   const context: CandidateContext = {owner,request:String(claim[0].request),account,period};
   const worker = neon(env.BENCH61_DATABASE_URL!);
   const single = async (text: string, params: unknown[] = []) => {
@@ -121,7 +123,9 @@ export const executeProbe = async (action: ProbeAction) => {
     ensure(rows.length===1,"Probe budget row missing");
   };
   const balance = async () => Number((await admin([{text:`SELECT balance FROM ${s}.budgets WHERE account=$1`,params:[account]}]))[0][0].balance);
-  const release = () => admin([{text:`UPDATE ${s}.run SET active_action=NULL WHERE owner=$1 AND active_action=$2 RETURNING owner`,params:[owner,action]}]);
+  const release = () => admin([{text:`UPDATE ${s}.run SET active_action=NULL,
+    operations=CASE WHEN $2='probe-qualify' THEN array_append(operations,'probe-qualified') ELSE operations END
+    WHERE owner=$1 AND active_action=$2 RETURNING owner`,params:[owner,action]}]);
   const refuse = async (run: Promise<unknown>, expected: string, reason: RegExp) => {
     try {await run;}catch(error){
       ensure(code(error)===expected && reason.test(message(error)),`Expected ${expected}, got ${code(error) ?? "no code"}`);

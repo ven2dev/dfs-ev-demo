@@ -69,6 +69,9 @@ describe.skipIf(!local)("local hold probe orchestration",()=>{
     expect(qualify.statements).toBeLessThanOrEqual(probeCaps["probe-qualify"].statements);
     await expect(executeProbe("probe-qualify")).rejects.toThrow("replay");
 
+    const completed=(await operator!.query(`SELECT active_action,operations FROM "${candidateSchema}".run`)).rows[0];
+    expect(completed.active_action).toBeNull();
+    expect(completed.operations).toContain("probe-qualified");
     const run=await executeProbe("probe-run");
     if(!("runs" in run))throw new Error("run result missing runs");
     expect(run.asyncSupported).toBe(true);
@@ -87,6 +90,29 @@ describe.skipIf(!local)("local hold probe orchestration",()=>{
     // A lost cleanup reply is safe to retry: absence is confirmed, not an error.
     expect(await executeProbe("probe-cleanup")).toMatchObject({alreadyAbsent:true});
   },120000);
+  it("refuses run before qualification without consuming its claim or constructing a worker",async()=>{
+    await executeProbe("probe-setup");
+    vi.mocked(neon).mockClear();
+    await expect(executeProbe("probe-run")).rejects.toThrow("successful qualification required");
+    expect(vi.mocked(neon).mock.calls).toHaveLength(1);
+    const state=(await operator!.query(`SELECT active_action,operations FROM "${candidateSchema}".run`)).rows[0];
+    expect(state.active_action).toBeNull();
+    expect(state.operations).not.toContain("probe-run");
+    expect(state.operations).not.toContain("probe-qualified");
+  });
+  it("refuses run after failed qualification and leaves cleanup available",async()=>{
+    await executeProbe("probe-setup");
+    await operator!.query(`ALTER ROLE "${candidateRole}" IN DATABASE bench61 SET statement_timeout='4s'`);
+    await expect(executeProbe("probe-qualify")).rejects.toThrow("Effective login defaults");
+    const state=(await operator!.query(`SELECT active_action,operations FROM "${candidateSchema}".run`)).rows[0];
+    expect(state.active_action).toBe("probe-qualify");
+    expect(state.operations).toContain("probe-qualify");
+    expect(state.operations).not.toContain("probe-qualified");
+    vi.mocked(neon).mockClear();
+    await expect(executeProbe("probe-run")).rejects.toThrow("successful qualification required");
+    expect(vi.mocked(neon).mock.calls).toHaveLength(1);
+    expect(await executeProbe("probe-cleanup")).toMatchObject({schemaAbsent:true,roleAbsent:true});
+  });
   it("refuses overlapping actions while one is active, and cleanup still recovers",async()=>{
     await executeProbe("probe-setup");
     await operator!.query(`UPDATE "${candidateSchema}".run SET active_action='probe-qualify'`);

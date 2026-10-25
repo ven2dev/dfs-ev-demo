@@ -202,7 +202,11 @@ that role's credential. Setup and cleanup run the module-owned SQL from
 - `probe-qualify` and `probe-run`: one-shot. Each claims the run row with an
   `operations` and `active_action` record and a renewed five-minute lease, so a
   replay or an overlapping action is refused. A failed action keeps its claim, so
-  only cleanup can follow. Qualify checks the login defaults (five identity probes,
+  only cleanup can follow. Successful qualification atomically clears its active
+  claim and appends a separate `probe-qualified` completion marker. The run claim
+  requires that marker, preventing workloads after skipped or failed qualification;
+  rejected run claims do not consume the run action or construct a worker client.
+  Qualify checks the login defaults (five identity probes,
   three of them concurrent), the privilege audit, statement-timeout cancellation and
   rollback, lock timeout, wrong owner and request, the shared/exclusive cleanup fence
   with exactly-once commit, and whether Neon applies `synchronous_commit=off` inside
