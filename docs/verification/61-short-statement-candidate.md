@@ -126,7 +126,9 @@ synchronous commit cut it by about two thirds again. In both durable modes the
 Estimates for the hosted target, not measurements: if the hosted p95 is also about
 55 × hold, #206's executor p95 of 139–154 ms (old shape) implies a hosted hold of
 about 2.5–2.8 ms. With roughly 11 ms of uncontended client latency, a 50 ms p95
-needs a hold of about (50 − 11) / 55 ≈ 0.7 ms. The local spike cannot say how much
+needs a hold of about (50 − 11) / 55 ≈ 0.7 ms. That figure combines a local ratio
+and #206's uncontended latency; it is a diagnostic, not a proven cutoff, and does
+not by itself show the target is unreachable. The local spike cannot say how much
 of the hosted hold is the post-update round trip (removed by the single statement)
 versus commit durability, which on Neon waits for WAL quorum and is unchanged by
 it. Limits: loopback client and container disk; local fsync is much faster than
@@ -143,15 +145,38 @@ successful-debit latency. Stop after 60 active minutes if preparation is incompl
 
 ## Proposed hosted workload budget — separate approval required
 
-Step 1, hosted hold probe (before the full experiment). Repeat the spike's three
-shapes on the designated Preview/Neon target: per shape, 20 workers × 200 debits
-and 1 worker × 50 debits, about 750 round trips in total plus setup and cleanup.
-It measures the hosted hold and the p95/hold ratio directly. If the single
-statement's hosted hold is above about 0.7 ms, the full experiment cannot meet
-50 ms at 20 workers and should not run; the owner then decides between
-`synchronous_commit=off` (if Neon supports it), escrow/credit leasing, or a
-target or hosting decision. `single-async` runs only if the owner approves
-measuring it.
+Step 1, hosted hold probe (before the full experiment). On the designated
+Preview/Neon target, each shape runs 20 workers × 200 debits and 1 worker × 50
+debits, so 250 debits per shape:
+
+| Shape | Per debit | Round trips | Submitted statements |
+| --- | --- | ---: | ---: |
+| batch | One Neon HTTP transaction: timeout settings, guard, debit | 250 | 750 |
+| single | One statement | 250 | 250 |
+| single-async | One statement, `synchronous_commit=off` at login | 250 | 250 |
+
+The hosted batch shape is the one #206 measured: one HTTP transaction carrying three
+statements, with begin and commit done on the server. It is not the local spike's
+five client round trips per debit, which no hosted caller uses. `single-async`
+changes durability and runs only with the owner's explicit approval.
+
+Workload: 500 round trips and 1,000 statements without `single-async`, or 750 and
+1,250 with it. Add at most 220 round trips/440 statements for finite qualification
+of the candidate role and at most 20 admin round trips of at most four statements
+(setup, per-run reset and balance check, snapshots, cleanup). Totals: 740 round
+trips/1,520 statements without `single-async`, or 990/1,770 with it. Caps are those
+totals plus 5% (777/1,596, or 1,040/1,859), enforced before any workload.
+
+Decision rule. The probe measures the 20-worker p95 of each shape directly. Step 2
+runs only if the single statement's measured 20-worker p95 is within 50 ms, or close
+enough that the owner judges a 1,000-sample trial could meet it; record that
+judgment with the numbers. A 200-sample p95 rests on its ten slowest samples, so it
+is a screening result, not acceptance. If the measured p95 and commits per second
+clearly show the target missed, stop and present them; the owner then decides
+between `synchronous_commit=off` (if Neon supports it and it is approved),
+escrow/credit leasing, or a target or hosting decision. The implied hold time and
+the p95/hold ratio are recorded as diagnostics that explain the result, never as
+the cutoff on their own.
 
 Step 2, full experiment, only if Step 1 passes. One bounded 20-worker experiment
 on the designated Preview/Neon target, with all provider APIs disabled. Three
