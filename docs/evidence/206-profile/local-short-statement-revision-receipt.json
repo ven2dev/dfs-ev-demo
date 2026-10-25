@@ -1,0 +1,52 @@
+{
+  "scope": "Review revision of the a095bd0 short-statement candidate: module-owned setup/cleanup SQL, per-mode parameters, backend counting, debit late-lease refusal, lock-hold spike",
+  "sourceParent": "a095bd0",
+  "runtime": "Node v24.21.0",
+  "fixture": {
+    "host": "127.0.0.1",
+    "port": 54361,
+    "database": "bench61",
+    "postgres": "18.6",
+    "memoryMiB": 512,
+    "container": "dfs61-hosted-harness-local",
+    "startedBefore": "2026-10-25T04:41:45Z",
+    "stoppedAt": "2026-10-25T04:42:39Z",
+    "finalState": "stopped"
+  },
+  "tests": [
+    {
+      "suite": "tests/bench61-candidate.test.ts",
+      "invocation": "BENCH61_LOCAL_TEST=1 vitest --config vitest.bench61-candidate.config.ts",
+      "observedAt": "2026-10-25T04:41:45Z",
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "suite": "tests/bench61-hold-spike.test.ts",
+      "invocation": "BENCH61_LOCAL_TEST=1 BENCH61_HOLD_SPIKE=1 vitest --config vitest.bench61-spike.config.ts",
+      "observedAt": "2026-10-25T04:42:05Z",
+      "passed": 1,
+      "failed": 0,
+      "skipped": 0,
+      "receipt": "local-hold-spike-receipt.json"
+    }
+  ],
+  "cleanup": {
+    "observedAt": "2026-10-25T04:42:39Z",
+    "schemaAbsent": true,
+    "roleAbsent": true,
+    "workerSessions": 0,
+    "operatorStatementTimeout": "0",
+    "operatorLockTimeout": "0"
+  },
+  "limits": "Local correctness and mechanism only. No hosted latency, Neon commit latency or pool behavior is established.",
+  "hostedActions": 0,
+  "providerCalls": 0,
+  "performanceRoutesEnabled": false,
+  "hostedTargetsUnchanged": {
+    "workers": 20,
+    "p95Ms": 50,
+    "headroomMs": 35
+  }
+}
