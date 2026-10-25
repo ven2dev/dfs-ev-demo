@@ -1,10 +1,11 @@
 import type { LivePropCacheEntry, LivePropCacheKey } from "@dfs-ev/db/runtime";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  getOrRefreshLivePropInputs,
+  getOrRefresh as getOrRefreshLivePropInputs,
   type LivePropCacheDeps,
-  type LivePropInputs,
-} from "./livePropCache";
+} from "@dfs-ev/db/runtime";
+
+type LivePropInputs = typeof payload;
 
 const key: LivePropCacheKey = {
   sportKey: "americanfootball_nfl",
@@ -13,7 +14,7 @@ const key: LivePropCacheKey = {
   playerName: "Jalen Hurts",
 };
 
-const payload: LivePropInputs = {
+const payload = {
   oddsByBookmaker: [
     {
       bookmakerKey: "draftkings",
@@ -43,7 +44,7 @@ const createMemoryDeps = (options: {
   let ownerSequence = 0;
   const currentTime = options.clock ?? (() => nowMs);
 
-  const deps: LivePropCacheDeps = {
+  const deps: LivePropCacheDeps<LivePropInputs> = {
     read: async () => entry,
     tryAcquireRefresh: async (_key, ownerId, freshAfterMs, leaseMs) => {
       if (entry && entry.fetchedAtMs > freshAfterMs) return false;
@@ -94,6 +95,25 @@ afterEach(() => {
 });
 
 describe("getOrRefreshLivePropInputs", () => {
+  it("accepts an opaque payload without provider fields", async () => {
+    const opaque = { revision: 7 };
+    let written: typeof opaque | undefined;
+    const deps: LivePropCacheDeps<typeof opaque> = {
+      read: async () => null,
+      tryAcquireRefresh: async () => true,
+      renew: async () => true,
+      write: async (_key, _ownerId, fresh) => { written = fresh; },
+      release: async () => undefined,
+      fetchFresh: async () => opaque,
+      makeOwnerId: () => "opaque-owner",
+      now: () => 100_000,
+      wait: async () => undefined,
+    };
+
+    await expect(getOrRefreshLivePropInputs(key, deps, { ttlMs: 90_000 })).resolves.toEqual(opaque);
+    expect(written).toEqual(opaque);
+  });
+
   it("returns a fresh shared entry without calling upstream", async () => {
     const fetchFresh = vi.fn(async () => payload);
     const { deps } = createMemoryDeps({

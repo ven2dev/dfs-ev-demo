@@ -1,16 +1,24 @@
 import "server-only";
 
-import { createLivePropCacheStore, type LivePropCacheKey } from "@dfs-ev/db/runtime";
+import { createLivePropCacheStore, getOrRefresh, type LivePropCacheKey } from "@dfs-ev/db/runtime";
 import { randomUUID } from "node:crypto";
 import { getSql } from "./db";
-import {
-  getOrRefreshLivePropInputs,
-  type LivePropInputs,
-} from "./livePropCache";
-import { fetchPlayerPropMarketOdds } from "./oddsApi";
+import { fetchPlayerPropMarketOdds, type OddsApiQuota, type PlayerPropBookmakerLine } from "./oddsApi";
 import { persistOddsObservation } from "./oddsSnapshotRepo";
 import { POLL_INTERVAL_MS } from "./streamConfig";
-import { fetchGameWeather } from "./weather";
+import { fetchGameWeather, type WeatherSnapshot } from "./weather";
+
+export type LivePropInputs = {
+  oddsByBookmaker: PlayerPropBookmakerLine[];
+  oddsObservation?: {
+    origin: "upstream";
+    observationId: string;
+    persisted: boolean;
+    capturedAt: string;
+    quota: OddsApiQuota;
+  };
+  weather: WeatherSnapshot;
+};
 
 export type LivePropFetchContext = {
   startTime: string;
@@ -29,7 +37,7 @@ export const getSharedLivePropInputs = async (
   key: LivePropCacheKey,
   context: LivePropFetchContext
 ): Promise<LivePropInputs> =>
-  getOrRefreshLivePropInputs(
+  getOrRefresh<LivePropInputs>(
     key,
     {
       ...cacheStore,

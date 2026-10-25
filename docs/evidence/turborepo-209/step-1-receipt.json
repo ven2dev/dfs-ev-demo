@@ -1,0 +1,159 @@
+{
+  "formatVersion": 1,
+  "issue": 209,
+  "stage": "Step 1 \u2014 generic cache kernel and boundary",
+  "baselineCommit": "17e25ae5c70056c6d03286ba5cd14eb7d177cd17",
+  "branch": "feature/dfsEV-209-generic-cache-kernel",
+  "candidateIdentity": {
+    "kind": "uncommitted candidate pending owner commit approval",
+    "changedTrackedPaths": [
+      "apps/web/src/lib/livePropCache.test.ts",
+      "apps/web/src/lib/livePropCache.ts",
+      "apps/web/src/lib/livePropCacheRepo.ts",
+      "apps/web/tests/db/orchestrator.ts",
+      "docs/turborepo-task-selection.md",
+      "package-lock.json",
+      "packages/db/package.json",
+      "packages/db/src/runtime.ts",
+      "packages/db/tsconfig.json",
+      "tests/db/orchestrator.test.ts",
+      "tests/import-boundaries.check.mjs",
+      "tests/monorepo-layout.check.mjs",
+      "tests/turbo-selection.check.mjs"
+    ],
+    "newPaths": [
+      "packages/db/src/livePropRefresh.ts",
+      "docs/evidence/turborepo-209/step-1-identity.json",
+      "docs/evidence/turborepo-209/step-1-receipt.json"
+    ],
+    "selectedSha256": {
+      "packages/db/src/livePropRefresh.ts": "5917bff6afdf6410abd1a068d497e6fec1d5750372327a347820ef706c4199c4",
+      "packages/db/src/runtime.ts": "19729d6edc37c1041033315aca6acb35a0036a0298a6b54f1236a66edec3108d",
+      "packages/db/package.json": "e147e701036ea16473cbf2faa9e66d5801a18649db29dd9c9257a2a94b3a90f9",
+      "packages/db/tsconfig.json": "86a614891f4e1e13e90afa65be1868fc4a71899e438bf4df67bf202d4e5d21f0",
+      "apps/web/src/lib/livePropCacheRepo.ts": "127cac18f3884cfda578f286394e72b5be76b0cfef324bd21ec83e97941dd32a",
+      "apps/web/src/lib/livePropCache.test.ts": "53deecb369e2fb0d78e2aa48ceb5b459b3a6ca5b04aa926f1e43ec0895411e44"
+    }
+  },
+  "architecture": {
+    "pattern": "generic lease-backed singleflight cache kernel beside generic DB store; web retains application composition",
+    "publicApi": [
+      "getOrRefresh<T>",
+      "LivePropCacheDeps<T>",
+      "LivePropCacheOptions"
+    ],
+    "runtimeImports": "only sibling ./livePropCache.ts type import; no web, pipeline, domain, tooling, Next, server-only or provider import",
+    "webRetains": [
+      "LivePropInputs",
+      "odds/weather provider types and clients",
+      "livePropCacheRepo cancellation/history/TTL/clock/ID composition",
+      "ordinary DB alias and scenario until Step 2"
+    ],
+    "deferredToStep2": [
+      "move 8 kernel units and 1 store-adapter unit",
+      "explicit vitest.db.config.mts exclusion for packages/db/tooling/tests/unit/**",
+      "DB-tooling affected unit command",
+      "move/genericize 25-contender scenario and root adapter",
+      "reassert 74 Node / 25 PostgreSQL / 12 catalog counts"
+    ]
+  },
+  "ownerConditions": {
+    "nodeTypes": {
+      "manifest": "@types/node ^24.19.2",
+      "lockedResolution": "24.19.2",
+      "tsconfigTypes": [
+        "node"
+      ],
+      "tsconfigLib": [
+        "ES2022"
+      ],
+      "domAdded": false,
+      "verdict": "pass"
+    },
+    "lockfile": {
+      "changedPackageRecords": [
+        "packages/db"
+      ],
+      "externalRecordsChanged": [],
+      "verdict": "pass: only packages/db workspace record changed"
+    },
+    "identity": {
+      "baselineCount": 17,
+      "candidateCount": 18,
+      "missing": [],
+      "added": [
+        "getOrRefreshLivePropInputs accepts an opaque payload without provider fields"
+      ],
+      "describeRetained": "getOrRefreshLivePropInputs",
+      "plannedPathMapping": {
+        "apps/web/src/lib/livePropCache.test.ts": "packages/db/tooling/tests/unit/livePropCache.test.ts",
+        "apps/web/src/lib/livePropCacheStore.test.ts": "packages/db/tooling/tests/unit/livePropCacheStore.test.ts",
+        "apps/web/tests/db/orchestrator.ts": "packages/db/tooling/tests/orchestrator.ts",
+        "tests/db/orchestrator.test.ts": "packages/db/tooling/tests/orchestrator.test.ts"
+      },
+      "verdict": "pass: all 17 prior names retained; one generic opaque-payload case added"
+    }
+  },
+  "workBudgets": {
+    "freshHit": {
+      "cacheQueries": 1,
+      "providerOrHistoryCalls": 0,
+      "preservedBy": "existing repository unit case"
+    },
+    "uncontendedRefresh": {
+      "cacheQueries": 3,
+      "preservedBy": "existing repository unit case"
+    },
+    "opaquePayload": "new unit stores and returns { revision: 7 } without odds/weather fields"
+  },
+  "checks": [
+    {
+      "command": "npm run typecheck --workspace @dfs-ev/db",
+      "result": "pass"
+    },
+    {
+      "command": "node --input-type=module -e import @dfs-ev/db/runtime export probe",
+      "result": "pass"
+    },
+    {
+      "command": "Vitest cache/store targeted",
+      "result": "pass: 10 cases (8 retained kernel, 1 retained store, 1 added opaque payload)"
+    },
+    {
+      "command": "Vitest web repository targeted",
+      "result": "pass: 8 retained cases"
+    },
+    {
+      "command": "npm test --workspace @dfs-ev/db",
+      "result": "pass: 9 DB harness unit cases"
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "pass"
+    },
+    {
+      "command": "npm run lint",
+      "result": "pass: ESLint plus 11 import-boundary checks"
+    },
+    {
+      "command": "npm run test:repo-layout",
+      "result": "pass: 11 checks, including Node-only DB types guard"
+    },
+    {
+      "command": "node --test tests/turbo-layout.check.mjs tests/turbo-selection.check.mjs tests/turbo-ci-selection.check.mjs",
+      "runtime": "Node 24.18.1",
+      "result": "pass: 26 checks"
+    }
+  ],
+  "unchangedOrNotRun": {
+    "workflow": "byte-identical; no CI configuration/task ownership change in Step 1",
+    "frozenSql": "not modified",
+    "databaseSuites": "not run in Step 1; Step 2 owns ordinary suite and Step 4 owns both full suites",
+    "webOnlyInstallPreview": "deferred to Step 4/pre-merge gate"
+  },
+  "activeEngineeringTimeHours": 1.8,
+  "timeCapHours": 5,
+  "verdict": "pass for Step 1 commit review; Step 2 requirements remain pending",
+  "commit": "not approved or created",
+  "push": "not approved or performed"
+}

@@ -74,7 +74,7 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
     receipt.base = base;
     const probes = [
       ["ui", "apps/web/src/probe.ts", "// UI probe\n", web, "affected"],
-      ["web-db", "apps/web/src/lib/livePropCache.ts", "// lease/cache probe\n", web, "affected"],
+      ["web-db", "apps/web/src/lib/livePropCacheRepo.ts", "// lease/cache probe\n", web, "affected"],
       ["domain", "packages/domain/src/probe.ts", "// domain probe\n", domain, "affected"],
       ["db-proposal", "packages/db/proposals/probe.sql", "-- SQL probe\n", all, "full"],
       ["pipeline", "services/pipeline/src/probe.ts", "// pipeline probe\n", pipeline, "affected"],

@@ -1,0 +1,58 @@
+{
+  "formatVersion": 1,
+  "issue": 209,
+  "stage": "step-1-generic-kernel",
+  "baselineCommit": "17e25ae5c70056c6d03286ba5cd14eb7d177cd17",
+  "candidateIdentity": "uncommitted; commit pending owner approval",
+  "ownerConditions": {
+    "dbTypeSupport": {
+      "packageDevDependency": "@types/node@^24.19.2",
+      "lockResolution": "24.19.2",
+      "types": [
+        "node"
+      ],
+      "lib": [
+        "ES2022"
+      ],
+      "domAdded": false
+    },
+    "futureUnitExclusion": "Step 2 must explicitly exclude packages/db/tooling/tests/unit/** from vitest.db.config.mts",
+    "testIdentity": "original names retained; planned old/new path map below"
+  },
+  "movedTestPaths": {
+    "apps/web/src/lib/livePropCache.test.ts": "packages/db/tooling/tests/unit/livePropCache.test.ts",
+    "apps/web/src/lib/livePropCacheStore.test.ts": "packages/db/tooling/tests/unit/livePropCacheStore.test.ts",
+    "apps/web/tests/db/orchestrator.ts": "packages/db/tooling/tests/orchestrator.ts",
+    "tests/db/orchestrator.test.ts": "packages/db/tooling/tests/orchestrator.test.ts"
+  },
+  "existingKernelNames": [
+    "getOrRefreshLivePropInputs returns a fresh shared entry without calling upstream",
+    "getOrRefreshLivePropInputs collapses concurrent viewers of one prop into one upstream refresh",
+    "getOrRefreshLivePropInputs takes over an abandoned refresh after its database lease expires",
+    "getOrRefreshLivePropInputs returns freshly fetched inputs even when the cache write fails",
+    "getOrRefreshLivePropInputs releases its lease when the upstream refresh fails",
+    "getOrRefreshLivePropInputs renews through a slow cache write so another viewer cannot take its lease",
+    "getOrRefreshLivePropInputs aborts a timed-out refresh and releases its lease",
+    "getOrRefreshLivePropInputs aborts and releases when it can no longer renew its lease"
+  ],
+  "storeAdapterName": "createLivePropCacheStore keeps each store bound to its own query adapter without querying during construction",
+  "webRepositoryNames": [
+    "getSharedLivePropInputs acquires the database lease, fetches both inputs once, and writes one shared payload",
+    "getSharedLivePropInputs serves a fresh database payload with a string timestamp without touching either upstream API",
+    "getSharedLivePropInputs serves a fresh database payload with a Date timestamp without touching either upstream API",
+    "getSharedLivePropInputs fails open with the fresh upstream result when its cache update fails",
+    "getSharedLivePropInputs returns and caches fresh inputs when immutable-history persistence fails",
+    "getSharedLivePropInputs does not log an expected history error when a live refresh arrives at kickoff",
+    "getSharedLivePropInputs renews a slow refresh with an owner-guarded database update",
+    "getSharedLivePropInputs cancels the sibling upstream request before releasing a failed refresh"
+  ],
+  "namePolicy": "All listed names, including describe(getOrRefreshLivePropInputs), remain exact. Step 1 adds only the separately reported opaque-payload test.",
+  "addedStep1Tests": [
+    "getOrRefreshLivePropInputs accepts an opaque payload without provider fields"
+  ],
+  "lockfileExpectation": {
+    "changedWorkspaceEntry": "packages/db",
+    "externalPackageEntries": "unchanged"
+  },
+  "status": "Step 1 candidate; physical unit/scenario paths, explicit PostgreSQL exclusion and test runner ownership are deferred to Step 2."
+}

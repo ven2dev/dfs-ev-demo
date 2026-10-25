@@ -1,24 +1,10 @@
-import type { LivePropCacheEntry, LivePropCacheKey, LivePropCacheStore } from "@dfs-ev/db/runtime";
-import type { OddsApiQuota, PlayerPropBookmakerLine } from "./oddsApi";
-import type { WeatherSnapshot } from "./weather";
+import type { LivePropCacheEntry, LivePropCacheKey, LivePropCacheStore } from "./livePropCache.ts";
 
-export type LivePropInputs = {
-  oddsByBookmaker: PlayerPropBookmakerLine[];
-  oddsObservation?: {
-    origin: "upstream";
-    observationId: string;
-    persisted: boolean;
-    capturedAt: string;
-    quota: OddsApiQuota;
-  };
-  weather: WeatherSnapshot;
-};
-
-export type LivePropCacheDeps = LivePropCacheStore<LivePropInputs> & {
+export type LivePropCacheDeps<T> = LivePropCacheStore<T> & {
   fetchFresh: (
     key: LivePropCacheKey,
     signal: AbortSignal
-  ) => Promise<LivePropInputs>;
+  ) => Promise<T>;
   makeOwnerId: () => string;
   now: () => number;
   wait: (ms: number) => Promise<void>;
@@ -40,20 +26,20 @@ const DEFAULT_REFRESH_TIMEOUT_MS = 20_000;
 const DEFAULT_WAIT_INTERVAL_MS = 250;
 const DEFAULT_MAX_WAIT_MS = 45_000;
 
-const isFresh = (
-  entry: LivePropCacheEntry<LivePropInputs> | null,
+const isFresh = <T>(
+  entry: LivePropCacheEntry<T> | null,
   freshAfterMs: number
-): entry is LivePropCacheEntry<LivePropInputs> => entry !== null && entry.fetchedAtMs > freshAfterMs;
+): entry is LivePropCacheEntry<T> => entry !== null && entry.fetchedAtMs > freshAfterMs;
 
 // Cross-instance singleflight. Postgres owns the refresh lease, so two
 // serverless instances racing on the same prop cannot both call the
-// upstream odds/weather APIs. Followers wait for the lease holder's
+// upstream fetch function. Followers wait for the lease holder's
 // cache write and then consume that same observation.
-export const getOrRefreshLivePropInputs = async (
+export const getOrRefresh = async <T>(
   key: LivePropCacheKey,
-  deps: LivePropCacheDeps,
+  deps: LivePropCacheDeps<T>,
   options: LivePropCacheOptions
-): Promise<LivePropInputs> => {
+): Promise<T> => {
   const startedAtMs = deps.now();
   const freshAfterMs = startedAtMs - options.ttlMs;
   const leaseMs = options.leaseMs ?? DEFAULT_LEASE_MS;
@@ -112,7 +98,7 @@ export const getOrRefreshLivePropInputs = async (
   }, renewIntervalMs);
 
   try {
-    let fresh: LivePropInputs;
+    let fresh: T;
     try {
       fresh = await deps.fetchFresh(key, controller.signal);
     } catch (error) {

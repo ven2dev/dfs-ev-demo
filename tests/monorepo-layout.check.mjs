@@ -256,6 +256,21 @@ test("database runtime and tooling have separate one-way dependency graphs", asy
   }
 });
 
+test("database runtime uses explicit Node types without a DOM-library dependency", async () => {
+  const [rootManifest, runtimeManifest, runtimeTsconfig] = await Promise.all([
+    "package.json", "packages/db/package.json", "packages/db/tsconfig.json",
+  ].map(async path => JSON.parse(await readFile(new URL(path, root), "utf8"))));
+  assert.equal(runtimeManifest.devDependencies?.["@types/node"], rootManifest.devDependencies?.["@types/node"],
+    "DB runtime pins the repository's existing Node declaration range");
+  assert.deepEqual(runtimeTsconfig.compilerOptions.types, ["node"],
+    "DB runtime has Node timer/AbortSignal declarations without ambient application types");
+  assert.deepEqual(runtimeTsconfig.compilerOptions.lib, ["ES2022"],
+    "DB runtime does not acquire DOM declarations for its generic cache kernel");
+  const contaminated = structuredClone(runtimeTsconfig);
+  contaminated.compilerOptions.lib.push("DOM");
+  assert.notDeepEqual(contaminated.compilerOptions.lib, ["ES2022"]);
+});
+
 
 const assertPipelinePackageGraph = (pipeline, infrastructure) => {
   for (const manifest of infrastructure) {

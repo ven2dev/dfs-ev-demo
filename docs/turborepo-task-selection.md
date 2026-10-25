@@ -357,3 +357,15 @@ The Step 4 receipt is unchanged and describes `d874c50`; it does not cover this
 correction. The ordinary and feature-store suites, their commands and fixtures
 are unchanged, so their recorded case counts still apply. Hosted Node 24
 verification of this correction remains pending a separately approved push.
+
+
+## #209 generic-kernel extraction status
+
+#209 begins from the #192 conservative correction and moves only the opaque
+lease/singleflight kernel to @dfs-ev/db/runtime. livePropCacheRepo.ts,
+provider types and provider/history composition remain web-owned. Web retains
+its ordinary-DB alias until the DB-owned unit and 25-contender scenario checks
+have passed; only then may #209 replace that alias with the DB-runtime task.
+This preserves fail-closed selection during the intermediate steps. The generic
+kernel has no provider policy, so DB's normal root/full fallback selects both DB
+suites for a kernel edit; the accepted over-selection avoids a custom selector.

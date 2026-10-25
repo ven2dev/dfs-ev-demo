@@ -1,5 +1,5 @@
 import { registerOrchestratorDatabaseTest } from "../../apps/web/tests/db/orchestrator";
-import type { LivePropInputs } from "../../apps/web/src/lib/livePropCache";
+import type { LivePropInputs } from "../../apps/web/src/lib/livePropCacheRepo";
 import { openTestClient } from "@dfs-ev/db-tooling/test-support/clients";
 import { cacheState, freshAfter, key, leaseMs, openContenders, payload, testStore } from "@dfs-ev/db-tooling/test-support/leases";
 

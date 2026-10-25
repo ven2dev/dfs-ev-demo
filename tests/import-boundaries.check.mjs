@@ -39,14 +39,14 @@ test("workspace relative imports fail in runtime, type-only, re-export, dynamic 
 });
 
 test("domain cannot import apps or services through relative paths, package names or the web alias", async () => {
-  for (const source of ["../../../apps/web/src/lib/livePropCache.ts", "../../../services/pipeline/src/featureStore/objectStore.ts"])
+  for (const source of ["../../../apps/web/src/lib/livePropCacheRepo.ts", "../../../services/pipeline/src/featureStore/objectStore.ts"])
     for (const code of forms(source)) await refuses("packages/domain/src/boundary-probe.ts", code, "import/no-restricted-paths");
-  for (const source of ["@dfs-ev/web", "@dfs-ev/web/src/lib/livePropCache", "@dfs-ev/pipeline", "@dfs-ev/pipeline/src/featureStore/objectStore", "@/lib/livePropCache"])
+  for (const source of ["@dfs-ev/web", "@dfs-ev/web/src/lib/livePropCacheRepo", "@dfs-ev/pipeline", "@dfs-ev/pipeline/src/featureStore/objectStore", "@/lib/livePropCacheRepo"])
     for (const code of forms(source)) await refuses("packages/domain/src/boundary-probe.ts", code, code.includes("require(") || code.includes("= import(") ? "no-restricted-syntax" : "no-restricted-imports");
 });
 
 test("TypeScript inline-import forms cannot bypass workspace checking", async () => {
-  for (const source of ["../../../apps/web/src/lib/livePropCache.ts", "@dfs-ev/pipeline", "@/lib/livePropCache", "@dfs-ev/domain/src/contracts.ts"])
+  for (const source of ["../../../apps/web/src/lib/livePropCacheRepo.ts", "@dfs-ev/pipeline", "@/lib/livePropCacheRepo", "@dfs-ev/domain/src/contracts.ts"])
     await refuses("packages/domain/src/boundary-probe.ts", `type Value = import("${source}").Value;`, "no-restricted-syntax");
   await refuses("apps/web/src/boundary-probe.ts", 'import Value = require("../../../packages/domain/src/contracts.ts");', "no-restricted-syntax");
 });
@@ -77,11 +77,11 @@ test("root lint runs the negative boundary probes in the CI lint step", () => {
 
 test("database runtime and tooling cannot import consumers through any supported import form", async () => {
   for (const [file, sources] of [
-    ["packages/db/src/boundary-probe.ts", ["../../../apps/web/src/lib/livePropCache.ts", "../../../services/pipeline/src/featureStore/objectStore.ts"]],
-    ["packages/db/tooling/tests/boundary-probe.ts", ["../../../../apps/web/src/lib/livePropCache.ts", "../../../../services/pipeline/src/featureStore/objectStore.ts"]],
+    ["packages/db/src/boundary-probe.ts", ["../../../apps/web/src/lib/livePropCacheRepo.ts", "../../../services/pipeline/src/featureStore/objectStore.ts"]],
+    ["packages/db/tooling/tests/boundary-probe.ts", ["../../../../apps/web/src/lib/livePropCacheRepo.ts", "../../../../services/pipeline/src/featureStore/objectStore.ts"]],
   ]) {
     for (const source of sources) for (const code of forms(source)) await refuses(file, code, "import/no-restricted-paths");
-    for (const source of ["@dfs-ev/web", "@dfs-ev/web/src/lib/livePropCache", "@dfs-ev/pipeline", "@dfs-ev/pipeline/src/featureStore/objectStore", "@/lib/livePropCache"])
+    for (const source of ["@dfs-ev/web", "@dfs-ev/web/src/lib/livePropCacheRepo", "@dfs-ev/pipeline", "@dfs-ev/pipeline/src/featureStore/objectStore", "@/lib/livePropCacheRepo"])
       for (const code of forms(source)) await refuses(file, code, code.includes("require(") || code.includes("= import(") ? "no-restricted-syntax" : "no-restricted-imports");
   }
 });
@@ -110,7 +110,7 @@ test("web source and tests may import only the runtime database entry point", as
     ["packages/db/tooling/tests/boundary-probe.ts", "../../src/readiness.ts"],
   ]) for (const code of forms(source)) await refuses(file, code, "import/no-relative-packages");
   for (const file of ["apps/web/src/boundary-probe.ts", "packages/db/src/boundary-probe.ts", "packages/db/tooling/tests/boundary-probe.ts"])
-    for (const source of ["@dfs-ev/db-tooling/test-support/clients", "@dfs-ev/web", "../../../apps/web/src/lib/livePropCache.ts"])
+    for (const source of ["@dfs-ev/db-tooling/test-support/clients", "@dfs-ev/web", "../../../apps/web/src/lib/livePropCacheRepo.ts"])
       await refuses(file, `type Value = import("${source}").Value;`, "no-restricted-syntax");
 });
 
@@ -119,7 +119,7 @@ test("pipeline source, scripts and tests cannot import web through any supported
   for (const file of ["services/pipeline/src/boundary-probe.ts", "services/pipeline/scripts/boundary-probe.ts", "services/pipeline/tests/boundary-probe.ts"]) {
     for (const source of ["@dfs-ev/web", "@dfs-ev/web/src/lib/livePropStore", "@/lib/livePropStore"])
       for (const code of forms(source)) await refuses(file, code, code.includes("require(") || code.includes("= import(") ? "no-restricted-syntax" : "no-restricted-imports");
-    await refuses(file, 'import "../../../apps/web/src/lib/livePropCache.ts";', "import/no-relative-packages");
+    await refuses(file, 'import "../../../apps/web/src/lib/livePropCacheRepo.ts";', "import/no-relative-packages");
     await refuses(file, 'type Value = import("@dfs-ev/web").Value;', "no-restricted-syntax");
   }
 });

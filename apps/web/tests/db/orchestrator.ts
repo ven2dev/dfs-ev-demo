@@ -1,6 +1,7 @@
 import { setTimeout as delay } from "node:timers/promises";
 import { expect, it, vi } from "vitest";
-import { getOrRefreshLivePropInputs, type LivePropInputs } from "../../src/lib/livePropCache";
+import { getOrRefresh as getOrRefreshLivePropInputs } from "@dfs-ev/db/runtime";
+import type { LivePropInputs } from "../../src/lib/livePropCacheRepo";
 import type { LivePropCacheKey, LivePropCacheStore } from "@dfs-ev/db/runtime";
 
 // The root integration adapter supplies infrastructure fixtures. This scenario
