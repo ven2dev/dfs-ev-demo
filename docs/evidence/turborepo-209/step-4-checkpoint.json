@@ -1,0 +1,266 @@
+{
+  "formatVersion": 1,
+  "issue": 209,
+  "stage": "Step 4 \u2014 combined preservation checkpoint",
+  "baselineCommit": "17e25ae5c70056c6d03286ba5cd14eb7d177cd17",
+  "implementationHead": "ffe7a7c6ca28825bcf36a6697402a0fecc231066",
+  "branch": "feature/dfsEV-209-generic-cache-kernel",
+  "candidateStatus": {
+    "implementationCommits": [
+      "9f3f9c1",
+      "03880d4605637933798999907b4f5ff8fcbf53c2",
+      "ffe7a7c6ca28825bcf36a6697402a0fecc231066"
+    ],
+    "step4ChangesBeforeThisReceipt": [
+      " M docs/turborepo-task-selection.md",
+      " M packages/db/tooling/tests/orchestrator.ts",
+      "?? docs/generic-cache-kernel.md"
+    ],
+    "receiptPath": "docs/evidence/turborepo-209/step-4-checkpoint.json",
+    "push": "not approved or performed",
+    "hostedChecks": "not run",
+    "preview": "not run"
+  },
+  "design": {
+    "pattern": "generic lease-backed singleflight cache kernel beside its generic PostgreSQL store; web retains provider and application composition",
+    "publicRuntimeApi": [
+      "getOrRefresh<T>",
+      "LivePropCacheDeps<T>",
+      "LivePropCacheOptions"
+    ],
+    "acceptedSelectionTradeoff": "a DB-kernel or DB-scenario change conservatively selects the full graph and both DB suites; web/UI composition changes select neither DB suite",
+    "futureExtractionTriggers": [
+      "Next, server-only, provider SDK or domain dependency",
+      "provider or credit-spend policy such as #61",
+      "frequent kernel edits whose conservative full graph cost needs a separate-package optimization"
+    ]
+  },
+  "preservation": {
+    "frozenRelocationManifest": {
+      "checked": 34,
+      "mismatches": []
+    },
+    "unchangedByByteHash": {
+      ".github/workflows/ci.yml": {
+        "sha256": "50c76d498071dbae82cbacd0553f7fd670cbf88d63a3bb913ffaad466446367b",
+        "matchesBase": true
+      },
+      "turbo.json": {
+        "sha256": "3f656f191071ba6b989d531727be2234a06fcc7e3c61ee0407dea31e5d194ea0",
+        "matchesBase": true
+      },
+      "package.json": {
+        "sha256": "c9e642790c193b1afe2e96d04404f089237f8708913da1b04e4f5902a691dabb",
+        "matchesBase": true
+      },
+      "scripts/turbo/run-affected.mjs": {
+        "sha256": "73d62122ce8d4b9204b6c2306542fced017bdf6301b68696eddb951d94f2fe7b",
+        "matchesBase": true
+      },
+      "packages/db/src/livePropCache.ts": {
+        "sha256": "8c4964fb97f7c92423e0cadce94442c5d4437a534fb394c3790988902b954749",
+        "matchesBase": true
+      },
+      "packages/db/catalog.sql": {
+        "sha256": "6174d71894f9e05c3e57dda8bef4dce2ce7e97bc99ce9ef5da14edb334ce67fa",
+        "matchesBase": true
+      },
+      "packages/db/migration-manifest.json": {
+        "sha256": "6a9ec6d3d6627b1f8c0ff5b6be08c89d8fba3ea70901684723f2497e66a768b5",
+        "matchesBase": true
+      },
+      "packages/db/readiness.json": {
+        "sha256": "d2f108774fb1b2732fcc80776e7beb2a8e78e179916c12e3954c4db86060d3fe",
+        "matchesBase": true
+      },
+      "packages/db/schema.sql": {
+        "sha256": "993fad84aa8f992c5b3373d869a7260d4bb13557b3e36aa626b8873570e5d34b",
+        "matchesBase": true
+      }
+    },
+    "externalLockRecordsChanged": [],
+    "lockfileChangedPackageRecords": [
+      "packages/db"
+    ],
+    "lockfileBaseSha256": "c39c13b1086575dd4244e17ca7e7452a41966f848a97c299a6fef8bfac19ca67",
+    "lockfileCandidateSha256": "dd0fe58a230ef794d1d51aac676a92eb16ab7cf3ddfc2084736ac7ac2fb25a6e",
+    "packagesDbLockChange": "workspace devDependency @types/node ^24.19.2 only; locked external resolution remains 24.19.2",
+    "nodeTypeBoundary": {
+      "types": [
+        "node"
+      ],
+      "lib": [
+        "ES2022"
+      ],
+      "domAdded": false
+    },
+    "codeSha256": {
+      "apps/web/src/lib/livePropCacheRepo.ts": "127cac18f3884cfda578f286394e72b5be76b0cfef324bd21ec83e97941dd32a",
+      "packages/db/src/livePropRefresh.ts": "5917bff6afdf6410abd1a068d497e6fec1d5750372327a347820ef706c4199c4",
+      "packages/db/src/runtime.ts": "19729d6edc37c1041033315aca6acb35a0036a0298a6b54f1236a66edec3108d",
+      "packages/db/tooling/tests/orchestrator.ts": "6a5883069156022f5921eb0fa52ff68ca57edf2a75620bf9f82677277a97fdc8",
+      "apps/web/package.json": "8ee37e028049d383db2e328f6f4edd05303bab3f9cd9f1a0011bada131067c7e",
+      "packages/db/package.json": "f6649317573d69f4c52f267e937c04829a9d3d606d27baacc5b84aeeb8621d13",
+      "packages/db/tooling/package.json": "42e8e7d8687fb0764080a2ee3e24c2869eeae61bb5e1353a67e98493d0e714d9",
+      "packages/db/tsconfig.json": "86a614891f4e1e13e90afa65be1868fc4a71899e438bf4df67bf202d4e5d21f0",
+      "vitest.node.config.ts": "9fdc59c68f9dc974a6f0efa812c7bfe39bd781565e791459beeb219b637acf08",
+      "vitest.db.config.mts": "ae257a19524f0b876c88970135f2728cfa44200e4f8800208d676bd3e2999085",
+      "scripts/db/db-test-lanes.mjs": "30d69bbdcbcd1d289d592a1fdc4f82c5cc292290cbdda647888e21f4892f7414",
+      "scripts/turbo/ci-db-selection.mjs": "be33c95a298de177e45bd4360a22b1af67051be6c5d02f24a82aeba6fc56c731",
+      "tests/import-boundaries.check.mjs": "091ab4097a5ad4d27f36306957a1f908d1a7e6bee5653849591faad31c69dc11",
+      "tests/turbo-layout.check.mjs": "81aff0b608d4649e9e003dcd0d028cab06fc3129fcd12651e636ceb600b52609",
+      "tests/turbo-selection.check.mjs": "ebac33e84a20c41e731c993c025e315c1447758765b3ba6016c42a96fb23c7a1",
+      "tests/turbo-ci-selection.check.mjs": "126dc79b854197f3a3478e223aa44111c539b00bb28a5cd6178f7f4ea875edd1"
+    }
+  },
+  "testIdentity": {
+    "originalRetainedCount": 17,
+    "currentRetainedCount": 17,
+    "exactNameMultiplicityPreserved": true,
+    "movedPathMapping": {
+      "apps/web/src/lib/livePropCache.test.ts": "packages/db/tooling/tests/unit/livePropCache.test.ts",
+      "apps/web/src/lib/livePropCacheStore.test.ts": "packages/db/tooling/tests/unit/livePropCacheStore.test.ts",
+      "apps/web/tests/db/orchestrator.ts": "packages/db/tooling/tests/orchestrator.ts",
+      "tests/db/orchestrator.test.ts": "packages/db/tooling/tests/orchestrator.test.ts"
+    },
+    "movedOriginalCases": {
+      "apps/web/src/lib/livePropCache.test.ts": [
+        "getOrRefreshLivePropInputs > returns a fresh shared entry without calling upstream",
+        "getOrRefreshLivePropInputs > collapses concurrent viewers of one prop into one upstream refresh",
+        "getOrRefreshLivePropInputs > takes over an abandoned refresh after its database lease expires",
+        "getOrRefreshLivePropInputs > returns freshly fetched inputs even when the cache write fails",
+        "getOrRefreshLivePropInputs > releases its lease when the upstream refresh fails",
+        "getOrRefreshLivePropInputs > renews through a slow cache write so another viewer cannot take its lease",
+        "getOrRefreshLivePropInputs > aborts a timed-out refresh and releases its lease",
+        "getOrRefreshLivePropInputs > aborts and releases when it can no longer renew its lease"
+      ],
+      "apps/web/src/lib/livePropCacheStore.test.ts": [
+        "createLivePropCacheStore > keeps each store bound to its own query adapter without querying during construction"
+      ]
+    },
+    "retainedWebRepositoryCases": 8,
+    "addedCases": [
+      "getOrRefreshLivePropInputs > accepts an opaque payload without provider fields",
+      "getSharedLivePropInputs wiring > binds the lazy query, TTL, id, clock and fetch callbacks to the generic kernel"
+    ],
+    "fullRootInventory": {
+      "baseline": {
+        "browserJsdom": 951,
+        "node": 291,
+        "total": 1242
+      },
+      "candidate": {
+        "browserJsdom": 942,
+        "node": 302,
+        "total": 1244
+      },
+      "changeExplanation": "nine moved generic cases leave browser and enter Node; opaque-payload and web-wiring cases add two Node cases"
+    },
+    "ordinaryDb": {
+      "requiredNodeCases": 74,
+      "postgresCases": 25,
+      "catalogContracts": 12,
+      "movedScenario": "25 database-backed consumers wait for one fetch and receive the same persisted payload"
+    },
+    "featureStoreCases": 79
+  },
+  "workBudgets": {
+    "freshHit": {
+      "cacheQueries": 1,
+      "providerAndHistoryCalls": 0
+    },
+    "uncontendedRefresh": {
+      "cacheQueries": 3,
+      "oddsRequests": 1,
+      "weatherRequests": 1,
+      "eligibleHistoryCallback": "unchanged"
+    },
+    "defaultsMs": {
+      "webTtl": 90000,
+      "lease": 30000,
+      "renewal": 10000,
+      "fetchTimeout": 20000,
+      "followerPoll": 250,
+      "maximumWait": 45000
+    }
+  },
+  "selection": {
+    "command": "npm run test:turbo-layout",
+    "runtime": "Node 24.18.1",
+    "result": "pass: 29 checks; real disposable Git ranges, current/proposed UI control and missing DB-alias/translator refusal probes",
+    "uiAndWebComposition": {
+      "ordinaryDb": false,
+      "featureStore": false,
+      "mode": "affected"
+    },
+    "dbKernelOrScenario": {
+      "ordinaryDb": true,
+      "featureStore": true,
+      "mode": "full"
+    },
+    "unknownOrGlobal": {
+      "ordinaryDb": true,
+      "featureStore": true,
+      "mode": "full"
+    },
+    "allTasksUncached": true
+  },
+  "checks": [
+    {
+      "command": "npm test",
+      "runtime": "Node 24.18.1",
+      "result": "pass: 942 browser/jsdom + 302 Node"
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "pass; readiness artifact verified"
+    },
+    {
+      "command": "npm run lint",
+      "result": "pass: ESLint + 11 import-boundary probes"
+    },
+    {
+      "command": "npm run test:ci-gate",
+      "result": "pass: 22 aggregate/layout checks"
+    },
+    {
+      "command": "npm run test:turbo-layout",
+      "result": "pass: 29 checks"
+    },
+    {
+      "command": "npm run test:firestore-rules",
+      "result": "pass; emulator stopped"
+    },
+    {
+      "command": "clean workspace-only install/build",
+      "commandDetail": "npm ci --workspace @dfs-ev/web --ignore-scripts --no-audit --no-fund; VERCEL=1 npm run build --workspace @dfs-ev/web",
+      "result": "pass: 379 packages; Next 16.4.2 generated all routes; pg, @types/pg and @dfs-ev/db-tooling absent"
+    },
+    {
+      "command": "npm run test:db:guard; npm run test:db:lifecycle; npm run test:db:local",
+      "fixture": "standard 512 MiB disposable PostgreSQL",
+      "result": "pass: 21 guard + 1 lifecycle + 74 required Node + 25 PostgreSQL + 12 catalog contracts; cleanup observed"
+    },
+    {
+      "command": "npm run test:feature-store:db",
+      "fixture": "fresh standard 512 MiB disposable PostgreSQL",
+      "result": "pass: 79/79; cleanup observed; 55.80 s"
+    },
+    {
+      "command": "git diff --check",
+      "result": "pass"
+    }
+  ],
+  "environmentObservations": [
+    "The sandbox could not fetch Google Geist fonts and an escalated existing-worktree build hit a Turbopack CSS-worker EPERM bind. A clean workspace-only clone build passed, so no source change was made for either environment restriction.",
+    "The first final feature-store run failed five ingestion assertions after a captured_at <= ingested_at constraint failure. PostgreSQL measured 1\u20135 ms behind the Node process. The unchanged pinned base passed that ingestion file 11/11 on the same fixture, and a fresh full candidate run passed 79/79. This pre-existing clock-skew-sensitive probe is recorded for follow-up; #209 does not change ingestion or feature-store code."
+  ],
+  "remainingBeforeMerge": [
+    "owner review and Step 4 commit approval",
+    "fresh owner push approval, independent review and hosted Node 24 CI",
+    "protected Preview with configured read-only readiness query; not-configured proves module loading only, not Neon driver execution"
+  ],
+  "activeEngineeringTimeHours": 4.6,
+  "timeCapHours": 5,
+  "verdict": "pass locally for Step 4 commit review; no push, PR, deployment or merge is authorized by this receipt"
+}

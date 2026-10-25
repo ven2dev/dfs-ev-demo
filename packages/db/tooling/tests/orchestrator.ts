@@ -2,8 +2,9 @@ import { setTimeout as delay } from "node:timers/promises";
 import { expect, it, vi } from "vitest";
 import { getOrRefresh, type LivePropCacheKey, type LivePropCacheStore } from "@dfs-ev/db/runtime";
 
-// The root integration adapter supplies infrastructure fixtures. This scenario
-// owns web refresh behavior without depending on a DB driver or test harness.
+// The DB-owned integration adapter supplies generic infrastructure fixtures.
+// This scenario verifies lease-backed refresh behavior without a web, driver or
+// provider dependency.
 type OrchestratorFixtures<Client, Payload> = {
   openTestClient: () => Promise<Client>;
   cacheState: (client: Client) => Promise<{ refresh_owner: string | null } | undefined>;
