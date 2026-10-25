@@ -482,5 +482,7 @@ deployment id. Evidence JSON is committed under docs/evidence once reviewed, per
 the measurement rules.
 
 Residual sessions. Two idle sessions for the removed role (OID 40960) remained at
-both observations, with none active or unknown and none terminated. Do not claim
-zero residual sessions until a timestamped observation shows them gone.
+both observations, with none active or unknown and none terminated. A later
+owner-run read-only query at 2026-10-25T05:53:21Z found zero sessions for that
+role, so they ended on their own without termination
+(`docs/evidence/206-profile/hosted-b09b7bf/residual-sessions-followup.json`).

@@ -23,8 +23,10 @@ Known limits, recorded in `docs/verification/61-http-timeout-qualification.md`
 - The report's "backend isolation held" claim is narrower than written: the probe
   shows transaction-local state did not carry over, which PostgreSQL guarantees at
   commit regardless of pooling.
-- Residual sessions: do not claim zero until a timestamped observation shows them
-  gone.
+- Residual sessions: closed. `residual-sessions-followup.json` records an
+  owner-run read-only query at 2026-10-25T05:53:21Z showing zero sessions (zero
+  active) for role OID 40960. None were terminated; they ended on their own. The
+  exact expiry time is unknown because the earlier observations have no timestamps.
 
 Not committed: browser accessibility captures and screenshots, which the report
 names as secondary to the structured JSON. No credential, token or connection URL

@@ -1,0 +1,10 @@
+{
+  "roleOid": 40960,
+  "resource": "dfs-ev-preview (Vercel-managed Neon)",
+  "method": "Owner-run read-only query in Vercel Storage Query: SELECT now(), count(*), count(*) FILTER (WHERE state = 'active') FROM pg_stat_activity WHERE usesysid = 40960",
+  "observedAt": "2026-10-25T05:53:21.526694Z",
+  "sessions": 0,
+  "active": 0,
+  "sessionsTerminated": false,
+  "conclusion": "Both idle sessions for the dropped role ended without termination. Normal expiry observed by this timestamp; the exact expiry time is unknown because the earlier observations have no timestamps."
+}
