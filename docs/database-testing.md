@@ -99,8 +99,10 @@ run. See [the #153 design and validation](database-suite-speed.md).
 
 
 `vitest.db.config.mts` runs the six retained primary/readiness/corpus files
-serially across `packages/db/tooling/tests`, `apps/web/tests/db` and
-`services/pipeline/tests/creator`. The legacy scratch lane was retired in #177.
+serially across `packages/db/tooling/tests` and `services/pipeline/tests/creator`.
+The generic live-prop kernel units live in `packages/db/tooling/tests/unit/` and
+are explicitly excluded from PostgreSQL discovery; the Node unit lane runs them
+exactly once. The legacy scratch lane was retired in #177.
 The runner executes Node checks, catalog verification and then serial Vitest;
 the Node workers remain CPU-bounded. These tests use real Node timers and are
 excluded from the jsdom suite. Setup installs

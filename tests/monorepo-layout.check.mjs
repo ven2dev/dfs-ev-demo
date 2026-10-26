@@ -256,6 +256,33 @@ test("database runtime and tooling have separate one-way dependency graphs", asy
   }
 });
 
+test("database runtime uses explicit Node types without a DOM-library dependency", async () => {
+  const [rootManifest, runtimeManifest, runtimeTsconfig] = await Promise.all([
+    "package.json", "packages/db/package.json", "packages/db/tsconfig.json",
+  ].map(async path => JSON.parse(await readFile(new URL(path, root), "utf8"))));
+  assert.equal(runtimeManifest.devDependencies?.["@types/node"], rootManifest.devDependencies?.["@types/node"],
+    "DB runtime pins the repository's existing Node declaration range");
+  assert.deepEqual(runtimeTsconfig.compilerOptions.types, ["node"],
+    "DB runtime has Node timer/AbortSignal declarations without ambient application types");
+  assert.deepEqual(runtimeTsconfig.compilerOptions.lib, ["ES2022"],
+    "DB runtime does not acquire DOM declarations for its generic cache kernel");
+  const contaminated = structuredClone(runtimeTsconfig);
+  contaminated.compilerOptions.lib.push("DOM");
+  assert.notDeepEqual(contaminated.compilerOptions.lib, ["ES2022"]);
+});
+
+test("generic DB tooling units run once in Node test lanes and never in PostgreSQL discovery", async () => {
+  const tooling = JSON.parse(await readFile(new URL("packages/db/tooling/package.json", root)));
+  const nodeConfig = await readFile(new URL("vitest.node.config.ts", root), "utf8");
+  const dbConfig = await readFile(new URL("vitest.db.config.mts", root), "utf8");
+  assert.equal(tooling.scripts.test,
+    "cd ../../.. && node --test packages/db/tooling/tests/*unit.check.mjs && vitest run --root . --config vitest.node.config.ts packages/db/tooling/tests/unit");
+  assert.match(nodeConfig, /packages\/db\/tooling\/tests\/unit\/\*\*\/\*\.test\.ts/,
+    "root npm test includes moved generic units through its Node configuration");
+  assert.match(dbConfig, /exclude: \["packages\/db\/tooling\/tests\/unit\/\*\*"\]/,
+    "the PostgreSQL configuration excludes moved generic units explicitly");
+});
+
 
 const assertPipelinePackageGraph = (pipeline, infrastructure) => {
   for (const manifest of infrastructure) {

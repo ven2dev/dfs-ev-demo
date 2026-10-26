@@ -48,11 +48,18 @@ test("DB report validation refuses partial, failed, skipped, duplicate and wrong
 
 
 test("every retained DB test file belongs to the serial suite", async () => {
-  const directories = ["packages/db/tooling/tests", "tests/db", "apps/web/tests/db", "services/pipeline/tests/creator"];
+  const directories = ["packages/db/tooling/tests", "tests/db", "services/pipeline/tests/creator"];
   const files = (await Promise.all(directories.map(async (directory) =>
-    (await readdir(directory, { recursive: true })).filter((file) => file.endsWith(".test.ts"))
+    (await readdir(directory, { recursive: true })).filter((file) => file.endsWith(".test.ts") && !file.startsWith("unit/"))
       .map((file) => directory + "/" + file)))).flat().sort();
   const assigned = [...SERIAL_FILES].sort();
   assert.equal(new Set(assigned).size, assigned.length);
   assert.deepEqual(assigned, files);
+});
+
+
+test("generic DB tooling unit tests cannot enter the PostgreSQL serial lane", async () => {
+  const config = await (await import("node:fs/promises")).readFile("vitest.db.config.mts", "utf8");
+  assert.match(config, /exclude: \["packages\/db\/tooling\/tests\/unit\/\*\*"\]/);
+  assert.ok(!SERIAL_FILES.some((file) => file.startsWith("packages/db/tooling/tests/unit/")));
 });

@@ -12,10 +12,11 @@ const workspaceFiles = ["apps/web/package.json", "packages/domain/package.json",
 const names = workspaceFiles.map(file => JSON.parse(readFileSync(join(root, file))).name);
 const tasks = ["test", "test:db:local", "test:feature-store:db"];
 const unit = name => `${name}#test`;
-const all = [...names.map(unit), "@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db", "@dfs-ev/web#test:db:local"].sort();
-const domain = ["@dfs-ev/domain", "@dfs-ev/web", "@dfs-ev/pipeline"].map(unit).concat("@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db", "@dfs-ev/web#test:db:local").sort();
-// Turbo selects by package: any web change, UI or lease/cache code, selects web's DB suite.
-const web = ["@dfs-ev/web#test", "@dfs-ev/web#test:db:local"];
+const all = [...names.map(unit), "@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db", "@dfs-ev/db#test:db:local"].sort();
+const domain = ["@dfs-ev/domain", "@dfs-ev/web", "@dfs-ev/pipeline"].map(unit).concat("@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db").sort();
+// The cache kernel and real contender scenario are DB-owned. UI and web
+// composition changes therefore do not select either PostgreSQL suite.
+const web = ["@dfs-ev/web#test"];
 const pipeline = ["@dfs-ev/pipeline#test", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/pipeline#test:feature-store:db"];
 const sha256 = bytes => createHash("sha256").update(bytes).digest("hex");
 
@@ -74,7 +75,9 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
     receipt.base = base;
     const probes = [
       ["ui", "apps/web/src/probe.ts", "// UI probe\n", web, "affected"],
-      ["web-db", "apps/web/src/lib/livePropCache.ts", "// lease/cache probe\n", web, "affected"],
+      ["web-wiring", "apps/web/src/lib/livePropCacheRepo.ts", "// web composition probe\n", web, "affected"],
+      ["db-runtime-kernel", "packages/db/src/livePropRefresh.ts", "// generic kernel probe\n", all, "full"],
+      ["db-scenario", "packages/db/tooling/tests/orchestrator.ts", "// DB contender scenario probe\n", all, "full"],
       ["domain", "packages/domain/src/probe.ts", "// domain probe\n", domain, "affected"],
       ["db-proposal", "packages/db/proposals/probe.sql", "-- SQL probe\n", all, "full"],
       ["pipeline", "services/pipeline/src/probe.ts", "// pipeline probe\n", pipeline, "affected"],
@@ -99,7 +102,7 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
       assert.ok(Object.values(plan.cache).every(value => value === false));
       const executions = [...result.stdout.matchAll(/EXEC:([^\r\n]+)/g)].map(match => match[1].trim()).sort();
       assert.deepEqual(executions, expected);
-      if (["ui", "web-db", "domain", "db-proposal", "pipeline"].includes(name)) {
+      if (["ui", "web-wiring", "db-runtime-kernel", "db-scenario", "domain", "db-proposal", "pipeline"].includes(name)) {
         const planFile = join(directory, ".turbo", `${name}-db-plan.json`);
         const outputs = join(directory, ".turbo", `${name}-outputs.txt`);
         const planCompletion = join(directory, ".turbo", `${name}-plan-completion.txt`);
@@ -160,6 +163,37 @@ test("Node 24 reproduces affected selection, conservative fallback and execution
       assert.deepEqual(selected.tasks.sort(), web);
       receipt.probes.push({ name: "PR merge checkout", base: targetBase, head: mergeHead,
         mode: selected.mode, selected: selected.tasks, outputHash: sha256(result.stdout), verdict: "pass" });
+    });
+    await t.test("DB cache ownership refuses a missing alias or translator identity", () => {
+      for (const kind of ["missing-db-alias", "missing-db-translator"]) {
+        git("checkout", "-q", "--detach", base);
+        if (kind === "missing-db-alias") {
+          const manifest = JSON.parse(readFileSync(join(directory, "packages/db/package.json")));
+          delete manifest.scripts["test:db:local"];
+          write("packages/db/package.json", JSON.stringify(manifest, null, 2) + "\n");
+        } else {
+          const source = readFileSync(join(directory, "scripts/turbo/ci-db-selection.mjs"), "utf8")
+            .replace(', "@dfs-ev/db#test:db:local"', "");
+          write("scripts/turbo/ci-db-selection.mjs", source);
+        }
+        const defectiveBase = commit("test(spike): " + kind);
+        write("packages/db/src/livePropRefresh.ts", "// kernel edit after defective DB ownership\n");
+        const defectiveHead = commit("test(spike): kernel after " + kind);
+        const result = runner(defectiveBase, defectiveHead);
+        assert.equal(result.status, 0, result.stdout + result.stderr);
+        const selected = selection(result);
+        const planFile = join(directory, ".turbo", kind + "-plan.json");
+        const outputs = join(directory, ".turbo", kind + "-outputs.txt");
+        const planOnly = runner(defectiveBase, defectiveHead, ["test:db:local", "test:feature-store:db"],
+          { TURBO_ALLOW_EMPTY: "1", TURBO_PLAN_ONLY: "1", TURBO_PLAN_FILE: planFile });
+        assert.equal(planOnly.status, 0, planOnly.stdout + planOnly.stderr);
+        const translated = run(process.execPath, ["scripts/turbo/ci-db-selection.mjs", planFile], directory,
+          { TURBO_BASE_SHA: defectiveBase, TURBO_HEAD_SHA: defectiveHead, TURBO_FORCE_FULL: "0", GITHUB_OUTPUT: outputs });
+        assert.notEqual(translated.status, 0, kind + " must refuse silently incomplete DB work");
+        assert.match(translated.stderr, /Invalid database task plan/);
+        if (kind === "missing-db-alias") assert.ok(!selected.tasks.includes("@dfs-ev/db#test:db:local"));
+        receipt.guards.push({ name: kind + ": moved kernel plan is rejected", base: defectiveBase, head: defectiveHead, verdict: "pass" });
+      }
     });
     await t.test("history, task flags, genuine empty selection and failure propagation", () => {
       git("checkout", "-q", "--detach", base);

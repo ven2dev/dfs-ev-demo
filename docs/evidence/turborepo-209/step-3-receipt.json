@@ -1,0 +1,209 @@
+{
+  "formatVersion": 1,
+  "issue": 209,
+  "stage": "Step 3 \u2014 package-owned DB task selection",
+  "baselineCommit": "03880d4605637933798999907b4f5ff8fcbf53c2",
+  "branch": "feature/dfsEV-209-generic-cache-kernel",
+  "candidateIdentity": {
+    "kind": "uncommitted candidate pending owner commit approval",
+    "changedTrackedPaths": [
+      "apps/web/package.json",
+      "docs/turborepo-task-selection.md",
+      "packages/db/package.json",
+      "scripts/turbo/ci-db-selection.mjs",
+      "tests/turbo-ci-selection.check.mjs",
+      "tests/turbo-layout.check.mjs",
+      "tests/turbo-selection.check.mjs"
+    ],
+    "sha256": {
+      "apps/web/package.json": "8ee37e028049d383db2e328f6f4edd05303bab3f9cd9f1a0011bada131067c7e",
+      "packages/db/package.json": "f6649317573d69f4c52f267e937c04829a9d3d606d27baacc5b84aeeb8621d13",
+      "scripts/turbo/ci-db-selection.mjs": "be33c95a298de177e45bd4360a22b1af67051be6c5d02f24a82aeba6fc56c731",
+      "tests/turbo-selection.check.mjs": "ebac33e84a20c41e731c993c025e315c1447758765b3ba6016c42a96fb23c7a1",
+      "tests/turbo-ci-selection.check.mjs": "126dc79b854197f3a3478e223aa44111c539b00bb28a5cd6178f7f4ea875edd1"
+    }
+  },
+  "ownership": {
+    "removed": "@dfs-ev/web#test:db:local",
+    "added": "@dfs-ev/db#test:db:local",
+    "reason": "kernel and real 25-contender consumer scenario are DB-owned; UI/web-composition changes no longer need ordinary PostgreSQL coverage",
+    "workflowChanged": false,
+    "runnerChanged": false,
+    "aggregateGateChanged": false,
+    "cachePolicy": "all tasks remain cache:false"
+  },
+  "matrix": {
+    "node": "v24.18.1",
+    "turbo": "2.11.10",
+    "verdict": "pass",
+    "selected": {
+      "ui": {
+        "mode": "affected",
+        "tasks": [
+          "@dfs-ev/web#test"
+        ]
+      },
+      "web-wiring": {
+        "mode": "affected",
+        "tasks": [
+          "@dfs-ev/web#test"
+        ]
+      },
+      "db-runtime-kernel": {
+        "mode": "full",
+        "tasks": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db#test:db:local",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ]
+      },
+      "db-scenario": {
+        "mode": "full",
+        "tasks": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db#test:db:local",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ]
+      },
+      "domain": {
+        "mode": "affected",
+        "tasks": [
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ]
+      },
+      "pipeline": {
+        "mode": "affected",
+        "tasks": [
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db"
+        ]
+      },
+      "unknown": {
+        "mode": "full",
+        "tasks": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db#test:db:local",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ]
+      },
+      "mixed-unknown-ui": {
+        "mode": "full",
+        "tasks": [
+          "@dfs-ev/db#test",
+          "@dfs-ev/db#test:db:local",
+          "@dfs-ev/db-tooling#test",
+          "@dfs-ev/db-tooling#test:db:local",
+          "@dfs-ev/domain#test",
+          "@dfs-ev/pipeline#test",
+          "@dfs-ev/pipeline#test:db:local",
+          "@dfs-ev/pipeline#test:feature-store:db",
+          "@dfs-ev/web#test"
+        ]
+      },
+      "PR merge checkout": {
+        "mode": "affected",
+        "tasks": [
+          "@dfs-ev/web#test"
+        ]
+      }
+    },
+    "negativeOwnershipGuards": [
+      {
+        "name": "missing-db-alias: moved kernel plan is rejected",
+        "base": "25a623c3a5f4c45dd1e50c30c4acbbc135fed489",
+        "head": "fa01b98334b5f5b4e819715609669218aee33122",
+        "verdict": "pass"
+      },
+      {
+        "name": "missing-db-translator: moved kernel plan is rejected",
+        "base": "56bf255dc017b3fc4eefed5111c9894fd5a99ce7",
+        "head": "7b9111b2d33e5fecbd381fc54608fe492deed43c",
+        "verdict": "pass"
+      }
+    ]
+  },
+  "expectedCITranslation": {
+    "uiOrWebWiring": {
+      "db_local": "false",
+      "feature_store": "false",
+      "mode": "affected"
+    },
+    "dbKernelOrScenario": {
+      "db_local": "true",
+      "feature_store": "true",
+      "mode": "full"
+    },
+    "domainOrPipeline": {
+      "db_local": "true",
+      "feature_store": "true",
+      "mode": "affected"
+    },
+    "unknownOrMixed": {
+      "db_local": "true",
+      "feature_store": "true",
+      "mode": "full"
+    }
+  },
+  "candidateRangePlan": {
+    "base": "03880d4605637933798999907b4f5ff8fcbf53c2",
+    "head": "same committed base because candidate is uncommitted",
+    "result": "intentional empty DB plan and db_local=false/feature_store=false; runner correctly refuses implicit/uncommitted Git range as evidence"
+  },
+  "checks": [
+    {
+      "command": "npm run test:turbo-layout",
+      "runtime": "Node 24.18.1",
+      "result": "pass: 29 checks including real range and two ownership-negative probes"
+    },
+    {
+      "command": "npm run typecheck",
+      "result": "pass"
+    },
+    {
+      "command": "npm run lint",
+      "result": "pass: 11 boundary probes"
+    },
+    {
+      "command": "npm run test:repo-layout",
+      "result": "pass: 12 checks"
+    },
+    {
+      "command": "npm test --workspace @dfs-ev/db",
+      "result": "pass: 10 DB harness checks"
+    }
+  ],
+  "preservation": {
+    "rootCommandNamesChanged": false,
+    "ciWorkflowChanged": false,
+    "frozenSqlModified": false,
+    "hostedMatrix": "required after separately approved push"
+  },
+  "activeEngineeringTimeHours": 3.8,
+  "timeCapHours": 5,
+  "verdict": "pass for Step 3 commit review; combined checkpoint remains Step 4",
+  "commit": "not approved or created",
+  "push": "not approved or performed"
+}

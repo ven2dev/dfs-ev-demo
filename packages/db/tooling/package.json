@@ -32,7 +32,7 @@
     "db:readiness:check": "cd ../../.. && node packages/db/tooling/scripts/db-readiness-manifest.mjs check",
     "db:migrate": "cd ../../.. && node packages/db/tooling/scripts/db-migrate.mjs",
     "db:migrate:dev": "cd ../../.. && node packages/db/tooling/scripts/db-migrate-dev.mjs",
-    "test": "cd ../../.. && node --test packages/db/tooling/tests/*unit.check.mjs",
+    "test": "cd ../../.. && node --test packages/db/tooling/tests/*unit.check.mjs && vitest run --root . --config vitest.node.config.ts packages/db/tooling/tests/unit",
     "test:db:local": "cd ../../.. && npm run test:db:local"
   },
   "dependencies": {

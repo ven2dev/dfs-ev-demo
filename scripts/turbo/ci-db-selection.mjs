@@ -1,9 +1,10 @@
 import { appendFileSync, readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 
-// Web owns the lease/cache orchestrator DB tests (apps/web/tests/db). Turbo
-// selects by package, so every web change selects the shared local DB suite.
-const localTaskIds = ["@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/web#test:db:local"];
+// Generic cache kernel and its real consumer scenario are DB-owned. Turbo
+// therefore selects the protected ordinary suite for DB changes, while web
+// UI and composition-only changes need only web unit coverage.
+const localTaskIds = ["@dfs-ev/db-tooling#test:db:local", "@dfs-ev/pipeline#test:db:local", "@dfs-ev/db#test:db:local"];
 const featureTaskId = "@dfs-ev/pipeline#test:feature-store:db";
 const taskIds = [...localTaskIds, featureTaskId];
 

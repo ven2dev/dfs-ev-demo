@@ -10,10 +10,10 @@
   shared inputs, so none of it is ported. Running all integrations for every UI
   edit would forfeit the selection target. Nx is viable but adds machinery beyond
   this repository's chosen Turborepo approach.
-- **Targets:** web changes, including UI-only edits, select the ordinary DB
-  suite but not the feature-store suite (owner-amended after review; see "Review
-  correction after 49e6f08"); domain changes select domain, web and pipeline tests; DB and pipeline
-  changes select affected integrations. Docs/runbooks and root/config/toolchain/
+- **Targets:** UI-only and remaining web-composition edits select neither
+  database suite. The generic DB cache kernel and its real contender scenario
+  select the ordinary suite; DB changes retain the conservative full fallback.
+  Domain and pipeline changes select their affected integrations. Docs/runbooks and root/config/toolchain/
   lock/workflow changes select full work or refuse visibly. Main and integration
   checkpoints retain full checks. There is no invented wall-clock threshold.
 - **Requirement reasons:** explicit complete Git history prevents incomplete
@@ -39,9 +39,9 @@ to execute their existing implementations and preserve CLI argument forwarding.
 
 | Workspace | Unit-test entry | Integration entry |
 | --- | --- | --- |
-| `@dfs-ev/web` | Existing browser and server tests | `test:db:local` selects the ordinary suite containing the lease/cache orchestrator integration |
+| `@dfs-ev/web` | Existing browser and server tests | None. Its repository composition has mock-only wiring coverage. |
 | `@dfs-ev/domain` | Existing browser math tests and Node projection tests | None |
-| `@dfs-ev/db` | Existing root DB harness unit checks | None |
+| `@dfs-ev/db` | Existing root DB harness unit checks | `test:db:local` selects the ordinary suite containing the generic cache kernel and contender scenario |
 | `@dfs-ev/db-tooling` | Existing tooling unit checks | `test:db:local` delegates to the complete protected root runner |
 | `@dfs-ev/pipeline` | Existing browser and Node pipeline tests | `test:db:local` selects the ordinary suite containing creator integration; `test:feature-store:db` selects the separate feature-store suite |
 
@@ -194,13 +194,14 @@ Step 2 was committed with owner approval as `bad427c` before Step 3 began.
 It preserved the original success/success aggregate while enforcing explicit
 selection before conditional work.
 
-The pipeline also declares an uncached `test:db:local` alias, because its creator
+The pipeline declares an uncached `test:db:local` alias because its creator
 PostgreSQL cases are executed by the protected ordinary runner. Domain and
-pipeline edits therefore select both DB suites. Web declares the same alias for
-its lease/cache orchestrator cases (added after review). The DB tooling, pipeline
-and web task IDs can all request that same ordinary suite; the CI plan translator emits one
-boolean, and the workflow runs it once. This is declared consumer ownership, not
-an infrastructure dependency on pipeline or a custom dependency traversal.
+pipeline edits therefore select both DB suites. The DB runtime now declares the
+ordinary alias because the generic cache kernel and contender scenario are DB
+owned. DB tooling, pipeline and DB runtime task IDs can request that same suite;
+the CI plan translator emits one boolean and the workflow runs it once. This is
+declared consumer ownership, not an infrastructure dependency on pipeline or a
+custom dependency traversal.
 
 ## Step 3 required-gate execution accounting
 
@@ -357,3 +358,19 @@ The Step 4 receipt is unchanged and describes `d874c50`; it does not cover this
 correction. The ordinary and feature-store suites, their commands and fixtures
 are unchanged, so their recorded case counts still apply. Hosted Node 24
 verification of this correction remains pending a separately approved push.
+
+
+## #209 generic-kernel extraction status
+
+The preceding #192 correction records the historical web-owned paths at that
+commit. #209 has now moved the opaque lease/singleflight kernel's eight
+retained unit names, store-adapter unit and generic 25-contender scenario into
+DB ownership. `livePropCacheRepo.ts`, provider types and provider/history
+composition remain web-owned; its fake wiring sentinel checks the lazy query,
+TTL, identifiers, clock and fetch bindings. Generic DB tooling units are
+explicitly excluded from PostgreSQL discovery and run exactly once in the Node
+unit lane. Step 3 makes DB the ordinary-suite task owner and removes web's
+temporary alias, so UI and remaining web-composition edits skip both DB suites.
+The generic kernel has no provider policy, so DB's normal root/full fallback selects
+both DB suites for a kernel edit; the accepted over-selection avoids a custom
+selector.
