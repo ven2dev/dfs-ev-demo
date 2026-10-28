@@ -127,7 +127,8 @@ profile only in the server deployment. Never expose them with a
 The app remains on its existing Next.js/Postgres stack. The Hostinger Business
 Web Hosting plan is suitable only as an external cron trigger; its shared
 CloudLinux/MySQL environment is not the collector runtime or database. Configure
-its one custom cron job to call the deployed HTTPS route every five minutes:
+its one custom cron job to call the deployed HTTPS route every 15 minutes
+(`*/15 * * * *`):
 
 ```bash
 curl --fail --silent --show-error --max-time 55 \
@@ -135,9 +136,17 @@ curl --fail --silent --show-error --max-time 55 \
   https://REPLACE_WITH_DEPLOYED_HOST/api/cron/collect-odds
 ```
 
-The five-minute trigger is a wake-up frequency, not a five-minute baseline
+The 15-minute trigger is a wake-up frequency, not a 15-minute baseline
 snapshot schedule. The database ledger determines which work is actually due.
-Five minutes is required if a priority target needs the approved T-6h cadence.
+Each wake queries Production Postgres, so the interval also sets how often the
+Neon compute is awake. Until 2026-10 the trigger ran every five minutes, which
+kept the compute from ever suspending. That is the likely cause, not yet
+confirmed from Neon's usage page, of the free-plan quota exhaustion (HTTP 402,
+issue #204). Fifteen minutes still places one wake inside every
+checkpoint window, including the 15-minute T-15m window that ends at kickoff, but
+gives T-15m one attempt instead of up to three. Return to five minutes, or to
+game-window wakes, before activating priority targets: their approved cadence is
+five minutes after T-6h.
 Use the same strong secret in Hostinger and the app deployment, restrict access
 to the Hostinger account, and rotate both values together if it is exposed.
 
@@ -164,15 +173,16 @@ operations-guide change; changing only the environment variable makes the
 monitor fail closed. The health query checks:
 
 - a current-week durable free-pilot pin;
-- a 15-minute pin-creation grace at the Tuesday week boundary, ending early as
+- a 30-minute pin-creation grace at the Tuesday week boundary, ending early as
   soon as the first new-week scheduled wake occurs;
-- a successful scheduled slate wake no more than 20 minutes old;
+- a successful scheduled slate wake no more than 35 minutes old, tolerating one
+  missed 15-minute wake plus trigger jitter;
 - successful scheduled event-odds calls with unknown cost in the last 24 hours;
 - failed current-pin checkpoints with at least two attempts that remain inside
   their due window;
 - current-pin checkpoints terminally skipped after exhausting attempts or
   their retry window;
-- claims expired by more than 10 minutes, allowing the next five-minute wake to
+- claims expired by more than 25 minutes, allowing the next 15-minute wake to
   recover an ordinary abandoned lease first;
 - pinned-event checkpoints that expired even though their window ended after
   the pin was created, excluding legitimate pre-activation backlog;
@@ -181,7 +191,9 @@ monitor fail closed. The health query checks:
 - whether the collector's shared quota policy can run the next pinned-event
   checkpoint. Degraded quota is a warning until it actually blocks that work.
 
-The `Collector Health` GitHub Actions workflow runs every ten minutes and also
+The `Collector Health` GitHub Actions workflow runs hourly at seven minutes past
+the hour (it previously ran every ten minutes; each check queries Production
+Postgres) and also
 supports manual dispatch. It was activated only after the health route produced
 the expected missing-wake incident and the approved Hostinger trigger completed
 an authenticated recurring wake. This prevents a knowingly red monitor from

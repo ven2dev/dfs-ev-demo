@@ -72,8 +72,28 @@ describe("GET /api/health/odds-collector", () => {
     });
     expect(snapshotMock).toHaveBeenCalledWith(new Date("2026-10-03T12:00:00.000Z"), {
       unknownCostLookbackMs: 86_400_000,
-      staleClaimGraceMs: 600_000,
+      staleClaimGraceMs: 1_500_000,
     });
+  });
+
+  it("tolerates one missed 15-minute wake but flags a longer gap", async () => {
+    const withWakeAt = (requestedAt: string) => {
+      const snapshot = healthySnapshot();
+      snapshot.latestScheduledWake = { requestedAt: new Date(requestedAt), outcome: "success" };
+      return snapshot;
+    };
+
+    // 30 minutes old: one 15-minute wake was missed.
+    snapshotMock.mockResolvedValueOnce(withWakeAt("2026-10-03T11:30:00.000Z"));
+    const tolerated = await GET(request("Bearer health-secret"));
+    expect(tolerated.status).toBe(200);
+    await expect(tolerated.json()).resolves.toMatchObject({ status: "healthy", reasons: [] });
+
+    // 36 minutes old: past the 35-minute limit.
+    snapshotMock.mockResolvedValueOnce(withWakeAt("2026-10-03T11:24:00.000Z"));
+    const stale = await GET(request("Bearer health-secret"));
+    expect(stale.status).toBe(503);
+    await expect(stale.json()).resolves.toMatchObject({ reasons: ["scheduled-wake-stale"] });
   });
 
   it("reports fixture deployments as unavailable without querying Postgres", async () => {

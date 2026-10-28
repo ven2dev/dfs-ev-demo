@@ -2,7 +2,9 @@ name: Collector Health
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    # Hourly, off the top of the hour: each check queries Production Postgres,
+    # so a denser schedule keeps the Neon compute from suspending.
+    - cron: "7 * * * *"
   workflow_dispatch:
 
 permissions: {}
