@@ -191,12 +191,15 @@ monitor fail closed. The health query checks:
 - whether the collector's shared quota policy can run the next pinned-event
   checkpoint. Degraded quota is a warning until it actually blocks that work.
 
-The `Collector Health` GitHub Actions workflow runs hourly at seven minutes past
-the hour (it previously ran every ten minutes; each check queries Production
-Postgres) and also
-supports manual dispatch. It was activated only after the health route produced
-the expected missing-wake incident and the approved Hostinger trigger completed
-an authenticated recurring wake. This prevents a knowingly red monitor from
+The `Collector Health` GitHub Actions workflow runs hourly at three minutes past
+the hour and also supports manual dispatch. Each check queries Production
+Postgres, so it is timed to land inside the five-minute idle window after the
+:00 collector wake instead of starting the compute on its own. GitHub can delay
+scheduled runs, so some checks may still wake the compute separately. It
+previously ran every ten minutes, then at seven minutes past the hour.
+It was activated only after the health route produced the expected
+missing-wake incident and the approved Hostinger trigger completed an
+authenticated recurring wake. This prevents a knowingly red monitor from
 training the operator to ignore alerts.
 
 GitHub stores both `ODDS_HEALTH_URL` and `ODDS_HEALTH_SECRET` as Actions
