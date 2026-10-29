@@ -8,10 +8,14 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 10;
 
-const MAX_WAKE_AGE_MS = 20 * 60 * 1_000;
-const PIN_CREATION_GRACE_MS = 15 * 60 * 1_000;
+// Sized for a 15-minute external collector wake, so the Neon compute can
+// suspend between wakes. Wake age tolerates one missed wake plus trigger jitter;
+// the pin grace covers the first new-week wake; the claim grace lets the next
+// wake recover an ordinary abandoned lease first.
+const MAX_WAKE_AGE_MS = 35 * 60 * 1_000;
+const PIN_CREATION_GRACE_MS = 30 * 60 * 1_000;
 const UNKNOWN_COST_LOOKBACK_MS = 24 * 60 * 60 * 1_000;
-const STALE_CLAIM_GRACE_MS = 10 * 60 * 1_000;
+const STALE_CLAIM_GRACE_MS = 25 * 60 * 1_000;
 
 const quotaReserve = () => {
   const raw = process.env.ODDS_COLLECTION_QUOTA_RESERVE;
