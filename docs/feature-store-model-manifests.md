@@ -1,8 +1,8 @@
 # Immutable model and report manifests (#165)
 
 Status: owner-approved roadmap, with server-side work measurement and enrollment
-before upload. Steps 1–2 are committed as `3e716cf` and `b67979a`. Step 3 (scoped
-orphan cleanup) is in review; commits require owner approval per step and push requires fresh consent. Engineering cap: five hours,
+before upload. Steps 1–3 are committed as `3e716cf`, `b67979a` and `4c9d5fa`. Step 4 (final
+benchmark and evidence) is prepared for owner commit approval; push requires fresh consent. Engineering cap: five hours,
 excluding review waiting; split remaining work if discovery exceeds the cap.
 
 ## Design basis
@@ -91,9 +91,9 @@ dataset publication p95 91.790 ms and three-artifact transport publication
 OS/DB/file caches were warm and unflushed. This prototype did not prove report
 envelope association, preflight enrollment or the new server work budget.
 
-Its compact receipt will accompany final evidence. Final implementation repeats
-the relative speed gate, preserving every timing trial, rather than treating the
-prototype timings as an implementation pass. The existing dataset transaction's
+The compact prototype receipt is retained as historical evidence. The final
+implementation repeats the relative speed gate below and preserves every trial;
+the prototype timings are not used as an implementation pass. The existing dataset transaction's
 two byte hashes are a separate drafted issue; this issue leaves that baseline
 unchanged so the comparison remains attributable.
 
@@ -103,7 +103,7 @@ Instrumentation queries are measurement overhead and do not enter production
 client counts or benchmark timing. Wall-clock assertions stay out of CI because
 machine-speed variation would make them unstable.
 
-## Step 1 review candidate
+## Proposal contract and isolation
 
 The proposal and its public SQL asset export add the registry and guarded
 publication/enrollment APIs. The pipeline can read and execute, but cannot write
@@ -126,12 +126,12 @@ call, proving the measurement includes internal database writes.
 
 Package/import checks (19), targeted TypeScript checking, lint, whitespace and
 frozen migration artifact checks pass. These SQL-only checks do not establish ObjectStore ordering or
-report-envelope validation: those are step 2. Address sweeping and final race/
-speed checks follow in steps 3–4. The [historical transport receipt](evidence/feature-store-165/preapproval-transport.json)
+report-envelope validation; step 2 supplies that proof, step 3 supplies sweep/race
+checks and step 4 supplies the final speed gate. The [historical transport receipt](evidence/feature-store-165/preapproval-transport.json)
 retains all pre-approval timing rows with its limitations. No migration is frozen,
 no hosted command was run and step 1 was approved and committed as `3e716cf`.
 
-## Step 2 review candidate
+## Trusted publisher and report preparation
 
 `publishQbModelRun` is the trusted pipeline entry point at
 `@dfs-ev/pipeline/feature-store/model-manifests`. A caller supplies a dedicated,
@@ -178,9 +178,8 @@ counts and ordering. It also covers two-mode publication, reuse, mismatched
 inputs before upload, pre-existing unregistered bytes, upload-time revocation,
 missing HEAD rollback and interrupted BEGIN. The real local fixture run checks
 fresh envelopes and descriptor/SQL associations for the natural 2,504-example
-cohort and zero strict PIT examples. Its elapsed times are informational: the
-final repeated relative speed gate remains step 4. Scoped sweep integration and
-the remaining cleaner/connection-race cases remain step 3.
+cohort and zero strict PIT examples. Its elapsed times are informational. Step 3 supplies scoped sweep integration
+and cleaner/connection-race evidence; the final relative speed gate appears below.
 
 [Step 2 evidence](evidence/feature-store-165/step-2-publication.json) records seven
 publication checks, 30 dataset/SQL regression checks, 19 package/import checks
@@ -193,7 +192,7 @@ The 0/2,504-member CI shapes have identical work counts. The real fixture's
 observations, not a speed-gate result. Fresh report bytes differ from the retained
 benchmark files because the envelopes bind fresh exact IDs/code/clocks.
 
-## Step 3 review candidate
+## Scoped orphan cleanup and failure handling
 
 The JavaScript orphan sweep now lists all four existing ObjectStore namespaces.
 For `models/` and `audits/`, one initial SQL query selects enrolled candidates;
@@ -221,11 +220,103 @@ survive cleanup. This last case injects response loss after a real COMMIT; it
 does not claim to reproduce a network partition.
 
 Mandatory deletion, dependent invalidation and artifact delivery remain #166.
-The final repeated relative benchmark and closeout evidence remain step 4.
 
 [Step 3 evidence](evidence/feature-store-165/step-3-orphans.json) records all nine
 race/failure scenarios (ten tests including the parent). All 109 feature-store
 database tests and 15 public package/import checks pass, including the existing
 0/2,504 client/hash/server-write budgets and real LOGIN refusal probes. Targeted
 TypeScript, ESLint, whitespace and frozen migration checks pass. SQL and the
-publication implementation are unchanged in this step.
+publication implementation were unchanged in step 3.
+
+
+## Final relative benchmark
+
+The [final benchmark receipt](evidence/feature-store-165/step-4-benchmark.json)
+records all 54 timing rows, source/SQL/runner hashes, fixture pins, work counts,
+per-block comparisons and the full receipt's ObjectStore address. Six initial
+baseline-only samples precede candidate SQL installation. Their p95 is
+**109.701 ms**. Each candidate then runs six ABBA blocks (12 samples per arm)
+against the unchanged dataset publisher on the same 512 MiB PostgreSQL 18.6
+fixture, Node 24.18.1 and retained 16-file cohort. Caches are warm and unflushed.
+The runner asserts the `buildDataset` function body equals the recorded baseline
+commit `71cdd90`, preserving its two transaction hashes and 2,504 membership
+inserts. The fixture reproduces the expected natural content hash and zero strict
+PIT examples without backdating knowledge clocks.
+
+| Candidate | Interleaved baseline p95 | Candidate p95 | p95 headroom | Smallest block headroom |
+| --- | ---: | ---: | ---: | ---: |
+| Exact retained reports + transport descriptor | 114.758 ms | 11.110 ms | 90.32% | 89.48% |
+| Actual full publisher + fresh descriptor/reports | 121.948 ms | 13.736 ms | 88.74% | 87.48% |
+
+Both p95 comparisons and all twelve block comparisons pass the approved 30%
+headroom gate. The metric is dispatch of BEGIN through the COMMIT response,
+a conservative upper bound on the lock hold. The separately recorded interval
+from address-lock response through COMMIT is only a client-observed lower bound.
+
+The retained transport arm uses the exact 9,290,168- and 306,544-byte archived
+files with the final proposal SQL and protocol. Its archived envelope dataset
+IDs differ from the scratch fixture, so this arm proves byte-volume transport
+and lock work. Its small orchestration wrapper is benchmark code. The second
+series invokes the actual `publishQbModelRun` implementation, scores fresh matching
+envelopes, and links them to the real SQL pins. It produced 9,290,167- and
+306,544-byte reports; their hashes, logical hashes, dataset IDs and 3,318-byte
+descriptor are recorded and verified. No timing claim relies on forged report
+provenance or an edited archived envelope.
+
+Every candidate trial has five publication-boundary SQL statements, four inside
+the transaction, three preflight HEADs, three uploads before BEGIN, three
+transaction HEADs and zero transaction hashing, uploads or object-byte reads.
+The full publisher also performs six preparation SQL reads and six object reads;
+those occur before publication. Actual crypto observation includes ObjectStore
+verification of reused bytes. Server-side DML work remains the exact identical
+0/2,504-member vectors proved in CI; row writes do not claim to measure all reads.
+
+End-to-end times are informational: the retained arm ranges 43.747–93.878 ms and
+the full publisher 2,041.428–2,337.260 ms. Scoring, disk speed and uploads affect
+that duration without holding the shared address lock. No end-to-end deadline
+or CI wall-clock assertion is added. These local measurements do not claim
+hosted latency, cold cache behavior or concurrent capacity. Actual backend
+termination, lock contention and unknown-acknowledgement behavior are covered
+separately by the deterministic race suite.
+
+The final source/receipt hashes and every timing comparison were independently
+rechecked. Runtime/SQL are unchanged from the 109-test step 3 regression run;
+the new benchmark passes targeted TypeScript and lint. Frozen migration artifacts
+and whitespace checks pass. Scratch databases, throwaway LOGINs and other fixture
+clients were zero after cleanup; the fixture container was stopped.
+
+## Acceptance mapping
+
+| Requirement | Evidence |
+| --- | --- |
+| Dataset pins, DB knowledge clock, algorithm/policy/adapter/code, mode and exact object metadata | Step 1 SQL round trip and clock/refusal probes; step 2 fresh report/descriptor/SQL association checks on the real fixture |
+| Upload before BEGIN, shared address lock, metadata-only HEAD, no transaction hashing | Step 2 observed SQL/ObjectStore/crypto ordering and fixed budgets at 0/2,504 actual members; final benchmark |
+| Real non-pipeline LOGIN cannot publish/modify; no forged clocks or identities | Step 1 actual LOGIN permission probes, direct mutation and unsupported identity refusals |
+| Rollback and cleaner races leave no dangling references | Step 3 both lock orders, post-insert rollback, backend termination, lost acknowledgement and late-upload cleanup; step 1 identical server DML vectors plus hidden-work negative control |
+| Proposal SQL only and no artifact consumer access | SQL asset in `packages/db/proposals/`, frozen migration checks, no reader/app grants or delivery surface |
+
+All artifact bytes use the existing private ObjectStore. A publication receipt
+is a trusted pipeline result. Current dataset/source authorization is checked
+again at publication; subsequent delivery, mandatory deletion and dependent
+invalidation are #166. The trusted database and ObjectStore owner remains part
+of the threat model. A caller uses a dedicated idle connection so enrollment
+commits before uploads and cannot be rolled back with a larger caller transaction.
+
+## Local verification
+
+Use Node 24 and the standard registered disposable PostgreSQL fixture:
+
+```sh
+docker compose --env-file /dev/null -f compose.test.yml up -d --wait postgres
+npm run test:feature-store:db
+node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON services/pipeline/scripts/feature-store/model-publication-benchmark.ts
+```
+
+Supply only the fixture's local `TEST_DATABASE_URL` in a clean environment;
+the scratch harness validates the target before creating a database. The benchmark
+writes its full receipt to `codex-briefs/165-step-4-benchmark.json` by default;
+`FS165_BENCHMARK_EVIDENCE` overrides the receipt path and `FS165_RETAINED_ROOT`
+overrides the root containing the two pinned report objects. Private fixture
+bytes stay under ignored `codex-briefs/node_modules/`. No hosted credential or
+Production command is needed. Wall-clock comparisons run only in this opt-in
+script because CI machine-speed variation would make them unstable.
