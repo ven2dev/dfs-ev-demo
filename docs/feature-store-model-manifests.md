@@ -1,10 +1,10 @@
 # Immutable model and report manifests (#165)
 
-Status: the four initial steps were approved and committed through `967f337`.
-Review corrections cover shared-report deletion, retry grace and orphan recovery
-retirement, plus descriptor-based get-or-create. They remain uncommitted pending owner approval. Evidence explicitly
-distinguishes the original implementation from the corrected sources.
-Descriptor-based get-or-create is owner-approved. Push requires fresh consent.
+Status: the four initial steps were approved and committed through `967f337`;
+shared-report deletion, retry grace, orphan recovery retirement and descriptor
+get-or-create corrections were approved and committed as `6db1a4c`. The additional
+preflight re-creation correction below awaits commit approval. Evidence separates
+the measured source versions. Push requires fresh consent.
 
 The review correction makes #164 failure cleanup take the shared address lock
 and check committed model references on a separate writer connection before
@@ -37,7 +37,10 @@ the sweep, including those with no object yet.
   preserve another identity for the same immutable descriptor. Allowing duplicate
   runs is rejected because a lost COMMIT acknowledgement would create duplicate
   registry records and ambiguous provenance for downstream governance.
-- **Targets:** five successful publication-boundary client SQL statements, four inside publication;
+  Aborting when a PUT re-creates preflight-present bytes is rejected because
+  durable enrollment permits safe continuation. Enrolling every preflight-present
+  address is rejected because it would claim unrelated private #164 evidence.
+- **Targets:** five successful normal-path publication-boundary client SQL statements, four inside publication;
   one metadata-only HEAD per published object inside the transaction, zero byte
   reads/hashes there and no per-example SQL/verification. Three preflight HEADs
   are outside the transaction for descriptor + two reports. All uploads finish
@@ -46,6 +49,11 @@ the sweep, including those with no object yet.
   baseline on the same 512 MiB PostgreSQL fixture. End-to-end time is informational.
   Every ABBA block includes one create and one reuse of that descriptor so the
   reuse path cannot conceal slower first-publication work.
+  The normal path has exactly one autocommit enrollment statement. Only a PUT
+  that creates an address missing from the preflight-absent set adds one
+  autocommit enrollment, immediately after that PUT and before BEGIN. This adds
+  no HEAD or transaction statement and is bounded by the 2–3 publication objects,
+  independently of example count.
 - **Server work:** CI measures transaction-local insert/update/delete counts
   across every `fs138` table, including definer-function DML, and requires exact
   equality for matching publication shapes guarding 0 and 2,504 examples.
@@ -61,6 +69,8 @@ the sweep, including those with no object yet.
   pipeline-only grants prevent consumer access before #166 provides governance.
   Renewed enrollment prevents retry starvation; retaining absent records through
   the retirement window covers late PUTs; expiring them bounds recovery metadata.
+  A successful PUT that re-creates preflight-present bytes enrolls the address
+  before BEGIN so publication rollback retains cleanup ownership of those bytes.
   The rights guard precedes get-or-create so a refused caller cannot receive an
   existing run; preserving the first run's clock and receipt avoids rewriting
   publication history. Existing identity and exact file pins are compared on
@@ -116,8 +126,11 @@ session's role switching from being mistaken for a non-pipeline LOGIN proof.
 The trusted database owner remains able to administer its database.
 
 HEAD each address before upload; enroll absent addresses in one autocommit call,
-then putIfAbsent for all objects. Existing objects are not enrolled, preserving
-unregistered audit evidence. Every absent-address retry renews the observation's
+then putIfAbsent for all objects. Objects that remain present are not enrolled,
+preserving unregistered audit evidence. If a PUT reports `created=true` for an
+address that was present at preflight, enroll that address immediately in a
+separate autocommit call and continue. This closes the #164 cleanup race between
+HEAD and PUT; already registered addresses remain a no-op. Every absent-address retry renews the observation's
 clock before upload. Observation rows survive interrupted uploads and orphan
 deletion throughout the recovery window; publication clears committed addresses.
 This allows a later sweep to reclaim a PUT that finishes inside that window.
@@ -208,7 +221,7 @@ The existing dataset publisher's transaction hashing is unchanged. A separate
 follow-up issue has been drafted for owner review; it is outside #165.
 
 Preparation performs three SQL reads per selected mode. These precede the
-publication boundary: one autocommit enrollment, BEGIN, batched guard, set-based
+normal publication boundary: one autocommit enrollment, BEGIN, batched guard, set-based
 publication and COMMIT. For both modes, total preparation is six queries and six
 object reads (input pins, population ledger, two datasets and two coverage
 ledgers). All uploads precede BEGIN. Per-object preflight HEADs establish which
@@ -411,6 +424,33 @@ the retry returns the original run marked as an existing publication. Tests cove
 one-row repeat publication, original clock/receipt preservation under a fresh
 rights grant, refused retries, conflicting claims and concurrent callers.
 
+## Preflight re-creation correction
+
+A #164 report can be present at preflight but deleted by its failure cleanup
+before the publisher's PUT. If that PUT creates the address, the publisher now
+enrolls it immediately outside the publication transaction and continues. The
+new bytes receive cleanup ownership; old private bytes that remain present are
+still untouched. Enrollment uses the existing API, renewing grace for an
+unregistered address and doing nothing for an already registered address.
+
+The [re-creation receipt](evidence/feature-store-165/recreated-object.json) records
+23 passing orphan/publication checks on the corrected sources. The regression
+creates a real #164 report, observes it at preflight, deletes it through
+`discardUnpublishedReport`, re-creates it in the PUT, and revokes rights before
+publication. It verifies the extra enrollment precedes BEGIN, survives rollback,
+respects the default grace, and permits a later sweep to reclaim the report.
+
+Successful publication has `5 + R` boundary statements, with `R` the number of
+re-created addresses absent from the preflight-absent set. All `1 + R` enrollment
+statements are autocommit before BEGIN; the four transaction statements and HEAD
+counts are unchanged. The regression's rights refusal has five boundary
+statements (two enrollment, BEGIN, guard, ROLLBACK) and no transaction HEADs.
+Normal 0/2,504-member and repeat-publication budgets still prove exactly one
+enrollment. The owner requires a speed rerun only if normal SQL or HEAD counts
+changed; neither changed. The 54-sample benchmark above remains evidence for
+the sources committed in `6db1a4c`; this receipt records the additional correction
+without presenting those historical timings as a fresh run.
+
 ## Acceptance mapping
 
 | Requirement | Evidence |
@@ -422,6 +462,7 @@ rights grant, refused retries, conflicting claims and concurrent callers.
 | Proposal SQL only and no artifact consumer access | SQL asset in `packages/db/proposals/`, frozen migration checks, no reader/app grants or delivery surface |
 | Shared report deletion, renewed retry grace and bounded recovery records | Correction receipt: #164/#165 byte-sharing race, actual cleanup lock wait, sweep after retry upload, in-flight PUT and default/custom-window retirement |
 | Descriptor get-or-create with current rights and immutable first publication | Correction receipt: one-run repeats, original clock/receipt preservation, denied retries, concurrent callers, conflicting claims and retry after lost COMMIT response; zero server writes on reuse at 0/2,504 members |
+| A preflight-present report re-created by publication remains reclaimable | Re-creation receipt: actual #164 cleanup before PUT, durable extra enrollment before BEGIN, rights refusal/rollback and sweep past grace; unchanged normal-path budgets |
 
 All artifact bytes use the existing private ObjectStore. A publication receipt
 is a trusted pipeline result. Current dataset/source authorization is checked

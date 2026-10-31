@@ -27,7 +27,7 @@ const checkCode = (code: CodeIdentity) => {
   assert.deepEqual(Object.keys(code).sort(), ["contentSha256", "gitSha"], "model-code-identity-refused");
 };
 
-// Trusted pipeline only. Preparation/scoring reads precede the five-statement
+// Trusted pipeline only. Preparation/scoring reads precede the normal five-statement
 // publication boundary. No archived-report delivery or serving authorization.
 // The caller supplies a dedicated idle connection and an actual source-byte
 // identity (the local runner captures it); sharing a transaction would make
@@ -82,11 +82,17 @@ export const publishQbModelRun = async (client: Pick<Client, "query">, store: Ob
     if (current) checkObject(current, object);
     else absent.push(object.objectKey);
   }
-  // Autocommit before all PUTs, including the empty reuse case. Existing private
-  // objects are never enrolled, preventing cleanup from claiming old evidence.
+  // Autocommit before all PUTs, including the empty reuse case. Objects that
+  // remain present are not enrolled, preventing cleanup from claiming old evidence.
   await client.query("SELECT fs138.enroll_model_objects($1::text[])", [absent]);
   for (const [i, object] of objects.entries()) {
-    checkObject((await store.putIfAbsent(object.objectKey, uploads[i])).object, object);
+    const uploaded = await store.putIfAbsent(object.objectKey, uploads[i]);
+    checkObject(uploaded.object, object);
+    // #164 cleanup may delete preflight-present bytes before this PUT. Enroll
+    // our re-created object before BEGIN so a rollback preserves crash cleanup.
+    if (uploaded.created && !absent.includes(object.objectKey)) {
+      await client.query("SELECT fs138.enroll_model_objects($1::text[])", [[object.objectKey]]);
+    }
   }
   let inTransaction = false;
   const publicationStarted = performance.now();

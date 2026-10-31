@@ -398,6 +398,66 @@ test("#165 scoped orphan cleanup, publication races and interrupted connections"
         return { defaultRetirementSeconds: MODEL_ORPHAN_RETIREMENT_SECONDS, retainedAt23Hours: true,
           configurableWindowHonored: true, absentAt25HoursRetired: true, privateObjectsPreserved: true };
       });
+      await check("a report deleted after preflight is re-created, durably enrolled and swept after refused publication", async () => {
+        const before = await counts(), settings = { code, modes: [mode] as const };
+        const reportInput = await persist({ ...pins, populationDiagnostics: [{ fixture: "report-recreation-race" }] });
+        const report = await completeQbReport(reader, store, reportInput, mode, cleaner);
+        const address = report.artifact.objectKey;
+        assert(!(await observations()).includes(address), "#164 report starts outside scoped cleanup");
+        let preflightPresent = false, discarded = false, recreated = false;
+        let work: Awaited<ReturnType<typeof measureQbModelPublication>>["work"] | undefined;
+        try {
+          await assert.rejects(measureQbModelPublication(writer, { ...store,
+            head: async key => {
+              const object = await store.head(key);
+              if (key === address) { assert(object); preflightPresent = true; }
+              return object;
+            },
+            putIfAbsent: async (key, payload) => {
+              if (key === address) {
+                assert(preflightPresent);
+                await discardUnpublishedReport(cleaner, store, key);
+                assert.equal(await store.head(key), null); discarded = true;
+              }
+              const put = await store.putIfAbsent(key, payload);
+              if (key === address) {
+                assert(put.created); recreated = true;
+                await admin.query(`INSERT INTO fs138.rights_decisions(profile_id,allowed_uses,valid_from,rationale)
+                  VALUES('orphan-fixture','{}','2020-01-01','refuse publication after report re-creation')`);
+              }
+              return put;
+            },
+          }, reportInput, settings), error => {
+            const failure = error as Error & Pick<Awaited<ReturnType<typeof measureQbModelPublication>>, "work" | "events">;
+            assert.match(failure.message, /model-current-rights-refused/);
+            assert.equal(failure.work.publicationStatements, 5); assert.equal(failure.work.transactionStatements, 3);
+            assert.equal(failure.work.preflightHeads, 2); assert.equal(failure.work.transactionHeads, 0);
+            assert.equal(failure.work.uploads, 2); assert.equal(failure.work.transactionUploads, 0);
+            assert.equal(failure.work.transactionHashes, 0); assert.equal(failure.work.transactionObjectReads, 0);
+            const enrollments = failure.events.filter(e => e.operation === "sql:enroll");
+            assert.equal(enrollments.length, 2); assert(enrollments.every(e => !e.transaction));
+            work = failure.work;
+            const sequence = failure.events.filter(e => e.operation !== "hash" && e.operation !== "get" && e.operation !== "sql:prepare")
+              .map(e => e.operation);
+            assert.deepEqual(sequence, ["head", "head", "sql:enroll", "put", "put", "sql:enroll", "sql:BEGIN", "sql:guard", "sql:ROLLBACK"]);
+            return true;
+          });
+          assert(preflightPresent && discarded && recreated); assert.deepEqual(await counts(), before);
+          const enrolled = (await cleaner.query("SELECT object_key FROM fs138.orphan_observations ORDER BY object_key")).rows.map(r => r.object_key);
+          assert.equal(enrolled.length, 2); assert(enrolled.includes(address), "recovery enrollment survives publication rollback");
+          assert(await store.head(address));
+          assert.deepEqual((await sweepOrphanObjects(cleaner, store)).removed, []);
+          await admin.query("UPDATE fs138.orphan_observations SET first_seen=clock_timestamp()-interval '10 minutes' WHERE object_key=ANY($1)", [enrolled]);
+          const swept = await sweepOrphanObjects(cleaner, store);
+          assert.deepEqual(swept.removed.sort(), enrolled); assert.equal(await store.head(address), null);
+          return { preflightPresent, discardedBy164Cleanup: discarded, recreated, refusedAfterUploads: true,
+            durableEnrollmentAfterRollback: true, reclaimedAfterGrace: true,
+            enrollmentStatements: 2, extraEnrollmentBeforeBegin: true, work };
+        } finally {
+          await admin.query(`INSERT INTO fs138.rights_decisions(profile_id,allowed_uses,valid_from,rationale)
+            VALUES('orphan-fixture',ARRAY['research'],'2020-01-01','restore fixture after re-creation race')`);
+        }
+      });
       evidence.database = (await admin.query("SELECT version() AS version")).rows[0].version;
       evidence.verdict = probes.every(p => p.verdict === "pass") ? "pass" : "fail";
     });
