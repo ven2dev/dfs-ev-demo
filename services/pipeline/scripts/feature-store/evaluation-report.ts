@@ -2,13 +2,14 @@ import type { Client } from "pg";
 import type { evaluateQbBaseline, QbEvidenceMode } from "@dfs-ev/domain/qb-evaluation";
 import { readQbInputPins, withPinnedQbReport, type Artifact } from "../../src/featureStore/qbReports.ts";
 import type { ObjectStore } from "../../src/featureStore/objectStore.ts";
+import { discardUnpublishedReport } from "../../src/featureStore/governance.ts";
 
 export type { Artifact } from "../../src/featureStore/qbReports.ts";
 
 // Preserve #164's existing private staging/final-rights behavior. #165 calls the
 // same preparation/scorer without this wrapper, enrolling before its first PUT.
 export const completeQbReport = async (client: Pick<Client, "query">, store: ObjectStore,
-  inputPins: Artifact, mode: QbEvidenceMode) => {
+  inputPins: Artifact, mode: QbEvidenceMode, cleanupWriter: Pick<Client, "query">) => {
   const started = performance.now();
   const pins = await readQbInputPins(store, inputPins);
   let staged: { artifact: Artifact; created: boolean } | undefined;
@@ -25,7 +26,7 @@ export const completeQbReport = async (client: Pick<Client, "query">, store: Obj
     return { ...guarded.value, rightsScope: "research" as const,
       authorization: guarded.authorization, delivery: guarded.delivery, elapsedMs };
   } catch (error) {
-    if (staged?.created) await store.delete(staged.artifact.objectKey);
+    if (staged?.created) await discardUnpublishedReport(cleanupWriter, store, staged.artifact.objectKey);
     throw error;
   }
 };

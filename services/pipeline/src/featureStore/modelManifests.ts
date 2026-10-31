@@ -4,6 +4,7 @@ import { MODEL_VERSION } from "@dfs-ev/domain/baseline";
 import { QB_EVALUATOR_VERSION, type QbEvidenceMode } from "@dfs-ev/domain/qb-evaluation";
 import { FEATURE_VERSION, LABEL_VERSION, HISTORY_POLICY, type CodeIdentity } from "./derived.ts";
 import { EMPIRICAL_ADAPTER } from "./empiricalAdapter.ts";
+import { connectionInterrupted } from "./connections.ts";
 import { sha256, type ObjectInfo, type ObjectStore } from "./objectStore.ts";
 import { readQbArtifact, readQbInputPins, withPinnedQbReport, type Artifact, type PreparedQbReport } from "./qbReports.ts";
 
@@ -25,8 +26,6 @@ const checkCode = (code: CodeIdentity) => {
     "model-code-identity-refused");
   assert.deepEqual(Object.keys(code).sort(), ["contentSha256", "gitSha"], "model-code-identity-refused");
 };
-const interrupted = (error: unknown) => error instanceof Error &&
-  /Query read timeout|Connection terminated|Connection closed|ECONNRESET|EPIPE/.test(error.message);
 
 // Trusted pipeline only. Preparation/scoring reads precede the five-statement
 // publication boundary. No archived-report delivery or serving authorization.
@@ -91,7 +90,8 @@ export const publishQbModelRun = async (client: Pick<Client, "query">, store: Ob
   }
   let inTransaction = false;
   const publicationStarted = performance.now();
-  let run: { run_id: string; identity: typeof identity; recorded_at: Date; rights_receipt: unknown };
+  let run: { run_id: string; descriptor_sha256: string; identity: typeof identity; recorded_at: Date;
+    rights_receipt: unknown; existing_publication: boolean };
   try {
     // Set first: if BEGIN's response is lost, the connection is discarded.
     inTransaction = true;
@@ -100,12 +100,13 @@ export const publishQbModelRun = async (client: Pick<Client, "query">, store: Ob
     for (const object of objects) checkObject(await store.head(object.objectKey), object);
     run = (await client.query<typeof run>("SELECT * FROM fs138.publish_model_run($1::jsonb,$2::jsonb)", publishParameters)).rows[0];
     assert(run, "model-publication-missing");
+    assert.equal(run.descriptor_sha256, descriptor.fileSha256, "model-publication-descriptor-mismatch");
     await client.query("COMMIT");
     inTransaction = false;
   } catch (error) {
     // A lost COMMIT response has an unknown outcome. Withhold the result and
     // discard this connection; never delete bytes that may now be referenced.
-    if (interrupted(error)) throw new Error("model-connection-interrupted-replace", { cause: error });
+    if (connectionInterrupted(error)) throw new Error("model-connection-interrupted-replace", { cause: error });
     if (inTransaction) {
       try { await client.query("ROLLBACK"); }
       catch (rollbackError) { throw new Error("model-connection-interrupted-replace", { cause: rollbackError }); }
@@ -114,6 +115,7 @@ export const publishQbModelRun = async (client: Pick<Client, "query">, store: Ob
     throw error;
   }
   return { runId: run.run_id, identity: run.identity, recordedAt: run.recorded_at, rightsReceipt: run.rights_receipt,
+    existingPublication: run.existing_publication,
     descriptor, reports: objects.slice(1), rightsScope: "research" as const,
     timingMs: { publication: performance.now() - publicationStarted, endToEnd: performance.now() - started } };
 };

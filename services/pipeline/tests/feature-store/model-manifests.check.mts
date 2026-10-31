@@ -133,7 +133,8 @@ test("#165 immutable pipeline-only manifests and database-side work budgets", { 
         for (const table of ["model_runs", "model_run_datasets", "model_artifacts"]) for (const sql of [
           `SELECT * FROM fs138.${table}`, `INSERT INTO fs138.${table} DEFAULT VALUES`, `UPDATE fs138.${table} SET run_id=run_id`, `DELETE FROM fs138.${table}`,
         ]) { await assert.rejects(reader.query(sql), { code: "42501" }); refusals++; }
-        for (const sql of ["SELECT fs138.publish_model_run('{}','[]')", "SELECT fs138.enroll_model_objects('{}')", "SELECT fs138.guard_model_publication('{}','{}')"])
+        for (const sql of ["SELECT fs138.publish_model_run('{}','[]')", "SELECT fs138.enroll_model_objects('{}')", "SELECT fs138.guard_model_publication('{}','{}')",
+          "SELECT fs138.retire_model_observation('audits/" + "a".repeat(64) + "',86400)"])
           { await assert.rejects(reader.query(sql), { code: "42501" }); refusals++; }
         return { ...login, refusals };
       });
@@ -178,7 +179,7 @@ test("#165 immutable pipeline-only manifests and database-side work budgets", { 
         assert.deepEqual(await runCounts(), before); return { refusedStates: 5, partialRows: false };
       });
       await check("CI server-side row writes are exact and identical for 0 and 2504 real dataset members", async () => {
-        const budgets: { rows: number; enrollment: Budget; publication: Budget }[] = [];
+        const budgets: { rows: number; enrollment: Budget; publication: Budget; reuse: Budget }[] = [];
         for (const i of [0, 1]) {
           const objects = objectsFor([i]), addresses = objects.map(o => o.objectKey);
           // These are measurement transactions. The real orchestrator will HEAD
@@ -195,7 +196,7 @@ test("#165 immutable pipeline-only manifests and database-side work budgets", { 
             const beforePublication = await writes(writer);
             await writer.query("SELECT fs138.guard_model_publication($1,$2)", [[ids[i]], addresses]);
             assert.deepEqual(writeDelta(beforePublication, await writes(writer)), [], "guard cannot hide DML inside a definer function");
-            await publish(objects);
+            const first = await publish(objects); assert.equal(first.existing_publication, false);
             const publication = writeDelta(beforePublication, await writes(writer));
             assert.deepEqual(publication, [
               { table: "model_artifacts", inserted: 2, updated: 0, deleted: 0 },
@@ -203,14 +204,41 @@ test("#165 immutable pipeline-only manifests and database-side work budgets", { 
               { table: "model_runs", inserted: 1, updated: 0, deleted: 0 },
               { table: "orphan_observations", inserted: 0, updated: 0, deleted: 2 },
             ]);
-            budgets.push({ rows: i === 0 ? 0 : 2504, enrollment, publication });
+            const beforeReuse = await writes(writer);
+            const retry = await publish(objects);
+            assert.equal(retry.existing_publication, true); assert.equal(retry.run_id, first.run_id);
+            const reuse = writeDelta(beforeReuse, await writes(writer)); assert.deepEqual(reuse, []);
+            budgets.push({ rows: i === 0 ? 0 : 2504, enrollment, publication, reuse });
             await writer.query("COMMIT");
           } catch (error) { await writer.query("ROLLBACK"); throw error; }
         }
         assert.deepEqual(budgets[0].publication, budgets[1].publication);
         assert.deepEqual(budgets[0].enrollment, budgets[1].enrollment);
+        assert.deepEqual(budgets[0].reuse, budgets[1].reuse);
         evidence.serverWork = budgets;
         return { measuredBy: "pg_stat_xact_user_tables on publishing LOGIN", budgets };
+      });
+      await check("descriptor get-or-create preserves the first run, refuses denied retries and conflicting claims, and serializes concurrent callers", async () => {
+        const before = await runCounts(), objects = objectsFor([1]);
+        const first = await publish(objects); assert.equal(first.existing_publication, false);
+        assert.equal(first.descriptor_sha256, objects[0].fileSha256);
+        await grant(true);
+        const retry = await publish([...objects].reverse().map(o => ({ ...o, datasetId: o.datasetId?.toUpperCase() ?? null })));
+        assert.equal(retry.existing_publication, true); assert.equal(retry.run_id, first.run_id);
+        assert.deepEqual(retry.recorded_at, first.recorded_at); assert.deepEqual(retry.rights_receipt, first.rights_receipt);
+        await grant(false);
+        await assert.rejects(publish(objects), /model-current-rights-refused/); await grant(true);
+        await assert.rejects(publish(objects, { ...identity, code: { ...code, gitSha: "b".repeat(40) } }), /model-existing-publication-mismatch/);
+        await assert.rejects(publish([objects[0], pin(modes[1], ids[1])]), /model-existing-publication-mismatch/);
+        assert.deepEqual(await runCounts(), { runs: before.runs + 1, datasets: before.datasets + 1, artifacts: before.artifacts + 2 });
+        const concurrentObjects = objectsFor([1]), other = await openWriter();
+        const [a, b] = await Promise.all([publish(concurrentObjects), other.query(
+          "SELECT * FROM fs138.publish_model_run($1::jsonb,$2::jsonb)", [JSON.stringify(identity), JSON.stringify(concurrentObjects)]).then(r => r.rows[0])]);
+        assert.equal(a.run_id, b.run_id);
+        assert.deepEqual([a.existing_publication, b.existing_publication].sort(), [false, true]);
+        assert.deepEqual(await runCounts(), { runs: before.runs + 2, datasets: before.datasets + 2, artifacts: before.artifacts + 4 });
+        return { descriptorUnique: true, identicalRetryReturnedOriginal: true, deniedRetryRefused: true,
+          conflictingClaimsRefused: 2, concurrentCallers: 2, concurrentRuns: 1, originalClockAndReceiptPreserved: true };
       });
       await check("direct SQL publication rechecks current rights after an address lock wait", async () => {
         const objects = objectsFor([1]), blocker = await openWriter();

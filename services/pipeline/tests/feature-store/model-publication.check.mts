@@ -20,7 +20,7 @@ const evidence: Record<string, unknown> = { issue: 165, step: 2, runtime: proces
   fixture: "synthetic genuine scored envelopes, real 0/2504 dataset members, PostgreSQL LOGIN and local ObjectStore", probes };
 
 test("#165 trusted report preparation and enroll-before-upload publication", { timeout: 120_000 }, async t => {
-  const output = new URL("../../../../codex-briefs/node_modules/", import.meta.url);
+  const output = new URL("../../../../node_modules/.cache/feature-store-165/", import.meta.url);
   await mkdir(output, { recursive: true });
   const root = await realpath(await mkdtemp(new URL("165-publication-tests-", output).pathname));
   evidence.storageRoot = root;
@@ -115,6 +115,7 @@ test("#165 trusted report preparation and enroll-before-upload publication", { t
         return { actualMembers: actual, trials };
       });
       await check("both-mode publication and repeated reuse never enroll existing objects", async () => {
+        const before = await counts();
         let calls = 0;
         const checkedWriter = new Proxy(writer, { get(target, property) {
           if (property !== "query") return Reflect.get(target, property, target);
@@ -132,8 +133,12 @@ test("#165 trusted report preparation and enroll-before-upload publication", { t
         assert.equal(retry.work.preflightHeads, 3); assert.equal(retry.work.transactionHeads, 3);
         assert.equal(retry.work.transactionHashes, 0); assert.equal(retry.work.objectReads, 6);
         assert.equal(first.result.descriptor.objectKey, retry.result.descriptor.objectKey);
-        assert.notEqual(first.result.runId, retry.result.runId);
-        return { first: first.work, retry: retry.work };
+        assert.equal(first.result.existingPublication, false); assert.equal(retry.result.existingPublication, true);
+        assert.equal(first.result.runId, retry.result.runId);
+        assert.deepEqual(first.result.recordedAt, retry.result.recordedAt);
+        assert.deepEqual(first.result.rightsReceipt, retry.result.rightsReceipt);
+        assert.equal((await counts()).runs, before.runs + 1);
+        return { first: first.work, retry: retry.work, oneRun: true, retryExistingPublication: true };
       });
       await check("mismatched input versions, preregistration, dataset pins and coverage refuse before uploads", async () => {
         const cases: [string, (p: QbInputPins) => void][] = [

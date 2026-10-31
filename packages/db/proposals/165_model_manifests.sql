@@ -27,6 +27,7 @@ $$;
 
 CREATE TABLE fs138.model_runs (
  run_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+ descriptor_sha256 fs138.sha256 NOT NULL UNIQUE,
  identity jsonb NOT NULL CHECK(fs138.valid_model_identity(identity)),
  recorded_at timestamptz NOT NULL,
  rights_receipt jsonb NOT NULL CHECK(jsonb_typeof(rights_receipt)='object')
@@ -92,7 +93,10 @@ BEGIN
  FOR address IN SELECT DISTINCT unnest(addresses) ORDER BY 1 LOOP
   PERFORM fs138.lock_object_for_publication(address);
   IF NOT EXISTS(SELECT 1 FROM fs138.model_artifacts WHERE object_key=address) THEN
-   INSERT INTO fs138.orphan_observations VALUES(address,clock_timestamp()) ON CONFLICT DO NOTHING;
+   -- An absent-address retry is a new upload attempt. Renew its grace rather
+   -- than letting an earlier failed attempt make fresh bytes immediately due.
+   INSERT INTO fs138.orphan_observations VALUES(address,clock_timestamp())
+    ON CONFLICT(object_key) DO UPDATE SET first_seen=EXCLUDED.first_seen;
   END IF;
  END LOOP;
 END $$;
@@ -141,9 +145,11 @@ BEGIN
  RETURN receipt;
 END $$;
 
-CREATE FUNCTION fs138.publish_model_run(p_identity jsonb,p_objects jsonb) RETURNS fs138.model_runs
+CREATE FUNCTION fs138.publish_model_run(p_identity jsonb,p_objects jsonb)
+RETURNS TABLE(run_id uuid,descriptor_sha256 fs138.sha256,identity jsonb,recorded_at timestamptz,
+ rights_receipt jsonb,existing_publication boolean)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
-DECLARE ids uuid[]; addresses text[]; receipt jsonb; result fs138.model_runs;
+DECLARE ids uuid[]; addresses text[]; receipt jsonb; result fs138.model_runs; descriptor_digest fs138.sha256; reused boolean;
 BEGIN
  IF NOT pg_has_role(session_user,'fs138_pipeline_writer','member') THEN RAISE EXCEPTION 'pipeline-role-required' USING ERRCODE='42501'; END IF;
  IF NOT fs138.valid_model_identity(p_identity) OR jsonb_typeof(p_objects) IS DISTINCT FROM 'array' THEN
@@ -176,19 +182,37 @@ BEGIN
   OR cardinality(ids)<>jsonb_array_length(p_objects)-1 THEN
   RAISE EXCEPTION 'model-report-dataset-mode-refused' USING ERRCODE='23514';
  END IF;
+ SELECT o->>'fileSha256' INTO descriptor_digest FROM jsonb_array_elements(p_objects) o WHERE o->>'slot'='descriptor';
  WITH run AS(
-  INSERT INTO fs138.model_runs(identity,rights_receipt) VALUES(p_identity,receipt) RETURNING *
+  INSERT INTO fs138.model_runs(descriptor_sha256,identity,rights_receipt) VALUES(descriptor_digest,p_identity,receipt)
+  ON CONFLICT ON CONSTRAINT model_runs_descriptor_sha256_key DO NOTHING RETURNING *
  ), pins AS(
   INSERT INTO fs138.model_run_datasets
-  SELECT run_id,d.dataset_id,d.spec->>'mode',d.file_sha256,d.content_sha256,d.spec,d.row_count,d.recorded_at
-  FROM run CROSS JOIN fs138.dataset_manifests d WHERE dataset_id=ANY(ids)
+  SELECT r.run_id,d.dataset_id,d.spec->>'mode',d.file_sha256,d.content_sha256,d.spec,d.row_count,d.recorded_at
+  FROM run r CROSS JOIN fs138.dataset_manifests d WHERE d.dataset_id=ANY(ids)
  ), artifacts AS(
   INSERT INTO fs138.model_artifacts
-  SELECT run_id,o.slot,o."datasetId",o."objectKey",o."fileSha256",o."byteSize" FROM run
+  SELECT r.run_id,o.slot,o."datasetId",o."objectKey",o."fileSha256",o."byteSize" FROM run r
   CROSS JOIN jsonb_to_recordset(p_objects) o(slot text,"datasetId" uuid,"objectKey" text,"fileSha256" text,"byteSize" integer)
- ) SELECT * INTO result FROM run;
+ ) SELECT r.* INTO result FROM run r;
+ reused:=NOT FOUND;
+ IF reused THEN
+  -- The descriptor's existing address lock serializes identical publications.
+  -- This fresh statement sees the winning commit without a no-op UPDATE, so
+  -- the original knowledge clock and rights receipt remain immutable.
+  SELECT r.* INTO STRICT result FROM fs138.model_runs r WHERE r.descriptor_sha256=descriptor_digest;
+  IF result.identity IS DISTINCT FROM p_identity OR
+   (SELECT jsonb_agg(jsonb_build_object('slot',a.slot,'datasetId',a.dataset_id,'objectKey',a.object_key,
+      'fileSha256',a.file_sha256,'byteSize',a.byte_size) ORDER BY a.slot)
+    FROM fs138.model_artifacts a WHERE a.run_id=result.run_id)
+   IS DISTINCT FROM (SELECT jsonb_agg(jsonb_build_object('slot',o.slot,'datasetId',o."datasetId",'objectKey',o."objectKey",
+      'fileSha256',o."fileSha256",'byteSize',o."byteSize") ORDER BY o.slot)
+    FROM jsonb_to_recordset(p_objects) o(slot text,"datasetId" uuid,"objectKey" text,"fileSha256" text,"byteSize" integer)) THEN
+   RAISE EXCEPTION 'model-existing-publication-mismatch' USING ERRCODE='23514';
+  END IF;
+ END IF;
  DELETE FROM fs138.orphan_observations WHERE object_key=ANY(addresses);
- RETURN result;
+ RETURN QUERY SELECT result.run_id,result.descriptor_sha256,result.identity,result.recorded_at,result.rights_receipt,reused;
 END $$;
 
 CREATE OR REPLACE FUNCTION fs138.orphan_recheck(address text,grace_seconds double precision DEFAULT 300) RETURNS boolean
@@ -216,7 +240,31 @@ BEGIN
  RETURN coalesce(first_seen+make_interval(secs=>grace_seconds)<=clock_timestamp(),false);
 END $$;
 
+-- Trusted cleaner only, after a metadata-only HEAD found no object while the
+-- address lock is held. An absent record survives the long GC recovery window
+-- from its last enrollment so an in-flight PUT can still be reclaimed later.
+-- SQL cannot inspect external storage; the same trusted-pipeline boundary as
+-- publication applies. Bound the parameter to prevent non-finite intervals.
+CREATE FUNCTION fs138.retire_model_observation(address text,retirement_seconds double precision) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
+DECLARE retired integer;
+BEGIN
+ IF NOT pg_has_role(session_user,'fs138_pipeline_writer','member') THEN RAISE EXCEPTION 'pipeline-role-required' USING ERRCODE='42501'; END IF;
+ IF address IS NULL OR address !~ '^(models|audits)/[a-f0-9]{64}$'
+  OR retirement_seconds IS NULL OR NOT(retirement_seconds>0 AND retirement_seconds<=31536000) THEN
+  RAISE EXCEPTION 'orphan-retirement-refused' USING ERRCODE='23514';
+ END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended(address,138));
+ DELETE FROM fs138.orphan_observations o WHERE o.object_key=address
+  AND o.first_seen+make_interval(secs=>retirement_seconds)<=clock_timestamp()
+  AND NOT EXISTS(SELECT 1 FROM fs138.model_artifacts a WHERE a.object_key=address);
+ GET DIAGNOSTICS retired=ROW_COUNT;
+ RETURN retired=1;
+END $$;
+
 REVOKE ALL ON FUNCTION fs138.valid_model_identity(jsonb),fs138.enroll_model_objects(text[]),
- fs138.guard_model_publication(uuid[],text[]),fs138.publish_model_run(jsonb,jsonb) FROM PUBLIC,fs138_reader;
+ fs138.guard_model_publication(uuid[],text[]),fs138.publish_model_run(jsonb,jsonb),
+ fs138.retire_model_observation(text,double precision) FROM PUBLIC,fs138_reader;
 GRANT EXECUTE ON FUNCTION fs138.valid_model_identity(jsonb),fs138.enroll_model_objects(text[]),
- fs138.guard_model_publication(uuid[],text[]),fs138.publish_model_run(jsonb,jsonb) TO fs138_pipeline_writer;
+ fs138.guard_model_publication(uuid[],text[]),fs138.publish_model_run(jsonb,jsonb),
+ fs138.retire_model_observation(text,double precision) TO fs138_pipeline_writer;

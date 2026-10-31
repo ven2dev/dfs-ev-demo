@@ -3,25 +3,26 @@ import { mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises"
 import { withFeatureStoreDatabase } from "./harness.ts";
 import { EVALUATION_ROOT, evaluationCodeIdentity, prepareEvaluationFixture } from "./evaluation-fixture.ts";
 import { measureQbModelPublication } from "./model-publication-measure.ts";
+import { modelPublicationCodeIdentity } from "./model-publication-identity.ts";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
 import { sha256 } from "../../src/featureStore/objectStore.ts";
 
 // Disposable local fixture only: harness target registration excludes hosted DBs.
 // All drafts/evidence and private fixture bytes survive a workstation restart.
-const directory = new URL("codex-briefs/node_modules/", EVALUATION_ROOT);
+const directory = new URL("node_modules/.cache/feature-store-165/", EVALUATION_ROOT);
 await mkdir(directory, { recursive: true });
 const root = await realpath(await mkdtemp(new URL("165-real-publication-", directory).pathname));
 const store = await openLocalObjectStore(root);
-const source = await evaluationCodeIdentity();
+const inputSource = await evaluationCodeIdentity(), source = await modelPublicationCodeIdentity();
 const receipt: Record<string, unknown> = { issue: 165, step: 2, recordedAt: new Date().toISOString(),
-  runtime: process.version, storageRoot: root, ...source,
+  runtime: process.version, storageRoot: root, ...source, inputGeneration: inputSource,
   fixture: "16 retained exact #138 wire files, fresh real clocks, 2504 retrospective and zero strict PIT examples",
   limitation: "behavior and deterministic work proof only; elapsed times are informational; final relative ABBA speed gate remains step 4",
   verdict: "running" };
 try {
   await withFeatureStoreDatabase(async context => {
     await context.admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/165_model_manifests.sql")), "utf8"));
-    const fixture = await prepareEvaluationFixture(context, store, source.code, event => console.log(JSON.stringify(event)));
+    const fixture = await prepareEvaluationFixture(context, store, inputSource.code, event => console.log(JSON.stringify(event)));
     const measured = await measureQbModelPublication(context.writer, store, fixture.inputPinsArtifact, { code: source.code });
     assert.deepEqual(measured.work, { preparationStatements: 6, publicationStatements: 5, transactionStatements: 4,
       preflightHeads: 3, transactionHeads: 3, objectReads: 6, transactionObjectReads: 0,
@@ -60,9 +61,10 @@ try {
   });
 } catch (error) { receipt.verdict = "fail"; receipt.error = String(error); process.exitCode = 1; }
 finally {
-  const after = await evaluationCodeIdentity();
+  assert.deepEqual(await evaluationCodeIdentity(), inputSource, "input-source-changed-during-measurement");
+  const after = await modelPublicationCodeIdentity();
   assert.deepEqual(after, source, "source-changed-during-measurement");
-  await writeFile(process.env.FS165_REAL_EVIDENCE ?? new URL("codex-briefs/165-step-2-real.json", EVALUATION_ROOT),
+  await writeFile(process.env.FS165_REAL_EVIDENCE ?? new URL("165-real-publication.json", directory),
     JSON.stringify(receipt, null, 2) + "\n");
 }
 console.log(JSON.stringify({ verdict: receipt.verdict, storageRoot: root }));

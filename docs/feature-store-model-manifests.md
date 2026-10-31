@@ -1,20 +1,42 @@
 # Immutable model and report manifests (#165)
 
-Status: owner-approved roadmap, with server-side work measurement and enrollment
-before upload. Steps 1–3 are committed as `3e716cf`, `b67979a` and `4c9d5fa`. Step 4 (final
-benchmark and evidence) is prepared for owner commit approval; push requires fresh consent. Engineering cap: five hours,
-excluding review waiting; split remaining work if discovery exceeds the cap.
+Status: the four initial steps were approved and committed through `967f337`.
+Review corrections cover shared-report deletion, retry grace and orphan recovery
+retirement, plus descriptor-based get-or-create. They remain uncommitted pending owner approval. Evidence explicitly
+distinguishes the original implementation from the corrected sources.
+Descriptor-based get-or-create is owner-approved. Push requires fresh consent.
+
+The review correction makes #164 failure cleanup take the shared address lock
+and check committed model references on a separate writer connection before
+unlinking a newly staged report. Report readers receive no model-artifact grant.
+Absent-address retries renew their cleanup grace before upload. Tests cover a
+#165 commit between #164 staging and failure, an actual cleanup lock wait, and a
+sweep between retry upload and publication. The owner-approved recovery policy
+retains absent-object observations for a configurable retirement window from
+last enrollment, defaulting to 24 hours. Registered model/report addresses drive
+the sweep, including those with no object yet.
 
 ## Design basis
 
 - **Pattern:** immutable versioned artifact registry, upload first followed by
   short transactional publication. Reuse ObjectStore and the common PostgreSQL
   writer address lock. Run/dataset/artifact associations are per publication.
+  Orphan recovery uses a GC grace period much longer than maximum expected
+  operation duration: 24-hour record retirement versus 300-second sweep grace.
+  A unique descriptor SHA-256 is the publication's natural idempotency key;
+  get-or-create returns the original immutable run on an identical retry.
 - **Alternatives:** uploads or byte hashing inside publication prolong lock
   holds; caller-written provenance permits forged identities; per-example
   artifact lineage repeats the retired evidence graph. Namespace-wide audit
   cleanup can remove private #164 evidence, so use scoped enrollment in the
   existing orphan-observation table instead of another staging registry.
+  Fencing plus bounded upload lifetime is rejected because ObjectStore lacks
+  conditional-write support and #172 is blocked. Infinite recovery records are
+  rejected because failed attempts otherwise accumulate without a bound.
+  A caller-supplied idempotency key is rejected because callers would have to
+  preserve another identity for the same immutable descriptor. Allowing duplicate
+  runs is rejected because a lost COMMIT acknowledgement would create duplicate
+  registry records and ambiguous provenance for downstream governance.
 - **Targets:** five successful publication-boundary client SQL statements, four inside publication;
   one metadata-only HEAD per published object inside the transaction, zero byte
   reads/hashes there and no per-example SQL/verification. Three preflight HEADs
@@ -22,6 +44,8 @@ excluding review waiting; split remaining work if discovery exceeds the cap.
   before BEGIN. Publication BEGIN-to-COMMIT p95 and every ABBA block's slowest
   candidate are <=70% of the interleaved dataset baseline p95 / block's fastest
   baseline on the same 512 MiB PostgreSQL fixture. End-to-end time is informational.
+  Every ABBA block includes one create and one reuse of that descriptor so the
+  reuse path cannot conceal slower first-publication work.
 - **Server work:** CI measures transaction-local insert/update/delete counts
   across every `fs138` table, including definer-function DML, and requires exact
   equality for matching publication shapes guarding 0 and 2,504 examples.
@@ -29,16 +53,28 @@ excluding review waiting; split remaining work if discovery exceeds the cap.
   removes 2 pre-upload observations for new objects. Enrollment inserts its 2
   rows separately. Zero writes to example/membership/source tables. This row
   budget measures writes; source review checks the no-per-example-read premise.
+  Reusing an existing descriptor writes zero rows at both fixture sizes.
 - **Requirement reasons:** version/hash pins prevent silent provenance changes;
   DB clocks prevent false historical-availability claims; current input rights
   and status checks refuse withdrawn inputs; short lock holds avoid delaying
   the cleaner and other publishers; client and server counts expose hidden work;
   pipeline-only grants prevent consumer access before #166 provides governance.
+  Renewed enrollment prevents retry starvation; retaining absent records through
+  the retirement window covers late PUTs; expiring them bounds recovery metadata.
+  The rights guard precedes get-or-create so a refused caller cannot receive an
+  existing run; preserving the first run's clock and receipt avoids rewriting
+  publication history. Existing identity and exact file pins are compared on
+  reuse so a conflicting descriptor claim fails closed.
 - **Assumptions:** trusted pipeline/database owner, one authoritative DB per
   ObjectStore root, local private research and immutable snapshots. No calibrated
   product or population-completeness claim. The empirical baseline has an
   algorithm descriptor rather than trained weights. Strict PIT and retrospective
   reconstruction keep distinct dataset pins and actual knowledge clocks.
+  PUTs complete within the recovery window under normal operation. This is an
+  operational assumption, not an enforced upload deadline: a PUT finishing after
+  record retirement can leave bytes outside this cleanup's scope. Recovery uses
+  one row per enrolled address from a failed attempt, coalesced on retry and held
+  through the retirement window; a three-object attempt enrolls at most three.
 
 ## Approved sequence
 
@@ -62,6 +98,17 @@ modes. It has exactly one descriptor and one report for each pinned mode; each
 report references its own pinned dataset. File keys bind namespace, SHA-256 and
 size. Caller input has no knowledge-clock parameter. SQL stamps publication time.
 
+`model_runs.descriptor_sha256` is NOT NULL and UNIQUE, derived from the validated
+descriptor pin. Publication uses INSERT ON CONFLICT DO NOTHING under the existing
+descriptor address lock, then returns either the inserted run or the matching
+existing run. SQL exposes `existing_publication`, surfaced by the pipeline as
+`existingPublication` (false on create, true on reuse). The stored identity and
+exact report/descriptor pins are compared before reuse; a conflicting claim fails.
+The first publication's `recorded_at` and rights receipt remain unchanged. Current
+rights and dataset/source guards still run before the insert and existing-run
+lookup, so a denied retry receives no historical run. There is no no-op UPDATE,
+additional caller key or new lock.
+
 The pipeline has SELECT and role-checked EXECUTE only on the new surface. Direct
 insert/update/delete and all reader/app access are refused. Definer functions
 use fixed search paths and the session login's membership, preventing an owner
@@ -70,10 +117,11 @@ The trusted database owner remains able to administer its database.
 
 HEAD each address before upload; enroll absent addresses in one autocommit call,
 then putIfAbsent for all objects. Existing objects are not enrolled, preserving
-unregistered audit evidence. Observation rows survive interrupted uploads and
-orphan deletion until committed publication clears them. This allows a later
-sweep to reclaim an upload that finishes after an earlier deletion; there is no deliberate
-upload-before-enrollment crash leak. All file I/O for uploads happens before the
+unregistered audit evidence. Every absent-address retry renews the observation's
+clock before upload. Observation rows survive interrupted uploads and orphan
+deletion throughout the recovery window; publication clears committed addresses.
+This allows a later sweep to reclaim a PUT that finishes inside that window.
+All file I/O for uploads happens before the
 publication transaction. Inside it, lock source/dataset inputs and sorted object
 addresses, check HEAD metadata only, then insert the run, pins and artifacts in
 one set-based publication call. The SQL call repeats current input guards so
@@ -152,9 +200,12 @@ mode's exact dataset, report address, byte count and logical report hash.
 `withDatasetRead` now passes SQL-owned metadata to its trusted callback using the
 existing manifest query. It retains three preparation queries per dataset and
 the final rights/status check. The legacy #164 report wrapper uses the extracted
-preparation callback while retaining its staging/failed-new-output behavior.
-The existing dataset publisher's transaction hashing is unchanged and has its
-own draft issue in `codex-briefs/dataset-publication-hashing-issue.md`.
+preparation callback. Failure cleanup now holds the shared address lock and checks
+committed model references before deleting new bytes. A separate writer performs
+this check, preserving the reader's permissions and the successful path's three
+read statements.
+The existing dataset publisher's transaction hashing is unchanged. A separate
+follow-up issue has been drafted for owner review; it is outside #165.
 
 Preparation performs three SQL reads per selected mode. These precede the
 publication boundary: one autocommit enrollment, BEGIN, batched guard, set-based
@@ -194,19 +245,31 @@ benchmark files because the envelopes bind fresh exact IDs/code/clocks.
 
 ## Scoped orphan cleanup and failure handling
 
-The JavaScript orphan sweep now lists all four existing ObjectStore namespaces.
-For `models/` and `audits/`, one initial SQL query selects enrolled candidates;
-unregistered addresses receive no per-object SQL check. Existing raw/dataset
-behavior remains. Each candidate still uses the shared address lock and SQL
-reference/grace recheck before deletion. That locked recheck protects a manifest
-that commits after candidate selection. No new lock or staging registry is added.
+For `models/` and `audits/`, registered addresses are the sweep's work source:
+one initial SQL query selects observations, including absent objects. These
+namespaces are not listed, so unregistered private reports receive no per-object
+SQL or HEAD check. Raw/dataset discovery retains its existing metadata listings.
+Each candidate uses the shared address lock and SQL reference/grace recheck.
+That locked recheck protects a manifest committed after candidate selection.
+No new lock or staging registry is added.
 
-Enrollment survives orphan deletion because an upload begun before cleanup may
-finish afterward. Subsequent metadata listing rediscovers those bytes and the
-same enrolled address remains eligible. Absent objects cause no per-object SQL
-work, even when their observation remains. Successful publication clears its
-observations. Keeping this small crash-recovery record avoids an unowned late
-upload without introducing leases or byte I/O inside publication.
+After normal grace (default 300 seconds), a registered object is checked with
+metadata-only HEAD. Existing unreferenced bytes are deleted; their observation
+remains available for a late PUT. An absent record retires only after the
+configured window from its last enrollment. `MODEL_ORPHAN_RETIREMENT_SECONDS`
+is the named 24-hour default; the fourth `sweepOrphanObjects` argument overrides
+it. The window is positive, at least the deletion grace and at most one year,
+preventing invalid/non-finite intervals. SQL rechecks age and committed references
+under the address lock before retirement. Successful publication still clears
+its observations immediately.
+
+Recovery storage is one row per failed object-upload attempt, coalesced per
+address across retries, retained through the retirement window (at most three
+rows for one descriptor and both reports). Missing bytes alone do not authorize
+early retirement. A PUT finishing inside the window remains reclaimable. A PUT
+finishing after retirement falls outside the operational assumption; no fencing
+or upload deadline is introduced. The 24-hour GC grace is intentionally much
+longer than expected operation duration and the 300-second deletion grace.
 
 The local race suite exercises both outcomes: a cleaner that wins removes bytes
 and publication refuses with no rows; a publisher that holds the address lock
@@ -229,9 +292,9 @@ TypeScript, ESLint, whitespace and frozen migration checks pass. SQL and the
 publication implementation were unchanged in step 3.
 
 
-## Final relative benchmark
+## Original relative benchmark (historical)
 
-The [final benchmark receipt](evidence/feature-store-165/step-4-benchmark.json)
+The [original benchmark receipt](evidence/feature-store-165/step-4-benchmark.json)
 records all 54 timing rows, source/SQL/runner hashes, fixture pins, work counts,
 per-block comparisons and the full receipt's ObjectStore address. Six initial
 baseline-only samples precede candidate SQL installation. Their p95 is
@@ -285,6 +348,69 @@ the new benchmark passes targeted TypeScript and lint. Frozen migration artifact
 and whitespace checks pass. Scratch databases, throwaway LOGINs and other fixture
 clients were zero after cleanup; the fixture container was stopped.
 
+## Review corrections and corrected-source benchmark
+
+The [correction receipt](evidence/feature-store-165/review-corrections.json)
+records 115 passing feature-store database checks, 19 package/path/import checks,
+targeted TypeScript/lint and unchanged frozen migrations. Its regression evidence
+covers byte-identical #164 staging reused by a committed #165 run before #164
+fails, a real cleanup lock wait, a sweep between retry upload and publication,
+an absent in-flight PUT followed by completion/reclamation, and absent recovery
+records retained at 23 hours and retired at 25 hours. A custom 22-hour window is
+also tested. The retirement API has a real reader LOGIN refusal probe.
+
+Model publication now has a separate source identity from #164 input generation.
+The disposable identity probe changes a #165-only runtime source, observes an
+unchanged #164 identity and a changed model identity, then restores the source.
+Both identities and source hashes are recorded in fresh benchmark evidence.
+Tests and scripts use ignored `node_modules/.cache/feature-store-165/` instead
+of depending on an untracked draft directory. Publisher and cleanup share the
+same socket/SQLSTATE interruption classifier, with nine refusal combinations.
+
+The [corrected-source benchmark](evidence/feature-store-165/review-benchmark.json)
+repeats all 54 samples on the same 512 MiB PostgreSQL 18.6 / Node 24.18.1 fixture
+and exact retained 16-file cohort. Baseline-first p95 is **105.851 ms**. The dataset
+publisher's body still matches main `71cdd90`; its transaction hashing remains
+the separate follow-up. No target is relaxed.
+
+| Candidate | Dataset p95 | Candidate p95 | p95 headroom | Smallest block headroom |
+| --- | ---: | ---: | ---: | ---: |
+| Exact retained-report transport | 115.160 ms | 10.257 ms | 91.09% | 89.83% |
+| Actual full publisher | 113.362 ms | 12.785 ms | 88.72% | 87.78% |
+
+Each candidate has six creates and six reuses. Every ABBA block uses the preceding
+baseline's newly created SQL dataset pin: B1 creates a descriptor and B2 returns
+that run with `existingPublication=true`. The full publisher prepares matching
+immutable input pins outside timing. Retained transport create/reuse p95 is
+10.257 / 6.563 ms; full publisher create/reuse p95 is 12.785 / 11.388 ms. All
+twelve pairs return the same run ID within each pair and distinct runs across
+blocks, preventing repeated reuse from concealing first-publication costs.
+
+Both p95 gates and all twelve ABBA block comparisons pass 30% headroom. Every
+candidate keeps five publication statements, four inside the transaction, three
+preflight HEADs, three uploads before BEGIN and three transaction HEADs. There is
+no transaction hashing, object-byte read or upload. The 0/2,504-member server DML
+vectors and hidden-work negative control still pass; reuse writes zero rows at
+both fixture sizes. Exact retained report sizes remain 9,290,168 / 306,544 bytes;
+fresh matching retrospective reports are 9,290,166 or 9,290,168 bytes and strict
+PIT reports are 306,544 bytes, with a 3,318-byte descriptor. Both fresh report logical
+hashes match the original measurement. File hashes and envelope/descriptor/dataset
+associations were verified against the corrected source identities.
+
+End-to-end time remains informational: retained transport 37.530–115.785 ms;
+full publisher 1,929.923–2,101.527 ms. Local warm-cache and retained-transport
+provenance limitations remain the same as the original benchmark. Every timing
+sample, per-trial budget and source hash is retained in the new compact receipt;
+the full receipt has a separate ObjectStore digest.
+
+The guard deliberately runs before metadata HEADs to hold the shared locks and
+again inside final publication to protect direct SQL callers and recheck current
+rights after those HEADs. Both calls are included in the measured fixed budget.
+Descriptor-based get-or-create also applies after a lost COMMIT acknowledgement:
+the retry returns the original run marked as an existing publication. Tests cover
+one-row repeat publication, original clock/receipt preservation under a fresh
+rights grant, refused retries, conflicting claims and concurrent callers.
+
 ## Acceptance mapping
 
 | Requirement | Evidence |
@@ -294,6 +420,8 @@ clients were zero after cleanup; the fixture container was stopped.
 | Real non-pipeline LOGIN cannot publish/modify; no forged clocks or identities | Step 1 actual LOGIN permission probes, direct mutation and unsupported identity refusals |
 | Rollback and cleaner races leave no dangling references | Step 3 both lock orders, post-insert rollback, backend termination, lost acknowledgement and late-upload cleanup; step 1 identical server DML vectors plus hidden-work negative control |
 | Proposal SQL only and no artifact consumer access | SQL asset in `packages/db/proposals/`, frozen migration checks, no reader/app grants or delivery surface |
+| Shared report deletion, renewed retry grace and bounded recovery records | Correction receipt: #164/#165 byte-sharing race, actual cleanup lock wait, sweep after retry upload, in-flight PUT and default/custom-window retirement |
+| Descriptor get-or-create with current rights and immutable first publication | Correction receipt: one-run repeats, original clock/receipt preservation, denied retries, concurrent callers, conflicting claims and retry after lost COMMIT response; zero server writes on reuse at 0/2,504 members |
 
 All artifact bytes use the existing private ObjectStore. A publication receipt
 is a trusted pipeline result. Current dataset/source authorization is checked
@@ -314,9 +442,9 @@ node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON services/pipeline/scripts/fe
 
 Supply only the fixture's local `TEST_DATABASE_URL` in a clean environment;
 the scratch harness validates the target before creating a database. The benchmark
-writes its full receipt to `codex-briefs/165-step-4-benchmark.json` by default;
+writes its full receipt to `node_modules/.cache/feature-store-165/165-benchmark.json` by default;
 `FS165_BENCHMARK_EVIDENCE` overrides the receipt path and `FS165_RETAINED_ROOT`
 overrides the root containing the two pinned report objects. Private fixture
-bytes stay under ignored `codex-briefs/node_modules/`. No hosted credential or
+bytes stay under ignored `node_modules/.cache/feature-store-165/`. No hosted credential or
 Production command is needed. Wall-clock comparisons run only in this opt-in
 script because CI machine-speed variation would make them unstable.

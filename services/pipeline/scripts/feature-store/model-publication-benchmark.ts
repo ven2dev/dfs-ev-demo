@@ -10,7 +10,9 @@ import { MODEL_VERSION } from "@dfs-ev/domain/baseline";
 import { QB_EVALUATOR_VERSION } from "@dfs-ev/domain/qb-evaluation";
 import { withFeatureStoreDatabase } from "./harness.ts";
 import { EVALUATION_ROOT, EXPECTED_COHORT, evaluationCodeIdentity, prepareEvaluationFixture } from "./evaluation-fixture.ts";
-import { buildDataset } from "../../src/featureStore/datasets.ts";
+import { modelPublicationCodeIdentity } from "./model-publication-identity.ts";
+import { buildDataset, type DatasetSpec } from "../../src/featureStore/datasets.ts";
+import type { Artifact, DatasetPin } from "../../src/featureStore/qbReports.ts";
 import { EMPIRICAL_ADAPTER } from "../../src/featureStore/empiricalAdapter.ts";
 import { FEATURE_VERSION, LABEL_VERSION, HISTORY_POLICY } from "../../src/featureStore/derived.ts";
 import { MODEL_PREREGISTRATION, publishQbModelRun } from "../../src/featureStore/modelManifests.ts";
@@ -21,7 +23,9 @@ type Database = Pick<Client, "query">;
 type Arm = "baseline" | "retained-transport" | "full-publisher";
 type Trial = { arm: Arm; phase: "baseline-first" | "interleaved"; block: number; position: number;
   transactionMs: number; lockResponseToCommitMs: number; endToEndMs: number;
-  work: ReturnType<typeof summarizeWork>; artifacts?: { slot: string; objectKey: string; fileSha256: string; byteSize: number }[] };
+  work: ReturnType<typeof summarizeWork>; artifacts?: { slot: string; objectKey: string; fileSha256: string; byteSize: number }[];
+  runId?: string; existingPublication?: boolean; inputPinsArtifact?: Artifact;
+  datasetPins?: (DatasetPin & { mode: string; spec: DatasetSpec })[] };
 type Event = { operation: string; transaction: boolean };
 const baselineCommit = "71cdd90e11cbee7ec6b0eb1961322d40c49a20e9";
 const percentile = (values: number[], fraction: number) => [...values].sort((a, b) => a - b)[Math.ceil(values.length * fraction) - 1];
@@ -76,27 +80,27 @@ const measure = async <T>(client: Database, store: ObjectStore, run: (database: 
 };
 
 // Opt-in benchmark: never imported by CI. Keep every sample, including misses.
-const directory = new URL("codex-briefs/node_modules/", EVALUATION_ROOT);
+const directory = new URL("node_modules/.cache/feature-store-165/", EVALUATION_ROOT);
 await mkdir(directory, { recursive: true });
 const root = await realpath(await mkdtemp(new URL("165-benchmark-", directory).pathname));
-const store = await openLocalObjectStore(root), source = await evaluationCodeIdentity();
+const store = await openLocalObjectStore(root), inputSource = await evaluationCodeIdentity(), source = await modelPublicationCodeIdentity();
 const paths = ["services/pipeline/scripts/feature-store/model-publication-benchmark.ts", "compose.test.yml"];
 const benchmarkHashes = Object.fromEntries(await Promise.all(paths.map(async path =>
   [path, sha256(await readFile(new URL(path, EVALUATION_ROOT)))])));
 const trials: Trial[] = [];
 const receipt: Record<string, unknown> = { schemaVersion: 1, issue: 165, step: 4, startedAt: new Date().toISOString(),
   runtime: process.version, machine: { arch: arch(), platform: platform(), release: release() },
-  ...source, benchmarkHashes, storageRoot: root, trials, baselineCommit, verdict: "running",
+  ...source, inputGeneration: inputSource, benchmarkHashes, storageRoot: root, trials, baselineCommit, verdict: "running",
   fixtureConfig: { postgresTmpfsBytes: 512 * 1024 * 1024, sharedMemoryBytes: 128 * 1024 * 1024 },
   boundary: "BEGIN dispatch to COMMIT response; conservative upper bound on address-lock hold. Lock-response-to-COMMIT is a client lower bound only.",
-  method: "Six baseline-only samples first, then six ABBA blocks per candidate (twelve samples per arm per series). Nearest-rank p95 and every block max(candidate)/min(baseline) <=0.70.",
-  cacheState: "Warm/unflushed OS, database and file caches; existing restricted connection; immutable object reuse after first publication; no cold/hosted claim.",
+  method: "Six baseline-only samples first, then six ABBA blocks per candidate: B1 creates and B2 reuses that descriptor (six creates and six reuses per candidate). Fresh dataset IDs come from the preceding measured baseline, with valid immutable input pins prepared outside timing. Nearest-rank p95 and every block max(candidate)/min(baseline) <=0.70.",
+  cacheState: "Warm/unflushed OS, database and file caches; existing restricted connection; immutable descriptor/report reuse within each B1/B2 pair; retained report bytes also reused across blocks; no cold/hosted claim.",
   endToEnd: "Informational only. Full publisher includes input validation, reads, scoring, hashing, serialization, preflight, enrollment, uploads and publication. Retained transport excludes report preparation.",
   limitations: ["Retained transport uses the final proposal SQL, actual ObjectStore and the same protocol, but its copied SQL orchestration is not the runtime publisher. Archived envelope IDs do not match the scratch DB; no semantic provenance pass is claimed for that arm.",
     "The separate full-publisher series exercises the actual runtime with freshly scored envelopes whose pins match SQL. Fresh report sizes/hashes are recorded; they need not equal the archived byte-volume fixtures.",
     "The unchanged dataset baseline inserts 2504 memberships and hashes its bytes twice inside the transaction; the model registry inserts a fixed publication set. This expected work difference is preserved.",
-    "Crypto and query observation add local instrumentation overhead to both arms; no observer SQL runs inside timing."] };
-const receiptPath = process.env.FS165_BENCHMARK_EVIDENCE ?? new URL("codex-briefs/165-step-4-benchmark.json", EVALUATION_ROOT);
+    "Crypto and query observation add local instrumentation overhead to both arms; no observer SQL runs inside timing. Full-publisher SQL dataset-pin validation runs after COMMIT outside timing."] };
+const receiptPath = process.env.FS165_BENCHMARK_EVIDENCE ?? new URL("165-benchmark.json", directory);
 const save = () => writeFile(receiptPath, JSON.stringify(receipt, null, 2) + "\n");
 await save();
 try {
@@ -109,14 +113,15 @@ try {
   receipt.baselineFunctionSha256 = sha256(Buffer.from(body(currentSource)));
   await withFeatureStoreDatabase(async context => {
     receipt.database = (await context.admin.query("SELECT version() AS version")).rows[0].version;
-    const fixture = await prepareEvaluationFixture(context, store, source.code, event => console.log(JSON.stringify(event)));
+    const fixture = await prepareEvaluationFixture(context, store, inputSource.code, event => console.log(JSON.stringify(event)));
     const retrospective = fixture.prepared.find(p => p.mode === "retrospective-reconstruction-v1")!;
     const strict = fixture.prepared.find(p => p.mode === "strict-point-in-time-v1")!;
     assert.equal(retrospective.dataset.rowCount, EXPECTED_COHORT.examples); assert.equal(strict.dataset.rowCount, 0);
     receipt.fixture = { wireFiles: fixture.pins.inputs.length, snapshots: fixture.pins.snapshots.length,
       inputPinsArtifact: fixture.inputPinsArtifact, modes: fixture.prepared.map(p => ({ mode: p.mode, ...p.dataset, spec: p.spec })) };
+    let currentRetrospective = retrospective.dataset;
     const baseline = async () => {
-      const measured = await measure(context.writer, store, (database, objects) => buildDataset(database, objects, retrospective.spec, source.code));
+      const measured = await measure(context.writer, store, (database, objects) => buildDataset(database, objects, retrospective.spec, inputSource.code));
       assert.equal(measured.result.rowCount, 2504); assert.equal(measured.result.contentSha256, EXPECTED_COHORT.contentSha256);
       assert.equal(measured.work.statements, 8); assert.equal(measured.work.transactionStatements, 5);
       assert.equal(measured.work.transactionHashes, 2); assert.equal(measured.work.transactionHeads, 1);
@@ -129,7 +134,7 @@ try {
     };
     const baselineTrial = async () => {
       const { result, ...measurement } = await baseline();
-      assert(result.datasetId); return measurement;
+      assert(result.datasetId); currentRetrospective = result; return measurement;
     };
     for (let i = 0; i < 6; i++) await record("baseline", "baseline-first", 0, i, baselineTrial);
     receipt.baselineFirstP95Ms = percentile(trials.map(t => t.transactionMs), .95);
@@ -146,14 +151,16 @@ try {
     const reportRoot = process.env.FS165_RETAINED_ROOT ?? "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164-data/objects/";
     const reportBytes = await Promise.all(retained.map(r => readFile(new URL(`audits/${r.hash}`, new URL(reportRoot.endsWith("/") ? reportRoot : reportRoot + "/", "file://")))));
     reportBytes.forEach((bytes, i) => { assert.equal(bytes.byteLength, retained[i].size); assert.equal(sha256(bytes), retained[i].hash); });
-    const reportPins = retained.map(r => ({ slot: r.slot, datasetId: r.datasetId, objectKey: `audits/${r.hash}`, fileSha256: r.hash, byteSize: r.size }));
-    const descriptorBytes = Buffer.from(JSON.stringify({ format: "dfs165-retained-transport-benchmark-v1", identity, reportPins,
-      limitation: "Archived envelopes are exact byte-volume fixtures, not matching report provenance for this scratch database." }) + "\n");
-    const descriptorHash = sha256(descriptorBytes);
-    const pins = [{ slot: "descriptor", datasetId: null, objectKey: `models/${descriptorHash}`, fileSha256: descriptorHash, byteSize: descriptorBytes.byteLength }, ...reportPins];
-    const payloads = [descriptorBytes, ...reportBytes], ids = reportPins.map(r => r.datasetId).sort(), addresses = pins.map(p => p.objectKey).sort();
-    receipt.retainedPayloads = pins;
+    receipt.retainedPayloads = retained.map(r => ({ slot: r.slot, fileSha256: r.hash, byteSize: r.size }));
     const transport = async () => {
+      const reportPins = retained.map(r => ({ slot: r.slot,
+        datasetId: r.slot === retrospective.mode ? currentRetrospective.datasetId : r.datasetId,
+        objectKey: `audits/${r.hash}`, fileSha256: r.hash, byteSize: r.size }));
+      const descriptorBytes = Buffer.from(JSON.stringify({ format: "dfs165-retained-transport-benchmark-v1", identity, reportPins,
+        limitation: "Archived envelopes are exact byte-volume fixtures, not matching report provenance for this scratch database." }) + "\n");
+      const descriptorHash = sha256(descriptorBytes);
+      const pins = [{ slot: "descriptor", datasetId: null, objectKey: `models/${descriptorHash}`, fileSha256: descriptorHash, byteSize: descriptorBytes.byteLength }, ...reportPins];
+      const payloads = [descriptorBytes, ...reportBytes], ids = reportPins.map(r => r.datasetId).sort(), addresses = pins.map(p => p.objectKey).sort();
       const parameters = [JSON.stringify(identity), JSON.stringify(pins)];
       const measured = await measure(context.writer, store, async (database, objects) => {
         const absent: string[] = [];
@@ -169,17 +176,35 @@ try {
           }
           const published = await database.query("SELECT * FROM fs138.publish_model_run($1::jsonb,$2::jsonb)", parameters);
           await database.query("COMMIT");
-          return published.rows[0].run_id as string;
+          return published.rows[0] as { run_id: string; existing_publication: boolean };
         } catch (error) { await database.query("ROLLBACK"); throw error; }
       });
       const { result, ...measurement } = measured;
-      assert(result);
-      return { ...measurement, artifacts: pins };
+      assert(result.run_id);
+      return { ...measurement, runId: result.run_id, existingPublication: result.existing_publication, artifacts: pins };
     };
     const full = async () => {
-      const measured = await measure(context.writer, store, (database, objects) => publishQbModelRun(database, objects, fixture.inputPinsArtifact, { code: source.code }));
+      // Each A creates a fresh SQL-owned manifest. Re-pin that same dataset file
+      // outside timing so B1 publishes a new descriptor and B2 repeats it. Both
+      // reports are freshly prepared by the real publisher with matching pins.
+      const inputBytes = Buffer.from(JSON.stringify({ ...fixture.pins, modes: fixture.pins.modes.map(p =>
+        p.mode === retrospective.mode ? { ...p, dataset: currentRetrospective } : p) }) + "\n");
+      const digest = sha256(inputBytes), inputPinsArtifact = { objectKey: `audits/${digest}`, sha256: digest, byteSize: inputBytes.byteLength };
+      await store.putIfAbsent(inputPinsArtifact.objectKey, inputBytes);
+      const datasetPins = fixture.prepared.map(p => {
+        const d = p.mode === retrospective.mode ? currentRetrospective : p.dataset;
+        return { mode: p.mode, datasetId: d.datasetId, objectKey: d.objectKey, fileSha256: d.fileSha256,
+          contentSha256: d.contentSha256, byteSize: d.byteSize, rowCount: d.rowCount, spec: p.spec };
+      });
+      const measured = await measure(context.writer, store, (database, objects) => publishQbModelRun(database, objects, inputPinsArtifact, { code: source.code }));
       const { result, ...measurement } = measured;
-      return { ...measurement, artifacts: [result.descriptor, ...result.reports] };
+      // Validation query is after COMMIT, outside timing and production counts.
+      const sqlPins = (await context.writer.query(`SELECT dataset_id,evidence_mode,file_sha256,content_sha256,row_count
+        FROM fs138.model_run_datasets WHERE run_id=$1 ORDER BY evidence_mode`, [result.runId])).rows;
+      assert.deepEqual(sqlPins, datasetPins.map(d => ({ dataset_id: d.datasetId, evidence_mode: d.mode,
+        file_sha256: d.fileSha256, content_sha256: d.contentSha256, row_count: d.rowCount })).sort((a, b) => a.evidence_mode.localeCompare(b.evidence_mode)));
+      return { ...measurement, runId: result.runId, existingPublication: result.existingPublication,
+        inputPinsArtifact, datasetPins, artifacts: [result.descriptor, ...result.reports] };
     };
     const series = [];
     for (const [index, arm] of (["retained-transport", "full-publisher"] as const).entries()) {
@@ -198,7 +223,17 @@ try {
         return { block, fastestBaselineMs, slowestCandidateMs, headroom: 1 - slowestCandidateMs / fastestBaselineMs,
           pass: slowestCandidateMs <= .7 * fastestBaselineMs };
       });
+      const candidate = selected.filter(t => t.arm === arm);
+      assert.equal(candidate.filter(t => !t.existingPublication).length, 6);
+      assert.equal(candidate.filter(t => t.existingPublication).length, 6);
+      for (const block of blocks) {
+        const pair = candidate.filter(t => t.block === block.block);
+        assert.deepEqual(pair.map(t => t.existingPublication), [false, true]); assert.equal(pair[0].runId, pair[1].runId);
+      }
+      assert.equal(new Set(candidate.map(t => t.runId)).size, 6);
       series.push({ arm, baselineP95Ms, candidateP95Ms, headroom: 1 - candidateP95Ms / baselineP95Ms, blocks,
+        createP95Ms: percentile(candidate.filter(t => !t.existingPublication).map(t => t.transactionMs), .95),
+        reuseP95Ms: percentile(candidate.filter(t => t.existingPublication).map(t => t.transactionMs), .95), creates: 6, reuses: 6,
         pass: candidateP95Ms <= .7 * baselineP95Ms && blocks.every(b => b.pass) });
     }
     for (const trial of trials.filter(t => t.arm !== "baseline")) {
@@ -213,7 +248,8 @@ try {
   });
 } catch (error) { receipt.verdict = "fail"; receipt.failure = String(error); }
 finally {
-  assert.deepEqual(await evaluationCodeIdentity(), source, "source-changed-during-benchmark");
+  assert.deepEqual(await evaluationCodeIdentity(), inputSource, "input-source-changed-during-benchmark");
+  assert.deepEqual(await modelPublicationCodeIdentity(), source, "source-changed-during-benchmark");
   for (const [path, digest] of Object.entries(benchmarkHashes)) assert.equal(sha256(await readFile(new URL(path, EVALUATION_ROOT))), digest);
   receipt.finishedAt = new Date().toISOString(); await save();
 }
