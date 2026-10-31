@@ -1,5 +1,5 @@
 import type { Client } from "pg";
-import type { ObjectStore } from "./objectStore.ts";
+import { OBJECT_NAMESPACES, type ObjectStore } from "./objectStore.ts";
 
 type Database = Pick<Client,"query">;
 export type DeletionReceipt = {event_id:string;recorded_at:Date;grace_seconds:number;
@@ -37,9 +37,15 @@ export const pruneDerivedVersions = async (client:Database):Promise<{featureIds:
 
 // Grace starts on first observation, so listing needs no provider-specific mtime.
 // The common writer address lock closes the publication-versus-sweep race.
+// Models/audits use explicit pre-upload enrollment; listing alone cannot claim
+// unrelated private reports. The SQL recheck repeats scope/reference checks
+// under lock, since this candidate snapshot may precede a publication commit.
 export const sweepOrphanObjects = async (client:Database,store:ObjectStore,graceSeconds=300) => {
  const removed:string[]=[];
- for(const namespace of ['raw','datasets'] as const)for(const object of await store.list(namespace)){
+ const enrolled=new Set((await client.query<{object_key:string}>(`SELECT object_key FROM fs138.orphan_observations
+  WHERE object_key ~ '^(models|audits)/'`)).rows.map(row=>row.object_key));
+ for(const namespace of OBJECT_NAMESPACES)for(const object of await store.list(namespace)){
+  if((namespace==='models'||namespace==='audits')&&!enrolled.has(object.key))continue;
   try{
    await client.query('BEGIN');
    const allowed=(await client.query<{allowed:boolean}>('SELECT fs138.orphan_recheck($1,$2) AS allowed',[object.key,graceSeconds])).rows[0].allowed;

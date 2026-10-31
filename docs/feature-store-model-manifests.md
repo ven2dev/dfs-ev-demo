@@ -1,8 +1,8 @@
 # Immutable model and report manifests (#165)
 
 Status: owner-approved roadmap, with server-side work measurement and enrollment
-before upload. Step 1 (proposal contract) is committed as `3e716cf`. Step 2 (trusted publisher)
-is in review; commits require owner approval per step and push requires fresh consent. Engineering cap: five hours,
+before upload. Steps 1–2 are committed as `3e716cf` and `b67979a`. Step 3 (scoped
+orphan cleanup) is in review; commits require owner approval per step and push requires fresh consent. Engineering cap: five hours,
 excluding review waiting; split remaining work if discovery exceeds the cap.
 
 ## Design basis
@@ -70,8 +70,9 @@ The trusted database owner remains able to administer its database.
 
 HEAD each address before upload; enroll absent addresses in one autocommit call,
 then putIfAbsent for all objects. Existing objects are not enrolled, preserving
-unregistered audit evidence. Observation rows survive an interrupted upload and
-stay until committed publication or scoped orphan cleanup; there is no deliberate
+unregistered audit evidence. Observation rows survive interrupted uploads and
+orphan deletion until committed publication clears them. This allows a later
+sweep to reclaim an upload that finishes after an earlier deletion; there is no deliberate
 upload-before-enrollment crash leak. All file I/O for uploads happens before the
 publication transaction. Inside it, lock source/dataset inputs and sorted object
 addresses, check HEAD metadata only, then insert the run, pins and artifacts in
@@ -191,3 +192,40 @@ The 0/2,504-member CI shapes have identical work counts. The real fixture's
 21.265 ms publication and 2,030.598 ms end-to-end times are single informational
 observations, not a speed-gate result. Fresh report bytes differ from the retained
 benchmark files because the envelopes bind fresh exact IDs/code/clocks.
+
+## Step 3 review candidate
+
+The JavaScript orphan sweep now lists all four existing ObjectStore namespaces.
+For `models/` and `audits/`, one initial SQL query selects enrolled candidates;
+unregistered addresses receive no per-object SQL check. Existing raw/dataset
+behavior remains. Each candidate still uses the shared address lock and SQL
+reference/grace recheck before deletion. That locked recheck protects a manifest
+that commits after candidate selection. No new lock or staging registry is added.
+
+Enrollment survives orphan deletion because an upload begun before cleanup may
+finish afterward. Subsequent metadata listing rediscovers those bytes and the
+same enrolled address remains eligible. Absent objects cause no per-object SQL
+work, even when their observation remains. Successful publication clears its
+observations. Keeping this small crash-recovery record avoids an unowned late
+upload without introducing leases or byte I/O inside publication.
+
+The local race suite exercises both outcomes: a cleaner that wins removes bytes
+and publication refuses with no rows; a publisher that holds the address lock
+blocks the cleaner, whose eventual recheck preserves the committed artifacts.
+It also proves pre-upload crash/retry, grace, partial upload cleanup, late-upload
+reclamation, shared/unregistered object preservation, rollback after SQL inserts,
+wrong HEAD key/digest/size, actual backend termination after insert and actual
+cleaner termination after unlink. A committed transaction whose acknowledgement
+is withheld returns the connection-replacement error while its referenced bytes
+survive cleanup. This last case injects response loss after a real COMMIT; it
+does not claim to reproduce a network partition.
+
+Mandatory deletion, dependent invalidation and artifact delivery remain #166.
+The final repeated relative benchmark and closeout evidence remain step 4.
+
+[Step 3 evidence](evidence/feature-store-165/step-3-orphans.json) records all nine
+race/failure scenarios (ten tests including the parent). All 109 feature-store
+database tests and 15 public package/import checks pass, including the existing
+0/2,504 client/hash/server-write budgets and real LOGIN refusal probes. Targeted
+TypeScript, ESLint, whitespace and frozen migration checks pass. SQL and the
+publication implementation are unchanged in this step.
