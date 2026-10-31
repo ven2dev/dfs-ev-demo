@@ -42,8 +42,10 @@ export const evaluationCodeIdentity = async () => {
     "services/pipeline/scripts/feature-store/harness.ts",
     "services/pipeline/scripts/feature-store/evaluation-benchmark.ts", "services/pipeline/scripts/feature-store/evaluation-measure.ts",
     "services/pipeline/scripts/feature-store/evaluation-worker.ts", "services/pipeline/scripts/feature-store/evaluation-report.ts", "services/pipeline/scripts/feature-store/evaluation-run.ts",
+    "services/pipeline/scripts/feature-store/model-publication-run.ts", "services/pipeline/scripts/feature-store/model-publication-measure.ts",
     "packages/domain/src/projection/qb-evaluation.ts", "packages/domain/src/projection/evaluation.ts", "packages/db/proposals/138_feature_store.sql",
     "packages/db/proposals/138_dataset_governance.sql", "packages/db/proposals/163_effective_rights.sql",
+    "packages/db/proposals/165_model_manifests.sql",
     "packages/domain/src/projection/empirical.ts", "packages/domain/src/projection/baseline.ts", "packages/domain/package.json",
     "services/pipeline/package.json", "package-lock.json",
   ].sort();

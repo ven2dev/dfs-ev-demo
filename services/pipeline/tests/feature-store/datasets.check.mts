@@ -66,7 +66,7 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
   let firstRows:{rows:{featureId:string;labelId:string;label:number;season:number;sampleSize:number;flags:string[]}[]};
   const reportPins=async(pinned:Awaited<ReturnType<typeof buildDataset>>)=>{
    const dataset=JSON.parse((await store.get(pinned.objectKey)).toString());
-   const coverage=Buffer.from(JSON.stringify({mode,rows:dataset.rows.map((r:{playerId:string;gameId:string;season:number;sampleSize:number;flags:string[]})=>({
+   const coverage=Buffer.from(JSON.stringify({format:'qb-evaluation-coverage-v1',mode,rows:dataset.rows.map((r:{playerId:string;gameId:string;season:number;sampleSize:number;flags:string[]})=>({
     player_id:r.playerId,game_id:r.gameId,season:r.season,sample_size:r.sampleSize,feature_state:'usable',label_state:'usable',
     feature_reasons:[],label_reasons:[],history_gaps:[],flags:r.flags,zero_attempts:false}))}));
    const coverageArtifact={objectKey:objectKey('audits',coverage),sha256:sha256(coverage),byteSize:coverage.length};

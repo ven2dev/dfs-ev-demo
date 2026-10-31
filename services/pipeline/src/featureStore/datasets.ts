@@ -21,6 +21,10 @@ export type DatasetRow = {
 };
 type Selection = { rows: DatasetRow[]; snapshots: string[]; exclusions: Record<string, number>; valid: boolean };
 type Access = { allowed: boolean; decisions: { profileId: string; decisionId: string | null }[]; checked_at: string };
+export type DatasetReadManifest = {
+  dataset_id: string; object_key: string; file_sha256: string; content_sha256: string;
+  byte_size: number; row_count: number; spec: DatasetSpec; code_sha: string; implementation_sha256: string; snapshots: string[];
+};
 
 // Logical reproducibility: natural keys + values and algorithm policy only.
 // UUIDs, ingestion/knowledge clocks, rights receipts and stale flags belong to
@@ -160,14 +164,15 @@ export const buildDataset = async (client: Database, store: ObjectStore, spec: D
 // held. The final check covers rights/status changes during calculation and I/O.
 // Revocation after that SQL snapshot and before delivery remains an accepted gap.
 export const withDatasetRead = async <T>(client: Database, store: ObjectStore, datasetId: string,
-  consume: (bytes: Buffer) => T | Promise<T>) => {
-  const manifest = (await client.query<{object_key:string;file_sha256:string;snapshots:string[]}>(`SELECT d.object_key,d.file_sha256,
+  consume: (bytes: Buffer, manifest: DatasetReadManifest) => T | Promise<T>) => {
+  const manifest = (await client.query<DatasetReadManifest>(`SELECT d.dataset_id,d.object_key,d.file_sha256,
+   d.content_sha256,d.byte_size,d.row_count,d.spec,d.code_sha,d.implementation_sha256,
    ARRAY(SELECT snapshot_id FROM fs138.dataset_inputs i WHERE i.dataset_id=d.dataset_id ORDER BY snapshot_id) AS snapshots
    FROM fs138.dataset_manifests d WHERE dataset_id=$1`,[datasetId])).rows[0];
   if (!manifest) throw new Error("dataset-missing");
   const authorization = await authorize(client,manifest.snapshots,datasetId);
   const bytes = await store.get(manifest.object_key);
-  const value = await consume(bytes);
+  const value = await consume(bytes, manifest);
   const delivery = await authorize(client,manifest.snapshots,datasetId);
   // Ingestion/build verified content; scheduled audits own storage-integrity
   // rehashing. No per-row or per-file source reconstruction on ordinary reads.
