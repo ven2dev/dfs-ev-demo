@@ -1,0 +1,33 @@
+{
+  "iteration": 3,
+  "base": "71cdd90e11cbee7ec6b0eb1961322d40c49a20e9",
+  "branch": "feature/dfsEV-220-hybrid-admission-qualification",
+  "worktree": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-220",
+  "sourceSha256": {
+    "packages/db/proposals/220_atomic_leader_gcra.sql": "a4d1be16d28a4b161bc78302295909db5cda2e2fd77b256b2aa9f614b3e6d26b",
+    "scripts/spikes/220-qualification.mjs": "68c97397e49c059be83c80b081f154afd60873599cb2d8343516854ae0e7c157",
+    "docs/220-hybrid-admission-qualification.md": "74611a7ca4d831726a0808d18b3d7ce673bec873e907f5625ae83992bec6b9c2",
+    "docs/evidence/220-qualification/local-iteration-3.json": "2fcc33f5593e530d1431c8c674bea61820712081967169d63801fcf2bb0adc9f"
+  },
+  "checks": {
+    "behaviorCases": 35,
+    "schemaAbsent": true,
+    "ownedFixtureRemoved": true,
+    "nodeSyntaxAndWhitespace": "pass"
+  },
+  "status": "owner-approved local checkpoint commit only; #220 open; no push/PR/issue posting/hosted/provider calls",
+  "consolidation": {
+    "onlyDocumentationAndCurrentManifestChanged": true,
+    "historicalReceiptsUnchanged": true,
+    "removedReports": [
+      "docs/220-hybrid-admission-iteration-2.md",
+      "docs/220-hybrid-admission-iteration-3.md"
+    ],
+    "gatesCarriedTo222": [
+      "covering snapshot release after request timeout plus margin",
+      "health reasons and audited operator period/plan reset",
+      "immediate stale/typed return without follower polling",
+      "proposed warm 200/140 ms and separate stale target; hosted unauthorized"
+    ]
+  }
+}

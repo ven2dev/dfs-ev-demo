@@ -1,0 +1,273 @@
+{
+  "cacheFixture": {
+    "events": 20,
+    "markets": 12,
+    "nonemptyRequestedSets": 81900,
+    "resourceRows": 240,
+    "logicalBytes": 985920,
+    "physicalBytes": 114688,
+    "rowBudget": 240,
+    "logicalBudgetBytes": 1048576,
+    "limitation": "synthetic 4 KiB payload; production payload limit/retention and trusted catalog refresh require review"
+  },
+  "iteration": 3,
+  "base": "71cdd90e11cbee7ec6b0eb1961322d40c49a20e9",
+  "tests": [
+    "held lease: follower never evaluates GCRA or reserves credit",
+    "rate denial: no lease/TAT advancement and another subject can lead immediately",
+    "budget refusal: no GCRA charge, no lease, no provider reservation; next subject is not blocked",
+    "multi-market request: one GCRA charge, one reservation, sorted leases and exact stale-market cost",
+    "partial overlap: no partial leases or charge; after publish, only missing markets are reserved",
+    "reverse-order overlapping market batches and subject arrays do not deadlock or double charge",
+    "coarser network and stricter user dimensions remain all-or-none",
+    "twenty distinct eligible paid leaders all admit without an artificial concurrency ceiling",
+    "freshness recheck under locks prevents a second leader after racing publish",
+    "a held-lease follower bypasses a locked subject row",
+    "new lease attempt gets a new reservation on every later refresh of the same key",
+    "same attempt replay cannot grant a new lease, charge GCRA again or send provider work",
+    "both GCRA and budget denials serve flagged stale values; absent cache yields typed denials",
+    "fresh cache hit performs one existing read and zero added limiter/budget calls",
+    "concurrent cheaper calls resync upward after out-of-order responses without normal-use drift",
+    "twenty overlapping reservations reconcile in shuffled order to the true provider balance",
+    "a late older higher reading cannot overwrite a newer lower snapshot",
+    "fresh response updates observation time beyond setup plus five minutes; exact replay is inert",
+    "actual over-reservation cost is recorded, balance can reach zero, and anomaly blocks further paid work",
+    "missing headers still record overrun cost and retain enlarged unresolved liability",
+    "invalid/future metadata cannot restore credit but trusted metadata can later settle the recorded cost",
+    "free observation retains unresolved in-flight liability and detects reset without granting a new period",
+    "without WAF/GCRA the single account still protects interactive floor and collector reserve",
+    "explicit rollback removes debit, lease, ledger and GCRA together",
+    "server statement/lock timeouts fail safely without a partial combined admission",
+    "expired/replaced lease owners cannot publish",
+    "uncatalogued events/markets and duplicate market dimensions create no state",
+    "twenty stale callers for different markets coalesce into one account-wide free observation",
+    "fresh cache hits and held paid-lease followers never trigger free quota observation",
+    "one failed free probe backs off concurrent followers and never admits paid work",
+    "a failed free observation still serves an eligible visibly stale cached value",
+    "free probe recovers after failure backoff without needing a paid quota refresh",
+    "unexpected cost on the nominally free observation is recorded and flags the breaker",
+    "expired free-probe owners cannot apply snapshots; a replacement owner can recover",
+    "catalog caps every allowed market subset at 240 per-market resource rows"
+  ],
+  "trials": [
+    {
+      "workers": 1,
+      "round": 0,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.31395800000018426,
+          "p95_ms": 0.3498329999999896,
+          "max_ms": 0.8423330000000533
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 0.8003750000000309,
+          "p95_ms": 0.9091670000000249,
+          "max_ms": 1.829541000000063
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 0.7725829999999405,
+          "p95_ms": 0.9009999999998399,
+          "max_ms": 1.7966670000000704
+        },
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 1.2764999999999418,
+          "p95_ms": 1.4473339999999553,
+          "max_ms": 4.850625000000036
+        }
+      }
+    },
+    {
+      "workers": 1,
+      "round": 1,
+      "samplesPerMode": 1000,
+      "modes": {
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 1.2257500000005166,
+          "p95_ms": 1.3298750000003565,
+          "max_ms": 7.225749999999607
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 0.8037500000000364,
+          "p95_ms": 0.8783750000002328,
+          "max_ms": 2.3149590000002718
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 0.8192910000016127,
+          "p95_ms": 0.8712500000001455,
+          "max_ms": 1.6713749999998981
+        },
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.415207999998529,
+          "p95_ms": 0.4544999999998254,
+          "max_ms": 1.285250000000815
+        }
+      }
+    },
+    {
+      "workers": 1,
+      "round": 2,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.41791700000067067,
+          "p95_ms": 0.45533400000022084,
+          "max_ms": 0.8388340000001335
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 0.8094160000000556,
+          "p95_ms": 0.8965420000004087,
+          "max_ms": 2.0650840000016615
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 0.8209999999999127,
+          "p95_ms": 0.8855829999993148,
+          "max_ms": 3.640625
+        },
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 1.2469170000003942,
+          "p95_ms": 1.3396250000005239,
+          "max_ms": 3.06158300000061
+        }
+      }
+    },
+    {
+      "workers": 20,
+      "round": 0,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.7037079999990965,
+          "p95_ms": 1.1352910000005068,
+          "max_ms": 20.394333000000188
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 3.315333999998984,
+          "p95_ms": 12.26287499999853,
+          "max_ms": 49.97808400000031
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 4.32708300000013,
+          "p95_ms": 13.159916000000521,
+          "max_ms": 28.584790999999313
+        },
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 3.6039590000000317,
+          "p95_ms": 9.537000000000262,
+          "max_ms": 29.586708000000726
+        }
+      }
+    },
+    {
+      "workers": 20,
+      "round": 1,
+      "samplesPerMode": 1000,
+      "modes": {
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 3.611457999999402,
+          "p95_ms": 10.338458000000173,
+          "max_ms": 16.260292000000845
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 3.9434999999994034,
+          "p95_ms": 13.298208000000159,
+          "max_ms": 36.78799999999865
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 2.9231670000008307,
+          "p95_ms": 9.92174999999952,
+          "max_ms": 21.434332999999242
+        },
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.6797920000008162,
+          "p95_ms": 1.0831669999988662,
+          "max_ms": 1.6068340000001626
+        }
+      }
+    },
+    {
+      "workers": 20,
+      "round": 2,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.6531670000003942,
+          "p95_ms": 0.9745419999999285,
+          "max_ms": 1.971125000000029
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 3.155292000001282,
+          "p95_ms": 10.352457999999388,
+          "max_ms": 33.25091600000087
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 4.005249999998341,
+          "p95_ms": 13.474458000000595,
+          "max_ms": 33.52845899999738
+        },
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 3.308167000002868,
+          "p95_ms": 8.920374999997875,
+          "max_ms": 20.975459000001138
+        }
+      }
+    }
+  ],
+  "queryCalls": 49932,
+  "queryCallCap": 60000,
+  "sqlSha256": "a4d1be16d28a4b161bc78302295909db5cda2e2fd77b256b2aa9f614b3e6d26b",
+  "fixture": {
+    "port": 54362,
+    "postgres": "18.6",
+    "memoryMiB": 512,
+    "transport": "local pg TCP; no managed HTTP claim"
+  },
+  "workBudgets": {
+    "freshHitAddedStatements": 0,
+    "freshHitAddedRoundTrips": 0,
+    "combinedAdmissionLeaseGcraAndBudgetStatements": 1,
+    "combinedAdmissionLocalRoundTrips": 1,
+    "mockPaidPathStatementsIncludingCacheRead": 2,
+    "mockPaidPathLocalRoundTrips": 2,
+    "maxResourceRowsLockedPerRequest": 12,
+    "maxSubjectRowsLockedPerRequest": 2,
+    "quotaObservation": "stale path: one account-wide claim, one mocked free /events, one fenced snapshot finish; followers bounded-poll with one claim query per poll; fresh path unchanged",
+    "pendingAggregate": "updated under account row lock; audited against SUM of unsettled ledger liabilities in behavior tests, not scanned on admission",
+    "lockOrder": "sorted resource rows, sorted subject rows, single budget row",
+    "internalWork": "catalog lookup; up to 12 inserts/locks/freshness reads; up to two GCRA inserts/locks/checks/updates; account lock, attempt lookup, conditional debit and audit insert; lease updates",
+    "postProviderRelease": "one counted query outside pre-provider timing; real publication/renewal outside this mock budget"
+  },
+  "limitations": [
+    "local-only; no production route wiring, HMAC/auth or managed transport proof",
+    "on-demand zero-credit observation coalesced across markets in mocks only; no real /events integration or period rollover approval",
+    "WAF exhaustion availability unverified; no WAF assumption needed for credit correctness",
+    "200/140 ms and log-only policy values remain owner decisions"
+  ],
+  "cleanup": {
+    "schemaAbsent": true
+  }
+}

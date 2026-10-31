@@ -1,0 +1,272 @@
+{
+  "base": "71cdd90e11cbee7ec6b0eb1961322d40c49a20e9",
+  "scope": "local synthetic qualification only",
+  "fixture": {
+    "postgres": "18.6",
+    "port": 54362,
+    "memoryMiB": 512,
+    "transport": "local pg TCP pools; no HTTP claim"
+  },
+  "tests": [
+    "held lease returns follower without evaluating or creating subject state",
+    "denial changes neither GCRA nor lease ownership; second subject leads",
+    "two dimensions all-or-none and reverse-order concurrent requests do not deadlock",
+    "coarser shared-network policy and stricter user policy advance all-or-none",
+    "same resource two pools 20 callers: one leader, followers uncharged",
+    "atomic freshness recheck prevents a second leader after a racing publish",
+    "held-lease follower bypasses even locked subject rows",
+    "independent 20 subjects/resources admit without global connection ceiling",
+    "rollback and server timeouts cannot leave partially admitted state",
+    "server lock timeout rolls back admission without a lease or partial GCRA",
+    "fenced publish refuses expired/replaced owner",
+    "database clock controls GCRA recovery without caller timestamps",
+    "WAF/GCRA absent: idempotent account reservation protects collector floor",
+    "trusted actual-cost reconciliation is bounded/idempotent; stale budget refuses",
+    "mock adapter: hit adds no limiter work; denial yields visible stale then second subject leads",
+    "expired-subject cleanup skips locked/live state",
+    "20,000 key variants materialize 20 cache entries within 128 KiB logical payload budget"
+  ],
+  "cacheVariantFixture": {
+    "variants": 20000,
+    "canonicalKeys": 20,
+    "rawVariantKeys": 20000,
+    "keyBytes": 1090,
+    "limitKeys": 20,
+    "limitCanonicalKeyBytes": 2048,
+    "cacheStorage": {
+      "entries": 20,
+      "logical_payload_bytes": 82160,
+      "physical_bytes": 32768
+    },
+    "logicalPayloadBudgetBytes": 131072,
+    "subsetCardinality": {
+      "registryMarkets": 12,
+      "nonemptySetsPerEvent": 4095,
+      "leaseKeysAt20Events": 81900,
+      "perMarketPayloadKeysAt20Events": 240,
+      "risk": "set normalization alone does not cap all valid subsets; event IDs currently only syntax-validated"
+    },
+    "excludes": "general production payload sizing/retention and event allowlist are not proven by this bounded variant fixture"
+  },
+  "workBudgets": {
+    "cacheHitAddedLimiterStatements": 0,
+    "cacheHitAddedRoundTrips": 0,
+    "atomicAdmissionSubmittedStatements": 1,
+    "atomicAdmissionLocalRoundTrips": 1,
+    "paidLeaderAddedStatements": 2,
+    "paidLeaderAddedLocalRoundTrips": 2,
+    "mockPaidPathTotalStatements": 3,
+    "mockPaidPathLocalRoundTrips": 3,
+    "internalWork": "one resource insert+row lock; held follower exits; at most two subject inserts/locks, two reads, one bounded update and one lease update; account reservation adds account lock, ledger lookup, conditional debit and audit insert",
+    "setupTopLevelStatements": 8,
+    "cleanupQueriesOutsideCounter": 2,
+    "totalStatementUpperBoundIncludingSetupAndCleanup": 40009,
+    "connectionTimeouts": "server startup options; not another per-request timeout statement; not a managed HTTP proof"
+  },
+  "historicalHosted": {
+    "p95": 64.294,
+    "target": 50,
+    "headroom": 35,
+    "verdict": "miss; unchanged"
+  },
+  "trials": [
+    {
+      "workers": 1,
+      "round": 0,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "n": 1000,
+          "p50": 0.34029099999997925,
+          "p95": 0.4126249999999345,
+          "max": 1.0018340000000308
+        },
+        "atomic": {
+          "n": 1000,
+          "p50": 0.5383339999998498,
+          "p95": 0.6931250000000091,
+          "max": 1.4184170000000904
+        },
+        "atomic-shared": {
+          "n": 1000,
+          "p50": 0.5934999999999491,
+          "p95": 0.6963749999999891,
+          "max": 1.2064589999999953
+        },
+        "paid-control": {
+          "n": 1000,
+          "p50": 1.2918749999998909,
+          "p95": 1.6703330000000278,
+          "max": 3.347541999999976
+        }
+      }
+    },
+    {
+      "workers": 1,
+      "round": 1,
+      "samplesPerMode": 1000,
+      "modes": {
+        "paid-control": {
+          "n": 1000,
+          "p50": 1.3085409999994226,
+          "p95": 1.6089169999995647,
+          "max": 5.234375
+        },
+        "atomic-shared": {
+          "n": 1000,
+          "p50": 0.5223750000004657,
+          "p95": 0.6525419999998121,
+          "max": 1.3568750000004002
+        },
+        "atomic": {
+          "n": 1000,
+          "p50": 0.557582999999795,
+          "p95": 0.6532090000000608,
+          "max": 1.0533329999998386
+        },
+        "baseline": {
+          "n": 1000,
+          "p50": 0.3291250000002037,
+          "p95": 0.4386670000003505,
+          "max": 3.7837499999996
+        }
+      }
+    },
+    {
+      "workers": 1,
+      "round": 2,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "n": 1000,
+          "p50": 0.345499999999447,
+          "p95": 0.4431249999997817,
+          "max": 0.6482080000005226
+        },
+        "atomic": {
+          "n": 1000,
+          "p50": 0.5579580000003261,
+          "p95": 0.6816669999998339,
+          "max": 16.097999999999956
+        },
+        "atomic-shared": {
+          "n": 1000,
+          "p50": 0.542250000000422,
+          "p95": 0.67504099999951,
+          "max": 1.845542000000023
+        },
+        "paid-control": {
+          "n": 1000,
+          "p50": 1.2921660000010888,
+          "p95": 1.6019579999992857,
+          "max": 3.0989579999986745
+        }
+      }
+    },
+    {
+      "workers": 20,
+      "round": 0,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "n": 1000,
+          "p50": 0.715541999999914,
+          "p95": 1.1047920000000886,
+          "max": 2.717916999999943
+        },
+        "atomic": {
+          "n": 1000,
+          "p50": 1.4482499999994616,
+          "p95": 2.8369170000005397,
+          "max": 8.743542000000161
+        },
+        "atomic-shared": {
+          "n": 1000,
+          "p50": 2.979957999999897,
+          "p95": 9.01179200000115,
+          "max": 22.853250000000116
+        },
+        "paid-control": {
+          "n": 1000,
+          "p50": 3.576208000000406,
+          "p95": 6.4820829999989655,
+          "max": 19.19866700000057
+        }
+      }
+    },
+    {
+      "workers": 20,
+      "round": 1,
+      "samplesPerMode": 1000,
+      "modes": {
+        "paid-control": {
+          "n": 1000,
+          "p50": 3.3789160000014817,
+          "p95": 6.757874999999331,
+          "max": 14.244124999999258
+        },
+        "atomic-shared": {
+          "n": 1000,
+          "p50": 2.7978750000002037,
+          "p95": 9.311832999999751,
+          "max": 19.674417000000176
+        },
+        "atomic": {
+          "n": 1000,
+          "p50": 1.140625,
+          "p95": 2.2610420000000886,
+          "max": 3.7254160000011325
+        },
+        "baseline": {
+          "n": 1000,
+          "p50": 0.6085000000002765,
+          "p95": 0.9230419999985315,
+          "max": 1.4523330000010901
+        }
+      }
+    },
+    {
+      "workers": 20,
+      "round": 2,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "n": 1000,
+          "p50": 0.6181249999990541,
+          "p95": 0.9132079999999405,
+          "max": 1.3936670000002778
+        },
+        "atomic": {
+          "n": 1000,
+          "p50": 1.2555410000004485,
+          "p95": 2.3427500000016153,
+          "max": 4.801375000000917
+        },
+        "atomic-shared": {
+          "n": 1000,
+          "p50": 2.8040410000012344,
+          "p95": 8.18395800000144,
+          "max": 21.0279589999991
+        },
+        "paid-control": {
+          "n": 1000,
+          "p50": 2.923958000001221,
+          "p95": 5.011583999999857,
+          "max": 13.775625000000218
+        }
+      }
+    }
+  ],
+  "submittedCalls": 37329,
+  "callCap": 40000,
+  "sqlSha256": "7723730a83f571359736c209fe59f433d602468a8e388c10912357e1767cbc42",
+  "limitations": [
+    "No production wiring or real HTTP round trips measured",
+    "Read-only API verified active Hobby team and no active/draft custom firewall configuration; WAF-specific monthly exhaustion behavior remains unverified",
+    "No replacement hosted deadline approved",
+    "Prototype reserve/reconcile is bounded mechanism evidence, not production period/rights/privilege completeness"
+  ],
+  "cleanup": {
+    "schemaAbsent": true
+  }
+}
