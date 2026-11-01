@@ -1,0 +1,259 @@
+{
+  "cacheFixture": {
+    "events": 20,
+    "markets": 12,
+    "nonemptyRequestedSets": 81900,
+    "resourceRows": 240,
+    "logicalBytes": 985920,
+    "physicalBytes": 114688,
+    "rowBudget": 240,
+    "logicalBudgetBytes": 1048576,
+    "limitation": "synthetic 4 KiB payload; production payload limit/retention and trusted catalog refresh require review"
+  },
+  "iteration": 2,
+  "base": "71cdd90e11cbee7ec6b0eb1961322d40c49a20e9",
+  "tests": [
+    "held lease: follower never evaluates GCRA or reserves credit",
+    "rate denial: no lease/TAT advancement and another subject can lead immediately",
+    "budget refusal: no GCRA charge, no lease, no provider reservation; next subject is not blocked",
+    "multi-market request: one GCRA charge, one reservation, sorted leases and exact stale-market cost",
+    "partial overlap: no partial leases or charge; after publish, only missing markets are reserved",
+    "reverse-order overlapping market batches and subject arrays do not deadlock or double charge",
+    "coarser network and stricter user dimensions remain all-or-none",
+    "twenty distinct eligible paid leaders all admit without an artificial concurrency ceiling",
+    "freshness recheck under locks prevents a second leader after racing publish",
+    "a held-lease follower bypasses a locked subject row",
+    "new lease attempt gets a new reservation on every later refresh of the same key",
+    "same attempt replay cannot grant a new lease, charge GCRA again or send provider work",
+    "both GCRA and budget denials serve flagged stale values; absent cache yields typed denials",
+    "fresh cache hit performs one existing read and zero added limiter/budget calls",
+    "trusted response observations refresh quota freshness beyond setup plus five minutes",
+    "stale/future/replayed observations cannot extend freshness or inflate credit",
+    "a late higher header from an older attempt cannot refund after a newer lower observation",
+    "without WAF/GCRA the single account still protects interactive floor and collector reserve",
+    "explicit rollback removes debit, lease, ledger and GCRA together",
+    "server statement/lock timeouts fail safely without a partial combined admission",
+    "expired/replaced lease owners cannot publish",
+    "uncatalogued events/markets and duplicate market dimensions create no state",
+    "catalog caps every allowed market subset at 240 per-market resource rows"
+  ],
+  "trials": [
+    {
+      "workers": 1,
+      "round": 0,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.3256669999999531,
+          "p95_ms": 0.37733300000013514,
+          "max_ms": 0.8114590000000135
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 0.7232910000000174,
+          "p95_ms": 0.8744580000000042,
+          "max_ms": 2.0106250000001182
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 0.7828340000000935,
+          "p95_ms": 0.8510840000003554,
+          "max_ms": 1.6414169999998194
+        },
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 1.2024170000004233,
+          "p95_ms": 1.2981249999998,
+          "max_ms": 2.574583000000075
+        }
+      }
+    },
+    {
+      "workers": 1,
+      "round": 1,
+      "samplesPerMode": 1000,
+      "modes": {
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 1.0672910000002958,
+          "p95_ms": 1.2817910000003394,
+          "max_ms": 3.250958000000537
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 0.7634170000001177,
+          "p95_ms": 0.830167000000074,
+          "max_ms": 1.550083999999515
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 0.7637909999994008,
+          "p95_ms": 0.8404169999994338,
+          "max_ms": 2.256875000000946
+        },
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.2919999999994616,
+          "p95_ms": 0.345208000000639,
+          "max_ms": 0.5455000000001746
+        }
+      }
+    },
+    {
+      "workers": 1,
+      "round": 2,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.362541999998939,
+          "p95_ms": 0.4501669999990554,
+          "max_ms": 0.9828340000003664
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 0.7626670000008744,
+          "p95_ms": 0.8457079999989219,
+          "max_ms": 2.891916000000492
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 0.7457919999997102,
+          "p95_ms": 0.8141250000007858,
+          "max_ms": 1.5363749999996799
+        },
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 1.202000000001135,
+          "p95_ms": 1.284750000000713,
+          "max_ms": 2.4887090000011085
+        }
+      }
+    },
+    {
+      "workers": 20,
+      "round": 0,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.7280829999999696,
+          "p95_ms": 1.1152910000000702,
+          "max_ms": 20.162374999999884
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 3.5625419999996666,
+          "p95_ms": 13.316917000000103,
+          "max_ms": 43.31224999999904
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 4.0715420000015,
+          "p95_ms": 14.937125000000378,
+          "max_ms": 35.22612499999923
+        },
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 3.6069580000003043,
+          "p95_ms": 10.975416999999652,
+          "max_ms": 36.62249999999949
+        }
+      }
+    },
+    {
+      "workers": 20,
+      "round": 1,
+      "samplesPerMode": 1000,
+      "modes": {
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 3.440999999998894,
+          "p95_ms": 9.917041999999128,
+          "max_ms": 19.44745800000055
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 4.047083000001294,
+          "p95_ms": 14.203374999999141,
+          "max_ms": 27.401083000000654
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 2.9963750000006257,
+          "p95_ms": 10.377958000000945,
+          "max_ms": 24.883041999999477
+        },
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.6529170000012527,
+          "p95_ms": 1.0977920000004815,
+          "max_ms": 1.6351249999988795
+        }
+      }
+    },
+    {
+      "workers": 20,
+      "round": 2,
+      "samplesPerMode": 1000,
+      "modes": {
+        "baseline": {
+          "samples": 1000,
+          "p50_ms": 0.6170000000001892,
+          "p95_ms": 0.889208000000508,
+          "max_ms": 1.5406670000011218
+        },
+        "atomic": {
+          "samples": 1000,
+          "p50_ms": 3.0344999999997526,
+          "p95_ms": 10.537459000001036,
+          "max_ms": 28.301167000001442
+        },
+        "shared": {
+          "samples": 1000,
+          "p50_ms": 4.026834000000235,
+          "p95_ms": 13.934624999999869,
+          "max_ms": 36.11658299999908
+        },
+        "paid-path": {
+          "samples": 1000,
+          "p50_ms": 3.5085829999989073,
+          "p95_ms": 10.577375000000757,
+          "max_ms": 22.99541700000009
+        }
+      }
+    }
+  ],
+  "queryCalls": 49382,
+  "queryCallCap": 60000,
+  "sqlSha256": "7111c286d77b2c2356bf9648f50e6fee55415d59ca40336cd899c9a6ad5b4197",
+  "fixture": {
+    "port": 54362,
+    "postgres": "18.6",
+    "memoryMiB": 512,
+    "transport": "local pg TCP; no managed HTTP claim"
+  },
+  "workBudgets": {
+    "freshHitAddedStatements": 0,
+    "freshHitAddedRoundTrips": 0,
+    "combinedAdmissionLeaseGcraAndBudgetStatements": 1,
+    "combinedAdmissionLocalRoundTrips": 1,
+    "mockPaidPathStatementsIncludingCacheRead": 2,
+    "mockPaidPathLocalRoundTrips": 2,
+    "maxResourceRowsLockedPerRequest": 12,
+    "maxSubjectRowsLockedPerRequest": 2,
+    "lockOrder": "sorted resource rows, sorted subject rows, single budget row",
+    "internalWork": "catalog lookup; up to 12 inserts/locks/freshness reads; up to two GCRA inserts/locks/checks/updates; account lock, attempt lookup, conditional debit and audit insert; lease updates",
+    "postProviderRelease": "one counted query outside pre-provider timing; real publication/renewal outside this mock budget"
+  },
+  "limitations": [
+    "local-only; no production route wiring, HMAC/auth or managed transport proof",
+    "freshness expires after genuine five-minute idle; explicit qualified observation required to recover",
+    "WAF exhaustion availability unverified; no WAF assumption needed for credit correctness",
+    "200/140 ms and log-only policy values remain owner decisions"
+  ],
+  "cleanup": {
+    "schemaAbsent": true
+  }
+}

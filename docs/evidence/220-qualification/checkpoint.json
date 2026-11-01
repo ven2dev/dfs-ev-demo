@@ -1,0 +1,20 @@
+{
+  "base": "71cdd90e11cbee7ec6b0eb1961322d40c49a20e9",
+  "branch": "codex/220-hybrid-admission-qualification",
+  "runtimeNode": "24.18.1",
+  "driverPg": "8.23.1",
+  "sourceSha256": {
+    "packages/db/proposals/220_atomic_leader_gcra.sql": "7723730a83f571359736c209fe59f433d602468a8e388c10912357e1767cbc42",
+    "scripts/spikes/220-qualification.mjs": "7a355a1595d33e874af78228f15367448bb369e8d2aa6697dd9dc633bf6ec86b",
+    "docs/220-hybrid-admission-qualification.md": "c071a6217b5ba78001495bbbde3440bc2e4e4c531fb273279cf289b1d98ab179",
+    "docs/evidence/220-qualification/local.json": "148cf8f70bbc53a97122e4bda5563d9cc9b3f61804b966be5691c6eba6e16eed",
+    "docs/evidence/220-qualification/waf-read.json": "a07fd47cd97d702e659bdc920af34add5545e69dec6d48d5d2b2baf91a8e4a5e"
+  },
+  "ownedFixtureCleanup": {
+    "schemaAbsent": true,
+    "composeProjectRemoved": "dfs220-qualification",
+    "otherTaskFixture": "not modified"
+  },
+  "trackedSourceChanges": [],
+  "status": "local review checkpoint; no commit, push, hosted SQL/deployment or paid provider call"
+}
