@@ -1,0 +1,22 @@
+{
+  "issue": 166,
+  "phase": "historical preimplementation evidence archive",
+  "sourceHashScope": "Original bytes, prior to archival whitespace compaction. Prototype source paths identify disposable files and are not runtime dependencies.",
+  "files": {
+    "preimplementation-spike.json": {
+      "originalSha256": "0443d72275b87d8f8b4b98182a2a7f3c1f1164886f89d5eae660a0c708a9d3fb",
+      "archivedSha256": "8dc3409f114f76fc7bcb5294cb5b54bfd93b6f4f1df05cde1c9621e54b5d7e09",
+      "jsonValuePreserved": true
+    },
+    "preimplementation-work-oracle.json": {
+      "originalSha256": "a84fc19207b9fda399ff8c3a98d0447c82160c954831032b6952091e766d309c",
+      "archivedSha256": "a84fc19207b9fda399ff8c3a98d0447c82160c954831032b6952091e766d309c",
+      "jsonValuePreserved": true
+    },
+    "preimplementation-verification.json": {
+      "originalSha256": "56d2af130a170fbc61f249aaab8d9b33f0ce26c71d171839c9af5dde6d20752c",
+      "archivedSha256": "56d2af130a170fbc61f249aaab8d9b33f0ce26c71d171839c9af5dde6d20752c",
+      "jsonValuePreserved": true
+    }
+  }
+}

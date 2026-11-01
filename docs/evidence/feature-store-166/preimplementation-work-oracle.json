@@ -1,0 +1,29 @@
+{
+  "issue": 166,
+  "kind": "supplemental database-side DML oracle negative control",
+  "qualification": "disposable local PostgreSQL; measurement-only function, not a reader API",
+  "sourceSha256": "7f62789038627dfa76167d671ca1c77439b868ccd92730b04945d9845477f124",
+  "startedAt": "2026-11-01T00:38:53.185Z",
+  "verdict": "pass",
+  "result": {
+    "sessionUser": "fs138_job_4f524c6f296d20c2",
+    "before": {
+      "n_tup_ins": "0",
+      "n_tup_upd": "0",
+      "n_tup_del": "0"
+    },
+    "after": {
+      "n_tup_ins": "1",
+      "n_tup_upd": "0",
+      "n_tup_del": "0"
+    },
+    "delta": {
+      "n_tup_ins": 1,
+      "n_tup_upd": 0,
+      "n_tup_del": 0
+    },
+    "detectedHiddenDefinerWrite": true,
+    "rolledBack": true
+  },
+  "finishedAt": "2026-11-01T00:38:54.017Z"
+}

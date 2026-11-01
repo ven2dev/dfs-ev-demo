@@ -1,0 +1,214 @@
+{
+  "issue": 166,
+  "step": 1,
+  "runtime": "v24.18.1",
+  "fixture": "synthetic dependency controls, actual restricted LOGINs and private local ObjectStore",
+  "probes": [
+    {
+      "name": "source closure invalidates exactly dependent runs and enqueues all their pins",
+      "verdict": "pass",
+      "details": {
+        "dependentRun": "9520a2c1-e716-4721-b233-092583d91ea0",
+        "survivor": "fa600e31-e9a1-49ed-8525-7fadfb026380",
+        "receipt": {
+          "event_id": "ce7009ac-d219-4cfc-a167-f8a1eab62106",
+          "recorded_at": "2026-11-01T03:51:23.794Z",
+          "reason": "source withdrawn",
+          "grace_seconds": 0,
+          "snapshot_ids": [
+            "c77a0b98-4066-45c1-8aee-75767c5d4be0"
+          ],
+          "feature_ids": [],
+          "label_ids": [],
+          "dataset_ids": [
+            "0e4e6a3f-0ae1-49cc-a5b5-625f31301bbc"
+          ],
+          "run_ids": [
+            "9520a2c1-e716-4721-b233-092583d91ea0"
+          ]
+        },
+        "queued": [
+          "audits/317c1b826b1a380e60bff6677203f80a551a439a9e2fac4d12b02097c4c1bd7a",
+          "audits/a126fc5ac8b4de85608e319b7315b2295b1e95e27afcd25c45b009c67280dd5f",
+          "datasets/67d0e3bbafa903e9a182c93c8d069cea21931e97a1de65d315db2b1e90bc00cc",
+          "models/fc9d008b896d75271f4053561e927e267679118a6753f5e9979881b2cdd0b6d1",
+          "raw/290c2f660bf7bdd8a0aa43c75b671171c02a07c21521f238ce4b353ed073093b"
+        ],
+        "firstInvalidationPreserved": true
+      }
+    },
+    {
+      "name": "explicit dataset deletion preserves sources, other datasets and derived values",
+      "verdict": "pass",
+      "details": {
+        "receipt": {
+          "event_id": "e0a91946-058c-400c-a4d2-2f6001d12d05",
+          "recorded_at": "2026-11-01T03:51:23.870Z",
+          "reason": "one dataset",
+          "grace_seconds": 0,
+          "snapshot_ids": [],
+          "feature_ids": [],
+          "label_ids": [],
+          "dataset_ids": [
+            "9c2222cf-bb3c-46c0-ac6c-4c7837fc0832"
+          ],
+          "run_ids": [
+            "80ae01cf-2bc4-4607-9709-70373950a04b"
+          ]
+        },
+        "unrelatedRun": "736f8b72-e505-405f-837b-a6fd19bfc92e",
+        "sourceKept": true,
+        "actualMembersBefore": 2,
+        "actualMembersAfter": 1,
+        "featureAndLabelKept": true,
+        "normalizedRowKept": true
+      }
+    },
+    {
+      "name": "source deletion follows membership lineage and removes actual derived/provider rows only in its scope",
+      "verdict": "pass",
+      "details": {
+        "receipt": {
+          "event_id": "e2e5dd53-a51d-40fd-a499-f3e948242764",
+          "recorded_at": "2026-11-01T03:51:23.948Z",
+          "reason": "member source withdrawn",
+          "grace_seconds": 0,
+          "snapshot_ids": [
+            "e4b15f87-4e2e-4775-8daf-8ed6a9d254e5"
+          ],
+          "feature_ids": [
+            "a75b7b7d-e93a-434b-9768-4655099aaafd"
+          ],
+          "label_ids": [
+            "b3b4b20c-683f-4b9b-bf0f-9b3c447e3719"
+          ],
+          "dataset_ids": [
+            "dee8b3de-3326-45aa-ae83-46d0c2c19e02"
+          ],
+          "run_ids": [
+            "7208e7cf-56a8-4e60-be32-72709691af88"
+          ]
+        },
+        "survivorRun": "46266da8-d71a-4756-b338-e87f489805c5",
+        "membershipUnionProved": true,
+        "actualRowsRemoved": 3,
+        "unrelatedRowsKept": 3
+      }
+    },
+    {
+      "name": "writer/reader LOGINs cannot directly mutate registry or call private closure; outsider cannot govern",
+      "verdict": "pass",
+      "details": {
+        "refusals": 16,
+        "realReader": "fs138_job_1b61f58ee19afed9",
+        "realOutsider": "fs138_job_95eb2e625cdabc94"
+      }
+    },
+    {
+      "name": "bad/mixed target sets roll back receipts, status and queue atomically",
+      "verdict": "pass",
+      "details": {
+        "refused": 28,
+        "explicitRollbackRestoredAll": true
+      }
+    },
+    {
+      "name": "publication samples rights after address waits and refuses invalidation before existing-run reuse",
+      "verdict": "pass",
+      "details": {
+        "liveRetryReturnedOriginal": true,
+        "deniedInvalidatedRetry": "P1665",
+        "authorizedInvalidatedRetry": "P1661",
+        "refusedAfterLockWait": true
+      }
+    },
+    {
+      "name": "source deletion / publication-first commits serialize without escaping the run closure",
+      "verdict": "pass",
+      "details": {
+        "actualLockWait": true,
+        "kind": "source",
+        "order": "publication-first",
+        "noEscapingPublication": true
+      }
+    },
+    {
+      "name": "source deletion / deletion-first commits serialize without escaping the run closure",
+      "verdict": "pass",
+      "details": {
+        "actualLockWait": true,
+        "kind": "source",
+        "order": "deletion-first",
+        "noEscapingPublication": true
+      }
+    },
+    {
+      "name": "dataset deletion / publication-first commits serialize without escaping the run closure",
+      "verdict": "pass",
+      "details": {
+        "actualLockWait": true,
+        "kind": "dataset",
+        "order": "publication-first",
+        "noEscapingPublication": true
+      }
+    },
+    {
+      "name": "dataset deletion / deletion-first commits serialize without escaping the run closure",
+      "verdict": "pass",
+      "details": {
+        "actualLockWait": true,
+        "kind": "dataset",
+        "order": "deletion-first",
+        "noEscapingPublication": true
+      }
+    },
+    {
+      "name": "pipeline retry has typed invalidation before scoring or uploads",
+      "verdict": "pass",
+      "details": {
+        "code": "model-publication-invalidated",
+        "uploads": 0
+      }
+    },
+    {
+      "name": "lost COMMIT reply returns no result and a fresh-connection retry reuses the original publication",
+      "verdict": "pass",
+      "details": {
+        "lostCommitResultWithheld": true,
+        "existingPublication": true,
+        "runs": 1,
+        "firstReceiptPreserved": true
+      }
+    },
+    {
+      "name": "pre-BEGIN tombstone refusal is typed and SQLSTATE mapping preserves unrelated failures",
+      "verdict": "pass",
+      "details": {
+        "beforeBegin": true,
+        "code": "model-object-deleted",
+        "uploads": 0,
+        "sqlstateMappings": 3,
+        "unrelatedFailuresPreserved": 3
+      }
+    },
+    {
+      "name": "new queue rows protect live shared references and preserve observed-address ownership",
+      "verdict": "pass",
+      "details": {
+        "sharedRetainedUntilLastLiveRun": true,
+        "orphanDeletedWhilePending": true,
+        "mandatoryCompletedOnlyAfterRetirement": true
+      }
+    }
+  ],
+  "verdict": "pass",
+  "sourceHashes": {
+    "packages/db/proposals/166_artifact_governance.sql": "50a3e27f5751701333a8214b1edcb628491971f42e2898f729e9016e6c3054f0",
+    "services/pipeline/src/featureStore/governance.ts": "28fc5310270c3f742872007b6c7f0f5bd1d7fd05a7d3337b6bd99f41fb1c3aac",
+    "services/pipeline/src/featureStore/modelManifests.ts": "0c38651178b91050538f8649d56a1946783efdeb61bbdc27d987e307bb0717d9",
+    "services/pipeline/src/featureStore/datasets.ts": "690c626a3a049f89bc6a45fad235af8b09e5d2b54eef0a0c76e261af20bb3fc7",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "6186132d4cc7ab095e5a834c202fb4671608cf1bac90ecbcf4587e811537b17e",
+    "services/pipeline/tests/feature-store/artifact-governance-fixture.ts": "76011e854470206d336b3dd0c65783ee29376803ab450a9dc418e847b8cc7228",
+    "services/pipeline/tests/feature-store/artifact-governance.check.mts": "8ea9d89f30f3682a77cc16bb441afaeda6f594911b6f5c90bc5f65f203e9510f"
+  }
+}

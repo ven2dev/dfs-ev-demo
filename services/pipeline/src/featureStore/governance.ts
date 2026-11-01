@@ -27,9 +27,15 @@ export const discardUnpublishedReport = async (client:Database,store:ObjectStore
  }
 };
 export type DeletionReceipt = {event_id:string;recorded_at:Date;grace_seconds:number;
- snapshot_ids:string[];feature_ids:string[];label_ids:string[];dataset_ids:string[]};
+ snapshot_ids:string[];feature_ids:string[];label_ids:string[];dataset_ids:string[];run_ids?:string[]};
+// #138-only fixtures still return DeletionReceipt. The #166 companion proposal
+// adds run_ids to both APIs without changing the foundation receipt fields.
+export type ArtifactDeletionReceipt = DeletionReceipt & {run_ids:string[]};
 export const deleteSources = async (client:Database,snapshotIds:string[],reason:string,graceSeconds=300):Promise<DeletionReceipt> =>
  (await client.query<DeletionReceipt>("SELECT * FROM fs138.delete_sources($1::uuid[],$2,$3)",[snapshotIds,reason,graceSeconds])).rows[0];
+
+export const deleteDatasets = async (client:Database,datasetIds:string[],reason:string,graceSeconds=300):Promise<ArtifactDeletionReceipt> =>
+ (await client.query<ArtifactDeletionReceipt>("SELECT * FROM fs138.delete_datasets($1::uuid[],$2,$3)",[datasetIds,reason,graceSeconds])).rows[0];
 
 // One bounded page, resumable after failures. The writer-only address lock
 // prevents republication between reference check and ObjectStore deletion.
