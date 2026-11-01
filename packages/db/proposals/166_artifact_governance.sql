@@ -224,13 +224,16 @@ BEGIN
  RETURN receipt;
 END $$;
 
--- SQL safety for the addresses enqueued above. Cleaner orchestration and its
--- four-statement CI budget follow in step 3; existing callers are already safe.
+-- Cleaner page selection skips observed model/audit addresses before LIMIT.
+-- Recheck repeats ownership under the common lock, including after waits.
 CREATE OR REPLACE FUNCTION fs138.removal_recheck(address text) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
 BEGIN
  IF NOT pg_has_role(session_user,'fs138_pipeline_writer','member') THEN
   RAISE EXCEPTION 'pipeline-role-required' USING ERRCODE='42501';
+ END IF;
+ IF address IS NULL OR address !~ '^(raw|datasets|models|audits)/[a-f0-9]{64}$' THEN
+  RAISE EXCEPTION 'object-address-refused' USING ERRCODE='23514';
  END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(address,138));
  IF NOT EXISTS(SELECT 1 FROM fs138.object_removals o
@@ -245,6 +248,34 @@ BEGIN
   RETURN false;
  END IF;
  RETURN true;
+END $$;
+
+-- Ack rechecks removal eligibility under the same transaction/address lock. Its
+-- internal recheck is server work, not an extra client statement. A failed ack
+-- rolls back queue completion; ObjectStore DELETE remains safely idempotent.
+CREATE OR REPLACE FUNCTION fs138.ack_removal(address text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
+BEGIN
+ IF NOT fs138.removal_recheck(address) THEN
+  RAISE EXCEPTION 'removal-not-authorized' USING ERRCODE='23514';
+ END IF;
+ UPDATE fs138.object_removals SET completed_at=clock_timestamp(),outcome='removed'
+ WHERE object_key=address;
+END $$;
+
+CREATE OR REPLACE FUNCTION fs138.requeue_removed_object(address text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
+BEGIN
+ IF NOT pg_has_role(session_user,'fs138_pipeline_writer','member') THEN
+  RAISE EXCEPTION 'pipeline-role-required' USING ERRCODE='42501';
+ END IF;
+ IF address IS NULL OR address !~ '^(raw|datasets|models|audits)/[a-f0-9]{64}$' THEN
+  RAISE EXCEPTION 'object-address-refused' USING ERRCODE='23514';
+ END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended(address,138));
+ UPDATE fs138.object_removals SET completed_at=NULL,outcome=NULL WHERE object_key=address;
+ -- A surviving observation still owns cleanup; page selection and recheck
+ -- defer. Requeue neither adopts its recovery record nor removes a tombstone.
 END $$;
 
 CREATE OR REPLACE FUNCTION fs138.orphan_recheck(address text,grace_seconds double precision DEFAULT 300) RETURNS boolean

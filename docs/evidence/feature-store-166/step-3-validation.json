@@ -1,0 +1,128 @@
+{
+  "issue": 166,
+  "step": 3,
+  "phase": "implementation review before commit",
+  "verdict": "pass",
+  "step2Commit": "becbcd08eae85cf440b5ed213bcd0e2ffd0e36a6",
+  "checks": [
+    {
+      "command": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-concurrency=1 services/pipeline/tests/feature-store/*.check.mts",
+      "verdict": "pass",
+      "tests": 153,
+      "passed": 153,
+      "failed": 0,
+      "skipped": 0,
+      "outputSha256": "94e5dfba806a03f4db8f01d9a5ac03411ed19e3ecab06cb51e243b507d75742b"
+    },
+    {
+      "command": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test services/pipeline/tests/package-contract.check.mjs tests/import-boundaries.check.mjs",
+      "verdict": "pass",
+      "tests": 15,
+      "passed": 15,
+      "failed": 0,
+      "skipped": 0,
+      "outputSha256": "33a8cfe37f1a5c9b43ac877795c1b7673faf7c6172b4fd78b7448be94a7580a0"
+    },
+    {
+      "check": "targeted TypeScript on feature-store runtime/tests and runner imports",
+      "verdict": "pass"
+    },
+    {
+      "check": "ESLint on changed cleaner runtime and tests; no warnings",
+      "verdict": "pass"
+    },
+    {
+      "check": "frozen migration artifacts and diff whitespace",
+      "verdict": "pass"
+    }
+  ],
+  "sourceHashes": {
+    "packages/db/proposals/166_artifact_governance.sql": "f39522f956d81d21ee08411160206e9441d024e91db5e9d1d746e00101ff9ca3",
+    "services/pipeline/src/featureStore/governance.ts": "712483533ab4bc8a4b3c815948be3508e79e0d98d95fd684f7b07efd2592f9f3",
+    "services/pipeline/tests/feature-store/artifact-governance-fixture.ts": "694d6f193b1b5b66c61e5b96a2610e1a99b709980fe086905893c6ca357885c2",
+    "services/pipeline/tests/feature-store/artifact-cleaner-work.ts": "8523f661442a4e2e8a810c2477ef1f68c0893b37e02abca2ce048875cbcfc519",
+    "services/pipeline/tests/feature-store/artifact-read-work.ts": "44626f9bfd3826db45cd7289bf79e9aa06c21743e9ef744e96885b596da63d5c",
+    "services/pipeline/tests/feature-store/artifact-cleaner.check.mts": "30e45d1f9f6c4012149c5aa25d48dc27c4c55b24843bfa85e3b1e871bf3cb742"
+  },
+  "cleanerEvidenceSha256": "f66ca68fe31ed8b8e40f0cfbdb5da2e13d225073466b9d9e690e023cbace2145",
+  "workBudgets": {
+    "pendingPageStatements": 1,
+    "eligiblePageLimit": 1024,
+    "sqlPerAuthorizedDeletion": 4,
+    "sqlPerRefusedCandidate": 3,
+    "objectDeletesPerAuthorizedCandidate": 1,
+    "ordinaryGetHeadPutList": 0,
+    "exampleTableScansAndTupleFetches": 0,
+    "nonQueueDml": 0,
+    "recheckWritesOnDeletionOrDeferral": 0,
+    "recheckQueueUpdatesOnSharedCompletion": 1,
+    "ackQueueUpdatesIncludingInternalRecheck": 1,
+    "rowGuards": [
+      0,
+      2504
+    ],
+    "allDeterministicBudgetsEqualAcrossRowGuards": true,
+    "ackInternalRecheckIncludedInServerCounters": true,
+    "rawServerCountersRetained": true
+  },
+  "behavior": {
+    "orphanOwnershipRespectedBeforePageLimitAndAfterLockWait": true,
+    "orphanBytesRemovedAfterGraceWhileMandatoryIntentPending": true,
+    "mandatoryDeleteOrAckWhileObserved": 0,
+    "retirementWindowSeconds": 86400,
+    "missingByteDeleteAfterRetirementIdempotent": true,
+    "separateBytesRetirementAndCompletionClocks": {
+      "addresses": [
+        "models/88e25f5fd62d8d3757f862f55386357b917c6159421cacb9d5dc1e98acef1c11",
+        "audits/cea569ab983ae50ca8b9c0df4dd10872ac16cc0d42835e90b6bb5d2313a4b541"
+      ],
+      "retirementWindowSeconds": 86400,
+      "orphanGraceSeconds": 300,
+      "bytesRemovedAt": "2026-11-01T04:09:38.230Z",
+      "observationsRetiredAt": "2026-11-01T04:09:38.245Z",
+      "queueCompletedAt": "2026-11-01T04:09:38.249Z",
+      "mandatoryDeletesWhileObserved": 0,
+      "ackWhileObservedRefused": true,
+      "observationKeptUntilRetirement": true,
+      "idempotentMissingByteDeletes": 2,
+      "repeatedDeleteErrors": 0,
+      "limitation": "Pending can outlast bytes through the 24h retirement window; this is not #229 late-PUT recovery."
+    },
+    "sharedAttemptsCompleteAndLastLiveReferenceRearmsGrace": true,
+    "unlinkBeforeAckExceptionsAndRealDisconnects": "both model and audit namespaces",
+    "lostCommitReplyAndExplicitRequeue": "both model and audit namespaces",
+    "publicationCleanerLockOrdersProbed": true,
+    "readerAndOutsiderLoginRefusalsProbed": true,
+    "pageProgress": {
+      "observedAddressesDeferredBeforeLimit": 1025,
+      "sharedAttemptsCompleted": 1025,
+      "firstPageCandidates": 1024,
+      "secondPageCandidates": 2,
+      "laterRemovableObjectReached": true,
+      "observedMandatoryDeletesOrAcks": 0,
+      "repeatedPageSql": 1
+    }
+  },
+  "qualification": {
+    "fixture": "synthetic dependency/queue controls, 0/2504 actual members, real restricted LOGINs and private local ObjectStore",
+    "runtime": "v24.18.1",
+    "testOnlyObservationAndGraceAgesShifted": true,
+    "knowledgeOrEventClocksBackdated": false,
+    "speedBenchmarkPerformed": false,
+    "hostedRoundTripsMeasured": false,
+    "finalGate": "Step 4: per-candidate-block p95(Q1+Q2)<=21 ms under 30 ms, local-fixture only",
+    "excluded": "#229 cleanup-ownership handoff and completed-removal late-PUT recovery lane",
+    "interimLimitation": "Observed removals can stay pending through the 24-hour retirement window after byte removal. Completed tombstones have no automatic revisit; explicit requeue is available."
+  },
+  "cleanup": {
+    "scratchDatabases": 0,
+    "temporaryLogins": 0,
+    "otherClientSessions": 0,
+    "taskLocalContainerStopped": true
+  },
+  "frozenMigrationsChanged": false,
+  "hostedWritesPerformed": false,
+  "step3Committed": false,
+  "pushPerformed": false,
+  "pending": "Owner review and step-3 commit approval"
+}

@@ -43,8 +43,11 @@ export const deleteDatasets = async (client:Database,datasetIds:string[],reason:
 // re-arms them. This lets later pages progress without polling shared addresses.
 // A crash after delete but before ack is safe: ObjectStore.delete is idempotent.
 export const cleanupDeletedObjects = async (client:Database,store:ObjectStore) => {
- const pending=(await client.query<{object_key:string}>(`SELECT object_key FROM fs138.object_removals
-  WHERE completed_at IS NULL AND remove_after<=clock_timestamp() ORDER BY object_key LIMIT 1024`)).rows;
+ const pending=(await client.query<{object_key:string}>(`SELECT r.object_key FROM fs138.object_removals r
+  WHERE r.completed_at IS NULL AND r.remove_after<=clock_timestamp()
+   AND NOT (r.object_key ~ '^(models|audits)/' AND EXISTS(
+    SELECT 1 FROM fs138.orphan_observations o WHERE o.object_key=r.object_key))
+  ORDER BY r.object_key LIMIT 1024`)).rows;
  const removed:string[]=[];
  const shared:string[]=[];
  for(const {object_key:key} of pending){
@@ -61,6 +64,11 @@ export const cleanupDeletedObjects = async (client:Database,store:ObjectStore) =
   }
  }
  return {removed,shared};
+};
+// Explicit writer action only. This re-arms the existing tombstone without
+// clearing it or changing its grace; automatic completed-removal recovery is #229.
+export const requeueRemovedObject = async (client:Database,key:string):Promise<void> => {
+ await client.query('SELECT fs138.requeue_removed_object($1)',[key]);
 };
 export const pruneDerivedVersions = async (client:Database):Promise<{featureIds:string[];labelIds:string[]}> =>
  (await client.query("SELECT fs138.prune_derived() AS pruned")).rows[0].pruned;

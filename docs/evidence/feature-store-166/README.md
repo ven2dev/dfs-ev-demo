@@ -81,10 +81,33 @@ FS166_READ_EVIDENCE=docs/evidence/feature-store-166/step-2-read-boundary.json \
   services/pipeline/tests/feature-store/model-artifacts.check.mts
 ```
 
-Cleaner page filtering, explicit model/audit requeue and the four-statement
-per-candidate CI budget land in step 3. Step 1 includes only the SQL live-reference
-and orphan-ownership checks needed to make newly queued model/audit rows safe.
-Mandatory removal can remain pending through the 24-hour observation retirement
-window while bytes are already absent. Integrated step-3 evidence will report
-byte-removal, observation-retirement and queue-completion clocks separately.
-#229 retains the cleanup handoff and completed-removal late-PUT recovery lane.
+## Step 3 implementation
+
+[Cleaner receipt](step-3-cleaner.json) records fixed client and database-side
+budgets at 0/2,504 actual members, shared-retained/final-reference grace,
+model/audit requeue, actual lock waits, unlink-before-ack exceptions and real
+disconnects, lost COMMIT replies and restricted LOGIN refusals. A combined queue
+fixture defers 1,025 observed addresses before the page limit, completes 1,025
+shared attempts and reaches later removable bytes. Full raw server counters and
+source hashes are retained. There is no elapsed-time CI assertion.
+[Step-3 validation](step-3-validation.json) records all 153 passing feature-store
+database tests, 15 package/import contract tests, targeted TypeScript/ESLint,
+frozen-migration verification and complete scratch cleanup. Step 2 is committed
+as `becbcd0`; step 3 awaits owner commit approval.
+
+The observed-address probe records **bytesRemovedAt**, **observationsRetiredAt**
+and **queueCompletedAt** separately. It proves the scoped sweep removes bytes
+after orphan grace while observation and removal intent survive, then mandatory
+cleanup completes only after retirement, without errors deleting missing bytes.
+Test-only observation/grace ages are shifted; database knowledge/event clocks
+are not backdated. Pending status can outlast byte presence through the 24-hour
+retirement window. #229 retains cleanup handoff and completed-removal late-PUT
+recovery; this receipt does not claim those guarantees.
+
+Regenerate the receipt against the registered disposable local target:
+
+```sh
+FS166_CLEANER_EVIDENCE=docs/evidence/feature-store-166/step-3-cleaner.json \
+  node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \
+  services/pipeline/tests/feature-store/artifact-cleaner.check.mts
+```

@@ -1,8 +1,8 @@
 # Model artifact governance (#166)
 
-Steps 1–2 implement the proposal lifecycle, source/explicit-dataset deletion
-APIs and the guarded artifact-read/calculation boundary. Cleaner orchestration
-remains the next reviewed step.
+Steps 1–3 implement the proposal lifecycle, source/explicit-dataset deletion
+APIs, guarded artifact-read/calculation boundary and mandatory artifact cleanup.
+Final retained-fixture benchmarking and integrated review remain step 4.
 Apply `packages/db/proposals/166_artifact_governance.sql` after the #138
 foundation/governance proposals, #163 effective rights and #165 model manifests
 in a registered local scratch database. This is proposal SQL, without a frozen
@@ -37,7 +37,7 @@ across I/O or calculation. Automatic SELECT AccessShareLock is expected.
 Mandatory cleanup uses one bounded page SELECT, then four SQL statements per
 deletable candidate (BEGIN, recheck, ack, COMMIT) and one ObjectStore DELETE;
 refused candidates use three statements and no DELETE/ack. Read and cleaner
-CI budgets land with steps 2 and 3. The final opt-in benchmark retains the
+CI budgets land with their respective steps 2 and 3. The final opt-in benchmark retains the
 per-block p95(Q1+Q2) ≤21 ms gate under 30 ms (≥30% headroom), with interleaved
 baseline runs. This is **local-fixture only**; hosted region/network RTT remains
 unmeasured (#220). No wall-clock CI assertions.
@@ -111,9 +111,9 @@ Because these APIs enqueue models/audits immediately, step 1 includes the SQL
 reference/ownership checks that make the new rows safe. Mandatory recheck
 defers while an orphan observation exists. Orphan recheck preserves the record
 and allows deletion after its own grace, subject to live-run protection;
-absent-record retirement ignores invalidated references. Cleaner page filtering,
-models/audits explicit requeue, CI budgets and integrated recovery tests remain
-step 3. The existing #164 lock-protected reference check remains; its cleanup
+absent-record retirement ignores invalidated references. Step 3 completes page
+filtering, explicit models/audits requeue, CI budgets and integrated cleanup
+tests, described below. The existing #164 lock-protected reference check remains; its cleanup
 handoff to the mandatory owner is #229.
 
 ## Evidence and remaining work
@@ -137,8 +137,8 @@ implementation.
 Step 2 adds the two-query trusted delivery boundary and deterministic read/server
 work budgets, described below. Step 3 finishes cleaner orchestration and its per-candidate budget.
 Step 4 runs the final benchmark, acceptance mapping and premise-first review.
-Each step is reviewed before committing. The feature remains within its
-3½–4-hour planning estimate; discovery beyond five hours triggers a split before
+Each step is reviewed before committing. The approved planning estimate was
+3½–4 hours; discovery beyond five hours triggers a split before
 further implementation. Push requires fresh owner consent.
 
 ## Guarded artifact reads and calculation
@@ -213,3 +213,58 @@ relation coordination locks; normal AccessShareLock is expected. Hidden scan
 and definer-DML negative controls demonstrate that the oracle detects violations.
 No wall-clock gate runs in CI; the final retained-fixture benchmark still gates
 each candidate block's p95(Q1+Q2) at ≤21 ms under 30 ms, local-fixture only.
+
+## Mandatory model/audit cleanup
+
+`cleanupDeletedObjects` uses one pending-page SELECT, bounded at 1,024 eligible
+addresses. It excludes observed model/audit addresses **before** the limit, so
+their 24-hour recovery records cannot starve later eligible work. Raw/dataset
+selection keeps its foundation behavior. Selection does not claim ownership:
+each candidate takes the common address lock through `removal_recheck`, which
+rechecks due status, orphan ownership and current live references after waits.
+
+An authorized candidate uses four client SQL statements: BEGIN, recheck, ack and
+COMMIT, with one ObjectStore DELETE between recheck and ack. Ack internally
+rechecks eligibility under the same transaction/address lock before marking
+`removed`; this is included in server-work evidence. A refused candidate uses
+three SQL statements and no DELETE/ack. Ordinary mandatory cleanup uses zero
+ObjectStore GET, HEAD, PUT or list calls. The existing `shared` return array is
+the legacy list of recheck-refused candidates; the queue's durable `outcome`
+distinguishes `shared-retained` completion from a still-pending deferral.
+
+Only a non-invalidated run keeps a model/report address shared-retained. Such
+an attempt completes durably, releasing its page slot. Deleting the last live
+reference re-arms completion/outcome and begins a new grace after invalidation
+work; repeated deletion keeps the greatest deadline. Invalidated run references
+do not retain bytes. Sources/datasets retain their existing live-reference rule.
+
+For observed addresses with pending removal, `orphan_recheck` retains the record
+and authorizes the scoped sweep after orphan grace, subject to live references.
+Mandatory selection/recheck continues to defer and ack refuses. An absent record
+retires only after the configured recovery window from its last enrollment
+(default `MODEL_ORPHAN_RETIREMENT_SECONDS = 86400`). Mandatory cleanup then
+performs an idempotent DELETE of already-missing bytes and completes `removed`.
+Evidence records byte-removal, observation-retirement and queue-completion times
+separately: pending status can persist up to that window after bytes are gone.
+
+The writer-only `requeueRemovedObject` API extends the existing narrow SQL
+operation to models/audits. It resets completion/outcome under the common lock,
+preserving the event, grace and permanent tombstone. An unknown address is a
+no-op, so requeue cannot silently claim unregistered objects. A surviving orphan
+observation still owns cleanup after requeue. Completed tombstones are not
+automatically polled; recovery-aware ownership handoff, #164 participation and
+completed-removal late-PUT recovery remain #229. The interim late-PUT gap is
+unchanged.
+
+`artifact-cleaner.check.mts` enforces the four/three-statement counts, one-page
+bound and ObjectStore counts. For 0 and 2,504 actual members, database-side
+counters include both recheck and ack's internal recheck: zero example-table
+scans/tuple fetches, zero non-queue DML, no recheck writes on deletion/deferral,
+one queue update on shared completion and one on ack. Deterministic work remains
+identical across row counts. Behavior probes cover grace and last-live-reference
+re-arm, observation deferral after an actual lock wait, both publication/cleaner
+orders, unlink-before-ack exceptions and real backend termination, lost COMMIT
+replies, explicit requeue, and real reader/outsider LOGIN refusals. A combined
+page fixture skips 1,025 observed addresses, durably completes 1,025 shared
+attempts and reaches a later removable object. Its publication metadata controls
+are synthetic and make no retained-report provenance claim.
