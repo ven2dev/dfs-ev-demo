@@ -71,7 +71,7 @@ in the [feature design](../../feature-store-artifact-governance.md).
 [Step-2 validation](step-2-validation.json) records all 143 passing feature-store
 database tests, 15 package/import contract tests, targeted TypeScript/ESLint,
 frozen-migration verification and complete scratch cleanup. Step 1 is committed
-as `0484bd6`; the step-2 implementation awaits owner commit approval.
+as `0484bd6`; step 2 is committed as `becbcd0`.
 
 Regenerate the receipt with the same registered local test target:
 
@@ -92,8 +92,9 @@ shared attempts and reaches later removable bytes. Full raw server counters and
 source hashes are retained. There is no elapsed-time CI assertion.
 [Step-3 validation](step-3-validation.json) records all 153 passing feature-store
 database tests, 15 package/import contract tests, targeted TypeScript/ESLint,
-frozen-migration verification and complete scratch cleanup. Step 2 is committed
-as `becbcd0`; step 3 awaits owner commit approval.
+frozen-migration verification and complete scratch cleanup. Step 3 is committed
+as `39947fb`. Per-step JSON receipts preserve their original precommit status;
+the final validation identifies the current source bytes.
 
 The observed-address probe records **bytesRemovedAt**, **observationsRetiredAt**
 and **queueCompletedAt** separately. It proves the scoped sweep removes bytes
@@ -111,3 +112,62 @@ FS166_CLEANER_EVIDENCE=docs/evidence/feature-store-166/step-3-cleaner.json \
   node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \
   services/pipeline/tests/feature-store/artifact-cleaner.check.mts
 ```
+
+## Step 4 final implementation
+
+- [Final benchmark](final-benchmark.json): 50 baseline-first reads and all
+  3,600 ABBA samples across six shapes, including 1,800 candidate reads.
+  Every one of 36 candidate blocks passes p95(Q1+Q2) ≤21 ms under 30 ms.
+  Worst block: **6.380 ms**, **78.73% headroom**. Baseline-first p95s are
+  **4.368 ms** (0 members) and **3.230 ms** (2,504 members).
+- [Fresh lifecycle](final-lifecycle.json), [read boundary](final-read-boundary.json)
+  and [cleaner](final-cleaner.json): 14, 11 and 9 behavior/work-budget probes
+  respectively, rerun against the current implementation. These preserve the
+  CI two-statement read and four-statement-per-deletion budgets, including
+  internal database work and the observed-address ownership rule.
+- [Independent verification](final-verification.json): exact sample groups,
+  work counts, Q1+Q2 sums, nearest-rank block percentiles, 47 current source
+  hashes and five unique freshly published descriptor/report objects checked
+  separately from the benchmark runner. No samples are discarded.
+- [Final validation](final-validation.json): 153 passing database tests,
+  19 package/import/path contract tests, targeted TypeScript/ESLint,
+  frozen-migration checks and complete scratch cleanup. The first contract run
+  encountered sandbox `EPERM` binding its loopback server; the unrestricted
+  rerun passes all 19 tests. Both attempts' output hashes are recorded.
+
+The [feature design](../../feature-store-artifact-governance.md#final-acceptance-and-premise-first-review)
+maps the acceptance criteria to these fresh receipts and records the review in
+premise → targets → correctness order. The owner has approved all four step
+commits. Evidence receipts retain their precommit status; push requires fresh
+owner consent.
+
+The benchmark exercises actual runtime APIs and fresh reports with matching
+scratch-database pins. Its source was written independently of the disposable
+spike. Fresh report sizes are 9,290,167 and 306,542 bytes; archived payload sizes
+are historical evidence. Ordinary timed reads use exactly two authorization
+queries, one GET per selected file, zero ordinary hashes/HEADs/writes and a
+trivial private byte-length calculation. Server-work measurement runs in the
+separate behavior lane, not inside timing.
+
+Reproduce the final speed experiment with Node 24, the registered local
+`TEST_DATABASE_URL`, the private retained wire objects identified by the #138
+source evidence and the 512 MiB `compose.test.yml` fixture:
+
+```sh
+FS166_BENCHMARK_EVIDENCE=docs/evidence/feature-store-166/final-benchmark.json \
+  node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
+  services/pipeline/scripts/feature-store/artifact-governance-benchmark.ts
+```
+
+For fresh integrated behavior receipts, set `FS166_LIFECYCLE_EVIDENCE`,
+`FS166_READ_EVIDENCE` and `FS166_CLEANER_EVIDENCE` to their `final-*.json` paths,
+then run `npm run test:feature-store:db` against that disposable local target.
+No environment files or hosted credentials are needed.
+
+All final speed results remain **local-fixture only**, with warm/unflushed
+OS/file/database caches and an existing restricted LOGIN. Query timing includes
+local loopback and decoding. Full-read timing is informational; the callback
+does not simulate #167 context/projection work. Hosted RTT/region/Neon wake
+(#220), cold caches and #168 capacity are unmeasured. #229 still owns cleanup
+handoff and late-PUT recovery; observed removals can remain pending through the
+24-hour retirement window after their bytes have disappeared.

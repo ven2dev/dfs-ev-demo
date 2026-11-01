@@ -1,8 +1,8 @@
 # Model artifact governance (#166)
 
-Steps 1–3 implement the proposal lifecycle, source/explicit-dataset deletion
-APIs, guarded artifact-read/calculation boundary and mandatory artifact cleanup.
-Final retained-fixture benchmarking and integrated review remain step 4.
+Steps 1–4 implement the proposal lifecycle, source/explicit-dataset deletion
+APIs, guarded artifact-read/calculation boundary and mandatory artifact cleanup,
+with retained-fixture benchmarking and integrated acceptance evidence.
 Apply `packages/db/proposals/166_artifact_governance.sql` after the #138
 foundation/governance proposals, #163 effective rights and #165 model manifests
 in a registered local scratch database. This is proposal SQL, without a frozen
@@ -136,7 +136,10 @@ implementation.
 
 Step 2 adds the two-query trusted delivery boundary and deterministic read/server
 work budgets, described below. Step 3 finishes cleaner orchestration and its per-candidate budget.
-Step 4 runs the final benchmark, acceptance mapping and premise-first review.
+Step 4 supplies the final benchmark, acceptance mapping and premise-first review
+below. Steps 1–3 are committed as `0484bd6`, `becbcd0` and `39947fb`;
+the owner has approved the step-4 commit. Evidence receipts retain their
+precommit source identities and status.
 Each step is reviewed before committing. The approved planning estimate was
 3½–4 hours; discovery beyond five hours triggers a split before
 further implementation. Push requires fresh owner consent.
@@ -268,3 +271,92 @@ replies, explicit requeue, and real reader/outsider LOGIN refusals. A combined
 page fixture skips 1,025 observed addresses, durably completes 1,025 shared
 attempts and reaches a later removable object. Its publication metadata controls
 are synthetic and make no retained-report provenance claim.
+
+## Final implementation benchmark — local-fixture only
+
+The [opt-in runner](../services/pipeline/scripts/feature-store/artifact-governance-benchmark.ts)
+uses the actual `withDatasetRead`, `publishQbModelRun` and `withModelArtifacts`
+APIs. It rebuilds the 16 retained wire files with fresh database clocks, the
+natural 2,504-member retrospective cohort and the genuine zero-member strict
+guard. Three real publications cover strict, retrospective and paired modes.
+Outside timing it verifies exact report bytes, logical report hashes,
+descriptor pins and SQL-owned dataset pins against those fresh publications.
+Report sizes are **9,290,167** and **306,542** bytes in this run; archived
+prototype sizes are not substituted for freshly generated envelopes.
+
+Before installing the candidate proposals, 25 dataset baseline reads per mode
+measured p95(Q1+Q2) of **4.368 ms** (zero members) and **3.230 ms** (2,504
+members). Baseline reads use the unchanged three-query API; only its two rights
+queries enter the timing comparison. After proposal installation, each of six
+shapes runs six ABBA blocks, 25 reads per position, using that same baseline
+and the two-query candidate. This yields **3,600 interleaved samples** plus
+50 baseline-first samples; all **1,800 candidate reads** and **36 candidate
+blocks** pass. Each block's gate uses the nearest-rank p95 of the 50 individual
+Q1+Q2 sums, rather than adding separately computed percentiles.
+
+| Run / selected files | Worst block p95(Q1+Q2) | Headroom under 30 ms |
+| --- | ---: | ---: |
+| Strict / descriptor | 2.134 ms | 92.89% |
+| Strict / descriptor + report | 4.425 ms | 85.25% |
+| Retrospective / descriptor | 4.551 ms | 84.83% |
+| Retrospective / descriptor + report | 6.380 ms | 78.73% |
+| Paired / descriptor | 1.894 ms | 93.69% |
+| Paired / descriptor + both reports | 3.535 ms | 88.22% |
+
+Every block clears **≤21 ms**, providing at least the required 30% headroom.
+The [full receipt](evidence/feature-store-166/final-benchmark.json) retains all
+samples, per-query durations, per-block results, baseline samples, exact fixture
+and source hashes, GET/calculation/full-read timing and work counts. No ordinary
+hashes, HEADs or writes occur during timed reads. The callback only sums byte
+lengths. Full-read p95s are informational (the worst block was 46.075 ms);
+this does not measure #167's parsing, context lookup or projection workload.
+
+These are **local-fixture-only** results: PostgreSQL 18.6, Node 24.18.1,
+512 MiB tmpfs, warm/unflushed caches and an existing restricted LOGIN. Query
+timing includes local loopback and `pg` decoding; instrumentation overhead
+applies to both arms. Hosted RTT, Neon wake/region (#220), cold caches,
+end-to-end serving and capacity remain unmeasured. There is no elapsed-time CI
+assertion and no ratio-to-baseline gate. Source hashes were unchanged at the
+end of the experiment; a separate verification recomputes counts, percentiles,
+hashes and fresh report pins in the [verification receipt](evidence/feature-store-166/final-verification.json).
+
+## Final acceptance and premise-first review
+
+**Premise.** Lineage invalidation, immutable identity/tombstones and resumable
+idempotent removal fit these private offline artifacts. The existing queue and
+address lock remain the coordination mechanism. Two short authorization
+snapshots fit a trusted buffered calculation; reader transactions across file
+I/O would obstruct deletion. Review found no new pattern deviation requiring
+an owner decision. Permanent refusal, the trusted callback/idle connection,
+the final-snapshot delivery gap and #229's interim recovery limitation remain
+the explicit approved decisions and assumptions.
+
+**Targets.** The final implementation clears every local speed block. CI proves
+two read statements independent of selected files and example count, plus zero
+example-table work/all-table reader DML inside the SQL functions. Cleanup uses
+one bounded page plus four statements per deletion (three per refusal), one
+DELETE and zero ordinary GET/HEAD/PUT/list calls. Server counters include ack's
+internal recheck and stay within the same budgets at 0 and 2,504 actual members.
+The negative controls detect hidden scans and definer DML. Metadata physical
+probe counts remain visible rather than being forced equal across query plans.
+
+| Acceptance / carry-forward | Fresh final evidence |
+| --- | --- |
+| Both deletion APIs invalidate exactly dependent runs, preserving unrelated sources/datasets/derived rows. | [Lifecycle](evidence/feature-store-166/final-lifecycle.json): exact run/address sets, real membership/provider rows, atomic rollback and both publication/deletion lock orders. Exactness remains within the accepted conservative dataset lineage. |
+| Original identity, pins, recorded_at and rights receipt remain immutable; deleted identity/address cannot be republished. | Lifecycle: immutable-field assertions, typed runner/direct-SQL refusals and live get-or-create retry after a lost COMMIT response. Both publication guards stay. |
+| Revocation/deletion before access or during any selected GET/calculation withholds delivery. | [Read boundary](evidence/feature-store-166/final-read-boundary.json): initial zero-GET refusals, descriptor-only full-lineage checks, 12 mid-operation controls, Q2 socket failure and callback/request-mutation controls. |
+| Exactly two read statements, bounded selected GETs, no reader coordination locks or transaction across I/O. | Read boundary: eight shapes, 0/2,504 actual members, internal work/lock probes, hidden-work negative controls and paused readers with concurrent committed deletion. One optional context control composes within the same two checks. |
+| Shared report bytes survive unaffected live runs and are removed after the last live reference and configured grace. | [Cleaner](evidence/feature-store-166/final-cleaner.json): shared-retained completion, greatest grace/re-arm and unaffected-run delivery; invalidated references cannot retain bytes. |
+| Orphan and mandatory ownership do not conflict or strand observed bytes under pending intent. | Cleaner: orphan bytes disappear after orphan grace while observation and pending intent survive; zero mandatory DELETE/ack while observed; retirement permits idempotent missing-byte deletion and durable `removed`. Three clocks remain separate. |
+| Four-statement cleaner budget; crash/resume, requeue and page progress. | Cleaner: raw server counters including ack's recheck, actual lock waits/disconnects, unlink-before-ack and lost-COMMIT controls; 1,025 observed plus 1,025 shared addresses cannot starve later removable bytes. |
+| Role isolation and proposal-only rollout. | All three receipts use real restricted LOGINs. [Final validation](evidence/feature-store-166/final-validation.json) records regression/contracts/static checks, unchanged frozen migrations and zero remaining scratch resources. |
+
+**Limits and successor boundary.** Mandatory `pending` may last through the
+24-hour observation-retirement window although bytes disappeared after orphan
+grace. Evidence records byte removal separately from retirement/completion.
+Completed tombstones have no automatic revisit; #229 owns the cleanup handoff,
+#164 participation and late-PUT recovery lane. This issue supplies explicit
+requeue, without claiming that recovery guarantee. #167 owns serving/context
+integration, #168 capacity and #170 same-size integrity qualification. The
+final regression receipts qualify this proposal/runtime; no hosted deployment
+or frozen migration is authorized by these results.

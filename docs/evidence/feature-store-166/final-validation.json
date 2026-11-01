@@ -1,0 +1,170 @@
+{
+  "issue": 166,
+  "step": 4,
+  "phase": "owner-approved step-4 commit checkpoint",
+  "verdict": "pass",
+  "recordedAt": "2026-11-01T04:18:43.675864+00:00",
+  "baseCommit": "8167af387a3863b867e71c2d830f2ddabe68987b",
+  "stepCommits": [
+    "0484bd6",
+    "becbcd0",
+    "39947fb0b53d6f53572ee4c835762dbd5035bb00"
+  ],
+  "runtime": "v24.18.1",
+  "checks": [
+    {
+      "command": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-concurrency=1 services/pipeline/tests/feature-store/*.check.mts",
+      "verdict": "pass",
+      "tests": 153,
+      "pass": 153,
+      "fail": 0,
+      "skipped": 0,
+      "outputSha256": "830930f9e0612b5cf72d501f7a634b85f76a7cefc192b68977008afba72f6540"
+    },
+    {
+      "command": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test services/pipeline/tests/package-contract.check.mjs tests/import-boundaries.check.mjs services/pipeline/tests/paths-contract.check.mjs",
+      "verdict": "pass",
+      "tests": 19,
+      "pass": 19,
+      "fail": 0,
+      "skipped": 0,
+      "outputSha256": "f7abb839752cb80d60f818699f32f8f8fbeac7b61085954408099e4638868cb9",
+      "initialSandboxAttempt": {
+        "tests": 19,
+        "pass": 18,
+        "fail": 1,
+        "skipped": 0,
+        "outputSha256": "c13eab340d78dd9cfc062c79899a8810ea101460b58803d78b128a477bbebb50",
+        "reason": "Sandbox refused the loopback server bind with listen EPERM on 127.0.0.1; identical command passes outside sandbox."
+      }
+    },
+    {
+      "command": "node node_modules/typescript/bin/tsc --noEmit -p codex-briefs/166-tsconfig.json",
+      "verdict": "pass",
+      "scope": "Targeted temporary config extends root; feature-store runtime, all #166 tests/oracles and publication/evaluation/final-benchmark runner imports."
+    },
+    {
+      "check": "ESLint on final benchmark plus all #166 runtime/tests/oracles",
+      "verdict": "pass",
+      "warnings": 0,
+      "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": "node packages/db/tooling/scripts/db-migration-artifacts.mjs check",
+      "verdict": "pass"
+    },
+    {
+      "command": "git diff --check; git diff --quiet 8167af3 -- packages/db/migrations",
+      "verdict": "pass"
+    }
+  ],
+  "speed": {
+    "qualification": "LOCAL-FIXTURE ONLY; hosted RTT/Neon wake/region (#220) unmeasured",
+    "gate": "Each candidate block nearest-rank p95(Q1+Q2)<=21 ms under 30 ms",
+    "baselineFirst": [
+      {
+        "mode": "strict-point-in-time-v1",
+        "rowCount": 0,
+        "p95Ms": 4.367666999998619
+      },
+      {
+        "mode": "retrospective-reconstruction-v1",
+        "rowCount": 2504,
+        "p95Ms": 3.229791000005207
+      }
+    ],
+    "totalSamples": 3650,
+    "interleavedSamples": 3600,
+    "candidateSamples": 1800,
+    "candidateBlocks": 36,
+    "worstCandidateBlockP95Ms": 6.379707999993116,
+    "minimumHeadroom": 0.7873430666668961,
+    "failedBlocks": 0,
+    "failedSamples": 0,
+    "independentlyVerified": true
+  },
+  "workBudgets": {
+    "readSql": 2,
+    "getsPerSelectedArtifact": 1,
+    "readHeadsWritesHashes": 0,
+    "readerExampleTableWorkAndAllTableDml": 0,
+    "readerExplicitCoordinationLocks": 0,
+    "locksOrTransactionAcrossIoOrCalculation": 0,
+    "cleanerPageSql": 1,
+    "cleanerPageLimit": 1024,
+    "sqlPerAuthorizedDeletion": 4,
+    "sqlPerRefusedCandidate": 3,
+    "objectDeletesPerAuthorizedCandidate": 1,
+    "cleanerOrdinaryGetHeadPutList": 0,
+    "cleanerExampleTableWorkAndNonQueueDml": 0,
+    "ackInternalRecheckIncluded": true,
+    "rowGuards": [
+      0,
+      2504
+    ],
+    "deterministicBudgetsEqualAcrossRowGuards": true
+  },
+  "acceptanceReview": {
+    "order": [
+      "premise/pattern/alternatives",
+      "targets/work/speed",
+      "correctness/behavior/roles/style"
+    ],
+    "newPatternDeviations": [],
+    "mapping": "docs/feature-store-artifact-governance.md#final-acceptance-and-premise-first-review",
+    "permanentRefusalAndBothPublicationGuardsPreserved": true,
+    "originalPublicationFieldsImmutable": true,
+    "exactDependentInvalidationWithinConservativeLineage": true,
+    "sharedLiveReferencesProtectedAndFinalDeletionRearmsGrace": true,
+    "observedAddressHasOneCleanupOwner": true,
+    "bytesRetirementAndCompletionClocksSeparate": true,
+    "limits": [
+      "Trusted callback and dedicated idle READ COMMITTED connection required.",
+      "Revocation after final SQL snapshot remains the accepted small delivery gap.",
+      "Observed mandatory removals may stay pending through 24h retirement after bytes are removed.",
+      "#229 owns cleanup handoff, #164 participation and completed-removal late-PUT recovery.",
+      "#167 serving/context, #168 capacity and #170 same-size integrity qualification are excluded."
+    ]
+  },
+  "evidenceHashes": {
+    "final-benchmark.json": "b56cb173427c3c0f1f3aa043320bd4f5197ef09276b0501e19ddab327c05eb57",
+    "final-lifecycle.json": "c8362692e5936b3d5ced9e6267494934c7ae8432f2a6cbe4ef1d7494b4604206",
+    "final-read-boundary.json": "6a7a1390880a1382c66df4bf05f7df43d207c945e908bd2f6f02d61fdc476d5a",
+    "final-cleaner.json": "d43097cc02227169cc6a1bd73d64363a6ec1ff9d134488ddc64c96b51cf1d98f",
+    "final-verification.json": "68915c3e8e9527e9ce3a958cd37702ec4b638367f854893aea8d9ccde1462f1c"
+  },
+  "sourceHashes": {
+    "docs/feature-store-artifact-governance.md": "a05ee6133b931ee6f32adb152c6fe5772d92cdd3f399b4a02a4e6676cbaa20c8",
+    "packages/db/package.json": "0833c88041304e871f635051448e586d32102848f332f71c9ed62e35248318f3",
+    "packages/db/proposals/166_artifact_governance.sql": "f39522f956d81d21ee08411160206e9441d024e91db5e9d1d746e00101ff9ca3",
+    "services/pipeline/package.json": "43b65745c9fb3ab4f00bdbc3e508da0add4c852789c93b6d4a7b1d9a93d5aaec",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+    "services/pipeline/src/featureStore/datasets.ts": "690c626a3a049f89bc6a45fad235af8b09e5d2b54eef0a0c76e261af20bb3fc7",
+    "services/pipeline/src/featureStore/governance.ts": "712483533ab4bc8a4b3c815948be3508e79e0d98d95fd684f7b07efd2592f9f3",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "25baf5f510d80e48e58a43e36b9cba6f5ec91308dfdb27eb54cb46d8a91bba05",
+    "services/pipeline/src/featureStore/modelManifests.ts": "0c38651178b91050538f8649d56a1946783efdeb61bbdc27d987e307bb0717d9",
+    "services/pipeline/tests/feature-store/artifact-cleaner-work.ts": "8523f661442a4e2e8a810c2477ef1f68c0893b37e02abca2ce048875cbcfc519",
+    "services/pipeline/tests/feature-store/artifact-cleaner.check.mts": "30e45d1f9f6c4012149c5aa25d48dc27c4c55b24843bfa85e3b1e871bf3cb742",
+    "services/pipeline/tests/feature-store/artifact-governance-fixture.ts": "694d6f193b1b5b66c61e5b96a2610e1a99b709980fe086905893c6ca357885c2",
+    "services/pipeline/tests/feature-store/artifact-governance.check.mts": "8ea9d89f30f3682a77cc16bb441afaeda6f594911b6f5c90bc5f65f203e9510f",
+    "services/pipeline/tests/feature-store/artifact-read-work.ts": "44626f9bfd3826db45cd7289bf79e9aa06c21743e9ef744e96885b596da63d5c",
+    "services/pipeline/tests/feature-store/model-artifacts.check.mts": "b2ac717a27e4865604f9d6030b3a3d43e956592805de8a3f2c67da139d1e72ca",
+    "services/pipeline/scripts/feature-store/artifact-governance-benchmark.ts": "7d1c3915dbb785568e4bf3d2ac85a3bdc60f45f12086cb176b4cd23bd7526b02"
+  },
+  "independentVerificationSourceFiles": 47,
+  "cleanup": {
+    "scratchDatabases": 0,
+    "temporaryLogins": 0,
+    "otherClientSessions": 0,
+    "taskLocalContainerStopped": true,
+    "storage": "Private benchmark/test objects remain beneath ignored node_modules/.cache/feature-store-166 for local evidence inspection."
+  },
+  "frozenMigrationsChanged": false,
+  "hostedWritesPerformed": false,
+  "productionCommandsPerformed": false,
+  "step4Committed": false,
+  "pushPerformed": false,
+  "pending": "Step-4 commit authorized; push requires fresh owner consent.",
+  "step4CommitApproved": true,
+  "documentationStatusRefresh": "After owner approval, only documentation approval status and this validation checkpoint changed; runtime, SQL, benchmark and measured behavior source bytes are unchanged."
+}

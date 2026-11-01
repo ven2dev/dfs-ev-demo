@@ -1,0 +1,257 @@
+{
+  "issue": 166,
+  "step": 4,
+  "verdict": "pass",
+  "recordedAt": "2026-11-01T04:18:00.096288+00:00",
+  "method": "Independent Python stdlib recomputation from raw samples: exact 144 position groups of 25, Q1+Q2 sums, nearest-rank ceil(.95*n)-1, every 50-candidate block <=21 ms, baseline-first, SHA-256 current source bytes and fresh stored report/descriptor pins. No timing rerun or sample filtering.",
+  "benchmarkSha256": "b56cb173427c3c0f1f3aa043320bd4f5197ef09276b0501e19ddab327c05eb57",
+  "totalSamples": 3650,
+  "interleavedSamples": 3600,
+  "candidateSamples": 1800,
+  "candidateBlocks": 36,
+  "worstCandidateBlockP95Ms": 6.379707999993116,
+  "minimumHeadroom": 0.7873430666668961,
+  "failedSamples": 0,
+  "failedBlocks": 0,
+  "allSampleWorkCountsMatch": true,
+  "allQ1Q2SumsAndPercentilesMatch": true,
+  "sourceFilesChecked": 47,
+  "sourceHashesMatch": true,
+  "uniqueFreshPublishedObjectsVerified": 5,
+  "behaviorProofs": {
+    "final-lifecycle.json": {
+      "sha256": "c8362692e5936b3d5ced9e6267494934c7ae8432f2a6cbe4ef1d7494b4604206",
+      "passingProbes": 14,
+      "sourceHashesMatch": true
+    },
+    "final-read-boundary.json": {
+      "sha256": "6a7a1390880a1382c66df4bf05f7df43d207c945e908bd2f6f02d61fdc476d5a",
+      "passingProbes": 11,
+      "sourceHashesMatch": true
+    },
+    "final-cleaner.json": {
+      "sha256": "d43097cc02227169cc6a1bd73d64363a6ec1ff9d134488ddc64c96b51cf1d98f",
+      "passingProbes": 9,
+      "sourceHashesMatch": true
+    }
+  },
+  "blocks": [
+    {
+      "shape": "strict/descriptor",
+      "block": 1,
+      "candidateP95Ms": 2.1339159999915864,
+      "headroom": 0.9288694666669471
+    },
+    {
+      "shape": "strict/descriptor",
+      "block": 2,
+      "candidateP95Ms": 1.161999999996624,
+      "headroom": 0.9612666666667792
+    },
+    {
+      "shape": "strict/descriptor",
+      "block": 3,
+      "candidateP95Ms": 1.6702919999952428,
+      "headroom": 0.9443236000001586
+    },
+    {
+      "shape": "strict/descriptor",
+      "block": 4,
+      "candidateP95Ms": 1.7035409999953117,
+      "headroom": 0.9432153000001563
+    },
+    {
+      "shape": "strict/descriptor",
+      "block": 5,
+      "candidateP95Ms": 2.038458000009996,
+      "headroom": 0.9320513999996668
+    },
+    {
+      "shape": "strict/descriptor",
+      "block": 6,
+      "candidateP95Ms": 1.4082909999997355,
+      "headroom": 0.9530569666666755
+    },
+    {
+      "shape": "strict/all",
+      "block": 1,
+      "candidateP95Ms": 4.425415999998222,
+      "headroom": 0.8524861333333926
+    },
+    {
+      "shape": "strict/all",
+      "block": 2,
+      "candidateP95Ms": 2.229250000003958,
+      "headroom": 0.9256916666665347
+    },
+    {
+      "shape": "strict/all",
+      "block": 3,
+      "candidateP95Ms": 1.4508749999949941,
+      "headroom": 0.9516375000001669
+    },
+    {
+      "shape": "strict/all",
+      "block": 4,
+      "candidateP95Ms": 1.7800419999985024,
+      "headroom": 0.9406652666667166
+    },
+    {
+      "shape": "strict/all",
+      "block": 5,
+      "candidateP95Ms": 1.5610410000081174,
+      "headroom": 0.9479652999997294
+    },
+    {
+      "shape": "strict/all",
+      "block": 6,
+      "candidateP95Ms": 1.2129169999971054,
+      "headroom": 0.9595694333334298
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 1,
+      "candidateP95Ms": 4.550709000002826,
+      "headroom": 0.8483096999999058
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 2,
+      "candidateP95Ms": 2.021459000010509,
+      "headroom": 0.932618033332983
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 3,
+      "candidateP95Ms": 3.632500000006985,
+      "headroom": 0.8789166666664339
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 4,
+      "candidateP95Ms": 2.671500999989803,
+      "headroom": 0.9109499666670066
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 5,
+      "candidateP95Ms": 1.692998999991687,
+      "headroom": 0.9435667000002771
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 6,
+      "candidateP95Ms": 1.9435410000005504,
+      "headroom": 0.9352152999999817
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 1,
+      "candidateP95Ms": 6.379707999993116,
+      "headroom": 0.7873430666668961
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 2,
+      "candidateP95Ms": 2.683124000002863,
+      "headroom": 0.9105625333332379
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 3,
+      "candidateP95Ms": 4.291792000003625,
+      "headroom": 0.8569402666665459
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 4,
+      "candidateP95Ms": 2.9811250000057044,
+      "headroom": 0.9006291666664765
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 5,
+      "candidateP95Ms": 2.3557500000024447,
+      "headroom": 0.9214749999999186
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 6,
+      "candidateP95Ms": 3.441458999979659,
+      "headroom": 0.885284700000678
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 1,
+      "candidateP95Ms": 1.5687090000137687,
+      "headroom": 0.947709699999541
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 2,
+      "candidateP95Ms": 1.6046260000002803,
+      "headroom": 0.9465124666666573
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 3,
+      "candidateP95Ms": 1.280916999996407,
+      "headroom": 0.9573027666667865
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 4,
+      "candidateP95Ms": 1.8938340000022436,
+      "headroom": 0.9368721999999252
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 5,
+      "candidateP95Ms": 1.361125000010361,
+      "headroom": 0.9546291666663212
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 6,
+      "candidateP95Ms": 1.1835839999985183,
+      "headroom": 0.9605472000000493
+    },
+    {
+      "shape": "both/all",
+      "block": 1,
+      "candidateP95Ms": 3.535083000009763,
+      "headroom": 0.8821638999996746
+    },
+    {
+      "shape": "both/all",
+      "block": 2,
+      "candidateP95Ms": 3.312374999994063,
+      "headroom": 0.8895875000001979
+    },
+    {
+      "shape": "both/all",
+      "block": 3,
+      "candidateP95Ms": 2.464416999995592,
+      "headroom": 0.9178527666668136
+    },
+    {
+      "shape": "both/all",
+      "block": 4,
+      "candidateP95Ms": 2.5598749999917345,
+      "headroom": 0.9146708333336089
+    },
+    {
+      "shape": "both/all",
+      "block": 5,
+      "candidateP95Ms": 2.8419990000111284,
+      "headroom": 0.905266699999629
+    },
+    {
+      "shape": "both/all",
+      "block": 6,
+      "candidateP95Ms": 2.568958999996539,
+      "headroom": 0.9143680333334487
+    }
+  ],
+  "qualification": "Local fixture only; hosted round trips and #229 recovery are not qualified."
+}
