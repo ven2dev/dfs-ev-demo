@@ -1,0 +1,29 @@
+{
+  "base": "89673a3ff4cb3c258c4f7e0d9995403b1bfc1c33",
+  "status": "uncommitted local runner-preflight correction for review; amendment of A not authorized",
+  "finding": "runGroup could skip existing region-only Git diff and paired-deployment checks",
+  "change": "mandatory paired receipts and direct non-merge A-to-B region-only proof before any HTTP request; read-only local Git proof reader",
+  "checks": {
+    "focusedNodeTests": 27,
+    "targetedEslint": "pass",
+    "diffWhitespace": "pass",
+    "applicationAndSqlChanged": false,
+    "buildOrDatabaseRerun": false,
+    "actualBExists": false
+  },
+  "notPerformed": [
+    "commit or amend",
+    "commit B",
+    "push",
+    "provisioning",
+    "deployment",
+    "hosted run",
+    "support message",
+    "GitHub issue creation"
+  ],
+  "sourceSha256": {
+    "scripts/spikes/220-hosted/load.mjs": "8e7b7e1f96f31917ace594589fc777868d5b9f87283153d18ec55bfec2fb79f5",
+    "tests/220-hosted-harness.check.mjs": "cc05db819a9cd85b19a4b680ba02a8aa164cfda5444fe57ca3e36b0961160069",
+    "docs/220-hosted-qualification-plan.md": "cf648962e32badeb436408f0a0c4f69d24275fac9790623d7a02c1923db5a707"
+  }
+}

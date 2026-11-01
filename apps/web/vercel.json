@@ -4,5 +4,8 @@
       "path": "/api/cron/sync-player-stats",
       "schedule": "0 13 * * *"
     }
+  ],
+  "regions": [
+    "iad1"
   ]
 }

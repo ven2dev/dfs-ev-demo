@@ -1,0 +1,170 @@
+{
+  "date": "2026-10-31",
+  "base": "f806e731b695790f5a3573b97bdb58ab0afe2293",
+  "status": "Git-pinned two-commit plan ready for owner review; all local changes uncommitted at f806e73; no external changes",
+  "checks": {
+    "focusedNodeTests": 24,
+    "postgresBehaviorChecks": 8,
+    "fixture": "PostgreSQL 18.6, standard 512 MiB, loopback 54362",
+    "typecheck": "pass",
+    "lintAndImportBoundaries": "pass",
+    "build": "pass",
+    "existingTrackedMigrationProposalFilesUnchanged": 18,
+    "ownedSchemaRoleAndFixtureRemoved": true,
+    "correctionRegressionAssertions": [
+      "path claim refuses admission ticket without state change",
+      "expired begin/sample/release refused after removing SQL hash",
+      "SQL bearer digest not passed",
+      "column-limited hosted_run reads; max_tickets refused",
+      "SECURITY INVOKER confirmed"
+    ],
+    "twoArmAssertions": [
+      "iad1/pdx1 bindings reject wrong or missing deployed-function metadata",
+      "identical per-arm ticket matrices alternate AB/BA",
+      "one active run at a time on shared fixture",
+      "SELECT 1 timing recorded outside baseline boundary",
+      "per-query round-trip telemetry",
+      "p95 140 per 20-leader round; overall warm p95 200; p99/max informational",
+      "mixed-region summaries refused"
+    ],
+    "gitArmAssertions": [
+      "Git deployment source required; CLI source refused",
+      "two distinct expected arm SHAs required; missing/equal/swapped pins refused",
+      "pdx1 route refuses iad1 SHA",
+      "both immutable Preview receipts require distinct deployment IDs/URLs and run IDs",
+      "summaries reject wrong expected SHA",
+      "second commit diff permits only vercel.json iad1 to pdx1 region change",
+      "CLI-only alternate config absent"
+    ]
+  },
+  "vercelMetadata": {
+    "projectId": "prj_GLXDEeScMKPAeDAUoYIoiNknwKJd",
+    "functionRegion": "iad1",
+    "stores": [
+      {
+        "id": "store_sIohx3i6MWXh1htB",
+        "neonProject": "wandering-tree-67967407",
+        "environment": "production",
+        "regionLabel": "pdx1"
+      },
+      {
+        "id": "store_jO5jfgqQC6xAaNcb",
+        "neonProject": "small-pond-10949870",
+        "environment": "preview",
+        "regionLabel": "iad1"
+      }
+    ],
+    "productionDatabaseHost": "ep-old-snow-aralp6jm-pooler.c-4.us-west-2.aws.neon.tech",
+    "productionDatabaseRegion": "us-west-2",
+    "hostRead": "owner-authorized read of Production DATABASE_URL; only host recorded; password/connection string neither printed nor saved"
+  },
+  "blockers": [
+    "Neon activation loop / connector project 404",
+    "Production branch and compute limits / control-plane authority unverified",
+    "branch-specific PUBLIC privilege audit and actual Hobby configuration preflight remain before any hosted qualification"
+  ],
+  "notDone": [
+    "commit",
+    "push",
+    "issue posting",
+    "hosted provisioning or qualification requests",
+    "Neon or Production SQL access",
+    "actual run secret generation",
+    "support message sent"
+  ],
+  "sourceSha256": {
+    "apps/web/src/lib/qualification220-core.mjs": "a1d1a522c3fc46e07f2ef998378475d3f816c31c9ff8df274b3c90ab480701de",
+    "apps/web/src/app/api/qualification220/route.ts": "2c7e0d39a8c5ab5463c873e115728bc6c0b658fb9e82be204f68c9ac3c952884",
+    "apps/web/src/proxy.ts": "372308292f568722fe49d81651b613690472847d010b1bf84ca0e39db97a48ed",
+    "packages/db/proposals/220_hosted_harness.sql": "46a929a4c3c5de965a93d2d02fc836fda2245dc52f48d293cb4ce7debd6078be",
+    "docs/220-hosted-qualification-plan.md": "0430d7c3082ace5de6b00adbcb2b0bc6e86fe391ca44142820db09c5cd7faef4",
+    "tests/220-hosted-harness.check.mjs": "0b5ac47ed3207b0a04d9a244499fcdb9bd487294861eef7f6380106fefa9c3bf",
+    "scripts/spikes/220-hosted/load.mjs": "dec83b60ad7c6ed2712007cd79340471ac0e4f88f4e9f517e343827151040a82",
+    "scripts/spikes/220-hosted/local-db.mjs": "cb3f5c75663d4403781aebc9d49fe8ba644447b5f58a8759bf59bc55c3b20b7c",
+    "scripts/spikes/220-hosted/plan.mjs": "adf17032fb68d7949bd91dcf9cfc459c899f09861b55448f42068b7c9f6a074a",
+    "scripts/spikes/220-hosted/setup.mjs": "8062492846affb3a70a999541874b519f3e195d00cc8212d6407cb5ba07054eb",
+    "apps/web/vercel.json": "22fd102845a1fd5479d3c6ff3b72a09fc6d761ab6c9c118ad35ffcb5ba0ab3ba",
+    "docs/220-hosted-qualification-follow-up-draft.md": "f6cc45a2424ccd261ebe737e601c3e03efbd87c749eb2beff3ec977c13bde58c"
+  },
+  "branch": "feature/dfsEV-220-hosted-harness",
+  "worktree": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-220-hosted-harness",
+  "neverMerge": true,
+  "arms": {
+    "regions": [
+      "iad1",
+      "pdx1"
+    ],
+    "ticketsPerRun": 18483,
+    "totalTickets": 36966,
+    "runTicketCap": 20000,
+    "gate": {
+      "each20LeaderWarmRoundP95Ms": 140,
+      "overallWarmP95Ms": 200,
+      "maxAndP99": "informational only"
+    },
+    "deploymentMetadataVerified": false,
+    "measuredHosted": false,
+    "deploymentMethod": "two separately approved Git pushes on never-merge harness branch; retain both immutable Previews",
+    "expectedShaByArm": {
+      "iad1": null,
+      "pdx1": null
+    },
+    "plannedCommits": [
+      {
+        "arm": "iad1",
+        "expectedSha": null,
+        "regions": [
+          "iad1"
+        ],
+        "created": false
+      },
+      {
+        "arm": "pdx1",
+        "expectedSha": null,
+        "parent": "iad1 commit; exact SHA pending",
+        "regions": [
+          "pdx1"
+        ],
+        "onlyChangedPath": "apps/web/vercel.json",
+        "created": false
+      }
+    ]
+  },
+  "vercelStoreSettingsRead": {
+    "date": "2026-10-31",
+    "method": "read-only existing Chrome store Settings page",
+    "regionLabel": "Portland, USA (West) pdx1",
+    "plan": "Launch",
+    "shownPlanLimit": "up to 16 CU, 64 GB RAM; not actual allocated compute",
+    "shownComputeUsage": "3 hours; not compute size",
+    "actualMinMaxCu": null,
+    "autoscaling": null,
+    "suspendTimeout": null,
+    "settingsChanged": false,
+    "supportDraftSent": false
+  },
+  "estimateSplit": {
+    "endToEndActiveHours": [
+      5,
+      8
+    ],
+    "localReviewPackageActiveHours": [
+      1.5,
+      2.5
+    ],
+    "proposedSeparateHostedIssueActiveHours": [
+      3.5,
+      5.5
+    ],
+    "githubIssueCreated": false,
+    "ownerReviewRequired": true
+  },
+  "ownerDecision": {
+    "neonAccess": "support request; no separate Neon project",
+    "supportRequestSent": false,
+    "provisioning": "blocked until access restored",
+    "branchPushes": "separate owner approval in hosted follow-up",
+    "hostedIssue": "draft only; 3.5\u20135.5 active hours"
+  },
+  "hostedIssueDraft": "docs/220-hosted-qualification-follow-up-draft.md"
+}

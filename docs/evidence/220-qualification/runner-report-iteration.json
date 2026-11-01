@@ -1,0 +1,32 @@
+{
+  "base": "e7f0be444f56ee835b66f8c4ed4dde9c28145db8",
+  "status": "uncommitted report-gate correction for owner review",
+  "finding": {
+    "raw20LeaderP95Ms": 150,
+    "requiredP95Ms": 140,
+    "staleCachedP95Ms": 100,
+    "previouslyReportedPass": true
+  },
+  "fix": "derive round p95 and pass/fail from raw rows rather than cached group summaries",
+  "checks": {
+    "focusedNodeTests": 28,
+    "targetedEslint": "pass",
+    "applicationAndSqlChanged": false,
+    "buildOrDatabaseRerun": false
+  },
+  "notPerformed": [
+    "additional amendment or commit",
+    "commit B",
+    "push",
+    "provisioning",
+    "deployment",
+    "hosted run",
+    "GitHub issue creation",
+    "support message"
+  ],
+  "sourceSha256": {
+    "scripts/spikes/220-hosted/load.mjs": "32bfb564029b1eacfd4d94f1aebd4476d94ca4abd09b12efc492d6c18b62c482",
+    "tests/220-hosted-harness.check.mjs": "7fd180502f42f1de3d0f184249c72d3e6a7f2c627893a1eabe7b8cc3f12c7a9b",
+    "docs/220-hosted-qualification-plan.md": "10daaade10c97b9df494dcbf11de3255c1d25b91e0662d6b5ad0a3c295eee6bb"
+  }
+}
