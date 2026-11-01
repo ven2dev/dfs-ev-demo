@@ -1,0 +1,26 @@
+{
+  "issue": 165,
+  "step": 3,
+  "recordedAt": "2026-10-31T04:34:17.457Z",
+  "runtime": "v24.18.1",
+  "fixture": "synthetic zero-example dataset; real PostgreSQL pipeline LOGINs, transactions and local immutable ObjectStore",
+  "probes": [
+    {"name":"enrollment survives a crash before upload and retry completes atomically","verdict":"pass","details":{"enrolledBeforeBytes":2,"retryCommitted":true}},
+    {"name":"scoped sweep honors grace, reclaims interrupted uploads and preserves private and shared objects","verdict":"pass","details":{"graceRefused":true,"reclaimed":2,"privateArtifactsPreserved":3,"sharedReferencesPreserved":true,"lateUploadEnrollmentRetained":true}},
+    {"name":"cleaner wins before BEGIN and publisher refuses missing bytes with fixed failure work","verdict":"pass","details":{"cleanerRemoved":2,"partialRows":false,"failureStatements":4}},
+    {"name":"publisher wins address lock and cleaner waits then preserves newly committed references","verdict":"pass","details":{"actualCleanerLockWait":true,"committedObjectsPreserved":2}},
+    {"name":"cleaner finishing during an upload leaves late bytes enrolled for the next sweep","verdict":"pass","details":{"removedDuringUpload":1,"lateBytesReclaimed":true}},
+    {"name":"post-insert rollback and wrong transaction HEAD metadata expose no partial manifests","verdict":"pass","details":{"rollbackAfterInsert":true,"metadataRefusals":3,"partialRows":false}},
+    {"name":"real backend termination after insert rolls back; enrollment survives for reclamation","verdict":"pass","details":{"actualBackendTerminated":true,"partialRows":false,"reclaimed":2}},
+    {"name":"lost COMMIT response withholds result while cleaner preserves committed bytes","verdict":"pass","details":{"actualCommitWithAcknowledgementWithheld":true,"committedObjectsPreserved":2}},
+    {"name":"cleaner disconnect after unlink is idempotent and unregistered audits require no SQL rechecks","verdict":"pass","details":{"realCleanerDisconnect":true,"retryRemoved":1,"unregisteredAuditRechecks":0,"privateArtifactsPreserved":3}}
+  ],
+  "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/node_modules/165-orphan-tests-I0WTIx",
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "verdict": "pass",
+  "codeHashes": {"services/pipeline/src/featureStore/governance.ts":"e42eeae0fbdd75c81cd13309b9f59eafdf37b4441b3849e472b5658b8e69a5e2","services/pipeline/src/featureStore/modelManifests.ts":"5cad3bcebbf403bad44a3a8e432f1dea83071deea3e7ca640394a0468769f28a","services/pipeline/tests/feature-store/model-orphans.check.mts":"9fa24c385b78676031ac990ac27cbaabf754a870b6c9257c7dc08dee5c531edf","packages/db/proposals/165_model_manifests.sql":"2c54e9dd24da86606e57718fc6571061ea2159921246acc7f9f92f050f5cfd0f"},
+  "validation": {"featureStoreDatabase":{"tests":109,"pass":109,"fail":0,"logSha256":"f7fcf7bc4d3aa7310ac8d37e375ea0b8e9020114a58f21ca0735a6f84729d514"},"packageAndImport":{"tests":15,"pass":15,"fail":0,"logSha256":"0f0c5133ba727dd3ca496c4601d405a933fd1bd64f72bf550fc62acdeb3301ea"},"targetedTypeScript":"pass","eslint":"pass","frozenMigrationArtifacts":"pass","whitespace":"pass"},
+  "sourceBase": "b67979a3d6cac65d78e8db3331c8cbfc04b0c95d",
+  "review": {"pattern":"Existing scoped mark-and-sweep using pre-upload enrollment and common PostgreSQL address lock; no new subsystem or lock.","premise":"Unregistered models/audits are outside the sweeper ownership scope. Candidate selection alone never authorizes deletion.","lateUploads":"Keep enrollment after deleting orphan bytes; metadata listing rediscovers late uploads. Successful publication clears enrollment.","connectionProbeLimit":"Post-insert publisher and post-unlink cleaner tests terminate real PostgreSQL backends. Lost-COMMIT-response test withholds the reply after a real COMMIT; no claim of an actual network partition."},
+  "limits": ["Synthetic zero-example fixture for race tests; SQL/client 0/2504 work checks and existing real 16-file step-2 behavior evidence remain separate.","No final relative speed result yet; repeated interleaved ABBA benchmark remains step 4.","No mandatory deletion, invalidation propagation or artifact delivery; those remain #166. No SQL grant or frozen migration change."]
+}

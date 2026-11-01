@@ -15,6 +15,7 @@
     "./assets/163_empirical_authorize.sql": "./proposals/163_empirical_authorize.sql",
     "./assets/163_empirical_history.sql": "./proposals/163_empirical_history.sql",
     "./assets/163_empirical_reader.sql": "./proposals/163_empirical_reader.sql",
+    "./assets/165_model_manifests.sql": "./proposals/165_model_manifests.sql",
     "./assets/schema.sql": "./schema.sql"
   },
   "scripts": {

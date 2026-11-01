@@ -18,7 +18,7 @@ type Trial = { round: number; mode: QbEvidenceMode; temperature: "cold" | "warm"
   result?: Measurement; failure?: string };
 const rounds = 10;
 const percentile = (values: number[], fraction: number) => [...values].sort((a, b) => a - b)[Math.ceil(values.length * fraction) - 1];
-const coldTrial = (config: ClientConfig, storageRoot: string, inputPins: Artifact, mode: QbEvidenceMode): Promise<Measurement> =>
+const coldTrial = (config: ClientConfig, cleanupConfig: ClientConfig, storageRoot: string, inputPins: Artifact, mode: QbEvidenceMode): Promise<Measurement> =>
   new Promise((resolve, reject) => {
     const started = performance.now();
     const child = fork(new URL("./evaluation-worker.ts", import.meta.url), [], { execArgv: ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON"],
@@ -27,7 +27,7 @@ const coldTrial = (config: ClientConfig, storageRoot: string, inputPins: Artifac
     const timer = setTimeout(() => { failure = new Error("cold-worker-timeout-20s"); child.kill("SIGKILL"); }, 20_000);
     child.on("error", error => { failure = error; });
     child.on("message", (message: { ready?: boolean; result?: Measurement; failure?: string }) => {
-      if (message.ready) { processStartMs = performance.now() - started; child.send({ config, storageRoot, inputPins, mode }); }
+      if (message.ready) { processStartMs = performance.now() - started; child.send({ config, cleanupConfig, storageRoot, inputPins, mode }); }
       if (message.result) measurement = { ...message.result, processStartMs, endToEndMs: performance.now() - started };
       if (message.failure) failure = new Error(message.failure);
     });
@@ -62,15 +62,16 @@ try {
     receipt.cohorts = fixture.prepared.map(p => ({ mode: p.mode, fileSha256: p.dataset.fileSha256,
       contentSha256: p.dataset.contentSha256, count: p.dataset.rowCount }));
     const config = await context.createReaderConfig();
+    const cleanupConfig = await context.createWriterConfig();
     const hashes = new Map<string, string>();
     for (let round = 1; round <= rounds; round++) for (const mode of EVALUATION_MODES)
       for (const temperature of (round % 2 ? ["cold", "warm"] : ["warm", "cold"]) as ("cold" | "warm")[]) {
         let result: Measurement | undefined;
         try {
-          if (temperature === "cold") result = await coldTrial(config, storageRoot, fixture.inputPinsArtifact, mode);
+          if (temperature === "cold") result = await coldTrial(config, cleanupConfig, storageRoot, fixture.inputPinsArtifact, mode);
           else {
             const started = performance.now();
-            const measured = await measureQbReport(context.reader, store, fixture.inputPinsArtifact, mode);
+            const measured = await measureQbReport(context.reader, store, fixture.inputPinsArtifact, mode, context.writer);
             result = { ...measured, requestMs: performance.now() - started, connectionMs: 0, objectStoreSetupMs: 0 };
           }
           const expected = hashes.get(mode);
