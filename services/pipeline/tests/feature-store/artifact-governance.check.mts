@@ -60,12 +60,15 @@ test("#166 proposal lifecycle and source/explicit dataset deletion", { timeout: 
         await assert.rejects(publish(objects), { code: "P1661" });
         const repeat = await deleteSources(writer, [a.snapshot], "repeat", 300);
         assert.notEqual(repeat.event_id, receipt.event_id);
+        assert.deepEqual(repeat.run_ids, [], "repeat event records no new invalidation");
+        assert.deepEqual((await writer.query("SELECT run_ids FROM fs138.deletion_events WHERE event_id=$1", [repeat.event_id])).rows[0].run_ids, []);
         assert.deepEqual((await status(run.run_id)).invalidated_at, after.invalidated_at);
         assert.equal((await status(run.run_id)).deletion_event_id, receipt.event_id);
         for (const sql of ["UPDATE fs138.model_runs SET invalidated_at=NULL,deletion_event_id=NULL WHERE run_id=$1",
           "UPDATE fs138.model_runs SET identity=jsonb_set(identity,'{code,gitSha}',to_jsonb(repeat('b',40))) WHERE run_id=$1"])
           await assert.rejects(admin.query(sql, [run.run_id]), /model-publication-immutable/);
-        return { dependentRun: run.run_id, survivor: survivor.run_id, receipt, queued, firstInvalidationPreserved: true };
+        return { dependentRun: run.run_id, survivor: survivor.run_id, receipt, queued, firstInvalidationPreserved: true,
+          repeatNewlyInvalidatedRunIds: repeat.run_ids };
       });
       await check("explicit dataset deletion preserves sources, other datasets and derived values", async () => {
         const source = await fixture.source(), example = await fixture.example(source);
@@ -83,8 +86,10 @@ test("#166 proposal lifecycle and source/explicit dataset deletion", { timeout: 
         assert.deepEqual((await writer.query("SELECT dataset_id FROM fs138.dataset_members WHERE dataset_id=ANY($1)", [[a.datasetId, b.datasetId]])).rows,
           [{ dataset_id: b.datasetId }]);
         assert.equal((await writer.query("SELECT count(*)::integer AS n FROM fs138.object_removals WHERE object_key=$1", [source.artifact.objectKey])).rows[0].n, 0);
+        const repeat = await deleteDatasets(writer, [a.datasetId], "repeat dataset", 0);
+        assert.deepEqual(repeat.run_ids, []);
         return { receipt, unrelatedRun: unrelated.run_id, sourceKept: true, actualMembersBefore: 2,
-          actualMembersAfter: 1, featureAndLabelKept: true, normalizedRowKept: true };
+          actualMembersAfter: 1, featureAndLabelKept: true, normalizedRowKept: true, repeatNewlyInvalidatedRunIds: repeat.run_ids };
       });
       await check("source deletion follows membership lineage and removes actual derived/provider rows only in its scope", async () => {
         const a = await fixture.source(), b = await fixture.source();
@@ -113,6 +118,7 @@ test("#166 proposal lifecycle and source/explicit dataset deletion", { timeout: 
           "UPDATE fs138.model_runs SET invalidated_at=clock_timestamp()", "DELETE FROM fs138.model_runs",
           "UPDATE fs138.model_artifacts SET byte_size=0", "UPDATE fs138.model_run_datasets SET row_count=0",
           "SELECT fs138.invalidate_dataset_dependents('{}','{}','{}','{}','forged',0)",
+          "SELECT fs138.validate_artifact_deletion_request('{}','forged',0)",
         ]) { await assert.rejects(client.query(sql), { code: "42501" }); refusals++; }
         for (const sql of ["SELECT fs138.delete_datasets('{}','reader',0)", "SELECT fs138.delete_sources('{}','reader',0)",
           "SELECT * FROM fs138.model_runs", "SET ROLE fs138_pipeline_writer"])
@@ -225,6 +231,68 @@ test("#166 proposal lifecycle and source/explicit dataset deletion", { timeout: 
         assert.deepEqual(retry.recordedAt, before[0].recorded_at); assert.deepEqual(retry.rightsReceipt, before[0].rights_receipt);
         assert.equal((await writer.query("SELECT count(*)::integer AS n FROM fs138.model_run_datasets WHERE dataset_id=$1", [data.datasetId])).rows[0].n, 1);
         return { lostCommitResultWithheld: true, existingPublication: true, runs: 1, firstReceiptPreserved: true };
+      });
+      await check("lost-COMMIT live retry matches every file pin despite another run's shared-report tombstone", async () => {
+        const commonSource = await fixture.source(), otherSource = await fixture.source();
+        const common = await fixture.dataset([commonSource.snapshot]);
+        const other = await fixture.dataset([otherSource.snapshot], "retrospective-reconstruction-v1");
+        const input = await fixture.inputPins([common, other]), original = await openWriter();
+        let committed = false;
+        const lostReply = { query: async (sql: string, values?: unknown[]) => {
+          const result = await original.query(sql, values);
+          if (sql === "COMMIT") { committed = true; throw Object.assign(new Error("reply lost"), { code: "ECONNRESET" }); }
+          return result;
+        } } as Pick<Client, "query">;
+        await assert.rejects(publishQbModelRun(lostReply, store, input, { code: governanceCode, modes: [common.mode] }),
+          /model-connection-interrupted-replace/);
+        assert(committed); await original.end();
+        const before = (await writer.query(`SELECT r.* FROM fs138.model_runs r
+          JOIN fs138.model_run_datasets d USING(run_id) WHERE d.dataset_id=$1`, [common.datasetId])).rows[0];
+        const b = await publishQbModelRun(writer, store, input, { code: governanceCode });
+        const pins = (await writer.query(`SELECT slot,dataset_id AS "datasetId",object_key AS "objectKey",
+          file_sha256 AS "fileSha256",byte_size AS "byteSize" FROM fs138.model_artifacts WHERE run_id=$1 ORDER BY slot`, [before.run_id])).rows;
+        const shared = pins.find(pin => pin.slot === common.mode)!;
+        assert.equal(b.reports.find(pin => pin.slot === common.mode)!.objectKey, shared.objectKey);
+        const deletion = await deleteDatasets(writer, [other.datasetId], "withdraw B only", 0);
+        assert.deepEqual(deletion.run_ids, [b.runId]); assert.equal((await status(before.run_id)).invalidated_at, null);
+        const retry = await publishQbModelRun(writer, store, input, { code: governanceCode, modes: [common.mode] });
+        assert.equal(retry.runId, before.run_id); assert.equal(retry.existingPublication, true);
+        assert.deepEqual(retry.recordedAt, before.recorded_at); assert.deepEqual(retry.rightsReceipt, before.rights_receipt);
+        await cleanupDeletedObjects(writer, store);
+        assert.equal((await writer.query("SELECT outcome FROM fs138.object_removals WHERE object_key=$1", [shared.objectKey])).rows[0].outcome, "shared-retained");
+        assert.equal((await publishQbModelRun(writer, store, input, { code: governanceCode, modes: [common.mode] })).existingPublication, true);
+        const alternative = await fixture.dataset([commonSource.snapshot]);
+        const extraDataset = await fixture.dataset([commonSource.snapshot], other.mode), extraReport = await fixture.report(extraDataset);
+        const mismatchSets = [
+          pins.map(pin => pin.slot === common.mode ? { ...pin, byteSize: pin.byteSize + 1 } : pin),
+          pins.map(pin => pin.slot === common.mode ? { ...pin, datasetId: alternative.datasetId } : pin),
+          pins.map(pin => pin.slot === common.mode ? { ...pin, slot: other.mode } : pin),
+          pins.map(pin => pin.slot === "descriptor" ? { ...pin, objectKey: `models/${"e".repeat(64)}`, fileSha256: "e".repeat(64) } : pin),
+          [...pins, { slot: other.mode, datasetId: extraDataset.datasetId, objectKey: extraReport.objectKey,
+            fileSha256: extraReport.sha256, byteSize: extraReport.byteSize }],
+        ];
+        for (const claimed of mismatchSets) {
+          const ids = [...new Set(claimed.map(pin => pin.datasetId).filter(Boolean))];
+          await assert.rejects(writer.query("SELECT fs138.guard_model_publication($1,$2,$3)",
+            [ids, claimed.map(pin => pin.objectKey), JSON.stringify(claimed)]), { code: "P1662" });
+          await assert.rejects(publish(claimed), { code: "P1662" });
+        }
+        await assert.rejects(writer.query("SELECT fs138.guard_model_publication($1,$2)",
+          [[common.datasetId], pins.map(pin => pin.objectKey)]), { code: "P1662" });
+        await assert.rejects(writer.query("SELECT * FROM fs138.publish_model_run($1,$2)",
+          [{ ...governanceIdentity, code: { ...governanceCode, gitSha: "d".repeat(40) } }, JSON.stringify(pins)]), /model-existing-publication-mismatch/);
+        await writer.query(`INSERT INTO fs138.rights_decisions(profile_id,allowed_uses,valid_from,rationale)
+          VALUES($1,'{}',clock_timestamp(),'deny exact live retry')`, [commonSource.profile]);
+        await assert.rejects(writer.query("SELECT * FROM fs138.publish_model_run($1,$2)", [governanceIdentity, JSON.stringify(pins)]), { code: "P1665" });
+        await writer.query(`INSERT INTO fs138.rights_decisions(profile_id,allowed_uses,valid_from,rationale)
+          VALUES($1,ARRAY['research'],clock_timestamp(),'restore for invalidation probe')`, [commonSource.profile]);
+        await deleteDatasets(writer, [common.datasetId], "withdraw A", 0);
+        await assert.rejects(writer.query("SELECT * FROM fs138.publish_model_run($1,$2)", [governanceIdentity, JSON.stringify(pins)]), { code: "P1661" });
+        assert.equal((await writer.query("SELECT count(*)::integer AS n FROM fs138.model_runs WHERE descriptor_sha256=$1", [before.descriptor_sha256])).rows[0].n, 1);
+        return { lostCommitResultWithheld: true, sharedReport: shared.objectKey, affectedRun: b.runId, liveRetryRun: before.run_id,
+          pendingAndSharedRetainedRetries: true, existingPublication: retry.existingPublication, firstClockAndReceiptPreserved: true,
+          mismatchedFileSetsRefused: mismatchSets.length, missingFullPinsRefused: true, conflictingIdentityRefused: true,
+          deniedLiveRetrySqlstate: "P1665", invalidatedRetrySqlstate: "P1661", identicalDescriptorRuns: 1 };
       });
       await check("pre-BEGIN tombstone refusal is typed and SQLSTATE mapping preserves unrelated failures", async () => {
         const source = await fixture.source(), data = await fixture.dataset([source.snapshot]), input = await fixture.inputPins([data]);

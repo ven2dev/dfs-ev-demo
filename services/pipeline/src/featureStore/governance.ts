@@ -31,8 +31,12 @@ export type DeletionReceipt = {event_id:string;recorded_at:Date;grace_seconds:nu
 // #138-only fixtures still return DeletionReceipt. The #166 companion proposal
 // adds run_ids to both APIs without changing the foundation receipt fields.
 export type ArtifactDeletionReceipt = DeletionReceipt & {run_ids:string[]};
-export const deleteSources = async (client:Database,snapshotIds:string[],reason:string,graceSeconds=300):Promise<DeletionReceipt> =>
- (await client.query<DeletionReceipt>("SELECT * FROM fs138.delete_sources($1::uuid[],$2,$3)",[snapshotIds,reason,graceSeconds])).rows[0];
+export const deleteSources = async (client:Database,snapshotIds:string[],reason:string,graceSeconds=300):Promise<ArtifactDeletionReceipt> => {
+ const receipt=(await client.query<DeletionReceipt>("SELECT * FROM fs138.delete_sources($1::uuid[],$2,$3)",[snapshotIds,reason,graceSeconds])).rows[0];
+ // Foundation-only scratch targets predate model runs; normalize that legacy
+ // response while the #166 proposal always supplies its newly invalidated IDs.
+ return {...receipt,run_ids:receipt.run_ids??[]};
+};
 
 export const deleteDatasets = async (client:Database,datasetIds:string[],reason:string,graceSeconds=300):Promise<ArtifactDeletionReceipt> =>
  (await client.query<ArtifactDeletionReceipt>("SELECT * FROM fs138.delete_datasets($1::uuid[],$2,$3)",[datasetIds,reason,graceSeconds])).rows[0];

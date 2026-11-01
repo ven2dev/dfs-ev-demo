@@ -1,170 +1,185 @@
 {
   "issue": 166,
-  "step": 4,
-  "phase": "owner-approved step-4 commit checkpoint",
+  "phase": "review corrections awaiting owner commit approval",
   "verdict": "pass",
-  "recordedAt": "2026-11-01T04:18:43.675864+00:00",
+  "recordedAt": "2026-11-01T05:35:37.089564+00:00",
   "baseCommit": "8167af387a3863b867e71c2d830f2ddabe68987b",
-  "stepCommits": [
-    "0484bd6",
-    "becbcd0",
-    "39947fb0b53d6f53572ee4c835762dbd5035bb00"
-  ],
-  "runtime": "v24.18.1",
+  "reviewedHead": "da46a72754cd64875b4e79296fb3a528308d0127",
+  "correctionsCommitted": false,
   "checks": [
     {
-      "command": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-concurrency=1 services/pipeline/tests/feature-store/*.check.mts",
+      "command": "node --test --test-concurrency=1 services/pipeline/tests/feature-store/*.check.mts",
       "verdict": "pass",
-      "tests": 153,
-      "pass": 153,
+      "tests": 158,
+      "pass": 158,
       "fail": 0,
       "skipped": 0,
-      "outputSha256": "830930f9e0612b5cf72d501f7a634b85f76a7cefc192b68977008afba72f6540"
+      "outputSha256": "44a7448b2a21f5f464f8c03a905612d1309cf5758de7b588b0ddee68b10cf4f0",
+      "scope": "PostgreSQL behavior/work budgets plus four deterministic evidence-verifier controls; no real elapsed-time assertion in CI."
     },
     {
-      "command": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test services/pipeline/tests/package-contract.check.mjs tests/import-boundaries.check.mjs services/pipeline/tests/paths-contract.check.mjs",
+      "command": "node --test services/pipeline/tests/package-contract.check.mjs tests/import-boundaries.check.mjs services/pipeline/tests/paths-contract.check.mjs",
       "verdict": "pass",
       "tests": 19,
       "pass": 19,
       "fail": 0,
       "skipped": 0,
-      "outputSha256": "f7abb839752cb80d60f818699f32f8f8fbeac7b61085954408099e4638868cb9",
-      "initialSandboxAttempt": {
-        "tests": 19,
-        "pass": 18,
-        "fail": 1,
-        "skipped": 0,
-        "outputSha256": "c13eab340d78dd9cfc062c79899a8810ea101460b58803d78b128a477bbebb50",
-        "reason": "Sandbox refused the loopback server bind with listen EPERM on 127.0.0.1; identical command passes outside sandbox."
-      }
+      "outputSha256": "d31604dc8814925f2d0ecf591ec2c5bfa5b84b6f426d30c231b07acd3d7b746d"
     },
     {
-      "command": "node node_modules/typescript/bin/tsc --noEmit -p codex-briefs/166-tsconfig.json",
+      "command": "node --test services/pipeline/tests/feature-store/artifact-evidence.check.mts",
       "verdict": "pass",
-      "scope": "Targeted temporary config extends root; feature-store runtime, all #166 tests/oracles and publication/evaluation/final-benchmark runner imports."
+      "tests": 4,
+      "pass": 4,
+      "fail": 0,
+      "skipped": 0,
+      "outputSha256": "76b2a7a5bd9cce601a8b390a7644bf140dfdd8591fe922f0a5e2c1239b76d721",
+      "scope": "Refreshed after lint-only simplification of receipt metadata extraction."
     },
     {
-      "check": "ESLint on final benchmark plus all #166 runtime/tests/oracles",
+      "check": "Targeted TypeScript and ESLint with --max-warnings 0 on changed runtime, test and benchmark/evidence sources",
       "verdict": "pass",
-      "warnings": 0,
       "outputSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
-      "command": "node packages/db/tooling/scripts/db-migration-artifacts.mjs check",
-      "verdict": "pass"
-    },
-    {
-      "command": "git diff --check; git diff --quiet 8167af3 -- packages/db/migrations",
+      "check": "Frozen migration artifact verification and diff whitespace",
       "verdict": "pass"
     }
   ],
+  "fixes": {
+    "exactLiveRetryAcrossSharedTombstone": {
+      "fullPinsInBothGuards": true,
+      "rightsAndStatusBeforeReuse": true,
+      "storedRunMustBeLive": true,
+      "completeFilesAndDatasetSetsMustMatch": true,
+      "lostCommitAThenDeleteBProbe": true,
+      "pendingAndSharedRetainedRetries": true,
+      "mismatchedFileSetsRefused": 5,
+      "identityConflictDeniedCallerAndInvalidatedRunRefused": true,
+      "newDescriptorCannotReuseTombstonedReport": true,
+      "firstClockAndRightsReceiptPreserved": true
+    },
+    "compactEvidence": {
+      "fullSamplesAndCountersOutsideFinalGitTree": true,
+      "supersededStepAndDuplicateReceiptsRemoved": true,
+      "fullRecordSha256AndByteSizeInEachReceipt": true,
+      "offlineVerifierRecomputesEveryBlockAndWorkCount": true,
+      "hashAloneCannotReconstructSamples": "Exact retained full bytes are required to audit this historical run. Reruns generate a new hash."
+    },
+    "runIds": "Only newly invalidated runs from UPDATE ... RETURNING; repeated deletion produces empty run_ids.",
+    "observedRemovalDeadline": "greatest(first_seen+orphan_grace,pending_removal.remove_after); both future deadlines tested.",
+    "deleteSourcesType": "ArtifactDeletionReceipt; legacy foundation response normalized to empty run_ids.",
+    "sharedRequestValidation": "Private SQL helper shared by both entry points, no caller grants; existing bad/mixed input probes pass."
+  },
   "speed": {
-    "qualification": "LOCAL-FIXTURE ONLY; hosted RTT/Neon wake/region (#220) unmeasured",
-    "gate": "Each candidate block nearest-rank p95(Q1+Q2)<=21 ms under 30 ms",
+    "qualification": "LOCAL-FIXTURE ONLY; hosted RTT/region/Neon wake unmeasured",
+    "rerunReason": "Publication guard SQL changed; read SQL is unchanged.",
+    "gate": "Every candidate block nearest-rank p95(Q1+Q2)<=21 ms under 30 ms (>=30% headroom)",
     "baselineFirst": [
       {
         "mode": "strict-point-in-time-v1",
         "rowCount": 0,
-        "p95Ms": 4.367666999998619
+        "p95Ms": 4.413541999994777
       },
       {
         "mode": "retrospective-reconstruction-v1",
         "rowCount": 2504,
-        "p95Ms": 3.229791000005207
+        "p95Ms": 3.5767090000008466
       }
     ],
     "totalSamples": 3650,
     "interleavedSamples": 3600,
     "candidateSamples": 1800,
     "candidateBlocks": 36,
-    "worstCandidateBlockP95Ms": 6.379707999993116,
-    "minimumHeadroom": 0.7873430666668961,
+    "worstCandidateBlockP95Ms": 4.806375999993179,
+    "minimumHeadroom": 0.8397874666668941,
     "failedBlocks": 0,
     "failedSamples": 0,
-    "independentlyVerified": true
+    "fullRecord": {
+      "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/node_modules/.cache/feature-store-166/final-benchmark-S12ECw/full-samples.json",
+      "sha256": "aa250f9f2fbc1870c51cbf13ccb56131998ef4983bb4274906b5b94f21b9fd72",
+      "byteSize": 3356558,
+      "retention": "Full record retained outside Git; obtain these exact bytes to audit the historical result. A rerun creates a new sample hash."
+    }
+  },
+  "independentSampleVerification": {
+    "verdict": "pass",
+    "method": "Independent Python stdlib SHA-256, coordinate/work/sum checks and nearest-rank percentiles recomputed from all raw samples; all source hashes and five unique stored artifacts checked.",
+    "fullSampleSha256": "aa250f9f2fbc1870c51cbf13ccb56131998ef4983bb4274906b5b94f21b9fd72",
+    "samples": 3650,
+    "candidateSamples": 1800,
+    "candidateBlocks": 36,
+    "positionGroups": 144,
+    "sourceFilesChecked": 42,
+    "storedArtifactsChecked": 5,
+    "worstBlockP95Ms": 4.806375999993179,
+    "minimumHeadroom": 0.8397874666668941
   },
   "workBudgets": {
     "readSql": 2,
     "getsPerSelectedArtifact": 1,
-    "readHeadsWritesHashes": 0,
-    "readerExampleTableWorkAndAllTableDml": 0,
+    "readOrdinaryHeadWritesHashes": 0,
+    "readerExampleTableWorkAndDml": 0,
     "readerExplicitCoordinationLocks": 0,
-    "locksOrTransactionAcrossIoOrCalculation": 0,
+    "transactionsOrLocksAcrossIoOrCalculation": 0,
     "cleanerPageSql": 1,
     "cleanerPageLimit": 1024,
-    "sqlPerAuthorizedDeletion": 4,
-    "sqlPerRefusedCandidate": 3,
-    "objectDeletesPerAuthorizedCandidate": 1,
+    "sqlPerDeletion": 4,
+    "sqlPerRefusal": 3,
+    "deletesPerAuthorizedCandidate": 1,
     "cleanerOrdinaryGetHeadPutList": 0,
-    "cleanerExampleTableWorkAndNonQueueDml": 0,
-    "ackInternalRecheckIncluded": true,
+    "cleanerExampleWorkAndNonQueueDml": 0,
+    "ackInternalRecheckCounted": true,
     "rowGuards": [
       0,
       2504
     ],
-    "deterministicBudgetsEqualAcrossRowGuards": true
+    "normalPublicationStatementCountsUnchanged": true
   },
-  "acceptanceReview": {
-    "order": [
-      "premise/pattern/alternatives",
-      "targets/work/speed",
-      "correctness/behavior/roles/style"
-    ],
-    "newPatternDeviations": [],
-    "mapping": "docs/feature-store-artifact-governance.md#final-acceptance-and-premise-first-review",
-    "permanentRefusalAndBothPublicationGuardsPreserved": true,
-    "originalPublicationFieldsImmutable": true,
-    "exactDependentInvalidationWithinConservativeLineage": true,
-    "sharedLiveReferencesProtectedAndFinalDeletionRearmsGrace": true,
-    "observedAddressHasOneCleanupOwner": true,
-    "bytesRetirementAndCompletionClocksSeparate": true,
-    "limits": [
-      "Trusted callback and dedicated idle READ COMMITTED connection required.",
-      "Revocation after final SQL snapshot remains the accepted small delivery gap.",
-      "Observed mandatory removals may stay pending through 24h retirement after bytes are removed.",
-      "#229 owns cleanup handoff, #164 participation and completed-removal late-PUT recovery.",
-      "#167 serving/context, #168 capacity and #170 same-size integrity qualification are excluded."
-    ]
-  },
-  "evidenceHashes": {
-    "final-benchmark.json": "b56cb173427c3c0f1f3aa043320bd4f5197ef09276b0501e19ddab327c05eb57",
-    "final-lifecycle.json": "c8362692e5936b3d5ced9e6267494934c7ae8432f2a6cbe4ef1d7494b4604206",
-    "final-read-boundary.json": "6a7a1390880a1382c66df4bf05f7df43d207c945e908bd2f6f02d61fdc476d5a",
-    "final-cleaner.json": "d43097cc02227169cc6a1bd73d64363a6ec1ff9d134488ddc64c96b51cf1d98f",
-    "final-verification.json": "68915c3e8e9527e9ce3a958cd37702ec4b638367f854893aea8d9ccde1462f1c"
+  "receiptHashes": {
+    "final-benchmark.json": "d9ee565a5c722466c0b5ae7aac753e64fd5e0879309e57df1719a7d88380c405",
+    "final-lifecycle.json": "553d3597fdf56a2e070f3b6b4ce65c8d85bc64ed5e4dee746e032cfb45ea3dc9",
+    "final-read-boundary.json": "d908d54a6082307754ab743fc17cf20d2f4dae3f74a5481d12660929b8de83a7",
+    "final-cleaner.json": "f38a39b250e83bd6d85d7f6658119566c389f0f7b018422de337f3ab772f7e02",
+    "preimplementation-spike.json": "3c0f2f680a29fc29588f15a106b4aebb123fbf1f70eb949803167e1b5b5620ac"
   },
   "sourceHashes": {
-    "docs/feature-store-artifact-governance.md": "a05ee6133b931ee6f32adb152c6fe5772d92cdd3f399b4a02a4e6676cbaa20c8",
+    "docs/feature-store-artifact-governance.md": "2c244eca3fcacf375f2014686b8c8c9ae02ef2caf95c9ade0f951892bf7e499a",
     "packages/db/package.json": "0833c88041304e871f635051448e586d32102848f332f71c9ed62e35248318f3",
-    "packages/db/proposals/166_artifact_governance.sql": "f39522f956d81d21ee08411160206e9441d024e91db5e9d1d746e00101ff9ca3",
+    "packages/db/proposals/165_model_manifests.sql": "1915e84e505be95eba819562e47aa4bc7936d15429d3d431fd9e319380800853",
+    "packages/db/proposals/166_artifact_governance.sql": "600402ed383510e91bf75f625af203ec2ec82e20fa521efec601dd47a00f7666",
     "services/pipeline/package.json": "43b65745c9fb3ab4f00bdbc3e508da0add4c852789c93b6d4a7b1d9a93d5aaec",
+    "services/pipeline/scripts/feature-store/artifact-governance-benchmark.ts": "bcf9dea3c7e011abfa662167b562390de853e5370da1b9ae3be4fc8f7f61207a",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "e2d94b1e7a86cefc1ce5f1b9cf6d7387d1c0366673770e0d278efd9c7f5d64e5",
     "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
     "services/pipeline/src/featureStore/datasets.ts": "690c626a3a049f89bc6a45fad235af8b09e5d2b54eef0a0c76e261af20bb3fc7",
-    "services/pipeline/src/featureStore/governance.ts": "712483533ab4bc8a4b3c815948be3508e79e0d98d95fd684f7b07efd2592f9f3",
+    "services/pipeline/src/featureStore/governance.ts": "e16f68aaf7b054ccfe7ce9b6fce6d3d8478728b2628524a2f095b157fe65637c",
     "services/pipeline/src/featureStore/modelArtifacts.ts": "25baf5f510d80e48e58a43e36b9cba6f5ec91308dfdb27eb54cb46d8a91bba05",
-    "services/pipeline/src/featureStore/modelManifests.ts": "0c38651178b91050538f8649d56a1946783efdeb61bbdc27d987e307bb0717d9",
+    "services/pipeline/src/featureStore/modelManifests.ts": "c677d0443177748fee090b9d5bb3607bc82f7bafd28ad5609a3922d76a109802",
     "services/pipeline/tests/feature-store/artifact-cleaner-work.ts": "8523f661442a4e2e8a810c2477ef1f68c0893b37e02abca2ce048875cbcfc519",
-    "services/pipeline/tests/feature-store/artifact-cleaner.check.mts": "30e45d1f9f6c4012149c5aa25d48dc27c4c55b24843bfa85e3b1e871bf3cb742",
+    "services/pipeline/tests/feature-store/artifact-cleaner.check.mts": "e953ff2b1cdc89606683fd7cdc29e0621454c1e489037ba4896c8dc351642abb",
+    "services/pipeline/tests/feature-store/artifact-evidence.check.mts": "98ba152eae6ab750a55191828ac6d8162318aa3b2b0991a2345fae2c44f9b7c3",
     "services/pipeline/tests/feature-store/artifact-governance-fixture.ts": "694d6f193b1b5b66c61e5b96a2610e1a99b709980fe086905893c6ca357885c2",
-    "services/pipeline/tests/feature-store/artifact-governance.check.mts": "8ea9d89f30f3682a77cc16bb441afaeda6f594911b6f5c90bc5f65f203e9510f",
+    "services/pipeline/tests/feature-store/artifact-governance.check.mts": "b66da1f4fbd0a7a6a3f0d863b367cfa1ba17b4b87445940eed47b7dc12bfc574",
     "services/pipeline/tests/feature-store/artifact-read-work.ts": "44626f9bfd3826db45cd7289bf79e9aa06c21743e9ef744e96885b596da63d5c",
-    "services/pipeline/tests/feature-store/model-artifacts.check.mts": "b2ac717a27e4865604f9d6030b3a3d43e956592805de8a3f2c67da139d1e72ca",
-    "services/pipeline/scripts/feature-store/artifact-governance-benchmark.ts": "7d1c3915dbb785568e4bf3d2ac85a3bdc60f45f12086cb176b4cd23bd7526b02"
+    "services/pipeline/tests/feature-store/model-artifacts.check.mts": "b2ac717a27e4865604f9d6030b3a3d43e956592805de8a3f2c67da139d1e72ca"
   },
-  "independentVerificationSourceFiles": 47,
   "cleanup": {
     "scratchDatabases": 0,
     "temporaryLogins": 0,
     "otherClientSessions": 0,
-    "taskLocalContainerStopped": true,
-    "storage": "Private benchmark/test objects remain beneath ignored node_modules/.cache/feature-store-166 for local evidence inspection."
+    "taskLocalContainerStopped": true
   },
+  "limits": [
+    "Trusted private buffered callback and dedicated idle READ COMMITTED session.",
+    "Accepted final-snapshot delivery gap.",
+    "#229 owns handoff, #164 participation and completed-removal late-PUT recovery.",
+    "Observed mandatory pending can outlast byte presence through the 24h retirement window.",
+    "Hosted latency, #167 serving, #168 capacity and #170 integrity qualification excluded."
+  ],
   "frozenMigrationsChanged": false,
   "hostedWritesPerformed": false,
   "productionCommandsPerformed": false,
-  "step4Committed": false,
   "pushPerformed": false,
-  "pending": "Step-4 commit authorized; push requires fresh owner consent.",
-  "step4CommitApproved": true,
-  "documentationStatusRefresh": "After owner approval, only documentation approval status and this validation checkpoint changed; runtime, SQL, benchmark and measured behavior source bytes are unchanged."
+  "pending": "Owner review/approval before committing corrections; no push."
 }

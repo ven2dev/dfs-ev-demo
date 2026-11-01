@@ -110,6 +110,13 @@ test("#166 model/audit mandatory removals, orphan deferral and CI cleaner budget
         }
         const beforeGrace = cleanerTrace(writer, store); await cleanupDeletedObjects(beforeGrace.client, beforeGrace.store); assertCleanerTrace(beforeGrace, 0);
         await admin.query("UPDATE fs138.orphan_observations SET first_seen=clock_timestamp()-interval '301 seconds' WHERE object_key=ANY($1)", [objects.map(o => o.objectKey)]);
+        await admin.query("UPDATE fs138.object_removals SET remove_after=clock_timestamp()+interval '1 hour' WHERE object_key=ANY($1)", [objects.map(o => o.objectKey)]);
+        const futureMandatory = await sweepOrphanObjects(writer, store, 300);
+        for (const object of objects) {
+          assert(!futureMandatory.removed.includes(object.objectKey)); assert(await store.head(object.objectKey));
+          assert.equal((await writer.query("SELECT fs138.orphan_recheck($1,300) AS allowed", [object.objectKey])).rows[0].allowed, false);
+        }
+        await admin.query("UPDATE fs138.object_removals SET remove_after=clock_timestamp()-interval '1 second' WHERE object_key=ANY($1)", [objects.map(o => o.objectKey)]);
         for (const object of objects) assert.equal((await writer.query("SELECT fs138.orphan_recheck($1,300) AS allowed", [object.objectKey])).rows[0].allowed, true);
         const swept = await sweepOrphanObjects(writer, store, 300), bytesRemovedAt = await clock();
         for (const object of objects) {
@@ -133,6 +140,7 @@ test("#166 model/audit mandatory removals, orphan deferral and CI cleaner budget
         assert(bytesRemovedAt <= observationsRetiredAt && observationsRetiredAt <= queueCompletedAt);
         return { addresses: objects.map(o => o.objectKey), retirementWindowSeconds: MODEL_ORPHAN_RETIREMENT_SECONDS,
           orphanGraceSeconds: 300, bytesRemovedAt, observationsRetiredAt, queueCompletedAt,
+          laterMandatoryDeadlineRespected: true, laterOrphanDeadlineRespected: true,
           mandatoryDeletesWhileObserved: 0, ackWhileObservedRefused: true, observationKeptUntilRetirement: true,
           idempotentMissingByteDeletes: missingByteDeletes, repeatedDeleteErrors: 0,
           limitation: "Pending can outlast bytes through the 24h retirement window; this is not #229 late-PUT recovery." };

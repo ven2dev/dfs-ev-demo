@@ -3,10 +3,12 @@ import crypto from "node:crypto";
 import { mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
 import { syncBuiltinESMExports } from "node:module";
 import { arch, platform, release } from "node:os";
+import { pathToFileURL } from "node:url";
 import type { Client } from "pg";
 import { withFeatureStoreDatabase } from "./harness.ts";
 import { EVALUATION_ROOT, EXPECTED_COHORT, evaluationCodeIdentity, prepareEvaluationFixture } from "./evaluation-fixture.ts";
 import { modelPublicationCodeIdentity } from "./model-publication-identity.ts";
+import { compactBenchmark } from "./artifact-governance-evidence.ts";
 import { withDatasetRead } from "../../src/featureStore/datasets.ts";
 import { withModelArtifacts, type ModelArtifactSlot } from "../../src/featureStore/modelArtifacts.ts";
 import { publishQbModelRun } from "../../src/featureStore/modelManifests.ts";
@@ -20,7 +22,8 @@ const p95 = (values: number[]) => [...values].sort((a, b) => a - b)[Math.ceil(va
 const codeIdentity = async () => {
   const publication = await modelPublicationCodeIdentity();
   const extra = ["packages/db/proposals/166_artifact_governance.sql", "compose.test.yml",
-    "services/pipeline/scripts/feature-store/artifact-governance-benchmark.ts"];
+    "services/pipeline/scripts/feature-store/artifact-governance-benchmark.ts",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts"];
   const hashes = Object.fromEntries(await Promise.all(extra.map(async path =>
     [path, sha256(await readFile(new URL(path, EVALUATION_ROOT)))])));
   const codeHashes = Object.fromEntries(Object.entries({ ...publication.codeHashes, ...hashes }).sort(([a], [b]) => a.localeCompare(b)));
@@ -112,7 +115,8 @@ const receipt: Record<string, unknown> = { schemaVersion: 1, issue: 166, step: 4
     "Query/crypto observation adds instrumentation overhead to both arms. Server work/locks are qualified separately by CI behavior receipts, outside this timing loop.",
     "All samples, including failures and slow blocks, are retained; failed gates are never silently filtered or relaxed."] };
 const receiptPath = process.env.FS166_BENCHMARK_EVIDENCE ?? new URL("166-benchmark.json", directory);
-const save = () => writeFile(receiptPath, JSON.stringify(receipt, null, 2) + "\n");
+const samplePath = pathToFileURL(`${root}/full-samples.json`);
+const save = () => writeFile(samplePath, JSON.stringify(receipt, null, 2) + "\n");
 await save();
 try {
   await withFeatureStoreDatabase(async context => {
@@ -197,5 +201,6 @@ finally {
     receipt.sourceUnchanged = true;
   } catch (error) { receipt.verdict = "fail"; receipt.sourceError = String(error); process.exitCode = 1; }
   receipt.finishedAt = new Date().toISOString(); await save();
+  await writeFile(receiptPath, JSON.stringify(compactBenchmark(await readFile(samplePath), samplePath.pathname), null, 2) + "\n");
 }
 console.log(JSON.stringify({ verdict: receipt.verdict, summary: receipt.summary, error: receipt.error }));

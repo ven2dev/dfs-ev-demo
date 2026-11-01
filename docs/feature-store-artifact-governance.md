@@ -29,6 +29,14 @@ removal recovery were split into [#229](https://github.com/ven2dev/dfs-ev-demo/i
 to bound this issue; fencing/upload deadlines need unavailable ObjectStore
 conditional writes (#172).
 
+**Evidence pattern.** Compact checksum-bound receipts refer to retained full
+local records, with deterministic offline replay of work counts and every block's
+percentile. Repeating raw samples/counters in Git obscures review and duplicates
+superseded proof; summary-only numbers without a sample digest cannot be audited.
+The receipt therefore binds SHA-256 and byte size before any replay. A digest
+verifies bytes but cannot recreate them: another checkout needs the retained
+full file to audit this historical run, or can rerun the experiment for new proof.
+
 **Targets.** The completed feature will enforce two statements per successful
 artifact read: one batched authorization with pin retrieval, one fresh
 pre-delivery rights/status check. Zero per-example/per-file authorization SQL,
@@ -56,9 +64,9 @@ and a genuine zero-member strict-PIT guard. Grace is configurable, default
 | Invalidate through server-owned dataset/source pins. | Callers cannot omit withdrawn inputs, and a shared file cannot invalidate an unrelated run. |
 | Preserve identity, pins, recorded_at and rights receipt; append invalidated_at and its deletion event ID once. | Governance cannot rewrite the first publication or resurrect a withdrawn run. |
 | Keep both publication guards and sample current rights after lock waits. | Direct SQL and long waits cannot bypass current rights; refused callers never receive a historical run. |
-| Permanently retain descriptor uniqueness and deletion tombstones. | Identical deleted evidence cannot be republished at the same identity/address. |
+| Permanently retain descriptor uniqueness and deletion tombstones; only an exact live stored publication may be returned across a shared-file tombstone. | Invalidated runs or new/conflicting pins cannot resurrect withdrawn evidence, while another run's deletion cannot break a live run's idempotent retry. |
 | Only non-invalidated runs retain shared bytes; last-reference deletion re-arms removal. | Cleanup neither breaks unaffected runs nor retains invalidated bytes forever. |
-| Mandatory cleanup defers while a model orphan observation exists; the scoped sweep still deletes after orphan grace. | Exactly one cleaner owns an address, with neither conflicting deletion nor an ownership dead end. |
+| Mandatory cleanup defers while a model orphan observation exists; its sweep honors the later of orphan grace and a pending mandatory remove_after. | Exactly one cleaner owns an address, without bypassing either configured deadline or creating an ownership dead end. |
 | Separate byte-removal and queue-completion times in evidence. | A pending receipt cannot be misread as data still present during observation retirement. |
 | Use real restricted LOGINs and narrow APIs. | Owner-session role switching cannot masquerade as a permission proof. |
 | Enforce client counts and server work in CI; speed gates stay opt-in. | Definer functions cannot conceal per-example work, and machine speed cannot cause flaky CI timing failures. |
@@ -87,19 +95,36 @@ registry tables. No new reader/app artifact access is granted in step 1.
 `deleteSources` extends the foundation closure from deleted snapshots through
 affected datasets to dependent runs. `deleteDatasets` deletes only the requested
 dataset pins, leaving source snapshots and derived values intact. Both use the
-same private closure to lock dependent metadata, record affected `run_ids`,
+same private closure to lock dependent metadata, record newly invalidated `run_ids`,
 invalidate runs and enqueue every artifact of those runs in one transaction.
 Grace starts after invalidation/provider cleanup. Repeated deletion preserves
 the first run clock/event while re-arming removal with the greatest deadline.
+`run_ids` comes from `UPDATE ... RETURNING`: repeated deletion records an empty
+array when it causes no new run invalidation, even while re-arming its bytes.
+Both pipeline APIs return `ArtifactDeletionReceipt` with a required `run_ids`;
+foundation-only fixtures normalize that absent legacy field to an empty array.
 
 The private closure has no caller EXECUTE grant. Public deletion APIs require a
 writer LOGIN, 1–1,024 distinct non-null IDs, an existing complete target set,
 a reason of 1–512 characters and finite grace within the accepted range.
 Failure rolls back status, receipt and queue writes together.
+Both SQL entry points call one private request-validation helper after their
+role check, preventing divergent request contracts. The helper has no caller
+EXECUTE grants.
 
 `guard_model_publication` still executes before HEADs and inside
 `publish_model_run`. After source/dataset/address lock waits, it checks current
-rights, then invalidated identity/pins and permanent address tombstones.
+rights, then invalidated identity/pins and permanent address tombstones. Before
+the tombstone refusal, full artifact pins may identify an exact live stored run:
+its descriptor hash, complete address/dataset sets, and every slot, dataset ID,
+object key, digest and byte size match. Only that existing publication may be
+returned; its first clock/receipt stays unchanged. A lost-COMMIT retry therefore
+survives deletion of another run sharing its report, whether the queue is pending
+or completed `shared-retained`. Changed, additional or missing pins, a new
+descriptor, a denied caller or an invalidated run cannot use this exception.
+The existing publication function also checks identity before returning reuse.
+The #165 proposal guard now takes optional full pins; both runtime guard calls
+provide them. Legacy two-argument guard calls remain conservative at tombstones.
 SQLSTATE `P1661` means `model-publication-invalidated`; `P1662` means
 `model-object-deleted`; `P1665` means `model-current-rights-refused`. Pipeline
 `ArtifactGovernanceError.code` maps those states without parsing provider text.
@@ -110,7 +135,7 @@ including retries after a lost COMMIT response.
 Because these APIs enqueue models/audits immediately, step 1 includes the SQL
 reference/ownership checks that make the new rows safe. Mandatory recheck
 defers while an orphan observation exists. Orphan recheck preserves the record
-and allows deletion after its own grace, subject to live-run protection;
+and allows deletion after the later applicable deadline, subject to live-run protection;
 absent-record retirement ignores invalidated references. Step 3 completes page
 filtering, explicit models/audits requeue, CI budgets and integrated cleanup
 tests, described below. The existing #164 lock-protected reference check remains; its cleanup
@@ -123,11 +148,11 @@ shapes. Overall shape p95(Q1+Q2) was 2.404–4.875 ms; worst repeated block p95 
 10.268 ms (65.77% headroom under 30 ms). Thirteen behavior probes and the hidden
 DML negative control passed. These are historical mechanism results from a
 disposable prototype, not timings for this implementation. Final source-byte
-evidence and the per-block gate will be rerun in step 4.
+evidence and the per-block gate supersede this prototype in the final receipts.
 
 The [committed evidence index](evidence/feature-store-166/README.md) separates
-the losslessly archived spike from the fresh implementation's
-[step-1 lifecycle receipt](evidence/feature-store-166/step-1-lifecycle.json).
+the compact historical spike from the fresh implementation's
+[final lifecycle receipt](evidence/feature-store-166/final-lifecycle.json).
 Step 1 proves exact deletion scope with real derived/member/provider rows,
 restricted LOGIN refusals, both publication/deletion lock orders, transactional
 rollback, permanent typed invalidation/tombstone refusal and a lost-COMMIT-reply
@@ -138,8 +163,9 @@ Step 2 adds the two-query trusted delivery boundary and deterministic read/serve
 work budgets, described below. Step 3 finishes cleaner orchestration and its per-candidate budget.
 Step 4 supplies the final benchmark, acceptance mapping and premise-first review
 below. Steps 1–3 are committed as `0484bd6`, `becbcd0` and `39947fb`;
-the owner has approved the step-4 commit. Evidence receipts retain their
-precommit source identities and status.
+step 4 is committed as `da46a72`. The review corrections await owner approval
+before a further commit. Compact receipts bind full local records with SHA-256;
+superseded per-step receipts are removed from the final tree.
 Each step is reviewed before committing. The approved planning estimate was
 3½–4 hours; discovery beyond five hours triggers a split before
 further implementation. Push requires fresh owner consent.
@@ -242,7 +268,11 @@ work; repeated deletion keeps the greatest deadline. Invalidated run references
 do not retain bytes. Sources/datasets retain their existing live-reference rule.
 
 For observed addresses with pending removal, `orphan_recheck` retains the record
-and authorizes the scoped sweep after orphan grace, subject to live references.
+and authorizes the scoped sweep after
+`greatest(first_seen + orphan_grace, pending_removal.remove_after)`, subject to
+live references. A future mandatory deadline blocks an otherwise due orphan;
+a later orphan deadline also remains authoritative. Completed tombstones add
+no pending deadline. This honors configured grace while retaining one owner.
 Mandatory selection/recheck continues to defer and ack refuses. An absent record
 retires only after the configured recovery window from its last enrollment
 (default `MODEL_ORPHAN_RETIREMENT_SECONDS = 86400`). Mandatory cleanup then
@@ -281,11 +311,11 @@ natural 2,504-member retrospective cohort and the genuine zero-member strict
 guard. Three real publications cover strict, retrospective and paired modes.
 Outside timing it verifies exact report bytes, logical report hashes,
 descriptor pins and SQL-owned dataset pins against those fresh publications.
-Report sizes are **9,290,167** and **306,542** bytes in this run; archived
+Report sizes are **9,290,167** and **306,544** bytes in this run; archived
 prototype sizes are not substituted for freshly generated envelopes.
 
 Before installing the candidate proposals, 25 dataset baseline reads per mode
-measured p95(Q1+Q2) of **4.368 ms** (zero members) and **3.230 ms** (2,504
+measured p95(Q1+Q2) of **4.414 ms** (zero members) and **3.577 ms** (2,504
 members). Baseline reads use the unchanged three-query API; only its two rights
 queries enter the timing comparison. After proposal installation, each of six
 shapes runs six ABBA blocks, 25 reads per position, using that same baseline
@@ -296,19 +326,21 @@ Q1+Q2 sums, rather than adding separately computed percentiles.
 
 | Run / selected files | Worst block p95(Q1+Q2) | Headroom under 30 ms |
 | --- | ---: | ---: |
-| Strict / descriptor | 2.134 ms | 92.89% |
-| Strict / descriptor + report | 4.425 ms | 85.25% |
-| Retrospective / descriptor | 4.551 ms | 84.83% |
-| Retrospective / descriptor + report | 6.380 ms | 78.73% |
-| Paired / descriptor | 1.894 ms | 93.69% |
-| Paired / descriptor + both reports | 3.535 ms | 88.22% |
+| Strict / descriptor | 4.806 ms | 83.98% |
+| Strict / descriptor + report | 1.791 ms | 94.03% |
+| Retrospective / descriptor | 3.040 ms | 89.87% |
+| Retrospective / descriptor + report | 3.376 ms | 88.75% |
+| Paired / descriptor | 2.217 ms | 92.61% |
+| Paired / descriptor + both reports | 3.369 ms | 88.77% |
 
 Every block clears **≤21 ms**, providing at least the required 30% headroom.
-The [full receipt](evidence/feature-store-166/final-benchmark.json) retains all
-samples, per-query durations, per-block results, baseline samples, exact fixture
-and source hashes, GET/calculation/full-read timing and work counts. No ordinary
+The [compact receipt](evidence/feature-store-166/final-benchmark.json) records
+every block's p95/headroom, baseline results, fixture/source hashes, work counts
+and verdicts. Its `fullRecord` SHA-256 binds every raw sample, query duration,
+fresh publication pin and GET/calculation/full-read timing in a retained file
+under ignored `node_modules/.cache/feature-store-166/`. No ordinary
 hashes, HEADs or writes occur during timed reads. The callback only sums byte
-lengths. Full-read p95s are informational (the worst block was 46.075 ms);
+lengths. Full-read p95s are informational (the worst block was 57.889 ms);
 this does not measure #167's parsing, context lookup or projection workload.
 
 These are **local-fixture-only** results: PostgreSQL 18.6, Node 24.18.1,
@@ -318,7 +350,11 @@ applies to both arms. Hosted RTT, Neon wake/region (#220), cold caches,
 end-to-end serving and capacity remain unmeasured. There is no elapsed-time CI
 assertion and no ratio-to-baseline gate. Source hashes were unchanged at the
 end of the experiment; a separate verification recomputes counts, percentiles,
-hashes and fresh report pins in the [verification receipt](evidence/feature-store-166/final-verification.json).
+hashes and fresh report pins in the full local record. The committed
+[offline verifier](../services/pipeline/scripts/feature-store/artifact-governance-evidence.ts)
+checks that record's SHA-256, all sample work counts and coordinates, Q1/Q2 sums,
+every block p95/headroom and the whole compact receipt. See the
+[reproduction commands](evidence/feature-store-166/README.md#reproducing-and-auditing-the-result).
 
 ## Final acceptance and premise-first review
 
@@ -338,17 +374,18 @@ one bounded page plus four statements per deletion (three per refusal), one
 DELETE and zero ordinary GET/HEAD/PUT/list calls. Server counters include ack's
 internal recheck and stay within the same budgets at 0 and 2,504 actual members.
 The negative controls detect hidden scans and definer DML. Metadata physical
-probe counts remain visible rather than being forced equal across query plans.
+probe totals remain in compact receipts and full per-table counters are bound
+by their full-record hashes, rather than forced equal across query plans.
 
 | Acceptance / carry-forward | Fresh final evidence |
 | --- | --- |
 | Both deletion APIs invalidate exactly dependent runs, preserving unrelated sources/datasets/derived rows. | [Lifecycle](evidence/feature-store-166/final-lifecycle.json): exact run/address sets, real membership/provider rows, atomic rollback and both publication/deletion lock orders. Exactness remains within the accepted conservative dataset lineage. |
-| Original identity, pins, recorded_at and rights receipt remain immutable; deleted identity/address cannot be republished. | Lifecycle: immutable-field assertions, typed runner/direct-SQL refusals and live get-or-create retry after a lost COMMIT response. Both publication guards stay. |
+| Original identity, pins, recorded_at and rights receipt remain immutable; deleted runs/new tombstoned publications refuse. | Lifecycle: typed refusals and lost-COMMIT retry of a live exact file set across another run's shared-file tombstone; changed sets, identity, denied rights and invalidated reuse refuse. Both publication guards stay. |
 | Revocation/deletion before access or during any selected GET/calculation withholds delivery. | [Read boundary](evidence/feature-store-166/final-read-boundary.json): initial zero-GET refusals, descriptor-only full-lineage checks, 12 mid-operation controls, Q2 socket failure and callback/request-mutation controls. |
 | Exactly two read statements, bounded selected GETs, no reader coordination locks or transaction across I/O. | Read boundary: eight shapes, 0/2,504 actual members, internal work/lock probes, hidden-work negative controls and paused readers with concurrent committed deletion. One optional context control composes within the same two checks. |
 | Shared report bytes survive unaffected live runs and are removed after the last live reference and configured grace. | [Cleaner](evidence/feature-store-166/final-cleaner.json): shared-retained completion, greatest grace/re-arm and unaffected-run delivery; invalidated references cannot retain bytes. |
-| Orphan and mandatory ownership do not conflict or strand observed bytes under pending intent. | Cleaner: orphan bytes disappear after orphan grace while observation and pending intent survive; zero mandatory DELETE/ack while observed; retirement permits idempotent missing-byte deletion and durable `removed`. Three clocks remain separate. |
-| Four-statement cleaner budget; crash/resume, requeue and page progress. | Cleaner: raw server counters including ack's recheck, actual lock waits/disconnects, unlink-before-ack and lost-COMMIT controls; 1,025 observed plus 1,025 shared addresses cannot starve later removable bytes. |
+| Orphan and mandatory ownership do not conflict or strand observed bytes under pending intent. | Cleaner: both grace deadlines are honored while observation and pending intent survive; zero mandatory DELETE/ack while observed; retirement permits idempotent missing-byte deletion and durable `removed`. Three clocks remain separate. |
+| Four-statement cleaner budget; crash/resume, requeue and page progress. | Cleaner: compact server totals including ack's recheck, with full counters retained by hash; actual lock waits/disconnects, unlink-before-ack and lost-COMMIT controls; 1,025 observed plus 1,025 shared addresses cannot starve later removable bytes. |
 | Role isolation and proposal-only rollout. | All three receipts use real restricted LOGINs. [Final validation](evidence/feature-store-166/final-validation.json) records regression/contracts/static checks, unchanged frozen migrations and zero remaining scratch resources. |
 
 **Limits and successor boundary.** Mandatory `pending` may last through the

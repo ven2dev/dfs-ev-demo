@@ -77,7 +77,7 @@ const prepareAndPublishQbModelRun = async (client: Pick<Client, "query">, store:
     objectKey: r.artifact.objectKey, fileSha256: r.artifact.sha256, byteSize: r.artifact.byteSize }))];
   const uploads = [descriptorBytes, ...reports.map(r => r.bytes)];
   const ids = reports.map(r => r.dataset.datasetId).sort(), addresses = objects.map(o => o.objectKey).sort();
-  const guardParameters = [ids, addresses], publishParameters = [JSON.stringify(identity), JSON.stringify(objects)];
+  const guardParameters = [ids, addresses, JSON.stringify(objects)], publishParameters = [JSON.stringify(identity), JSON.stringify(objects)];
   const absent: string[] = [];
   for (const object of objects) {
     const current = await store.head(object.objectKey);
@@ -104,7 +104,7 @@ const prepareAndPublishQbModelRun = async (client: Pick<Client, "query">, store:
     // Set first: if BEGIN's response is lost, the connection is discarded.
     inTransaction = true;
     await client.query("BEGIN");
-    await client.query("SELECT fs138.guard_model_publication($1::uuid[],$2::text[])", guardParameters);
+    await client.query("SELECT fs138.guard_model_publication($1::uuid[],$2::text[],$3::jsonb)", guardParameters);
     for (const object of objects) checkObject(await store.head(object.objectKey), object);
     run = (await client.query<typeof run>("SELECT * FROM fs138.publish_model_run($1::jsonb,$2::jsonb)", publishParameters)).rows[0];
     assert(run, "model-publication-missing");

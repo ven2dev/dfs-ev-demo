@@ -101,7 +101,9 @@ BEGIN
  END LOOP;
 END $$;
 
-CREATE FUNCTION fs138.guard_model_publication(ids uuid[],addresses text[]) RETURNS jsonb
+-- Optional pins keep legacy two-argument guards compatible; #166 uses the
+-- complete immutable set to distinguish live retries from new publications.
+CREATE FUNCTION fs138.guard_model_publication(ids uuid[],addresses text[],p_objects jsonb DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
 DECLARE snapshots uuid[]; n integer; address text; checked_at timestamptz; receipt jsonb; allowed boolean;
 BEGIN
@@ -174,7 +176,7 @@ BEGIN
  SELECT array_agg(DISTINCT (o->>'datasetId')::uuid ORDER BY (o->>'datasetId')::uuid)
   FILTER(WHERE o->>'datasetId' IS NOT NULL),array_agg(o->>'objectKey' ORDER BY o->>'objectKey')
   INTO ids,addresses FROM jsonb_array_elements(p_objects) o;
- receipt:=fs138.guard_model_publication(ids,addresses);
+ receipt:=fs138.guard_model_publication(ids,addresses,p_objects);
  -- Report mode belongs to the actual pinned dataset, not a caller's claim.
  IF EXISTS(SELECT 1 FROM jsonb_array_elements(p_objects) o
   JOIN fs138.dataset_manifests d ON d.dataset_id=(o->>'datasetId')::uuid
@@ -263,8 +265,8 @@ BEGIN
 END $$;
 
 REVOKE ALL ON FUNCTION fs138.valid_model_identity(jsonb),fs138.enroll_model_objects(text[]),
- fs138.guard_model_publication(uuid[],text[]),fs138.publish_model_run(jsonb,jsonb),
+ fs138.guard_model_publication(uuid[],text[],jsonb),fs138.publish_model_run(jsonb,jsonb),
  fs138.retire_model_observation(text,double precision) FROM PUBLIC,fs138_reader;
 GRANT EXECUTE ON FUNCTION fs138.valid_model_identity(jsonb),fs138.enroll_model_objects(text[]),
- fs138.guard_model_publication(uuid[],text[]),fs138.publish_model_run(jsonb,jsonb),
+ fs138.guard_model_publication(uuid[],text[],jsonb),fs138.publish_model_run(jsonb,jsonb),
  fs138.retire_model_observation(text,double precision) TO fs138_pipeline_writer;

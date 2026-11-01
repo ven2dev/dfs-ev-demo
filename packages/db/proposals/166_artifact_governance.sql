@@ -60,10 +60,15 @@ BEGIN
  FOREACH address IN ARRAY addresses LOOP
   PERFORM pg_advisory_xact_lock(hashtextextended(address,138));
  END LOOP;
- INSERT INTO fs138.deletion_events(reason,grace_seconds,snapshot_ids,feature_ids,label_ids,dataset_ids,run_ids)
- VALUES(p_reason,p_grace,p_snapshots,p_features,p_labels,p_datasets,affected_runs) RETURNING * INTO receipt;
- UPDATE fs138.model_runs SET invalidated_at=receipt.recorded_at,deletion_event_id=receipt.event_id
- WHERE run_id=ANY(affected_runs) AND invalidated_at IS NULL;
+ INSERT INTO fs138.deletion_events(reason,grace_seconds,snapshot_ids,feature_ids,label_ids,dataset_ids)
+ VALUES(p_reason,p_grace,p_snapshots,p_features,p_labels,p_datasets) RETURNING * INTO receipt;
+ -- A receipt records transitions caused by this event, not historical
+ -- dependents. Repeated deletion may re-arm bytes without invalidating a run.
+ WITH invalidated AS (
+  UPDATE fs138.model_runs SET invalidated_at=receipt.recorded_at,deletion_event_id=receipt.event_id
+  WHERE run_id=ANY(affected_runs) AND invalidated_at IS NULL RETURNING run_id
+ ) SELECT coalesce(array_agg(run_id ORDER BY run_id),'{}') INTO receipt.run_ids FROM invalidated;
+ UPDATE fs138.deletion_events SET run_ids=receipt.run_ids WHERE event_id=receipt.event_id RETURNING * INTO receipt;
  UPDATE fs138.dataset_manifests SET invalidated_at=coalesce(invalidated_at,receipt.recorded_at)
  WHERE dataset_id=ANY(p_datasets);
  DELETE FROM fs138.dataset_members WHERE dataset_id=ANY(p_datasets);
@@ -75,6 +80,19 @@ BEGIN
  RETURN receipt;
 END $$;
 
+-- Shared private request contract for both deletion entry points. Keep it out
+-- of the writer/reader surface so direct calls cannot stand in for deletion.
+CREATE FUNCTION fs138.validate_artifact_deletion_request(ids uuid[],reason text,grace_seconds double precision)
+RETURNS void LANGUAGE plpgsql IMMUTABLE SET search_path=pg_catalog,fs138 AS $$
+BEGIN
+ IF ids IS NULL OR cardinality(ids) NOT BETWEEN 1 AND 1024
+ OR cardinality(ids)<>(SELECT count(DISTINCT id) FROM unnest(ids) id)
+ OR reason IS NULL OR length(reason) NOT BETWEEN 1 AND 512
+ OR grace_seconds IS NULL OR NOT(grace_seconds BETWEEN 0 AND 86400) THEN
+  RAISE EXCEPTION 'deletion-request-refused' USING ERRCODE='23514';
+ END IF;
+END $$;
+
 CREATE OR REPLACE FUNCTION fs138.delete_sources(ids uuid[],reason text,grace_seconds double precision DEFAULT 300)
 RETURNS fs138.deletion_events LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
 DECLARE receipt fs138.deletion_events; affected_datasets uuid[]; affected_features uuid[]; affected_labels uuid[];
@@ -82,12 +100,7 @@ BEGIN
  IF NOT pg_has_role(session_user,'fs138_pipeline_writer','member') THEN
   RAISE EXCEPTION 'pipeline-role-required' USING ERRCODE='42501';
  END IF;
- IF ids IS NULL OR cardinality(ids) NOT BETWEEN 1 AND 1024
- OR cardinality(ids)<>(SELECT count(DISTINCT id) FROM unnest(ids) id)
- OR reason IS NULL OR length(reason) NOT BETWEEN 1 AND 512
- OR grace_seconds IS NULL OR NOT(grace_seconds BETWEEN 0 AND 86400) THEN
-  RAISE EXCEPTION 'deletion-request-refused' USING ERRCODE='23514';
- END IF;
+ PERFORM fs138.validate_artifact_deletion_request(ids,reason,grace_seconds);
  PERFORM s.snapshot_id FROM fs138.source_snapshots s WHERE s.snapshot_id=ANY(ids) ORDER BY s.snapshot_id FOR UPDATE;
  IF (SELECT count(*) FROM fs138.source_snapshots s WHERE s.snapshot_id=ANY(ids))<>cardinality(ids) THEN
   RAISE EXCEPTION 'deletion-snapshot-set-refused' USING ERRCODE='23514';
@@ -125,12 +138,7 @@ BEGIN
  IF NOT pg_has_role(session_user,'fs138_pipeline_writer','member') THEN
   RAISE EXCEPTION 'pipeline-role-required' USING ERRCODE='42501';
  END IF;
- IF ids IS NULL OR cardinality(ids) NOT BETWEEN 1 AND 1024
- OR cardinality(ids)<>(SELECT count(DISTINCT id) FROM unnest(ids) id)
- OR reason IS NULL OR length(reason) NOT BETWEEN 1 AND 512
- OR grace_seconds IS NULL OR NOT(grace_seconds BETWEEN 0 AND 86400) THEN
-  RAISE EXCEPTION 'deletion-request-refused' USING ERRCODE='23514';
- END IF;
+ PERFORM fs138.validate_artifact_deletion_request(ids,reason,grace_seconds);
  receipt:=fs138.invalidate_dataset_dependents(ids,'{}','{}','{}',reason,grace_seconds);
  -- Explicit dataset deletion keeps sources, derived values and unrelated pins.
  UPDATE fs138.object_removals SET remove_after=greatest(remove_after,clock_timestamp()+make_interval(secs=>grace_seconds))
@@ -164,7 +172,7 @@ END $$;
 -- Both #165 guard calls stay: before HEADs and inside direct SQL publication.
 -- Lock status rows even when invalidated, then sample current rights after all
 -- waits. Rights refusal precedes historical-status errors and never returns a run.
-CREATE OR REPLACE FUNCTION fs138.guard_model_publication(ids uuid[],addresses text[]) RETURNS jsonb
+CREATE OR REPLACE FUNCTION fs138.guard_model_publication(ids uuid[],addresses text[],p_objects jsonb DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
 DECLARE snapshots uuid[]; address text; checked_at timestamptz; receipt jsonb; allowed boolean;
 BEGIN
@@ -218,6 +226,23 @@ BEGIN
  )) THEN
   RAISE EXCEPTION 'model-dataset-version-refused' USING ERRCODE='23514';
  END IF;
+ -- Locks and current rights/status above still gate every retry. A deletion
+ -- of another run may tombstone shared bytes; returning this exact live run
+ -- neither republishes those bytes nor changes its original receipt/clock.
+ -- Match every pin, including slot, dataset, digest and size, not just keys.
+ -- Legacy guards without full pins stay conservative at tombstones.
+ IF jsonb_typeof(p_objects)='array' AND EXISTS(
+  SELECT 1 FROM fs138.model_runs r WHERE r.invalidated_at IS NULL
+   AND 'models/'||r.descriptor_sha256=ANY(addresses)
+   AND (SELECT array_agg(a.object_key ORDER BY a.object_key) FROM fs138.model_artifacts a WHERE a.run_id=r.run_id)
+    =(SELECT array_agg(key ORDER BY key) FROM unnest(addresses) key)
+   AND (SELECT array_agg(p.dataset_id ORDER BY p.dataset_id) FROM fs138.model_run_datasets p WHERE p.run_id=r.run_id)
+    =(SELECT array_agg(id ORDER BY id) FROM unnest(ids) id)
+   AND (SELECT jsonb_agg(jsonb_build_object('slot',a.slot,'datasetId',a.dataset_id,'objectKey',a.object_key,
+     'fileSha256',a.file_sha256,'byteSize',a.byte_size) ORDER BY a.slot)
+    FROM fs138.model_artifacts a WHERE a.run_id=r.run_id)
+    =(SELECT jsonb_agg(o ORDER BY o->>'slot') FROM jsonb_array_elements(p_objects) o)
+ ) THEN RETURN receipt; END IF;
  IF EXISTS(SELECT 1 FROM fs138.object_removals o WHERE o.object_key=ANY(addresses)) THEN
   RAISE EXCEPTION 'model-object-deleted' USING ERRCODE='P1662';
  END IF;
@@ -280,7 +305,7 @@ END $$;
 
 CREATE OR REPLACE FUNCTION fs138.orphan_recheck(address text,grace_seconds double precision DEFAULT 300) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
-DECLARE observed_at timestamptz;
+DECLARE observed_at timestamptz; mandatory_after timestamptz;
 BEGIN
  IF NOT pg_has_role(session_user,'fs138_pipeline_writer','member') THEN
   RAISE EXCEPTION 'pipeline-role-required' USING ERRCODE='42501';
@@ -292,9 +317,11 @@ BEGIN
  PERFORM pg_advisory_xact_lock(hashtextextended(address,138));
  IF address ~ '^(models|audits)/' THEN
   -- A pending mandatory intent does not clear observation or force refusal:
-  -- this sweep owns the observed address and deletes bytes after orphan grace.
+  -- this sweep owns the observed address, honoring both configured deadlines.
   IF EXISTS(SELECT 1 FROM fs138.model_artifacts a JOIN fs138.model_runs r USING(run_id)
    WHERE a.object_key=address AND r.invalidated_at IS NULL) THEN RETURN false; END IF;
+  SELECT r.remove_after INTO mandatory_after FROM fs138.object_removals r
+  WHERE r.object_key=address AND r.completed_at IS NULL;
  ELSE
   -- Preserve existing raw/dataset ownership and discovery behavior.
   IF EXISTS(SELECT 1 FROM fs138.object_removals o WHERE o.object_key=address)
@@ -305,7 +332,8 @@ BEGIN
   INSERT INTO fs138.orphan_observations VALUES(address,clock_timestamp()) ON CONFLICT DO NOTHING;
  END IF;
  SELECT o.first_seen INTO observed_at FROM fs138.orphan_observations o WHERE o.object_key=address;
- RETURN coalesce(observed_at+make_interval(secs=>grace_seconds)<=clock_timestamp(),false);
+ RETURN observed_at IS NOT NULL AND
+  greatest(observed_at+make_interval(secs=>grace_seconds),mandatory_after)<=clock_timestamp();
 END $$;
 
 CREATE OR REPLACE FUNCTION fs138.retire_model_observation(address text,retirement_seconds double precision) RETURNS boolean
@@ -329,6 +357,7 @@ BEGIN
 END $$;
 
 REVOKE ALL ON FUNCTION fs138.preserve_model_publication(),
+ fs138.validate_artifact_deletion_request(uuid[],text,double precision),
  fs138.invalidate_dataset_dependents(uuid[],uuid[],uuid[],uuid[],text,double precision),
  fs138.delete_datasets(uuid[],text,double precision) FROM PUBLIC,fs138_reader,fs138_pipeline_writer;
 GRANT EXECUTE ON FUNCTION fs138.delete_datasets(uuid[],text,double precision) TO fs138_pipeline_writer;

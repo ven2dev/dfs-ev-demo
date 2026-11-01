@@ -8,33 +8,34 @@
       "name": "source closure invalidates exactly dependent runs and enqueues all their pins",
       "verdict": "pass",
       "details": {
-        "dependentRun": "18405c51-e3aa-4795-a286-41253d294294",
-        "survivor": "48447554-6009-48df-b6e6-a273e5405a69",
+        "dependentRun": "d08bc982-cd91-4885-a7bb-c2ae82b5668c",
+        "survivor": "c99cbc79-4fb5-4716-96a6-fa4c3410da4b",
         "receipt": {
-          "event_id": "04c4231f-cd4f-4f4d-8bec-8169bfba04ff",
-          "recorded_at": "2026-11-01T04:16:27.868Z",
+          "event_id": "2da26963-aa58-47f1-9cc9-b098b4493b73",
+          "recorded_at": "2026-11-01T05:31:29.700Z",
           "reason": "source withdrawn",
           "grace_seconds": 0,
           "snapshot_ids": [
-            "97cf39d8-8022-4480-b41e-be8b182f16a5"
+            "22105566-44b8-4cfc-afbc-c7e52c1895a2"
           ],
           "feature_ids": [],
           "label_ids": [],
           "dataset_ids": [
-            "0e8b34e7-cfe4-41a3-9d0e-e6d48f4f2dc6"
+            "5b10c057-e9fc-475d-9f51-373918a44ffa"
           ],
           "run_ids": [
-            "18405c51-e3aa-4795-a286-41253d294294"
+            "d08bc982-cd91-4885-a7bb-c2ae82b5668c"
           ]
         },
         "queued": [
-          "audits/282dc093173dc3f414a8668558588e0f706cd6500bd4ddfbe1c03fbfd3366b46",
-          "audits/8fc6a24d012750f39298feca4fbec0daa3395cc9e59c09766c1bdff82a71a34e",
-          "datasets/b6f49a0bba61c0cb3f59728576d047036a31425fd905e13aeb5d0d3df654f01c",
-          "models/c1ca3f34a775aa79b9c3075eacd4679da7f6cfc4d27c6e1479a977b3f418354c",
-          "raw/eac4a7de511b20ad2d90fbf7b0a1c2befe42634d54924b157ac812dd0ae2852e"
+          "audits/c4b027e9348b768c39ad429835946df1db39a079c9bd5d9ca76da65f7257ccb0",
+          "audits/edf10f20f4eb072dbdb4e38132d3aff026d34b5aff1c05fc0467d93d1b11bebf",
+          "datasets/4d19fa889fc6d1519334345a6b4086f23b5ec87821d5198906bf5a082c47c5bf",
+          "models/5abdf45569ef1acbfa81e65ca74a7fde5dbeb5bfc96533a6dbcded66b708aed5",
+          "raw/3c4fab7eaeaff6204b1e8fc121ca09ea826266c62f543b8eb9e9caf3c2fe315d"
         ],
-        "firstInvalidationPreserved": true
+        "firstInvalidationPreserved": true,
+        "repeatNewlyInvalidatedRunIds": []
       }
     },
     {
@@ -42,26 +43,27 @@
       "verdict": "pass",
       "details": {
         "receipt": {
-          "event_id": "1671785e-6809-4dbe-b60e-f9e79f40449f",
-          "recorded_at": "2026-11-01T04:16:27.950Z",
+          "event_id": "74ec42d7-e7f0-4b01-8686-c3a4a21797c6",
+          "recorded_at": "2026-11-01T05:31:29.793Z",
           "reason": "one dataset",
           "grace_seconds": 0,
           "snapshot_ids": [],
           "feature_ids": [],
           "label_ids": [],
           "dataset_ids": [
-            "995829d0-3469-4efd-9f7a-f9932f8967b4"
+            "4923c57b-e3bc-4ceb-8407-0cd69597b392"
           ],
           "run_ids": [
-            "32ad99cf-4b9e-4d72-9cfe-2382460f401b"
+            "6dd1edf4-23e4-4dec-b5af-698d9af4f2b0"
           ]
         },
-        "unrelatedRun": "9d45347e-5d8d-4b7b-b08a-38ac35eacf94",
+        "unrelatedRun": "157b33d5-cf1d-4141-b147-7d205d44e218",
         "sourceKept": true,
         "actualMembersBefore": 2,
         "actualMembersAfter": 1,
         "featureAndLabelKept": true,
-        "normalizedRowKept": true
+        "normalizedRowKept": true,
+        "repeatNewlyInvalidatedRunIds": []
       }
     },
     {
@@ -69,27 +71,27 @@
       "verdict": "pass",
       "details": {
         "receipt": {
-          "event_id": "b4b56cc3-862d-49f9-8266-a126c10ca2be",
-          "recorded_at": "2026-11-01T04:16:28.029Z",
+          "event_id": "4f243b77-241e-4b1f-94c8-7ee83c928eb2",
+          "recorded_at": "2026-11-01T05:31:29.877Z",
           "reason": "member source withdrawn",
           "grace_seconds": 0,
           "snapshot_ids": [
-            "423136e6-1215-4557-9eaf-fdc3a1fe2b98"
+            "e8968cb9-7dac-4b93-9638-8d89888f9ecb"
           ],
           "feature_ids": [
-            "b831c063-7f89-4613-a7bc-944defc1c0c2"
+            "9d247d04-b251-4f6a-b2b7-a1bd727ff2fa"
           ],
           "label_ids": [
-            "e9d17bd1-7c2f-4863-9082-c6631a810f54"
+            "2d519fe6-c108-4fca-acfb-65dbd2148839"
           ],
           "dataset_ids": [
-            "f5cbb658-85de-441e-90dd-4039717642c8"
+            "50e73de7-fd01-47b3-ba2b-cd707dc2723b"
           ],
           "run_ids": [
-            "897b6371-db94-4b4e-a67c-b496c9e2cd4b"
+            "762252a9-4e99-4eaf-a6c8-ac2a3cd6ce3d"
           ]
         },
-        "survivorRun": "8428e212-c877-4066-b619-0023607ad6b5",
+        "survivorRun": "fe2db151-d3c6-41c4-9369-507f09426c28",
         "membershipUnionProved": true,
         "actualRowsRemoved": 3,
         "unrelatedRowsKept": 3
@@ -99,9 +101,9 @@
       "name": "writer/reader LOGINs cannot directly mutate registry or call private closure; outsider cannot govern",
       "verdict": "pass",
       "details": {
-        "refusals": 16,
-        "realReader": "fs138_job_1dbc6c5632f84959",
-        "realOutsider": "fs138_job_d8aa803acfb998f4"
+        "refusals": 18,
+        "realReader": "fs138_job_ffce305ccdb48957",
+        "realOutsider": "fs138_job_99929593a4a7159c"
       }
     },
     {
@@ -181,6 +183,25 @@
       }
     },
     {
+      "name": "lost-COMMIT live retry matches every file pin despite another run's shared-report tombstone",
+      "verdict": "pass",
+      "details": {
+        "lostCommitResultWithheld": true,
+        "sharedReport": "audits/4d550b50dbcb230fbaa7b3cd4021fa29c11b366ee916489ef72231e53e3c86e2",
+        "affectedRun": "02322720-4860-41bb-a0ae-ef2b168295e8",
+        "liveRetryRun": "2c346946-59e1-484b-9e8f-478bf6ce9ea6",
+        "pendingAndSharedRetainedRetries": true,
+        "existingPublication": true,
+        "firstClockAndReceiptPreserved": true,
+        "mismatchedFileSetsRefused": 5,
+        "missingFullPinsRefused": true,
+        "conflictingIdentityRefused": true,
+        "deniedLiveRetrySqlstate": "P1665",
+        "invalidatedRetrySqlstate": "P1661",
+        "identicalDescriptorRuns": 1
+      }
+    },
+    {
       "name": "pre-BEGIN tombstone refusal is typed and SQLSTATE mapping preserves unrelated failures",
       "verdict": "pass",
       "details": {
@@ -203,12 +224,19 @@
   ],
   "verdict": "pass",
   "sourceHashes": {
-    "packages/db/proposals/166_artifact_governance.sql": "f39522f956d81d21ee08411160206e9441d024e91db5e9d1d746e00101ff9ca3",
-    "services/pipeline/src/featureStore/governance.ts": "712483533ab4bc8a4b3c815948be3508e79e0d98d95fd684f7b07efd2592f9f3",
-    "services/pipeline/src/featureStore/modelManifests.ts": "0c38651178b91050538f8649d56a1946783efdeb61bbdc27d987e307bb0717d9",
+    "packages/db/proposals/166_artifact_governance.sql": "600402ed383510e91bf75f625af203ec2ec82e20fa521efec601dd47a00f7666",
+    "services/pipeline/src/featureStore/governance.ts": "e16f68aaf7b054ccfe7ce9b6fce6d3d8478728b2628524a2f095b157fe65637c",
+    "services/pipeline/src/featureStore/modelManifests.ts": "c677d0443177748fee090b9d5bb3607bc82f7bafd28ad5609a3922d76a109802",
     "services/pipeline/src/featureStore/datasets.ts": "690c626a3a049f89bc6a45fad235af8b09e5d2b54eef0a0c76e261af20bb3fc7",
     "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
     "services/pipeline/tests/feature-store/artifact-governance-fixture.ts": "694d6f193b1b5b66c61e5b96a2610e1a99b709980fe086905893c6ca357885c2",
-    "services/pipeline/tests/feature-store/artifact-governance.check.mts": "8ea9d89f30f3682a77cc16bb441afaeda6f594911b6f5c90bc5f65f203e9510f"
+    "services/pipeline/tests/feature-store/artifact-governance.check.mts": "b66da1f4fbd0a7a6a3f0d863b367cfa1ba17b4b87445940eed47b7dc12bfc574"
+  },
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/node_modules/.cache/feature-store-166/review-corrections/full-lifecycle.json",
+    "sha256": "72208d144fbb858ac06afce05e93f8c35491281c8036b03bf408eea97462bcef",
+    "byteSize": 8530,
+    "retention": "Full record retained outside Git; obtain these exact bytes to audit the historical result. A rerun creates a new sample hash."
   }
 }
