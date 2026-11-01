@@ -1,7 +1,8 @@
 # Model artifact governance (#166)
 
-Step 1 implements the proposal lifecycle and source/explicit-dataset deletion
-APIs. Delivery and cleaner orchestration remain subsequent reviewed steps.
+Steps 1–2 implement the proposal lifecycle, source/explicit-dataset deletion
+APIs and the guarded artifact-read/calculation boundary. Cleaner orchestration
+remains the next reviewed step.
 Apply `packages/db/proposals/166_artifact_governance.sql` after the #138
 foundation/governance proposals, #163 effective rights and #165 model manifests
 in a registered local scratch database. This is proposal SQL, without a frozen
@@ -134,8 +135,81 @@ retry that preserves the original run. No prototype source was copied into the
 implementation.
 
 Step 2 adds the two-query trusted delivery boundary and deterministic read/server
-work budgets. Step 3 finishes cleaner orchestration and its per-candidate budget.
+work budgets, described below. Step 3 finishes cleaner orchestration and its per-candidate budget.
 Step 4 runs the final benchmark, acceptance mapping and premise-first review.
 Each step is reviewed before committing. The feature remains within its
 3½–4-hour planning estimate; discovery beyond five hours triggers a split before
 further implementation. Push requires fresh owner consent.
+
+## Guarded artifact reads and calculation
+
+The public pipeline subpath `@dfs-ev/pipeline/feature-store/model-artifacts`
+exports `readModelArtifacts` and `withModelArtifacts`. Both accept a run UUID
+and one to three distinct supported slots: `descriptor`,
+`strict-point-in-time-v1`, `retrospective-reconstruction-v1`. Slots may only
+select pinned artifacts; callers supply no addresses or source scope.
+
+Q1 calls `fs138.authorize_model_read(run_id, slots, true)` once. Within that
+statement's stable snapshot it derives the run's full dataset/source lineage,
+checks current rights once per distinct profile and checks run/dataset/source
+status. Only then does it return immutable run metadata, dataset pins, selected
+artifact pins and the current authorization receipt. Even a descriptor-only
+read authorizes every cited dataset/source. The restricted reader receives only
+EXECUTE on this narrow function; registry table SELECT/mutation and writer APIs
+remain refused. The original publication receipt is historical metadata, never
+an authorization certificate.
+
+The API GETs each selected artifact once, checks its pinned byte size and invokes
+the optional trusted calculation. It does no HEAD, PUT, DELETE, raw/dataset-byte
+read or ordinary integrity rehash. After all I/O and calculation, Q2 calls the
+same function with `false`, re-deriving current rights/status in a fresh statement
+and returning only its receipt. Results are released only after Q2 succeeds.
+There is no nested dataset guard. #167 may put its single context lookup inside
+the trusted callback; its future handler will then use three total SQL calls.
+Context lookup/lineage integration and serving behavior remain #167 work.
+
+Use a dedicated idle READ COMMITTED connection for the entire operation so a
+caller transaction cannot keep locks open across I/O. The API opens no
+transaction. The SQL function rejects repeatable-read/serializable snapshots,
+which could hide a newly committed revocation from Q2. An idle connection and a
+callback that never streams, caches or releases private bytes are trusted caller
+preconditions, matching the existing publisher's dedicated-connection contract.
+PostgreSQL's extended Parse/Bind protocol means transaction and statement clock
+inequality is not a valid way to detect a previously open transaction. Real
+paused-GET/calculation probes instead verify idle session state, no transaction,
+no held locks and a concurrent deletion that commits before Q2.
+
+A tombstone for shared-retained bytes does not refuse an unaffected existing
+run. Its live status and rights decide delivery. Invalidated runs, invalidated
+datasets, deleted sources, missing lineage and denied/expired grants all refuse.
+Malformed requests, missing run/slot, rights refusal, status refusal and snapshot
+session refusal have typed codes (`model-read-request-refused`,
+`model-read-missing`, `model-current-rights-refused`,
+`model-read-status-refused`, `model-read-session-refused`). Missing, failed or
+wrong-size GETs produce `model-artifact-unavailable` with the original cause.
+Calculation errors and database/socket failures preserve their original error;
+none returns a buffered result. Same-size corruption remains #170's integrity
+qualification responsibility, as it is for ordinary foundation reads.
+
+## Step-2 CI work budgets
+
+The database lane automatically discovers `model-artifacts.check.mts`. It
+asserts exactly **two client SQL statements** and **one GET per selected file**
+on success and on Q2 refusal. Initial rights/status refusal uses one query and
+zero GETs. There are zero client BEGIN/COMMIT/ROLLBACK calls and zero ordinary
+HEAD/PUT/DELETE/list calls. Tests cover single-mode and paired-mode runs with
+0 versus 2,504 actual members, descriptor-only and all selected artifacts.
+
+The measurement-only wrapper samples `pg_stat_xact_user_tables` immediately
+before/after the actual production authorization function in one autocommit
+statement. This includes work inside definer functions. Q1 and Q2 each enforce
+zero all-table DML and zero scans/tuple fetches of membership, example-value,
+example-lineage and normalized tables. These deterministic counters are
+identical at 0 and 2,504 members. Full metadata counters are retained for review;
+their physical probe counts can differ with custom/generic plans and early
+EXISTS exits. CI does not force a planner mode to manufacture equality.
+In-statement `pg_locks` inspection rejects advisory, tuple/transaction and
+relation coordination locks; normal AccessShareLock is expected. Hidden scan
+and definer-DML negative controls demonstrate that the oracle detects violations.
+No wall-clock gate runs in CI; the final retained-fixture benchmark still gates
+each candidate block's p95(Q1+Q2) at ≤21 ms under 30 ms, local-fixture only.

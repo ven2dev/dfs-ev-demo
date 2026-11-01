@@ -77,8 +77,8 @@ export const governanceFixture = (writer: Database, store: ObjectStore) => {
     [governanceCode.gitSha, governanceCode.contentSha256, spec, artifact.sha256, artifact.objectKey,
       artifact.byteSize, contentSha256, rows.length])).rows[0].dataset_id as string;
     await writer.query("INSERT INTO fs138.dataset_inputs SELECT $1,unnest($2::uuid[])", [datasetId, sources]);
-    for (const row of rows) await writer.query("INSERT INTO fs138.dataset_members VALUES($1,$2,$3)",
-      [datasetId, row.featureId, row.labelId]);
+    await writer.query(`INSERT INTO fs138.dataset_members SELECT $1,r."featureId",r."labelId"
+      FROM jsonb_to_recordset($2) r("featureId" uuid,"labelId" uuid)`, [datasetId, JSON.stringify(rows)]);
     return { datasetId, mode, spec, objectKey: artifact.objectKey, fileSha256: artifact.sha256,
       contentSha256, byteSize: artifact.byteSize, rowCount: rows.length, sources };
   };
@@ -101,4 +101,29 @@ export const governanceFixture = (writer: Database, store: ObjectStore) => {
     return persist("audits", pins);
   };
   return { source, example, dataset, report, objects, inputPins, persist };
+};
+
+// Actual 2,504-row controls without 12,520 fixture INSERT round trips. These
+// synthetic values prove work independence, not retained-report provenance.
+export const governanceExamples = async (writer: Database, input: { job: string; snapshot: string }, count: number): Promise<DatasetRow[]> => {
+  const prefix = randomUUID();
+  const result = await writer.query(`WITH f AS (
+    INSERT INTO fs138.feature_values(job_id,player_id,game_id,stat,season,cutoff,checkpoint,feature_version,
+      history_policy,evidence_mode,state,reasons,flags,sample_size,history,history_gaps)
+    SELECT $1,$3||n,$3||n,'passing_yards',2022,'2022-01-01',clock_timestamp(),$4,$5,
+      'retrospective-reconstruction-v1','usable','{}',ARRAY['historical-availability-unverified'],2,
+      '[{"gameId":"h1","kickoff":"2021-01-01T00:00:00Z","yards":100},{"gameId":"h2","kickoff":"2021-01-02T00:00:00Z","yards":200}]','[]'
+    FROM generate_series(1,$6::integer) n RETURNING *
+  ), l AS (
+    INSERT INTO fs138.outcome_labels(job_id,player_id,game_id,stat,season,label_cutoff,label_version,
+      evidence_mode,state,reasons,flags,value)
+    SELECT $1,player_id,game_id,'passing_yards',2022,'2022-01-02',$7,'retrospective-reconstruction-v1',
+      'usable','{}',ARRAY['historical-availability-unverified'],250 FROM f RETURNING *
+  ), fi AS (INSERT INTO fs138.feature_inputs SELECT feature_id,$2 FROM f),
+  li AS (INSERT INTO fs138.label_inputs SELECT label_id,$2 FROM l)
+  SELECT f.feature_id AS "featureId",l.label_id AS "labelId",f.player_id AS "playerId",f.game_id AS "gameId",
+    f.season,f.cutoff,f.sample_size AS "sampleSize",f.history,l.label_cutoff AS "labelCutoff",l.value AS label,f.flags
+  FROM f JOIN l USING(player_id) ORDER BY f.game_id`,
+  [input.job, input.snapshot, prefix, FEATURE_VERSION, HISTORY_POLICY, count, LABEL_VERSION]);
+  return result.rows.map(row => ({ ...row, cutoff: row.cutoff.toISOString(), labelCutoff: row.labelCutoff.toISOString() }));
 };

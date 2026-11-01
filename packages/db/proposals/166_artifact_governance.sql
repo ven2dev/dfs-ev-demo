@@ -302,4 +302,73 @@ REVOKE ALL ON FUNCTION fs138.preserve_model_publication(),
  fs138.delete_datasets(uuid[],text,double precision) FROM PUBLIC,fs138_reader,fs138_pipeline_writer;
 GRANT EXECUTE ON FUNCTION fs138.delete_datasets(uuid[],text,double precision) TO fs138_pipeline_writer;
 -- CREATE OR REPLACE retains the original narrow grants on existing APIs.
--- No reader/app artifact-table grants or delivery capability in lifecycle step 1.
+-- No general reader/app artifact-table grants.
+
+-- The only reader capability: one statement snapshot for the entire run's
+-- rights/status. Pin retrieval is part of Q1; Q2 returns only a fresh receipt.
+-- STABLE keeps the internal SELECTs on the caller statement's snapshot. There
+-- are no writer coordination locks, membership reads or per-example work.
+CREATE FUNCTION fs138.authorize_model_read(p_run uuid,p_slots text[],p_with_pins boolean)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
+DECLARE publication fs138.model_runs; snapshots uuid[]; checked_at timestamptz:=statement_timestamp();
+ receipt jsonb; allowed boolean; pins jsonb; files jsonb;
+BEGIN
+ IF NOT(pg_has_role(session_user,'fs138_reader','member')
+  OR pg_has_role(session_user,'fs138_pipeline_writer','member')) THEN
+  RAISE EXCEPTION 'model-reader-role-required' USING ERRCODE='42501';
+ END IF;
+ -- The trusted API requires a dedicated idle connection. Do not infer an
+ -- explicit transaction from clock differences: Parse/Bind can start a normal
+ -- autocommit transaction before statement_timestamp in the extended protocol.
+ -- Refuse snapshot isolation, which would hide revocation from Q2.
+ IF current_setting('transaction_isolation')<>'read committed' THEN
+  RAISE EXCEPTION 'model-read-session-refused' USING ERRCODE='P1667';
+ END IF;
+ IF p_run IS NULL OR p_with_pins IS NULL OR p_slots IS NULL
+ OR cardinality(p_slots) NOT BETWEEN 1 AND 3
+ OR cardinality(p_slots)<>(SELECT count(DISTINCT slot) FROM unnest(p_slots) slot)
+ OR EXISTS(SELECT 1 FROM unnest(p_slots) slot WHERE slot NOT IN
+  ('descriptor','strict-point-in-time-v1','retrospective-reconstruction-v1')) THEN
+  RAISE EXCEPTION 'model-read-request-refused' USING ERRCODE='P1663';
+ END IF;
+ SELECT r.* INTO publication FROM fs138.model_runs r WHERE r.run_id=p_run;
+ IF NOT FOUND THEN RAISE EXCEPTION 'model-read-missing' USING ERRCODE='P1664'; END IF;
+ SELECT coalesce(array_agg(DISTINCT i.snapshot_id ORDER BY i.snapshot_id),'{}') INTO snapshots
+ FROM fs138.model_run_datasets p JOIN fs138.dataset_inputs i USING(dataset_id) WHERE p.run_id=p_run;
+ WITH profiles AS (SELECT DISTINCT s.profile_id FROM fs138.source_snapshots s WHERE s.snapshot_id=ANY(snapshots)),
+ decisions AS MATERIALIZED (
+  SELECT p.profile_id,e.decision_id,e.allowed_uses FROM profiles p
+  LEFT JOIN LATERAL fs138.effective_rights(p.profile_id,checked_at,checked_at) e ON true
+ ) SELECT coalesce(bool_and(decision_id IS NOT NULL AND 'research'=ANY(allowed_uses)),false),
+  jsonb_build_object('checkedAt',checked_at,'decisions',coalesce(jsonb_agg(jsonb_build_object(
+   'profileId',profile_id,'decisionId',decision_id) ORDER BY profile_id),'[]'::jsonb)) INTO allowed,receipt FROM decisions;
+ IF NOT allowed THEN RAISE EXCEPTION 'model-current-rights-refused' USING ERRCODE='P1665'; END IF;
+ IF publication.invalidated_at IS NOT NULL
+ OR (SELECT count(*) FROM fs138.model_run_datasets p WHERE p.run_id=p_run) NOT BETWEEN 1 AND 2
+ OR EXISTS(SELECT 1 FROM fs138.model_run_datasets p LEFT JOIN fs138.dataset_manifests d USING(dataset_id)
+  WHERE p.run_id=p_run AND (d.dataset_id IS NULL OR d.invalidated_at IS NOT NULL
+   OR NOT EXISTS(SELECT 1 FROM fs138.dataset_inputs i WHERE i.dataset_id=p.dataset_id)))
+ OR EXISTS(SELECT 1 FROM unnest(snapshots) id LEFT JOIN fs138.source_snapshots s ON s.snapshot_id=id
+  WHERE s.snapshot_id IS NULL OR s.deleted_at IS NOT NULL) THEN
+  RAISE EXCEPTION 'model-read-status-refused' USING ERRCODE='P1666';
+ END IF;
+ IF (SELECT count(*) FROM fs138.model_artifacts a WHERE a.run_id=p_run AND a.slot=ANY(p_slots))<>cardinality(p_slots) THEN
+  RAISE EXCEPTION 'model-read-missing' USING ERRCODE='P1664';
+ END IF;
+ -- A shared-retained tombstone refuses new publication, not delivery of a live
+ -- unaffected run. Run/dataset/source status above is the delivery policy.
+ IF NOT p_with_pins THEN RETURN jsonb_build_object('authorization',receipt); END IF;
+ SELECT jsonb_agg(jsonb_build_object('datasetId',p.dataset_id,'mode',p.evidence_mode,
+  'fileSha256',p.file_sha256,'contentSha256',p.content_sha256,'spec',p.spec,
+  'rowCount',p.row_count,'recordedAt',p.dataset_recorded_at) ORDER BY p.evidence_mode)
+ INTO pins FROM fs138.model_run_datasets p WHERE p.run_id=p_run;
+ SELECT jsonb_agg(jsonb_build_object('slot',a.slot,'datasetId',a.dataset_id,'objectKey',a.object_key,
+  'fileSha256',a.file_sha256,'byteSize',a.byte_size) ORDER BY a.slot)
+ INTO files FROM fs138.model_artifacts a WHERE a.run_id=p_run AND a.slot=ANY(p_slots);
+ RETURN jsonb_build_object('run',jsonb_build_object('runId',publication.run_id,
+  'descriptorSha256',publication.descriptor_sha256,'identity',publication.identity,
+  'recordedAt',publication.recorded_at,'rightsReceipt',publication.rights_receipt),
+  'datasets',pins,'artifacts',files,'authorization',receipt);
+END $$;
+REVOKE ALL ON FUNCTION fs138.authorize_model_read(uuid,text[],boolean) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fs138.authorize_model_read(uuid,text[],boolean) TO fs138_reader,fs138_pipeline_writer;

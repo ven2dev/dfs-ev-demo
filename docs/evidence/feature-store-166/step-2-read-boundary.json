@@ -1,0 +1,3906 @@
+{
+  "issue": 166,
+  "step": 2,
+  "runtime": "v24.18.1",
+  "fixture": "synthetic 0/2504 actual members, same lineage, real restricted LOGINs, private local ObjectStore",
+  "qualification": "CI behavior and work budgets only; final retained-fixture per-block speed gate remains step 4",
+  "probes": [
+    {
+      "name": "CI: exactly two SQL statements, selected GETs only and equal server work for 0/2504 members",
+      "verdict": "pass",
+      "details": [
+        {
+          "shape": "single-0",
+          "datasetRows": 0,
+          "selectedFiles": 1,
+          "sql": 2,
+          "objectWork": {
+            "gets": 1,
+            "heads": 0,
+            "puts": 0,
+            "deletes": 0,
+            "lists": 0
+          },
+          "q1": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 5,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 5
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 2
+            }
+          ],
+          "q2": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 4,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 4
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 2
+            }
+          ]
+        },
+        {
+          "shape": "single-0",
+          "datasetRows": 0,
+          "selectedFiles": 2,
+          "sql": 2,
+          "objectWork": {
+            "gets": 2,
+            "heads": 0,
+            "puts": 0,
+            "deletes": 0,
+            "lists": 0
+          },
+          "q1": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 4
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 5,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 5
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ],
+          "q2": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 4,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 4
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ]
+        },
+        {
+          "shape": "single-2504",
+          "datasetRows": 2504,
+          "selectedFiles": 1,
+          "sql": 2,
+          "objectWork": {
+            "gets": 1,
+            "heads": 0,
+            "puts": 0,
+            "deletes": 0,
+            "lists": 0
+          },
+          "q1": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 5,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 5
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ],
+          "q2": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 4,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 4
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ]
+        },
+        {
+          "shape": "single-2504",
+          "datasetRows": 2504,
+          "selectedFiles": 2,
+          "sql": 2,
+          "objectWork": {
+            "gets": 2,
+            "heads": 0,
+            "puts": 0,
+            "deletes": 0,
+            "lists": 0
+          },
+          "q1": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 4
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 5,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 5
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ],
+          "q2": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 4,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 4
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ]
+        },
+        {
+          "shape": "pair-0",
+          "datasetRows": 0,
+          "selectedFiles": 1,
+          "sql": 2,
+          "objectWork": {
+            "gets": 1,
+            "heads": 0,
+            "puts": 0,
+            "deletes": 0,
+            "lists": 0
+          },
+          "q1": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 2,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 5,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 10
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ],
+          "q2": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 2,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 4,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 8
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ]
+        },
+        {
+          "shape": "pair-0",
+          "datasetRows": 0,
+          "selectedFiles": 3,
+          "sql": 2,
+          "objectWork": {
+            "gets": 3,
+            "heads": 0,
+            "puts": 0,
+            "deletes": 0,
+            "lists": 0
+          },
+          "q1": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 2,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 6
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 5,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 10
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ],
+          "q2": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 2,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 3
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 4,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 8
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ]
+        },
+        {
+          "shape": "pair-2504",
+          "datasetRows": 2504,
+          "selectedFiles": 1,
+          "sql": 2,
+          "objectWork": {
+            "gets": 1,
+            "heads": 0,
+            "puts": 0,
+            "deletes": 0,
+            "lists": 0
+          },
+          "q1": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 2,
+              "seq_tup_read": 4,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 5,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 10
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ],
+          "q2": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 2,
+              "seq_tup_read": 4,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 4,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 8
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ]
+        },
+        {
+          "shape": "pair-2504",
+          "datasetRows": 2504,
+          "selectedFiles": 3,
+          "sql": 2,
+          "objectWork": {
+            "gets": 3,
+            "heads": 0,
+            "puts": 0,
+            "deletes": 0,
+            "lists": 0
+          },
+          "q1": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 2,
+              "seq_tup_read": 4,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 6
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 5,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 10
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ],
+          "q2": [
+            {
+              "table": "dataset_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 2,
+              "inserted": 0,
+              "seq_scan": 2,
+              "seq_tup_read": 4,
+              "idx_tup_fetch": 2
+            },
+            {
+              "table": "dataset_manifests",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 3,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "dataset_members",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "deletion_events",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "feature_values",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "job_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "label_inputs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "model_artifacts",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 3
+            },
+            {
+              "table": "model_run_datasets",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 4,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 8
+            },
+            {
+              "table": "model_runs",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "norm_identity",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_participation",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_player_game_stats",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "norm_schedule",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "object_removals",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "orphan_observations",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "outcome_labels",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "rights_decisions",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 1
+            },
+            {
+              "table": "source_profiles",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 0,
+              "inserted": 0,
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_tup_fetch": 0
+            },
+            {
+              "table": "source_snapshots",
+              "deleted": 0,
+              "updated": 0,
+              "idx_scan": 1,
+              "inserted": 0,
+              "seq_scan": 1,
+              "seq_tup_read": 1,
+              "idx_tup_fetch": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CI server oracle detects hidden example scans and definer DML",
+      "verdict": "pass",
+      "details": [
+        {
+          "hiddenWork": "example scan",
+          "detected": true
+        },
+        {
+          "hiddenWork": "definer DML",
+          "detected": true
+        }
+      ]
+    },
+    {
+      "name": "actual reader LOGIN has only the guarded surface; outsider cannot read or escalate",
+      "verdict": "pass",
+      "details": {
+        "session_user": "fs138_job_41dca53084b13004",
+        "current_user": "fs138_job_41dca53084b13004",
+        "refused": 12
+      }
+    },
+    {
+      "name": "bad request, unknown run/slot and repeatable snapshots fail closed before any GET",
+      "verdict": "pass",
+      "details": {
+        "malformedRequestSql": 0,
+        "missingSlotOrRunTyped": true,
+        "repeatableSnapshotRefused": true,
+        "gets": 0
+      }
+    },
+    {
+      "name": "initial missing/expired/revoked rights and source/dataset/run status refuse before bytes",
+      "verdict": "pass",
+      "details": [
+        {
+          "reason": "missing-rights",
+          "code": "model-current-rights-refused",
+          "sql": 1,
+          "gets": 0
+        },
+        {
+          "reason": "expired-rights",
+          "code": "model-current-rights-refused",
+          "sql": 1,
+          "gets": 0
+        },
+        {
+          "reason": "revoked-rights",
+          "code": "model-current-rights-refused",
+          "sql": 1,
+          "gets": 0
+        },
+        {
+          "reason": "source",
+          "code": "model-read-status-refused",
+          "sql": 1,
+          "gets": 0
+        },
+        {
+          "reason": "dataset",
+          "code": "model-read-status-refused",
+          "sql": 1,
+          "gets": 0
+        },
+        {
+          "reason": "run",
+          "code": "model-read-status-refused",
+          "sql": 1,
+          "gets": 0
+        }
+      ]
+    },
+    {
+      "name": "descriptor-only reads authorize every cited dataset, including unselected report lineage",
+      "verdict": "pass",
+      "details": {
+        "sourcesAuthorized": 2,
+        "requestedFiles": 1,
+        "unselectedLineageRefused": true,
+        "gets": 0
+      }
+    },
+    {
+      "name": "revocation and both deletion APIs during each GET or calculation withhold the result",
+      "verdict": "pass",
+      "details": [
+        {
+          "kind": "rights",
+          "during": "GET-1",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        },
+        {
+          "kind": "rights",
+          "during": "GET-2",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        },
+        {
+          "kind": "rights",
+          "during": "GET-3",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        },
+        {
+          "kind": "rights",
+          "during": "calculation",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        },
+        {
+          "kind": "source",
+          "during": "GET-1",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        },
+        {
+          "kind": "source",
+          "during": "GET-2",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        },
+        {
+          "kind": "source",
+          "during": "GET-3",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        },
+        {
+          "kind": "source",
+          "during": "calculation",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        },
+        {
+          "kind": "dataset",
+          "during": "GET-1",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        },
+        {
+          "kind": "dataset",
+          "during": "GET-2",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        },
+        {
+          "kind": "dataset",
+          "during": "GET-3",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        },
+        {
+          "kind": "dataset",
+          "during": "calculation",
+          "sql": 2,
+          "gets": 3,
+          "delivered": false
+        }
+      ]
+    },
+    {
+      "name": "paused GET and calculation hold no transaction or coordination locks; deletion commits concurrently",
+      "verdict": "pass",
+      "details": [
+        {
+          "pausedAt": "get",
+          "state": "idle",
+          "transactionOpen": false,
+          "locks": 0,
+          "concurrentDeletionCommitted": true
+        },
+        {
+          "pausedAt": "calculation",
+          "state": "idle",
+          "transactionOpen": false,
+          "locks": 0,
+          "concurrentDeletionCommitted": true
+        }
+      ]
+    },
+    {
+      "name": "shared-retained tombstones preserve unaffected existing-run delivery",
+      "verdict": "pass",
+      "details": {
+        "invalidatedRunRefused": true,
+        "unaffectedRunDelivered": true,
+        "tombstonedSharedReportDelivered": true
+      }
+    },
+    {
+      "name": "missing/mismatched bytes, calculation failures and Q2 connection loss release no result",
+      "verdict": "pass",
+      "details": {
+        "delivered": false,
+        "missingOrMismatchedBeforeCalculation": true,
+        "failedCalculationWithheld": true,
+        "lostQ2Withheld": true
+      }
+    },
+    {
+      "name": "caller/callback mutation cannot change the final authorization identity; context work composes once",
+      "verdict": "pass",
+      "details": {
+        "boundaryAuthorizationSql": 2,
+        "explicitContextControlSql": 1,
+        "mutatedIdentityNotUsed": true,
+        "revokedResultWithheld": true,
+        "authorizedCalculationDelivered": true
+      }
+    }
+  ],
+  "verdict": "pass",
+  "sourceHashes": {
+    "packages/db/proposals/166_artifact_governance.sql": "7a3f7c43921062fb77ae821dcbfd3620a55dc2d14267b1f4eb5ec6c52f61989b",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "25baf5f510d80e48e58a43e36b9cba6f5ec91308dfdb27eb54cb46d8a91bba05",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+    "services/pipeline/package.json": "43b65745c9fb3ab4f00bdbc3e508da0add4c852789c93b6d4a7b1d9a93d5aaec",
+    "services/pipeline/tests/feature-store/artifact-governance-fixture.ts": "694d6f193b1b5b66c61e5b96a2610e1a99b709980fe086905893c6ca357885c2",
+    "services/pipeline/tests/feature-store/artifact-read-work.ts": "44626f9bfd3826db45cd7289bf79e9aa06c21743e9ef744e96885b596da63d5c",
+    "services/pipeline/tests/feature-store/model-artifacts.check.mts": "b2ac717a27e4865604f9d6030b3a3d43e956592805de8a3f2c67da139d1e72ca"
+  }
+}

@@ -55,7 +55,32 @@ The harness applies fresh proposal SQL only in a disposable database and drops
 its database and LOGINs afterward. `TEST_DATABASE_URL` identifies the registered
 local test target. No hosted environment file is loaded.
 
-The read boundary and its two-statement/server-work CI budget land in step 2.
+## Step 2 implementation
+
+[Read-boundary receipt](step-2-read-boundary.json) records eight successful
+read shapes across single/paired modes, 0/2,504 actual members and descriptor-only
+versus all artifacts. Each uses exactly two SQL calls and the selected GET count,
+with zero example-table work and all-table DML inside both authorization calls.
+All raw server counters remain in the receipt; metadata probe counts are allowed
+to vary with PostgreSQL plan choice. A measurement-only in-statement lock probe,
+hidden-scan and hidden-DML controls, actual LOGIN refusals, 12 mid-operation
+revocation/deletion cases, paused-reader concurrency checks and shared-retained
+delivery cover the read contract. Source hashes identify the implementation.
+The trusted callback and dedicated idle connection preconditions are described
+in the [feature design](../../feature-store-artifact-governance.md).
+[Step-2 validation](step-2-validation.json) records all 143 passing feature-store
+database tests, 15 package/import contract tests, targeted TypeScript/ESLint,
+frozen-migration verification and complete scratch cleanup. Step 1 is committed
+as `0484bd6`; the step-2 implementation awaits owner commit approval.
+
+Regenerate the receipt with the same registered local test target:
+
+```sh
+FS166_READ_EVIDENCE=docs/evidence/feature-store-166/step-2-read-boundary.json \
+  node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \
+  services/pipeline/tests/feature-store/model-artifacts.check.mts
+```
+
 Cleaner page filtering, explicit model/audit requeue and the four-statement
 per-candidate CI budget land in step 3. Step 1 includes only the SQL live-reference
 and orphan-ownership checks needed to make newly queued model/audit rows safe.
