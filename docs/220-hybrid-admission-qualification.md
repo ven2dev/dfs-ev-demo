@@ -1,10 +1,12 @@
 # #220 hybrid admission qualification
 
-Status: owner-approved **local commit only**, 2026-10-31. #220 stays open.
-No push, PR, issue posting, hosted execution or real provider call is authorized.
+Status: Iteration 4 review fixes are **uncommitted for owner review**, 2026-11-01.
+PR #226 remains unchanged at 4df07f6; #220 stays open. No new commit, push, issue
+posting, hosted execution or real provider call is authorized in this correction.
 Branch: `feature/dfsEV-220-hybrid-admission-qualification`.
 Durable worktree: `/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-220`.
-Base: `71cdd90e11cbee7ec6b0eb1961322d40c49a20e9`.
+Review-fix base: `4df07f62a36ad46e4d577518e860bd0231e43f40`. Earlier receipts
+retain their original measurement bases.
 
 ## Current Design basis
 
@@ -30,6 +32,31 @@ singleflight and owner-fencing pattern. A mocked zero-credit /events observation
 runs outside the transaction, records a trustworthy snapshot and releases that
 lease before atomic paid admission is retried. This lease is not paid leadership
 and consumes neither GCRA nor a credit reservation.
+
+### Iteration 4 review-fix basis (local, before implementation)
+
+Probe recovery follows bounded exponential retry plus a terminal circuit breaker
+with explicit operator reinitialization. Reject fixed one-second retries because
+permanent misconfiguration amplifies free calls indefinitely; reject automatic
+period/plan inference because it could invent credit or discard pending liability.
+The transient cap is 60 seconds, limiting repeated probes while allowing recovery
+within roughly a minute. Terminal health reasons are readable SQL state only;
+no application or collector-health route changes belong to this correction.
+The operator primitive preserves liabilities and refuses a period change while
+old liabilities remain. A serving/audited production reset remains a #222 gate.
+
+### Round 2 confirmation basis (before implementation)
+
+Use a debounced circuit breaker: the first reduced-counter or plan-total mismatch
+is a suspicion with normal capped backoff; only the next completed probe with
+the same condition latches needs-init. Accepted/initialized state clears the
+suspicion; a different completed outcome replaces it. Reject immediate latching
+because an ordinary reordered reading can trigger manual-recovery downtime;
+reject indefinite retry of a confirmed change because operator setup is needed
+before trusting a changed account baseline. Missing budget and our own period
+label mismatch remain immediately terminal. This is a confirmation policy, not
+proof of provider ordering; repeated delayed/inconsistent provider readings still
+need real-header qualification before enforce.
 
 ### Alternatives
 
@@ -62,7 +89,10 @@ and consumes neither GCRA nor a credit reservation.
 - The 20-event / 12-market fixture has at most 240 resource rows and 1 MiB logical
   payload for 4 KiB synthetic payloads. Real payload size/catalog retention and
   production stale eligibility are separate design gates.
-- Historical hosted 64.294 ms remains a miss against 50/35 ms. Proposed warm
+- Historical hosted 64.294 ms remains a miss against 50/35 ms. That figure was
+  most likely measured across regions (iad1 functions and an AWS us-west-2
+  database), is not evidence against the single-row debit design, and must be
+  resolved by the hosted iad1/pdx1 comparison. Proposed warm
   200 ms p95 / <=140 ms acceptance in every 20-leader round is not approved by
   these local results. Stale-quota recovery is reported separately; see #222 gates.
 
@@ -119,7 +149,7 @@ to the exact final provider balance with pending zero.
 Within the initialized period, x-requests-used orders accepted snapshots;
 remaining plus used is checked against the initialized quota total. HTTP arrival
 time alone cannot authorize upward credit. Lower used counters do not silently
-open a new period. Missing, malformed, future or inconsistent headers do not
+open a new period. Missing, malformed, future or mismatched headers do not
 restore credit/freshness; actual cost is recorded and liability retained. Trusted
 metadata repair can settle a record without another provider send. This ordering
 assumes coherent per-account counters within a period, not a provider-issued
@@ -143,7 +173,24 @@ snapshot finish, and retries paid admission. Twenty distinct event callers share
 one mocked observation. Its independent upstream 70 remaining / 30 used replaces
 an older 100/0 view; twenty cost-1 admissions leave available credit 50.
 
-Failed probes back off and recover; expired/replaced owners cannot publish.
+Transient failures (missing headers/network observations, older observations
+and an expired current owner) back off exponentially: 1, 2, 4, 8, 16, 32, then
+60 seconds, capped there to limit probe amplification while retaining recovery.
+A replaced owner cannot change its replacement's lease or backoff. Missing
+budget and our own period-label mismatch latch needs-init immediately, with
+health_reason budget-uninitialized or quota-period-mismatch. A first lower-used
+reading or plan-total mismatch instead records suspect_reason as
+quota-counter-reset or quota-plan-mismatch and a suspected-* health reason,
+sets normal capped backoff, and leaves needs_init false. Only the next completed
+probe with the same condition confirms the terminal reason. An accepted probe
+or initialization clears suspicion; a different completed outcome replaces it.
+Follower/backoff claims and stale replaced-owner finishes do not confirm a
+suspicion. claim_probe returns needs-init even
+if another observation makes the budget fresh. These callers retain the flagged
+stale/typed-unavailable policy and make no additional free call. Only the local
+operator initialize_budget primitive clears this terminal state; it preserves
+liability and sticky overrun and refuses an unresolved prior-period rollover.
+This is not a production-authorized reset/health route or audited operator API.
 Fresh cache hits and existing paid-resource followers do not trigger a probe.
 If observation fails, eligible stale data stays visibly stale; otherwise the
 response is typed observation-unavailable. The five-minute drift-check interval
@@ -171,10 +218,78 @@ reserve 3 then actual 8 from 100 records liability 8 and balance 92, with the
 breaker set. An unexpected charge on the nominally free probe is also recorded
 as a cost-zero expected attempt with actual cost, not silently discarded.
 
-## Iteration 3 verification and measurement
+## Iteration 4, review round 2 verification and per-finding report
+
+**47 local behavior checks passed: all 44 prior cases (with reset/plan expectations
+updated) plus three new confirmation/reordering regressions.**
+Six full timing trials passed (one and 20 workers, three rounds each, four modes,
+1,000 successful samples per mode). The fixture was PostgreSQL 18.6 / measured
+524,288 KiB tmpfs / loopback 54362. Provider calls remain mocks only.
+
+| Finding | Result and regression evidence |
+| --- | --- |
+| 1. Probe recovery (round 2) | Fixed: capped exponential delay; missing budget/period mismatch latch immediately. First counter-reset/plan-total suspicion backs off without a latch; a second consecutive matching probe confirms it. Twenty reset claims make exactly two free calls before the latch, then one more after initialization. Reordered paid/free readings recover, acceptance clears suspicion, and different completions replace it. All previous stale/coalescing cases pass. |
+| 2. Late-stale duplicate retry | Fixed: refresh retry gets a fresh UUID; late stale deletes its newly denied audit row. A fixture-only BEFORE INSERT subject trigger ages the budget after the early check but before reserve. Fresh-ID and accidental same-ID retries both become leader with exactly one reservation. |
+| 3. Historical baseline | Fixed at both occurrences: 64.294 ms most likely crossed iad1/us-west-2, does not disprove the debit design, and needs the hosted iad1/pdx1 comparison. The 50/35 ms targets are unchanged. |
+| 4. Redundant state | Removed the unreachable state branch; a comment explains that fixed-total validation already determines remaining when used is unchanged. |
+| 5. Validation ownership | Reconcile settles only on observe's validated accepted/older/older-or-reset result plus used >= actual cost. Invalid period/sum/future/missing metadata remain unsettled; valid older repair settles without additive credit drift. |
+| 6. Reproducible evidence | Explicit output argument and exclusive write; an existing-file run exits 1 before DB setup and leaves the receipt unchanged. Current receipt carries exact script and SQL Git blob OIDs. Older measured values are unchanged and marked superseded. |
+
+Terminal-window regressions advance retry_after on the disposable fixture past
+the 60-second cap, rather than sleeping for wall-clock windows. They prove that
+elapsed backoff alone cannot clear needs-init; they do not claim an elapsed-time
+production trial. Full live free-provider and hosted behavior remain untested.
+
+Command executed (exit 0):
+
+```sh
+/Users/vernonneilly/.nvm/versions/node/v24.18.1/bin/node scripts/spikes/220-qualification.mjs pg /Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-220/docs/evidence/220-qualification/local-iteration-4.json
+```
+
+Captured output summary: **47 PASS lines, 6 TRIAL lines, RECEIPT saved at the
+explicit path**. Full command output:
+[220-iteration-4-round-2.log](/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/220-iteration-4-round-2.log).
+Every behavior-case name and trial result is also in the generated JSON.
+
+| Current 20-worker round | Baseline p95 | Distinct-subject atomic p95 | Shared-subject atomic p95 | Warm mock paid path p95 |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 1.116 ms | 12.630 ms | 15.273 ms | 9.787 ms |
+| 2 | 0.918 ms | 9.789 ms | 13.503 ms | 9.704 ms |
+| 3 | 1.169 ms | 10.719 ms | 15.132 ms | 16.466 ms |
+
+These local timings do not establish a hosted pass. The run used **50,263 counted
+query messages under 60,000**. Schema setup has 16 top-level statements in one
+message; the two fixture trigger create/drop pairs add four extra top-level
+statements beyond counted messages. Two final schema cleanup/absence queries are
+outside the counter. Conservative top-level statement bound: 60,021; internal
+PL/pgSQL statements remain separate from submitted round trips. Normal admission
+still makes one submitted combined call; initialization's liability scan is
+operator/test setup work, not admission work.
+
+Schema absence was verified, then the owned compose fixture was removed. Node
+syntax and targeted script ESLint passed; no application or migration source
+changed, so no application-suite claim is made for this scoped spike correction.
+
+### Evidence index
+
+| Receipt | Status |
+| --- | --- |
+| local.json | Historical; measured values preserved; superseded by local-iteration-4.json |
+| local-iteration-2.json | Historical; measured values preserved; superseded by local-iteration-4.json |
+| local-iteration-3.json | Historical; measured values preserved; superseded by local-iteration-4.json |
+| local-iteration-4.json | Current review round 2; deleted/regenerated by exact final script, identified by Git blob OID |
+| checkpoint-iteration-4.json | Current source, command/output, scope and cleanup checks |
+
+The reviewed script Git blob is `477c47e141ae68ca6bbd276f0163f5a91ade3101`. Files are still
+uncommitted under the owner's review gate: the receipt does not claim the new
+script is already in HEAD. After commit approval, verify the committed script
+blob equals this OID. This permits exact committed-script provenance without
+committing before the requested review or inventing a self-referential commit ID.
+
+## Historical Iteration 3 verification and measurement
 
 
-**35 local behavior checks pass**. Receipt:
+**35 historical local behavior checks passed** against Iteration 3 source. Receipt:
 `docs/evidence/220-qualification/local-iteration-3.json`.
 
 The fixture is unchanged PostgreSQL 18.6 / measured 524,288 KiB tmpfs / Node
@@ -215,7 +330,7 @@ hosted p95 acceptance or proof of the proposed 200/140 ms budget.
   calls (read, stale check, polls, retry); this is a disclosed worst-case test
   bound, not a production budget approval. Failure paths do a freshness recheck
   before refusing, and no paid call follows an unresolved failure.
-- Final run: 49,932 counted query messages under 60,000.
+- Historical Iteration 3 run: 49,932 counted query messages under 60,000.
   Setup contains 14 top-level statements in one message; two schema-cleanup
   queries are outside the counter. Conservative top-level statement bound:
   60,015, separate from internal function statements.
@@ -290,9 +405,34 @@ mock and update its work budgets/regressions before enforce; do not copy its
   Set its target from hosted measurement; returning followers follow gate c.
 
 Both remain proposals until the hosted test and owner decision. Hosted testing
-is **still unauthorized**. Historical 64.294 ms versus 50/35 ms remains a miss;
-local pg results neither pass that target nor prove the proposed hosted SLO.
+is **still unauthorized**. Historical 64.294 ms versus 50/35 ms remains a miss.
+That figure was most likely measured across regions (iad1 functions and an AWS
+us-west-2 database), is not evidence against the single-row debit design, and
+must be resolved by the hosted iad1/pdx1 comparison. Local pg results neither
+pass that target nor prove the proposed hosted SLO.
 No user cap, weaker durability or lower worker fixture can manufacture a pass.
+
+### e. Admission retry identity and probe recovery hand-off
+
+A quota-stale → refresh → retry takes a fresh attempt UUID. An attempt identifies
+one admission try, not a logical request. The late stale branch removes its own
+newly denied audit row before returning; a deterministic regression also proves
+that an accidental same-ID retry is not trapped as replay. Only the successful
+try installs a lease and one reservation. Preserve this behavior in #222.
+
+Carry forward the bounded transient backoff, two-completed-probe confirmation
+rule, terminal health reasons and operator-only clearing rule. A free reading
+may arrive after a paid reconcile has advanced provider_used, so one lower-used
+reading must remain a suspicion rather than cause an operator-recovery outage.
+The same applies to one plan-total mismatch. Only a matching condition on the
+next completed probe latches; accepted/initialization clears suspect_reason,
+and a different completion replaces it. Missing budget and our own period label
+mismatch are immediately terminal. This reduces single-reading false positives;
+it is not a guarantee that a provider cannot return repeated reordered readings. The local initialization primitive preserves
+liability and sticky overrun; the fuller audited reset/runbook/health integration
+in gate b remains required. Reconcile now relies on observe's validated result
+and used >= actual cost rather than duplicating provider-header rules; observe
+validates before returning any accepted/older/older-or-reset state.
 
 ## Remaining review and release boundary
 
@@ -318,14 +458,34 @@ application integration/proof. Future scope estimated above six hours is split.
   atomically; proved 240 resource rows, unique lease attempts, flagged stale
   responses and recorded overrun cost. Its conservative older-response refund
   rule still stranded credit, and genuinely idle quota needed free observation.
-- **Iteration 3 (current):** 35 checks added snapshot-minus-pending reconciliation,
+- **Iteration 3 (historical):** 35 checks added snapshot-minus-pending reconciliation,
   on-demand account-wide free-probe coalescing/recovery and actual-cost anomalies.
   The unresolved-liability, serving/polling and operator/deadline gaps above are
   explicitly carried forward rather than labeled as production passes.
 
-Earlier JSON receipts/checkpoints retain their original hashes/paths as historical
-records; they are not current-source manifests. Exact earlier source/report
-archives and full logs stay outside Git in the durable chat visualizations
-directory. `checkpoint-iteration-3.json` now verifies the current consolidated
-document and unchanged Iteration 3 SQL/harness/receipt. The separate Iteration 2
-and 3 report files are removed; this is the single report for the checkpoint.
+Earlier receipt measurements are preserved. local.json, local-iteration-2.json
+and local-iteration-3.json now carry historical/superseded metadata; their measured
+values are unchanged. Older checkpoint hashes describe the pre-annotation JSON
+and earlier SQL/script/doc bytes, not current-source manifests. Archives and
+full logs remain outside Git. The current checkpoint manifest is
+checkpoint-iteration-4.json; the new generated receipt includes exact script and
+SQL Git blob IDs for commit verification after owner approval.
+
+
+## Round 2 review return
+
+The final SQL/script implement the two-completed-probe confirmation policy.
+The reordered-reading test claims a free probe, records a paid reconciliation
+first, then finishes the older probe: no latch, backoff/suspected health state,
+accepted next probe, resumed paid refresh and intact liability invariant. Reset
+and plan mismatch require consecutive confirmation; an accepted or different
+completion clears/replaces suspicion. Missing budget and period mismatch still
+latch on the first probe. Initialization clears both terminal state and suspicion.
+
+Round-1 uncommitted receipt/checkpoint were archived outside Git as
+220-round-1-local-iteration-4.json and 220-round-1-checkpoint-iteration-4.json.
+The old untracked receipt was deleted, then regenerated exclusively from the
+final script and SQL. No old measured values in historical Iterations 1–3 were
+changed. Current Git blob IDs were verified against disk and recorded in the
+receipt/checkpoint. As before, committed-blob verification awaits owner approval;
+no commit, push, hosted work, migration or application edit occurred.
