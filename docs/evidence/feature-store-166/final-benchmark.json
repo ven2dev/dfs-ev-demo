@@ -1,0 +1,693 @@
+{
+  "schemaVersion": 2,
+  "issue": 166,
+  "step": 4,
+  "verdict": "pass",
+  "startedAt": "2026-11-01T05:32:45.832Z",
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin",
+    "release": "27.2.0"
+  },
+  "code": {
+    "gitSha": "da46a72754cd64875b4e79296fb3a528308d0127",
+    "contentSha256": "9bb8ea4966ed7a7d546f60009fe2af528fd2ef45482461756fc2fb8ec683e607"
+  },
+  "codeHashes": {
+    "compose.test.yml": "57a19ced9e5892293f353b95456ea4e07544d467d5843634f508773496b4418e",
+    "package-lock.json": "dd0fe58a230ef794d1d51aac676a92eb16ab7cf3ddfc2084736ac7ac2fb25a6e",
+    "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "packages/db/proposals/165_model_manifests.sql": "1915e84e505be95eba819562e47aa4bc7936d15429d3d431fd9e319380800853",
+    "packages/db/proposals/166_artifact_governance.sql": "600402ed383510e91bf75f625af203ec2ec82e20fa521efec601dd47a00f7666",
+    "packages/domain/package.json": "34e81b6f0dcc082e7b3a47f0e5a53b2b667e8da166e3f98b4f1c97f358c72144",
+    "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "packages/domain/src/projection/evaluation.ts": "0852560f81b50968d83088f3de661c07611a9ba852c896aa8527f807a5046fe6",
+    "packages/domain/src/projection/qb-evaluation.ts": "a6c6536b85bf98633b05af1528b212a15cce0d7a0c3227cbce5b0c1a9625e489",
+    "services/pipeline/package.json": "43b65745c9fb3ab4f00bdbc3e508da0add4c852789c93b6d4a7b1d9a93d5aaec",
+    "services/pipeline/scripts/feature-store/artifact-governance-benchmark.ts": "bcf9dea3c7e011abfa662167b562390de853e5370da1b9ae3be4fc8f7f61207a",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "e2d94b1e7a86cefc1ce5f1b9cf6d7387d1c0366673770e0d278efd9c7f5d64e5",
+    "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "23163c515afc6e14d86ba663f8ae54807a00e812ac6f07d4f1f3f5aaff6dc1cb",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "fa2d82a3105a601ab33a3c72deb827a17ad27cd759827134267fd61806dc5336",
+    "services/pipeline/scripts/feature-store/evaluation-measure.ts": "c6aee7cc7462dbe17ef1957a1b3a2f25094ef5eaa1e7612e11bbc25fef32873b",
+    "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts": "e6f9b3170a4a13fc6c6a0d8518a3247e76c4f1b09cd0898d4dc9c8bd7469b2e6",
+    "services/pipeline/scripts/feature-store/evaluation-run.ts": "cd13a88ead8eddebfe4a9b198208906654bd172a1219ae7b6a7caba76533c2d5",
+    "services/pipeline/scripts/feature-store/evaluation-worker.ts": "702d74737b3a307989f5132175c2cde479e07d64c2689610496120a08f94ccb5",
+    "services/pipeline/scripts/feature-store/harness.ts": "f9d74c2ede8c342c8cdc65b800ff3107176cc7d12154a482edcc4d431bec84cb",
+    "services/pipeline/scripts/feature-store/model-publication-identity.ts": "beaef66634ca1bc1e2ad68d4329869dc1a1109c57cc5c15c837c2706d0d5aa3a",
+    "services/pipeline/scripts/feature-store/model-publication-measure.ts": "e9de10a392e645c736d68634228f8e3bd873120155e05f0c8f827450b45082b5",
+    "services/pipeline/scripts/feature-store/model-publication-run.ts": "5ee9d7cd849d4ac112df045f30e167e8f418aead40be7c22910b039114625012",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+    "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+    "services/pipeline/src/featureStore/connections.ts": "37970dc14cdbcbed94fc5d4bb20808bc0f686317eadb77cf635f7b657ba8ef6c",
+    "services/pipeline/src/featureStore/datasets.ts": "690c626a3a049f89bc6a45fad235af8b09e5d2b54eef0a0c76e261af20bb3fc7",
+    "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "8bddf06f546033ba1714224ec26a8b60c623e5fd8d0d4af54a0ff9658f65187b",
+    "services/pipeline/src/featureStore/governance.ts": "e16f68aaf7b054ccfe7ce9b6fce6d3d8478728b2628524a2f095b157fe65637c",
+    "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+    "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "25baf5f510d80e48e58a43e36b9cba6f5ec91308dfdb27eb54cb46d8a91bba05",
+    "services/pipeline/src/featureStore/modelManifests.ts": "c677d0443177748fee090b9d5bb3607bc82f7bafd28ad5609a3922d76a109802",
+    "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "services/pipeline/src/featureStore/objectStore.ts": "d6a9f26c2fd8f54eef161ce5e8dcf8c127a284e90bc6a0e6051355ffc6e737e9",
+    "services/pipeline/src/featureStore/qbReports.ts": "91fa70d5e8a05e1dbbbd0a9968a557da04e4e7b22c8c8f431c5ef475f8a8465e",
+    "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7"
+  },
+  "fixtureConfig": {
+    "postgresTmpfsBytes": 536870912,
+    "sharedMemoryBytes": 134217728
+  },
+  "method": {
+    "baselineFirstReadsPerMode": 25,
+    "shapes": 6,
+    "blocksPerShape": 6,
+    "order": [
+      "baseline",
+      "candidate",
+      "candidate",
+      "baseline"
+    ],
+    "readsPerPosition": 25,
+    "interleavedSamples": 3600,
+    "candidateSamples": 1800,
+    "gate": "Every shape/block: nearest-rank p95 of each candidate read's Q1+Q2 <=21 ms under 30 ms (>=30% headroom). Baseline ratios are informative only.",
+    "queryBoundary": "Client query dispatch to resolved response, including local loopback and pg JSON decoding; excludes metadata-only baseline query, GET and calculation.",
+    "baseline": "Unmodified withDatasetRead, three SQL calls; time only its two effective_rights calls. Baseline-first precedes candidate SQL installation.",
+    "candidate": "Actual withModelArtifacts, two authorize_model_read calls; freshly published matching SQL/envelope pins, no prototype orchestration.",
+    "cache": "Warm/unflushed OS, file and database caches, existing restricted LOGIN; no cold-cache claim."
+  },
+  "qualification": "LOCAL-FIXTURE ONLY. Hosted RTT/Neon wake/region (#220) unmeasured; no #167 serving or #168 capacity claim.",
+  "limitations": [
+    "Full read time and trivial byte-length calculation are informational; no parsing/context/projection workload is claimed.",
+    "Query/crypto observation adds instrumentation overhead to both arms. Server work/locks are qualified separately by CI behavior receipts, outside this timing loop.",
+    "All samples, including failures and slow blocks, are retained; failed gates are never silently filtered or relaxed."
+  ],
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "baselineFirst": [
+    {
+      "mode": "strict-point-in-time-v1",
+      "rowCount": 0,
+      "p95Ms": 4.413541999994777
+    },
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "rowCount": 2504,
+      "p95Ms": 3.5767090000008466
+    }
+  ],
+  "shapes": [
+    {
+      "name": "strict/descriptor",
+      "runId": "0e908ab9-af6d-4d4e-a44d-2ddb7a852377",
+      "datasetId": "64d5fdfc-0dfc-422e-a982-72ca51372e57",
+      "slots": [
+        "descriptor"
+      ]
+    },
+    {
+      "name": "strict/all",
+      "runId": "0e908ab9-af6d-4d4e-a44d-2ddb7a852377",
+      "datasetId": "64d5fdfc-0dfc-422e-a982-72ca51372e57",
+      "slots": [
+        "descriptor",
+        "strict-point-in-time-v1"
+      ]
+    },
+    {
+      "name": "retrospective/descriptor",
+      "runId": "16cf3bea-be75-4f71-8538-afac93e25ce0",
+      "datasetId": "b10716ff-33f2-49d2-81e0-d3a37278ba5a",
+      "slots": [
+        "descriptor"
+      ]
+    },
+    {
+      "name": "retrospective/all",
+      "runId": "16cf3bea-be75-4f71-8538-afac93e25ce0",
+      "datasetId": "b10716ff-33f2-49d2-81e0-d3a37278ba5a",
+      "slots": [
+        "descriptor",
+        "retrospective-reconstruction-v1"
+      ]
+    },
+    {
+      "name": "both/descriptor",
+      "runId": "4c94feed-df51-4b6d-9857-fbf5dc0d7198",
+      "datasetId": "b10716ff-33f2-49d2-81e0-d3a37278ba5a",
+      "slots": [
+        "descriptor"
+      ]
+    },
+    {
+      "name": "both/all",
+      "runId": "4c94feed-df51-4b6d-9857-fbf5dc0d7198",
+      "datasetId": "b10716ff-33f2-49d2-81e0-d3a37278ba5a",
+      "slots": [
+        "descriptor",
+        "retrospective-reconstruction-v1",
+        "strict-point-in-time-v1"
+      ]
+    }
+  ],
+  "blocks": [
+    {
+      "shape": "strict/descriptor",
+      "block": 1,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 4.395040999996127,
+      "candidateP95Ms": 4.806375999993179,
+      "headroom": 0.8397874666668941,
+      "endToEndP95Ms": 5.687624999991385,
+      "pass": true
+    },
+    {
+      "shape": "strict/descriptor",
+      "block": 2,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.2067490000044927,
+      "candidateP95Ms": 1.516875000015716,
+      "headroom": 0.9494374999994761,
+      "endToEndP95Ms": 1.7659999999887077,
+      "pass": true
+    },
+    {
+      "shape": "strict/descriptor",
+      "block": 3,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.3141670000040904,
+      "candidateP95Ms": 1.7563329999975394,
+      "headroom": 0.9414555666667487,
+      "endToEndP95Ms": 2.4199590000062017,
+      "pass": true
+    },
+    {
+      "shape": "strict/descriptor",
+      "block": 4,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.703332999997656,
+      "candidateP95Ms": 1.6859160000021802,
+      "headroom": 0.9438027999999273,
+      "endToEndP95Ms": 2.3318749999889405,
+      "pass": true
+    },
+    {
+      "shape": "strict/descriptor",
+      "block": 5,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.206540999992285,
+      "candidateP95Ms": 1.6239169999898877,
+      "headroom": 0.9458694333336705,
+      "endToEndP95Ms": 1.9037090000056196,
+      "pass": true
+    },
+    {
+      "shape": "strict/descriptor",
+      "block": 6,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.498458000001847,
+      "candidateP95Ms": 1.6939989999955287,
+      "headroom": 0.9435333666668158,
+      "endToEndP95Ms": 2.4305419999873266,
+      "pass": true
+    },
+    {
+      "shape": "strict/all",
+      "block": 1,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.6695420000032755,
+      "candidateP95Ms": 1.6135839999915333,
+      "headroom": 0.9462138666669488,
+      "endToEndP95Ms": 2.656333999999333,
+      "pass": true
+    },
+    {
+      "shape": "strict/all",
+      "block": 2,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.475832999989507,
+      "candidateP95Ms": 1.7910410000040429,
+      "headroom": 0.9402986333331985,
+      "endToEndP95Ms": 2.287083999995957,
+      "pass": true
+    },
+    {
+      "shape": "strict/all",
+      "block": 3,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.100917000003392,
+      "candidateP95Ms": 1.6093320000072708,
+      "headroom": 0.9463555999997576,
+      "endToEndP95Ms": 2.0035839999909513,
+      "pass": true
+    },
+    {
+      "shape": "strict/all",
+      "block": 4,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.14183399999456,
+      "candidateP95Ms": 1.7353739999816753,
+      "headroom": 0.9421542000006108,
+      "endToEndP95Ms": 2.7676659999997355,
+      "pass": true
+    },
+    {
+      "shape": "strict/all",
+      "block": 5,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.399833999981638,
+      "candidateP95Ms": 1.7246659999946132,
+      "headroom": 0.9425111333335129,
+      "endToEndP95Ms": 2.7650419999990845,
+      "pass": true
+    },
+    {
+      "shape": "strict/all",
+      "block": 6,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 4.094249000001582,
+      "candidateP95Ms": 1.5601250000036089,
+      "headroom": 0.947995833333213,
+      "endToEndP95Ms": 2.0352920000004815,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 1,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.524250000016764,
+      "candidateP95Ms": 2.21524999999383,
+      "headroom": 0.926158333333539,
+      "endToEndP95Ms": 2.75908299999719,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 2,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 4.635167000000365,
+      "candidateP95Ms": 1.8596249999827705,
+      "headroom": 0.9380125000005743,
+      "endToEndP95Ms": 2.196541999990586,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 3,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.4423340000066673,
+      "candidateP95Ms": 2.03208300001279,
+      "headroom": 0.9322638999995737,
+      "endToEndP95Ms": 2.321250000008149,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 4,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.266290999992634,
+      "candidateP95Ms": 1.9208740000030957,
+      "headroom": 0.9359708666665635,
+      "endToEndP95Ms": 2.3667500000010477,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 5,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.6825000000098953,
+      "candidateP95Ms": 2.197249999997439,
+      "headroom": 0.9267583333334187,
+      "endToEndP95Ms": 2.766124999994645,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/descriptor",
+      "block": 6,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.067083999994793,
+      "candidateP95Ms": 3.0400409999856493,
+      "headroom": 0.8986653000004784,
+      "endToEndP95Ms": 3.774167000010493,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 1,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 5.493625000002794,
+      "candidateP95Ms": 2.699709000007715,
+      "headroom": 0.9100096999997428,
+      "endToEndP95Ms": 23.819707999995444,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 2,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.659625000000233,
+      "candidateP95Ms": 2.778375000008964,
+      "headroom": 0.9073874999997011,
+      "endToEndP95Ms": 24.3648749999993,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 3,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.4172079999989364,
+      "candidateP95Ms": 2.934666000001016,
+      "headroom": 0.9021777999999662,
+      "endToEndP95Ms": 23.014790999994148,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 4,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 5.003000000011525,
+      "candidateP95Ms": 2.8657490000041435,
+      "headroom": 0.9044750333331952,
+      "endToEndP95Ms": 57.15129199999501,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 5,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 4.075333000015235,
+      "candidateP95Ms": 3.375541000001249,
+      "headroom": 0.887481966666625,
+      "endToEndP95Ms": 6.826000000000931,
+      "pass": true
+    },
+    {
+      "shape": "retrospective/all",
+      "block": 6,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.492832999996608,
+      "candidateP95Ms": 3.103499999997439,
+      "headroom": 0.8965500000000853,
+      "endToEndP95Ms": 22.040582999994513,
+      "pass": true
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 1,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.0741259999922477,
+      "candidateP95Ms": 2.2169169999979204,
+      "headroom": 0.926102766666736,
+      "endToEndP95Ms": 3.386207999996259,
+      "pass": true
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 2,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.201833999992232,
+      "candidateP95Ms": 1.9527930000040215,
+      "headroom": 0.934906899999866,
+      "endToEndP95Ms": 2.6362499999959255,
+      "pass": true
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 3,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.4584580000082497,
+      "candidateP95Ms": 1.561958999998751,
+      "headroom": 0.9479347000000417,
+      "endToEndP95Ms": 1.8098339999996824,
+      "pass": true
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 4,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.2824999999866122,
+      "candidateP95Ms": 1.665000000008149,
+      "headroom": 0.9444999999997283,
+      "endToEndP95Ms": 1.9060000000026776,
+      "pass": true
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 5,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.431458000006387,
+      "candidateP95Ms": 1.6766239999997197,
+      "headroom": 0.9441125333333427,
+      "endToEndP95Ms": 1.9374580000003334,
+      "pass": true
+    },
+    {
+      "shape": "both/descriptor",
+      "block": 6,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.354833999997936,
+      "candidateP95Ms": 2.1202500000072177,
+      "headroom": 0.9293249999997594,
+      "endToEndP95Ms": 2.8074999999953434,
+      "pass": true
+    },
+    {
+      "shape": "both/all",
+      "block": 1,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.271000999986427,
+      "candidateP95Ms": 2.86445900000399,
+      "headroom": 0.9045180333332004,
+      "endToEndP95Ms": 57.889208000007784,
+      "pass": true
+    },
+    {
+      "shape": "both/all",
+      "block": 2,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.084208000000217,
+      "candidateP95Ms": 3.368917000014335,
+      "headroom": 0.8877027666661889,
+      "endToEndP95Ms": 24.468957999997656,
+      "pass": true
+    },
+    {
+      "shape": "both/all",
+      "block": 3,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.8455829999875277,
+      "candidateP95Ms": 2.9579170000070008,
+      "headroom": 0.9014027666664333,
+      "endToEndP95Ms": 23.879625000001397,
+      "pass": true
+    },
+    {
+      "shape": "both/all",
+      "block": 4,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 3.6044589999946766,
+      "candidateP95Ms": 2.600957999995444,
+      "headroom": 0.9133014000001518,
+      "endToEndP95Ms": 23.76675000000978,
+      "pass": true
+    },
+    {
+      "shape": "both/all",
+      "block": 5,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 4.388374999994994,
+      "candidateP95Ms": 3.150833000006969,
+      "headroom": 0.894972233333101,
+      "endToEndP95Ms": 23.331792000011774,
+      "pass": true
+    },
+    {
+      "shape": "both/all",
+      "block": 6,
+      "baselineSamples": 50,
+      "candidateSamples": 50,
+      "baselineP95Ms": 2.897500000006403,
+      "candidateP95Ms": 2.604291000010562,
+      "headroom": 0.913190299999648,
+      "endToEndP95Ms": 23.072832999998354,
+      "pass": true
+    }
+  ],
+  "summary": {
+    "totalSamples": 3650,
+    "interleavedSamples": 3600,
+    "candidateSamples": 1800,
+    "candidateBlocks": 36,
+    "worstCandidateBlockP95Ms": 4.806375999993179,
+    "minimumHeadroom": 0.8397874666668941,
+    "failedBlocks": 0,
+    "failedSamples": 0
+  },
+  "sourceUnchanged": true,
+  "finishedAt": "2026-11-01T05:34:36.294Z",
+  "fullRecord": {
+    "path": "full-records.tar.gz#final-benchmark-S12ECw/full-samples.json",
+    "sha256": "aa250f9f2fbc1870c51cbf13ccb56131998ef4983bb4274906b5b94f21b9fd72",
+    "byteSize": 3356558,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  },
+  "verification": {
+    "samples": 3650,
+    "candidateBlocks": 36,
+    "workBudgetsVerified": true,
+    "allBlocksAtLeast30PercentHeadroom": true
+  },
+  "workCounts": [
+    {
+      "work": {
+        "sql": 3,
+        "rights": 2,
+        "gets": 1,
+        "heads": 0,
+        "puts": 0,
+        "deletes": 0,
+        "lists": 0,
+        "hashes": 0,
+        "calculations": 1
+      },
+      "samples": 1850
+    },
+    {
+      "work": {
+        "sql": 2,
+        "rights": 2,
+        "gets": 1,
+        "heads": 0,
+        "puts": 0,
+        "deletes": 0,
+        "lists": 0,
+        "hashes": 0,
+        "calculations": 1
+      },
+      "samples": 900
+    },
+    {
+      "work": {
+        "sql": 2,
+        "rights": 2,
+        "gets": 2,
+        "heads": 0,
+        "puts": 0,
+        "deletes": 0,
+        "lists": 0,
+        "hashes": 0,
+        "calculations": 1
+      },
+      "samples": 600
+    },
+    {
+      "work": {
+        "sql": 2,
+        "rights": 2,
+        "gets": 3,
+        "heads": 0,
+        "puts": 0,
+        "deletes": 0,
+        "lists": 0,
+        "hashes": 0,
+        "calculations": 1
+      },
+      "samples": 300
+    }
+  ],
+  "inputGeneration": {
+    "code": {
+      "gitSha": "da46a72754cd64875b4e79296fb3a528308d0127",
+      "contentSha256": "d317d36c9056b19d52731ba698a32099caea0ef5068478bfe6a418e0958865d2"
+    },
+    "codeHashes": {
+      "package-lock.json": "dd0fe58a230ef794d1d51aac676a92eb16ab7cf3ddfc2084736ac7ac2fb25a6e",
+      "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+      "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+      "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+      "packages/domain/package.json": "34e81b6f0dcc082e7b3a47f0e5a53b2b667e8da166e3f98b4f1c97f358c72144",
+      "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+      "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+      "packages/domain/src/projection/evaluation.ts": "0852560f81b50968d83088f3de661c07611a9ba852c896aa8527f807a5046fe6",
+      "packages/domain/src/projection/qb-evaluation.ts": "a6c6536b85bf98633b05af1528b212a15cce0d7a0c3227cbce5b0c1a9625e489",
+      "services/pipeline/package.json": "43b65745c9fb3ab4f00bdbc3e508da0add4c852789c93b6d4a7b1d9a93d5aaec",
+      "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "23163c515afc6e14d86ba663f8ae54807a00e812ac6f07d4f1f3f5aaff6dc1cb",
+      "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "fa2d82a3105a601ab33a3c72deb827a17ad27cd759827134267fd61806dc5336",
+      "services/pipeline/scripts/feature-store/evaluation-measure.ts": "c6aee7cc7462dbe17ef1957a1b3a2f25094ef5eaa1e7612e11bbc25fef32873b",
+      "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+      "services/pipeline/scripts/feature-store/evaluation-report.ts": "e6f9b3170a4a13fc6c6a0d8518a3247e76c4f1b09cd0898d4dc9c8bd7469b2e6",
+      "services/pipeline/scripts/feature-store/evaluation-run.ts": "cd13a88ead8eddebfe4a9b198208906654bd172a1219ae7b6a7caba76533c2d5",
+      "services/pipeline/scripts/feature-store/evaluation-worker.ts": "702d74737b3a307989f5132175c2cde479e07d64c2689610496120a08f94ccb5",
+      "services/pipeline/scripts/feature-store/harness.ts": "f9d74c2ede8c342c8cdc65b800ff3107176cc7d12154a482edcc4d431bec84cb",
+      "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+      "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+      "services/pipeline/src/featureStore/connections.ts": "37970dc14cdbcbed94fc5d4bb20808bc0f686317eadb77cf635f7b657ba8ef6c",
+      "services/pipeline/src/featureStore/datasets.ts": "690c626a3a049f89bc6a45fad235af8b09e5d2b54eef0a0c76e261af20bb3fc7",
+      "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+      "services/pipeline/src/featureStore/empiricalAdapter.ts": "8bddf06f546033ba1714224ec26a8b60c623e5fd8d0d4af54a0ff9658f65187b",
+      "services/pipeline/src/featureStore/governance.ts": "e16f68aaf7b054ccfe7ce9b6fce6d3d8478728b2628524a2f095b157fe65637c",
+      "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+      "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+      "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+      "services/pipeline/src/featureStore/modelArtifacts.ts": "25baf5f510d80e48e58a43e36b9cba6f5ec91308dfdb27eb54cb46d8a91bba05",
+      "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+      "services/pipeline/src/featureStore/objectStore.ts": "d6a9f26c2fd8f54eef161ce5e8dcf8c127a284e90bc6a0e6051355ffc6e737e9",
+      "services/pipeline/src/featureStore/qbReports.ts": "91fa70d5e8a05e1dbbbd0a9968a557da04e4e7b22c8c8f431c5ef475f8a8465e",
+      "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7"
+    }
+  },
+  "fixture": {
+    "wireFiles": 16,
+    "modes": [
+      {
+        "mode": "retrospective-reconstruction-v1",
+        "rowCount": 2504,
+        "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+      },
+      {
+        "mode": "strict-point-in-time-v1",
+        "rowCount": 0,
+        "contentSha256": "7858bc13cfd59085549e3c61fc1d42685f5a9134114316bbb623e79aaff43caf"
+      }
+    ]
+  }
+}

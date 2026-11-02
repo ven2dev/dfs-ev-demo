@@ -21,6 +21,14 @@ export type DatasetRow = {
 };
 type Selection = { rows: DatasetRow[]; snapshots: string[]; exclusions: Record<string, number>; valid: boolean };
 type Access = { allowed: boolean; decisions: { profileId: string; decisionId: string | null }[]; checked_at: string };
+export class DatasetAccessError extends Error {
+  readonly reason: "invalidated" | "rights-or-status";
+  constructor(reason: "invalidated" | "rights-or-status") {
+    super("dataset-current-rights-or-status-refused");
+    this.name = "DatasetAccessError";
+    this.reason = reason;
+  }
+}
 export type DatasetReadManifest = {
   dataset_id: string; object_key: string; file_sha256: string; content_sha256: string;
   byte_size: number; row_count: number; spec: DatasetSpec; code_sha: string; implementation_sha256: string; snapshots: string[];
@@ -90,7 +98,7 @@ const validate = (spec: DatasetSpec) => {
 // Exactly one status/rights query at each boundary. Missing rights fail closed.
 // The current valid-time decision is selected using the database knowledge clock.
 const authorize = async (client: Database, snapshots: string[], datasetId: string | null): Promise<Access> => {
-  const result = (await client.query<Access>(`WITH clock AS MATERIALIZED(SELECT clock_timestamp() AS now),
+  const result = (await client.query<Access & { rights_allowed: boolean; dataset_invalidated: boolean }>(`WITH clock AS MATERIALIZED(SELECT clock_timestamp() AS now),
  wanted AS MATERIALIZED(SELECT DISTINCT unnest($1::uuid[]) AS snapshot_id),
  profiles AS(SELECT DISTINCT s.profile_id FROM wanted w JOIN fs138.source_snapshots s USING(snapshot_id)),
  decisions AS MATERIALIZED(
@@ -100,10 +108,13 @@ const authorize = async (client: Database, snapshots: string[], datasetId: strin
   NOT EXISTS(SELECT 1 FROM wanted w LEFT JOIN fs138.source_snapshots s USING(snapshot_id) WHERE s.snapshot_id IS NULL OR s.deleted_at IS NOT NULL)
   AND NOT EXISTS(SELECT 1 FROM decisions WHERE decision_id IS NULL OR NOT('research'=ANY(allowed_uses)))
   AND ($2::uuid IS NULL OR EXISTS(SELECT 1 FROM fs138.dataset_manifests WHERE dataset_id=$2 AND invalidated_at IS NULL)) AS allowed,
-  coalesce((SELECT jsonb_agg(jsonb_build_object('profileId',profile_id,'decisionId',decision_id) ORDER BY profile_id) FROM decisions),'[]') AS decisions
+  coalesce((SELECT jsonb_agg(jsonb_build_object('profileId',profile_id,'decisionId',decision_id) ORDER BY profile_id) FROM decisions),'[]') AS decisions,
+  NOT EXISTS(SELECT 1 FROM decisions WHERE decision_id IS NULL OR NOT('research'=ANY(allowed_uses))) AS rights_allowed,
+  EXISTS(SELECT 1 FROM fs138.dataset_manifests WHERE dataset_id=$2 AND invalidated_at IS NOT NULL) AS dataset_invalidated
  FROM clock`, [snapshots, datasetId])).rows[0];
-  if (!result.allowed) throw new Error("dataset-current-rights-or-status-refused");
-  return result;
+  const { rights_allowed, dataset_invalidated, ...access } = result;
+  if (!access.allowed) throw new DatasetAccessError(rights_allowed && dataset_invalidated ? "invalidated" : "rights-or-status");
+  return access;
 };
 
 export const buildDataset = async (client: Database, store: ObjectStore, spec: DatasetSpec, code: CodeIdentity) => {

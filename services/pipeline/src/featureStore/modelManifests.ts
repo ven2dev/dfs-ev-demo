@@ -5,6 +5,8 @@ import { QB_EVALUATOR_VERSION, type QbEvidenceMode } from "@dfs-ev/domain/qb-eva
 import { FEATURE_VERSION, LABEL_VERSION, HISTORY_POLICY, type CodeIdentity } from "./derived.ts";
 import { EMPIRICAL_ADAPTER } from "./empiricalAdapter.ts";
 import { connectionInterrupted } from "./connections.ts";
+import { DatasetAccessError } from "./datasets.ts";
+import { ArtifactGovernanceError, artifactGovernanceError } from "./artifactGovernanceErrors.ts";
 import { sha256, type ObjectInfo, type ObjectStore } from "./objectStore.ts";
 import { readQbArtifact, readQbInputPins, withPinnedQbReport, type Artifact, type PreparedQbReport } from "./qbReports.ts";
 
@@ -32,7 +34,7 @@ const checkCode = (code: CodeIdentity) => {
 // The caller supplies a dedicated idle connection and an actual source-byte
 // identity (the local runner captures it); sharing a transaction would make
 // enrollment rollback with publication and lose crash cleanup ownership.
-export const publishQbModelRun = async (client: Pick<Client, "query">, store: ObjectStore,
+const prepareAndPublishQbModelRun = async (client: Pick<Client, "query">, store: ObjectStore,
   inputPins: Artifact, options: { code: CodeIdentity; modes?: readonly QbEvidenceMode[] }) => {
   const started = performance.now();
   // Own mutable caller inputs before the first await.
@@ -75,7 +77,7 @@ export const publishQbModelRun = async (client: Pick<Client, "query">, store: Ob
     objectKey: r.artifact.objectKey, fileSha256: r.artifact.sha256, byteSize: r.artifact.byteSize }))];
   const uploads = [descriptorBytes, ...reports.map(r => r.bytes)];
   const ids = reports.map(r => r.dataset.datasetId).sort(), addresses = objects.map(o => o.objectKey).sort();
-  const guardParameters = [ids, addresses], publishParameters = [JSON.stringify(identity), JSON.stringify(objects)];
+  const guardParameters = [ids, addresses, JSON.stringify(objects)], publishParameters = [JSON.stringify(identity), JSON.stringify(objects)];
   const absent: string[] = [];
   for (const object of objects) {
     const current = await store.head(object.objectKey);
@@ -102,7 +104,7 @@ export const publishQbModelRun = async (client: Pick<Client, "query">, store: Ob
     // Set first: if BEGIN's response is lost, the connection is discarded.
     inTransaction = true;
     await client.query("BEGIN");
-    await client.query("SELECT fs138.guard_model_publication($1::uuid[],$2::text[])", guardParameters);
+    await client.query("SELECT fs138.guard_model_publication($1::uuid[],$2::text[],$3::jsonb)", guardParameters);
     for (const object of objects) checkObject(await store.head(object.objectKey), object);
     run = (await client.query<typeof run>("SELECT * FROM fs138.publish_model_run($1::jsonb,$2::jsonb)", publishParameters)).rows[0];
     assert(run, "model-publication-missing");
@@ -124,4 +126,18 @@ export const publishQbModelRun = async (client: Pick<Client, "query">, store: Ob
     existingPublication: run.existing_publication,
     descriptor, reports: objects.slice(1), rightsScope: "research" as const,
     timingMs: { publication: performance.now() - publicationStarted, endToEnd: performance.now() - started } };
+};
+
+export { ArtifactGovernanceError } from "./artifactGovernanceErrors.ts";
+
+// Cover preparation and pre-BEGIN enrollment as well as publication. An old
+// dataset pin refuses before scoring/upload; it never falls through to reuse
+// of an invalidated run. Dataset reads retain their existing refusal message.
+export const publishQbModelRun = async (...args: Parameters<typeof prepareAndPublishQbModelRun>) => {
+  try { return await prepareAndPublishQbModelRun(...args); }
+  catch (error) {
+    if (error instanceof DatasetAccessError && error.reason === "invalidated")
+      throw new ArtifactGovernanceError("model-publication-invalidated", error);
+    throw artifactGovernanceError(error);
+  }
 };
