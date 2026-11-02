@@ -1,0 +1,728 @@
+{
+  "issue": 166,
+  "step": 3,
+  "runtime": "v24.18.1",
+  "fixture": "synthetic dependency/queue controls, 0/2504 actual members, real restricted LOGINs and private local ObjectStore",
+  "qualification": "CI work/behavior only. Test-only observation/grace ages are shifted; database knowledge/event clocks are never backdated. #229 recovery handoff is excluded.",
+  "probes": [
+    {
+      "name": "CI: one page plus four statements per deletion; fixed server work at 0/2504 actual members",
+      "verdict": "pass",
+      "details": [
+        {
+          "datasetRows": 0,
+          "candidates": 5,
+          "pageStatements": 1,
+          "statementsPerDeletion": 4,
+          "totalStatements": 21,
+          "objectDeletes": 5,
+          "otherObjectWork": {
+            "gets": 0,
+            "heads": 0,
+            "puts": 0,
+            "lists": 0
+          },
+          "server": [
+            {
+              "slot": "descriptor",
+              "recheck": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 3,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 1,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              },
+              "ack": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 4,
+                  "idx_tup_fetch": 3,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              }
+            },
+            {
+              "slot": "strict-point-in-time-v1",
+              "recheck": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 3,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 1,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              },
+              "ack": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 4,
+                  "idx_tup_fetch": 3,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              }
+            },
+            {
+              "slot": "retrospective-reconstruction-v1",
+              "recheck": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 3,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 1,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              },
+              "ack": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 4,
+                  "idx_tup_fetch": 3,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 4,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "datasetRows": 2504,
+          "candidates": 5,
+          "pageStatements": 1,
+          "statementsPerDeletion": 4,
+          "totalStatements": 21,
+          "objectDeletes": 5,
+          "otherObjectWork": {
+            "gets": 0,
+            "heads": 0,
+            "puts": 0,
+            "lists": 0
+          },
+          "server": [
+            {
+              "slot": "descriptor",
+              "recheck": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 3,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 1,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              },
+              "ack": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 4,
+                  "idx_tup_fetch": 3,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              }
+            },
+            {
+              "slot": "strict-point-in-time-v1",
+              "recheck": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 3,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 1,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              },
+              "ack": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 4,
+                  "idx_tup_fetch": 3,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              }
+            },
+            {
+              "slot": "retrospective-reconstruction-v1",
+              "recheck": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 3,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 1,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              },
+              "ack": {
+                "tablesMeasured": 22,
+                "allTables": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 4,
+                  "idx_tup_fetch": 3,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "exampleTables": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 0,
+                  "idx_tup_fetch": 0,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                },
+                "queue": {
+                  "seq_scan": 0,
+                  "seq_tup_read": 0,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 2,
+                  "inserted": 0,
+                  "updated": 1,
+                  "deleted": 0
+                },
+                "nonQueue": {
+                  "seq_scan": 3,
+                  "seq_tup_read": 7,
+                  "idx_scan": 2,
+                  "idx_tup_fetch": 1,
+                  "inserted": 0,
+                  "updated": 0,
+                  "deleted": 0
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "only live runs retain shared bytes; last-reference deletion re-arms the greatest grace",
+      "verdict": "pass",
+      "details": {
+        "affectedRun": "803f5211-abb1-4d29-b805-e919d690d119",
+        "survivorUntilFinalDeletion": "a207bd6d-cb63-4d9c-9043-b51a4805aa32",
+        "sharedAddress": "audits/d71cffba0cd9bdcdcf8ff983c98f5863dd617334076f21566a03b7e5c081e6b1",
+        "sharedCompletedDurably": true,
+        "finalEvent": "72006bfd-0afc-4131-a8d5-e876955a1b35",
+        "repeatEvent": "8db0f620-d5c9-4919-964f-ee20a5a88ff3",
+        "greatestGracePreserved": true,
+        "invalidatedReferencesDoNotRetain": true,
+        "recheckServerWork": {
+          "recheck": {
+            "tablesMeasured": 22,
+            "allTables": {
+              "seq_scan": 3,
+              "seq_tup_read": 13,
+              "idx_scan": 4,
+              "idx_tup_fetch": 4,
+              "inserted": 0,
+              "updated": 1,
+              "deleted": 0
+            },
+            "exampleTables": {
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_scan": 0,
+              "idx_tup_fetch": 0,
+              "inserted": 0,
+              "updated": 0,
+              "deleted": 0
+            },
+            "queue": {
+              "seq_scan": 0,
+              "seq_tup_read": 0,
+              "idx_scan": 2,
+              "idx_tup_fetch": 2,
+              "inserted": 0,
+              "updated": 1,
+              "deleted": 0
+            },
+            "nonQueue": {
+              "seq_scan": 3,
+              "seq_tup_read": 13,
+              "idx_scan": 2,
+              "idx_tup_fetch": 2,
+              "inserted": 0,
+              "updated": 0,
+              "deleted": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "observed model/audit bytes are swept after grace while pending; mandatory completion follows 24h retirement",
+      "verdict": "pass",
+      "details": {
+        "addresses": [
+          "models/fffb2b9c0328be5627a209b4d48a1b0944274df71a4a6ffbef9263ded97ae16f",
+          "audits/a0657cf53c5ab9c283de6b8004bbf251f511b2f8566c41d93195dcf6a9afeb0e"
+        ],
+        "retirementWindowSeconds": 86400,
+        "orphanGraceSeconds": 300,
+        "bytesRemovedAt": "2026-11-01T05:31:25.790Z",
+        "observationsRetiredAt": "2026-11-01T05:31:25.812Z",
+        "queueCompletedAt": "2026-11-01T05:31:25.817Z",
+        "laterMandatoryDeadlineRespected": true,
+        "laterOrphanDeadlineRespected": true,
+        "mandatoryDeletesWhileObserved": 0,
+        "ackWhileObservedRefused": true,
+        "observationKeptUntilRetirement": true,
+        "idempotentMissingByteDeletes": 2,
+        "repeatedDeleteErrors": 0,
+        "limitation": "Pending can outlast bytes through the 24h retirement window; this is not #229 late-PUT recovery."
+      }
+    },
+    {
+      "name": "recheck after an address-lock wait defers newly visible observations without completing the removal",
+      "verdict": "pass",
+      "details": {
+        "actualLockWait": true,
+        "freshObservationRespected": true,
+        "mandatoryDeletes": 0,
+        "acks": 0,
+        "noDurableCompletionWhileObserved": true
+      }
+    },
+    {
+      "name": "cleaner-first publication refuses tombstones and publication-first deletion includes the committed run",
+      "verdict": "pass",
+      "details": {
+        "cleanerFirstPublicationSqlstate": "P1662",
+        "publicationFirstRunInDeletionReceipt": true,
+        "bothActualLockWaits": true,
+        "modelAndReportRemoved": true
+      }
+    },
+    {
+      "name": "unlink-before-ack failures and real disconnects resume with idempotent missing-byte deletion",
+      "verdict": "pass",
+      "details": [
+        {
+          "namespace": "models",
+          "failure": "exception",
+          "unlinkBeforeAck": true,
+          "pendingAfterFailure": true,
+          "retryDeletes": 1,
+          "retrySql": 4
+        },
+        {
+          "namespace": "models",
+          "failure": "disconnect",
+          "unlinkBeforeAck": true,
+          "pendingAfterFailure": true,
+          "retryDeletes": 1,
+          "retrySql": 4
+        },
+        {
+          "namespace": "audits",
+          "failure": "exception",
+          "unlinkBeforeAck": true,
+          "pendingAfterFailure": true,
+          "retryDeletes": 1,
+          "retrySql": 4
+        },
+        {
+          "namespace": "audits",
+          "failure": "disconnect",
+          "unlinkBeforeAck": true,
+          "pendingAfterFailure": true,
+          "retryDeletes": 1,
+          "retrySql": 4
+        }
+      ]
+    },
+    {
+      "name": "lost COMMIT response keeps completion; explicit model/audit requeue retains tombstones and grace",
+      "verdict": "pass",
+      "details": [
+        {
+          "namespace": "models",
+          "lostCommitDidNotRepeatDelete": true,
+          "explicitRequeueRemovedBytes": true,
+          "tombstoneAndGracePreserved": true,
+          "completedRecoveryLaneAbsentAsAgreed": true
+        },
+        {
+          "namespace": "audits",
+          "lostCommitDidNotRepeatDelete": true,
+          "explicitRequeueRemovedBytes": true,
+          "tombstoneAndGracePreserved": true,
+          "completedRecoveryLaneAbsentAsAgreed": true
+        }
+      ]
+    },
+    {
+      "name": "real reader/outsider LOGINs cannot clean or requeue; invalid writer addresses fail atomically",
+      "verdict": "pass",
+      "details": {
+        "actualLoginRefusalsAndBadAddressRefusals": 19,
+        "directMutationRefused": true,
+        "unknownRequeueDoesNotCreateOwnership": true
+      }
+    },
+    {
+      "name": "bounded pages skip 1025 observed addresses, complete 1025 shared attempts and reach later removable bytes",
+      "verdict": "pass",
+      "details": {
+        "observedAddressesDeferredBeforeLimit": 1025,
+        "sharedAttemptsCompleted": 1025,
+        "firstPageCandidates": 1024,
+        "secondPageCandidates": 2,
+        "laterRemovableObjectReached": true,
+        "observedMandatoryDeletesOrAcks": 0,
+        "repeatedPageSql": 1
+      }
+    }
+  ],
+  "verdict": "pass",
+  "sourceHashes": {
+    "packages/db/proposals/166_artifact_governance.sql": "600402ed383510e91bf75f625af203ec2ec82e20fa521efec601dd47a00f7666",
+    "services/pipeline/src/featureStore/governance.ts": "e16f68aaf7b054ccfe7ce9b6fce6d3d8478728b2628524a2f095b157fe65637c",
+    "services/pipeline/tests/feature-store/artifact-governance-fixture.ts": "694d6f193b1b5b66c61e5b96a2610e1a99b709980fe086905893c6ca357885c2",
+    "services/pipeline/tests/feature-store/artifact-cleaner-work.ts": "8523f661442a4e2e8a810c2477ef1f68c0893b37e02abca2ce048875cbcfc519",
+    "services/pipeline/tests/feature-store/artifact-read-work.ts": "44626f9bfd3826db45cd7289bf79e9aa06c21743e9ef744e96885b596da63d5c",
+    "services/pipeline/tests/feature-store/artifact-cleaner.check.mts": "e953ff2b1cdc89606683fd7cdc29e0621454c1e489037ba4896c8dc351642abb"
+  },
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "full-records.tar.gz#review-corrections/full-cleaner.json",
+    "sha256": "f7cdc38bd9698454825bb8fac987638d181f4ce6d144634515d026646b1cf62e",
+    "byteSize": 98698,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

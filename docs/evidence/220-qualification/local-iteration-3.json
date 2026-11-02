@@ -269,5 +269,8 @@
   ],
   "cleanup": {
     "schemaAbsent": true
-  }
+  },
+  "historical": true,
+  "supersededBy": "local-iteration-4.json",
+  "historicalNote": "Measured values preserved; the reviewed Iteration 4 script no longer generates this receipt. Original checkpoint hashes describe the pre-annotation JSON."
 }

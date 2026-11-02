@@ -196,7 +196,8 @@ the cold measurement and has no appended transport probe.
 | Warm admission only | 1 | 0 | 1 owner-fenced lease release |
 | Warm full cache-miss path | 2 | 0 | 1 owner-fenced lease release |
 | Stale quota, probe leader accepted | 5 | 1 free /events | 1 owner-fenced lease release |
-| Stale quota, probe follower/backoff | 3 | 0 | 0 |
+| Stale quota, probe follower / claim backoff / needs-init | 3 | 0 | 0 |
+| Stale quota, finish backoff / needs-init / unavailable | 4 | 1 free /events | 0 |
 | Stale quota, invalid observation | 4 | 1 free /events | 0 |
 
 runGroup gates each 20-leader warm round by p95 <=140 ms. summarizeArm requires
@@ -340,3 +341,20 @@ This correction remains uncommitted for owner review; A has not been amended
 again. It would need a separately approved amendment before B so the region-only
 second-commit invariant remains true. No new commit, B, push or hosted work is
 part of this iteration.
+
+## Merged qualification SQL synchronization
+
+The never-merge harness incorporates main (PR #226) through a merge, preserving
+the original harness commit history. Setup and
+between-group resets call initialize_budget, the sole terminal-probe reset path,
+after draining leases and clearing synthetic attempts. Stale groups initialize
+a fresh snapshot first, then age only its timestamp. Sticky cost-overrun remains
+sticky; operator setup does not forgive it.
+
+Probe needs-init and backoff are distinct typed report outcomes, neither successful
+admissions nor request errors. Claims return them immediately without polling or
+a free call; finish may also return either after one free call. The existing
+confirmation/backoff policy comes from main's proposal SQL. An accepted/fresh
+probe permits one bounded retry with a new owner/attempt UUID inside hosted_sample,
+with no additional round trip. Stale-path timing remains separate with no target.
+No hosted work is authorized while #86 remains open.

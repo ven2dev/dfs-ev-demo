@@ -24,9 +24,38 @@ CREATE TABLE spike220.attempts (
   period text NOT NULL, overrun boolean NOT NULL DEFAULT false
 );
 CREATE TABLE spike220.quota_probe (
-  id int PRIMARY KEY CHECK(id=1), owner text, lease_until timestamptz, retry_after timestamptz, reported_cost int
+  id int PRIMARY KEY CHECK(id=1), owner text, lease_until timestamptz, retry_after timestamptz, reported_cost int,
+  failures int NOT NULL DEFAULT 0 CHECK(failures BETWEEN 0 AND 31),
+  needs_init boolean NOT NULL DEFAULT false, health_reason text, suspect_reason text
 );
 INSERT INTO spike220.quota_probe(id) VALUES(1);
+-- Local operator primitive, not an application/production reset API. Probe then
+-- account lock order matches finish_probe. Preserve liability and sticky overrun.
+-- A new period cannot inherit old unresolved liability or silently forgive it.
+CREATE FUNCTION spike220.initialize_budget(remaining int, used int, observed timestamptz,
+  quota_period text, collector_floor int)
+RETURNS void LANGUAGE plpgsql AS $$
+DECLARE pending bigint;
+BEGIN
+  IF remaining IS NULL OR remaining<0 OR used IS NULL OR used<0
+    OR observed IS NULL OR observed NOT BETWEEN clock_timestamp()-interval '5 minutes' AND clock_timestamp()
+    OR quota_period IS NULL OR length(quota_period) NOT BETWEEN 1 AND 128
+    OR collector_floor IS NULL OR collector_floor<0 THEN RAISE EXCEPTION 'invalid initialization'; END IF;
+  PERFORM 1 FROM spike220.quota_probe WHERE id=1 FOR UPDATE;
+  PERFORM 1 FROM spike220.budget WHERE id=1 FOR UPDATE;
+  SELECT coalesce(sum(liability),0) INTO pending FROM spike220.attempts WHERE admitted AND NOT settled;
+  IF pending>0 AND EXISTS(SELECT FROM spike220.attempts WHERE admitted AND NOT settled
+    AND period IS DISTINCT FROM quota_period) THEN RAISE EXCEPTION 'resolve prior-period liability before initialization'; END IF;
+  INSERT INTO spike220.budget(id,balance,floor,observed_at,provider_remaining,provider_used,quota_total,pending_reserved,period)
+    VALUES(1,greatest(0,remaining::bigint-pending)::int,collector_floor,observed,remaining,used,remaining::bigint+used,pending,quota_period)
+    ON CONFLICT(id) DO UPDATE SET balance=excluded.balance,floor=excluded.floor,observed_at=excluded.observed_at,
+      provider_remaining=excluded.provider_remaining,provider_used=excluded.provider_used,
+      quota_total=excluded.quota_total,pending_reserved=excluded.pending_reserved,period=excluded.period;
+  -- This is the only recovery path that clears terminal probe state.
+  UPDATE spike220.quota_probe SET owner=NULL,lease_until=NULL,retry_after=NULL,reported_cost=NULL,
+    failures=0,needs_init=false,health_reason=NULL,suspect_reason=NULL WHERE id=1;
+END $$;
+
 -- Atomic single-row debit primitive; caller transaction decides whether leases
 -- and subject state also commit. Never held across provider network calls.
 CREATE FUNCTION spike220.reserve(attempt text, amount int, is_collector boolean)
@@ -36,6 +65,7 @@ BEGIN
   IF amount IS NULL OR amount<=0 OR attempt IS NULL OR length(attempt) NOT BETWEEN 1 AND 128
     OR is_collector IS NULL THEN RAISE EXCEPTION 'invalid reservation'; END IF;
   SELECT * INTO b FROM spike220.budget WHERE id=1 FOR UPDATE;
+  IF NOT FOUND THEN RETURN QUERY SELECT false,false; RETURN; END IF;
   SELECT * INTO a FROM spike220.attempts WHERE id=attempt;
   IF FOUND THEN
     IF a.cost<>amount OR a.collector<>is_collector THEN RAISE EXCEPTION 'identity conflict'; END IF;
@@ -112,6 +142,9 @@ BEGIN
   IF NOT paid.admitted THEN
     IF NOT EXISTS(SELECT FROM spike220.budget WHERE id=1 AND observed_at BETWEEN
       clock_timestamp()-interval '5 minutes' AND clock_timestamp()) THEN
+      -- reserve may have logged this newly denied try. It owns no liability;
+      -- remove it so a stale-quota retry cannot collide with a denial audit row.
+      DELETE FROM spike220.attempts WHERE id=request_owner AND NOT admitted;
       RETURN QUERY SELECT 'quota-stale','{}'::text[],request_owner; RETURN;
     END IF;
     RETURN QUERY SELECT 'budget-refused','{}'::text[],request_owner; RETURN;
@@ -135,7 +168,7 @@ BEGIN
     OR observed IS NULL OR observed>clock_timestamp() OR quota_period IS DISTINCT FROM b.period
     OR remaining::bigint+used<>b.quota_total THEN RETURN 'invalid'; END IF;
   IF used<b.provider_used THEN RETURN 'older-or-reset'; END IF;
-  IF used=b.provider_used AND remaining>b.provider_remaining THEN RETURN 'inconsistent'; END IF;
+  -- The fixed-total sum check already fixes remaining when used is unchanged.
   IF used=b.provider_used AND observed<b.observed_at THEN RETURN 'older'; END IF;
   UPDATE spike220.budget SET provider_remaining=remaining,provider_used=used,
     observed_at=greatest(observed_at,observed),
@@ -168,14 +201,25 @@ BEGIN
   state:=spike220.observe(remaining,used,observed,quota_period);
   -- Even an older same-period paid response settles against the retained newer
   -- snapshot. Missing/malformed headers keep liability unresolved and consumed.
-  IF state IN ('accepted','older','older-or-reset') AND a.period=b.period
-    AND quota_period=b.period AND remaining IS NOT NULL AND used>=actual_cost
-    AND remaining::bigint+used=b.quota_total AND observed IS NOT NULL AND observed<=clock_timestamp() THEN
+  IF state IN ('accepted','older','older-or-reset') AND used>=actual_cost THEN
     UPDATE spike220.budget SET pending_reserved=pending_reserved-(a.liability+extra) WHERE id=1;
     UPDATE spike220.attempts SET settled=true,liability=0 WHERE id=attempt;
   END IF;
   UPDATE spike220.budget SET balance=greatest(0,provider_remaining::bigint-pending_reserved)::int WHERE id=1;
   RETURN state;
+END $$;
+-- Bounded exponential retry: 1,2,4,8,16,32,60 seconds. The named 60-second
+-- cap limits repeated free-provider work while allowing transient recovery.
+CREATE FUNCTION spike220.probe_failure(reason text, terminal boolean, suspicion text DEFAULT NULL)
+RETURNS void LANGUAGE plpgsql AS $$
+DECLARE PROBE_BACKOFF_CAP_SECONDS CONSTANT int := 60;
+BEGIN
+  UPDATE spike220.quota_probe SET owner=NULL,lease_until=NULL,
+    failures=least(failures+1,31),needs_init=needs_init OR terminal,
+    health_reason=CASE WHEN needs_init THEN health_reason ELSE reason END,
+    suspect_reason=CASE WHEN needs_init THEN suspect_reason ELSE suspicion END,
+    retry_after=CASE WHEN needs_init OR terminal THEN NULL ELSE clock_timestamp()+
+      least(PROBE_BACKOFF_CAP_SECONDS,power(2,least(failures,6))::int)*interval '1 second' END WHERE id=1;
 END $$;
 CREATE FUNCTION spike220.claim_probe(request_owner text)
 RETURNS text LANGUAGE plpgsql AS $$
@@ -183,6 +227,7 @@ DECLARE p spike220.quota_probe;
 BEGIN
   IF request_owner IS NULL OR length(request_owner) NOT BETWEEN 1 AND 128 THEN RAISE EXCEPTION 'invalid owner'; END IF;
   SELECT * INTO p FROM spike220.quota_probe WHERE id=1 FOR UPDATE;
+  IF p.needs_init THEN RETURN 'needs-init'; END IF;
   IF EXISTS(SELECT FROM spike220.budget WHERE id=1 AND observed_at BETWEEN
     clock_timestamp()-interval '5 minutes' AND clock_timestamp()) THEN RETURN 'fresh'; END IF;
   IF p.retry_after>clock_timestamp() THEN RETURN 'backoff'; END IF;
@@ -193,23 +238,47 @@ END $$;
 CREATE FUNCTION spike220.finish_probe(request_owner text, remaining int, used int,
   observed timestamptz, quota_period text, free_cost int DEFAULT 0)
 RETURNS text LANGUAGE plpgsql AS $$
-DECLARE p spike220.quota_probe; state text; b spike220.budget;
+DECLARE p spike220.quota_probe; state text; b spike220.budget; terminal_reason text; candidate_reason text;
 BEGIN
   SELECT * INTO p FROM spike220.quota_probe WHERE id=1 FOR UPDATE;
-  IF p.owner IS DISTINCT FROM request_owner OR p.lease_until IS NULL OR p.lease_until<=clock_timestamp() THEN
-    RETURN 'owner-expired'; END IF;
+  IF p.owner IS DISTINCT FROM request_owner OR p.lease_until IS NULL THEN RETURN 'owner-expired'; END IF;
+  IF p.lease_until<=clock_timestamp() THEN
+    PERFORM spike220.probe_failure('probe-owner-expired',false); RETURN 'owner-expired'; END IF;
+  SELECT * INTO b FROM spike220.budget WHERE id=1 FOR UPDATE;
+  IF NOT FOUND THEN
+    PERFORM spike220.probe_failure('budget-uninitialized',true); RETURN 'needs-init'; END IF;
   IF free_cost IS NULL OR free_cost<0 THEN
     state:='invalid';
   ELSIF free_cost>0 THEN
     -- Unexpected cost on the nominally free endpoint is still real cost.
-    SELECT * INTO b FROM spike220.budget WHERE id=1 FOR UPDATE;
     INSERT INTO spike220.attempts(id,cost,collector,admitted,period)
       VALUES('quota:'||request_owner,0,false,true,b.period);
     state:=spike220.reconcile('quota:'||request_owner,free_cost,remaining,used,observed,quota_period);
   ELSE
     state:=spike220.observe(remaining,used,observed,quota_period);
   END IF;
-  UPDATE spike220.quota_probe SET owner=NULL,lease_until=NULL,reported_cost=free_cost,
-    retry_after=CASE WHEN state='accepted' THEN NULL ELSE clock_timestamp()+interval '1 second' END WHERE id=1;
-  RETURN state;
+  IF state='accepted' THEN
+    UPDATE spike220.quota_probe SET owner=NULL,lease_until=NULL,reported_cost=free_cost,
+      failures=0,retry_after=NULL,health_reason=NULL,suspect_reason=NULL WHERE id=1;
+    RETURN state;
+  END IF;
+  IF quota_period IS NOT NULL AND quota_period IS DISTINCT FROM b.period THEN
+    terminal_reason:='quota-period-mismatch';
+  ELSIF remaining IS NOT NULL AND remaining>=0 AND used IS NOT NULL AND used>=0
+    AND remaining::bigint+used<>b.quota_total THEN
+    candidate_reason:='quota-plan-mismatch';
+  ELSIF state='older-or-reset' THEN candidate_reason:='quota-counter-reset';
+  END IF;
+  -- A free reading can arrive after a paid reconcile and look like a reset.
+  -- Debounce counter/plan suspicions across two consecutive completed probes;
+  -- accepted/initialization clears them and a different outcome replaces them.
+  -- Missing budget and our operator-owned period label still latch immediately.
+  IF candidate_reason IS NOT NULL AND candidate_reason=p.suspect_reason THEN
+    terminal_reason:=candidate_reason;
+  END IF;
+  PERFORM spike220.probe_failure(coalesce(terminal_reason,
+    CASE WHEN candidate_reason IS NOT NULL THEN 'suspected-'||candidate_reason ELSE 'probe-observation-unavailable' END),
+    terminal_reason IS NOT NULL,candidate_reason);
+  UPDATE spike220.quota_probe SET reported_cost=free_cost WHERE id=1;
+  RETURN CASE WHEN terminal_reason IS NOT NULL THEN 'needs-init' ELSE state END;
 END $$;

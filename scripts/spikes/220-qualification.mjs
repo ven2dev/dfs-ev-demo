@@ -1,10 +1,21 @@
-// Local synthetic Iteration 3. No dotenv, ambient DB URL, HTTP or provider client.
+// Local synthetic Iteration 4. No dotenv, ambient DB URL, HTTP or provider client.
 import { createRequire } from 'node:module';
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, writeFile, access } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { performance } from 'node:perf_hooks';
 import { randomUUID, createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
-const {Pool}=createRequire(import.meta.url)(process.argv[2]);
+const [pgModule,output,...flags]=process.argv.slice(2);
+assert(pgModule&&output&&flags.every(x=>x==='--behavior-only'),'usage: node 220-qualification.mjs <pg-module> <new-receipt-path> [--behavior-only]');
+const receiptPath=resolve(output);
+try{await access(receiptPath);throw new Error('refuse to overwrite existing receipt');}catch(error){if(error.code!=='ENOENT')throw error;}
+const {Pool}=createRequire(import.meta.url)(pgModule);
+const scriptPath=fileURLToPath(import.meta.url);
+const scriptBytes=await readFile(scriptPath);
+const scriptGitBlobOid=execFileSync('git',['hash-object',scriptPath],{encoding:'utf8'}).trim();
+const gitHead=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
 const cfg={host:'127.0.0.1',port:54362,user:'dfs_ev_test',password:'dfs_ev_test',database:'dfs_ev_test',max:20,
   options:'-c statement_timeout=5000 -c lock_timeout=2000'};
 const a=new Pool(cfg),b=new Pool(cfg),tests=[],trials=[];let calls=0,created=false,receipt;
@@ -16,8 +27,8 @@ const markets=[...source.matchAll(/key: "(player_[a-z0-9_]+)"/g)].map(x=>x[1]);a
 const key=(event=0,market=0)=>`event${event}/${markets[market]}`;
 const keys=Array.from({length:20},(_,i)=>markets.map((_,j)=>key(i,j))).flat();
 const reset=async()=>{await q(a,'TRUNCATE spike220.resources,spike220.subjects,spike220.budget,spike220.attempts');
-  await q(a,`INSERT INTO spike220.budget(id,balance,floor,observed_at,provider_remaining,provider_used,quota_total,period) VALUES(1,100000,20,clock_timestamp(),100000,0,100000,'fixture-period')`);
-  await q(a,'UPDATE spike220.quota_probe SET owner=NULL,lease_until=NULL,retry_after=NULL');};
+  quotaPeriod='fixture-period';
+  await q(a,"SELECT spike220.initialize_budget(100000,0,clock_timestamp(),'fixture-period',20)");};
 const test=async(name,fn)=>{await reset();await fn();tests.push(name);console.log('PASS '+name);};
 const admit=(p,resources=[key()],owner=randomUUID(),dims=['network'],rate=60000,burst=1)=>
  one(p,'SELECT * FROM spike220.admit($1,$2,$3,$4,$5,30000)',[resources,owner,dims,
@@ -35,12 +46,13 @@ const parallel=async(n,fn)=>{let next=0;const out=await Promise.allSettled(Array
  const failure=out.find(x=>x.status==='rejected');if(failure)throw failure.reason;};
 const dist=x=>{const s=x.toSorted((a,b)=>a-b);return {samples:s.length,p50_ms:s[Math.ceil(s.length*.5)-1],p95_ms:s[Math.ceil(s.length*.95)-1],max_ms:s.at(-1)};};
 const read=(p,resources)=>q(p,`SELECT resource,payload,fetched_at>clock_timestamp()-interval '5 minutes' AS fresh FROM spike220.resources WHERE resource=ANY($1)`,[resources]);
+let quotaPeriod='fixture-period';
 let freeCalls=0,freeMode='ok',freeSnapshot={remaining:100,used:0,last:0};
 const ensureQuota=async(p)=>{
  const owner=randomUUID();
  for(let poll=0;poll<200;poll++){
   const claim=(await one(p,'SELECT spike220.claim_probe($1) AS state',[owner])).state;
-  if(claim==='fresh')return true;if(claim==='backoff')return false;
+  if(claim==='fresh')return true;if(['backoff','needs-init'].includes(claim))return false;
   if(claim==='follower'){await new Promise(r=>setTimeout(r,5));continue;}
   assert.equal(claim,'leader');freeCalls++;
   // Models fetchSlateEvents outside any transaction. Exactly zero provider
@@ -48,20 +60,22 @@ const ensureQuota=async(p)=>{
   await new Promise(r=>setTimeout(r,15));
   const row={...freeSnapshot}; // independent mocked upstream state, not the local budget
   const failed=freeMode==='failure';
-  const state=(await one(p,"SELECT spike220.finish_probe($1,$2,$3,$4,'fixture-period',$5) AS state",
-   [owner,failed?null:row.remaining,failed?null:row.used,await stamp(),failed?null:row.last])).state;
+  const state=(await one(p,"SELECT spike220.finish_probe($1,$2,$3,$4,$5,$6) AS state",
+   [owner,failed?null:row.remaining,failed?null:row.used,await stamp(),quotaPeriod,failed?null:row.last])).state;
   if(state==='accepted')return true;
-  return (await one(p,"SELECT observed_at>clock_timestamp()-interval '5 minutes' AS fresh FROM spike220.budget")).fresh;
+  if(state==='needs-init')return false;
+  return Boolean((await one(p,"SELECT observed_at>clock_timestamp()-interval '5 minutes' AS fresh FROM spike220.budget"))?.fresh);
  }return false;
 };
-const fetchMock=async(p,resources,subject)=>{
+const fetchMock=async(p,resources,subject,tryAdmit=admit)=>{
  const cached=(await read(p,resources)).rows;
  if(cached.length===resources.length&&cached.every(x=>x.fresh&&x.payload))return {kind:'fresh'};
- const owner=randomUUID();let gate=await admit(p,resources,owner,[subject]);
+ let owner=randomUUID();let gate=await tryAdmit(p,resources,owner,[subject]);
  if(gate.outcome==='quota-stale'){
   if(!await ensureQuota(p))return cached.length===resources.length&&cached.every(x=>x.payload)
    ?{kind:'stale',stale:true,reason:'quota-observation-unavailable'}:{kind:'quota-observation-unavailable'};
-  gate=await admit(p,resources,owner,[subject]);
+  owner=randomUUID(); // One identity per admission try, not per logical request.
+  gate=await tryAdmit(p,resources,owner,[subject]);
  }
  if(['denied','budget-refused'].includes(gate.outcome)){
   return cached.length===resources.length&&cached.every(x=>x.payload)
@@ -304,6 +318,153 @@ try{
   assert.equal((await one(a,"SELECT spike220.finish_probe($1,100,0,clock_timestamp(),'fixture-period') AS s",[old])).s,'owner-expired');
   assert.equal((await one(b,"SELECT spike220.finish_probe($1,100,0,clock_timestamp(),'fixture-period') AS s",[fresh])).s,'accepted');
  });
+
+ // Fixture-only time advancement ages retry_after beyond the named 60-second
+ // cap; it proves terminal state still blocks without wall-clock sleeps.
+ const passWindow=()=>q(a,"UPDATE spike220.quota_probe SET retry_after=clock_timestamp()-interval '61 seconds'");
+ await test('missing budget: twenty claims beyond simulated backoff windows make one free call until operator initialization',async()=>{
+  freeCalls=0;freeMode='ok';freeSnapshot={remaining:100,used:0,last:0};
+  await stale(a,[key()]);await q(a,'DELETE FROM spike220.budget');
+  for(let i=0;i<20;i++){if(i)await passWindow();assert.equal((await fetchMock(i%2?a:b,[key()],'n'+i)).kind,'stale');}
+  assert.equal(freeCalls,1);
+  assert.deepEqual(await one(a,'SELECT needs_init,health_reason FROM spike220.quota_probe'),{needs_init:true,health_reason:'budget-uninitialized'});
+  await q(a,"SELECT spike220.initialize_budget(100,0,clock_timestamp(),'fixture-period',20)");
+  assert.equal((await one(a,'SELECT spike220.claim_probe($1) AS s',[randomUUID()])).s,'fresh');assert.equal(freeCalls,1);
+  await q(a,"UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'");
+  assert.equal((await fetchMock(b,[key()],'after-init')).kind,'provider-mock');assert.equal(freeCalls,2);await liabilityInvariant();
+ });
+ await test('monthly counter reset: two free probes confirm the latch across twenty simulated windows, then one more after reinitialization',async()=>{
+  freeCalls=0;freeMode='ok';freeSnapshot={remaining:100,used:0,last:0};await seed();
+  await q(a,"SELECT spike220.observe(70,30,clock_timestamp(),'fixture-period')");
+  await q(a,"UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'");
+  for(let i=0;i<20;i++){if(i)await passWindow();assert.equal((await fetchMock(i%2?a:b,[key()],'n'+i)).kind,'quota-observation-unavailable');}
+  assert.equal(freeCalls,2);assert.equal((await one(a,'SELECT health_reason FROM spike220.quota_probe')).health_reason,'quota-counter-reset');
+  quotaPeriod='next-period';await q(a,"SELECT spike220.initialize_budget(100,0,clock_timestamp(),'next-period',20)");
+  assert.deepEqual(await one(a,'SELECT needs_init,suspect_reason FROM spike220.quota_probe'),{needs_init:false,suspect_reason:null});
+  await q(a,"UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'");
+  assert.equal((await fetchMock(b,[key()],'after-reset')).kind,'provider-mock');assert.equal(freeCalls,3);await liabilityInvariant();
+ });
+ await test('period mismatch latches immediately and a confirmed plan mismatch stays terminal even after a fresh observation',async()=>{
+  for(const [remaining,period,reason] of [[100,'wrong-period','quota-period-mismatch'],[101,'fixture-period','quota-plan-mismatch']]){
+   await q(a,"SELECT spike220.initialize_budget(100,0,clock_timestamp(),'fixture-period',20)");
+   await q(a,"UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'");
+   const owner=randomUUID();assert.equal((await one(a,'SELECT spike220.claim_probe($1) AS s',[owner])).s,'leader');
+   const first=(await one(a,'SELECT spike220.finish_probe($1,$2,0,clock_timestamp(),$3,0) AS s',[owner,remaining,period])).s;
+   if(reason==='quota-plan-mismatch'){
+    assert.equal(first,'invalid');assert.deepEqual(await one(a,'SELECT needs_init,suspect_reason FROM spike220.quota_probe'),{needs_init:false,suspect_reason:'quota-plan-mismatch'});
+    assert.equal((await one(b,'SELECT spike220.claim_probe($1) AS s',[randomUUID()])).s,'backoff');
+    await passWindow();const next=randomUUID();assert.equal((await one(b,'SELECT spike220.claim_probe($1) AS s',[next])).s,'leader');
+    assert.equal((await one(b,'SELECT spike220.finish_probe($1,$2,0,clock_timestamp(),$3,0) AS s',[next,remaining,period])).s,'needs-init');
+   }else assert.equal(first,'needs-init');
+   await q(a,"SELECT spike220.observe(100,0,clock_timestamp(),'fixture-period')");
+   assert.equal((await one(a,'SELECT spike220.claim_probe($1) AS s',[randomUUID()])).s,'needs-init');
+   assert.equal((await one(a,'SELECT health_reason FROM spike220.quota_probe')).health_reason,reason);
+  }
+ });
+
+ await test('reordered free reading after paid reconciliation is suspected, then accepted next probe resumes paid refresh',async()=>{
+  await seed();await q(a,"SELECT * FROM spike220.reserve('paid-before-window',1,false)");
+  await q(a,"UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'");
+  const old=randomUUID();assert.equal((await one(a,'SELECT spike220.claim_probe($1) AS s',[old])).s,'leader');const oldObserved=await stamp();
+  assert.equal((await reconcile('paid-before-window',1,99,1)).state,'accepted');
+  assert.equal((await one(b,"SELECT spike220.finish_probe($1,100,0,$2,'fixture-period',0) AS s",[old,oldObserved])).s,'older-or-reset');
+  assert.deepEqual(await one(a,'SELECT needs_init,suspect_reason,health_reason,retry_after>clock_timestamp() AS backoff FROM spike220.quota_probe'),{needs_init:false,suspect_reason:'quota-counter-reset',health_reason:'suspected-quota-counter-reset',backoff:true});await liabilityInvariant();
+  await q(a,"UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'");await passWindow();
+  const fresh=randomUUID();assert.equal((await one(a,'SELECT spike220.claim_probe($1) AS s',[fresh])).s,'leader');
+  assert.equal((await one(a,"SELECT spike220.finish_probe($1,99,1,clock_timestamp(),'fixture-period',0) AS s",[fresh])).s,'accepted');
+  assert.deepEqual(await one(a,'SELECT needs_init,suspect_reason FROM spike220.quota_probe'),{needs_init:false,suspect_reason:null});
+  assert.equal((await fetchMock(b,[key()],'after-reordered-probe')).kind,'provider-mock');await liabilityInvariant();
+ });
+ await test('plan suspicion followed by acceptance clears and a later mismatch starts a new confirmation sequence',async()=>{
+  await seed();await q(a,"UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'");
+  const first=randomUUID();await q(a,'SELECT spike220.claim_probe($1)',[first]);
+  assert.equal((await one(a,"SELECT spike220.finish_probe($1,101,0,clock_timestamp(),'fixture-period',0) AS s",[first])).s,'invalid');
+  assert.equal((await one(a,'SELECT suspect_reason FROM spike220.quota_probe')).suspect_reason,'quota-plan-mismatch');
+  await passWindow();const good=randomUUID();await q(a,'SELECT spike220.claim_probe($1)',[good]);
+  assert.equal((await one(a,"SELECT spike220.finish_probe($1,100,0,clock_timestamp(),'fixture-period',0) AS s",[good])).s,'accepted');
+  assert.deepEqual(await one(a,'SELECT needs_init,suspect_reason,health_reason,failures FROM spike220.quota_probe'),{needs_init:false,suspect_reason:null,health_reason:null,failures:0});
+  await q(a,"UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'");const later=randomUUID();await q(a,'SELECT spike220.claim_probe($1)',[later]);
+  assert.equal((await one(a,"SELECT spike220.finish_probe($1,101,0,clock_timestamp(),'fixture-period',0) AS s",[later])).s,'invalid');
+  assert.equal((await one(a,'SELECT needs_init FROM spike220.quota_probe')).needs_init,false);
+ });
+ await test('different completed probe outcomes replace or clear suspicion instead of confirming an old condition',async()=>{
+  await seed();await q(a,"SELECT spike220.observe(70,30,clock_timestamp(),'fixture-period')");
+  await q(a,"UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'");
+  for(const [remaining,used,expected] of [[100,0,'quota-counter-reset'],[101,0,'quota-plan-mismatch'],[null,null,null],[101,0,'quota-plan-mismatch']]){
+   const owner=randomUUID();assert.equal((await one(a,'SELECT spike220.claim_probe($1) AS s',[owner])).s,'leader');
+   await q(a,"SELECT spike220.finish_probe($1,$2,$3,clock_timestamp(),'fixture-period',0)",[owner,remaining,used]);
+   assert.deepEqual(await one(a,'SELECT needs_init,suspect_reason FROM spike220.quota_probe'),{needs_init:false,suspect_reason:expected});await passWindow();
+  }
+  const expired=randomUUID();await q(a,'SELECT spike220.claim_probe($1)',[expired]);await q(a,"UPDATE spike220.quota_probe SET lease_until=clock_timestamp()-interval '1 second'");
+  assert.equal((await one(a,"SELECT spike220.finish_probe($1,101,0,clock_timestamp(),'fixture-period',0) AS s",[expired])).s,'owner-expired');
+  assert.equal((await one(a,'SELECT suspect_reason FROM spike220.quota_probe')).suspect_reason,null);
+ });
+ await test('transient free-probe failures grow exponentially and remain capped at sixty seconds',async()=>{
+  await seed();await q(a,"UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'");
+  for(const expected of [1,2,4,8,16,32,60,60]){
+   const owner=randomUUID();assert.equal((await one(a,'SELECT spike220.claim_probe($1) AS s',[owner])).s,'leader');
+   assert.equal((await one(a,"SELECT spike220.finish_probe($1,NULL,NULL,NULL,'fixture-period',NULL) AS s",[owner])).s,'invalid');
+   const p=await one(a,'SELECT round(extract(epoch FROM retry_after-clock_timestamp()))::int AS seconds,needs_init FROM spike220.quota_probe');
+   assert.deepEqual(p,{seconds:expected,needs_init:false});
+   assert.equal((await one(b,'SELECT spike220.claim_probe($1) AS s',[randomUUID()])).s,'backoff');await passWindow();
+  }
+  const owner=randomUUID();await q(a,'SELECT spike220.claim_probe($1)',[owner]);
+  assert.equal((await one(a,"SELECT spike220.finish_probe($1,100,0,clock_timestamp()-interval '7 minutes','fixture-period',0) AS s",[owner])).s,'older');
+  assert.equal((await one(a,'SELECT needs_init FROM spike220.quota_probe')).needs_init,false);
+ });
+ await test('an expired current probe backs off but cannot cancel a replacement probe',async()=>{
+  await seed();await q(a,"UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'");
+  const old=randomUUID(),fresh=randomUUID();await q(a,'SELECT spike220.claim_probe($1)',[old]);
+  await q(a,"UPDATE spike220.quota_probe SET lease_until=clock_timestamp()-interval '1 second'");
+  assert.equal((await one(a,"SELECT spike220.finish_probe($1,100,0,clock_timestamp(),'fixture-period',0) AS s",[old])).s,'owner-expired');
+  assert.equal((await one(b,'SELECT spike220.claim_probe($1) AS s',[fresh])).s,'backoff');await passWindow();
+  assert.equal((await one(b,'SELECT spike220.claim_probe($1) AS s',[fresh])).s,'leader');
+  assert.equal((await one(a,"SELECT spike220.finish_probe($1,100,0,clock_timestamp(),'fixture-period',0) AS s",[old])).s,'owner-expired');
+  assert.equal((await one(a,'SELECT owner FROM spike220.quota_probe')).owner,fresh);
+ });
+ await test('operator reinitialization preserves unresolved liability and sticky overrun and refuses an unresolved prior period',async()=>{
+  await seed();await q(a,"SELECT * FROM spike220.reserve('pending',3,false)");
+  await q(a,'UPDATE spike220.budget SET cost_overrun=true');
+  await assert.rejects(q(a,"SELECT spike220.initialize_budget(100,0,clock_timestamp(),'new-period',20)"));
+  await q(a,"SELECT spike220.initialize_budget(100,0,clock_timestamp(),'fixture-period',20)");
+  assert.deepEqual(await one(a,'SELECT balance,pending_reserved::int AS pending,cost_overrun FROM spike220.budget'),{balance:97,pending:3,cost_overrun:true});await liabilityInvariant();
+ });
+ const lateTrigger=async()=>{
+  await q(a,`CREATE FUNCTION spike220.force_late_stale() RETURNS trigger LANGUAGE plpgsql AS $$
+   BEGIN IF NEW.subject='force-late-stale' AND NOT EXISTS(SELECT FROM spike220.subjects WHERE subject=NEW.subject) THEN
+    UPDATE spike220.budget SET observed_at=clock_timestamp()-interval '6 minutes'; END IF; RETURN NEW; END $$;
+   CREATE TRIGGER force_late_stale BEFORE INSERT ON spike220.subjects FOR EACH ROW EXECUTE FUNCTION spike220.force_late_stale()`);
+ };
+ const removeLateTrigger=()=>q(a,'DROP TRIGGER force_late_stale ON spike220.subjects; DROP FUNCTION spike220.force_late_stale()');
+ await test('forced late stale branch leaves no denial attempt: same-ID refresh retry can lead with exactly one reservation',async()=>{
+  await seed();const owner=randomUUID();await lateTrigger();
+  try{
+   assert.equal((await admit(a,[key()],owner,['force-late-stale'])).outcome,'quota-stale');
+   assert.equal((await one(a,'SELECT count(*)::int AS n FROM spike220.attempts')).n,0);assert.deepEqual(await leases(),[]);
+   await q(a,"SELECT spike220.observe(100,0,clock_timestamp(),'fixture-period')");
+   assert.equal((await admit(a,[key()],owner,['force-late-stale'])).outcome,'leader');
+   assert.equal((await one(a,'SELECT count(*)::int AS n FROM spike220.attempts WHERE admitted')).n,1);await liabilityInvariant();
+  }finally{await removeLateTrigger();}
+ });
+ await test('mock refresh retry uses a fresh attempt UUID after forced late stale and reserves exactly once',async()=>{
+  await seed();freeCalls=0;freeMode='ok';freeSnapshot={remaining:100,used:0,last:0};const owners=[];await lateTrigger();
+  try{
+   const result=await fetchMock(a,[key()],'force-late-stale',(...args)=>{owners.push(args[2]);return admit(...args);});
+   assert.equal(result.kind,'provider-mock');assert.equal(freeCalls,1);assert.equal(owners.length,2);assert.notEqual(owners[0],owners[1]);
+   assert.equal((await one(a,'SELECT count(*)::int AS n FROM spike220.attempts')).n,1);await liabilityInvariant();
+  }finally{await removeLateTrigger();}
+ });
+ await test('validated older snapshots settle only when used covers actual cost; malformed metadata cannot settle',async()=>{
+  await seed();await q(a,"SELECT * FROM spike220.reserve('older',3,false)");await q(a,"SELECT spike220.observe(90,10,clock_timestamp(),'fixture-period')");
+  assert.equal((await one(a,"SELECT spike220.reconcile('older',1,99,1,clock_timestamp(),'wrong-period') AS state")).state,'invalid');
+  assert.equal((await one(a,"SELECT settled FROM spike220.attempts WHERE id='older'")).settled,false);
+  assert.equal((await reconcile('older',1,100,0)).state,'older-or-reset');
+  assert.equal((await one(a,"SELECT settled FROM spike220.attempts WHERE id='older'")).settled,false);
+  assert.equal((await reconcile('older',1,100,1)).state,'invalid');
+  assert.equal((await one(a,"SELECT settled FROM spike220.attempts WHERE id='older'")).settled,false);
+  assert.equal((await reconcile('older',1,99,1)).state,'older-or-reset');
+  assert.equal((await one(a,"SELECT settled FROM spike220.attempts WHERE id='older'")).settled,true);await liabilityInvariant();
+ });
  await test('catalog caps every allowed market subset at 240 per-market resource rows',async()=>{
   // Enumerate every nonempty subset. Materialize flattened individual keys,
   // never a market-set key. Logical payload bound uses a 4 KiB fixture per row.
@@ -334,9 +495,13 @@ try{
    }})()));result.modes[mode]=dist(times);
   }trials.push(result);console.log('TRIAL '+JSON.stringify(result));
  }
- receipt={...receipt,iteration:3,base:'71cdd90e11cbee7ec6b0eb1961322d40c49a20e9',
+ const serverVersion=(await one(a,'SHOW server_version')).server_version;
+ receipt={...receipt,iteration:4,reviewRound:2,base:gitHead,scriptGitBlobOid,scriptSha256:createHash('sha256').update(scriptBytes).digest('hex'),
+  sqlGitBlobOid:execFileSync('git',['hash-object',fileURLToPath(new URL('../../packages/db/proposals/220_atomic_leader_gcra.sql',import.meta.url))],{encoding:'utf8'}).trim(),
+  sourceNote:'Git blob IDs identify exact reviewed bytes; HEAD is the pre-commit base. Verify the same blobs are committed after owner approval.',
+  command:['node',fileURLToPath(import.meta.url),pgModule,receiptPath,...flags],sqlTopLevelSetupStatements:(sql.match(/^(?:CREATE|INSERT) /gm)??[]).length,
   tests,trials,queryCalls:calls,queryCallCap:CAP,sqlSha256:createHash('sha256').update(sql).digest('hex'),
-  fixture:{port:54362,postgres:(await one(a,'SHOW server_version')).server_version,memoryMiB:512,transport:'local pg TCP; no managed HTTP claim'},
+  fixture:{port:54362,postgres:serverVersion,memoryMiB:512,transport:'local pg TCP; no managed HTTP claim'},
   workBudgets:{freshHitAddedStatements:0,freshHitAddedRoundTrips:0,combinedAdmissionLeaseGcraAndBudgetStatements:1,
    combinedAdmissionLocalRoundTrips:1,mockPaidPathStatementsIncludingCacheRead:2,mockPaidPathLocalRoundTrips:2,
    maxResourceRowsLockedPerRequest:12,maxSubjectRowsLockedPerRequest:2,quotaObservation:'stale path: one account-wide claim, one mocked free /events, one fenced snapshot finish; followers bounded-poll with one claim query per poll; fresh path unchanged',
@@ -350,4 +515,4 @@ try{
  if(created){await a.query('DROP SCHEMA spike220 CASCADE');const x=await a.query("SELECT to_regnamespace('spike220') IS NULL AS absent");if(receipt)receipt.cleanup={schemaAbsent:x.rows[0].absent};}
  await Promise.all([a.end(),b.end()]);
 }
-if(receipt){await writeFile(new URL('../../docs/evidence/220-qualification/local-iteration-3.json',import.meta.url),JSON.stringify(receipt,null,2)+'\n');console.log('RECEIPT saved');}
+if(receipt){await writeFile(receiptPath,JSON.stringify(receipt,null,2)+'\n',{flag:'wx'});console.log('RECEIPT '+receiptPath);}

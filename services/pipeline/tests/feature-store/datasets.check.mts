@@ -66,7 +66,7 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
   let firstRows:{rows:{featureId:string;labelId:string;label:number;season:number;sampleSize:number;flags:string[]}[]};
   const reportPins=async(pinned:Awaited<ReturnType<typeof buildDataset>>)=>{
    const dataset=JSON.parse((await store.get(pinned.objectKey)).toString());
-   const coverage=Buffer.from(JSON.stringify({mode,rows:dataset.rows.map((r:{playerId:string;gameId:string;season:number;sampleSize:number;flags:string[]})=>({
+   const coverage=Buffer.from(JSON.stringify({format:'qb-evaluation-coverage-v1',mode,rows:dataset.rows.map((r:{playerId:string;gameId:string;season:number;sampleSize:number;flags:string[]})=>({
     player_id:r.playerId,game_id:r.gameId,season:r.season,sample_size:r.sampleSize,feature_state:'usable',label_state:'usable',
     feature_reasons:[],label_reasons:[],history_gaps:[],flags:r.flags,zero_attempts:false}))}));
    const coverageArtifact={objectKey:objectKey('audits',coverage),sha256:sha256(coverage),byteSize:coverage.length};
@@ -98,10 +98,10 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
    let staged='';
    await assert.rejects(completeQbReport(reader,{...store,putIfAbsent:async(key,bytes)=>{
     const uploaded=await store.putIfAbsent(key,bytes);assert(uploaded.created);staged=key;await grant([]);return uploaded;
-   }},inputPins,mode),/current-rights/);
+   }},inputPins,mode,writer),/current-rights/);
    assert(staged);assert.equal(await store.head(staged),null);await grant(['research']);
    const before=queryCounts.reader;
-   const result=await measureQbReport(reader,store,inputPins,mode);
+   const result=await measureQbReport(reader,store,inputPins,mode,writer);
    assert.equal(queryCounts.reader-before,3);assert.equal(result.rightsScope,'research');assert.equal(result.folds,2);
    assert.equal(result.cases,10);assert(result.delivery.allowed);
    assert((await store.get(result.artifact.objectKey)).includes(Buffer.from('historical-availability-unverified')));
@@ -191,7 +191,7 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
    const large=await buildDataset(writer,store,{...spec,featuresAsOf:now,labelsAsOf:now},code);
    assert.equal(large.rowCount,130);assert.equal(queryCounts.writer-before,8);
    const readBefore=queryCounts.reader;await readDataset(reader,store,large.datasetId);assert.equal(queryCounts.reader-readBefore,3);
-   const report=await measureQbReport(reader,store,await reportPins(large),mode);
+   const report=await measureQbReport(reader,store,await reportPins(large),mode,writer);
    assert.equal(report.folds,130);assert.equal(report.cases,650);
    assert.deepEqual(report.work,{statements:3,rightsChecks:2,objectReads:3,objectWrites:1,rawSourceReads:0,perExampleQueries:0});
    return {small:2,large:130,buildStatements:8,readStatements:3,batchedRightsQueriesPerOperation:2};

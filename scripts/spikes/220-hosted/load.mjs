@@ -54,10 +54,10 @@ export async function runGroup({deployment,binding,expectedShaByArm,armReceipts,
         const body=await response.json();
         assert(body.runId===binding.runId && body.sha===binding.reviewedSha && body.region===binding.arm && body.arm===binding.arm && sampleKey(body.sample)===sampleKey(samples[index]),'sample identity mismatch');
         for(const k of ['inFunctionPreProviderMs','preProviderSqlMs','preProviderQueries','inFunctionTotalMs','sqlQueries'])assert(Number.isFinite(body[k])&&body[k]>=0,'missing in-function measurement');
-        const expected=first.mode==='baseline'?['baseline']:first.stage==='stale'?['leader','probe-follower-stale','observation-unavailable']:['leader'];
+        const expected=first.mode==='baseline'?['baseline']:first.stage==='stale'?['leader','probe-follower-stale','observation-unavailable','needs-init','backoff']:['leader'];
         assert(expected.includes(body.outcome),'unexpected admission outcome');
         const warmQueries=first.mode==='path'?2:1;
-        const cap=first.stage==='stale'?(body.outcome==='leader'?5:body.outcome==='observation-unavailable'?4:3):warmQueries;
+        const cap=first.stage==='stale'?(body.outcome==='leader'?5:['observation-unavailable','needs-init','backoff'].includes(body.outcome)?4:3):warmQueries;
         const transportProbe=first.mode==='baseline' && first.stage!=='cold';
         assert(body.preProviderQueries>=warmQueries && body.preProviderQueries<=cap && body.sqlQueries<=cap+(body.outcome==='leader'||transportProbe?1:0),'SQL work budget exceeded');
         assert(Array.isArray(body.queryTimings) && body.queryTimings.length===body.sqlQueries && body.queryTimings.every(x=>typeof x.operation==='string'&&Number.isFinite(x.elapsedMs)&&x.elapsedMs>=0),'missing per-query timing');

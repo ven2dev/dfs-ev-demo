@@ -1,0 +1,367 @@
+{
+  "issue": 166,
+  "phase": "disposable-local-spike",
+  "verdict": "pass",
+  "runtime": "v24.18.1",
+  "startedAt": "2026-11-01T00:36:16.080Z",
+  "finishedAt": "2026-11-01T00:38:08.207Z",
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "fixtureConfig": {
+    "postgresTmpfsBytes": 536870912,
+    "sharedMemoryBytes": 134217728
+  },
+  "qualification": "local-fixture only; hosted Neon/region/network RTT unmeasured (#220)",
+  "target": {
+    "statistic": "nearest-rank p95 of per-read Q1+Q2 (not sum of p95s)",
+    "limitMs": 21,
+    "allocationMs": 30
+  },
+  "cacheState": "warm/unflushed OS, file and database caches; connected restricted LOGIN; no cold/hosted claim",
+  "method": "Baseline-only first, then six ABBA blocks x25 requests per position per shape; all samples retained. Baseline has three client queries; only its two rights/status queries are timed for comparison. Candidate folds pin retrieval into Q1.",
+  "baselineFirst": {
+    "byRows": [
+      {
+        "rows": 0,
+        "p95Q1PlusQ2Ms": 6.826459000003524
+      },
+      {
+        "rows": 2504,
+        "p95Q1PlusQ2Ms": 3.9740010000095936
+      }
+    ]
+  },
+  "sources": {
+    "services/pipeline/src/featureStore/datasets.ts": "a89851324dc584e0bd642fc32330a4673b4590caf0ce2798edb83505b195107c",
+    "services/pipeline/src/featureStore/governance.ts": "ec233fe4ceb0830399c6412fb3703777ad796697a055ebd844f25045eae6ce5a",
+    "services/pipeline/src/featureStore/modelManifests.ts": "d7696d8d6b23a9d447c0f98e81e386277c0a81e208bc159efe0b1abf67cb2b34",
+    "packages/db/proposals/165_model_manifests.sql": "5cccb655c1a971424db9fd71f4a139d9d393617f275a6cc0b5f9f4d4fe58e78e",
+    "compose.test.yml": "57a19ced9e5892293f353b95456ea4e07544d467d5843634f508773496b4418e",
+    "codex-briefs/node_modules/166-spike-work/prepare.py": "bf140e93325bf0a39f9f1d34d242f1ba2f9945825461e33d7d5ae31735821021",
+    "codex-briefs/node_modules/166-spike-work/spike.mts": "f61204ed871a4277aaf8e2630b07f6e41442778368443277fb724fb7581e7c08",
+    "codex-briefs/node_modules/166-spike-work/spike.mjs": "998759f231e52c459ee0e67b2f1404fe28b678e07e65349dbeba4727f59ec4ec",
+    "codex-briefs/node_modules/166-spike-work/packages/db/proposals/166_spike.sql": "71ff0f007a8f6269b4e1ce97aff31ecb45ffe065114da48432afeed21ab435f0"
+  },
+  "limitations": [
+    "Disposable mechanism SQL and copied orchestration are not implementation or CI qualification.",
+    "Automatic SELECT AccessShareLock is expected; no explicit reader coordination lock or transaction spans I/O/calculation.",
+    "No completed-removal recovery lane or paused/late-PUT handoff tests; #229 owns them.",
+    "Direct-SQL concurrency graph fixtures are synthetic and do not claim report-envelope provenance.",
+    "A pending removal may outlast byte removal until orphan retirement (24h default); byte removal and completion clocks are separate."
+  ],
+  "speed": [
+    {
+      "shape": "0-1-files",
+      "runId": "e386f5cf-89ba-4df8-8369-5511f4891f5c",
+      "slots": [
+        "descriptor"
+      ],
+      "datasetRows": 0,
+      "candidateP95Ms": 2.4597909999865806,
+      "baselineP95Ms": 3.3265410000021802,
+      "blocks": [
+        {
+          "block": 0,
+          "p95Ms": 2.508124999993015
+        },
+        {
+          "block": 1,
+          "p95Ms": 1.478291999985231
+        },
+        {
+          "block": 2,
+          "p95Ms": 1.9457510000065668
+        },
+        {
+          "block": 3,
+          "p95Ms": 3.3910829999949783
+        },
+        {
+          "block": 4,
+          "p95Ms": 2.5543329999927664
+        },
+        {
+          "block": 5,
+          "p95Ms": 1.651916999995592
+        }
+      ],
+      "headroomFraction": 0.918006966667114,
+      "pass": true
+    },
+    {
+      "shape": "0-2-files",
+      "runId": "e386f5cf-89ba-4df8-8369-5511f4891f5c",
+      "slots": [
+        "descriptor",
+        "strict-point-in-time-v1"
+      ],
+      "datasetRows": 0,
+      "candidateP95Ms": 2.404000000009546,
+      "baselineP95Ms": 3.263375000009546,
+      "blocks": [
+        {
+          "block": 0,
+          "p95Ms": 3.434124999999767
+        },
+        {
+          "block": 1,
+          "p95Ms": 1.9874999999883585
+        },
+        {
+          "block": 2,
+          "p95Ms": 2.1165000000037253
+        },
+        {
+          "block": 3,
+          "p95Ms": 2.0051670000102604
+        },
+        {
+          "block": 4,
+          "p95Ms": 1.8729180000082124
+        },
+        {
+          "block": 5,
+          "p95Ms": 2.120249999992666
+        }
+      ],
+      "headroomFraction": 0.9198666666663484,
+      "pass": true
+    },
+    {
+      "shape": "1-1-files",
+      "runId": "8d6032ac-a0c1-4460-b90a-e2db82f6e65e",
+      "slots": [
+        "descriptor"
+      ],
+      "datasetRows": 2504,
+      "candidateP95Ms": 3.8470840000081807,
+      "baselineP95Ms": 8.986542000013287,
+      "blocks": [
+        {
+          "block": 0,
+          "p95Ms": 2.186167000007117
+        },
+        {
+          "block": 1,
+          "p95Ms": 9.892665999985184
+        },
+        {
+          "block": 2,
+          "p95Ms": 5.061333000005106
+        },
+        {
+          "block": 3,
+          "p95Ms": 2.1064579999947455
+        },
+        {
+          "block": 4,
+          "p95Ms": 1.7899170000018785
+        },
+        {
+          "block": 5,
+          "p95Ms": 3.007167000003392
+        }
+      ],
+      "headroomFraction": 0.8717638666663939,
+      "pass": true
+    },
+    {
+      "shape": "1-2-files",
+      "runId": "8d6032ac-a0c1-4460-b90a-e2db82f6e65e",
+      "slots": [
+        "descriptor",
+        "retrospective-reconstruction-v1"
+      ],
+      "datasetRows": 2504,
+      "candidateP95Ms": 4.874666999996407,
+      "baselineP95Ms": 4.951333999997587,
+      "blocks": [
+        {
+          "block": 0,
+          "p95Ms": 4.149875000017346
+        },
+        {
+          "block": 1,
+          "p95Ms": 2.7327079999959096
+        },
+        {
+          "block": 2,
+          "p95Ms": 10.268375999992713
+        },
+        {
+          "block": 3,
+          "p95Ms": 3.0576250000012806
+        },
+        {
+          "block": 4,
+          "p95Ms": 3.7868339999986347
+        },
+        {
+          "block": 5,
+          "p95Ms": 3.108416000017314
+        }
+      ],
+      "headroomFraction": 0.8375111000001197,
+      "pass": true
+    },
+    {
+      "shape": "2-1-files",
+      "runId": "a4e31e7f-5681-4f25-a487-98de1e334ba6",
+      "slots": [
+        "descriptor"
+      ],
+      "datasetRows": 2504,
+      "candidateP95Ms": 2.900041999979294,
+      "baselineP95Ms": 5.419083000000683,
+      "blocks": [
+        {
+          "block": 0,
+          "p95Ms": 1.3779170000052545
+        },
+        {
+          "block": 1,
+          "p95Ms": 5.796582999988459
+        },
+        {
+          "block": 2,
+          "p95Ms": 7.164499999998952
+        },
+        {
+          "block": 3,
+          "p95Ms": 2.0652499999996508
+        },
+        {
+          "block": 4,
+          "p95Ms": 1.43254199999501
+        },
+        {
+          "block": 5,
+          "p95Ms": 2.900041999979294
+        }
+      ],
+      "headroomFraction": 0.9033319333340235,
+      "pass": true
+    },
+    {
+      "shape": "2-3-files",
+      "runId": "a4e31e7f-5681-4f25-a487-98de1e334ba6",
+      "slots": [
+        "descriptor",
+        "strict-point-in-time-v1",
+        "retrospective-reconstruction-v1"
+      ],
+      "datasetRows": 2504,
+      "candidateP95Ms": 3.620458999997936,
+      "baselineP95Ms": 5.178333999996539,
+      "blocks": [
+        {
+          "block": 0,
+          "p95Ms": 3.647499999991851
+        },
+        {
+          "block": 1,
+          "p95Ms": 3.6127919999998994
+        },
+        {
+          "block": 2,
+          "p95Ms": 4.079459000000497
+        },
+        {
+          "block": 3,
+          "p95Ms": 3.1570840000058524
+        },
+        {
+          "block": 4,
+          "p95Ms": 3.2577500000043074
+        },
+        {
+          "block": 5,
+          "p95Ms": 3.926207999989856
+        }
+      ],
+      "headroomFraction": 0.8793180333334021,
+      "pass": true
+    }
+  ],
+  "schemaVersion": 2,
+  "sampleCount": 3600,
+  "probes": [
+    {
+      "name": "two query work and hidden-work negative control",
+      "verdict": "pass"
+    },
+    {
+      "name": "real reader LOGIN refusals and zero GET on initial refusal",
+      "verdict": "pass"
+    },
+    {
+      "name": "rights revoked at each GET and during trusted calculation withholds all output",
+      "verdict": "pass"
+    },
+    {
+      "name": "exact source/dataset invalidation, immutable first receipt and shared-retained re-arm",
+      "verdict": "pass"
+    },
+    {
+      "name": "paused reader has no coordination locks and concurrent deletion commits",
+      "verdict": "pass"
+    },
+    {
+      "name": "orphan sweep removes bytes while removal pending; retirement permits idempotent completion",
+      "verdict": "pass"
+    },
+    {
+      "name": "unknown slots refuse and an unrelated real LOGIN has no artifact authority",
+      "verdict": "pass"
+    },
+    {
+      "name": "publication before deletion and deletion before publication serialize correctly",
+      "verdict": "pass"
+    },
+    {
+      "name": "lost COMMIT reply on a live publication retries to one original run",
+      "verdict": "pass"
+    },
+    {
+      "name": "configured grace and unlink-before-ack crash resume are idempotent",
+      "verdict": "pass"
+    },
+    {
+      "name": "bounded cleanup pages progress past shared-retained and observed addresses",
+      "verdict": "pass"
+    },
+    {
+      "name": "deletion during each file GET and calculation withholds delivery",
+      "verdict": "pass"
+    },
+    {
+      "name": "mandatory cleanup fixed client work budgets",
+      "verdict": "pass"
+    }
+  ],
+  "fullRecord": {
+    "path": "full-records.tar.gz#before-review-corrections/preimplementation-spike.json",
+    "sha256": "8dc3409f114f76fc7bcb5294cb5b54bfd93b6f4f1df05cde1c9621e54b5d7e09",
+    "byteSize": 1053020,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  },
+  "supplementalRecords": {
+    "preimplementation-work-oracle.json": {
+      "path": "full-records.tar.gz#before-review-corrections/preimplementation-work-oracle.json",
+      "sha256": "a84fc19207b9fda399ff8c3a98d0447c82160c954831032b6952091e766d309c",
+      "byteSize": 781,
+      "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+    },
+    "preimplementation-verification.json": {
+      "path": "full-records.tar.gz#before-review-corrections/preimplementation-verification.json",
+      "sha256": "56d2af130a170fbc61f249aaab8d9b33f0ce26c71d171839c9af5dde6d20752c",
+      "byteSize": 863,
+      "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+    },
+    "preimplementation-archive.json": {
+      "path": "full-records.tar.gz#before-review-corrections/preimplementation-archive.json",
+      "sha256": "70ab3f6c43b4fb5e9166010e23e6bf4238508cf233206c51e0bbb58c56c325e6",
+      "byteSize": 1059,
+      "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+    }
+  }
+}

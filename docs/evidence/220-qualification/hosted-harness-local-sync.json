@@ -1,0 +1,80 @@
+{
+  "date": "2026-11-01",
+  "status": "local sync ready for owner review; edits uncommitted",
+  "mainBase": "6cae8b0df076de0987d81ade3228735e2e2b4897",
+  "rebasedHarnessHead": "62b9244fe11aefcd3abfd95db676ee5fb50a050d",
+  "supersedes": "hosted-harness-local.json (retained unchanged as historical evidence)",
+  "command": "python3 - docs/evidence/220-qualification/hosted-harness-local-sync.json (exclusive create)",
+  "checks": {
+    "node": {
+      "passed": 29,
+      "command": "node --test tests/220-hosted-harness.check.mjs"
+    },
+    "postgres": {
+      "fixture": "PostgreSQL 18.6, loopback 54362, 512 MiB",
+      "cases": [
+        "restricted connection inherits server timeouts before first statement",
+        "statement timeout cancels active statement",
+        "column-limited run reads and SECURITY INVOKER; runner cannot change phases, mint tickets or create tables",
+        "admission ticket refuses path claim without mutation; missing run and replay fenced",
+        "separate cache-read/admission path and owner-fenced release",
+        "20 independent connections admit distinct leaders through shared account",
+        "stale quota transition accepts single probe then retries one ticket",
+        "setup clears prior-run terminal latch via initialize_budget; first stale probe leads",
+        "arm activation pauses other run; expired begin/sample/release still fenced"
+      ],
+      "passed": 9
+    },
+    "postgresCommand": "node scripts/spikes/220-hosted/local-db.mjs",
+    "targetedEslint": "pass",
+    "diffCheck": "pass",
+    "schemaRoleAndOwnedFixtureRemoved": true
+  },
+  "source": {
+    "packages/db/proposals/220_atomic_leader_gcra.sql": {
+      "gitBlob": "bd3fb632506af3a1f6bc8512ac2aaa42d88be579",
+      "sha256": "425c36415fd2cb4eeebd9de59fd07b024d0ba5d92da6a97e37d3874da96bf208"
+    },
+    "packages/db/proposals/220_hosted_harness.sql": {
+      "gitBlob": "a95da2498f0bbca8a3dd9dcd2d2542ef6a85622d",
+      "sha256": "009d75e313aad8af0b98d81e9af93860e721311fef054776fcb2bd705230ec89"
+    },
+    "scripts/spikes/220-hosted/setup.mjs": {
+      "gitBlob": "7d11f630bbb497742062d5882bc811217894cf86",
+      "sha256": "935b588e7ec9a484db8576fe7ff5f2e19871eb5a5e277d27be838d90e1cc541c"
+    },
+    "apps/web/src/lib/qualification220-core.mjs": {
+      "gitBlob": "12ac0c60f764813362879aea88c707e2dbb4fb43",
+      "sha256": "b37d48150114a9087724b274c5be71758f1b3b9002bfa8d651ef3267d5964832"
+    },
+    "scripts/spikes/220-hosted/load.mjs": {
+      "gitBlob": "d2150b23dd85ed53a97a1871aa566a70406571a8",
+      "sha256": "87f8a32fc746c25e4a24fc953f3a6854934d80293a09d1c4cf5a2ac342993ece"
+    },
+    "scripts/spikes/220-hosted/local-db.mjs": {
+      "gitBlob": "d47e7e41aed28eccf27ed0f235914969219b0a6b",
+      "sha256": "81f7dc024722e00432b0ef4690356ead3128a4ab55d68035d0ddaebda82bdfd1"
+    },
+    "tests/220-hosted-harness.check.mjs": {
+      "gitBlob": "a72e16a97bc65234da08bf9c434d429420ff35b4",
+      "sha256": "79bfb0bc6fd1657c3d95904f0513d61cb5769acc7b6afa276efb3b22c05d2913"
+    },
+    "docs/220-hosted-qualification-plan.md": {
+      "gitBlob": "0c98521e3d5423c265a070c5ed9475607b8f320a",
+      "sha256": "7cd498c78bcbe62cecdb40fdd90aee66e4ed00b6a5e6bf9e7ae14aa56dc3c22d"
+    }
+  },
+  "constraints": {
+    "commit": false,
+    "push": false,
+    "commitB": false,
+    "hostedActions": false,
+    "neverMerge": true,
+    "hostedBlocker": "#86"
+  },
+  "unchanged": [
+    "packages/db/migrations/",
+    "proposal SQL and qualification script from main",
+    "stale timing has no target"
+  ]
+}

@@ -53,7 +53,15 @@ try{
  assert.equal((await query('SELECT spike220.claim_probe($1) AS state',[stale.owner]))[0].state,'leader');
  assert.equal((await query('SELECT spike220.claim_probe($1) AS state',[randomUUID()]))[0].state,'follower');
  assert.equal((await query("SELECT spike220.finish_probe($1,100000,0,clock_timestamp(),'fixture-period',0) AS state",[stale.owner]))[0].state,'accepted');
- assert.equal((await query('SELECT * FROM spike220.hosted_sample($1,$2,true)',[run,'stale']))[0].outcome,'leader');cases.push('stale quota transition accepts single probe then retries one ticket');
+ const retried=(await query('SELECT * FROM spike220.hosted_sample($1,$2,true)',[run,'stale']))[0];
+ assert.equal(retried.outcome,'leader');assert.notEqual(retried.owner,stale.owner);cases.push('stale quota transition accepts single probe then retries one ticket');
+ await q("UPDATE spike220.resources SET owner=NULL,lease_until=NULL");
+ await q("UPDATE spike220.quota_probe SET needs_init=true,failures=4,health_reason='quota-counter-reset',suspect_reason='older-or-reset'");
+ for(const statement of prepareGroup('stale:20:0:path',{remaining:100000,used:0},run))await q(statement.text,statement.values);
+ const reset=(await q('SELECT * FROM spike220.quota_probe')).rows[0];
+ assert.equal(reset.needs_init,false);assert.equal(reset.failures,0);assert.equal(reset.health_reason,null);assert.equal(reset.suspect_reason,null);
+ assert.equal((await query('SELECT spike220.claim_probe($1) AS state',[randomUUID()]))[0].state,'leader');
+ cases.push('setup clears prior-run terminal latch via initialize_budget; first stale probe leads');
  const otherRun=randomUUID();await q("INSERT INTO spike220.hosted_run VALUES($1,clock_timestamp()+interval '1 hour','paused',$2,20000)",[otherRun,role]);
  const activate=prepareGroup('next-tick:20:0:path',{},otherRun)[0];await q(activate.text,activate.values);
  assert.equal((await q('SELECT active_group FROM spike220.hosted_run WHERE id=$1',[run])).rows[0].active_group,'paused');

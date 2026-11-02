@@ -6,7 +6,7 @@ import { sha256, type ObjectStore } from "../../src/featureStore/objectStore.ts"
 
 // Shared by the opt-in speed probe and CI's deterministic work-budget checks.
 export const measureQbReport = async (client: Pick<Client, "query">, store: ObjectStore,
-  inputPins: Artifact, mode: QbEvidenceMode) => {
+  inputPins: Artifact, mode: QbEvidenceMode, cleanupWriter: Pick<Client, "query">) => {
   const queries: { text: string; elapsedMs: number }[] = [];
   const reads: string[] = [], writes: string[] = [];
   let busy = false;
@@ -23,7 +23,7 @@ export const measureQbReport = async (client: Pick<Client, "query">, store: Obje
   const measuredStore = { ...store,
     get: async (key: string) => { reads.push(key); return store.get(key); },
     putIfAbsent: async (key: string, bytes: Uint8Array) => { writes.push(key); return store.putIfAbsent(key, bytes); } };
-  const result = await completeQbReport(reader, measuredStore, inputPins, mode);
+  const result = await completeQbReport(reader, measuredStore, inputPins, mode, cleanupWriter);
   assert.equal(queries.length, 3);
   const rightsChecks = queries.filter(q => q.text.includes("fs138.effective_rights(")).length;
   assert.equal(rightsChecks, 2);

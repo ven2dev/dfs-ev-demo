@@ -1,0 +1,57 @@
+{
+  "issue": 165,
+  "step": 1,
+  "runtime": "v24.18.1",
+  "fixture": "synthetic 0/2504-example pinned datasets; same source profile, real PostgreSQL clocks and LOGINs",
+  "scope": "proposal SQL contract and server DML work only; no ObjectStore orchestration or report-envelope provenance pass",
+  "probes": [
+    {"name":"proposal DDL rolls back and leaves the frozen main catalog untouched","verdict":"pass","details":{"rollbackRemovedNewTables":true,"proposalOnly":true}},
+    {"name":"manifest pins SQL-owned datasets, supported identities, DB clock and exact object metadata","verdict":"pass","details":{"datasetPins":2,"artifacts":3,"dbClock":true,"identityVerified":true}},
+    {"name":"real non-pipeline LOGIN cannot read/publish/enroll/guard or mutate any manifest table","verdict":"pass","details":{"session_user":"fs138_job_1b87399dced97b3d","current_user":"fs138_job_1b87399dced97b3d","pipeline":false,"refusals":15}},
+    {"name":"ordinary pipeline credentials cannot forge clocks or directly change immutable identities","verdict":"pass","details":{"refusals":10}},
+    {"name":"unsupported identities, backdated extra fields and mismatched mode/key/size are refused atomically","verdict":"pass","details":{"refusals":11,"partialRows":false}},
+    {"name":"missing, invalidated, unsupported datasets and current withdrawn inputs refuse publication","verdict":"pass","details":{"refusedStates":5,"partialRows":false}},
+    {"name":"CI server-side row writes are exact and identical for 0 and 2504 real dataset members","verdict":"pass","details":{"measuredBy":"pg_stat_xact_user_tables on publishing LOGIN","budgets":[{"rows":0,"enrollment":[{"table":"orphan_observations","inserted":2,"updated":0,"deleted":0}],"publication":[{"table":"model_artifacts","inserted":2,"updated":0,"deleted":0},{"table":"model_run_datasets","inserted":1,"updated":0,"deleted":0},{"table":"model_runs","inserted":1,"updated":0,"deleted":0},{"table":"orphan_observations","inserted":0,"updated":0,"deleted":2}]},{"rows":2504,"enrollment":[{"table":"orphan_observations","inserted":2,"updated":0,"deleted":0}],"publication":[{"table":"model_artifacts","inserted":2,"updated":0,"deleted":0},{"table":"model_run_datasets","inserted":1,"updated":0,"deleted":0},{"table":"model_runs","inserted":1,"updated":0,"deleted":0},{"table":"orphan_observations","inserted":0,"updated":0,"deleted":2}]}]}},
+    {"name":"direct SQL publication rechecks current rights after an address lock wait","verdict":"pass","details":{"actualLockWait":true,"revokedWhileWaiting":true,"publicationRefused":true}},
+    {"name":"server work oracle observes hidden writes even when one client calls a definer function","verdict":"pass","details":{"observedHiddenUpdates":2504,"clientFunctionCalls":1,"changesRolledBack":true}},
+    {"name":"rollback restores enrollment and removes all partially inserted manifest associations","verdict":"pass","details":{"partialRows":false,"enrolledAddresses":3}},
+    {"name":"guard alone preserves cleanup enrollment; unregistered audits are not claimed","verdict":"pass","details":{"guardDoesNotLoseEnrollment":true,"unregisteredAddressNotEnrolled":true}},
+    {"name":"committed references protect shared addresses and real pipeline grant has no role ownership","verdict":"pass","details":{"protectedObjects":2,"loginPrivileged":false}}
+  ],
+  "proposalSha256": "2c54e9dd24da86606e57718fc6571061ea2159921246acc7f9f92f050f5cfd0f",
+  "codeHashes": {
+    "packages/db/proposals/165_model_manifests.sql": "2c54e9dd24da86606e57718fc6571061ea2159921246acc7f9f92f050f5cfd0f",
+    "packages/db/package.json": "65946afd488c8fd6ce7c258bbc49c4a870fc83f6396aff5b4a34248b429f3a9b",
+    "services/pipeline/tests/feature-store/model-manifests.check.mts": "ee32948d68ee0828f9627fce1310ac9379288799c5ac3b1f187d6819ec063d0d",
+    "services/pipeline/scripts/feature-store/harness.ts": "f9d74c2ede8c342c8cdc65b800ff3107176cc7d12154a482edcc4d431bec84cb"
+  },
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "serverWork": [
+    {"rows":0,"enrollment":[{"table":"orphan_observations","inserted":2,"updated":0,"deleted":0}],"publication":[{"table":"model_artifacts","inserted":2,"updated":0,"deleted":0},{"table":"model_run_datasets","inserted":1,"updated":0,"deleted":0},{"table":"model_runs","inserted":1,"updated":0,"deleted":0},{"table":"orphan_observations","inserted":0,"updated":0,"deleted":2}]},
+    {"rows":2504,"enrollment":[{"table":"orphan_observations","inserted":2,"updated":0,"deleted":0}],"publication":[{"table":"model_artifacts","inserted":2,"updated":0,"deleted":0},{"table":"model_run_datasets","inserted":1,"updated":0,"deleted":0},{"table":"model_runs","inserted":1,"updated":0,"deleted":0},{"table":"orphan_observations","inserted":0,"updated":0,"deleted":2}]}
+  ],
+  "verdict": "pass",
+  "recordedAt": "2026-10-30",
+  "sourceBase": "71cdd90e11cbee7ec6b0eb1961322d40c49a20e9",
+  "checks": {
+    "sqlContractTests": 13,
+    "sqlContractPass": true,
+    "packageAndImportChecks": 19,
+    "packageAndImportPass": true,
+    "targetedTypecheck": "pass",
+    "targetedLint": "pass",
+    "whitespace": "pass",
+    "frozenMigrationArtifacts": "pass"
+  },
+  "correction": "The first counter test included prior session work; final assertions use before/after deltas on the publishing LOGIN and a hidden-write negative control. Measurement queries are excluded from production work counts.",
+  "limitations": [
+    "Step 1 proves SQL contract and server row writes. Preflight HEAD/enroll/upload orchestration ordering is implemented and verified in step 2.",
+    "Historical preapproval transport timing is not a final implementation benchmark.",
+    "SQL tests do not claim ObjectStore existence or matching report-envelope validation."
+  ],
+  "cleanup": {
+    "scratchDatabases": 0,
+    "throwawayLogins": 0,
+    "otherTestClients": 0
+  }
+}

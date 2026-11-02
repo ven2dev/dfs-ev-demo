@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 2,
+  "issue": 165,
+  "status": "completed",
+  "startedAt": "2026-10-30T22:48:44.412Z",
+  "recovery": "New measurements after reboot deleted the previous tmp files. Prior exact JSON was unavailable; no old numbers reconstructed.",
+  "sourceMain": "71cdd90e11cbee7ec6b0eb1961322d40c49a20e9",
+  "sourceHashes": {
+    "services/pipeline/scripts/feature-store/165-publication-spike.ts": "36b79fdf622e46a4954b35690f2a57b959ac9f72611c00d9e4ea6fe7d1524324",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "1de9241dce7ac0ae314252a96a416bcc82bab229d4f726a2046ce39ad1392962",
+    "services/pipeline/scripts/feature-store/harness.ts": "f9d74c2ede8c342c8cdc65b800ff3107176cc7d12154a482edcc4d431bec84cb",
+    "services/pipeline/src/featureStore/datasets.ts": "33d71b86b80f38b8129a9738483eb85415b3e52a275005ac9b5a29953748bde3",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "services/pipeline/src/featureStore/objectStore.ts": "d6a9f26c2fd8f54eef161ce5e8dcf8c127a284e90bc6a0e6051355ffc6e737e9",
+    "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "packages/db/proposals/165_spike.sql": "2fabbcae1ac2ca3a6b4d466fb966d2cac079bd289be6b6d3ee62c59b9d193332",
+    "package-lock.json": "dd0fe58a230ef794d1d51aac676a92eb16ab7cf3ddfc2084736ac7ac2fb25a6e",
+    "compose.test.yml": "57a19ced9e5892293f353b95456ea4e07544d467d5843634f508773496b4418e"
+  },
+  "code": {
+    "gitSha": "71cdd90e11cbee7ec6b0eb1961322d40c49a20e9",
+    "contentSha256": "7514ced90aec7ec37584c4f9f4237b7dfd7ace6e29b3c593a5618c97ede3f898"
+  },
+  "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/165-spike-objects/run-48ucpI",
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin",
+    "osRelease": "27.2.0"
+  },
+  "boundary": "BEGIN before dispatch through COMMIT response, including lock acquisition, metadata HEAD and publication SQL. Hashing/uploads/enrollment, scoring, fixture setup and connection setup excluded.",
+  "endToEndBoundary": "Per-publication hashing/uploads, staging enrollment and transaction; excludes scoring, initial payload serialization and fixture/connection setup. Informational only.",
+  "cacheState": "warm/unflushed OS, database and file caches; one existing session per arm; no cold/hosted claim",
+  "method": "Six dataset-only transactions first, then six ABBA blocks, twelve samples per arm. Nearest-rank p95 and every block max(candidate)/min(baseline)<=0.70.",
+  "baseline": [
+    {"transactionMs":74.63125000000582,"addressHeldClientMs":73.27116700001352,"endToEndMs":352.57712499999616,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"transactionMs":75.38816700001189,"addressHeldClientMs":73.20733299999847,"endToEndMs":345.1117079999967,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"transactionMs":72.86299999999756,"addressHeldClientMs":71.22708400001284,"endToEndMs":335.4763329999987,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"transactionMs":74.45720900000015,"addressHeldClientMs":73.03375000000233,"endToEndMs":327.16916600000695,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"transactionMs":76.49874999999884,"addressHeldClientMs":74.80120899999747,"endToEndMs":338.0664170000091,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"transactionMs":75.11983299998974,"addressHeldClientMs":73.33220799999253,"endToEndMs":365.78283300000476,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0}
+  ],
+  "trials": [
+    {"block":1,"kind":"baseline","transactionMs":71.38558299999568,"addressHeldClientMs":69.33995900000446,"endToEndMs":315.7134170000063,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"block":1,"kind":"candidate","transactionMs":4.2786249999917345,"addressHeldClientMs":2.640499999994063,"endToEndMs":35.55666599998949,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":3,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"912f8e22-b89f-499a-825b-82ec82e6a299"},
+    {"block":1,"kind":"candidate","transactionMs":3.5177909999911208,"addressHeldClientMs":2.138042000005953,"endToEndMs":56.25487500001327,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"d894dc6b-9561-4b81-ac5a-4158d8862f24"},
+    {"block":1,"kind":"baseline","transactionMs":91.78958299999067,"addressHeldClientMs":90.44741600000998,"endToEndMs":333.56379200000083,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"block":2,"kind":"baseline","transactionMs":78.64312500000233,"addressHeldClientMs":77.05074999999488,"endToEndMs":330.81916700000875,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"block":2,"kind":"candidate","transactionMs":3.219875000009779,"addressHeldClientMs":1.865458000000217,"endToEndMs":47.32033300001058,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"e3efa098-63a7-4397-b005-188755562c44"},
+    {"block":2,"kind":"candidate","transactionMs":3.4382500000065193,"addressHeldClientMs":2.2501249999913853,"endToEndMs":40.52154200000223,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"c2390aeb-99dc-4c9b-95ce-3d2614013199"},
+    {"block":2,"kind":"baseline","transactionMs":78.34679099998903,"addressHeldClientMs":76.42500000000291,"endToEndMs":331.21487499999057,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"block":3,"kind":"baseline","transactionMs":83.54150000000664,"addressHeldClientMs":82.02412499999627,"endToEndMs":344.53966699999,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"block":3,"kind":"candidate","transactionMs":3.15929199999664,"addressHeldClientMs":1.8988329999992857,"endToEndMs":66.25125000000116,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"9a07a83e-f0e3-444d-b7cb-15d67355421b"},
+    {"block":3,"kind":"candidate","transactionMs":3.193250000011176,"addressHeldClientMs":2.0195419999945443,"endToEndMs":37.68037500001083,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"e224e5ce-69e6-4aa5-943c-3347cdc6964e"},
+    {"block":3,"kind":"baseline","transactionMs":77.77170899999328,"addressHeldClientMs":75.38358300000255,"endToEndMs":347.9543330000015,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"block":4,"kind":"baseline","transactionMs":75.10229100000288,"addressHeldClientMs":72.88091599999461,"endToEndMs":323.8421249999956,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"block":4,"kind":"candidate","transactionMs":2.9563749999942956,"addressHeldClientMs":1.7316250000003492,"endToEndMs":41.86008300000685,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"de6d2cdb-1859-4e82-813a-02d1387ee992"},
+    {"block":4,"kind":"candidate","transactionMs":3.6034590000053868,"addressHeldClientMs":2.163750000006985,"endToEndMs":40.86370800000441,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"2c03cd65-0c3e-4fac-8920-d1c1c0bf45f1"},
+    {"block":4,"kind":"baseline","transactionMs":74.66537499999686,"addressHeldClientMs":73.05933299999742,"endToEndMs":349.2873749999999,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"block":5,"kind":"baseline","transactionMs":78.48683399999572,"addressHeldClientMs":76.7513750000071,"endToEndMs":344.2914160000073,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"block":5,"kind":"candidate","transactionMs":3.371791999990819,"addressHeldClientMs":1.9568750000034925,"endToEndMs":94.7152919999935,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"b59992c2-0f1f-40ce-a0b6-c803bc936b46"},
+    {"block":5,"kind":"candidate","transactionMs":3.414375000007567,"addressHeldClientMs":2.1572500000038417,"endToEndMs":53.154292000006535,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"d40dd95b-10fa-4621-abd1-16921829423d"},
+    {"block":5,"kind":"baseline","transactionMs":82.18254100000195,"addressHeldClientMs":79.98725000000559,"endToEndMs":342.8996669999906,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"block":6,"kind":"baseline","transactionMs":82.78987499998766,"addressHeldClientMs":79.46074999999837,"endToEndMs":374.14049999999406,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0},
+    {"block":6,"kind":"candidate","transactionMs":2.8169590000034077,"addressHeldClientMs":1.6075000000128057,"endToEndMs":41.53924999998708,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"e7260a54-8d2c-44a2-82dd-45e8ec9cf08f"},
+    {"block":6,"kind":"candidate","transactionMs":5.345375000004424,"addressHeldClientMs":3.7195839999913005,"endToEndMs":40.714208000004874,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"3207ce6d-6d52-4cf6-8392-75e6027183ea"},
+    {"block":6,"kind":"baseline","transactionMs":80.56633299999521,"addressHeldClientMs":79.23004199999559,"endToEndMs":327.86479199999303,"sqlStatements":8,"transactionStatements":5,"heads":1,"uploads":1,"hashesInTransaction":2,"objectReadsInTransaction":0}
+  ],
+  "rowScaleTrials": [
+    {"round":1,"guardedDatasetRows":2504,"limitation":"Guard/transport scale test; full artifact/dataset association constraints are outside this prototype","transactionMs":2.9961250000051223,"addressHeldClientMs":1.8111669999925653,"endToEndMs":41.412249999993946,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"39d9d2ee-e3ec-4d75-acb2-993b69f94909"},
+    {"round":2,"guardedDatasetRows":2504,"limitation":"Guard/transport scale test; full artifact/dataset association constraints are outside this prototype","transactionMs":3.1560000000026776,"addressHeldClientMs":1.8369579999998678,"endToEndMs":57.90608400000201,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"6d669208-e83d-4eca-8175-dbc91c7f6740"},
+    {"round":3,"guardedDatasetRows":2504,"limitation":"Guard/transport scale test; full artifact/dataset association constraints are outside this prototype","transactionMs":2.750916999997571,"addressHeldClientMs":1.736125000010361,"endToEndMs":36.549041999998735,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"91b898d0-911c-4ebc-8695-26626f418a22"},
+    {"round":1,"guardedDatasetRows":0,"limitation":"Guard/transport scale test; full artifact/dataset association constraints are outside this prototype","transactionMs":2.899541999999201,"addressHeldClientMs":1.6969580000004498,"endToEndMs":39.25037500000326,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"eecccb6c-fd70-48da-8708-f393e3df8bed"},
+    {"round":2,"guardedDatasetRows":0,"limitation":"Guard/transport scale test; full artifact/dataset association constraints are outside this prototype","transactionMs":28.31970900000306,"addressHeldClientMs":27.258749999993597,"endToEndMs":62.202416000000085,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"d749fc63-155c-410c-a97c-2b2cf424cd67"},
+    {"round":3,"guardedDatasetRows":0,"limitation":"Guard/transport scale test; full artifact/dataset association constraints are outside this prototype","transactionMs":3.299834000004921,"addressHeldClientMs":1.8983750000043074,"endToEndMs":34.55687499999476,"sqlStatements":5,"transactionStatements":4,"heads":3,"uploads":3,"newUploads":0,"hashesInTransaction":0,"objectReadsInTransaction":0,"allUploadsBeforeBegin":true,"perExampleSql":0,"runId":"401cad9f-da30-4ed7-bf8c-ab36aeede182"}
+  ],
+  "probes": [
+    {"name":"real non-pipeline LOGIN refuses read, publication APIs and direct mutations","verdict":"pass","details":{"session_user":"fs138_job_7742a59bec58a389","current_user":"fs138_job_7742a59bec58a389","pipeline":false,"refusals":9}},
+    {"name":"pipeline cannot directly backdate, rewrite or delete manifest identities","verdict":"pass","details":{"refusals":5,"dbClockBounds":true}},
+    {"name":"post-insert rollback leaves no partial rows and discoverable enrolled bytes","verdict":"pass","details":{"partialRuns":0,"partialArtifacts":0,"completePathStatements":5,"newBytesDiscoverable":true,"enrolled":true}},
+    {"name":"scoped orphan sweep collects owned orphan and preserves committed and unregistered objects","verdict":"pass","details":{"committedObjectsPreserved":3,"unregisteredAuditObjectsPreserved":4,"ownedOrphansRemoved":1}},
+    {"name":"cleaner winning between upload and BEGIN refuses publication without dangling references","verdict":"pass","details":{"cleanerWon":true,"danglingReferences":0,"partialRows":0}},
+    {"name":"publisher holding address locks blocks cleaner; committed reference survives","verdict":"pass","details":{"lockWaitObserved":true,"committedReferencePreserved":true}},
+    {"name":"invalidated pinned dataset refuses publication","verdict":"pass","details":{"denied":true}}
+  ],
+  "failures": [],
+  "scopeLimit": "Transport prototype only. Retained report bytes cite archived exact dataset IDs, not this rebuilt DB. No complete report-envelope/algorithm identity/association correctness pass is claimed.",
+  "limitations": [
+    "Counts are client protocol statements; PL/pgSQL statements are inspectable in the pinned SQL and not claimed to be single internal operations.",
+    "Row-scale probe varies guarded dataset IDs (0 and 2504 rows); payload association validation is intentionally incomplete in this disposable prototype.",
+    "Scoped sweep enrolls only newly created publication objects; pre-existing unregistered audits remain private and are preserved.",
+    "Crash after upload and before enrollment can leave discoverable unregistered bytes; automatic deletion leaves these alone.",
+    "Address-held interval starts at lock-query response, after actual server acquisition; full transaction timing is the conservative gate.",
+    "Previously measured results are unavailable after reboot. Historical summary is not substituted for measured evidence."
+  ],
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "fixtureConfig": {
+    "postgresTmpfsBytes": 536870912,
+    "sharedMemoryBytes": 134217728,
+    "verifiedContainerImage": "postgres:18.6-alpine3.24@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873",
+    "verifiedTmpfs": {
+      "/var/lib/postgresql": "rw,size=512m"
+    },
+    "verifiedShmSize": 134217728
+  },
+  "fixture": {
+    "inputPinsArtifact": {
+      "objectKey": "audits/ff0af32957dffdcd164dc96f2b9469d7fe316f68f93f38a153beb8742e8db56a",
+      "sha256": "ff0af32957dffdcd164dc96f2b9469d7fe316f68f93f38a153beb8742e8db56a",
+      "byteSize": 36896
+    },
+    "wireFiles": 16,
+    "sourceSnapshots": 16,
+    "cohorts": [
+      {
+        "mode": "retrospective-reconstruction-v1",
+        "datasetId": "7c5cc9b6-14a8-42df-bf63-6de934776a60",
+        "rows": 2504,
+        "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+        "fileSha256": "768d841dd2429d5c76d2dccfc342fbe22f418e68968e1be9e32e81da2b69d38e"
+      },
+      {
+        "mode": "strict-point-in-time-v1",
+        "datasetId": "7f44cdeb-c97f-47ad-a71f-d5d9410ac7c1",
+        "rows": 0,
+        "contentSha256": "7858bc13cfd59085549e3c61fc1d42685f5a9134114316bbb623e79aaff43caf",
+        "fileSha256": "8d820a6fae2a81d2539053d716ac5b5a3dbe8976735d27d58395628bdb540710"
+      }
+    ]
+  },
+  "payloads": [
+    {
+      "kind": "descriptor",
+      "dataset_id": null,
+      "key": "models/356e5db3891f105da5ce6693a652f1e50af3a46d7ab06e19b91f67eaeb2ebe72",
+      "hash": "356e5db3891f105da5ce6693a652f1e50af3a46d7ab06e19b91f67eaeb2ebe72",
+      "size": 447
+    },
+    {
+      "kind": "retrospective-report",
+      "dataset_id": "7c5cc9b6-14a8-42df-bf63-6de934776a60",
+      "key": "audits/07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+      "hash": "07ede5c2d95897479d9033a98722dd569f6fa46f8b30a7bf124da1ab99366ddf",
+      "size": 9290168
+    },
+    {
+      "kind": "strict-report",
+      "dataset_id": "7f44cdeb-c97f-47ad-a71f-d5d9410ac7c1",
+      "key": "audits/40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+      "hash": "40d29a3533d1534915703d6739a84eb279f62771f6ae78ff3b7c6ae0e7679b1d",
+      "size": 306544
+    }
+  ],
+  "work": {
+    "successfulCompletePathStatements": 5,
+    "transactionStatements": 4,
+    "stagingEnrollmentStatements": 1,
+    "objectUploads": 3,
+    "metadataHeads": 3,
+    "hashesInTransaction": 0,
+    "objectReadsInTransaction": 0,
+    "perExampleSql": 0,
+    "allUploadsBeforeBegin": true,
+    "baselineCompletePathStatements": 8,
+    "baselineTransactionStatements": 5,
+    "baselineHeads": 1,
+    "sqlCalls": [
+      "stage(newly_created_addresses)",
+      "BEGIN",
+      "guard(dataset_ids,addresses)",
+      "publish(dataset_ids,code,objects)",
+      "COMMIT"
+    ],
+    "errorCounts": {
+      "postInsertRollback": 5,
+      "missingFirstObjectRollback": 4,
+      "invalidDatasetRollback": 4
+    },
+    "serverWork": "Fixed 3-address loop and set-based checks of 2 datasets / 16 source snapshots; no member/example SQL loop. Internal SQL functions are pinned for inspection.",
+    "errorCountsProvenance": "Expected from pinned source control flow; individual failing-path metric objects are not exported. Success-path counters are observed and asserted."
+  },
+  "blockComparisons": [
+    {"block":1,"baselineMinMs":71.38558299999568,"candidateMaxMs":4.2786249999917345,"headroom":0.9400631777428785,"pass":true},
+    {"block":2,"baselineMinMs":78.34679099998903,"candidateMaxMs":3.4382500000065193,"headroom":0.9561149862537829,"pass":true},
+    {"block":3,"baselineMinMs":77.77170899999328,"candidateMaxMs":3.193250000011176,"headroom":0.9589407248333524,"pass":true},
+    {"block":4,"baselineMinMs":74.66537499999686,"candidateMaxMs":3.6034590000053868,"headroom":0.9517385535128493,"pass":true},
+    {"block":5,"baselineMinMs":78.48683399999572,"candidateMaxMs":3.414375000007567,"headroom":0.9564974808385346,"pass":true},
+    {"block":6,"baselineMinMs":80.56633299999521,"candidateMaxMs":5.345375000004424,"headroom":0.9336524972533534,"pass":true}
+  ],
+  "timing": {
+    "baselineFirstP95Ms": 76.49874999999884,
+    "baselineP95Ms": 91.78958299999067,
+    "candidateP95Ms": 5.345375000004424,
+    "relativeCeilingMs": 64.25270809999347,
+    "headroom": 0.941764905937039,
+    "baselineRangeMs": [
+      71.38558299999568,
+      91.78958299999067
+    ],
+    "candidateRangeMs": [
+      2.8169590000034077,
+      5.345375000004424
+    ],
+    "pass": true
+  },
+  "cleanup": {
+    "scratchDatabasesRemaining": 0,
+    "throwawayLoginsRemaining": 0,
+    "otherTestClientsBeforeStop": 0,
+    "localTestContainer": "stopped after catalog verification",
+    "implementationCommits": 0,
+    "trackedCheckoutChanges": 0,
+    "untrackedReviewFolder": "codex-briefs/"
+  },
+  "finishedAt": "2026-10-30T22:50:00.251Z",
+  "recoveryChecks": {
+    "allTwelveSourceHashesVerifiedAfterRun": true,
+    "sourceCopiesMatchExecutedScripts": true,
+    "allSevenProbesPass": true,
+    "allSixBlocksPass": true,
+    "zeroAnd2504RowsHaveFiveStatements": true,
+    "retainedSourceArtifactsUnchangedByThisProbe": true,
+    "priorExactSpikeJsonRecovered": false,
+    "newSpikeExecuted": true
+  },
+  "setupFailureReceipt": "165-publication-spike-sandbox-refusal.json"
+}

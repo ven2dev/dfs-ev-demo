@@ -223,3 +223,15 @@ test('raw samples own p95 gates even when cached summaries claim a pass',()=>{
  const malformed=structuredClone(groups);malformed[0].rows[0].inFunctionPreProviderMs=NaN;
  assert.throws(()=>summarizeArm(malformed,'iad1',expectedShaByArm));
 });
+
+test('claim and finish retain needs-init/backoff outcomes without retry or polling',async()=>{
+ for(const outcome of ['needs-init','backoff'])for(const phase of ['claim_probe','finish_probe']){
+  let probes=0,admissions=0;
+  const handler=createHandler({env,now:()=>now,queryFactory:()=>async sql=>{
+   if(sql.includes('hosted_sample'))admissions++;
+   return [{outcome:sql.includes('hosted_begin')?'claimed':sql.includes(phase)?outcome:sql.includes('claim_probe')?'leader':'quota-stale',owner:'owner'}];
+  },freeEvents:async()=>{probes++;return {remaining:100,used:0,last:0,observed:new Date(now).toISOString()};}});
+  const body=await(await handler(request({...sample,stage:'stale'}))).json();
+  assert.equal(body.outcome,outcome);assert.equal(admissions,1);assert.equal(probes,phase==='finish_probe'?1:0);
+ }
+});

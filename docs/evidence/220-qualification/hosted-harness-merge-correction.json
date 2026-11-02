@@ -1,0 +1,10 @@
+{
+  "supersedesHistoryMetadataIn": "hosted-harness-local-sync.json",
+  "originalHarnessHead": "f1fa10cc5f2851237342118ae698236569b57735",
+  "pendingMergeParent": "6cae8b0df076de0987d81ade3228735e2e2b4897",
+  "mergeCommitted": false,
+  "originalSourceBlobsVerifiedIdentical": true,
+  "planBlob": "908fb11d4f4e208c4d39978c2fa55c50606efad5",
+  "correction": "Original f1fa10c restored; main merge pending owner commit approval. No rebased commit retained in branch ancestry.",
+  "push": false
+}

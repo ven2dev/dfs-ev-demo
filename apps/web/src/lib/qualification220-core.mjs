@@ -91,10 +91,10 @@ export function createHandler({env,queryFactory,clock=()=>performance.now(),now=
           const [finished]=await run("SELECT spike220.finish_probe($1,$2,$3,$4,'fixture-period',$5) AS outcome",
             [row.owner,quota.remaining,quota.used,quota.observed,quota.last]);
           if(finished.outcome==='accepted') [row]=await run('SELECT * FROM spike220.hosted_sample($1,$2,true)',[binding.runId,key]);
-          else row={...row,outcome:'observation-unavailable'};
+          else row={...row,outcome:['needs-init','backoff'].includes(finished.outcome)?finished.outcome:'observation-unavailable'};
         } else if(claim.outcome==='fresh') {
           [row]=await run('SELECT * FROM spike220.hosted_sample($1,$2,true)',[binding.runId,key]);
-        } else row={...row,outcome:'probe-follower-stale'}; // immediate, no polling
+        } else row={...row,outcome:['needs-init','backoff'].includes(claim.outcome)?claim.outcome:'probe-follower-stale'}; // immediate, no polling
       }
       if(!row)throw new Error('unknown sample');
       const preProviderMs=clock()-entry,preProviderSqlMs=sqlMs,preProviderQueries=queries;

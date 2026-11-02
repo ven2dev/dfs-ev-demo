@@ -48,7 +48,7 @@ try {
         get: async (key: string) => { objectReads.push(key); return store.get(key); },
         putIfAbsent: async (key: string, bytes: Uint8Array) => { objectWrites.push(key); return store.putIfAbsent(key, bytes); } };
       const before = context.queryCounts.reader;
-      const result = await completeQbReport(reader, measuredStore, fixture.inputPinsArtifact, mode);
+      const result = await completeQbReport(reader, measuredStore, fixture.inputPinsArtifact, mode, context.writer);
       const rightsChecks = sql.filter(s => s.includes("fs138.effective_rights(")).length;
       assert.equal(context.queryCounts.reader - before, 3); assert.equal(sql.length, 3); assert.equal(rightsChecks, 2);
       assert(!sql.some(s => /fs138\.(norm_|normalized_evidence|outcome_labels|feature_values)/.test(s)));

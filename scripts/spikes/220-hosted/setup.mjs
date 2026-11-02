@@ -20,8 +20,8 @@ export function prepareGroup(group,quota,runId) {
   // with matching total, initialized BEFORE timing, then only age its timestamp.
   return [{text:'SELECT count(*)::int AS active FROM spike220.resources WHERE lease_until>clock_timestamp()',values:[],requireZero:'active'},
     {text:'TRUNCATE spike220.resources,spike220.subjects,spike220.attempts',values:[]},
-    {text:`UPDATE spike220.budget SET balance=$1,provider_remaining=$1,provider_used=$2,quota_total=$1::bigint+$2::bigint,pending_reserved=0,cost_overrun=false,observed_at=clock_timestamp()-CASE WHEN $3 THEN interval '6 minutes' ELSE interval '0 seconds' END WHERE id=1`,values:[quota.remaining,quota.used,group.startsWith('stale:')]},
-    {text:'UPDATE spike220.quota_probe SET owner=NULL,lease_until=NULL,retry_after=NULL',values:[]},
+    {text:"SELECT spike220.initialize_budget($1,$2,clock_timestamp(),'fixture-period',20)",values:[quota.remaining,quota.used]},
+    {text:"UPDATE spike220.budget SET observed_at=observed_at-interval '6 minutes' WHERE id=1 AND $1",values:[group.startsWith('stale:')]},
     activate];
 }
 export function roleGrants(role,database) {
@@ -35,6 +35,8 @@ REVOKE SELECT ON spike220.hosted_run FROM "${role}";
 GRANT SELECT(id,expires_at,active_group,runner) ON spike220.hosted_run TO "${role}";
 GRANT SELECT,UPDATE ON spike220.hosted_tickets TO "${role}";
 GRANT SELECT,INSERT,UPDATE ON spike220.resources,spike220.subjects,spike220.budget,spike220.attempts,spike220.quota_probe TO "${role}";
+-- admit removes a non-admitted attempt if freshness changes under its lock.
+GRANT DELETE ON spike220.attempts TO "${role}";
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA spike220 TO "${role}";
 REVOKE TEMPORARY ON DATABASE "${database}" FROM PUBLIC;
 ALTER ROLE "${role}" IN DATABASE "${database}" SET statement_timeout='5s';
@@ -48,7 +50,7 @@ export function initialization(binding,expiresAt,{includeFixture=true}={}) {
   const rows=tickets();
   const statements=[
     {text:"INSERT INTO spike220.catalog SELECT 'event'||i||'/'||market FROM generate_series(0,19) i CROSS JOIN unnest($1::text[]) market",values:[markets]},
-    {text:"INSERT INTO spike220.budget(id,balance,floor,observed_at,provider_remaining,provider_used,quota_total,period) VALUES(1,100000,20,clock_timestamp(),100000,0,100000,'fixture-period')",values:[]},
+    {text:"SELECT spike220.initialize_budget(100000,0,clock_timestamp(),'fixture-period',20)",values:[]},
     {text:'INSERT INTO spike220.hosted_run(id,expires_at,active_group,runner,max_tickets) VALUES($1,$2,$3,$4,$5)',values:[binding.runId,expiresAt,rows[0].group,binding.neon.role,rows.length]},
     {text:`INSERT INTO spike220.hosted_tickets(run_id,sample,group_name,mode,resource_keys,dimensions,owner_id)
       SELECT $1,x.sample,x."group",x.mode,ARRAY[x.resource],x.dimensions,x.owner::uuid

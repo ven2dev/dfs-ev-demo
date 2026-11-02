@@ -37,7 +37,7 @@ const persist = async (store: ObjectStore, value: unknown) => {
 export const evaluationCodeIdentity = async () => {
   const sourceDirectory = "services/pipeline/src/featureStore/";
   const files = [
-    ...await readdir(new URL(sourceDirectory, EVALUATION_ROOT)).then(names => names.filter(n => n.endsWith(".ts")).map(n => sourceDirectory + n)),
+    ...await readdir(new URL(sourceDirectory, EVALUATION_ROOT)).then(names => names.filter(n => n.endsWith(".ts") && n !== "modelManifests.ts").map(n => sourceDirectory + n)),
     "services/pipeline/scripts/feature-store/evaluation-fixture.ts", "services/pipeline/scripts/feature-store/evaluation-prepare.ts",
     "services/pipeline/scripts/feature-store/harness.ts",
     "services/pipeline/scripts/feature-store/evaluation-benchmark.ts", "services/pipeline/scripts/feature-store/evaluation-measure.ts",

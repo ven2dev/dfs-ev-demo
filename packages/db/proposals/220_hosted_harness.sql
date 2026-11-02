@@ -52,6 +52,11 @@ BEGIN
     OR (t.state='needs-quota' AND t.quota_retries>=1) THEN
     RAISE EXCEPTION 'sample absent, replayed or invalid transition';
   END IF;
+  -- Each bounded quota retry is a new reservation attempt, not a replay.
+  IF t.state='needs-quota' THEN
+    t.owner_id:=gen_random_uuid();
+    UPDATE spike220.hosted_tickets SET owner_id=t.owner_id WHERE run_id=p_run AND sample=p_sample;
+  END IF;
   SELECT * INTO a FROM spike220.admit(t.resource_keys,t.owner_id::text,t.dimensions,
     ARRAY[10000,10000],ARRAY[10000,10000],30000);
   UPDATE spike220.hosted_tickets x SET state=CASE WHEN a.outcome='quota-stale' THEN 'needs-quota' ELSE 'complete' END,
