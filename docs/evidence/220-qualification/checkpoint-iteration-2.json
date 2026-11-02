@@ -1,0 +1,26 @@
+{
+  "iteration": 2,
+  "base": "71cdd90e11cbee7ec6b0eb1961322d40c49a20e9",
+  "branch": "feature/dfsEV-220-hybrid-admission-qualification",
+  "worktree": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-220",
+  "sourceSha256": {
+    "packages/db/proposals/220_atomic_leader_gcra.sql": "7111c286d77b2c2356bf9648f50e6fee55415d59ca40336cd899c9a6ad5b4197",
+    "scripts/spikes/220-qualification.mjs": "e06e603e93b15f0b0dc4d265274219db52497781570bbf46a2861bc060c9ec81",
+    "docs/220-hybrid-admission-qualification.md": "6a7130c42a33908e8c3fef6f0e4b8c556862b027976cd14d9f9b4e4107e4b91d",
+    "docs/220-hybrid-admission-iteration-2.md": "06b7a91f235591e023ecb56c6bb605d572d77603c9fb297d13e8c1d1d06cb8ed",
+    "docs/evidence/220-qualification/local-iteration-2.json": "7463b721972ff3b5156c02ac7c3adc7cdbec2a252c432762cf128936661cd013"
+  },
+  "validation": {
+    "behaviorCases": 23,
+    "schemaAbsent": true,
+    "fixtureRemoved": true,
+    "whitespaceAndNodeSyntax": "pass"
+  },
+  "limitations": [
+    "local-only; no production route wiring, HMAC/auth or managed transport proof",
+    "freshness expires after genuine five-minute idle; explicit qualified observation required to recover",
+    "WAF exhaustion availability unverified; no WAF assumption needed for credit correctness",
+    "200/140 ms and log-only policy values remain owner decisions"
+  ],
+  "commitPushHostedActions": "none"
+}

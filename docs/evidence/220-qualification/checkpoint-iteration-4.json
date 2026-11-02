@@ -1,0 +1,91 @@
+{
+  "iteration": 4,
+  "base": "4df07f62a36ad46e4d577518e860bd0231e43f40",
+  "branch": "feature/dfsEV-220-hybrid-admission-qualification",
+  "status": "round-2 confirmation fixes uncommitted for owner review; PR #226 unchanged",
+  "checks": {
+    "behaviorCases": 47,
+    "all35PreviousCasesPassed": true,
+    "fullTimingTrials": 6,
+    "samplesPerModePerTrial": 1000,
+    "queryCalls": 50263,
+    "queryCallCap": 60000,
+    "nodeSyntax": "pass",
+    "targetedEslint": "pass",
+    "existingOutputRefusal": {
+      "exit": 1,
+      "beforeDatabaseSetup": true,
+      "existingReceiptUnchanged": true
+    },
+    "historicalMeasuredValuesUnchanged": true,
+    "migrationFilesUnchanged": 11,
+    "applicationCodeUnchanged": true,
+    "fixtureTmpfsKiB": 524288,
+    "schemaAbsent": true,
+    "ownedFixtureRemoved": true,
+    "previous44CasesPreservedWithUpdatedResetAndPlanExpectations": true,
+    "all44PriorCasesPassedWithRequiredExpectationUpdates": true
+  },
+  "sourceSha256": {
+    "packages/db/proposals/220_atomic_leader_gcra.sql": "425c36415fd2cb4eeebd9de59fd07b024d0ba5d92da6a97e37d3874da96bf208",
+    "scripts/spikes/220-qualification.mjs": "236a23d3ac19f69fe3fb45187ba93cc8fa4e9d36f419783eb7444f1666ecee0a",
+    "docs/220-hybrid-admission-qualification.md": "7cc504e741d40d8cb132a5566ee0375ff4ffa1e4d515f1a7cf3c5f492ade8c60",
+    "docs/evidence/220-qualification/local.json": "a7fb4dd73a811f1610caf08e6ac5808f551ea21895e9fd610832e6dfd60556a0",
+    "docs/evidence/220-qualification/local-iteration-2.json": "a4ac795bc0613c0f53fe982d92ed2de9fe328184ecadf399e683b0d3c6a259d1",
+    "docs/evidence/220-qualification/local-iteration-3.json": "3daca7d04abeb48f5dae3d4bc3f73a63a26959a65f1bd2d8a3d81c3d0400dea6",
+    "docs/evidence/220-qualification/local-iteration-4.json": "20697668ca929f3ebffc30eb8e6488b6ce92bb2ff1fd3f2d2bb8b8844c5400c4"
+  },
+  "scriptGitBlobOid": "477c47e141ae68ca6bbd276f0163f5a91ade3101",
+  "sqlGitBlobOid": "bd3fb632506af3a1f6bc8512ac2aaa42d88be579",
+  "committedScriptBlobVerification": "pending owner commit approval; reviewed blob OID recorded now",
+  "command": [
+    "node",
+    "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-220/scripts/spikes/220-qualification.mjs",
+    "pg",
+    "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-220/docs/evidence/220-qualification/local-iteration-4.json"
+  ],
+  "commandExit": 0,
+  "stdoutSummary": {
+    "passLines": 47,
+    "trialLines": 6,
+    "receiptSaved": true
+  },
+  "fullLogPath": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/220-iteration-4-round-2.log",
+  "fullLogSha256": "17534cd9e9162d22dcf67bdd73d072d16664c45d6cb95e8ff207dd9cb219018c",
+  "limitations": [
+    "provider and free observations mocked; no real HTTP/Neon/Production access",
+    "terminal windows advanced by fixture retry timestamps, not real-time waits",
+    "serving follower polling and full audited operator/health integration remain #222 gates",
+    "the separate never-merge hosted-harness branch was not changed; reviewed SQL fixes must be incorporated there before any hosted qualification"
+  ],
+  "reviewRound": 2,
+  "updatedPriorTests": {
+    "monthly counter reset: twenty simulated windows stay terminal and only operator reinitialization permits the next free call": "monthly counter reset: two free probes confirm the latch across twenty simulated windows, then one more after reinitialization",
+    "period and plan mismatch are health-signaled terminal failures even if another observation freshens the budget": "period mismatch latches immediately and a confirmed plan mismatch stays terminal even after a fresh observation"
+  },
+  "newTests": [
+    "reordered free reading after paid reconciliation is suspected, then accepted next probe resumes paid refresh",
+    "plan suspicion followed by acceptance clears and a later mismatch starts a new confirmation sequence",
+    "different completed probe outcomes replace or clear suspicion instead of confirming an old condition"
+  ],
+  "confirmationPolicy": {
+    "immediate": [
+      "budget-uninitialized",
+      "quota-period-mismatch"
+    ],
+    "twoConsecutiveCompletedProbes": [
+      "quota-counter-reset",
+      "quota-plan-mismatch"
+    ],
+    "acceptedAndInitializationClearSuspicion": true,
+    "differentCompletionReplacesSuspicion": true,
+    "monthlyResetFreeCallCounts": {
+      "beforeLatch": 2,
+      "afterInitializationAdditional": 1
+    }
+  },
+  "archivedRound1Evidence": [
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/220-round-1-local-iteration-4.json",
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/220-round-1-checkpoint-iteration-4.json"
+  ]
+}

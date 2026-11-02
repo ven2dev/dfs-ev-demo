@@ -1,0 +1,32 @@
+{
+  "team": {
+    "id": "team_s66WXM6S37xvFRoA68265CFl",
+    "slug": "vernon-neillys-projects",
+    "billing": {
+      "plan": "hobby",
+      "status": "active"
+    }
+  },
+  "firewall": {
+    "active": {
+      "type": "NoneType"
+    },
+    "draft": {
+      "type": "NoneType"
+    }
+  },
+  "checkedAtUtc": "2026-10-31T02:16:41Z",
+  "readOnly": true,
+  "project": "prj_GLXDEeScMKPAeDAUoYIoiNknwKJd",
+  "docs": {
+    "rateLimiting": "https://vercel.com/docs/vercel-firewall/vercel-waf/rate-limiting",
+    "usage": "https://vercel.com/docs/vercel-firewall/vercel-waf/usage-and-pricing",
+    "hobby": "https://vercel.com/docs/plans/hobby"
+  },
+  "conclusions": {
+    "currentPlan": "active Hobby",
+    "activeAndDraftCustomConfig": "both null in authenticated GET",
+    "documentedLimits": "one rate-limit rule within three custom rules; IP supported; fixed-window 10s\u201310m; per-region counters; one million allowed requests",
+    "allowanceExhaustion": "WAF-specific behavior unverified. Generic Hobby usage docs describe feature suspension in most cases, not a precise WAF enforcement contract. No fail-open, global 429, automatic charge or continuation assumption."
+  }
+}
