@@ -27,9 +27,19 @@ export const discardUnpublishedReport = async (client:Database,store:ObjectStore
  }
 };
 export type DeletionReceipt = {event_id:string;recorded_at:Date;grace_seconds:number;
- snapshot_ids:string[];feature_ids:string[];label_ids:string[];dataset_ids:string[]};
-export const deleteSources = async (client:Database,snapshotIds:string[],reason:string,graceSeconds=300):Promise<DeletionReceipt> =>
- (await client.query<DeletionReceipt>("SELECT * FROM fs138.delete_sources($1::uuid[],$2,$3)",[snapshotIds,reason,graceSeconds])).rows[0];
+ snapshot_ids:string[];feature_ids:string[];label_ids:string[];dataset_ids:string[];run_ids?:string[]};
+// #138-only fixtures still return DeletionReceipt. The #166 companion proposal
+// adds run_ids to both APIs without changing the foundation receipt fields.
+export type ArtifactDeletionReceipt = DeletionReceipt & {run_ids:string[]};
+export const deleteSources = async (client:Database,snapshotIds:string[],reason:string,graceSeconds=300):Promise<ArtifactDeletionReceipt> => {
+ const receipt=(await client.query<DeletionReceipt>("SELECT * FROM fs138.delete_sources($1::uuid[],$2,$3)",[snapshotIds,reason,graceSeconds])).rows[0];
+ // Foundation-only scratch targets predate model runs; normalize that legacy
+ // response while the #166 proposal always supplies its newly invalidated IDs.
+ return {...receipt,run_ids:receipt.run_ids??[]};
+};
+
+export const deleteDatasets = async (client:Database,datasetIds:string[],reason:string,graceSeconds=300):Promise<ArtifactDeletionReceipt> =>
+ (await client.query<ArtifactDeletionReceipt>("SELECT * FROM fs138.delete_datasets($1::uuid[],$2,$3)",[datasetIds,reason,graceSeconds])).rows[0];
 
 // One bounded page, resumable after failures. The writer-only address lock
 // prevents republication between reference check and ObjectStore deletion.
@@ -37,8 +47,11 @@ export const deleteSources = async (client:Database,snapshotIds:string[],reason:
 // re-arms them. This lets later pages progress without polling shared addresses.
 // A crash after delete but before ack is safe: ObjectStore.delete is idempotent.
 export const cleanupDeletedObjects = async (client:Database,store:ObjectStore) => {
- const pending=(await client.query<{object_key:string}>(`SELECT object_key FROM fs138.object_removals
-  WHERE completed_at IS NULL AND remove_after<=clock_timestamp() ORDER BY object_key LIMIT 1024`)).rows;
+ const pending=(await client.query<{object_key:string}>(`SELECT r.object_key FROM fs138.object_removals r
+  WHERE r.completed_at IS NULL AND r.remove_after<=clock_timestamp()
+   AND NOT (r.object_key ~ '^(models|audits)/' AND EXISTS(
+    SELECT 1 FROM fs138.orphan_observations o WHERE o.object_key=r.object_key))
+  ORDER BY r.object_key LIMIT 1024`)).rows;
  const removed:string[]=[];
  const shared:string[]=[];
  for(const {object_key:key} of pending){
@@ -55,6 +68,11 @@ export const cleanupDeletedObjects = async (client:Database,store:ObjectStore) =
   }
  }
  return {removed,shared};
+};
+// Explicit writer action only. This re-arms the existing tombstone without
+// clearing it or changing its grace; automatic completed-removal recovery is #229.
+export const requeueRemovedObject = async (client:Database,key:string):Promise<void> => {
+ await client.query('SELECT fs138.requeue_removed_object($1)',[key]);
 };
 export const pruneDerivedVersions = async (client:Database):Promise<{featureIds:string[];labelIds:string[]}> =>
  (await client.query("SELECT fs138.prune_derived() AS pruned")).rows[0].pruned;

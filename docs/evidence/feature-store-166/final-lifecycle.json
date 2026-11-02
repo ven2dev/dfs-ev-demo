@@ -1,0 +1,242 @@
+{
+  "issue": 166,
+  "step": 1,
+  "runtime": "v24.18.1",
+  "fixture": "synthetic dependency controls, actual restricted LOGINs and private local ObjectStore",
+  "probes": [
+    {
+      "name": "source closure invalidates exactly dependent runs and enqueues all their pins",
+      "verdict": "pass",
+      "details": {
+        "dependentRun": "d08bc982-cd91-4885-a7bb-c2ae82b5668c",
+        "survivor": "c99cbc79-4fb5-4716-96a6-fa4c3410da4b",
+        "receipt": {
+          "event_id": "2da26963-aa58-47f1-9cc9-b098b4493b73",
+          "recorded_at": "2026-11-01T05:31:29.700Z",
+          "reason": "source withdrawn",
+          "grace_seconds": 0,
+          "snapshot_ids": [
+            "22105566-44b8-4cfc-afbc-c7e52c1895a2"
+          ],
+          "feature_ids": [],
+          "label_ids": [],
+          "dataset_ids": [
+            "5b10c057-e9fc-475d-9f51-373918a44ffa"
+          ],
+          "run_ids": [
+            "d08bc982-cd91-4885-a7bb-c2ae82b5668c"
+          ]
+        },
+        "queued": [
+          "audits/c4b027e9348b768c39ad429835946df1db39a079c9bd5d9ca76da65f7257ccb0",
+          "audits/edf10f20f4eb072dbdb4e38132d3aff026d34b5aff1c05fc0467d93d1b11bebf",
+          "datasets/4d19fa889fc6d1519334345a6b4086f23b5ec87821d5198906bf5a082c47c5bf",
+          "models/5abdf45569ef1acbfa81e65ca74a7fde5dbeb5bfc96533a6dbcded66b708aed5",
+          "raw/3c4fab7eaeaff6204b1e8fc121ca09ea826266c62f543b8eb9e9caf3c2fe315d"
+        ],
+        "firstInvalidationPreserved": true,
+        "repeatNewlyInvalidatedRunIds": []
+      }
+    },
+    {
+      "name": "explicit dataset deletion preserves sources, other datasets and derived values",
+      "verdict": "pass",
+      "details": {
+        "receipt": {
+          "event_id": "74ec42d7-e7f0-4b01-8686-c3a4a21797c6",
+          "recorded_at": "2026-11-01T05:31:29.793Z",
+          "reason": "one dataset",
+          "grace_seconds": 0,
+          "snapshot_ids": [],
+          "feature_ids": [],
+          "label_ids": [],
+          "dataset_ids": [
+            "4923c57b-e3bc-4ceb-8407-0cd69597b392"
+          ],
+          "run_ids": [
+            "6dd1edf4-23e4-4dec-b5af-698d9af4f2b0"
+          ]
+        },
+        "unrelatedRun": "157b33d5-cf1d-4141-b147-7d205d44e218",
+        "sourceKept": true,
+        "actualMembersBefore": 2,
+        "actualMembersAfter": 1,
+        "featureAndLabelKept": true,
+        "normalizedRowKept": true,
+        "repeatNewlyInvalidatedRunIds": []
+      }
+    },
+    {
+      "name": "source deletion follows membership lineage and removes actual derived/provider rows only in its scope",
+      "verdict": "pass",
+      "details": {
+        "receipt": {
+          "event_id": "4f243b77-241e-4b1f-94c8-7ee83c928eb2",
+          "recorded_at": "2026-11-01T05:31:29.877Z",
+          "reason": "member source withdrawn",
+          "grace_seconds": 0,
+          "snapshot_ids": [
+            "e8968cb9-7dac-4b93-9638-8d89888f9ecb"
+          ],
+          "feature_ids": [
+            "9d247d04-b251-4f6a-b2b7-a1bd727ff2fa"
+          ],
+          "label_ids": [
+            "2d519fe6-c108-4fca-acfb-65dbd2148839"
+          ],
+          "dataset_ids": [
+            "50e73de7-fd01-47b3-ba2b-cd707dc2723b"
+          ],
+          "run_ids": [
+            "762252a9-4e99-4eaf-a6c8-ac2a3cd6ce3d"
+          ]
+        },
+        "survivorRun": "fe2db151-d3c6-41c4-9369-507f09426c28",
+        "membershipUnionProved": true,
+        "actualRowsRemoved": 3,
+        "unrelatedRowsKept": 3
+      }
+    },
+    {
+      "name": "writer/reader LOGINs cannot directly mutate registry or call private closure; outsider cannot govern",
+      "verdict": "pass",
+      "details": {
+        "refusals": 18,
+        "realReader": "fs138_job_ffce305ccdb48957",
+        "realOutsider": "fs138_job_99929593a4a7159c"
+      }
+    },
+    {
+      "name": "bad/mixed target sets roll back receipts, status and queue atomically",
+      "verdict": "pass",
+      "details": {
+        "refused": 28,
+        "explicitRollbackRestoredAll": true
+      }
+    },
+    {
+      "name": "publication samples rights after address waits and refuses invalidation before existing-run reuse",
+      "verdict": "pass",
+      "details": {
+        "liveRetryReturnedOriginal": true,
+        "deniedInvalidatedRetry": "P1665",
+        "authorizedInvalidatedRetry": "P1661",
+        "refusedAfterLockWait": true
+      }
+    },
+    {
+      "name": "source deletion / publication-first commits serialize without escaping the run closure",
+      "verdict": "pass",
+      "details": {
+        "actualLockWait": true,
+        "kind": "source",
+        "order": "publication-first",
+        "noEscapingPublication": true
+      }
+    },
+    {
+      "name": "source deletion / deletion-first commits serialize without escaping the run closure",
+      "verdict": "pass",
+      "details": {
+        "actualLockWait": true,
+        "kind": "source",
+        "order": "deletion-first",
+        "noEscapingPublication": true
+      }
+    },
+    {
+      "name": "dataset deletion / publication-first commits serialize without escaping the run closure",
+      "verdict": "pass",
+      "details": {
+        "actualLockWait": true,
+        "kind": "dataset",
+        "order": "publication-first",
+        "noEscapingPublication": true
+      }
+    },
+    {
+      "name": "dataset deletion / deletion-first commits serialize without escaping the run closure",
+      "verdict": "pass",
+      "details": {
+        "actualLockWait": true,
+        "kind": "dataset",
+        "order": "deletion-first",
+        "noEscapingPublication": true
+      }
+    },
+    {
+      "name": "pipeline retry has typed invalidation before scoring or uploads",
+      "verdict": "pass",
+      "details": {
+        "code": "model-publication-invalidated",
+        "uploads": 0
+      }
+    },
+    {
+      "name": "lost COMMIT reply returns no result and a fresh-connection retry reuses the original publication",
+      "verdict": "pass",
+      "details": {
+        "lostCommitResultWithheld": true,
+        "existingPublication": true,
+        "runs": 1,
+        "firstReceiptPreserved": true
+      }
+    },
+    {
+      "name": "lost-COMMIT live retry matches every file pin despite another run's shared-report tombstone",
+      "verdict": "pass",
+      "details": {
+        "lostCommitResultWithheld": true,
+        "sharedReport": "audits/4d550b50dbcb230fbaa7b3cd4021fa29c11b366ee916489ef72231e53e3c86e2",
+        "affectedRun": "02322720-4860-41bb-a0ae-ef2b168295e8",
+        "liveRetryRun": "2c346946-59e1-484b-9e8f-478bf6ce9ea6",
+        "pendingAndSharedRetainedRetries": true,
+        "existingPublication": true,
+        "firstClockAndReceiptPreserved": true,
+        "mismatchedFileSetsRefused": 5,
+        "missingFullPinsRefused": true,
+        "conflictingIdentityRefused": true,
+        "deniedLiveRetrySqlstate": "P1665",
+        "invalidatedRetrySqlstate": "P1661",
+        "identicalDescriptorRuns": 1
+      }
+    },
+    {
+      "name": "pre-BEGIN tombstone refusal is typed and SQLSTATE mapping preserves unrelated failures",
+      "verdict": "pass",
+      "details": {
+        "beforeBegin": true,
+        "code": "model-object-deleted",
+        "uploads": 0,
+        "sqlstateMappings": 3,
+        "unrelatedFailuresPreserved": 3
+      }
+    },
+    {
+      "name": "new queue rows protect live shared references and preserve observed-address ownership",
+      "verdict": "pass",
+      "details": {
+        "sharedRetainedUntilLastLiveRun": true,
+        "orphanDeletedWhilePending": true,
+        "mandatoryCompletedOnlyAfterRetirement": true
+      }
+    }
+  ],
+  "verdict": "pass",
+  "sourceHashes": {
+    "packages/db/proposals/166_artifact_governance.sql": "600402ed383510e91bf75f625af203ec2ec82e20fa521efec601dd47a00f7666",
+    "services/pipeline/src/featureStore/governance.ts": "e16f68aaf7b054ccfe7ce9b6fce6d3d8478728b2628524a2f095b157fe65637c",
+    "services/pipeline/src/featureStore/modelManifests.ts": "c677d0443177748fee090b9d5bb3607bc82f7bafd28ad5609a3922d76a109802",
+    "services/pipeline/src/featureStore/datasets.ts": "690c626a3a049f89bc6a45fad235af8b09e5d2b54eef0a0c76e261af20bb3fc7",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+    "services/pipeline/tests/feature-store/artifact-governance-fixture.ts": "694d6f193b1b5b66c61e5b96a2610e1a99b709980fe086905893c6ca357885c2",
+    "services/pipeline/tests/feature-store/artifact-governance.check.mts": "b66da1f4fbd0a7a6a3f0d863b367cfa1ba17b4b87445940eed47b7dc12bfc574"
+  },
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "full-records.tar.gz#review-corrections/full-lifecycle.json",
+    "sha256": "72208d144fbb858ac06afce05e93f8c35491281c8036b03bf408eea97462bcef",
+    "byteSize": 8530,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}
