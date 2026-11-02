@@ -29,13 +29,13 @@ removal recovery were split into [#229](https://github.com/ven2dev/dfs-ev-demo/i
 to bound this issue; fencing/upload deadlines need unavailable ObjectStore
 conditional writes (#172).
 
-**Evidence pattern.** Compact checksum-bound receipts refer to retained full
-local records, with deterministic offline replay of work counts and every block's
-percentile. Repeating raw samples/counters in Git obscures review and duplicates
-superseded proof; summary-only numbers without a sample digest cannot be audited.
-The receipt therefore binds SHA-256 and byte size before any replay. A digest
-verifies bytes but cannot recreate them: another checkout needs the retained
-full file to audit this historical run, or can rerun the experiment for new proof.
+**Evidence pattern.** Compact checksum-bound receipts refer to one deterministic
+compressed bundle committed beside them, with offline replay of work counts and
+every block's percentile. Repeating raw sample/counter JSON in Git obscures review;
+cache-only records disappear during dependency cleanup, and summary-only numbers
+cannot be audited. Relative member paths bind SHA-256 and uncompressed byte size
+before replay, so a fresh clone carries the exact historical proof. The complete
+evidence folder stays within 600 KB. Reruns produce fresh samples and hashes.
 
 **Targets.** The completed feature will enforce two statements per successful
 artifact read: one batched authorization with pin retrieval, one fresh
@@ -337,8 +337,8 @@ Every block clears **≤21 ms**, providing at least the required 30% headroom.
 The [compact receipt](evidence/feature-store-166/final-benchmark.json) records
 every block's p95/headroom, baseline results, fixture/source hashes, work counts
 and verdicts. Its `fullRecord` SHA-256 binds every raw sample, query duration,
-fresh publication pin and GET/calculation/full-read timing in a retained file
-under ignored `node_modules/.cache/feature-store-166/`. No ordinary
+fresh publication pin and GET/calculation/full-read timing in the committed
+`full-records.tar.gz` bundle. No ordinary
 hashes, HEADs or writes occur during timed reads. The callback only sums byte
 lengths. Full-read p95s are informational (the worst block was 57.889 ms);
 this does not measure #167's parsing, context lookup or projection workload.
@@ -350,7 +350,7 @@ applies to both arms. Hosted RTT, Neon wake/region (#220), cold caches,
 end-to-end serving and capacity remain unmeasured. There is no elapsed-time CI
 assertion and no ratio-to-baseline gate. Source hashes were unchanged at the
 end of the experiment; a separate verification recomputes counts, percentiles,
-hashes and fresh report pins in the full local record. The committed
+hashes and fresh report pins in the bundled full record. The committed
 [offline verifier](../services/pipeline/scripts/feature-store/artifact-governance-evidence.ts)
 checks that record's SHA-256, all sample work counts and coordinates, Q1/Q2 sums,
 every block p95/headroom and the whole compact receipt. See the

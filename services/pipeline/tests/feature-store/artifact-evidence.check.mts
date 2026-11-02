@@ -1,7 +1,16 @@
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { compactBenchmark, compactBehavior, verifyBenchmarkSamples, verifyEvidenceReceipt,
-  type FullBenchmark } from "../../scripts/feature-store/artifact-governance-evidence.ts";
+  verifyEvidenceBundle, type FullBenchmark } from "../../scripts/feature-store/artifact-governance-evidence.ts";
+
+test("every committed evidence reference resolves to a checksum-matching bundled member without a cache or database", async () => {
+  const directory = fileURLToPath(new URL("../../../../docs/evidence/feature-store-166/", import.meta.url));
+  // Hashes/byte sizes/relative membership only: no recorded or live timing gate.
+  const verdicts = await verifyEvidenceBundle(directory, false);
+  assert.equal(verdicts.length, 8);
+  assert(verdicts.every(result => result.verdict === "pass"));
+});
 
 // Deterministic arithmetic controls only: no clock measurement or speed gate
 // executes in CI. The offline verifier must reject incomplete/tampered proof.

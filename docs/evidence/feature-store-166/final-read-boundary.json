@@ -977,9 +977,9 @@
   },
   "schemaVersion": 2,
   "fullRecord": {
-    "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/node_modules/.cache/feature-store-166/review-corrections/full-read-boundary.json",
+    "path": "full-records.tar.gz#review-corrections/full-read-boundary.json",
     "sha256": "67492f43618c57f337ee73d4da942b099fd8d18bd2df0cd869c3dd34f05f2c48",
     "byteSize": 108419,
-    "retention": "Full record retained outside Git; obtain these exact bytes to audit the historical result. A rerun creates a new sample hash."
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
   }
 }

@@ -720,9 +720,9 @@
   },
   "schemaVersion": 2,
   "fullRecord": {
-    "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/node_modules/.cache/feature-store-166/review-corrections/full-cleaner.json",
+    "path": "full-records.tar.gz#review-corrections/full-cleaner.json",
     "sha256": "f7cdc38bd9698454825bb8fac987638d181f4ce6d144634515d026646b1cf62e",
     "byteSize": 98698,
-    "retention": "Full record retained outside Git; obtain these exact bytes to audit the historical result. A rerun creates a new sample hash."
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
   }
 }

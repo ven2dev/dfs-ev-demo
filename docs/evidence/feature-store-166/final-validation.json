@@ -1,11 +1,11 @@
 {
   "issue": 166,
-  "phase": "review corrections awaiting owner commit approval",
+  "phase": "review-correction validation with durable full-record follow-up",
   "verdict": "pass",
   "recordedAt": "2026-11-01T05:35:37.089564+00:00",
   "baseCommit": "8167af387a3863b867e71c2d830f2ddabe68987b",
   "reviewedHead": "da46a72754cd64875b4e79296fb3a528308d0127",
-  "correctionsCommitted": false,
+  "correctionsCommitted": true,
   "checks": [
     {
       "command": "node --test --test-concurrency=1 services/pipeline/tests/feature-store/*.check.mts",
@@ -60,11 +60,11 @@
       "firstClockAndRightsReceiptPreserved": true
     },
     "compactEvidence": {
-      "fullSamplesAndCountersOutsideFinalGitTree": true,
       "supersededStepAndDuplicateReceiptsRemoved": true,
       "fullRecordSha256AndByteSizeInEachReceipt": true,
       "offlineVerifierRecomputesEveryBlockAndWorkCount": true,
-      "hashAloneCannotReconstructSamples": "Exact retained full bytes are required to audit this historical run. Reruns generate a new hash."
+      "hashAloneCannotReconstructSamples": "The exact full bytes are committed in full-records.tar.gz. Reruns generate a new hash.",
+      "fullSamplesAndCountersInCommittedBundle": true
     },
     "runIds": "Only newly invalidated runs from UPDATE ... RETURNING; repeated deletion produces empty run_ids.",
     "observedRemovalDeadline": "greatest(first_seen+orphan_grace,pending_removal.remove_after); both future deadlines tested.",
@@ -96,10 +96,10 @@
     "failedBlocks": 0,
     "failedSamples": 0,
     "fullRecord": {
-      "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/node_modules/.cache/feature-store-166/final-benchmark-S12ECw/full-samples.json",
+      "path": "full-records.tar.gz#final-benchmark-S12ECw/full-samples.json",
       "sha256": "aa250f9f2fbc1870c51cbf13ccb56131998ef4983bb4274906b5b94f21b9fd72",
       "byteSize": 3356558,
-      "retention": "Full record retained outside Git; obtain these exact bytes to audit the historical result. A rerun creates a new sample hash."
+      "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
     }
   },
   "independentSampleVerification": {
@@ -137,20 +137,20 @@
     "normalPublicationStatementCountsUnchanged": true
   },
   "receiptHashes": {
-    "final-benchmark.json": "d9ee565a5c722466c0b5ae7aac753e64fd5e0879309e57df1719a7d88380c405",
-    "final-lifecycle.json": "553d3597fdf56a2e070f3b6b4ce65c8d85bc64ed5e4dee746e032cfb45ea3dc9",
-    "final-read-boundary.json": "d908d54a6082307754ab743fc17cf20d2f4dae3f74a5481d12660929b8de83a7",
-    "final-cleaner.json": "f38a39b250e83bd6d85d7f6658119566c389f0f7b018422de337f3ab772f7e02",
-    "preimplementation-spike.json": "3c0f2f680a29fc29588f15a106b4aebb123fbf1f70eb949803167e1b5b5620ac"
+    "final-benchmark.json": "907bcbdd4fc73c13e7c9eb080e576e5f35bfcde8a12738a7228563bab158d2e0",
+    "final-lifecycle.json": "29737e07cd035d798980d6f43690f1104478560652a4ca237401d9a1db437e3f",
+    "final-read-boundary.json": "74264223f5388015d3d15bb2e2d131b556753bd95ca8f494f3c25dfb49e740c0",
+    "final-cleaner.json": "98198d3e5168d099931609b371206231be9c50858572ae445307a05bf968bd27",
+    "preimplementation-spike.json": "ea31dd1426509e14b0ccc885fc5399bb57d4f7e5dacd5a2f5842a5e53dfc4fce"
   },
   "sourceHashes": {
-    "docs/feature-store-artifact-governance.md": "2c244eca3fcacf375f2014686b8c8c9ae02ef2caf95c9ade0f951892bf7e499a",
+    "docs/feature-store-artifact-governance.md": "abf24ebd1d4c712a380e668c6363d6fa15dc0e8b4d9ae034be21b4ef258c4e3d",
     "packages/db/package.json": "0833c88041304e871f635051448e586d32102848f332f71c9ed62e35248318f3",
     "packages/db/proposals/165_model_manifests.sql": "1915e84e505be95eba819562e47aa4bc7936d15429d3d431fd9e319380800853",
     "packages/db/proposals/166_artifact_governance.sql": "600402ed383510e91bf75f625af203ec2ec82e20fa521efec601dd47a00f7666",
     "services/pipeline/package.json": "43b65745c9fb3ab4f00bdbc3e508da0add4c852789c93b6d4a7b1d9a93d5aaec",
     "services/pipeline/scripts/feature-store/artifact-governance-benchmark.ts": "bcf9dea3c7e011abfa662167b562390de853e5370da1b9ae3be4fc8f7f61207a",
-    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "e2d94b1e7a86cefc1ce5f1b9cf6d7387d1c0366673770e0d278efd9c7f5d64e5",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "f587582eaae5fc11755e1d7c084313b4cd6d37be464a60ae794344dac81ee536",
     "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
     "services/pipeline/src/featureStore/datasets.ts": "690c626a3a049f89bc6a45fad235af8b09e5d2b54eef0a0c76e261af20bb3fc7",
     "services/pipeline/src/featureStore/governance.ts": "e16f68aaf7b054ccfe7ce9b6fce6d3d8478728b2628524a2f095b157fe65637c",
@@ -158,11 +158,12 @@
     "services/pipeline/src/featureStore/modelManifests.ts": "c677d0443177748fee090b9d5bb3607bc82f7bafd28ad5609a3922d76a109802",
     "services/pipeline/tests/feature-store/artifact-cleaner-work.ts": "8523f661442a4e2e8a810c2477ef1f68c0893b37e02abca2ce048875cbcfc519",
     "services/pipeline/tests/feature-store/artifact-cleaner.check.mts": "e953ff2b1cdc89606683fd7cdc29e0621454c1e489037ba4896c8dc351642abb",
-    "services/pipeline/tests/feature-store/artifact-evidence.check.mts": "98ba152eae6ab750a55191828ac6d8162318aa3b2b0991a2345fae2c44f9b7c3",
+    "services/pipeline/tests/feature-store/artifact-evidence.check.mts": "2f379adbbf6248e7822233d9953aeabaf1f57442b5ad4e8c74be193812d9c85f",
     "services/pipeline/tests/feature-store/artifact-governance-fixture.ts": "694d6f193b1b5b66c61e5b96a2610e1a99b709980fe086905893c6ca357885c2",
     "services/pipeline/tests/feature-store/artifact-governance.check.mts": "b66da1f4fbd0a7a6a3f0d863b367cfa1ba17b4b87445940eed47b7dc12bfc574",
     "services/pipeline/tests/feature-store/artifact-read-work.ts": "44626f9bfd3826db45cd7289bf79e9aa06c21743e9ef744e96885b596da63d5c",
-    "services/pipeline/tests/feature-store/model-artifacts.check.mts": "b2ac717a27e4865604f9d6030b3a3d43e956592805de8a3f2c67da139d1e72ca"
+    "services/pipeline/tests/feature-store/model-artifacts.check.mts": "b2ac717a27e4865604f9d6030b3a3d43e956592805de8a3f2c67da139d1e72ca",
+    "docs/evidence/feature-store-166/README.md": "1fb788473c080c50325503fdc773d680c1ebda952c3f003b2b5cd35fdf1df1e9"
   },
   "cleanup": {
     "scratchDatabases": 0,
@@ -181,5 +182,74 @@
   "hostedWritesPerformed": false,
   "productionCommandsPerformed": false,
   "pushPerformed": false,
-  "pending": "Owner review/approval before committing corrections; no push."
+  "pending": "Durable evidence follow-up is committed separately from the measured implementation; no push authorized.",
+  "correctionCommit": "eb0562b6b3a4ef5fabd471eea8c38583c82cce03",
+  "durableEvidence": {
+    "pattern": "One deterministic compressed bundle with relative member references and uncompressed SHA-256 verification before replay.",
+    "bundle": "full-records.tar.gz",
+    "bundleSha256": "ab7b9e9e882fd33e49068eb202270d33b7bc2b35a1b7d1ee71047ea82de377dc",
+    "bundleByteSize": 419572,
+    "members": [
+      {
+        "member": "before-review-corrections/preimplementation-archive.json",
+        "verdict": "pass",
+        "sha256": "70ab3f6c43b4fb5e9166010e23e6bf4238508cf233206c51e0bbb58c56c325e6",
+        "byteSize": 1059
+      },
+      {
+        "member": "before-review-corrections/preimplementation-spike.json",
+        "verdict": "pass",
+        "sha256": "8dc3409f114f76fc7bcb5294cb5b54bfd93b6f4f1df05cde1c9621e54b5d7e09",
+        "byteSize": 1053020
+      },
+      {
+        "member": "before-review-corrections/preimplementation-verification.json",
+        "verdict": "pass",
+        "sha256": "56d2af130a170fbc61f249aaab8d9b33f0ce26c71d171839c9af5dde6d20752c",
+        "byteSize": 863
+      },
+      {
+        "member": "before-review-corrections/preimplementation-work-oracle.json",
+        "verdict": "pass",
+        "sha256": "a84fc19207b9fda399ff8c3a98d0447c82160c954831032b6952091e766d309c",
+        "byteSize": 781
+      },
+      {
+        "member": "final-benchmark-S12ECw/full-samples.json",
+        "verdict": "pass",
+        "sha256": "aa250f9f2fbc1870c51cbf13ccb56131998ef4983bb4274906b5b94f21b9fd72",
+        "byteSize": 3356558
+      },
+      {
+        "member": "review-corrections/full-cleaner.json",
+        "verdict": "pass",
+        "sha256": "f7cdc38bd9698454825bb8fac987638d181f4ce6d144634515d026646b1cf62e",
+        "byteSize": 98698
+      },
+      {
+        "member": "review-corrections/full-lifecycle.json",
+        "verdict": "pass",
+        "sha256": "72208d144fbb858ac06afce05e93f8c35491281c8036b03bf408eea97462bcef",
+        "byteSize": 8530
+      },
+      {
+        "member": "review-corrections/full-read-boundary.json",
+        "verdict": "pass",
+        "sha256": "67492f43618c57f337ee73d4da942b099fd8d18bd2df0cd869c3dd34f05f2c48",
+        "byteSize": 108419
+      }
+    ],
+    "nonDatabaseChecks": {
+      "evidence": 5,
+      "featureStoreUnit": 18,
+      "packageImportPathContracts": 19,
+      "failed": 0,
+      "typeScript": "pass",
+      "eslint": "pass"
+    },
+    "sqlOrRuntimeSourceChanged": false,
+    "benchmarkRerunRequired": false,
+    "sourceHashScope": "Original benchmark/full records retain their measurement-time source hashes. Source pins below also cover the evidence-only follow-up.",
+    "freshCloneAudit": "The documented audit uses only tracked files, Node 24 and tar; no dependencies, database or cache."
+  }
 }

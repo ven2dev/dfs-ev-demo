@@ -339,23 +339,29 @@
     }
   ],
   "fullRecord": {
-    "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/node_modules/.cache/feature-store-166/before-review-corrections/preimplementation-spike.json",
+    "path": "full-records.tar.gz#before-review-corrections/preimplementation-spike.json",
     "sha256": "8dc3409f114f76fc7bcb5294cb5b54bfd93b6f4f1df05cde1c9621e54b5d7e09",
     "byteSize": 1053020,
-    "retention": "Historical prototype full record retained outside Git; final implementation proof is superseding."
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
   },
   "supplementalRecords": {
     "preimplementation-work-oracle.json": {
-      "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/node_modules/.cache/feature-store-166/before-review-corrections/preimplementation-work-oracle.json",
-      "sha256": "a84fc19207b9fda399ff8c3a98d0447c82160c954831032b6952091e766d309c"
+      "path": "full-records.tar.gz#before-review-corrections/preimplementation-work-oracle.json",
+      "sha256": "a84fc19207b9fda399ff8c3a98d0447c82160c954831032b6952091e766d309c",
+      "byteSize": 781,
+      "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
     },
     "preimplementation-verification.json": {
-      "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/node_modules/.cache/feature-store-166/before-review-corrections/preimplementation-verification.json",
-      "sha256": "56d2af130a170fbc61f249aaab8d9b33f0ce26c71d171839c9af5dde6d20752c"
+      "path": "full-records.tar.gz#before-review-corrections/preimplementation-verification.json",
+      "sha256": "56d2af130a170fbc61f249aaab8d9b33f0ce26c71d171839c9af5dde6d20752c",
+      "byteSize": 863,
+      "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
     },
     "preimplementation-archive.json": {
-      "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/node_modules/.cache/feature-store-166/before-review-corrections/preimplementation-archive.json",
-      "sha256": "70ab3f6c43b4fb5e9166010e23e6bf4238508cf233206c51e0bbb58c56c325e6"
+      "path": "full-records.tar.gz#before-review-corrections/preimplementation-archive.json",
+      "sha256": "70ab3f6c43b4fb5e9166010e23e6bf4238508cf233206c51e0bbb58c56c325e6",
+      "byteSize": 1059,
+      "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
     }
   }
 }

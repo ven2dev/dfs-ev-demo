@@ -58,7 +58,6 @@
     "services/pipeline/src/featureStore/qbReports.ts": "91fa70d5e8a05e1dbbbd0a9968a557da04e4e7b22c8c8f431c5ef475f8a8465e",
     "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7"
   },
-  "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/node_modules/.cache/feature-store-166/final-benchmark-S12ECw",
   "fixtureConfig": {
     "postgresTmpfsBytes": 536870912,
     "sharedMemoryBytes": 134217728
@@ -566,10 +565,10 @@
   "sourceUnchanged": true,
   "finishedAt": "2026-11-01T05:34:36.294Z",
   "fullRecord": {
-    "path": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/node_modules/.cache/feature-store-166/final-benchmark-S12ECw/full-samples.json",
+    "path": "full-records.tar.gz#final-benchmark-S12ECw/full-samples.json",
     "sha256": "aa250f9f2fbc1870c51cbf13ccb56131998ef4983bb4274906b5b94f21b9fd72",
     "byteSize": 3356558,
-    "retention": "Full record retained outside Git; obtain these exact bytes to audit the historical result. A rerun creates a new sample hash."
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
   },
   "verification": {
     "samples": 3650,

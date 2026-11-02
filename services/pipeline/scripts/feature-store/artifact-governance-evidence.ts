@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { execFileSync } from "node:child_process";
+import { readFile, readdir, writeFile } from "node:fs/promises";
+import { isAbsolute, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sha256 } from "../../src/featureStore/objectStore.ts";
 
@@ -77,13 +78,15 @@ export const verifyBenchmarkSamples = (full: FullBenchmark) => {
   return { samples: 3650, candidateBlocks: 36, workBudgetsVerified: true, allBlocksAtLeast30PercentHeadroom: true };
 };
 
-const fullRecord = (bytes: Buffer, path: string) => ({ path: resolve(path), sha256: sha256(bytes), byteSize: bytes.byteLength,
-  retention: "Full record retained outside Git; obtain these exact bytes to audit the historical result. A rerun creates a new sample hash." });
+const fullRecord = (bytes: Buffer, path: string) => ({ path: isAbsolute(path) ? relative(process.cwd(), path) : path,
+  sha256: sha256(bytes), byteSize: bytes.byteLength,
+  retention: path.includes("#") ? "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+    : "Full record staged locally; bundle it before committing the receipt. A rerun creates a new sample hash." });
 export const compactBenchmark = (bytes: Buffer, path: string) => {
   const full = JSON.parse(bytes.toString()) as FullBenchmark;
   const verification = full.verdict === "pass" ? verifyBenchmarkSamples(full) : { verdict: "not-qualified" };
   const { samples, ...metadata } = full;
-  delete metadata.publications; delete metadata.fixture; delete metadata.inputGeneration;
+  delete metadata.publications; delete metadata.fixture; delete metadata.inputGeneration; delete metadata.storageRoot;
   const workCounts = [...new Set(samples.map(s => JSON.stringify(s.work)))].map(work => ({
     work: JSON.parse(work), samples: samples.filter(s => JSON.stringify(s.work) === work).length }));
   const input = full.inputGeneration as { code: unknown; codeHashes: unknown };
@@ -114,22 +117,85 @@ const compactCounters = (value: unknown): unknown => {
 export const compactBehavior = (bytes: Buffer, path: string): Record<string, unknown> & { schemaVersion: number; fullRecord: ReturnType<typeof fullRecord> } => ({
   ...compactCounters(JSON.parse(bytes.toString())) as Record<string, unknown>, schemaVersion: 2, fullRecord: fullRecord(bytes, path) });
 
+type RecordReference = { path: string; sha256: string; byteSize?: number };
+const verifyRecordBytes = (record: RecordReference, bytes: Buffer) => {
+  assert.equal(sha256(bytes), record.sha256, "full-record-sha256-mismatch");
+  if (record.byteSize !== undefined) assert.equal(bytes.byteLength, record.byteSize, "full-record-byte-size-mismatch");
+};
 export const verifyEvidenceReceipt = (receipt: ReturnType<typeof compactBenchmark> | ReturnType<typeof compactBehavior>, bytes: Buffer) => {
-  assert.equal(sha256(bytes), receipt.fullRecord.sha256, "full-record-sha256-mismatch");
+  verifyRecordBytes(receipt.fullRecord, bytes);
+  // The disposable prototype used a different sample shape. Preserve its
+  // original summary/probe projection rather than claiming final qualification.
+  if ("phase" in receipt && receipt.phase === "disposable-local-spike") {
+    const full = JSON.parse(bytes.toString());
+    const { schemaVersion, sampleCount, probes, baselineFirst, fullRecord: record, supplementalRecords, ...metadata } = receipt;
+    assert.equal(schemaVersion, 2); assert.equal(sampleCount, full.samples.length);
+    assert.deepEqual(probes, full.probes.map(({ name, verdict }: { name: string; verdict: string }) => ({ name, verdict })));
+    assert.deepEqual(baselineFirst, { byRows: full.baselineFirst.byRows });
+    assert(record && supplementalRecords);
+    assert.deepEqual(metadata, Object.fromEntries(Object.keys(metadata).map(key => [key, full[key]])), "compact-receipt-mismatch");
+    return;
+  }
   const expected = "samples" in JSON.parse(bytes.toString()) ? compactBenchmark(bytes, receipt.fullRecord.path) : compactBehavior(bytes, receipt.fullRecord.path);
   assert.deepEqual(receipt, expected, "compact-receipt-mismatch");
 };
 
-// CLI: full samples are a separate durable local artifact. Hash first, then
-// recompute every percentile/work count and compare the entire compact receipt.
+const recordReferences = (value: unknown): RecordReference[] => {
+  if (!value || typeof value !== "object") return [];
+  const object = value as Record<string, unknown>;
+  if (typeof object.path === "string" && typeof object.sha256 === "string") return [object as RecordReference];
+  return Object.values(object).flatMap(recordReferences);
+};
+
+// Read just the named member to stdout; never extract files or follow archive
+// paths on disk. Validate membership and relative paths before invoking tar.
+export const verifyEvidenceBundle = async (directory: string, recompute = true) => {
+  const bundle = resolve(directory, "full-records.tar.gz");
+  const members = execFileSync("tar", ["-tzf", bundle], { encoding: "utf8" }).trim().split("\n");
+  assert.equal(new Set(members).size, members.length, "duplicate-bundle-member");
+  const receipts = await Promise.all((await readdir(directory)).filter(name => name.endsWith(".json"))
+    .sort().map(async name => ({ name, receipt: JSON.parse(await readFile(resolve(directory, name), "utf8")) })));
+  const records = new Map<string, Buffer>();
+  const verdicts = [];
+  for (const { name, receipt } of receipts) {
+    for (const record of recordReferences(receipt)) {
+      assert(!isAbsolute(record.path), "absolute-full-record-path");
+      const [archive, member, extra] = record.path.split("#");
+      assert.equal(archive, "full-records.tar.gz", "unexpected-full-record-bundle");
+      assert(member && !extra && /^[a-zA-Z0-9][a-zA-Z0-9_./-]*$/.test(member) &&
+        member.split("/").every(part => part && part !== "." && part !== ".."), "unsafe-full-record-member");
+      assert(members.includes(member), "missing-full-record-member");
+      const bytes = records.get(member) ?? execFileSync("tar", ["-xOzf", bundle, member], { maxBuffer: 16 * 1024 * 1024 });
+      // SHA-256 precedes JSON parsing or any percentile/counter recomputation.
+      verifyRecordBytes(record, bytes);
+      if (!records.has(member)) verdicts.push({ record: member, verdict: "pass", sha256: sha256(bytes), byteSize: bytes.byteLength });
+      records.set(member, bytes);
+    }
+    if (recompute && receipt.fullRecord) {
+      const bytes = records.get(receipt.fullRecord.path.split("#")[1])!;
+      verifyEvidenceReceipt(receipt, bytes);
+    }
+    assert(recordReferences(receipt).length, `receipt-without-full-record:${name}`);
+  }
+  assert.deepEqual([...records.keys()].sort(), [...members].sort(), "unreferenced-bundle-member");
+  return verdicts;
+};
+
+// Hash first, then recompute. `audit` needs only tracked files, Node and tar;
+// its hash-only mode is suitable for CI without measuring or gating timing.
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const [operation, receiptPath, fullPath] = process.argv.slice(2);
-  assert(receiptPath && fullPath && ["benchmark", "behavior", "verify"].includes(operation),
-    "usage: artifact-governance-evidence.ts benchmark|behavior|verify RECEIPT FULL_RECORD");
-  const bytes = await readFile(fullPath);
-  if (operation === "verify") {
-    const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
-    verifyEvidenceReceipt(receipt, bytes);
-    console.log(JSON.stringify({ verdict: "pass", sha256: sha256(bytes), ...receipt.verification }));
-  } else await writeFile(receiptPath, JSON.stringify(operation === "benchmark" ? compactBenchmark(bytes, fullPath) : compactBehavior(bytes, fullPath), null, 2) + "\n");
+  if (operation === "audit") {
+    assert(receiptPath && !fullPath, "usage: artifact-governance-evidence.ts audit EVIDENCE_DIRECTORY");
+    for (const verdict of await verifyEvidenceBundle(receiptPath)) console.log(JSON.stringify(verdict));
+  } else {
+    assert(receiptPath && fullPath && ["benchmark", "behavior", "verify"].includes(operation),
+      "usage: artifact-governance-evidence.ts benchmark|behavior|verify RECEIPT FULL_RECORD");
+    const bytes = await readFile(fullPath);
+    if (operation === "verify") {
+      const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
+      verifyEvidenceReceipt(receipt, bytes);
+      console.log(JSON.stringify({ verdict: "pass", sha256: sha256(bytes), ...receipt.verification }));
+    } else await writeFile(receiptPath, JSON.stringify(operation === "benchmark" ? compactBenchmark(bytes, fullPath) : compactBehavior(bytes, fullPath), null, 2) + "\n");
+  }
 }
