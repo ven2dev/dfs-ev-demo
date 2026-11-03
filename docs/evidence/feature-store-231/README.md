@@ -10,13 +10,20 @@ contains the Design basis, requirements and nine-criterion acceptance mapping.
 - [Final benchmark](final-benchmark.json) binds all 1,245 samples: 45 unchanged
   reference-first requests, then six interleaved cohorts containing 600 candidate
   and 600 reference requests. All six candidate cohorts pass ≤210 ms p95; worst
-  **27.729 ms**, **90.76% headroom under 300 ms**. Reference-first p95: **11.623 ms**.
+  **30.212 ms**, **89.93% headroom under 300 ms**. Reference-first p95: **8.153 ms**.
 - [Context behavior](final-context.json) binds six metadata/PIT/version/last-valid/
   knowledge-clock/narrow-LOGIN/index/work probe groups.
-- [Composite behavior](final-composite.json) binds 15 probe groups and 78 measured
+- [Composite behavior](final-composite.json) binds 15 probe groups and 79 measured
   delivery/refusal budgets, including independent lineage, label invariance,
   exact-reference/pruning/mutation refusal, withdrawal races, paused-reader locks,
   model-only compatibility and shared-retained reports.
+
+The corrected context probes pin knownAsOf between feature insertion and job
+completion, then prove the selected value/visible head stay unchanged after the
+job finishes. The completion-time microsecond boundary is explicit. Composite
+probes assert P1666 status refusal for feature/source withdrawal and pruning at
+Q1/Q2, including when an older valid feature survives; forged caller references
+retain P2317. The source hashes bind these corrected SQL and probe sources.
 
 Each receipt names `full-records.tar.gz#member/path.json`. SHA-256 and byte size
 describe the **uncompressed member**. The committed bundle contains exactly these
@@ -44,9 +51,9 @@ named files to stdout; it does not extract files to disk.
 
 | Uncompressed member | Verdict | Bytes | SHA-256 |
 | --- | --- | ---: | --- |
-| final/full-samples.json | pass | 1,483,533 | `380982fb0426e5ddb511c883852701682c76721ec8895857747b632bd4436ccc` |
-| behavior/full-composite.json | pass | 112,279 | `c468282b39c4ef5bee5e419191b74028d6f846853360b37e01e2643d25203b98` |
-| behavior/full-context.json | pass | 14,972 | `b0b0be86f8ada235a612e5d17ec3ea0df9dfc96a96766a4c3f2f14769a5f5860` |
+| final/full-samples.json | pass | 1,483,111 | `33420718f3ce5a8ba9f5383a8927b5fba070abec50e5a58eddb73b817396808e` |
+| behavior/full-composite.json | pass | 113,861 | `e54eb6da387e0d8f71888da061ad84d53e5523985991427f88977e95d6c5e766` |
+| behavior/full-context.json | pass | 15,347 | `5d949afc3b874aa9eaf2fbfd66f73138b8c5b3ec02db8f59e6b94462adda9786` |
 
 Benchmark replay recomputes complete-request nearest-rank p95s, headroom, cold
 setup shares, per-n/client/server work and cohort membership, then checks the
@@ -86,12 +93,12 @@ none occurred. Stage percentiles are never summed.
 
 | Cohort | Candidate total p95 ms | Reference total p95 ms | Setup p95 ms | Warm-path p95 ms | Aggregate setup share |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Cold connection 1 | 27.729 | 22.533 | 6.888 | 21.587 | 23.36% |
-| Cold connection 2 | 24.580 | 21.723 | 6.123 | 18.526 | 23.64% |
-| Cold connection 3 | 24.279 | 32.370 | 6.287 | 19.146 | 23.28% |
-| Warm 1 | 4.491 | 7.029 | 0 | 4.491 | 0% |
-| Warm 2 | 4.235 | 6.528 | 0 | 4.235 | 0% |
-| Warm 3 | 5.123 | 6.542 | 0 | 5.123 | 0% |
+| Cold connection 1 | 25.791 | 24.451 | 6.453 | 19.942 | 24.10% |
+| Cold connection 2 | 25.686 | 20.503 | 6.537 | 19.195 | 23.67% |
+| Cold connection 3 | 30.212 | 20.680 | 6.440 | 23.821 | 23.69% |
+| Warm 1 | 4.502 | 7.698 | 0.000 | 4.502 | 0.00% |
+| Warm 2 | 4.125 | 7.182 | 0.000 | 4.125 | 0.00% |
+| Warm 3 | 5.249 | 7.123 | 0.000 | 5.249 | 0.00% |
 
 Cold setup includes Client creation/connect/authentication in an already running
 process. Close is outside timing. Warm-path duration is each sample's total minus
@@ -150,13 +157,12 @@ tests**, **23 workspace boundary/layout tests**, focused TypeScript and lint pas
 All **8 public-package/path contracts** pass; the local review-server test was
 rerun with loopback permission after the sandbox refused its bind.
 The **10 database-free #166/#231 evidence checks** also pass after final packaging.
-SQL and runtime source hashes match the final benchmark's source identity; the
-only Step 3 work is benchmark/evidence tooling, tests, records and documentation.
-No frozen migration or runtime/SQL change was needed after Step 2.
+SQL and runtime source hashes match the corrected final benchmark's source
+identity. Proposal SQL changes cover usable knowledge time and typed withdrawal;
+no frozen migration or runtime TypeScript change is included in the corrections.
 
-Before the Step 3 approval checkpoint, the documented audit and all 10 evidence
-checks were repeated in a clean archive of committed sources with the intended
-Step 3 audit/evidence files overlaid. That copy contained **no node_modules or
-cache**, and all three records passed hash/size checks and recomputation. It is
-a clean source-copy proof, not a claim that the unapproved Step 3 commit already
-exists. Owner review/commit approval and fresh push consent remain required.
+The documented audit and all 10 database-free evidence checks also pass in a
+minimal copy containing only the audit sources, tests and committed evidence,
+with no node_modules or cache. All three #231 records pass hash/size validation
+and recomputation there; the checks also cover the unchanged #166 bundle. The
+working-copy corrections await owner approval before commit and push.

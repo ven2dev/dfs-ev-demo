@@ -237,7 +237,7 @@ const compositeBehaviorProjection = (full: CompositeBehavior) => {
     return { issue: full.issue, step: full.step, fixture: full.fixture, verdict: full.verdict, sourceHashes: full.sourceHashes,
       probes, work: first.counts };
   }
-  assert.equal(full.step, 2); assert.equal(probes.length, 15); assert(full.budgets && full.budgets.length === 78);
+  assert.equal(full.step, 2); assert.equal(probes.length, 15); assert(full.budgets && full.budgets.length === 79);
   for (const budget of full.budgets) {
     assert(budget.unionProfiles.length > 0); assert.equal(new Set(budget.unionProfiles).size, budget.unionProfiles.length);
     assert([0, 1, 2].includes(budget.rightsBatches)); assert.equal(budget.rightsCalls, budget.rightsBatches * budget.unionProfiles.length);

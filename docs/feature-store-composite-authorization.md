@@ -13,6 +13,12 @@ one composite authorize/use/recheck boundary. A model's provenance and the serve
 feature's own source lineage form one authorization scope. Training membership
 does not govern which player-games can be served. Resolution releases metadata;
 Q1 releases private history only after the combined authorization succeeds.
+The materialized-feature lookup follows the serving pattern described by
+[Databricks](https://docs.databricks.com/aws/en/machine-learning/feature-store/online-workflows);
+availability-time filtering follows the point-in-time concern documented by
+[Feast](https://docs.feast.dev/getting-started/concepts/point-in-time-joins).
+The composite two-check authorization is this project's rights/deletion contract,
+not a requirement prescribed by those feature-store systems.
 
 **Alternatives rejected.** Training-membership eligibility excludes new/unlabeled
 games and lets target-label availability influence service eligibility. Nested
@@ -38,7 +44,7 @@ CI enforces work counts; repeated wall-clock qualification is opt-in.
 | Requirement | Risk prevented |
 | --- | --- |
 | Exact player/game and supported version/history-policy/mode pins; explicit runId at authorization. | Confusing same-game QBs, mutable model selection or silently changing policy. |
-| Real computed/checkpoint clocks and microsecond knownAsOf selection. | Look-ahead and an incorrect choice at revision boundaries. |
+| Real computed/checkpoint/job-finished clocks and microsecond knownAsOf selection. | Treating an inserted but unusable feature as known, look-ahead and incorrect revision boundaries. |
 | Metadata only before Q1; no label/training-member reads. | Unauthorized value disclosure and target-dependent availability. |
 | Derive both lineages server-side at Q1/Q2; compare complete references and own scope across awaits. | Omitted sources, forged older selections, mutation or narrowing the final check. |
 | Last valid value with flags; deletion/current rights refusal still refuses. | Blanketing useful permitted values or reviving withdrawn evidence through fallback. |
@@ -56,6 +62,18 @@ The accepted post-Q2 statement-snapshot delivery gap remains. No hosted latency,
 serving clearance, calibration or cold-cache claim. The real strict historical
 cohort is zero; no clocks were backdated. Prospective/correction/race controls are
 synthetic and labeled separately. #229 cleanup ownership remains unchanged.
+
+**Resolver metadata disclosure.** The resolver deliberately releases sample size,
+cutoff, identity/version/clock metadata, flags and complete source snapshot IDs
+without a rights evaluation. EXECUTE is limited to the trusted composite research
+caller and existing research reader/pipeline-writer roles; PUBLIC has no grant.
+This is acceptable within that operator trust boundary: metadata supports private
+selection and inspection, while history, artifact bytes and predictions stay
+behind Q1/Q2. It is not a public or rights-filtered metadata endpoint. A future
+product boundary must keep this metadata private, preventing the resolver from
+becoming an unauthorized delivery channel. Real LOGIN probes cover the grants
+and table/role-switch refusals; no claim is made that resolver metadata is hidden
+from a trusted operator whose current source rights have been revoked.
 
 ## Prototype proof and final evidence
 
@@ -83,11 +101,19 @@ on a registered local fixture. No frozen migration is added. Consumers use
 `resolveModelContext` from `@dfs-ev/pipeline/feature-store/model-context`.
 
 The resolver accepts playerId, gameId, featureVersion, historyPolicy, evidenceMode
-and knownAsOf. It selects successful producer revisions whose computed_at and
-checkpoint are visible at knownAsOf, ordered by checkpoint, computed_at and
+and knownAsOf. It selects successful producer revisions whose computed_at,
+checkpoint and producer job finished_at are visible at knownAsOf, ordered by checkpoint, computed_at and
 feature_id descending. It selects the latest usable bounded history, retaining
 the last valid selection when the newest visible result is unavailable. It never
 reads history, labels or training membership, and makes no rights decision.
+Both selected and visible-head queries require `job.finished_at <= knownAsOf`;
+the current freshness head requires `job.finished_at <= observedAt`. A request
+between insertion and completion therefore keeps its previous valid selection
+even after the newer job finishes. A microsecond completion-boundary probe and
+a real running-to-finished probe establish this contract without backdating.
+
+**#138 follow-up:** its older as-of query also needs review of job-completion
+visibility. This PR changes only #231's resolver; #138 SQL stays unchanged.
 
 The result separates `feature` identity/clocks/version/sample metadata and complete
 sorted `snapshotIds` from `selection` at knownAsOf and current `freshness`.
@@ -106,7 +132,7 @@ another value.
 | P2314 | model-context-insufficient-history |
 | P2315 | model-context-unavailable |
 | P2316 | model-context-lineage-refused |
-| P2317 | model-context-reference-refused |
+| P2317 | model-context-reference-refused (caller metadata/lineage or an existing older selection mismatches) |
 
 P1667 keeps #166's typed session refusal for snapshot isolation. Unrelated SQL,
 permission and connection errors remain intact. The TypeScript API owns scalar
@@ -150,9 +176,13 @@ the narrow LOGIN cannot omit context by calling it or the model-only wrapper.
 Existing broad #166 reader/writer grants and model-only two-statement reads remain.
 
 Both checks re-resolve the feature from the normalized request and compare its
-entire immutable feature metadata and complete sorted snapshot reference. A
-forged older selection or a pruned/changed reference refuses with P2317; a missing
-feature or empty lineage keeps its explicit unavailable/lineage refusal. Q2 never
+entire immutable feature metadata and complete sorted snapshot reference.
+Withdrawal, missing/pruned features or lost lineage at Q1/Q2 refuse with P1666
+(`model-read-status-refused`), including when re-resolution could fall back to an
+older valid feature. Existing feature references with forged metadata/lineage or
+an older selection for a newer request keep P2317. An absent referenced identity
+is treated as unavailable; this is a refusal, not proof of prior possession.
+Standalone resolution retains its P2314/P2315/P2316 diagnostics. Q2 never
 substitutes an older value. Each check independently derives the model's cited
 dataset sources and the feature's own sources, then checks current status and one
 deduplicated union of rights profiles. The requested artifact subset does not
@@ -203,18 +233,18 @@ The final-source benchmark uses the actual resolver and composite reader, a real
 descriptor GET/parse, shared domain support/probability/pricing math, Q2 and full
 JSON serialization. It preselects one real feature at each n=2–16 from metadata
 without labels or training membership. The unchanged #163 reference is measured
-first (45 requests, **11.623 ms p95**), then interleaved ABBA, 50 requests per
+first (45 requests, **8.153 ms p95**), then interleaved ABBA, 50 requests per
 position. Every cohort has 100 candidate and 100 reference requests. All **600
 candidate requests and six cohorts pass**; no timing/work miss was discarded.
 
 | Cohort | Reference p95 ms | Full candidate p95 ms | Setup p95 ms | Warm-path p95 ms | Aggregate setup share | Headroom |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Cold connection 1 | 22.533 | **27.729** | 6.888 | 21.587 | 23.36% | **90.76%** |
-| Cold connection 2 | 21.723 | 24.580 | 6.123 | 18.526 | 23.64% | 91.81% |
-| Cold connection 3 | 32.370 | 24.279 | 6.287 | 19.146 | 23.28% | 91.91% |
-| Warm 1 | 7.029 | 4.491 | 0 | 4.491 | 0% | 98.50% |
-| Warm 2 | 6.528 | 4.235 | 0 | 4.235 | 0% | 98.59% |
-| Warm 3 | 6.542 | 5.123 | 0 | 5.123 | 0% | 98.29% |
+| Cold connection 1 | 24.451 | 25.791 | 6.453 | 19.942 | 24.10% | 91.40% |
+| Cold connection 2 | 20.503 | 25.686 | 6.537 | 19.195 | 23.67% | 91.44% |
+| Cold connection 3 | 20.680 | 30.212 | 6.440 | 23.821 | 23.69% | 89.93% |
+| Warm 1 | 7.698 | 4.502 | 0.000 | 4.502 | 0.00% | 98.50% |
+| Warm 2 | 7.182 | 4.125 | 0.000 | 4.125 | 0.00% | 98.62% |
+| Warm 3 | 7.123 | 5.249 | 0.000 | 5.249 | 0.00% | 98.25% |
 
 The gate uses each request's complete duration, including setup on cold samples;
 stage percentiles are descriptive and are never added. Setup share is the sum of
@@ -250,7 +280,7 @@ needs Node 24 and tar only to audit; no database, dependencies or original cache
 | Both lineages/races | Independently derived 2P rights budget per successful probe; overlap and independent profiles; model/feature withdrawal at either boundary; no output on refusal. |
 | Narrow authority | Real LOGIN, EXECUTE-only resolver/composite capability, private-core/unscoped/table/writer/SET ROLE refusals. |
 | Hidden work and locks | Equal matched relational counters, zero reader DML/per-example verification, scan/write negative controls; paused reader has no transaction/locks and deletion commits. |
-| Fixed speed | Six complete real-fixture cohorts at ≤210 ms p95, minimum 90.76% headroom under 300 ms; cold setup reported separately. |
+| Fixed speed | Six complete real-fixture cohorts at ≤210 ms p95, minimum 89.93% headroom under 300 ms; cold setup reported separately. |
 | Package/proposal/evidence hygiene | Public workspace APIs, proposal SQL only, compact receipts/full deterministic bundle, hash-first TypeScript audit and database-free CI membership check. |
 | Owner workflow | Approved roadmap comment, fresh-main feature branch, per-step review before commit, no trailers, fresh push consent and five-hour split boundary. |
 
@@ -261,3 +291,14 @@ changes.
 
 No final prediction handler, Next.js route, product UI, hosted service/access,
 Production command, frozen migration, calibration, #168 capacity or #229 cleanup.
+
+## Carried requirements for #167
+
+The served feature's evidence mode must be one of the run's dataset modes;
+the handler's descriptor validation refuses otherwise, preventing a retrospective
+feature from being served under a strict-only model or an unsupported mode pin.
+This checks mode compatibility, not membership of the feature in training rows.
+Keep the explicit runId/version/policy pins and the single composite boundary.
+#167 requires its final handler benchmark after #231 merges, not another spike
+unless its design changes. The #138 as-of completion-time finding above remains
+a separate follow-up and does not expand this PR.

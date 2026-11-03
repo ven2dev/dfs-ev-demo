@@ -4,18 +4,18 @@
   "fixture": "synthetic lineage/selection controls; no historical availability claim",
   "verdict": "pass",
   "sourceHashes": {
-    "packages/db/proposals/231_composite_authorization.sql": "a0200a4f07ed639ec8a53ce99a3bbcd6738f26784a9935644ab7b9e4cf96651b",
+    "packages/db/proposals/231_composite_authorization.sql": "8eb4df53c1ecafb8a80dbbde03f8d64a2637553111e34974dbd2940ed5563196",
     "services/pipeline/src/featureStore/modelArtifacts.ts": "910c52ef827d25936232a4d8ae38321cd3a669ce34e9cf431d215aed6fd10fb0",
     "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
     "services/pipeline/tests/feature-store/composite-authorization-fixture.ts": "ce21e6cafa8db3b89fc24b8b3d8d253746cedbe3a8282b293856a522ade4e68f",
     "services/pipeline/tests/feature-store/composite-read-work.ts": "443a086aad0f54b91bbff22d56618ae729f36ab86e41b5619da1d9992e8911ef",
-    "services/pipeline/tests/feature-store/composite-authorization.check.mts": "04f4e84917ce10162dd5cb727bfda304e34c500ecf27f95d54488293d4204bab"
+    "services/pipeline/tests/feature-store/composite-authorization.check.mts": "0f5f2c87d58757d7e6baa6b74553170eb92ca626e37bce9606583546d154d761"
   },
   "probes": [
     {
       "name": "every n=2..16 uses exactly 3 SQL / 2 union checks / 1 descriptor GET and 2 × P rights calls",
       "verdict": "pass",
-      "detailsSha256": "463366b6546d62797d3d1687474cd1f388231216dcdecc369e4421c90f20841e"
+      "detailsSha256": "5b60ba4d6c4e2d7b53a4c472daee612285e80e36ac8e99f2998968202872a27d"
     },
     {
       "name": "unlabeled independent input, target-label existence/value independence and two QBs in one game",
@@ -25,42 +25,42 @@
     {
       "name": "one profile shared by multiple snapshots is checked once; independent and unselected model lineage stays included",
       "verdict": "pass",
-      "detailsSha256": "a05c164339692193cb5000891b080c3f6001bbbde5b1703506937641ea06ae2f"
+      "detailsSha256": "2ed107f101403755ab005e3311e049ddd6a4bc45d171a04f2beac71383cd0649"
     },
     {
       "name": "exact reference refuses omitted/extra/forged lineage and metadata, older revision and alternate policy",
       "verdict": "pass",
-      "detailsSha256": "d8ad7352fcb081f98cc102922b89b44c35a79d403e9c72d682ea9f56908b93f7"
+      "detailsSha256": "7215943ceda7992647ac4b2963bd82dc2a7b86a85bad687072ebc350fc02a225"
     },
     {
       "name": "Q2 retains selected values while refreshing flags; caller/callback mutation cannot narrow private scope",
       "verdict": "pass",
-      "detailsSha256": "9da04e2a19c10f5efcbdd25c6d8ef664653e0613796f0134273ce306ab61cd03"
+      "detailsSha256": "017e320bf5fe2e8c9d64adaeda90120a74f382a310c19fdb8efcb6a4477f0cd9"
     },
     {
       "name": "pruning the selected revision refuses instead of returning an older still-valid feature",
       "verdict": "pass",
-      "detailsSha256": "f678630144ba1fdabc7ede0f49045b5948689295fc01d20c26ab1c1b7b9245aa"
+      "detailsSha256": "e42ff9e2419821dfc51313172678f56f2f69814ab53a2374f9c74eda32020201"
     },
     {
       "name": "independent model/feature revocation before Q1, during GET or calculation refuses with measured per-probe calls",
       "verdict": "pass",
-      "detailsSha256": "1a63381b1859aa6563709e6b0f83d094ea67982e93bfb13a7379d1ff2f545498"
+      "detailsSha256": "8fe00c0150d223a8356c8a7d2461147133ea166665ccdddc0f4f9090de97e7e8"
     },
     {
       "name": "both deletion APIs and independent feature deletion refuse without reselection or delivery",
       "verdict": "pass",
-      "detailsSha256": "4290235cd091bc0fd54ecacd7e072c8bf317bd2166f2d5f55b1bd7e6bbb36bfb"
+      "detailsSha256": "7ea586169db34feb2a381cf086bc2686795f4dc6d7daad96264a9cdb9276876c"
     },
     {
       "name": "empty/pruned/changed lineage and missing feature or source state fail closed at both boundaries",
       "verdict": "pass",
-      "detailsSha256": "ab1b7ca192c176c2bc2c1be36e5be53ab9de530efc0653c685fd429225bdcd11"
+      "detailsSha256": "f4493aae2fea0e20bdd41dfc6b6822185cd93607010d84e50d35f7f789eeded1"
     },
     {
       "name": "database work is identical at matched n=2/16 graphs; observer detects hidden scans/writes",
       "verdict": "pass",
-      "detailsSha256": "ab9b255eab8a652b19cddb403eb09c4a3af4cdc7b6ce2aa6156de292f3ea02a6"
+      "detailsSha256": "c0cafd2c86b330326928fc89acfce85d660ef83616af16f12f09afde86494cba"
     },
     {
       "name": "paused GET and calculation hold no reader transaction/locks and concurrent deletion commits",
@@ -89,7 +89,7 @@
     }
   ],
   "work": {
-    "probes": 78,
+    "probes": 79,
     "successfulAllNProbes": 30,
     "n": [
       2,
@@ -121,8 +121,8 @@
   "schemaVersion": 2,
   "fullRecord": {
     "path": "full-records.tar.gz#behavior/full-composite.json",
-    "sha256": "c468282b39c4ef5bee5e419191b74028d6f846853360b37e01e2643d25203b98",
-    "byteSize": 112279,
+    "sha256": "e54eb6da387e0d8f71888da061ad84d53e5523985991427f88977e95d6c5e766",
+    "byteSize": 113861,
     "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
   }
 }

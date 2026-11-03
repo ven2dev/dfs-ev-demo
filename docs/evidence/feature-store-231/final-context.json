@@ -4,11 +4,11 @@
   "fixture": "synthetic metadata/role controls; real database knowledge clocks",
   "verdict": "pass",
   "sourceHashes": {
-    "packages/db/proposals/231_composite_authorization.sql": "a0200a4f07ed639ec8a53ce99a3bbcd6738f26784a9935644ab7b9e4cf96651b",
+    "packages/db/proposals/231_composite_authorization.sql": "8eb4df53c1ecafb8a80dbbde03f8d64a2637553111e34974dbd2940ed5563196",
     "packages/db/package.json": "869f63102313bb81a5665a99ad0a3bab8942ab3f2a142e225066b8b9635f13d5",
     "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
     "services/pipeline/package.json": "0c57f17b81cc13c57b99aa1ea7f5ed9defe3532bb23f77a377d42e12e8aab26f",
-    "services/pipeline/tests/feature-store/model-context.check.mts": "c21df8fd65243c4d1917121176d4f4f1e9700d413642bbff0177a2b2222cf2e2"
+    "services/pipeline/tests/feature-store/model-context.check.mts": "c9b6729073723c228c70e5790050a991e9c94b6f25f6b777c6a29845863ef967"
   },
   "probes": [
     {
@@ -24,7 +24,7 @@
     {
       "name": "latest valid at knownAsOf, last-valid flags, later-known values never replace selection",
       "verdict": "pass",
-      "detailsSha256": "2d54c91d44e3c281092d4133c6a13d75603212bd7b255f06a991ad529e463387"
+      "detailsSha256": "484cafb5670cdfdad3a036f92bc5f8bc4c295b285edfbd7c7cea123c0660c43b"
     },
     {
       "name": "typed refusals at both TypeScript and direct SQL boundaries",
@@ -34,12 +34,12 @@
     {
       "name": "real LOGIN can only execute the narrow metadata surface; PUBLIC/role-switch bypasses refuse",
       "verdict": "pass",
-      "detailsSha256": "1f580d1378f80c324dd42345ca57b2aeff7bebce29d7a29e31f8c3b273d29b13"
+      "detailsSha256": "ec3ca444a6c87259363a7bcdb7f06fe5d3677ea7cb42c95e56f63ea1ced42b7e"
     },
     {
       "name": "indexed metadata work, zero reader DML/rights/history expansion and no transaction after resolution",
       "verdict": "pass",
-      "detailsSha256": "e170dd7253bc7a9672f58bf950d393b0c374beacd5c8f6f3ffdd0e46c9003a48"
+      "detailsSha256": "5a655e40c5991514355d7770dcb8b166c2b094a96399c2310982c1b3168a3cd3"
     }
   ],
   "work": [
@@ -137,8 +137,8 @@
   "schemaVersion": 2,
   "fullRecord": {
     "path": "full-records.tar.gz#behavior/full-context.json",
-    "sha256": "b0b0be86f8ada235a612e5d17ec3ea0df9dfc96a96766a4c3f2f14769a5f5860",
-    "byteSize": 14972,
+    "sha256": "5d949afc3b874aa9eaf2fbfd66f73138b8c5b3ec02db8f59e6b94462adda9786",
+    "byteSize": 15347,
     "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
   }
 }

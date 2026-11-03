@@ -3,7 +3,7 @@
   "schemaVersion": 3,
   "issue": 231,
   "verdict": "pass",
-  "startedAt": "2026-11-03T01:44:41.089Z",
+  "startedAt": "2026-11-03T06:08:56.503Z",
   "runtime": "v24.18.1",
   "machine": {
     "arch": "arm64",
@@ -11,8 +11,8 @@
     "release": "27.2.0"
   },
   "code": {
-    "gitSha": "af7daefdef5aed1ef4ec8b5871dfbf4fd7566b2c",
-    "contentSha256": "ab703a0c5e3697f77f8c62710ed8c3b3fb6c8b3bc1a11d729f00e81819f362e8"
+    "gitSha": "c22e557b46b79975314837cbb5e9230162b6f8bc",
+    "contentSha256": "acd22bffdb1a5da326bbf0b7293d5db845b58095f8949c03c9d739af7a7c1f2a"
   },
   "codeHashes": {
     "compose.test.yml": "57a19ced9e5892293f353b95456ea4e07544d467d5843634f508773496b4418e",
@@ -22,14 +22,14 @@
     "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
     "packages/db/proposals/165_model_manifests.sql": "1915e84e505be95eba819562e47aa4bc7936d15429d3d431fd9e319380800853",
     "packages/db/proposals/166_artifact_governance.sql": "600402ed383510e91bf75f625af203ec2ec82e20fa521efec601dd47a00f7666",
-    "packages/db/proposals/231_composite_authorization.sql": "a0200a4f07ed639ec8a53ce99a3bbcd6738f26784a9935644ab7b9e4cf96651b",
+    "packages/db/proposals/231_composite_authorization.sql": "8eb4df53c1ecafb8a80dbbde03f8d64a2637553111e34974dbd2940ed5563196",
     "packages/domain/package.json": "34e81b6f0dcc082e7b3a47f0e5a53b2b667e8da166e3f98b4f1c97f358c72144",
     "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
     "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
     "packages/domain/src/projection/evaluation.ts": "0852560f81b50968d83088f3de661c07611a9ba852c896aa8527f807a5046fe6",
     "packages/domain/src/projection/qb-evaluation.ts": "a6c6536b85bf98633b05af1528b212a15cce0d7a0c3227cbce5b0c1a9625e489",
     "services/pipeline/package.json": "0c57f17b81cc13c57b99aa1ea7f5ed9defe3532bb23f77a377d42e12e8aab26f",
-    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "59d0f305da43dd954c98675eaa043c18226c6595a12fdbc01451cad8442ab029",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "896ff21c067fbf508c613959644e62986d88e683e4ab6f36cf540024c1a1cc03",
     "services/pipeline/scripts/feature-store/composite-authorization-benchmark.ts": "348d57c7d1c55ba13d0eebe36b2051e0de89766cdfdd4425dfab65638ac056df",
     "services/pipeline/scripts/feature-store/composite-authorization-measure.ts": "99d9e5e96a4d9d5cdf843be27985549b51ba93ba31ab576f97c96db7b22e6755",
     "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "23163c515afc6e14d86ba663f8ae54807a00e812ac6f07d4f1f3f5aaff6dc1cb",
@@ -65,7 +65,7 @@
   },
   "inputGeneration": {
     "code": {
-      "gitSha": "af7daefdef5aed1ef4ec8b5871dfbf4fd7566b2c",
+      "gitSha": "c22e557b46b79975314837cbb5e9230162b6f8bc",
       "contentSha256": "719bb9105388bcacc8d905b48972cc619fd76cc72c4a3c410e359de010507bec"
     },
     "codeHashes": {
@@ -111,13 +111,13 @@
       "cohort": 1,
       "candidateSamples": 100,
       "referenceSamples": 100,
-      "candidateP95Ms": 27.72904199999175,
-      "referenceP95Ms": 22.532666999992216,
-      "headroom": 0.9075698600000275,
-      "candidateSetupP95Ms": 6.887749999994412,
-      "candidateWarmPathP95Ms": 21.587457999994513,
-      "candidateMeanSetupShare": 0.23416664147869018,
-      "candidateAggregateSetupShare": 0.23360316487723132,
+      "candidateP95Ms": 25.79145800000697,
+      "referenceP95Ms": 24.451249999998254,
+      "headroom": 0.9140284733333102,
+      "candidateSetupP95Ms": 6.452791999996407,
+      "candidateWarmPathP95Ms": 19.9417509999912,
+      "candidateMeanSetupShare": 0.2407305537491569,
+      "candidateAggregateSetupShare": 0.24102774384259618,
       "n": [
         2,
         3,
@@ -142,13 +142,13 @@
       "cohort": 2,
       "candidateSamples": 100,
       "referenceSamples": 100,
-      "candidateP95Ms": 24.579666999998153,
-      "referenceP95Ms": 21.723082999989856,
-      "headroom": 0.9180677766666728,
-      "candidateSetupP95Ms": 6.1230000000068685,
-      "candidateWarmPathP95Ms": 18.5257500000007,
-      "candidateMeanSetupShare": 0.23561785565866905,
-      "candidateAggregateSetupShare": 0.23635386843312722,
+      "candidateP95Ms": 25.685958000001847,
+      "referenceP95Ms": 20.502542000001995,
+      "headroom": 0.9143801399999938,
+      "candidateSetupP95Ms": 6.536707999999635,
+      "candidateWarmPathP95Ms": 19.19533399998909,
+      "candidateMeanSetupShare": 0.2370824468134448,
+      "candidateAggregateSetupShare": 0.23674131971938822,
       "n": [
         2,
         3,
@@ -173,13 +173,13 @@
       "cohort": 3,
       "candidateSamples": 100,
       "referenceSamples": 100,
-      "candidateP95Ms": 24.279458999997587,
-      "referenceP95Ms": 32.370000000009895,
-      "headroom": 0.919068470000008,
-      "candidateSetupP95Ms": 6.286999999996624,
-      "candidateWarmPathP95Ms": 19.145584000012605,
-      "candidateMeanSetupShare": 0.2338444507712004,
-      "candidateAggregateSetupShare": 0.23284497991914557,
+      "candidateP95Ms": 30.21249999999418,
+      "referenceP95Ms": 20.67958300000464,
+      "headroom": 0.899291666666686,
+      "candidateSetupP95Ms": 6.439500000007683,
+      "candidateWarmPathP95Ms": 23.82149999999092,
+      "candidateMeanSetupShare": 0.23855816225620108,
+      "candidateAggregateSetupShare": 0.23690450337220453,
       "n": [
         2,
         3,
@@ -204,11 +204,11 @@
       "cohort": 1,
       "candidateSamples": 100,
       "referenceSamples": 100,
-      "candidateP95Ms": 4.491125000000466,
-      "referenceP95Ms": 7.028541000006953,
-      "headroom": 0.9850295833333318,
+      "candidateP95Ms": 4.50204200000735,
+      "referenceP95Ms": 7.698250000001281,
+      "headroom": 0.9849931933333088,
       "candidateSetupP95Ms": 0,
-      "candidateWarmPathP95Ms": 4.491125000000466,
+      "candidateWarmPathP95Ms": 4.50204200000735,
       "candidateMeanSetupShare": 0,
       "candidateAggregateSetupShare": 0,
       "n": [
@@ -235,11 +235,11 @@
       "cohort": 2,
       "candidateSamples": 100,
       "referenceSamples": 100,
-      "candidateP95Ms": 4.235042000000249,
-      "referenceP95Ms": 6.528417000008631,
-      "headroom": 0.9858831933333325,
+      "candidateP95Ms": 4.125333999996656,
+      "referenceP95Ms": 7.181624999997439,
+      "headroom": 0.9862488866666779,
       "candidateSetupP95Ms": 0,
-      "candidateWarmPathP95Ms": 4.235042000000249,
+      "candidateWarmPathP95Ms": 4.125333999996656,
       "candidateMeanSetupShare": 0,
       "candidateAggregateSetupShare": 0,
       "n": [
@@ -266,11 +266,11 @@
       "cohort": 3,
       "candidateSamples": 100,
       "referenceSamples": 100,
-      "candidateP95Ms": 5.123042000006535,
-      "referenceP95Ms": 6.542333000004874,
-      "headroom": 0.9829231933333116,
+      "candidateP95Ms": 5.248915999996825,
+      "referenceP95Ms": 7.123124999998254,
+      "headroom": 0.9825036133333439,
       "candidateSetupP95Ms": 0,
-      "candidateWarmPathP95Ms": 5.123042000006535,
+      "candidateWarmPathP95Ms": 5.248915999996825,
       "candidateMeanSetupShare": 0,
       "candidateAggregateSetupShare": 0,
       "n": [
@@ -335,8 +335,8 @@
         "name": "games.csv.gz",
         "expectedWireSha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
         "status": "ingested",
-        "jobId": "4efbf89a-c415-4acf-bc31-094372b25f82",
-        "snapshotId": "e38a2fe7-19c1-4027-b157-e48eab3bf87f",
+        "jobId": "9fb962ac-a7b1-41e7-a606-704e04e1da77",
+        "snapshotId": "2ef31170-33a7-434b-b02b-d3b410a608de",
         "profileId": "nflverse.schedules.all.v1",
         "objectKey": "raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
         "wireSha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
@@ -356,12 +356,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 239.2600829999999,
+        "elapsedMs": 279.79258300000015,
         "stagesMs": {
-          "download": 0.12445800000000418,
-          "validationAndNormalization": 145.64200000000005,
-          "objectWrite": 8.918708999999808,
-          "databasePublication": 84.58637399999998
+          "download": 0.285665999999992,
+          "validationAndNormalization": 160.91866700000014,
+          "objectWrite": 12.251083000000108,
+          "databasePublication": 106.35195899999985
         },
         "work": {
           "downloadRequests": 0,
@@ -374,8 +374,8 @@
         "name": "pbp_participation_2021.csv",
         "expectedWireSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
         "status": "ingested",
-        "jobId": "f676df06-13d6-4f75-9aaf-a02a98edcf36",
-        "snapshotId": "4395f598-cf01-4368-b8fe-5f6eae93331b",
+        "jobId": "a1518328-7a3e-4e68-9dfd-f445113aab56",
+        "snapshotId": "8216aa78-9253-4cc4-9a81-ed82ee7a79e6",
         "profileId": "nflverse.pbp_participation.2021.v1",
         "objectKey": "raw/b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
         "wireSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
@@ -395,12 +395,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 1229.833709,
+        "elapsedMs": 1427.639833,
         "stagesMs": {
-          "download": 0.08187499999985448,
-          "validationAndNormalization": 903.1115420000001,
-          "objectWrite": 37.39433299999973,
-          "databasePublication": 289.248834
+          "download": 0.0827919999999267,
+          "validationAndNormalization": 1041.0391249999998,
+          "objectWrite": 56.3802910000004,
+          "databasePublication": 330.1470839999997
         },
         "work": {
           "downloadRequests": 0,
@@ -413,8 +413,8 @@
         "name": "pbp_participation_2022.csv",
         "expectedWireSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
         "status": "ingested",
-        "jobId": "cb31739d-f4d1-48a0-b19e-41a3bc9250ab",
-        "snapshotId": "c29bf68d-3cd1-4cf5-8ce8-fcad3878671a",
+        "jobId": "ee4b3e7c-b586-4a55-9b2a-a8aa68c88a37",
+        "snapshotId": "545e702c-2d0a-4a77-92a3-b97f369970ff",
         "profileId": "nflverse.pbp_participation.2022.v1",
         "objectKey": "raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
         "wireSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
@@ -434,12 +434,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 1236.9547499999999,
+        "elapsedMs": 1371.3115000000003,
         "stagesMs": {
-          "download": 0.07404099999985192,
-          "validationAndNormalization": 888.6146250000002,
-          "objectWrite": 35.6527500000002,
-          "databasePublication": 312.6197919999995
+          "download": 0.09270900000001348,
+          "validationAndNormalization": 912.5464579999998,
+          "objectWrite": 47.72974999999997,
+          "databasePublication": 410.94712500000014
         },
         "work": {
           "downloadRequests": 0,
@@ -452,8 +452,8 @@
         "name": "pbp_participation_2023.csv",
         "expectedWireSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
         "status": "ingested",
-        "jobId": "56c8072b-cac7-43b5-8c7a-1bd03b5b6508",
-        "snapshotId": "baa85d21-40e5-4121-bf3c-34c8b5c53305",
+        "jobId": "d673f2c7-b60d-4254-9484-2f1592b6e79c",
+        "snapshotId": "f9056ecc-d103-4052-ac5e-73a8cf88c4d9",
         "profileId": "nflverse.pbp_participation.2023.v1",
         "objectKey": "raw/ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
         "wireSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
@@ -473,12 +473,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 2014.7330420000003,
+        "elapsedMs": 2372.1520419999997,
         "stagesMs": {
-          "download": 0.08487500000001091,
-          "validationAndNormalization": 1537.478333,
-          "objectWrite": 86.51416699999936,
-          "databasePublication": 390.66050000000087
+          "download": 0.07929200000035053,
+          "validationAndNormalization": 1567.2770409999994,
+          "objectWrite": 102.9824579999995,
+          "databasePublication": 701.8193760000013
         },
         "work": {
           "downloadRequests": 0,
@@ -491,8 +491,8 @@
         "name": "pbp_participation_2024.csv",
         "expectedWireSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
         "status": "ingested",
-        "jobId": "7100a58f-088e-48c1-b476-12231c02aea5",
-        "snapshotId": "51c79fe1-1c64-49b9-8e95-4dfaa3aa2908",
+        "jobId": "7627c99d-9fe4-4535-84ce-b6a2352d9d64",
+        "snapshotId": "695fbb14-49fe-423f-b00c-306e8b2aea40",
         "profileId": "nflverse.pbp_participation.2024.v1",
         "objectKey": "raw/b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
         "wireSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
@@ -512,12 +512,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 1902.635875,
+        "elapsedMs": 2098.4217499999995,
         "stagesMs": {
-          "download": 0.12012500000037107,
-          "validationAndNormalization": 1469.4761669999998,
-          "objectWrite": 69.7275410000002,
-          "databasePublication": 363.314292
+          "download": 0.11758300000019517,
+          "validationAndNormalization": 1543.2900419999996,
+          "objectWrite": 110.25762500000019,
+          "databasePublication": 444.7626249999994
         },
         "work": {
           "downloadRequests": 0,
@@ -530,8 +530,8 @@
         "name": "pbp_participation_2025.csv",
         "expectedWireSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
         "status": "ingested",
-        "jobId": "fffac9ec-6ed3-43ed-a504-b5391aa1b3c6",
-        "snapshotId": "c40d8ac3-ead3-4b3f-ae04-968c8aa3084b",
+        "jobId": "54a08d4c-2dc5-4ba6-82ba-c5a235e9c34c",
+        "snapshotId": "e2892c4e-31c2-4e2c-bc5c-a0e5b0eea3b7",
         "profileId": "nflverse.pbp_participation.2025.v1",
         "objectKey": "raw/59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
         "wireSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
@@ -551,12 +551,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 1871.5753330000007,
+        "elapsedMs": 2113.7848749999994,
         "stagesMs": {
-          "download": 0.08899999999994179,
-          "validationAndNormalization": 1464.8902500000004,
-          "objectWrite": 57.10699999999997,
-          "databasePublication": 349.49383300000045
+          "download": 0.12229200000001583,
+          "validationAndNormalization": 1628.3950829999994,
+          "objectWrite": 93.63512499999888,
+          "databasePublication": 391.6387500000019
         },
         "work": {
           "downloadRequests": 0,
@@ -569,8 +569,8 @@
         "name": "roster_weekly_2021.csv",
         "expectedWireSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
         "status": "ingested",
-        "jobId": "6f3ed521-1604-48a1-8298-facf09903f2d",
-        "snapshotId": "f1848b94-da0d-4fbe-a6bf-544dc357386d",
+        "jobId": "a3c63655-ea49-4919-8491-7504a9ec6f53",
+        "snapshotId": "ab78b72e-5d35-44f2-8bb6-e0977bf03189",
         "profileId": "nflverse.weekly_rosters.2021.v1",
         "objectKey": "raw/88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
         "wireSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
@@ -590,12 +590,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 680.655041,
+        "elapsedMs": 733.8226250000007,
         "stagesMs": {
-          "download": 0.0562499999996362,
-          "validationAndNormalization": 587.4122499999994,
-          "objectWrite": 30.06800000000112,
-          "databasePublication": 63.12083299999904
+          "download": 0.08487500000046566,
+          "validationAndNormalization": 636.7255420000001,
+          "objectWrite": 32.87520899999981,
+          "databasePublication": 64.14074900000014
         },
         "work": {
           "downloadRequests": 0,
@@ -608,8 +608,8 @@
         "name": "roster_weekly_2022.csv",
         "expectedWireSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
         "status": "ingested",
-        "jobId": "ca3e012c-16e6-41ed-b58b-c30a6ea273f7",
-        "snapshotId": "5de3e473-7bb0-43ba-8502-b3d443c83168",
+        "jobId": "886a399c-1a54-4a0d-bbc0-f7dce429301a",
+        "snapshotId": "fa03d0ea-863a-442d-913b-0e71cedb259a",
         "profileId": "nflverse.weekly_rosters.2022.v1",
         "objectKey": "raw/bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
         "wireSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
@@ -629,12 +629,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 691.2888750000002,
+        "elapsedMs": 702.4102079999993,
         "stagesMs": {
-          "download": 0.04745800000091549,
-          "validationAndNormalization": 592.0704590000005,
-          "objectWrite": 28.959207999998398,
-          "databasePublication": 70.21450000000004
+          "download": 0.05120799999895098,
+          "validationAndNormalization": 595.0207920000012,
+          "objectWrite": 36.060208000000785,
+          "databasePublication": 71.28024999999798
         },
         "work": {
           "downloadRequests": 0,
@@ -647,8 +647,8 @@
         "name": "roster_weekly_2023.csv",
         "expectedWireSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
         "status": "ingested",
-        "jobId": "ab2726c5-99c5-426b-91ae-5ffb998db0d0",
-        "snapshotId": "ac1b62b4-a42c-42a1-be4b-cb8144021fef",
+        "jobId": "61f38302-941a-47ef-b4b6-32f503ee21f8",
+        "snapshotId": "25f013e5-9ef8-416d-b9d3-4006e1d1e8b0",
         "profileId": "nflverse.weekly_rosters.2023.v1",
         "objectKey": "raw/1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
         "wireSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
@@ -668,12 +668,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 655.9399160000012,
+        "elapsedMs": 747.9514159999999,
         "stagesMs": {
-          "download": 0.05795800000123563,
-          "validationAndNormalization": 553.9848749999983,
-          "objectWrite": 29.45625000000109,
-          "databasePublication": 72.44325000000026
+          "download": 0.04800000000068394,
+          "validationAndNormalization": 645.4091250000001,
+          "objectWrite": 31.58050000000003,
+          "databasePublication": 70.91625000000022
         },
         "work": {
           "downloadRequests": 0,
@@ -686,8 +686,8 @@
         "name": "roster_weekly_2024.csv.gz",
         "expectedWireSha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
         "status": "ingested",
-        "jobId": "e3bcb05f-b22b-4c16-ae12-a3ce72e5edca",
-        "snapshotId": "1fa2b3a6-fc1a-4691-8311-7d4a917144d1",
+        "jobId": "51b4cd6e-59b7-4900-9bb0-9c770a479426",
+        "snapshotId": "07044fef-4b45-46f2-84e5-1e6db671db04",
         "profileId": "nflverse.weekly_rosters.2024.v1",
         "objectKey": "raw/330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
         "wireSha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
@@ -707,12 +707,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 651.3685420000002,
+        "elapsedMs": 649.0470000000005,
         "stagesMs": {
-          "download": 0.034958000000187894,
-          "validationAndNormalization": 592.3112500000007,
-          "objectWrite": 8.29333300000144,
-          "databasePublication": 50.731416999997236
+          "download": 0.033999999999650754,
+          "validationAndNormalization": 570.1208330000009,
+          "objectWrite": 9.228791999999885,
+          "databasePublication": 69.66591700000026
         },
         "work": {
           "downloadRequests": 0,
@@ -725,8 +725,8 @@
         "name": "roster_weekly_2025.csv.gz",
         "expectedWireSha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
         "status": "ingested",
-        "jobId": "ea0c2d49-b7f0-43e7-8795-19da76fcff18",
-        "snapshotId": "43929676-cd84-48c6-82f1-2a7407fe7860",
+        "jobId": "c9265e18-2553-4c93-b0bd-9f96dbec4ec0",
+        "snapshotId": "bac0964d-1a73-42dd-9ffe-ec51e90973a7",
         "profileId": "nflverse.weekly_rosters.2025.v1",
         "objectKey": "raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
         "wireSha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
@@ -746,12 +746,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 656.350375,
+        "elapsedMs": 673.2647919999999,
         "stagesMs": {
-          "download": 0.026833000001715845,
-          "validationAndNormalization": 580.9564999999984,
-          "objectWrite": 9.049250000000029,
-          "databasePublication": 66.31966700000157
+          "download": 0.029875000000174623,
+          "validationAndNormalization": 590.5302080000001,
+          "objectWrite": 7.451291999999739,
+          "databasePublication": 75.2567080000008
         },
         "work": {
           "downloadRequests": 0,
@@ -764,8 +764,8 @@
         "name": "stats_player_week_2021.csv.gz",
         "expectedWireSha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
         "status": "ingested",
-        "jobId": "1d530782-d817-4463-b057-9e16a6d045a2",
-        "snapshotId": "67c0727b-5336-4ee8-ab5a-c2954edd7824",
+        "jobId": "8b97e0ce-66cb-4e6c-aa56-3d5efe6449fc",
+        "snapshotId": "6a6ace81-47ce-410b-9e30-7af3704ef8e8",
         "profileId": "nflverse.stats_player.2021.v1",
         "objectKey": "raw/1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
         "wireSha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
@@ -785,12 +785,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 599.7635410000003,
+        "elapsedMs": 613.7141670000001,
         "stagesMs": {
-          "download": 0.032332999999198364,
-          "validationAndNormalization": 558.0650000000005,
-          "objectWrite": 8.526917000001049,
-          "databasePublication": 33.139790999999605
+          "download": 0.030209000000468222,
+          "validationAndNormalization": 569.1275409999998,
+          "objectWrite": 9.739375000001019,
+          "databasePublication": 34.81783399999949
         },
         "work": {
           "downloadRequests": 0,
@@ -803,8 +803,8 @@
         "name": "stats_player_week_2022.csv.gz",
         "expectedWireSha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
         "status": "ingested",
-        "jobId": "23076dfa-e60f-473b-af2a-2474e52f9949",
-        "snapshotId": "511c04ca-637b-44eb-a1d8-1ac98ebba4a3",
+        "jobId": "a3805dbf-7cf6-4a7e-be3a-312a2c52b684",
+        "snapshotId": "4c65fecc-9beb-41a0-a30d-770601bb3f4f",
         "profileId": "nflverse.stats_player.2022.v1",
         "objectKey": "raw/0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
         "wireSha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
@@ -824,12 +824,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 590.5056249999998,
+        "elapsedMs": 590.9850829999996,
         "stagesMs": {
-          "download": 0.04195899999831454,
-          "validationAndNormalization": 558.6697500000009,
-          "objectWrite": 8.10425000000032,
-          "databasePublication": 23.69024999999965
+          "download": 0.027625000000625732,
+          "validationAndNormalization": 546.3938749999998,
+          "objectWrite": 9.602082999999766,
+          "databasePublication": 34.963416999999026
         },
         "work": {
           "downloadRequests": 0,
@@ -842,8 +842,8 @@
         "name": "stats_player_week_2023.csv.gz",
         "expectedWireSha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
         "status": "ingested",
-        "jobId": "b54ef3f8-ed70-40e9-ad4f-9ae1d060d64a",
-        "snapshotId": "41e2add0-a73f-4bda-bc97-eef3bbbd61e3",
+        "jobId": "65e88e74-9f40-4e71-8a1e-5ba20d7a2fd9",
+        "snapshotId": "3fca64dc-ba0d-48a0-8089-ed2601f726bb",
         "profileId": "nflverse.stats_player.2023.v1",
         "objectKey": "raw/6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
         "wireSha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
@@ -863,12 +863,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 577.439042,
+        "elapsedMs": 609.0509580000016,
         "stagesMs": {
-          "download": 0.026707999999416643,
-          "validationAndNormalization": 534.8099590000002,
-          "objectWrite": 6.80779099999927,
-          "databasePublication": 35.79541700000118
+          "download": 0.04145800000151212,
+          "validationAndNormalization": 557.2283749999988,
+          "objectWrite": 7.490041000000929,
+          "databasePublication": 44.29162599999836
         },
         "work": {
           "downloadRequests": 0,
@@ -881,8 +881,8 @@
         "name": "stats_player_week_2024.csv.gz",
         "expectedWireSha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
         "status": "ingested",
-        "jobId": "e276f220-4d4a-43df-aa1b-2dac3e979631",
-        "snapshotId": "72edd622-6cdd-4348-a669-3f62ac29494c",
+        "jobId": "71461b4a-09ce-4929-99bb-80928b76df6b",
+        "snapshotId": "b8ffd9fa-836d-4074-b57f-ec5770c1d4d7",
         "profileId": "nflverse.stats_player.2024.v1",
         "objectKey": "raw/61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
         "wireSha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
@@ -902,12 +902,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 610.2676249999986,
+        "elapsedMs": 597.7754999999997,
         "stagesMs": {
-          "download": 0.027082999999038293,
-          "validationAndNormalization": 562.6475420000006,
-          "objectWrite": 9.032999999999447,
-          "databasePublication": 38.560708000000886
+          "download": 0.025124999996478437,
+          "validationAndNormalization": 550.3285420000029,
+          "objectWrite": 7.540915999998106,
+          "databasePublication": 39.88166700000147
         },
         "work": {
           "downloadRequests": 0,
@@ -920,8 +920,8 @@
         "name": "stats_player_week_2025.csv.gz",
         "expectedWireSha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
         "status": "ingested",
-        "jobId": "51bb028c-30bf-45d5-aaff-c5f466e628a0",
-        "snapshotId": "e3466bd0-e981-44da-8796-f777a62b7ca7",
+        "jobId": "bcd64912-457a-4ea0-8ffd-872e61c69c8b",
+        "snapshotId": "95ac4f68-6b07-473c-a989-5df2d01ac216",
         "profileId": "nflverse.stats_player.2025.v1",
         "objectKey": "raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
         "wireSha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
@@ -941,12 +941,12 @@
           "refusedRows": 0
         },
         "newObject": true,
-        "elapsedMs": 592.1630000000005,
+        "elapsedMs": 614.46875,
         "stagesMs": {
-          "download": 0.02974999999969441,
-          "validationAndNormalization": 539.8328750000001,
-          "objectWrite": 9.453041999999186,
-          "databasePublication": 42.84783300000163
+          "download": 0.027291000002151122,
+          "validationAndNormalization": 561.3992499999986,
+          "objectWrite": 9.51783400000204,
+          "databasePublication": 43.52541599999677
         },
         "work": {
           "downloadRequests": 0,
@@ -969,209 +969,209 @@
       }
     ],
     "inputPinsArtifact": {
-      "objectKey": "audits/66268d9829eac9e5834e73bfe28f08342ab1a00aaed86ea19811846538dc195a",
-      "sha256": "66268d9829eac9e5834e73bfe28f08342ab1a00aaed86ea19811846538dc195a",
-      "byteSize": 36870
+      "objectKey": "audits/c647b4426b418f5325cc7df4079139ae85ce062875cf1757b2ed233044d66f38",
+      "sha256": "c647b4426b418f5325cc7df4079139ae85ce062875cf1757b2ed233044d66f38",
+      "byteSize": 36911
     }
   },
   "requests": {
     "cases": [
       {
-        "featureId": "e7e4d313-967e-4e18-bcda-10c2f739b6d1",
+        "featureId": "288bca8e-92be-4c6c-b613-bd9c5230e15f",
         "n": 2,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_03_TB_LA",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "7187d303-9ff8-4eca-b615-f88ada5ddc0b",
+        "featureId": "3762b133-0531-40ad-b439-6c33a46b7356",
         "n": 3,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_04_TB_NE",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "39bff80e-b29b-48f2-9748-93658b96c87a",
+        "featureId": "b2325a62-4221-4b47-9211-3666ce95c025",
         "n": 4,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_05_MIA_TB",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "74d63a25-dd60-48e2-8e92-d07cfa552bc8",
+        "featureId": "6e963c74-2552-488d-bbb8-0bdd0b4d847a",
         "n": 5,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_06_TB_PHI",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "5a9ee363-ec8e-441b-b3ae-473c53bf19bb",
+        "featureId": "45d47d11-34a4-4ae6-83bd-70cf1d25e79a",
         "n": 6,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_07_CHI_TB",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "648f7c44-cb07-4373-89e1-94ad2bfdb6c8",
+        "featureId": "cdc477b5-a120-4c6f-bf74-f1f7900d10e4",
         "n": 7,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_08_TB_NO",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "e3c01e8a-4e96-4628-8ca6-bb2db204efbc",
+        "featureId": "0a5a6272-4805-46db-8c34-01bbe1563121",
         "n": 8,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_10_TB_WAS",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "a6476652-36bf-43dc-a181-73a1f9ac2296",
+        "featureId": "59432e24-7cf4-487f-8821-2f9cc5b4c11a",
         "n": 9,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_11_NYG_TB",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "482baef8-5235-4591-a929-5ecf1548d2e8",
+        "featureId": "4fb8cf69-856e-42a9-827e-a3e4afdf2c02",
         "n": 10,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_12_TB_IND",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "24a2af2d-ee70-468b-b676-a618c7a09235",
+        "featureId": "dbf9d117-b2ff-437e-acfb-475142f54a5b",
         "n": 11,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_13_TB_ATL",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "d6ac5064-c57f-4903-849c-151dc777fad0",
+        "featureId": "11962d95-d153-4754-85eb-1e7aa55208d3",
         "n": 12,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_14_BUF_TB",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "0d942518-b702-40e4-b2a5-9ed1df3c871a",
+        "featureId": "c6e5305d-0fc8-47b8-837e-3c61c989f3c3",
         "n": 13,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_15_NO_TB",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "c0420d9f-8b8b-4aa1-ae3d-0b9d4132a347",
+        "featureId": "87e70c89-16df-4bcd-ad5c-84f7070c7c1c",
         "n": 14,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_16_TB_CAR",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "0d5fb8aa-357b-461d-997f-bdeb7e1fb1ee",
+        "featureId": "acfea318-1a23-43be-8f24-5465e4098d24",
         "n": 15,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_17_TB_NYJ",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       },
       {
-        "featureId": "d8bd7885-ee55-4c5b-9b20-1a58e323baf5",
+        "featureId": "26fc7f81-47fb-41fc-ab8d-797321e86712",
         "n": 16,
         "request": {
           "playerId": "00-0019596",
           "gameId": "2021_18_CAR_TB",
-          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "knownAsOf": "2026-11-03 06:10:27.652479+00",
           "featureVersion": "qb-passing-yards-feature-v1",
           "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
           "evidenceMode": "retrospective-reconstruction-v1"
         }
       }
     ],
-    "sha256": "462804227d38dffd17b964fe66f5155093377f664003c420fef1d1f05e45e306",
+    "sha256": "d3336743029bb6a830794df8d7ffd895904d131e9cd3fb96692bc2fdd8356605",
     "selection": "Feature metadata only; one real request at every n=2..16; no label/membership gate."
   },
-  "baselineFirstP95Ms": 11.62304099999892,
+  "baselineFirstP95Ms": 8.153332999994745,
   "modelOnly": {
     "sql": 2,
     "descriptorGets": 1,
     "verdict": "pass"
   },
   "sourceUnchanged": true,
-  "finishedAt": "2026-11-03T01:46:45.085Z",
+  "finishedAt": "2026-11-03T06:10:47.794Z",
   "fullRecord": {
     "path": "full-records.tar.gz#final/full-samples.json",
-    "sha256": "380982fb0426e5ddb511c883852701682c76721ec8895857747b632bd4436ccc",
-    "byteSize": 1483533,
+    "sha256": "33420718f3ce5a8ba9f5383a8927b5fba070abec50e5a58eddb73b817396808e",
+    "byteSize": 1483111,
     "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
   },
   "verification": {
@@ -1181,8 +1181,8 @@
     "rightsBudget": "2 * independently derived union profile count",
     "workBudgetsVerified": true,
     "allCohortsAtLeast30PercentHeadroom": true,
-    "worstCandidateP95Ms": 27.72904199999175,
-    "minimumHeadroom": 0.9075698600000275
+    "worstCandidateP95Ms": 30.21249999999418,
+    "minimumHeadroom": 0.899291666666686
   },
   "workCounts": [
     {
@@ -1221,7 +1221,7 @@
   "serverWork": [
     {
       "n": 2,
-      "featureId": "e7e4d313-967e-4e18-bcda-10c2f739b6d1",
+      "featureId": "288bca8e-92be-4c6c-b613-bd9c5230e15f",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -1306,7 +1306,7 @@
     },
     {
       "n": 3,
-      "featureId": "7187d303-9ff8-4eca-b615-f88ada5ddc0b",
+      "featureId": "3762b133-0531-40ad-b439-6c33a46b7356",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -1353,7 +1353,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 37,
           "idx_tup_fetch": 68,
           "inserted": 0,
@@ -1380,7 +1380,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 37,
           "idx_tup_fetch": 68,
           "inserted": 0,
@@ -1391,7 +1391,7 @@
     },
     {
       "n": 4,
-      "featureId": "39bff80e-b29b-48f2-9748-93658b96c87a",
+      "featureId": "b2325a62-4221-4b47-9211-3666ce95c025",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -1399,7 +1399,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 37,
           "idx_tup_fetch": 69,
           "inserted": 0,
@@ -1426,7 +1426,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 37,
           "idx_tup_fetch": 69,
           "inserted": 0,
@@ -1438,7 +1438,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 34,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1465,7 +1465,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 34,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1476,7 +1476,7 @@
     },
     {
       "n": 5,
-      "featureId": "74d63a25-dd60-48e2-8e92-d07cfa552bc8",
+      "featureId": "6e963c74-2552-488d-bbb8-0bdd0b4d847a",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -1484,7 +1484,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1511,7 +1511,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1523,7 +1523,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1550,7 +1550,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1561,7 +1561,7 @@
     },
     {
       "n": 6,
-      "featureId": "5a9ee363-ec8e-441b-b3ae-473c53bf19bb",
+      "featureId": "45d47d11-34a4-4ae6-83bd-70cf1d25e79a",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -1569,7 +1569,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1596,7 +1596,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1608,7 +1608,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1635,7 +1635,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1646,7 +1646,7 @@
     },
     {
       "n": 7,
-      "featureId": "648f7c44-cb07-4373-89e1-94ad2bfdb6c8",
+      "featureId": "cdc477b5-a120-4c6f-bf74-f1f7900d10e4",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -1654,7 +1654,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1681,7 +1681,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1693,7 +1693,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1720,7 +1720,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1731,7 +1731,7 @@
     },
     {
       "n": 8,
-      "featureId": "e3c01e8a-4e96-4628-8ca6-bb2db204efbc",
+      "featureId": "0a5a6272-4805-46db-8c34-01bbe1563121",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -1739,7 +1739,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1766,7 +1766,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1778,7 +1778,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1805,7 +1805,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1816,7 +1816,7 @@
     },
     {
       "n": 9,
-      "featureId": "a6476652-36bf-43dc-a181-73a1f9ac2296",
+      "featureId": "59432e24-7cf4-487f-8821-2f9cc5b4c11a",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -1824,7 +1824,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1851,7 +1851,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1863,7 +1863,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1890,7 +1890,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1901,7 +1901,7 @@
     },
     {
       "n": 10,
-      "featureId": "482baef8-5235-4591-a929-5ecf1548d2e8",
+      "featureId": "4fb8cf69-856e-42a9-827e-a3e4afdf2c02",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -1909,7 +1909,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1936,7 +1936,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -1948,7 +1948,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1975,7 +1975,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -1986,7 +1986,7 @@
     },
     {
       "n": 11,
-      "featureId": "24a2af2d-ee70-468b-b676-a618c7a09235",
+      "featureId": "dbf9d117-b2ff-437e-acfb-475142f54a5b",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -1994,7 +1994,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2021,7 +2021,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2033,7 +2033,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -2060,7 +2060,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -2071,7 +2071,7 @@
     },
     {
       "n": 12,
-      "featureId": "d6ac5064-c57f-4903-849c-151dc777fad0",
+      "featureId": "11962d95-d153-4754-85eb-1e7aa55208d3",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -2079,7 +2079,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2106,7 +2106,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2118,7 +2118,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -2145,7 +2145,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -2156,7 +2156,7 @@
     },
     {
       "n": 13,
-      "featureId": "0d942518-b702-40e4-b2a5-9ed1df3c871a",
+      "featureId": "c6e5305d-0fc8-47b8-837e-3c61c989f3c3",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -2164,7 +2164,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2191,7 +2191,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2203,7 +2203,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -2230,7 +2230,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -2241,7 +2241,7 @@
     },
     {
       "n": 14,
-      "featureId": "c0420d9f-8b8b-4aa1-ae3d-0b9d4132a347",
+      "featureId": "87e70c89-16df-4bcd-ad5c-84f7070c7c1c",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -2249,7 +2249,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2276,7 +2276,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2288,7 +2288,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -2315,7 +2315,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -2326,7 +2326,7 @@
     },
     {
       "n": 15,
-      "featureId": "0d5fb8aa-357b-461d-997f-bdeb7e1fb1ee",
+      "featureId": "acfea318-1a23-43be-8f24-5465e4098d24",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -2334,7 +2334,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2361,7 +2361,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2373,7 +2373,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -2400,7 +2400,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -2411,7 +2411,7 @@
     },
     {
       "n": 16,
-      "featureId": "d8bd7885-ee55-4c5b-9b20-1a58e323baf5",
+      "featureId": "26fc7f81-47fb-41fc-ab8d-797321e86712",
       "rightsCalls": 32,
       "verdict": "pass",
       "unionProfiles": 16,
@@ -2419,7 +2419,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2446,7 +2446,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 33,
           "idx_tup_fetch": 65,
           "inserted": 0,
@@ -2458,7 +2458,7 @@
         "tablesMeasured": 22,
         "allTables": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,
@@ -2485,7 +2485,7 @@
         },
         "nonQueue": {
           "seq_scan": 10,
-          "seq_tup_read": 212,
+          "seq_tup_read": 155,
           "idx_scan": 30,
           "idx_tup_fetch": 61,
           "inserted": 0,

@@ -44,7 +44,7 @@ test("#231 metadata-only point-in-time context and narrow capability", { timeout
       [profile, sourceJob, digest])).rows[0].snapshot_id as string;
       await finishJob(writer, sourceJob, { counts: {} });
       type Seed = { player?: string; game?: string; n?: number; unavailable?: boolean; failed?: boolean;
-        mode?: string; version?: string; policy?: string; supersedes?: string; checkpoint?: string; emptyLineage?: boolean };
+        mode?: string; version?: string; policy?: string; supersedes?: string; checkpoint?: string; emptyLineage?: boolean; running?: boolean };
       const seed = async (options: Seed = {}) => {
         const jobId = await job(), n = options.n ?? 3, usable = !options.unavailable && n >= 2;
         const history = Array.from({ length: n }, (_, i) => ({ gameId: `prior-${i}`, kickoff: "2024-01-01T00:00:00Z", yards: 100 + i }));
@@ -58,7 +58,7 @@ test("#231 metadata-only point-in-time context and narrow capability", { timeout
           JSON.stringify(history), options.supersedes ?? null])).rows[0] as {
             feature_id: string; job_id: string; player_id: string; game_id: string; computed_at: string; checkpoint: string };
         if (!options.emptyLineage) await writer.query("INSERT INTO fs138.feature_inputs VALUES($1,$2)", [f.feature_id, snapshot]);
-        await finishJob(writer, jobId, { counts: {}, ...(options.failed ? { errorCode: "synthetic-failure" } : {}) });
+        if (!options.running) await finishJob(writer, jobId, { counts: {}, ...(options.failed ? { errorCode: "synthetic-failure" } : {}) });
         const request: ModelContextRequest = { playerId: f.player_id, gameId: f.game_id, knownAsOf: await clock(),
           featureVersion: FEATURE_VERSION, historyPolicy: HISTORY_POLICY, evidenceMode: (options.mode ?? mode) as typeof mode };
         return { ...f, request };
@@ -115,14 +115,35 @@ test("#231 metadata-only point-in-time context and narrow capability", { timeout
           assert.deepEqual(last.selection.reasons, ["newer-unavailable"]); assert.equal(last.freshness.stale, true);
           assert.equal(last.freshness.headId, c.feature_id);
           const boundary = (await admin.query(`SELECT ($1::timestamptz-interval '1 microsecond')::text AS before,
-            $1::timestamptz::text AS exact`, [b.computed_at])).rows[0];
+            $1::timestamptz::text AS exact`, [(await admin.query("SELECT finished_at::text FROM fs138.job_runs WHERE job_id=$1", [b.job_id])).rows[0].finished_at])).rows[0];
           assert.equal((await resolveModelContext(scoped, { ...b.request, knownAsOf: boundary.before })).feature.featureId, a.feature_id);
           assert.equal((await resolveModelContext(scoped, { ...b.request, knownAsOf: boundary.exact })).feature.featureId, b.feature_id);
           // Checkpoint order precedes computed_at; a later computation for an
           // older checkpoint cannot displace the selected revision.
           await seed({ player: a.player_id, game: a.game_id, checkpoint: a.checkpoint });
           assert.equal((await resolveModelContext(scoped, { ...b.request, knownAsOf: await clock() })).feature.featureId, b.feature_id);
-          return { selected: b.feature_id, unavailable: c.feature_id, boundary, lastValid: true, laterValueWithheld: true };
+          // Insertion is not availability. Pin knowledge while the newer job
+          // is running, then prove completing it cannot rewrite that answer.
+          const previous = await seed();
+          const pending = await seed({ player: previous.player_id, game: previous.game_id,
+            n: 8, supersedes: previous.feature_id, running: true });
+          const beforeFinish = await resolveModelContext(scoped, pending.request);
+          assert.equal(beforeFinish.feature.featureId, previous.feature_id);
+          assert.equal(beforeFinish.freshness.headId, previous.feature_id);
+          await finishJob(writer, pending.job_id, { counts: {} });
+          const afterFinish = await resolveModelContext(scoped, pending.request);
+          assert.deepEqual(afterFinish.feature, beforeFinish.feature);
+          assert.deepEqual(afterFinish.selection, beforeFinish.selection);
+          assert.equal(afterFinish.freshness.headId, pending.feature_id);
+          const clocks = (await admin.query(`SELECT f.computed_at::text,j.finished_at::text,
+            f.computed_at < $2::timestamptz AND $2::timestamptz < j.finished_at AS between
+            FROM fs138.feature_values f JOIN fs138.job_runs j USING(job_id) WHERE f.feature_id=$1`,
+          [pending.feature_id, pending.request.knownAsOf])).rows[0];
+          assert.equal(clocks.between, true);
+          assert.equal((await resolveModelContext(scoped, { ...pending.request, knownAsOf: await clock() })).feature.featureId, pending.feature_id);
+          return { selected: b.feature_id, unavailable: c.feature_id, boundary, lastValid: true, laterValueWithheld: true,
+            usableKnowledgeTime: { ...clocks, knownAsOf: pending.request.knownAsOf, sameSelectionBeforeAndAfterFinish: true,
+              visibleHeadUnchanged: true, currentHeadRefreshed: true } };
         });
         await check("typed refusals at both TypeScript and direct SQL boundaries", async () => {
           const f = await seed(); let noSql = 0;

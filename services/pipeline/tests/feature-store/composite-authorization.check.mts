@@ -125,6 +125,10 @@ test("#231 composite model/served-feature authorization and per-probe work budge
             { ...context, snapshotIds: [] }, { ...context, snapshotIds: [randomUUID()] }, { ...context, snapshotIds: [...context.snapshotIds, randomUUID()] },
             { ...context, feature: { ...context.feature, playerId: "forged" } }, { ...context, feature: { ...context.feature, computedAt: "2020-01-01" } },
           ]) await assert.rejects(deliver(world, { context: changed, rightsBatches: 0, statements: 1, gets: 0 }), refusal("model-context-reference-refused"));
+          rights.reset();
+          await assert.rejects(client.query("SELECT fs138.authorize_model_context_read($1,ARRAY['descriptor'],false,$2)",
+            [world.runId, { ...context, feature: { ...context.feature, playerId: "forged-at-Q2" } }]), { code: "P2317" });
+          assert.equal(rights.profiles.length, 0);
           const newer = await fixture.feature([world.served.snapshot], { playerId: world.feature.request.playerId,
             gameId: world.feature.request.gameId, supersedes: world.feature.id, n: 8 });
           const forged = { ...context, request: newer.request };
@@ -134,7 +138,7 @@ test("#231 composite model/served-feature authorization and per-probe work budge
           // Old request history remains valid at its own knownAsOf. It is not
           // permission to forge an older selection for a later request.
           await deliver(world, { context });
-          return { invalidReferencesRefused: 7, olderAtOriginalKnownAsOfStillValid: true };
+          return { invalidReferencesRefused: 8, forgedQ2Sqlstate: "P2317", forgedQ2RightsCalls: 0, olderAtOriginalKnownAsOfStillValid: true };
         });
         await check("Q2 retains selected values while refreshing flags; caller/callback mutation cannot narrow private scope", async () => {
           const world = await fixture.world(), reference = await resolveModelContext(client, world.feature.request), selected = reference.feature.featureId;
@@ -154,17 +158,24 @@ test("#231 composite model/served-feature authorization and per-probe work budge
           return { immutableScope: true, originalValues: true, updatedFlags: result.context?.freshness };
         });
         await check("pruning the selected revision refuses instead of returning an older still-valid feature", async () => {
+          const details = [];
+          for (const point of ["resolve", "calculate"] as const) {
           const world = await fixture.world();
           const newer = await fixture.feature([world.served.snapshot], { playerId: world.feature.request.playerId,
             gameId: world.feature.request.gameId, supersedes: world.feature.id, n: 8 });
-          await assert.rejects(deliver({ ...world, feature: newer }, { rightsBatches: 1, calculate: async input => {
-            const value = math(input);
+          const prune = async () => {
             await admin.query("DELETE FROM fs138.feature_inputs WHERE feature_id=$1", [newer.id]);
             await admin.query("DELETE FROM fs138.feature_values WHERE feature_id=$1", [newer.id]);
-            return value;
-          } }), refusal("model-context-reference-refused"));
+          };
+          await assert.rejects(deliver({ ...world, feature: newer }, { rightsBatches: point === "resolve" ? 0 : 1,
+            ...(point === "resolve" ? { afterResolve: prune, statements: 2, gets: 0 }
+              : { calculate: async (input: ModelReadInput) => { const value = math(input); await prune(); return value; } })
+          }), refusal("model-read-status-refused"));
           assert.equal((await resolveModelContext(client, world.feature.request)).feature.featureId, world.feature.id);
-          return { oldFeatureStillExists: true, substitutedOldValueDelivered: false, budget: budgets.at(-1) };
+          details.push({ point, oldFeatureStillExists: true, substitutedOldValueDelivered: false,
+            typedRefusal: "model-read-status-refused", budget: budgets.at(-1) });
+          }
+          return details;
         });
         await check("independent model/feature revocation before Q1, during GET or calculation refuses with measured per-probe calls", async () => {
           const details = [];
@@ -191,7 +202,7 @@ test("#231 composite model/served-feature authorization and per-probe work budge
               ...(point === "resolve" ? { afterResolve: change, statements: 2, gets: 0 }
                 : point === "get" ? { objects: { get: async (key: string) => { const b = await store.get(key); await change(); return b; } } }
                 : { calculate: async (input: ModelReadInput) => { const v = math(input); await change(); return v; } }) };
-            await assert.rejects(deliver(world, options), refusal(side === "feature-source" ? "model-context-unavailable" : "model-read-status-refused"));
+            await assert.rejects(deliver(world, options), refusal("model-read-status-refused"));
             if (side === "feature-source") assert.equal((await admin.query("SELECT invalidated_at FROM fs138.model_runs WHERE run_id=$1", [world.runId])).rows[0].invalidated_at, null);
             details.push({ side, point, budget: budgets.at(-1) });
           }
@@ -208,8 +219,7 @@ test("#231 composite model/served-feature authorization and per-probe work budge
               } else if (kind === "extra") await writer.query("INSERT INTO fs138.feature_inputs VALUES($1,$2)", [world.feature.id, extra.snapshot]);
               else if (kind === "source-deleted") await admin.query("UPDATE fs138.source_snapshots SET deleted_at=clock_timestamp() WHERE snapshot_id=$1", [world.served.snapshot]);
             };
-            const code = kind === "missing" ? "model-context-unavailable" : kind === "extra" ? "model-context-reference-refused"
-              : kind === "source-deleted" ? "model-read-status-refused" : "model-context-lineage-refused";
+            const code = kind === "extra" ? "model-context-reference-refused" : "model-read-status-refused";
             await assert.rejects(deliver(world, { rightsBatches: point === "resolve" ? 0 : 1,
               ...(point === "resolve" ? { afterResolve: change, statements: 2, gets: 0 }
                 : { calculate: async (input: ModelReadInput) => { const v = math(input); await change(); return v; } }) }), refusal(code));

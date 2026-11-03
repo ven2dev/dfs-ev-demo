@@ -48,7 +48,8 @@ BEGIN
  FROM fs138.feature_values f JOIN fs138.job_runs j USING(job_id)
  WHERE (f.player_id,f.game_id,f.stat,f.feature_version,f.history_policy,f.evidence_mode)=
   (p_player,p_game,'passing_yards',p_feature_version,p_history_policy,p_mode)
- AND f.computed_at<=p_known_as_of AND f.checkpoint<=p_known_as_of AND j.status='succeeded'
+ AND f.computed_at<=p_known_as_of AND f.checkpoint<=p_known_as_of
+ AND j.status='succeeded' AND j.finished_at<=p_known_as_of
  AND f.state='usable' AND f.sample_size BETWEEN 2 AND 16 AND f.cutoff IS NOT NULL
  ORDER BY f.checkpoint DESC,f.computed_at DESC,f.feature_id DESC LIMIT 1;
 
@@ -58,7 +59,8 @@ BEGIN
  FROM fs138.feature_values f JOIN fs138.job_runs j USING(job_id)
  WHERE (f.player_id,f.game_id,f.stat,f.feature_version,f.history_policy,f.evidence_mode)=
   (p_player,p_game,'passing_yards',p_feature_version,p_history_policy,p_mode)
- AND f.computed_at<=p_known_as_of AND f.checkpoint<=p_known_as_of AND j.status='succeeded'
+ AND f.computed_at<=p_known_as_of AND f.checkpoint<=p_known_as_of
+ AND j.status='succeeded' AND j.finished_at<=p_known_as_of
  ORDER BY f.checkpoint DESC,f.computed_at DESC,f.feature_id DESC LIMIT 1;
  IF selected.feature_id IS NULL THEN
   IF visible_head.sample_size<2 THEN
@@ -71,7 +73,8 @@ BEGIN
  FROM fs138.feature_values f JOIN fs138.job_runs j USING(job_id)
  WHERE (f.player_id,f.game_id,f.stat,f.feature_version,f.history_policy,f.evidence_mode)=
   (p_player,p_game,'passing_yards',p_feature_version,p_history_policy,p_mode)
- AND f.computed_at<=observed_at AND f.checkpoint<=observed_at AND j.status='succeeded'
+ AND f.computed_at<=observed_at AND f.checkpoint<=observed_at
+ AND j.status='succeeded' AND j.finished_at<=observed_at
  ORDER BY f.checkpoint DESC,f.computed_at DESC,f.feature_id DESC LIMIT 1;
  SELECT coalesce(array_agg(i.snapshot_id ORDER BY i.snapshot_id),'{}') INTO inputs
  FROM fs138.feature_inputs i WHERE i.feature_id=selected.feature_id;
@@ -143,14 +146,30 @@ BEGIN
    RAISE EXCEPTION 'model-context-reference-refused' USING ERRCODE='P2317';
   END IF;
   request:=p_context->'request';
-  context:=fs138.resolve_model_context(request->>'playerId',request->>'gameId',request->>'featureVersion',
-   request->>'historyPolicy',request->>'evidenceMode',(request->>'knownAsOf')::timestamptz);
+  BEGIN
+   context:=fs138.resolve_model_context(request->>'playerId',request->>'gameId',request->>'featureVersion',
+    request->>'historyPolicy',request->>'evidenceMode',(request->>'knownAsOf')::timestamptz);
+  EXCEPTION WHEN SQLSTATE 'P2314' OR SQLSTATE 'P2315' OR SQLSTATE 'P2316' THEN
+   -- At Q1/Q2 a reference has already been resolved. Loss of its usable
+   -- feature/lineage is withdrawal, not a malformed caller reference.
+   RAISE EXCEPTION 'model-read-status-refused' USING ERRCODE='P1666';
+  END;
   -- Re-resolve independently at both boundaries. Compare all immutable metadata
   -- and the complete sorted lineage; ignore old freshness observations only.
   -- A missing/pruned/deleted selection cannot silently fall back to an older one.
   IF context->'request' IS DISTINCT FROM request
   OR context->'feature' IS DISTINCT FROM p_context->'feature'
   OR context->'snapshotIds' IS DISTINCT FROM p_context->'snapshotIds' THEN
+   -- Pruning/deletion may leave an older valid revision for re-resolution.
+   -- Distinguish the lost original from an existing but forged selection.
+   BEGIN
+    IF NOT EXISTS(SELECT 1 FROM fs138.feature_values f
+     WHERE f.feature_id=(p_context->'feature'->>'featureId')::uuid) THEN
+     RAISE EXCEPTION 'model-read-status-refused' USING ERRCODE='P1666';
+    END IF;
+   EXCEPTION WHEN invalid_text_representation THEN
+    RAISE EXCEPTION 'model-context-reference-refused' USING ERRCODE='P2317';
+   END;
    RAISE EXCEPTION 'model-context-reference-refused' USING ERRCODE='P2317';
   END IF;
   SELECT array_agg(DISTINCT id ORDER BY id) INTO snapshots FROM (
