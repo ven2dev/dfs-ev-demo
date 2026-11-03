@@ -28,7 +28,7 @@ describe("model context request and refusal boundary without a database", () => 
   });
   it("maps SQLSTATE contracts and preserves unrelated database or connection errors", () => {
     for (const [state, code] of Object.entries({ P2311: "model-context-request-refused", P2312: "model-context-unsupported-version",
-      P2313: "model-context-future-knowledge", P2314: "model-context-insufficient-history", P2315: "model-context-unavailable", P2316: "model-context-lineage-refused",
+      P2313: "model-context-future-knowledge", P2314: "model-context-insufficient-history", P2315: "model-context-unavailable", P2316: "model-context-lineage-refused", P2317: "model-context-reference-refused",
       "22007": "model-context-request-refused", "22008": "model-context-request-refused", "22009": "model-context-request-refused" })) {
       const cause = { code: state, message: "provider text varies" }, error = modelContextError(cause);
       expect(error).toBeInstanceOf(ModelContextError); expect(error).toMatchObject({ code, cause });

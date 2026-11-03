@@ -20,7 +20,7 @@ export type ModelContext = {
 
 export type ModelContextCode = "model-context-request-refused" | "model-context-unsupported-version"
   | "model-context-future-knowledge" | "model-context-insufficient-history" | "model-context-unavailable"
-  | "model-context-lineage-refused";
+  | "model-context-lineage-refused" | "model-context-reference-refused";
 export class ModelContextError extends Error {
   readonly code: ModelContextCode;
   constructor(code: ModelContextCode, cause?: unknown) {
@@ -32,6 +32,7 @@ const sqlCodes: Record<string, ModelContextCode> = {
   P2311: "model-context-request-refused", P2312: "model-context-unsupported-version",
   P2313: "model-context-future-knowledge", P2314: "model-context-insufficient-history",
   P2315: "model-context-unavailable", P2316: "model-context-lineage-refused",
+  P2317: "model-context-reference-refused",
   // Date.parse accepts some normalized calendar dates that PostgreSQL refuses.
   // Keep those malformed caller timestamps in the explicit request contract.
   "22007": "model-context-request-refused", "22008": "model-context-request-refused", "22009": "model-context-request-refused",

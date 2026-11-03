@@ -2,8 +2,9 @@
 
 The owner approved the [measured roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/231#issuecomment-6592422691).
 #231 supplies the independent context and authorization capability that #167's
-local handler consumes. The current step implements metadata selection and its
-narrow role; the composite Q1/Q2 extension follows in Step 2.
+local handler consumes. Steps 1–2 implement metadata selection, its narrow role
+and the composite Q1/Q2 boundary. Final-source speed qualification and durable
+evidence follow in Step 3.
 
 ## Design basis
 
@@ -93,8 +94,9 @@ sorted `snapshotIds` from `selection` at knownAsOf and current `freshness`.
 `selection.lastValid` identifies an unavailable head within the request's knowledge
 boundary; `freshness.superseded/stale` and reasons describe the current successful
 producer head without importing its values. All are private metadata, not a delivery
-authorization. Step 2 independently validates/rederives the complete selection and
-lineage at Q1/Q2, refusing withdrawal instead of selecting another value.
+authorization. The composite boundary independently validates/rederives the
+complete selection and lineage at Q1/Q2, refusing withdrawal instead of selecting
+another value.
 
 | SQLSTATE | Typed ModelContextError code |
 | --- | --- |
@@ -104,12 +106,13 @@ lineage at Q1/Q2, refusing withdrawal instead of selecting another value.
 | P2314 | model-context-insufficient-history |
 | P2315 | model-context-unavailable |
 | P2316 | model-context-lineage-refused |
+| P2317 | model-context-reference-refused |
 
 P1667 keeps #166's typed session refusal for snapshot isolation. Unrelated SQL,
 permission and connection errors remain intact. The TypeScript API owns scalar
 request pins before awaiting SQL and sends neither caller history nor target data.
 
-The `fs231_model_reader` capability has schema USAGE and resolver EXECUTE only.
+The `fs231_model_reader` capability has schema USAGE and resolver/composite EXECUTE only.
 It is a NOLOGIN role with non-inheriting/non-settable fs138_reader membership for
 the existing role guard. A provisioned local restricted LOGIN receives:
 
@@ -123,10 +126,80 @@ the unscoped model-only API remains inaccessible to it. The existing #166 reader
 and pipeline writer retain compatibility. These are proposal provisioning notes,
 not hosted commands.
 
+## Composite shared boundary (Step 2)
+
+Consumers pass the resolver's `context` with `runId` and selected `slots` to
+`withModelArtifacts` or `readModelArtifacts` from
+`@dfs-ev/pipeline/feature-store/model-artifacts`. The handler composition is:
+
+```ts
+const context = await resolveModelContext(client, request);
+const result = await withModelArtifacts(client, store,
+  { runId, slots: ["descriptor"], context }, input => {
+    // Trusted private calculation consumes input.history and descriptor bytes.
+    // #167 owns descriptor-pin validation and the final prediction contract.
+    return calculate(input);
+  });
+// Delivery uses result.value and the final result.context freshness flags.
+```
+
+Q1 and Q2 each execute `authorize_model_context_read`, which requires a context.
+The private `authorize_model_scope` core also backs the existing model-only
+`authorize_model_read` signature. Only its definer can execute the core directly;
+the narrow LOGIN cannot omit context by calling it or the model-only wrapper.
+Existing broad #166 reader/writer grants and model-only two-statement reads remain.
+
+Both checks re-resolve the feature from the normalized request and compare its
+entire immutable feature metadata and complete sorted snapshot reference. A
+forged older selection or a pruned/changed reference refuses with P2317; a missing
+feature or empty lineage keeps its explicit unavailable/lineage refusal. Q2 never
+substitutes an older value. Each check independently derives the model's cited
+dataset sources and the feature's own sources, then checks current status and one
+deduplicated union of rights profiles. The requested artifact subset does not
+narrow the model's source authorization. Shared-retained removal intent remains
+compatible with delivery of an unaffected live run.
+
+Only Q1 returns private materialized history, together with the database-owned
+model/file pins. The trusted callback and selected GETs finish before Q2. The
+TypeScript orchestrator owns a serialized context and copies run/slot pins before
+the first await; caller or callback mutation cannot narrow Q2. No reader BEGIN,
+coordination lock, history expansion/verification or byte hash is introduced.
+The returned `context` is Q2's refreshed metadata/flags for the original value;
+the callback's input metadata describes Q1. Missing bytes, calculation failures
+and a refused/lost Q2 release no result.
+
+### Deterministic Step 2 proof
+
+`composite-authorization.check.mts` adds 15 PostgreSQL probe groups, including
+independent unlabeled features outside training datasets, label add/change/remove
+independence, distinct QBs in one game, exact-reference/pruning/mutation refusals,
+model/feature revocation and deletion at both boundaries, source state, real narrow
+LOGIN refusals, model-only 0/2,504-row compatibility and shared-retained files.
+
+At each n=2–16, both overlapping and independent lineage controls assert exactly
+3 client SQL statements, 2 combined checks, 1 descriptor GET and zero byte hashes.
+Each successful probe independently derives P from database-owned lineage and
+asserts exactly 2P effective-rights calls, twice for every distinct profile. Early
+refusals assert their exact completed batches (0, 1 or 2) × P. A measurement-only
+NOTICE wrapper counts actual rights calls even when a SQL statement rolls back.
+
+A separate transaction-local server observer compares complete relational
+counters for matched n=2/16 graphs at Q1 and Q2. Both are identical, with zero
+reader DML, label/member/normalized reads or forbidden locks. Scan/write negative
+controls prove that the observer sees hidden database work. Pauses during GET and
+calculation show an idle backend with no transaction or locks while another
+writer commits deletion. Measurement wrappers are confined to disposable test
+databases and removed before speed qualification.
+
+Validation also passes 69 context/#163/#166 regression tests, 7 focused unit tests,
+23 package-boundary/layout checks, focused TypeScript and lint. The synthetic
+controls establish behavior and work budgets; they do not establish real historical
+availability or qualify final-source speed. The existing CI feature-store glob
+discovers the PostgreSQL suite; wall-clock assertions remain outside CI.
+
 ## Remaining steps and scope
 
-Step 2 adds composite union Q1/Q2 to the shared reader, immutable scope and the
-per-probe `2 × P` rights-call/work/lock/race tests. Step 3 qualifies final sources,
+Step 3 qualifies final sources,
 durable receipts/bundle and the TypeScript audit. The owner reviews each step
 before commit. The approved estimate is 4–5 hours including prototype work; split
 before more work if discovery exceeds five.
