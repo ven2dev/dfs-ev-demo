@@ -16,7 +16,9 @@ export const discardUnpublishedReport = async (client:Database,store:ObjectStore
    pg_has_role(session_user,'fs138_pipeline_writer','member') AS writer`,[key])).rows[0];
   if(!writer)throw new Error('report-cleanup-writer-required');
   const referenced=registry&&(await client.query<{referenced:boolean}>(
-   'SELECT EXISTS(SELECT 1 FROM fs138.model_artifacts WHERE object_key=$1) AS referenced',[key])).rows[0].referenced;
+   `SELECT EXISTS(SELECT 1 FROM fs138.model_artifacts WHERE object_key=$1)
+    OR EXISTS(SELECT 1 FROM fs138.object_removals WHERE object_key=$1) AS referenced`,[key])).rows[0].referenced;
+  // Re-read ownership after the advisory lock wait, in a fresh statement.
   if(!referenced)await store.delete(key);
   await client.query('COMMIT');
  }catch(error){
