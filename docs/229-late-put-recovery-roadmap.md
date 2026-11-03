@@ -166,3 +166,29 @@ checks, normal root typecheck and focused lint pass. Frozen assets are unchanged
 Recovery selection/execution and backoff persistence are Step 2; the amended
 spike proves the schedule but this checkpoint does not claim that adapter is done.
 No commit or push yet; owner commit approval is the next gate.
+
+## Step 2 checkpoint — November 2, 2026
+
+Step 1 committed as `7e41f2a`. The combined maintenance capability is
+`cleanupDeletedObjectsWithRecovery`, exported through the existing governance
+package entry point. It drains the compatible pending-only `cleanupDeletedObjects`
+first, then one separate recovery/adoption page; callers choosing #229 maintenance
+use the combined entry point. The existing #138 dataset spike deliberately keeps
+its pending-only foundation API; it does not load the #229 schema. The combined
+capability requires the #229 proposal schema.
+
+Both ordinary ack and shared-retained completion initialize a 60-second due time
+and step 1. Private scheduling advances only after a committed revisit, caps at
+one hour, clips to the fixed horizon, and clears only scheduling metadata after
+the final authorized deletion (or shared-reference refusal). Repeated events keep
+existing backoff. Tests cover both hooks, real late bytes at the final revisit,
+rollback after a lost DELETE response, shared retirement and bounded old-row
+adoption. Two full pages measured exactly 8,194 client statements, 2,048 idempotent
+DELETE calls and no cleanup GET/HEAD/LIST/PUT; both 1,025th rows progress on the
+next invocation. Client-count proof does not replace Step 3 server-work counters.
+
+46 affected PostgreSQL checks, TypeScript, focused lint and 23 package-boundary/
+layout checks pass. Step 3 still covers the complete paused-PUT/handoff and
+interruption matrix, #174 mixed shared/observed controls and internal counters;
+Step 4 runs both complete database suites and final review. Step 2 is uncommitted
+and awaits owner approval; nothing pushed or hosted.

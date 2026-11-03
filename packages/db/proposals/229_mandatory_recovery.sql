@@ -45,6 +45,22 @@ END $$;
 CREATE TRIGGER removal_observation_handoff AFTER INSERT OR UPDATE OF event_id
  ON fs138.object_removals FOR EACH ROW EXECUTE FUNCTION fs138.adopt_queued_observation();
 
+-- Private scheduling helper: callers hold the address lock. Scans/repeated
+-- events never reset the step or horizon. NULL due means initial completion.
+CREATE FUNCTION fs138.schedule_removal_recovery(address text,advance boolean) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
+DECLARE at_time timestamptz:=clock_timestamp();
+BEGIN
+ UPDATE fs138.object_removals SET
+  recovery_due=CASE WHEN recovery_until<=at_time THEN NULL
+   ELSE least(recovery_until,at_time+make_interval(secs=>least(3600,60*power(2,recovery_step))::double precision)) END,
+  recovery_step=CASE WHEN recovery_until<=at_time THEN 0 ELSE least(6,recovery_step+1) END,
+  recovery_until=CASE WHEN recovery_until<=at_time THEN NULL ELSE recovery_until END
+ WHERE object_key=address AND completed_at IS NOT NULL AND recovery_until IS NOT NULL
+ AND (advance OR recovery_due IS NULL);
+END $$;
+REVOKE ALL ON FUNCTION fs138.schedule_removal_recovery(text,boolean) FROM PUBLIC;
+
 CREATE OR REPLACE FUNCTION fs138.removal_recheck(address text) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
 BEGIN
@@ -66,6 +82,7 @@ BEGIN
  OR EXISTS(SELECT 1 FROM fs138.model_artifacts a JOIN fs138.model_runs r USING(run_id)
   WHERE a.object_key=address AND r.invalidated_at IS NULL) THEN
   UPDATE fs138.object_removals SET completed_at=clock_timestamp(),outcome='shared-retained' WHERE object_key=address;
+  PERFORM fs138.schedule_removal_recovery(address,false);
   RETURN false;
  END IF;
  RETURN true;
@@ -128,3 +145,50 @@ END $$;
 REVOKE ALL ON FUNCTION fs138.adopt_removal_observation(text),fs138.adopt_queued_observation() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION fs138.adopt_removal_observation(text) TO fs138_pipeline_writer;
 -- CREATE OR REPLACE preserves the existing recheck/orphan/retirement grants.
+
+-- Both ordinary completion paths start the same backoff, including shared files.
+CREATE OR REPLACE FUNCTION fs138.ack_removal(address text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
+BEGIN
+ IF NOT fs138.removal_recheck(address) THEN
+  RAISE EXCEPTION 'removal-not-authorized' USING ERRCODE='23514'; END IF;
+ UPDATE fs138.object_removals SET completed_at=clock_timestamp(),outcome='removed' WHERE object_key=address;
+ PERFORM fs138.schedule_removal_recovery(address,false);
+END $$;
+
+CREATE FUNCTION fs138.recovery_removal_recheck(address text) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
+BEGIN
+ IF NOT pg_has_role(session_user,'fs138_pipeline_writer','member') THEN
+  RAISE EXCEPTION 'pipeline-role-required' USING ERRCODE='42501'; END IF;
+ IF address IS NULL OR address !~ '^(models|audits)/[a-f0-9]{64}$' THEN
+  RAISE EXCEPTION 'object-address-refused' USING ERRCODE='23514'; END IF;
+ PERFORM pg_advisory_xact_lock(hashtextextended(address,138));
+ PERFORM fs138.adopt_removal_observation(address);
+ -- Lazy adoption of a pending row is not permission to skip its pending grace.
+ IF NOT EXISTS(SELECT FROM fs138.object_removals WHERE object_key=address
+  AND completed_at IS NOT NULL AND recovery_until IS NOT NULL
+  AND recovery_due<=clock_timestamp() AND remove_after<=clock_timestamp()) THEN RETURN false; END IF;
+ IF EXISTS(SELECT FROM fs138.source_snapshots WHERE object_key=address AND deleted_at IS NULL)
+ OR EXISTS(SELECT FROM fs138.dataset_manifests WHERE object_key=address AND invalidated_at IS NULL)
+ OR EXISTS(SELECT FROM fs138.model_artifacts a JOIN fs138.model_runs r USING(run_id)
+  WHERE a.object_key=address AND r.invalidated_at IS NULL) THEN
+  UPDATE fs138.object_removals SET outcome='shared-retained' WHERE object_key=address;
+  -- No DELETE is allowed; advance/retire metadata so shared rows cannot pin pages.
+  PERFORM fs138.schedule_removal_recovery(address,true);
+  RETURN false;
+ END IF;
+ RETURN true;
+END $$;
+
+CREATE FUNCTION fs138.ack_recovery_removal(address text) RETURNS void
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
+BEGIN
+ IF NOT fs138.recovery_removal_recheck(address) THEN
+  RAISE EXCEPTION 'recovery-not-authorized' USING ERRCODE='23514'; END IF;
+ -- DELETE succeeded while the same address lock was held. The last expired
+ -- revisit retires only scheduling metadata; the permanent tombstone stays.
+ PERFORM fs138.schedule_removal_recovery(address,true);
+END $$;
+REVOKE ALL ON FUNCTION fs138.recovery_removal_recheck(text),fs138.ack_recovery_removal(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION fs138.recovery_removal_recheck(text),fs138.ack_recovery_removal(text) TO fs138_pipeline_writer;
