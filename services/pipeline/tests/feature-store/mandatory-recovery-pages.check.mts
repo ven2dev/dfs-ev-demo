@@ -1,6 +1,8 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { realpath, mkdtemp, readFile, rm } from "node:fs/promises";
 import { test } from "node:test";
 import { withFeatureStoreDatabase } from "../../scripts/feature-store/harness.ts";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
@@ -9,7 +11,7 @@ import { governanceFixture, governanceIdentity } from "./artifact-governance-fix
 import { cleanerTrace } from "./artifact-cleaner-work.ts";
 
 test("#229 Step 2: completion scheduling, bounded revisits and final retirement",{timeout:120_000},async t=>{
- const directory=await mkdtemp('/private/tmp/229-step2-'),store=await openLocalObjectStore(directory);
+ const directory=await realpath(await mkdtemp(join(tmpdir(), '229-step2-'))),store=await openLocalObjectStore(directory);
  try{await withFeatureStoreDatabase(async({admin,writer,reader})=>{
   for(const name of ['165_model_manifests.sql','166_artifact_governance.sql'])
    await admin.query(await readFile(new URL(import.meta.resolve(`@dfs-ev/db/assets/${name}`)),'utf8'));

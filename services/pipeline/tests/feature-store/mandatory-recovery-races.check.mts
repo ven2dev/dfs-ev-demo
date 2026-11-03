@@ -1,6 +1,8 @@
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtemp,readFile,writeFile,rm } from 'node:fs/promises';
+import { realpath, mkdtemp,readFile,writeFile,rm } from 'node:fs/promises';
 import { test } from 'node:test';
 import { withFeatureStoreDatabase } from '../../scripts/feature-store/harness.ts';
 import { openLocalObjectStore } from '../../src/featureStore/localObjectStore.ts';
@@ -12,7 +14,7 @@ import { readCounterDelta,deterministicReadWork,type ReadCounters } from './arti
 
 const probes:{name:string;details:unknown}[]=[];
 test('#229 Step 3: late PUT handoff, interruption, lock races and hidden work',{timeout:120_000},async t=>{
- const directory=await mkdtemp('/private/tmp/229-step3-'),store=await openLocalObjectStore(directory);
+ const directory=await realpath(await mkdtemp(join(tmpdir(), '229-step3-'))),store=await openLocalObjectStore(directory);
  try{await withFeatureStoreDatabase(async({admin,writer,openWriter})=>{
   for(const name of ['165_model_manifests.sql','166_artifact_governance.sql','229_mandatory_recovery.sql'])
    await admin.query(await readFile(new URL(import.meta.resolve(`@dfs-ev/db/assets/${name}`)),'utf8'));
