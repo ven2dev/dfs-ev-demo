@@ -271,3 +271,29 @@ the fixed budget. All 54 affected PostgreSQL checks, 23 boundary/layout checks,
 typecheck and focused lint pass. The 8,194-statement cap is unchanged. Step 3
 remains uncommitted; the original step-3 receipt is preserved byte-for-byte and
 superseded by step-3-review-fix.json.
+
+## Step 4 final validation checkpoint — November 2, 2026
+
+Step 3 (including the review fix, both receipts, local inventory and tests) is
+committed as `0f4e71c1d8c09016b6c72f630209e6f2d33ad64e`. No trailer or push.
+
+Both complete PostgreSQL suites pass on the standard PostgreSQL 18.6 fixture
+(512 MiB tmpfs, 128 MiB shared memory): the database suite verifies 2 template
+checks, 74 Node checks, 25 Vitest checks and 12 catalog contracts across all 11
+frozen migration versions; the complete feature-store suite passes 187 checks
+across all 18 discovered files with zero failures/skips. Both ran through the
+standard run lock, sequentially, without hosted access or stopping the existing
+local service. After completion, the cluster has zero scratch databases and zero
+generated fs138_job_ LOGINs.
+
+Full lint/import boundaries (11 checks), normal typecheck/readiness/typegen,
+CI/layout (22 checks) and Turborepo layout/selection (29 checks) all pass. All 20
+pre-existing database assets and all 14 original feature-store DB test files
+remain byte-identical to the main baseline; four new test files add #229 coverage.
+No implementation changes were needed during final validation. The Step 3
+source/blob identities remain those in its committed review-fix receipt.
+
+Step 4 consists only of this checkpoint and the compact final validation receipt;
+full logs are outside Git. Owner review and commit approval are the next gate.
+Independent final review and fresh per-instance push approval remain separate;
+no issue closure or merge is performed by this work.

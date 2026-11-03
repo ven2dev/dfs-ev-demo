@@ -1,0 +1,274 @@
+{
+  "issue": 229,
+  "step": 4,
+  "date": "2026-11-02",
+  "base": "0f4e71c1d8c09016b6c72f630209e6f2d33ad64e",
+  "status": "all final checks pass; evidence uncommitted for owner review",
+  "implementationChangedDuringValidation": false,
+  "source": {
+    "packages/db/package.json": {
+      "gitBlob": "c8b316144694c67b68b28f3c85cba98bf3a7b5fb",
+      "sha256": "fb48b0d7237f4252e920ac97ce59170dd750a9a7d8931727c5f1862a0397bd7a"
+    },
+    "packages/db/proposals/229_mandatory_recovery.sql": {
+      "gitBlob": "bc247c12e98359b60f0695a5880214ed0dfe1916",
+      "sha256": "059ca1fa5a9144a5bb485fbb00c92eb96c452e76479f8fac4c2443e97609027d"
+    },
+    "packages/db/proposals/229_recovery_qualification.sql": {
+      "gitBlob": "691414590bf772820da8339dc1c091c49d60729c",
+      "sha256": "022ac799e17b924d985acbcfa3bb2dfe9fa4d0fef201a1cfd6be7cfdc83f4326"
+    },
+    "services/pipeline/src/featureStore/governance.ts": {
+      "gitBlob": "4a29d1daea080acd222256ed46c6e817055b38dd",
+      "sha256": "7fe4f91ec857a8a80b1e8b917c7a68cec21ca21ba765266391df42922fb96e27"
+    },
+    "services/pipeline/tests/feature-store/mandatory-recovery-pages.check.mts": {
+      "gitBlob": "b1b9c621243a314b6aae7190bd7e510cf64bee72",
+      "sha256": "d528f262b0db5bc4bc5d77809ec8b1e25a677ff302c8ff8685f638a60f16584c"
+    },
+    "services/pipeline/tests/feature-store/mandatory-recovery-races.check.mts": {
+      "gitBlob": "a9b32e6a43761aca66707058dc996db72177407d",
+      "sha256": "4d94dc8124825fa8466ce44fc7ce4f00f882155a1a9f0d42f99463310567ac68"
+    },
+    "services/pipeline/tests/feature-store/mandatory-recovery-selection.check.mts": {
+      "gitBlob": "5ea1650cf19fe5294fc24dd3ac286ad941fdfff1",
+      "sha256": "8d89cbaa0c345e010af89f6976f23440d140a9eca29411b865a6024182e9f405"
+    },
+    "services/pipeline/tests/feature-store/mandatory-recovery.check.mts": {
+      "gitBlob": "57257f5870468f57d8086a9cad8075f2e9d60d74",
+      "sha256": "48d5f98501fb180ade995c2d7f7066a04fa4ede399c60400550f3eeb879d8bd0"
+    }
+  },
+  "roadmap": {
+    "path": "docs/229-late-put-recovery-roadmap.md",
+    "gitBlob": "12791fbccaf39bb53f1ead6c969cd71803e1e78c",
+    "sha256": "f970a68d8ee691ebc66b71a5b904f882463d8b4b8ea45e91bb5a417e2126d733"
+  },
+  "databaseSuite": {
+    "command": "npm run test:db",
+    "exitCode": 0,
+    "templateChecks": 2,
+    "nodeChecks": 74,
+    "vitestChecks": 25,
+    "vitestFiles": 6,
+    "requiredCases": {
+      "node": 74,
+      "lease": 13,
+      "readiness": 4,
+      "corpus": 8
+    },
+    "catalogContracts": 12,
+    "migrationVersions": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ]
+  },
+  "featureStoreSuite": {
+    "command": "npm run test:feature-store:db",
+    "code": 0,
+    "elapsedMs": 100316,
+    "log": "/private/tmp/229-step4-feature-store.log",
+    "standardRunLock": true,
+    "checks": 187,
+    "discoveredFiles": 18,
+    "failures": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "staticChecks": [
+    {
+      "command": "npm run lint",
+      "code": 0,
+      "elapsedMs": 9129,
+      "log": "/private/tmp/229-step4-lint.log"
+    },
+    {
+      "command": "npm run typecheck",
+      "code": 0,
+      "elapsedMs": 2308,
+      "log": "/private/tmp/229-step4-typecheck.log"
+    },
+    {
+      "command": "npm run test:ci-gate",
+      "code": 0,
+      "elapsedMs": 1891,
+      "log": "/private/tmp/229-step4-test-ci-gate.log"
+    },
+    {
+      "command": "npm run test:turbo-layout",
+      "code": 0,
+      "elapsedMs": 34655,
+      "log": "/private/tmp/229-step4-test-turbo-layout.log"
+    }
+  ],
+  "fixture": {
+    "postgres": "18.6",
+    "loopbackPort": 54329,
+    "tmpfsKiB": 524288,
+    "sharedMemoryBytes": 134217728,
+    "standardRunLock": true,
+    "existingServiceLeftRunning": true,
+    "remainingScratchDatabases": 0,
+    "remainingGeneratedFeatureStoreLogins": 0
+  },
+  "preservation": {
+    "base": "6cae8b0df076de0987d81ade3228735e2e2b4897",
+    "head": "0f4e71c1d8c09016b6c72f630209e6f2d33ad64e",
+    "preservedDbAssets": [
+      {
+        "file": "packages/db/migrations/0001_pre_41_baseline.sql",
+        "gitBlob": "799f2d021e04b692f45ad968abeca8e1b1f1a391"
+      },
+      {
+        "file": "packages/db/migrations/0002_market_observation_history.sql",
+        "gitBlob": "c79310e65e3c5766f40771a765aed535559d4d41"
+      },
+      {
+        "file": "packages/db/migrations/0003_predictive_evidence.sql",
+        "gitBlob": "bcb063dc367e24c3ac7172753332f9124f769b70"
+      },
+      {
+        "file": "packages/db/migrations/0004_creator_corpus_projection.sql",
+        "gitBlob": "0edde4655856771ef7d17679dedf2aa02ba227d4"
+      },
+      {
+        "file": "packages/db/migrations/0005_predictive_source_claims.sql",
+        "gitBlob": "8253676b7d6a60bdeb961ed70cd4d5db1162e16f"
+      },
+      {
+        "file": "packages/db/migrations/0006_predictive_source_bindings.sql",
+        "gitBlob": "822539ac9c6f50b2885aee1a5b16a602424b4a1c"
+      },
+      {
+        "file": "packages/db/migrations/0007_predictive_unavailable_bindings.sql",
+        "gitBlob": "7e0656ef78859afbbb28d9c3fdd8efb982f1f370"
+      },
+      {
+        "file": "packages/db/migrations/0008_predictive_source_witnesses.sql",
+        "gitBlob": "03731942a1188ed9ef88d0649a95591d81c239dc"
+      },
+      {
+        "file": "packages/db/migrations/0009_predictive_source_decisions.sql",
+        "gitBlob": "1da13ef8d2cb77d47cf960d3bba7b38c5a3eb736"
+      },
+      {
+        "file": "packages/db/migrations/0010_predictive_source_consumers.sql",
+        "gitBlob": "52f2b05d9e19c84f6e1e4c999a6508e629dd5273"
+      },
+      {
+        "file": "packages/db/migrations/0011_predictive_capture_ingestion_clock.sql",
+        "gitBlob": "d01fbd2aa845ff232becfbe216c1a9e4c4b101f7"
+      },
+      {
+        "file": "packages/db/proposals/138_dataset_governance.sql",
+        "gitBlob": "68131cf08c62aa194339ee0329ecbf7f8c12189f"
+      },
+      {
+        "file": "packages/db/proposals/138_feature_store.sql",
+        "gitBlob": "816aecde0c799165ccba681275380ab779e87115"
+      },
+      {
+        "file": "packages/db/proposals/163_effective_rights.sql",
+        "gitBlob": "4f4901d8eb69ffca985d749e2d08dfcb83e92212"
+      },
+      {
+        "file": "packages/db/proposals/163_empirical_authorize.sql",
+        "gitBlob": "75b5887ccf0a449ddb91105fc38208c9fe88e152"
+      },
+      {
+        "file": "packages/db/proposals/163_empirical_history.sql",
+        "gitBlob": "fda289cfc29641b764c5bf053b147b710ea99573"
+      },
+      {
+        "file": "packages/db/proposals/163_empirical_reader.sql",
+        "gitBlob": "48276bcf4e0c0b8e72814095914969f90e1d9dc3"
+      },
+      {
+        "file": "packages/db/proposals/165_model_manifests.sql",
+        "gitBlob": "9ec1a3c608f4d0770df7febce7e21e360c6f8c18"
+      },
+      {
+        "file": "packages/db/proposals/166_artifact_governance.sql",
+        "gitBlob": "56a2518564d41a5f232b2bbd75801e07ca93a242"
+      },
+      {
+        "file": "packages/db/proposals/220_atomic_leader_gcra.sql",
+        "gitBlob": "bd3fb632506af3a1f6bc8512ac2aaa42d88be579"
+      }
+    ],
+    "existingFeatureStoreTestFilesUnchanged": [
+      "services/pipeline/tests/feature-store/artifact-cleaner.check.mts",
+      "services/pipeline/tests/feature-store/artifact-evidence.check.mts",
+      "services/pipeline/tests/feature-store/artifact-governance.check.mts",
+      "services/pipeline/tests/feature-store/datasets.check.mts",
+      "services/pipeline/tests/feature-store/derived.check.mts",
+      "services/pipeline/tests/feature-store/empirical-adapter.check.mts",
+      "services/pipeline/tests/feature-store/ingest.check.mts",
+      "services/pipeline/tests/feature-store/model-artifacts.check.mts",
+      "services/pipeline/tests/feature-store/model-manifests.check.mts",
+      "services/pipeline/tests/feature-store/model-orphans.check.mts",
+      "services/pipeline/tests/feature-store/model-publication.check.mts",
+      "services/pipeline/tests/feature-store/removal-queue.check.mts",
+      "services/pipeline/tests/feature-store/rights.check.mts",
+      "services/pipeline/tests/feature-store/schema.check.mts"
+    ],
+    "newFeatureStoreTestFiles": [
+      "services/pipeline/tests/feature-store/mandatory-recovery-pages.check.mts",
+      "services/pipeline/tests/feature-store/mandatory-recovery-races.check.mts",
+      "services/pipeline/tests/feature-store/mandatory-recovery-selection.check.mts",
+      "services/pipeline/tests/feature-store/mandatory-recovery.check.mts"
+    ],
+    "issueProposalSha256": "059ca1fa5a9144a5bb485fbb00c92eb96c452e76479f8fac4c2443e97609027d"
+  },
+  "logs": {
+    "229-step4-database.log": {
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-step4/229-step4-database.log",
+      "bytes": 10317,
+      "sha256": "e4fad4b3d8de108f41897cf702c46be5a174a5c2e30a1316756ebbbd391e295a"
+    },
+    "229-step4-feature-store.log": {
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-step4/229-step4-feature-store.log",
+      "bytes": 20683,
+      "sha256": "a3ae0348112be5adb871f70a0b933a6a8c1c490dbf547aab55f44bacb2966823"
+    },
+    "229-step4-lint.log": {
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-step4/229-step4-lint.log",
+      "bytes": 1383,
+      "sha256": "8160249599e10d0dd7d2caa4c77e3096a7a90c815766d5d5c9a9337b548331fc"
+    },
+    "229-step4-typecheck.log": {
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-step4/229-step4-typecheck.log",
+      "bytes": 314,
+      "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e"
+    },
+    "229-step4-test-ci-gate.log": {
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-step4/229-step4-test-ci-gate.log",
+      "bytes": 2626,
+      "sha256": "b853bb63c2331fcac0a9bac128253651a6d8dd37503cffdb614660a8f9243f04"
+    },
+    "229-step4-test-turbo-layout.log": {
+      "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-step4/229-step4-test-turbo-layout.log",
+      "bytes": 2193,
+      "sha256": "5bb9bcda781f418a555243b2c5a582f287d3d5fd30fa83f3e7fcaa3c0d6b5960"
+    }
+  },
+  "fullRecord": {
+    "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-step4/full-validation.json.gz",
+    "uncompressedBytes": 45412,
+    "uncompressedSha256": "ba83ccaeab25bbe1a98594735050c58484fe50066854d9a1ccc3a43ab0e31891",
+    "compressedSha256": "bb0921581e12a028a07b83549d7155ac1f94efba026c28bccf15b35571b4a33b"
+  },
+  "review": "ready for owner review before Step 4 commit; independent review and fresh push approval remain",
+  "commit": false,
+  "push": false,
+  "hostedActions": false
+}
