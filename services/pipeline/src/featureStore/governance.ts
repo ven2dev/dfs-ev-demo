@@ -73,14 +73,13 @@ export const cleanupDeletedObjects = async (client:Database,store:ObjectStore) =
 };
 // #229 maintenance capability; #138/#166 pending-only callers remain compatible.
 // Two independently bounded pages: recovery never displaces ordinary pending work.
+// No recurring legacy-adoption scan: queue-time triggers consume observations.
 export const cleanupDeletedObjectsWithRecovery = async (client:Database,store:ObjectStore) => {
  const pending=await cleanupDeletedObjects(client,store);
  const candidates=(await client.query<{object_key:string}>(`SELECT r.object_key FROM fs138.object_removals r
-  LEFT JOIN fs138.orphan_observations o ON o.object_key=r.object_key
-  WHERE (r.object_key ~ '^(models|audits)/' AND o.object_key IS NOT NULL)
-   OR (r.completed_at IS NOT NULL AND r.recovery_until IS NOT NULL
-    AND r.recovery_due<=clock_timestamp() AND r.remove_after<=clock_timestamp())
-  ORDER BY coalesce(r.recovery_due,o.first_seen),r.object_key LIMIT 1024`)).rows;
+  WHERE r.completed_at IS NOT NULL AND r.recovery_until IS NOT NULL
+   AND r.recovery_due<=now() AND r.remove_after<=now()
+  ORDER BY r.recovery_due,r.object_key LIMIT 1024`)).rows;
  const recovered:string[]=[],deferred:string[]=[];
  for(const {object_key:key} of candidates){
   try{

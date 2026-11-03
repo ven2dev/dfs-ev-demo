@@ -18,23 +18,19 @@ test("#229 Step 2: completion scheduling, bounded revisits and final retirement"
    VALUES('229 recovery controls',0,'{}','{}','{}','{}') RETURNING event_id`)).rows[0].event_id;
   const queue=async(key:string)=>admin.query(`INSERT INTO fs138.object_removals(object_key,event_id,remove_after)
    VALUES($1,$2,clock_timestamp()-interval '1 second')`,[key,event]);
-  const old=await fixture.persist('audits',{oldPending:randomUUID()});await queue(old.objectKey);
-  await admin.query("INSERT INTO fs138.orphan_observations VALUES($1,clock_timestamp()-interval '10 minutes')",[old.objectKey]);
-  const oldCompleted=await fixture.persist('audits',{oldCompleted:randomUUID()});await queue(oldCompleted.objectKey);
-  await admin.query("INSERT INTO fs138.orphan_observations VALUES($1,clock_timestamp()-interval '10 minutes')",[oldCompleted.objectKey]);
-  await admin.query("UPDATE fs138.object_removals SET completed_at=clock_timestamp(),outcome='removed' WHERE object_key=$1",[oldCompleted.objectKey]);
   await admin.query(await readFile(new URL(import.meta.resolve('@dfs-ev/db/assets/229_mandatory_recovery.sql')),'utf8'));
   const state=async(key:string)=>(await admin.query('SELECT * FROM fs138.object_removals WHERE object_key=$1',[key])).rows[0];
   const clock=async()=>(await admin.query('SELECT clock_timestamp() now')).rows[0].now as Date;
   const due=async(key:string)=>admin.query("UPDATE fs138.object_removals SET recovery_due=clock_timestamp()-interval '1 second' WHERE object_key=$1",[key]);
   const maintenance=async()=>{const trace=cleanerTrace(writer,store);const result=await cleanupDeletedObjectsWithRecovery(trace.client,trace.store);
    assert.deepEqual(trace.work,{gets:0,heads:0,puts:0,lists:0});return {trace,result};};
-  await t.test('old pending/completed observations are adopted in the recovery lane without bypassing pending grace',async()=>{
-   const {result}=await maintenance();assert(result.deferred.includes(old.objectKey));assert(result.recovered.includes(oldCompleted.objectKey));
-   assert.equal((await state(old.objectKey)).completed_at,null);assert(await store.head(old.objectKey));
-   assert((await state(old.objectKey)).recovery_until);assert.equal(await store.head(oldCompleted.objectKey),null);
-   // Drain the adopted pending control so later probes are isolated.
-   await maintenance();
+  await t.test('unqueued observations are never scanned/adopted by maintenance; queue-time trigger handles new intents',async()=>{
+   const object=await fixture.persist('audits',{unqueued:randomUUID()});await writer.query('SELECT fs138.enroll_model_objects($1)',[[object.objectKey]]);
+   const {trace,result}=await maintenance();assert.deepEqual(result,{removed:[],shared:[],recovered:[],deferred:[]});assert.equal(trace.statements.length,2);
+   assert.equal((await admin.query('SELECT count(*)::int n FROM fs138.orphan_observations WHERE object_key=$1',[object.objectKey])).rows[0].n,1);
+   await admin.query("UPDATE fs138.orphan_observations SET first_seen=clock_timestamp()-interval '10 minutes' WHERE object_key=$1",[object.objectKey]);await queue(object.objectKey);
+   assert.equal((await admin.query('SELECT count(*)::int n FROM fs138.orphan_observations WHERE object_key=$1',[object.objectKey])).rows[0].n,0);
+   assert((await state(object.objectKey)).recovery_until);await maintenance();assert.equal(await store.head(object.objectKey),null);
   });
   let removed:string,shared:string,removedBytes:Buffer;
   await t.test('ordinary removed acknowledgement starts 60-second backoff',async()=>{
@@ -96,7 +92,7 @@ test("#229 Step 2: completion scheduling, bounded revisits and final retirement"
     SELECT key,$2,clock_timestamp()-interval '1 minute',clock_timestamp(),'removed',clock_timestamp()+interval '1 hour',clock_timestamp()-interval '1 second',1
     FROM unnest($1::text[]) key`,[keys,event]);
    const first=await maintenance();assert.equal(first.result.recovered.length,1024);assert.equal(first.result.removed.length,1024);assert.equal(first.trace.statements.length,8194);assert.equal(first.trace.deletes.length,2048);
-   assert.match(first.trace.statements[4097],/LEFT JOIN fs138.orphan_observations/);
+   assert.match(first.trace.statements[4097],/ORDER BY r.recovery_due,r.object_key/);
    assert(first.trace.deletes.slice(0,1024).every(key=>key.startsWith('models/')));
    const second=await maintenance();assert.equal(second.result.recovered.length,1);assert.equal(second.result.removed.length,1);assert.equal(second.trace.statements.length,10);
   });

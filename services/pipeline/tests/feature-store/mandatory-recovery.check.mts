@@ -37,6 +37,17 @@ test("#229 Step 1: mandatory ownership handoff and cleaner deferral", {timeout:1
     await assert.rejects(writer.query("SELECT fs138.enroll_model_objects($1)",[[object.objectKey]]),{code:"P1662"});
    }
   });
+  await t.test("enroll/recheck/removal-trigger orders never leave a new tombstoned model/audit observation",async()=>{
+   for(const namespace of ['models','audits'] as const)for(const observationFirst of [false,true]){
+    const object=await fixture.persist(namespace,{namespace,observationFirst,id:randomUUID()});
+    if(observationFirst)await enrolled(object.objectKey);
+    await queue(object.objectKey);assert.equal(await observation(object.objectKey),undefined);
+    await assert.rejects(enrolled(object.objectKey),{code:'P1662'});
+    assert.equal((await writer.query('SELECT fs138.orphan_recheck($1,0) ok',[object.objectKey])).rows[0].ok,false);
+    await writer.query('SELECT fs138.removal_recheck($1)',[object.objectKey]);assert.equal(await observation(object.objectKey),undefined);
+    await queue(object.objectKey);assert.equal(await observation(object.objectKey),undefined);
+   }
+  });
   await t.test("handoff rolls back with the queue intent, without losing its observation",async()=>{
    const object=await fixture.persist("models",{rollback:randomUUID()});await enrolled(object.objectKey);
    await admin.query("BEGIN");await queue(object.objectKey);assert.equal(await observation(object.objectKey),undefined);await admin.query("ROLLBACK");

@@ -8,7 +8,11 @@ ALTER TABLE fs138.object_removals
 CREATE INDEX removal_recovery_due ON fs138.object_removals(recovery_due,object_key)
  WHERE completed_at IS NOT NULL AND recovery_until IS NOT NULL;
 
--- Safe writer-only lazy handoff also serves old pending/completed queue rows.
+-- The existing pending lane must also skip permanent completed tombstones.
+CREATE INDEX removal_pending_addresses ON fs138.object_removals(object_key)
+ WHERE completed_at IS NULL;
+
+-- Writer-only handoff for the queue trigger and locked pending recheck.
 -- Caller deletion functions already hold the complete sorted address-lock set.
 CREATE FUNCTION fs138.adopt_removal_observation(address text) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
@@ -164,8 +168,7 @@ BEGIN
  IF address IS NULL OR address !~ '^(models|audits)/[a-f0-9]{64}$' THEN
   RAISE EXCEPTION 'object-address-refused' USING ERRCODE='23514'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended(address,138));
- PERFORM fs138.adopt_removal_observation(address);
- -- Lazy adoption of a pending row is not permission to skip its pending grace.
+ -- Queue-time handoff supplies recovery metadata. No legacy discovery runs here.
  IF NOT EXISTS(SELECT FROM fs138.object_removals WHERE object_key=address
   AND completed_at IS NOT NULL AND recovery_until IS NOT NULL
   AND recovery_due<=clock_timestamp() AND remove_after<=clock_timestamp()) THEN RETURN false; END IF;

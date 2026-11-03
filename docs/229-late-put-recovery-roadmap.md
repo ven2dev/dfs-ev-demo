@@ -49,7 +49,7 @@ It tests scheduling/handoff primitives against the real #138/#165/#166 schema.
 Full authorization, shared-reference and failure matrix belong in the approved
 implementation, not assertions inferred from synthetic queue measurements.
 
-## Spike results and limits
+## Original spike results and limits — adoption superseded by review
 
 The proposal adds recovery_until/recovery_due to the existing removal row and
 uses the existing address lock. Handoff transfers latest enrollment +24h and
@@ -92,20 +92,20 @@ remaining work no longer fits. The approved issue branch is created from fresh m
 
 1. **Transfer ownership in proposal SQL (0.75–1h).** Extend the existing removal
    row; integrate adoption into deletion's existing sorted address-lock phase
-   and bounded lazy adoption for pre-existing rows. Preserve horizon and both
+   and queue-time ownership transfer. Preserve horizon and both
    grace deadlines. Add same-lock mandatory-owner refusal to orphan_recheck,
    retire_model_observation and #164 discard cleanup. Preserve the tombstone and
    existing writer-only mutation surface; tests use real restricted logins.
 2. **Bounded recovery adapter (0.5–0.75h).** Pending lane first, unchanged limit;
-   separate recovery/adoption selection <=1,024. Recheck under lock, delete
+   separate due-only recovery selection <=1,024. Recheck under lock, delete
    idempotently, then acknowledge/advance backoff in the same transaction.
    Start at 60s and double to a 3,600s cap; next due is the earlier of that delay
    and recovery_until. Persist the capped step; scans and repeated deletion events
    never reset it. Backoff advances only after a committed revisit, so a crash
    cannot skip the final deletion attempt. Due time is not a scheduler guarantee: a
    delayed invocation performs the final revisit after the horizon before retiring.
-   Adoption-only pending rows become eligible for the next pending page; they
-   do not bypass grace. Shared references are never deleted: recheck advances
+   New queue intents adopt observations atomically at insertion/upsert; recovery
+   never discovers unqueued observations. Shared references are never deleted: recheck advances
    their revisit scheduling or retires expired metadata so they cannot pin the
    first recovery page forever. Final expired revisit deletes eligible bytes
    before retiring metadata. Preserve existing connection-interruption policy.
@@ -132,7 +132,7 @@ before measured behavior/work proof. All SQL changes remain proposals here.
 | Backoff | SQL schedule proves 60/120/240/480/960/1920/3600s, cap and final due exactly at horizon; delayed invocation and crash rollback cannot skip final revisit; repeated scans/events cannot reset backoff. |
 | Recovery expiry | Boundary before/at/after horizon; final authorized delete then retire only schedule metadata; identical content remains publication-refused. |
 | #174 progress | 1,025 observed +1,025 genuinely shared live addresses +later removable target, plus >1,024 recovery candidates; independent bounded lanes, shared attempts cannot monopolize either page. |
-| Existing-row rollout | Pending and completed observed rows predating #229 are discovered/adopted in bounded work without a new table/full address walk. |
+| Rollout/invariant | Inventory the supported installation before rollout. No persistent #165/#166 schema is deployed; no backfill is shipped. Enroll, recheck and queue-trigger order tests prove no new model/audit observation can pair with a tombstone. A manually managed legacy installation would need separately reviewed one-time backfill, never a recurring scan. |
 | Grace/shared safety | Pending owner cannot bypass grace; live model/raw/dataset references survive both lanes and repeated events re-arm as before. |
 | Permissions/work | Reader/outsider/direct mutations refused; bad keys rejected; <=2+4P+4R client statements, no cleanup GET/HEAD/LIST/PUT; internal counters show no example/member scans. |
 
@@ -192,3 +192,82 @@ layout checks pass. Step 3 still covers the complete paused-PUT/handoff and
 interruption matrix, #174 mixed shared/observed controls and internal counters;
 Step 4 runs both complete database suites and final review. Step 2 is uncommitted
 and awaits owner approval; nothing pushed or hosted.
+
+## Superseded Step 3 checkpoint — adoption scan rejected in review
+
+Step 2 committed as `c5c3136`. Recovery selection now materializes separately
+capped due and adoption branches, combines them with UNION ALL, orders due first,
+and limits the combined page to 1,024. The outer sort sees at most 2,048 rows.
+An anti-join against the bounded due CTE excludes duplicate adoption candidates
+without a full-table DISTINCT. Due uses stable now() and the recovery partial
+index; adoption starts at observations and uses a parameterized primary-key
+lookup into removals. A partial observation index supports its first_seen order.
+The existing pending lane gets a partial unfinished-row index too, preventing
+its empty page from walking historical tombstones. Client statement counts and
+the pending/recovery separation are unchanged.
+
+On the standard PostgreSQL 18.6/512 MiB fixture, 10,000 and 50,000 inactive
+tombstones with four due and four adoption controls cost 32/23 execution shared
+buffers for recovery and 1/1 for pending. Neither recovery branch nor pending
+sequentially scans object_removals; due and pending partial indexes and adoption
+PK probes appear in the captured plans. CI caps execution hit+read blocks at 128
+per selection and permits at most 16 blocks growth across fixture sizes. The
+replaced shape costs 911 blocks and fails the same gate. No planner settings
+were forced. This qualifies bounded active-work/index lookup at the fixture; it
+is not an elapsed-time or infinite-scale constant-cost claim.
+
+Five behavior/work groups pass: paused real PUT across handoff (normal/lost upload
+reply), unlink-before-ack exception and actual disconnect, lost COMMIT reply, both
+recovery/repeated-deletion lock orders, and mixed #174 queue progress with 1,025
+legacy observations plus 1,025 actual live model references. The later pending
+target is reached within three invocations; every page stays bounded and shared
+bytes remain. Internal counters at 0/2,504 members show no example-table reads
+or writes and fixed queue DML, including nested ack checks. Definer scan/write
+negative controls prove that the observer detects hidden work. Scheduling metadata
+is aged only in synthetic controls; real producer knowledge clocks are untouched.
+
+53 affected PostgreSQL checks, 23 boundary/layout checks, TypeScript and focused
+lint pass. Plans and buffer counts are in step-3-selection-and-races.json; full
+race/counter records and all logs are retained outside Git. Step 4 still runs
+both complete database suites and final checks/review. Step 3 is uncommitted;
+no code push or hosted action has occurred.
+
+## Step 3 review correction — no recurring adoption
+
+**Inventory decision.** Read-only inventory on November 2 found no #165/#166
+objects in either connectable dfs_ev_test* database on the standard local fixture.
+The #165/#166 rollout records describe proposals applied only in registered
+disposable scratch databases, removed in finally; #166 explicitly has no frozen
+migration or hosted rollout. Thus no persistent legacy dataset exists in the
+supported repository setup, and **no backfill is added**. No hosted connection
+was made. This is not an inventory claim about manually created databases outside
+that workflow. Such a target would require separate one-time migration review
+before applying #229. Local inventory bytes are preserved in the revised receipt.
+
+**Pattern correction.** The previous adoption branch was the wrong pattern for
+one-time legacy states: it walked unrelated in-flight/unswept observations on
+every invocation. The selection fixture missed that population. Both that
+branch and its unused observation index are removed. Recovery now selects only
+completed due removal rows, ordered by recovery_due/object_key through the
+partial index; one LIMIT 1,024 remains. Pending runs first through its own
+partial index and LIMIT 1,024. The 8,194-statement bound remains unchanged.
+Queue INSERT/UPSERT consumes observations, enrollment refuses tombstones, and
+model/audit rechecks never create observations. New tests cover both orders,
+both namespaces and all these paths. Historical receipts/prototype measurements
+are retained unchanged and superseded by the review-fix receipt.
+
+The mixed #174 probe now uses 1,025 **unqueued** observations plus 1,025 actual
+live shared references and the later removable target. The observations remain
+untouched and the pending target is reached in two invocations. The plan fixture
+now grows inactive tombstones **and unqueued audits observations** together to
+10,000 and 50,000. The same 128-block and 16-block growth gates apply, including
+the old shape as a failing negative control. No recurring work is justified by
+the presence of synthetic legacy controls in tests.
+
+Final review-fix measurements: at 10,000/10,000 and 50,000/50,000 inactive
+tombstones/unqueued observations, recovery uses 2/2 execution buffers and pending
+uses 1/1. The rejected query costs 1,583 blocks on the larger fixture and fails
+the fixed budget. All 54 affected PostgreSQL checks, 23 boundary/layout checks,
+typecheck and focused lint pass. The 8,194-statement cap is unchanged. Step 3
+remains uncommitted; the original step-3 receipt is preserved byte-for-byte and
+superseded by step-3-review-fix.json.
