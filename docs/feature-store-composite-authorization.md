@@ -3,8 +3,8 @@
 The owner approved the [measured roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/231#issuecomment-6592422691).
 #231 supplies the independent context and authorization capability that #167's
 local handler consumes. Steps 1–2 implement metadata selection, its narrow role
-and the composite Q1/Q2 boundary. Final-source speed qualification and durable
-evidence follow in Step 3.
+and the composite Q1/Q2 boundary. Step 3 qualifies the reviewed composition and
+retains auditable full evidence with the code.
 
 ## Design basis
 
@@ -197,12 +197,67 @@ controls establish behavior and work budgets; they do not establish real histori
 availability or qualify final-source speed. The existing CI feature-store glob
 discovers the PostgreSQL suite; wall-clock assertions remain outside CI.
 
-## Remaining steps and scope
+## Final qualification (Step 3)
 
-Step 3 qualifies final sources,
-durable receipts/bundle and the TypeScript audit. The owner reviews each step
-before commit. The approved estimate is 4–5 hours including prototype work; split
-before more work if discovery exceeds five.
+The final-source benchmark uses the actual resolver and composite reader, a real
+descriptor GET/parse, shared domain support/probability/pricing math, Q2 and full
+JSON serialization. It preselects one real feature at each n=2–16 from metadata
+without labels or training membership. The unchanged #163 reference is measured
+first (45 requests, **11.623 ms p95**), then interleaved ABBA, 50 requests per
+position. Every cohort has 100 candidate and 100 reference requests. All **600
+candidate requests and six cohorts pass**; no timing/work miss was discarded.
+
+| Cohort | Reference p95 ms | Full candidate p95 ms | Setup p95 ms | Warm-path p95 ms | Aggregate setup share | Headroom |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Cold connection 1 | 22.533 | **27.729** | 6.888 | 21.587 | 23.36% | **90.76%** |
+| Cold connection 2 | 21.723 | 24.580 | 6.123 | 18.526 | 23.64% | 91.81% |
+| Cold connection 3 | 32.370 | 24.279 | 6.287 | 19.146 | 23.28% | 91.91% |
+| Warm 1 | 7.029 | 4.491 | 0 | 4.491 | 0% | 98.50% |
+| Warm 2 | 6.528 | 4.235 | 0 | 4.235 | 0% | 98.59% |
+| Warm 3 | 6.542 | 5.123 | 0 | 5.123 | 0% | 98.29% |
+
+The gate uses each request's complete duration, including setup on cold samples;
+stage percentiles are descriptive and are never added. Setup share is the sum of
+setup time divided by the sum of complete candidate time in that cohort. Warm-path
+time is each complete time minus its own setup. Connection close is outside timing.
+Cold means a new connection in an already running Node process; caches remain
+unflushed. The reference performs its unchanged per-row qualification and checks
+feature lineage; the candidate checks model plus feature lineage and trusts the
+producer. Their ratio is informational. **Local-fixture-only qualification** does
+not establish hosted latency, cold-cache/fresh-process startup or #167 handler speed.
+
+The fixture again reproduces 16 wire inputs, the exact 2,504-row retrospective
+content hash and zero strict historical rows with real clocks. At every n, actual
+database calls match **2 × the independently derived union profile count** (the
+real fixture happens to have 16 union profiles). Matched synthetic n=2/16 graphs
+prove equal relational work separately; the actual real-request counters and all
+full samples remain in the bundle. The 16-profile observation is not a CI budget.
+
+See [final evidence and audit instructions](evidence/feature-store-231/README.md).
+Three compact receipts reference relative members in a deterministic committed
+bundle. The existing TypeScript audit checks uncompressed SHA-256 and size before
+recomputing all six full-path percentiles, work counts, setup shares and compact
+projections. CI checks references/hashes without timing assertions. A clean copy
+needs Node 24 and tar only to audit; no database, dependencies or original cache.
+
+## Acceptance mapping
+
+| Criterion | Implementation and proof |
+| --- | --- |
+| Independent feature scope, no target influence | Metadata resolver and composite source union; outside-training unlabeled probe, label add/change/remove invariance, same-game QBs distinct; zero label/member reads. |
+| Point-in-time and last-valid policy | Exact pins, successful producer clocks and microseconds; Step 1 boundary/last-valid probes; Step 2 older-reference/pruning/race refusals and final freshness flags. |
+| Shared boundary | One private SQL core and TypeScript orchestrator; all-n 3 SQL/2 combined checks/1 GET; model-only 2 SQL. |
+| Both lineages/races | Independently derived 2P rights budget per successful probe; overlap and independent profiles; model/feature withdrawal at either boundary; no output on refusal. |
+| Narrow authority | Real LOGIN, EXECUTE-only resolver/composite capability, private-core/unscoped/table/writer/SET ROLE refusals. |
+| Hidden work and locks | Equal matched relational counters, zero reader DML/per-example verification, scan/write negative controls; paused reader has no transaction/locks and deletion commits. |
+| Fixed speed | Six complete real-fixture cohorts at ≤210 ms p95, minimum 90.76% headroom under 300 ms; cold setup reported separately. |
+| Package/proposal/evidence hygiene | Public workspace APIs, proposal SQL only, compact receipts/full deterministic bundle, hash-first TypeScript audit and database-free CI membership check. |
+| Owner workflow | Approved roadmap comment, fresh-main feature branch, per-step review before commit, no trailers, fresh push consent and five-hour split boundary. |
+
+The owner reviews each step before commit. The approved estimate remains 4–5
+hours including prototype work. #167 consumes this boundary and needs its final
+handler benchmark after #231 merges; another spike is required only if the design
+changes.
 
 No final prediction handler, Next.js route, product UI, hosted service/access,
 Production command, frozen migration, calibration, #168 capacity or #229 cleanup.

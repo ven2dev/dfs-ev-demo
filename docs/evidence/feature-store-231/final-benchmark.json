@@ -1,0 +1,2498 @@
+{
+  "kind": "composite-authorization-benchmark",
+  "schemaVersion": 3,
+  "issue": 231,
+  "verdict": "pass",
+  "startedAt": "2026-11-03T01:44:41.089Z",
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin",
+    "release": "27.2.0"
+  },
+  "code": {
+    "gitSha": "af7daefdef5aed1ef4ec8b5871dfbf4fd7566b2c",
+    "contentSha256": "ab703a0c5e3697f77f8c62710ed8c3b3fb6c8b3bc1a11d729f00e81819f362e8"
+  },
+  "codeHashes": {
+    "compose.test.yml": "57a19ced9e5892293f353b95456ea4e07544d467d5843634f508773496b4418e",
+    "package-lock.json": "dd0fe58a230ef794d1d51aac676a92eb16ab7cf3ddfc2084736ac7ac2fb25a6e",
+    "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "packages/db/proposals/165_model_manifests.sql": "1915e84e505be95eba819562e47aa4bc7936d15429d3d431fd9e319380800853",
+    "packages/db/proposals/166_artifact_governance.sql": "600402ed383510e91bf75f625af203ec2ec82e20fa521efec601dd47a00f7666",
+    "packages/db/proposals/231_composite_authorization.sql": "a0200a4f07ed639ec8a53ce99a3bbcd6738f26784a9935644ab7b9e4cf96651b",
+    "packages/domain/package.json": "34e81b6f0dcc082e7b3a47f0e5a53b2b667e8da166e3f98b4f1c97f358c72144",
+    "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "packages/domain/src/projection/evaluation.ts": "0852560f81b50968d83088f3de661c07611a9ba852c896aa8527f807a5046fe6",
+    "packages/domain/src/projection/qb-evaluation.ts": "a6c6536b85bf98633b05af1528b212a15cce0d7a0c3227cbce5b0c1a9625e489",
+    "services/pipeline/package.json": "0c57f17b81cc13c57b99aa1ea7f5ed9defe3532bb23f77a377d42e12e8aab26f",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "59d0f305da43dd954c98675eaa043c18226c6595a12fdbc01451cad8442ab029",
+    "services/pipeline/scripts/feature-store/composite-authorization-benchmark.ts": "348d57c7d1c55ba13d0eebe36b2051e0de89766cdfdd4425dfab65638ac056df",
+    "services/pipeline/scripts/feature-store/composite-authorization-measure.ts": "99d9e5e96a4d9d5cdf843be27985549b51ba93ba31ab576f97c96db7b22e6755",
+    "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "23163c515afc6e14d86ba663f8ae54807a00e812ac6f07d4f1f3f5aaff6dc1cb",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "fa2d82a3105a601ab33a3c72deb827a17ad27cd759827134267fd61806dc5336",
+    "services/pipeline/scripts/feature-store/evaluation-measure.ts": "c6aee7cc7462dbe17ef1957a1b3a2f25094ef5eaa1e7612e11bbc25fef32873b",
+    "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts": "e6f9b3170a4a13fc6c6a0d8518a3247e76c4f1b09cd0898d4dc9c8bd7469b2e6",
+    "services/pipeline/scripts/feature-store/evaluation-run.ts": "cd13a88ead8eddebfe4a9b198208906654bd172a1219ae7b6a7caba76533c2d5",
+    "services/pipeline/scripts/feature-store/evaluation-worker.ts": "702d74737b3a307989f5132175c2cde479e07d64c2689610496120a08f94ccb5",
+    "services/pipeline/scripts/feature-store/harness.ts": "f9d74c2ede8c342c8cdc65b800ff3107176cc7d12154a482edcc4d431bec84cb",
+    "services/pipeline/scripts/feature-store/model-publication-identity.ts": "beaef66634ca1bc1e2ad68d4329869dc1a1109c57cc5c15c837c2706d0d5aa3a",
+    "services/pipeline/scripts/feature-store/model-publication-measure.ts": "e9de10a392e645c736d68634228f8e3bd873120155e05f0c8f827450b45082b5",
+    "services/pipeline/scripts/feature-store/model-publication-run.ts": "5ee9d7cd849d4ac112df045f30e167e8f418aead40be7c22910b039114625012",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+    "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+    "services/pipeline/src/featureStore/connections.ts": "37970dc14cdbcbed94fc5d4bb20808bc0f686317eadb77cf635f7b657ba8ef6c",
+    "services/pipeline/src/featureStore/datasets.ts": "690c626a3a049f89bc6a45fad235af8b09e5d2b54eef0a0c76e261af20bb3fc7",
+    "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "8bddf06f546033ba1714224ec26a8b60c623e5fd8d0d4af54a0ff9658f65187b",
+    "services/pipeline/src/featureStore/governance.ts": "e16f68aaf7b054ccfe7ce9b6fce6d3d8478728b2628524a2f095b157fe65637c",
+    "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+    "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "910c52ef827d25936232a4d8ae38321cd3a669ce34e9cf431d215aed6fd10fb0",
+    "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
+    "services/pipeline/src/featureStore/modelManifests.ts": "c677d0443177748fee090b9d5bb3607bc82f7bafd28ad5609a3922d76a109802",
+    "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "services/pipeline/src/featureStore/objectStore.ts": "d6a9f26c2fd8f54eef161ce5e8dcf8c127a284e90bc6a0e6051355ffc6e737e9",
+    "services/pipeline/src/featureStore/qbReports.ts": "91fa70d5e8a05e1dbbbd0a9968a557da04e4e7b22c8c8f431c5ef475f8a8465e",
+    "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7",
+    "services/pipeline/tests/feature-store/artifact-read-work.ts": "44626f9bfd3826db45cd7289bf79e9aa06c21743e9ef744e96885b596da63d5c",
+    "services/pipeline/tests/feature-store/composite-read-work.ts": "443a086aad0f54b91bbff22d56618ae729f36ab86e41b5619da1d9992e8911ef"
+  },
+  "inputGeneration": {
+    "code": {
+      "gitSha": "af7daefdef5aed1ef4ec8b5871dfbf4fd7566b2c",
+      "contentSha256": "719bb9105388bcacc8d905b48972cc619fd76cc72c4a3c410e359de010507bec"
+    },
+    "codeHashes": {
+      "package-lock.json": "dd0fe58a230ef794d1d51aac676a92eb16ab7cf3ddfc2084736ac7ac2fb25a6e",
+      "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+      "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+      "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+      "packages/domain/package.json": "34e81b6f0dcc082e7b3a47f0e5a53b2b667e8da166e3f98b4f1c97f358c72144",
+      "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+      "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+      "packages/domain/src/projection/evaluation.ts": "0852560f81b50968d83088f3de661c07611a9ba852c896aa8527f807a5046fe6",
+      "packages/domain/src/projection/qb-evaluation.ts": "a6c6536b85bf98633b05af1528b212a15cce0d7a0c3227cbce5b0c1a9625e489",
+      "services/pipeline/package.json": "0c57f17b81cc13c57b99aa1ea7f5ed9defe3532bb23f77a377d42e12e8aab26f",
+      "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "23163c515afc6e14d86ba663f8ae54807a00e812ac6f07d4f1f3f5aaff6dc1cb",
+      "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "fa2d82a3105a601ab33a3c72deb827a17ad27cd759827134267fd61806dc5336",
+      "services/pipeline/scripts/feature-store/evaluation-measure.ts": "c6aee7cc7462dbe17ef1957a1b3a2f25094ef5eaa1e7612e11bbc25fef32873b",
+      "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+      "services/pipeline/scripts/feature-store/evaluation-report.ts": "e6f9b3170a4a13fc6c6a0d8518a3247e76c4f1b09cd0898d4dc9c8bd7469b2e6",
+      "services/pipeline/scripts/feature-store/evaluation-run.ts": "cd13a88ead8eddebfe4a9b198208906654bd172a1219ae7b6a7caba76533c2d5",
+      "services/pipeline/scripts/feature-store/evaluation-worker.ts": "702d74737b3a307989f5132175c2cde479e07d64c2689610496120a08f94ccb5",
+      "services/pipeline/scripts/feature-store/harness.ts": "f9d74c2ede8c342c8cdc65b800ff3107176cc7d12154a482edcc4d431bec84cb",
+      "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+      "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+      "services/pipeline/src/featureStore/connections.ts": "37970dc14cdbcbed94fc5d4bb20808bc0f686317eadb77cf635f7b657ba8ef6c",
+      "services/pipeline/src/featureStore/datasets.ts": "690c626a3a049f89bc6a45fad235af8b09e5d2b54eef0a0c76e261af20bb3fc7",
+      "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+      "services/pipeline/src/featureStore/empiricalAdapter.ts": "8bddf06f546033ba1714224ec26a8b60c623e5fd8d0d4af54a0ff9658f65187b",
+      "services/pipeline/src/featureStore/governance.ts": "e16f68aaf7b054ccfe7ce9b6fce6d3d8478728b2628524a2f095b157fe65637c",
+      "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+      "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+      "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+      "services/pipeline/src/featureStore/modelArtifacts.ts": "910c52ef827d25936232a4d8ae38321cd3a669ce34e9cf431d215aed6fd10fb0",
+      "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
+      "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+      "services/pipeline/src/featureStore/objectStore.ts": "d6a9f26c2fd8f54eef161ce5e8dcf8c127a284e90bc6a0e6051355ffc6e737e9",
+      "services/pipeline/src/featureStore/qbReports.ts": "91fa70d5e8a05e1dbbbd0a9968a557da04e4e7b22c8c8f431c5ef475f8a8465e",
+      "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7"
+    }
+  },
+  "cohorts": [
+    {
+      "temperature": "cold",
+      "cohort": 1,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 27.72904199999175,
+      "referenceP95Ms": 22.532666999992216,
+      "headroom": 0.9075698600000275,
+      "candidateSetupP95Ms": 6.887749999994412,
+      "candidateWarmPathP95Ms": 21.587457999994513,
+      "candidateMeanSetupShare": 0.23416664147869018,
+      "candidateAggregateSetupShare": 0.23360316487723132,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    },
+    {
+      "temperature": "cold",
+      "cohort": 2,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 24.579666999998153,
+      "referenceP95Ms": 21.723082999989856,
+      "headroom": 0.9180677766666728,
+      "candidateSetupP95Ms": 6.1230000000068685,
+      "candidateWarmPathP95Ms": 18.5257500000007,
+      "candidateMeanSetupShare": 0.23561785565866905,
+      "candidateAggregateSetupShare": 0.23635386843312722,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    },
+    {
+      "temperature": "cold",
+      "cohort": 3,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 24.279458999997587,
+      "referenceP95Ms": 32.370000000009895,
+      "headroom": 0.919068470000008,
+      "candidateSetupP95Ms": 6.286999999996624,
+      "candidateWarmPathP95Ms": 19.145584000012605,
+      "candidateMeanSetupShare": 0.2338444507712004,
+      "candidateAggregateSetupShare": 0.23284497991914557,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    },
+    {
+      "temperature": "warm",
+      "cohort": 1,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 4.491125000000466,
+      "referenceP95Ms": 7.028541000006953,
+      "headroom": 0.9850295833333318,
+      "candidateSetupP95Ms": 0,
+      "candidateWarmPathP95Ms": 4.491125000000466,
+      "candidateMeanSetupShare": 0,
+      "candidateAggregateSetupShare": 0,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    },
+    {
+      "temperature": "warm",
+      "cohort": 2,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 4.235042000000249,
+      "referenceP95Ms": 6.528417000008631,
+      "headroom": 0.9858831933333325,
+      "candidateSetupP95Ms": 0,
+      "candidateWarmPathP95Ms": 4.235042000000249,
+      "candidateMeanSetupShare": 0,
+      "candidateAggregateSetupShare": 0,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    },
+    {
+      "temperature": "warm",
+      "cohort": 3,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 5.123042000006535,
+      "referenceP95Ms": 6.542333000004874,
+      "headroom": 0.9829231933333116,
+      "candidateSetupP95Ms": 0,
+      "candidateWarmPathP95Ms": 5.123042000006535,
+      "candidateMeanSetupShare": 0,
+      "candidateAggregateSetupShare": 0,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    }
+  ],
+  "fixtureConfig": {
+    "postgresTmpfsBytes": 536870912,
+    "sharedMemoryBytes": 134217728
+  },
+  "method": {
+    "baselineFirstRequests": 45,
+    "temperatures": [
+      "cold",
+      "warm"
+    ],
+    "cohortsPerTemperature": 3,
+    "order": [
+      "baseline",
+      "candidate",
+      "candidate",
+      "baseline"
+    ],
+    "requestsPerPosition": 50,
+    "candidateRequestsPerCohort": 100,
+    "referenceRequestsPerCohort": 100,
+    "gate": "Every candidate cohort nearest-rank full-path p95 <=210 ms, >=30% headroom under 300 ms; failures stop and are retained.",
+    "composition": "Actual resolver -> actual composite Q1 -> descriptor GET/parse -> domain support/probabilities/pricing -> actual Q2 -> full JSON serialization.",
+    "reference": "Unchanged #163 createEmpiricalAdapter; measured first before #231 SQL installation; target-independent requests selected from feature metadata.",
+    "cold": "Fresh restricted PostgreSQL connection in a running Node process; setup included in total and reported separately. Close outside timing.",
+    "warm": "Existing dedicated idle READ COMMITTED connection; setup zero. Cold/warm are connection states, not cache states.",
+    "observation": "SQL/ObjectStore/hash observers on both arms; authentication hashes are setup, not artifact rehashing. Server counters/rights instrumentation removed before timing."
+  },
+  "qualification": "LOCAL-FIXTURE ONLY. OS/DB/file caches unflushed; no hosted RTT/wake/region (#220), cold-cache, fresh-process or #167 final-handler claim.",
+  "limitations": [
+    "Strict historical eligibility remains zero; all real requests are retrospective and retain real producer knowledge clocks.",
+    "Reference authorizes the feature only and performs its unchanged per-row qualification; candidate authorizes model plus feature and trusts producer-qualified materialization. Ratios are informational.",
+    "Synthetic PIT/correction/race/independent-lineage controls live in the behavior receipts; no synthetic histories qualify this real-fixture speed result.",
+    "This trusted benchmark composition is not #167's response/deadline/session-disposition contract; #167 still qualifies its final handler after #231 merges."
+  ],
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "fixture": {
+    "wireFiles": 16,
+    "inputs": [
+      {
+        "name": "games.csv.gz",
+        "expectedWireSha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+        "status": "ingested",
+        "jobId": "4efbf89a-c415-4acf-bc31-094372b25f82",
+        "snapshotId": "e38a2fe7-19c1-4027-b157-e48eab3bf87f",
+        "profileId": "nflverse.schedules.all.v1",
+        "objectKey": "raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+        "wireSha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+        "decodedSha256": "ac9f51116270f6dbe67aa842092801862a702a0764104ea79275a7e940bcd616",
+        "headerSha256": "6cdacf455895ebf361cdd8162b5655acfbfbc5598de01e47effb801282fdb779",
+        "wireBytes": 515250,
+        "decodedBytes": 2185203,
+        "rawRows": 7548,
+        "normalizedRows": 1359,
+        "diagnostics": {
+          "selectedRows": 1359,
+          "filteredRows": 6189,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 239.2600829999999,
+        "stagesMs": {
+          "download": 0.12445800000000418,
+          "validationAndNormalization": 145.64200000000005,
+          "objectWrite": 8.918708999999808,
+          "databasePublication": 84.58637399999998
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "pbp_participation_2021.csv",
+        "expectedWireSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+        "status": "ingested",
+        "jobId": "f676df06-13d6-4f75-9aaf-a02a98edcf36",
+        "snapshotId": "4395f598-cf01-4368-b8fe-5f6eae93331b",
+        "profileId": "nflverse.pbp_participation.2021.v1",
+        "objectKey": "raw/b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+        "wireSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+        "decodedSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+        "headerSha256": "84bf2347f6d70d204ddb241c6607197eac0c9c60448cb70ec99e2f1a01ea0642",
+        "wireBytes": 22498246,
+        "decodedBytes": 22498246,
+        "rawRows": 50714,
+        "normalizedRows": 18309,
+        "diagnostics": {
+          "selectedRows": 18309,
+          "filteredRows": 2298,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 4189,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 1229.833709,
+        "stagesMs": {
+          "download": 0.08187499999985448,
+          "validationAndNormalization": 903.1115420000001,
+          "objectWrite": 37.39433299999973,
+          "databasePublication": 289.248834
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "pbp_participation_2022.csv",
+        "expectedWireSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+        "status": "ingested",
+        "jobId": "cb31739d-f4d1-48a0-b19e-41a3bc9250ab",
+        "snapshotId": "c29bf68d-3cd1-4cf5-8ce8-fcad3878671a",
+        "profileId": "nflverse.pbp_participation.2022.v1",
+        "objectKey": "raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+        "wireSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+        "decodedSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+        "headerSha256": "84bf2347f6d70d204ddb241c6607197eac0c9c60448cb70ec99e2f1a01ea0642",
+        "wireBytes": 22245804,
+        "decodedBytes": 22245804,
+        "rawRows": 50150,
+        "normalizedRows": 18193,
+        "diagnostics": {
+          "selectedRows": 18193,
+          "filteredRows": 2306,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 4100,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 1236.9547499999999,
+        "stagesMs": {
+          "download": 0.07404099999985192,
+          "validationAndNormalization": 888.6146250000002,
+          "objectWrite": 35.6527500000002,
+          "databasePublication": 312.6197919999995
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "pbp_participation_2023.csv",
+        "expectedWireSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+        "status": "ingested",
+        "jobId": "56c8072b-cac7-43b5-8c7a-1bd03b5b6508",
+        "snapshotId": "baa85d21-40e5-4121-bf3c-34c8b5c53305",
+        "profileId": "nflverse.pbp_participation.2023.v1",
+        "objectKey": "raw/ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+        "wireSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+        "decodedSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+        "headerSha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+        "wireBytes": 49967956,
+        "decodedBytes": 49967956,
+        "rawRows": 46168,
+        "normalizedRows": 17670,
+        "diagnostics": {
+          "selectedRows": 17670,
+          "filteredRows": 2111,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 2014.7330420000003,
+        "stagesMs": {
+          "download": 0.08487500000001091,
+          "validationAndNormalization": 1537.478333,
+          "objectWrite": 86.51416699999936,
+          "databasePublication": 390.66050000000087
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "pbp_participation_2024.csv",
+        "expectedWireSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+        "status": "ingested",
+        "jobId": "7100a58f-088e-48c1-b476-12231c02aea5",
+        "snapshotId": "51c79fe1-1c64-49b9-8e95-4dfaa3aa2908",
+        "profileId": "nflverse.pbp_participation.2024.v1",
+        "objectKey": "raw/b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+        "wireSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+        "decodedSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+        "headerSha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+        "wireBytes": 49688308,
+        "decodedBytes": 49688308,
+        "rawRows": 45919,
+        "normalizedRows": 17564,
+        "diagnostics": {
+          "selectedRows": 17564,
+          "filteredRows": 2053,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 1,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 1902.635875,
+        "stagesMs": {
+          "download": 0.12012500000037107,
+          "validationAndNormalization": 1469.4761669999998,
+          "objectWrite": 69.7275410000002,
+          "databasePublication": 363.314292
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "pbp_participation_2025.csv",
+        "expectedWireSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+        "status": "ingested",
+        "jobId": "fffac9ec-6ed3-43ed-a504-b5391aa1b3c6",
+        "snapshotId": "c40d8ac3-ead3-4b3f-ae04-968c8aa3084b",
+        "profileId": "nflverse.pbp_participation.2025.v1",
+        "objectKey": "raw/59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+        "wireSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+        "decodedSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+        "headerSha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+        "wireBytes": 49094943,
+        "decodedBytes": 49094943,
+        "rawRows": 45184,
+        "normalizedRows": 17707,
+        "diagnostics": {
+          "selectedRows": 17707,
+          "filteredRows": 2135,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 1871.5753330000007,
+        "stagesMs": {
+          "download": 0.08899999999994179,
+          "validationAndNormalization": 1464.8902500000004,
+          "objectWrite": 57.10699999999997,
+          "databasePublication": 349.49383300000045
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "roster_weekly_2021.csv",
+        "expectedWireSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+        "status": "ingested",
+        "jobId": "6f3ed521-1604-48a1-8298-facf09903f2d",
+        "snapshotId": "f1848b94-da0d-4fbe-a6bf-544dc357386d",
+        "profileId": "nflverse.weekly_rosters.2021.v1",
+        "objectKey": "raw/88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+        "wireSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+        "decodedSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+        "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+        "wireBytes": 15242660,
+        "decodedBytes": 15242660,
+        "rawRows": 46696,
+        "normalizedRows": 1916,
+        "diagnostics": {
+          "selectedRows": 1916,
+          "filteredRows": 44780,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 680.655041,
+        "stagesMs": {
+          "download": 0.0562499999996362,
+          "validationAndNormalization": 587.4122499999994,
+          "objectWrite": 30.06800000000112,
+          "databasePublication": 63.12083299999904
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "roster_weekly_2022.csv",
+        "expectedWireSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+        "status": "ingested",
+        "jobId": "ca3e012c-16e6-41ed-b58b-c30a6ea273f7",
+        "snapshotId": "5de3e473-7bb0-43ba-8502-b3d443c83168",
+        "profileId": "nflverse.weekly_rosters.2022.v1",
+        "objectKey": "raw/bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+        "wireSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+        "decodedSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+        "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+        "wireBytes": 14790824,
+        "decodedBytes": 14790824,
+        "rawRows": 46163,
+        "normalizedRows": 1844,
+        "diagnostics": {
+          "selectedRows": 1844,
+          "filteredRows": 44319,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 691.2888750000002,
+        "stagesMs": {
+          "download": 0.04745800000091549,
+          "validationAndNormalization": 592.0704590000005,
+          "objectWrite": 28.959207999998398,
+          "databasePublication": 70.21450000000004
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "roster_weekly_2023.csv",
+        "expectedWireSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+        "status": "ingested",
+        "jobId": "ab2726c5-99c5-426b-91ae-5ffb998db0d0",
+        "snapshotId": "ac1b62b4-a42c-42a1-be4b-cb8144021fef",
+        "profileId": "nflverse.weekly_rosters.2023.v1",
+        "objectKey": "raw/1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+        "wireSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+        "decodedSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+        "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+        "wireBytes": 14612235,
+        "decodedBytes": 14612235,
+        "rawRows": 45655,
+        "normalizedRows": 1812,
+        "diagnostics": {
+          "selectedRows": 1812,
+          "filteredRows": 43843,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 655.9399160000012,
+        "stagesMs": {
+          "download": 0.05795800000123563,
+          "validationAndNormalization": 553.9848749999983,
+          "objectWrite": 29.45625000000109,
+          "databasePublication": 72.44325000000026
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "roster_weekly_2024.csv.gz",
+        "expectedWireSha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+        "status": "ingested",
+        "jobId": "e3bcb05f-b22b-4c16-ae12-a3ce72e5edca",
+        "snapshotId": "1fa2b3a6-fc1a-4691-8311-7d4a917144d1",
+        "profileId": "nflverse.weekly_rosters.2024.v1",
+        "objectKey": "raw/330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+        "wireSha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+        "decodedSha256": "074ecaeb9325de943c11f7bbc941425626985090ef8386f90cd837fa5cb5d4b3",
+        "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+        "wireBytes": 699786,
+        "decodedBytes": 14926918,
+        "rawRows": 46579,
+        "normalizedRows": 1867,
+        "diagnostics": {
+          "selectedRows": 1867,
+          "filteredRows": 44712,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 651.3685420000002,
+        "stagesMs": {
+          "download": 0.034958000000187894,
+          "validationAndNormalization": 592.3112500000007,
+          "objectWrite": 8.29333300000144,
+          "databasePublication": 50.731416999997236
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "roster_weekly_2025.csv.gz",
+        "expectedWireSha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+        "status": "ingested",
+        "jobId": "ea0c2d49-b7f0-43e7-8795-19da76fcff18",
+        "snapshotId": "43929676-cd84-48c6-82f1-2a7407fe7860",
+        "profileId": "nflverse.weekly_rosters.2025.v1",
+        "objectKey": "raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+        "wireSha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+        "decodedSha256": "c2f7a1ffebe06058400af1989d1cd2900cc5c9659f084623708a06d4e28de35b",
+        "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+        "wireBytes": 708144,
+        "decodedBytes": 15385661,
+        "rawRows": 46849,
+        "normalizedRows": 1948,
+        "diagnostics": {
+          "selectedRows": 1948,
+          "filteredRows": 44901,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 656.350375,
+        "stagesMs": {
+          "download": 0.026833000001715845,
+          "validationAndNormalization": 580.9564999999984,
+          "objectWrite": 9.049250000000029,
+          "databasePublication": 66.31966700000157
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "stats_player_week_2021.csv.gz",
+        "expectedWireSha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+        "status": "ingested",
+        "jobId": "1d530782-d817-4463-b057-9e16a6d045a2",
+        "snapshotId": "67c0727b-5336-4ee8-ab5a-c2954edd7824",
+        "profileId": "nflverse.stats_player.2021.v1",
+        "objectKey": "raw/1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+        "wireSha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+        "decodedSha256": "41915fb49238902ad1f129ebf0405b11a1e710454ae0fe8f7b3e4f9145875f48",
+        "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+        "wireBytes": 1254611,
+        "decodedBytes": 8477784,
+        "rawRows": 18969,
+        "normalizedRows": 655,
+        "diagnostics": {
+          "selectedRows": 655,
+          "filteredRows": 18314,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 599.7635410000003,
+        "stagesMs": {
+          "download": 0.032332999999198364,
+          "validationAndNormalization": 558.0650000000005,
+          "objectWrite": 8.526917000001049,
+          "databasePublication": 33.139790999999605
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "stats_player_week_2022.csv.gz",
+        "expectedWireSha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+        "status": "ingested",
+        "jobId": "23076dfa-e60f-473b-af2a-2474e52f9949",
+        "snapshotId": "511c04ca-637b-44eb-a1d8-1ac98ebba4a3",
+        "profileId": "nflverse.stats_player.2022.v1",
+        "objectKey": "raw/0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+        "wireSha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+        "decodedSha256": "ad426c3fe5bf1cc30c3f137fdfe96d054e19d400879ee4413129da49fa7b54be",
+        "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+        "wireBytes": 1241515,
+        "decodedBytes": 8408729,
+        "rawRows": 18831,
+        "normalizedRows": 633,
+        "diagnostics": {
+          "selectedRows": 633,
+          "filteredRows": 18198,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 590.5056249999998,
+        "stagesMs": {
+          "download": 0.04195899999831454,
+          "validationAndNormalization": 558.6697500000009,
+          "objectWrite": 8.10425000000032,
+          "databasePublication": 23.69024999999965
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "stats_player_week_2023.csv.gz",
+        "expectedWireSha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+        "status": "ingested",
+        "jobId": "b54ef3f8-ed70-40e9-ad4f-9ae1d060d64a",
+        "snapshotId": "41e2add0-a73f-4bda-bc97-eef3bbbd61e3",
+        "profileId": "nflverse.stats_player.2023.v1",
+        "objectKey": "raw/6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+        "wireSha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+        "decodedSha256": "f19cb71a5de0dce7fd09376026237c9ee9d5a93fe13815a2ea3ec2d37204cb17",
+        "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+        "wireBytes": 1237909,
+        "decodedBytes": 8332874,
+        "rawRows": 18643,
+        "normalizedRows": 663,
+        "diagnostics": {
+          "selectedRows": 663,
+          "filteredRows": 17980,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 577.439042,
+        "stagesMs": {
+          "download": 0.026707999999416643,
+          "validationAndNormalization": 534.8099590000002,
+          "objectWrite": 6.80779099999927,
+          "databasePublication": 35.79541700000118
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "stats_player_week_2024.csv.gz",
+        "expectedWireSha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+        "status": "ingested",
+        "jobId": "e276f220-4d4a-43df-aa1b-2dac3e979631",
+        "snapshotId": "72edd622-6cdd-4348-a669-3f62ac29494c",
+        "profileId": "nflverse.stats_player.2024.v1",
+        "objectKey": "raw/61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+        "wireSha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+        "decodedSha256": "3ddc45a84f759aa348ce465ae001752c530575455717657cdfe1f8abfcdb4759",
+        "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+        "wireBytes": 1244175,
+        "decodedBytes": 8470040,
+        "rawRows": 18983,
+        "normalizedRows": 664,
+        "diagnostics": {
+          "selectedRows": 664,
+          "filteredRows": 18319,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 610.2676249999986,
+        "stagesMs": {
+          "download": 0.027082999999038293,
+          "validationAndNormalization": 562.6475420000006,
+          "objectWrite": 9.032999999999447,
+          "databasePublication": 38.560708000000886
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "stats_player_week_2025.csv.gz",
+        "expectedWireSha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+        "status": "ingested",
+        "jobId": "51bb028c-30bf-45d5-aaff-c5f466e628a0",
+        "snapshotId": "e3466bd0-e981-44da-8796-f777a62b7ca7",
+        "profileId": "nflverse.stats_player.2025.v1",
+        "objectKey": "raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+        "wireSha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+        "decodedSha256": "e5e0615b3d96a3eaebfaee91e55afb4a4e7fe0caf057454177bcd7d6ad4bcfc2",
+        "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+        "wireBytes": 1262421,
+        "decodedBytes": 8656387,
+        "rawRows": 19422,
+        "normalizedRows": 664,
+        "diagnostics": {
+          "selectedRows": 664,
+          "filteredRows": 18758,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 592.1630000000005,
+        "stagesMs": {
+          "download": 0.02974999999969441,
+          "validationAndNormalization": 539.8328750000001,
+          "objectWrite": 9.453041999999186,
+          "databasePublication": 42.84783300000163
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      }
+    ],
+    "modes": [
+      {
+        "mode": "retrospective-reconstruction-v1",
+        "rowCount": 2504,
+        "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+      },
+      {
+        "mode": "strict-point-in-time-v1",
+        "rowCount": 0,
+        "contentSha256": "7858bc13cfd59085549e3c61fc1d42685f5a9134114316bbb623e79aaff43caf"
+      }
+    ],
+    "inputPinsArtifact": {
+      "objectKey": "audits/66268d9829eac9e5834e73bfe28f08342ab1a00aaed86ea19811846538dc195a",
+      "sha256": "66268d9829eac9e5834e73bfe28f08342ab1a00aaed86ea19811846538dc195a",
+      "byteSize": 36870
+    }
+  },
+  "requests": {
+    "cases": [
+      {
+        "featureId": "e7e4d313-967e-4e18-bcda-10c2f739b6d1",
+        "n": 2,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_03_TB_LA",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "7187d303-9ff8-4eca-b615-f88ada5ddc0b",
+        "n": 3,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_04_TB_NE",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "39bff80e-b29b-48f2-9748-93658b96c87a",
+        "n": 4,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_05_MIA_TB",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "74d63a25-dd60-48e2-8e92-d07cfa552bc8",
+        "n": 5,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_06_TB_PHI",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "5a9ee363-ec8e-441b-b3ae-473c53bf19bb",
+        "n": 6,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_07_CHI_TB",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "648f7c44-cb07-4373-89e1-94ad2bfdb6c8",
+        "n": 7,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_08_TB_NO",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "e3c01e8a-4e96-4628-8ca6-bb2db204efbc",
+        "n": 8,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_10_TB_WAS",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "a6476652-36bf-43dc-a181-73a1f9ac2296",
+        "n": 9,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_11_NYG_TB",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "482baef8-5235-4591-a929-5ecf1548d2e8",
+        "n": 10,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_12_TB_IND",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "24a2af2d-ee70-468b-b676-a618c7a09235",
+        "n": 11,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_13_TB_ATL",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "d6ac5064-c57f-4903-849c-151dc777fad0",
+        "n": 12,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_14_BUF_TB",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "0d942518-b702-40e4-b2a5-9ed1df3c871a",
+        "n": 13,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_15_NO_TB",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "c0420d9f-8b8b-4aa1-ae3d-0b9d4132a347",
+        "n": 14,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_16_TB_CAR",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "0d5fb8aa-357b-461d-997f-bdeb7e1fb1ee",
+        "n": 15,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_17_TB_NYJ",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "d8bd7885-ee55-4c5b-9b20-1a58e323baf5",
+        "n": 16,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_18_CAR_TB",
+          "knownAsOf": "2026-11-03 01:46:25.170048+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      }
+    ],
+    "sha256": "462804227d38dffd17b964fe66f5155093377f664003c420fef1d1f05e45e306",
+    "selection": "Feature metadata only; one real request at every n=2..16; no label/membership gate."
+  },
+  "baselineFirstP95Ms": 11.62304099999892,
+  "modelOnly": {
+    "sql": 2,
+    "descriptorGets": 1,
+    "verdict": "pass"
+  },
+  "sourceUnchanged": true,
+  "finishedAt": "2026-11-03T01:46:45.085Z",
+  "fullRecord": {
+    "path": "full-records.tar.gz#final/full-samples.json",
+    "sha256": "380982fb0426e5ddb511c883852701682c76721ec8895857747b632bd4436ccc",
+    "byteSize": 1483533,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  },
+  "verification": {
+    "samples": 1245,
+    "candidateSamples": 600,
+    "candidateCohorts": 6,
+    "rightsBudget": "2 * independently derived union profile count",
+    "workBudgetsVerified": true,
+    "allCohortsAtLeast30PercentHeadroom": true,
+    "worstCandidateP95Ms": 27.72904199999175,
+    "minimumHeadroom": 0.9075698600000275
+  },
+  "workCounts": [
+    {
+      "arm": "baseline",
+      "samples": 645,
+      "work": [
+        {
+          "sql": 3,
+          "checks": 2,
+          "gets": 0,
+          "heads": 0,
+          "puts": 0,
+          "deletes": 0,
+          "lists": 0,
+          "hashes": 0
+        }
+      ]
+    },
+    {
+      "arm": "candidate",
+      "samples": 600,
+      "work": [
+        {
+          "sql": 3,
+          "checks": 2,
+          "gets": 1,
+          "heads": 0,
+          "puts": 0,
+          "deletes": 0,
+          "lists": 0,
+          "hashes": 0
+        }
+      ]
+    }
+  ],
+  "serverWork": [
+    {
+      "n": 2,
+      "featureId": "e7e4d313-967e-4e18-bcda-10c2f739b6d1",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 40,
+          "idx_tup_fetch": 72,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 40,
+          "idx_tup_fetch": 72,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 37,
+          "idx_tup_fetch": 68,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 37,
+          "idx_tup_fetch": 68,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 3,
+      "featureId": "7187d303-9ff8-4eca-b615-f88ada5ddc0b",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 40,
+          "idx_tup_fetch": 72,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 40,
+          "idx_tup_fetch": 72,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 37,
+          "idx_tup_fetch": 68,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 37,
+          "idx_tup_fetch": 68,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 4,
+      "featureId": "39bff80e-b29b-48f2-9748-93658b96c87a",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 37,
+          "idx_tup_fetch": 69,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 37,
+          "idx_tup_fetch": 69,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 34,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 34,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 5,
+      "featureId": "74d63a25-dd60-48e2-8e92-d07cfa552bc8",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 6,
+      "featureId": "5a9ee363-ec8e-441b-b3ae-473c53bf19bb",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 7,
+      "featureId": "648f7c44-cb07-4373-89e1-94ad2bfdb6c8",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 8,
+      "featureId": "e3c01e8a-4e96-4628-8ca6-bb2db204efbc",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 9,
+      "featureId": "a6476652-36bf-43dc-a181-73a1f9ac2296",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 10,
+      "featureId": "482baef8-5235-4591-a929-5ecf1548d2e8",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 11,
+      "featureId": "24a2af2d-ee70-468b-b676-a618c7a09235",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 12,
+      "featureId": "d6ac5064-c57f-4903-849c-151dc777fad0",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 13,
+      "featureId": "0d942518-b702-40e4-b2a5-9ed1df3c871a",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 14,
+      "featureId": "c0420d9f-8b8b-4aa1-ae3d-0b9d4132a347",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 15,
+      "featureId": "0d5fb8aa-357b-461d-997f-bdeb7e1fb1ee",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 16,
+      "featureId": "d8bd7885-ee55-4c5b-9b20-1a58e323baf5",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    }
+  ]
+}

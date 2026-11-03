@@ -4,6 +4,8 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { sha256 } from "../../src/featureStore/objectStore.ts";
+import type { CompositeCase, CompositeSample } from "./composite-authorization-measure.ts";
+import type { ReadCounters } from "../../tests/feature-store/artifact-read-work.ts";
 
 type Sample = { phase: string; shape: string; arm: string; block: number; position: number; read: number;
   q1Ms: number; q2Ms: number; sumMs: number; endToEndMs: number; verdict: string;
@@ -20,6 +22,112 @@ const p95 = (values: number[]) => {
   return [...values].sort((a, b) => a - b)[Math.ceil(values.length * .95) - 1];
 };
 const near = (a: number, b: number) => assert(Math.abs(a - b) < 1e-9, "recomputed-statistic-mismatch");
+
+export const compositeCohortSummary = (samples: CompositeSample[], temperature: "cold" | "warm", cohort: number) => {
+  const candidate = samples.filter(s => s.arm === "candidate"), reference = samples.filter(s => s.arm === "baseline");
+  const candidateP95Ms = p95(candidate.map(s => s.totalMs));
+  return { temperature, cohort, candidateSamples: candidate.length, referenceSamples: reference.length,
+    candidateP95Ms, referenceP95Ms: p95(reference.map(s => s.totalMs)), headroom: 1 - candidateP95Ms / 300,
+    candidateSetupP95Ms: p95(candidate.map(s => s.setupMs)), candidateWarmPathP95Ms: p95(candidate.map(s => s.warmPathMs)),
+    candidateMeanSetupShare: candidate.reduce((sum, s) => sum + s.setupShare, 0) / candidate.length,
+    candidateAggregateSetupShare: candidate.reduce((sum, s) => sum + s.setupMs, 0) / candidate.reduce((sum, s) => sum + s.totalMs, 0),
+    n: [...new Set(candidate.map(s => s.n))].sort((a, b) => a - b),
+    pass: candidate.length === 100 && reference.length === 100 && samples.every(s => s.verdict === "pass") && candidateP95Ms <= 210 };
+};
+export type FullCompositeBenchmark = Record<string, unknown> & {
+  kind: "composite-authorization-benchmark"; issue: number; verdict: string; schemaVersion: number;
+  samples: CompositeSample[]; cohorts: ReturnType<typeof compositeCohortSummary>[];
+  baselineFirstP95Ms?: number;
+  requests?: { cases: CompositeCase[]; sha256: string; selection: string };
+  modelOnly?: { sql: number; descriptorGets: number; verdict: string };
+  fixture?: { wireFiles: number; modes: { mode: string; rowCount: number; contentSha256: string }[]; [key: string]: unknown };
+  serverWork?: { n: number; featureId: string; profiles: string[]; rightsCalls: number; q1: ReadCounters; q2: ReadCounters; verdict: string }[];
+};
+const allN = Array.from({ length: 15 }, (_, i) => i + 2);
+const verifyCompositeCounters = (rows: ReadCounters) => {
+  assert(rows.length > 0);
+  for (const row of rows) {
+    assert.equal(row.inserted + row.updated + row.deleted, 0, "composite-reader-DML");
+    if (/^(dataset_members|outcome_labels|label_inputs|norm_)/.test(row.table))
+      assert(Object.entries(row).every(([key, value]) => key === "table" || value === 0), "composite-hidden-example-work");
+  }
+};
+export const verifyCompositeBenchmark = (full: FullCompositeBenchmark) => {
+  assert.equal(full.kind, "composite-authorization-benchmark"); assert.equal(full.issue, 231); assert.equal(full.verdict, "pass");
+  assert.equal(full.sourceUnchanged, true);
+  assert.equal(full.samples.length, 1245); assert.equal(full.cohorts.length, 6);
+  assert(full.requests && full.fixture && full.serverWork);
+  assert.deepEqual(full.requests.cases.map(c => c.n), allN);
+  assert.equal(sha256(Buffer.from(JSON.stringify(full.requests.cases))), full.requests.sha256, "request-selection-hash-mismatch");
+  assert.equal(full.fixture.wireFiles, 16);
+  assert.equal(full.fixture.modes.find(m => m.mode === "strict-point-in-time-v1")!.rowCount, 0);
+  const retrospective = full.fixture.modes.find(m => m.mode === "retrospective-reconstruction-v1")!;
+  assert.equal(retrospective.rowCount, 2504);
+  assert.equal(retrospective.contentSha256, "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d");
+  assert.deepEqual(full.modelOnly, { sql: 2, descriptorGets: 1, verdict: "pass" });
+  assert.deepEqual(full.serverWork.map(w => w.n), allN);
+  for (const probe of full.serverWork) {
+    assert.equal(probe.verdict, "pass"); assert(probe.profiles.length > 0);
+    assert.equal(new Set(probe.profiles).size, probe.profiles.length);
+    assert.equal(probe.rightsCalls, 2 * probe.profiles.length);
+    verifyCompositeCounters(probe.q1); verifyCompositeCounters(probe.q2);
+  }
+  const coordinates = new Set<string>(), groups = new Map<string, CompositeSample[]>();
+  for (const sample of full.samples) {
+    const { arm, phase, temperature, cohort, position, read, work } = sample;
+    assert.equal(sample.verdict, "pass"); assert(["baseline", "candidate"].includes(arm));
+    assert(["cold", "warm"].includes(temperature)); assert(allN.includes(sample.n));
+    assert(full.requests.cases.some(c => c.featureId === sample.featureId && c.n === sample.n));
+    const key = JSON.stringify([phase, temperature, cohort, position, read]);
+    assert(!coordinates.has(key), "duplicate-composite-sample-coordinate"); coordinates.add(key);
+    assert.deepEqual(work, { sql: 3, checks: 2, gets: arm === "candidate" ? 1 : 0, heads: 0, puts: 0, deletes: 0, lists: 0, hashes: 0 });
+    assert.deepEqual(sample.queries.map(q => q.kind), arm === "candidate" ? ["context", "check", "check"] : ["check", "history", "check"]);
+    p95([sample.totalMs, sample.setupMs, sample.warmPathMs, sample.getMs, sample.computeMs, sample.serializationMs,
+      ...sample.queries.map(q => q.elapsedMs)]);
+    assert(sample.totalMs > 0 && sample.outputBytes > 0);
+    near(sample.totalMs, sample.setupMs + sample.warmPathMs); near(sample.setupShare, sample.setupMs / sample.totalMs);
+    assert(sample.setupShare >= 0 && sample.setupShare < 1);
+    if (temperature === "warm") assert.equal(sample.setupMs, 0); else assert(sample.setupMs > 0);
+    assert(sample.queries.reduce((sum, q) => sum + q.elapsedMs, 0) + sample.getMs + sample.computeMs + sample.serializationMs <= sample.warmPathMs + 1e-6,
+      "overlapping-or-fabricated-composite-stage-times");
+    assert(Number.isInteger(read));
+    if (phase === "baseline-first") assert(arm === "baseline" && temperature === "warm" && cohort === 0 && position === 0 && read >= 1 && read <= 45);
+    else {
+      assert.equal(phase, "interleaved"); assert(Number.isInteger(cohort) && cohort >= 1 && cohort <= 3);
+      assert.equal(arm, ["baseline", "candidate", "candidate", "baseline"][position]); assert(read >= 1 && read <= 50);
+      const group = JSON.stringify([temperature, cohort, position]); groups.set(group, [...groups.get(group) ?? [], sample]);
+    }
+  }
+  assert.equal(groups.size, 24); assert([...groups.values()].every(g => g.length === 50));
+  const baselineFirst = full.samples.filter(s => s.phase === "baseline-first"); assert.equal(baselineFirst.length, 45);
+  near(p95(baselineFirst.map(s => s.totalMs)), full.baselineFirstP95Ms!);
+  const cohortKeys = new Set<string>();
+  for (const result of full.cohorts) {
+    const key = JSON.stringify([result.temperature, result.cohort]); assert(!cohortKeys.has(key)); cohortKeys.add(key);
+    const selected = full.samples.filter(s => s.phase === "interleaved" && s.temperature === result.temperature && s.cohort === result.cohort);
+    const expected = compositeCohortSummary(selected, result.temperature, result.cohort);
+    assert.deepEqual(result, expected, "composite-cohort-recomputation-mismatch");
+    assert.deepEqual(result.n, allN); assert(result.pass && result.headroom >= .3, "composite-full-path-headroom-gate-failed");
+    // Each arm uses the same request schedule within each cohort.
+    for (const input of full.requests.cases)
+      assert.equal(selected.filter(s => s.arm === "baseline" && s.featureId === input.featureId).length,
+        selected.filter(s => s.arm === "candidate" && s.featureId === input.featureId).length);
+  }
+  return { samples: 1245, candidateSamples: 600, candidateCohorts: 6, rightsBudget: "2 * independently derived union profile count",
+    workBudgetsVerified: true, allCohortsAtLeast30PercentHeadroom: true,
+    worstCandidateP95Ms: Math.max(...full.cohorts.map(c => c.candidateP95Ms)), minimumHeadroom: Math.min(...full.cohorts.map(c => c.headroom)) };
+};
+export const compactCompositeBenchmark = (bytes: Buffer, path: string) => {
+  const full = JSON.parse(bytes.toString()) as FullCompositeBenchmark;
+  const verification = full.verdict === "pass" ? verifyCompositeBenchmark(full) : { verdict: "not-qualified" };
+  const { samples, serverWork, ...metadata } = full;
+  delete metadata.storageRoot; delete metadata.publication;
+  return { ...metadata, fullRecord: fullRecord(bytes, path), verification,
+    workCounts: ["baseline", "candidate"].map(arm => ({ arm, samples: samples.filter(s => s.arm === arm).length,
+      work: [...new Set(samples.filter(s => s.arm === arm).map(s => JSON.stringify(s.work)))].map(w => JSON.parse(w)) })),
+    serverWork: serverWork?.map(({ q1, q2, profiles, ...probe }) => ({ ...probe, unionProfiles: profiles.length,
+      q1: compactCounters(q1), q2: compactCounters(q2) })) };
+};
 
 // Recompute from individual Q1/Q2 durations, not stored block summaries. This
 // offline verifier performs no SQL and is not a machine-speed assertion in CI.
@@ -114,15 +222,59 @@ const compactCounters = (value: unknown): unknown => {
   if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, compactCounters(child)]));
   return value;
 };
-export const compactBehavior = (bytes: Buffer, path: string): Record<string, unknown> & { schemaVersion: number; fullRecord: ReturnType<typeof fullRecord> } => ({
-  ...compactCounters(JSON.parse(bytes.toString())) as Record<string, unknown>, schemaVersion: 2, fullRecord: fullRecord(bytes, path) });
+type CompositeBehavior = {
+  issue: number; step: number; fixture: string; verdict: string; sourceHashes: Record<string, string>;
+  probes: { name: string; verdict: string; details: unknown }[];
+  budgets?: { unionProfiles: string[]; rightsCalls: number; rightsBatches: number; work: Record<string, number> }[];
+};
+const compositeBehaviorProjection = (full: CompositeBehavior) => {
+  assert.equal(full.verdict, "pass"); assert(full.probes.every(p => p.verdict === "pass"));
+  const probes = full.probes.map(({ name, verdict, details }) => ({ name, verdict, detailsSha256: sha256(Buffer.from(JSON.stringify(details))) }));
+  if (full.step === 1) {
+    assert.equal(probes.length, 6);
+    const first = full.probes[0].details as { counts: { n: number; statements: number; rightsChecks: number; historyReads: number }[] };
+    assert.deepEqual(first.counts, allN.map(n => ({ n, statements: 1, rightsChecks: 0, historyReads: 0 })));
+    return { issue: full.issue, step: full.step, fixture: full.fixture, verdict: full.verdict, sourceHashes: full.sourceHashes,
+      probes, work: first.counts };
+  }
+  assert.equal(full.step, 2); assert.equal(probes.length, 15); assert(full.budgets && full.budgets.length === 78);
+  for (const budget of full.budgets) {
+    assert(budget.unionProfiles.length > 0); assert.equal(new Set(budget.unionProfiles).size, budget.unionProfiles.length);
+    assert([0, 1, 2].includes(budget.rightsBatches)); assert.equal(budget.rightsCalls, budget.rightsBatches * budget.unionProfiles.length);
+    assert.equal(budget.work.hashes + budget.work.heads + budget.work.puts + budget.work.deletes + budget.work.lists, 0);
+    assert(budget.work.statements <= 3 && budget.work.checks <= 2 && budget.work.gets <= 1);
+  }
+  const allNProbes = full.probes[0].details as { n: number; overlap: boolean; budget: NonNullable<CompositeBehavior["budgets"]>[number] }[];
+  assert.equal(allNProbes.length, 30);
+  for (const n of allN) for (const overlap of [false, true]) {
+    const selected = allNProbes.filter(p => p.n === n && p.overlap === overlap); assert.equal(selected.length, 1);
+    const budget = selected[0].budget; assert.equal(budget.rightsBatches, 2);
+    assert.deepEqual(budget.work, { statements: 3, checks: 2, gets: 1, heads: 0, puts: 0, deletes: 0, lists: 0, hashes: 0 });
+  }
+  const matched = full.probes.find(p => p.name.startsWith("database work is identical"))!.details as {
+    matched: { n: number; q1: ReadCounters; q2: ReadCounters; profiles: string[]; rightsCalls: number }[];
+    negativeControls: { scanDetected: boolean; writeDetected: boolean }; historyExpansion: number };
+  assert.deepEqual(matched.matched.map(m => m.n), [2, 16]);
+  assert.deepEqual(matched.matched[0].q1, matched.matched[1].q1); assert.deepEqual(matched.matched[0].q2, matched.matched[1].q2);
+  for (const m of matched.matched) { verifyCompositeCounters(m.q1); verifyCompositeCounters(m.q2); assert.equal(m.rightsCalls, 2 * m.profiles.length); }
+  assert.deepEqual(matched.negativeControls, { scanDetected: true, writeDetected: true }); assert.equal(matched.historyExpansion, 0);
+  return { issue: full.issue, step: full.step, fixture: full.fixture, verdict: full.verdict, sourceHashes: full.sourceHashes, probes,
+    work: { probes: full.budgets.length, successfulAllNProbes: 30, n: allN, sql: 3, checks: 2, descriptorGets: 1,
+      rightsCallBudget: "completed batches * independently derived union profile count; exactly 2P on success",
+      matchedRelationalWork: true, readerDml: 0, hiddenExampleReads: 0, ...matched.negativeControls } };
+};
+export const compactBehavior = (bytes: Buffer, path: string): Record<string, unknown> & { schemaVersion: number; fullRecord: ReturnType<typeof fullRecord> } => {
+  const full = JSON.parse(bytes.toString());
+  const projection = full.issue === 231 ? compositeBehaviorProjection(full) : compactCounters(full) as Record<string, unknown>;
+  return { ...projection, schemaVersion: 2, fullRecord: fullRecord(bytes, path) };
+};
 
 type RecordReference = { path: string; sha256: string; byteSize?: number };
 const verifyRecordBytes = (record: RecordReference, bytes: Buffer) => {
   assert.equal(sha256(bytes), record.sha256, "full-record-sha256-mismatch");
   if (record.byteSize !== undefined) assert.equal(bytes.byteLength, record.byteSize, "full-record-byte-size-mismatch");
 };
-export const verifyEvidenceReceipt = (receipt: ReturnType<typeof compactBenchmark> | ReturnType<typeof compactBehavior>, bytes: Buffer) => {
+export const verifyEvidenceReceipt = (receipt: ReturnType<typeof compactBenchmark> | ReturnType<typeof compactBehavior> | ReturnType<typeof compactCompositeBenchmark>, bytes: Buffer) => {
   verifyRecordBytes(receipt.fullRecord, bytes);
   // The disposable prototype used a different sample shape. Preserve its
   // original summary/probe projection rather than claiming final qualification.
@@ -136,7 +288,9 @@ export const verifyEvidenceReceipt = (receipt: ReturnType<typeof compactBenchmar
     assert.deepEqual(metadata, Object.fromEntries(Object.keys(metadata).map(key => [key, full[key]])), "compact-receipt-mismatch");
     return;
   }
-  const expected = "samples" in JSON.parse(bytes.toString()) ? compactBenchmark(bytes, receipt.fullRecord.path) : compactBehavior(bytes, receipt.fullRecord.path);
+  const full = JSON.parse(bytes.toString());
+  const expected = full.kind === "composite-authorization-benchmark" ? compactCompositeBenchmark(bytes, receipt.fullRecord.path)
+    : "samples" in full ? compactBenchmark(bytes, receipt.fullRecord.path) : compactBehavior(bytes, receipt.fullRecord.path);
   assert.deepEqual(receipt, expected, "compact-receipt-mismatch");
 };
 
@@ -189,13 +343,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     assert(receiptPath && !fullPath, "usage: artifact-governance-evidence.ts audit EVIDENCE_DIRECTORY");
     for (const verdict of await verifyEvidenceBundle(receiptPath)) console.log(JSON.stringify(verdict));
   } else {
-    assert(receiptPath && fullPath && ["benchmark", "behavior", "verify"].includes(operation),
-      "usage: artifact-governance-evidence.ts benchmark|behavior|verify RECEIPT FULL_RECORD");
+    assert(receiptPath && fullPath && ["benchmark", "composite", "behavior", "verify"].includes(operation),
+      "usage: artifact-governance-evidence.ts benchmark|composite|behavior|verify RECEIPT FULL_RECORD");
     const bytes = await readFile(fullPath);
     if (operation === "verify") {
       const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
       verifyEvidenceReceipt(receipt, bytes);
       console.log(JSON.stringify({ verdict: "pass", sha256: sha256(bytes), ...receipt.verification }));
-    } else await writeFile(receiptPath, JSON.stringify(operation === "benchmark" ? compactBenchmark(bytes, fullPath) : compactBehavior(bytes, fullPath), null, 2) + "\n");
+    } else await writeFile(receiptPath, JSON.stringify(operation === "benchmark" ? compactBenchmark(bytes, fullPath)
+      : operation === "composite" ? compactCompositeBenchmark(bytes, fullPath) : compactBehavior(bytes, fullPath), null, 2) + "\n");
   }
 }
