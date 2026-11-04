@@ -1,7 +1,7 @@
 import type { Client } from "pg";
 import { FEATURE_VERSION, LABEL_VERSION, HISTORY_POLICY, type CodeIdentity } from "./derived.ts";
 import type { EvidenceMode } from "./asOf.ts";
-import { objectKey, sha256, type ObjectStore } from "./objectStore.ts";
+import { sha256, type ObjectStore } from "./objectStore.ts";
 
 type Database = Pick<Client, "query">;
 export type DatasetSpec = {
@@ -130,9 +130,15 @@ export const buildDataset = async (client: Database, store: ObjectStore, spec: D
   const pinned = { contentSha256, format: "qb-passing-yards-dataset-v1", spec, code, snapshots: selection.snapshots,
     rights: authorization.decisions, exclusions: selection.exclusions, rows: selection.rows };
   const bytes = Buffer.from(JSON.stringify(pinned) + "\n");
-  const key = objectKey("datasets", bytes);
+  const fileSha256 = sha256(bytes);
+  const key = `datasets/${fileSha256}`;
   const inputSha256 = sha256(Buffer.from(JSON.stringify({spec, snapshots: selection.snapshots,
     members: selection.rows.map(r => [r.featureId,r.labelId]), code})));
+  const publicationValues = [
+    selection.snapshots, code.gitSha, code.contentSha256, spec, inputSha256,
+    fileSha256, key, bytes.byteLength, selection.rows.length, selection.exclusions, authorization,
+    JSON.stringify(selection.rows.map(({ featureId, labelId }) => ({ featureId, labelId }))), contentSha256,
+  ];
   let datasetId: string;
   let inTransaction = false;
   try {
@@ -143,7 +149,7 @@ export const buildDataset = async (client: Database, store: ObjectStore, spec: D
     await client.query(`WITH guard AS MATERIALIZED(SELECT fs138.lock_active_snapshots($1::uuid[]) AS ok)
       SELECT fs138.lock_object_for_publication($2) FROM guard WHERE ok`,[selection.snapshots,key]);
     const object = await store.head(key);
-    if (!object || object.sha256!==sha256(bytes) || object.byteSize!==bytes.byteLength)
+    if (!object || object.sha256!==fileSha256 || object.byteSize!==bytes.byteLength)
       throw new Error("dataset-object-missing-or-mismatched");
     const publication = await client.query<{dataset_id:string}>(`WITH guard AS MATERIALIZED(SELECT fs138.lock_active_snapshots($1::uuid[]) AS ok),
      manifest AS(INSERT INTO fs138.dataset_manifests(code_sha,implementation_sha256,spec,input_sha256,file_sha256,object_key,byte_size,row_count,exclusions,rights_receipt,content_sha256)
@@ -151,9 +157,7 @@ export const buildDataset = async (client: Database, store: ObjectStore, spec: D
      members AS(INSERT INTO fs138.dataset_members SELECT dataset_id,r."featureId",r."labelId" FROM manifest
       CROSS JOIN jsonb_to_recordset($12::jsonb) AS r("featureId" uuid,"labelId" uuid)),
      inputs AS(INSERT INTO fs138.dataset_inputs SELECT dataset_id,snapshot_id FROM manifest CROSS JOIN unnest($1::uuid[]) snapshot_id)
-     SELECT dataset_id FROM manifest`, [selection.snapshots,code.gitSha,code.contentSha256,spec,inputSha256,
-        sha256(bytes),key,bytes.byteLength,selection.rows.length,selection.exclusions,authorization,
-        JSON.stringify(selection.rows.map(r => ({featureId:r.featureId,labelId:r.labelId}))),contentSha256]);
+     SELECT dataset_id FROM manifest`, publicationValues);
     datasetId = publication.rows[0].dataset_id;
     await client.query("COMMIT");
   } catch (error) {
@@ -165,7 +169,7 @@ export const buildDataset = async (client: Database, store: ObjectStore, spec: D
     throw error;
   }
   const delivery = await authorize(client, selection.snapshots, datasetId);
-  return {datasetId, objectKey:key,fileSha256:sha256(bytes),contentSha256,inputSha256,byteSize:bytes.byteLength,
+  return {datasetId, objectKey:key,fileSha256,contentSha256,inputSha256,byteSize:bytes.byteLength,
     rowCount:selection.rows.length,exclusions:selection.exclusions,authorization,delivery,elapsedMs:performance.now()-started,
     work:{statements:8,rightsQueries:2,pointInTimeJoins:1,perRowQueries:0,objectWrites:1,sourceByteReads:0}};
 };
