@@ -1,8 +1,8 @@
 # Private prediction helpers (#235)
 
 The owner approved the [roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/235#issuecomment-6622741080).
-Step 1 supplies descriptor compatibility and the private value contract for
-#167. Forecast arithmetic and response-data composition remain Step 2 work.
+Steps 1–2 supply descriptor compatibility, forecast arithmetic and response data
+for #167. They remain private pipeline helpers; #167 supplies the guarded handler.
 
 ## Design basis
 
@@ -17,8 +17,8 @@ eligibility/label work or nests authorization. An inference framework or public
 helper API adds configuration and composition paths for one fixed descriptor.
 Duplicating supported-policy constants risks drift; importing producer/reader
 implementations at runtime pulls I/O into the core. Instead, trusted pipeline
-code supplies policy values assembled from existing constants. Step 2 will use
-the existing public domain empirical kernel rather than duplicate arithmetic.
+code supplies policy values assembled from existing constants. Arithmetic uses
+the existing public domain empirical kernel.
 
 **Targets.** Descriptor dataset sets contain 1–2 entries; histories have n=2–16.
 Helpers perform **0 SQL, 0 authorization calls, 0 ObjectStore/file/network
@@ -52,8 +52,9 @@ inside #167's trusted Q1 callback. Q1 provides authoritative immutable run and
 dataset pins plus the authorized context. Q2 refreshes status/freshness before
 delivery. Parsed descriptor JSON is data, not executable caller objects. These
 helpers do not independently verify transport bytes or claim to be a public
-security boundary. Type-only local imports avoid reader initialization; runtime
-Step 1 imports only `node:util` for structural equality.
+security boundary. Type-only local imports avoid reader initialization. Runtime
+imports are `node:util` for structural equality and the dependency-free public
+`@dfs-ev/domain/empirical` arithmetic kernel.
 
 ## Step 1: descriptor compatibility
 
@@ -92,11 +93,47 @@ arbitrary descriptor or dataset-spec objects.
 | `unsupported-model-policy` | Requested or recorded policy is outside the trusted supported policy. |
 | `descriptor-mismatch` | Descriptor shape, identity, context or exposed dataset pins disagree. |
 | `evidence-mode-mismatch` | Otherwise-valid run has no dataset in the served feature's mode. |
+| `materialization-refused` | Malformed/count-mismatched history, sample size outside 2–16 or non-finite/non-numeric support. |
 
 JSON parse failures and mapping private errors to bounded unavailable responses
 belong to #167. No partial response is constructed by this validator.
 
-## Validation and remaining work
+## Step 2: forecast and response data
+
+`computePredictionForecast` accepts the private Q1 history, its declared sample
+size and a finite numeric line. A non-finite/non-numeric line refuses as
+`invalid-request`. An array/count backstop enforces integer n=2–16 and exact
+length. The helper extracts only `yards`, constructs equal-mass support once and
+evaluates the requested line once through `equalMassSupport` → `probabilityAt`.
+A finite-numeric-support check refuses malformed materializations instead of
+dropping values or manufacturing a forecast. This is an arithmetic backstop;
+it does not inspect example game IDs, dates, eligibility, lineage or outcomes.
+The existing kernel preserves duplicate mass, signed values, integer pushes,
+half-lines and all-push results without smoothing. The result is sample count,
+line and Over/Under/Push probabilities; history/support remains private.
+
+`buildPredictionResponse` takes validated model/request pins, the forecast,
+**Q2's final context**, and the boundary's `authorization` (Q1) and `delivery`
+(Q2) receipts. It returns an available data object containing:
+
+- Player/game and explicit run/descriptor identity, research/uncalibrated
+  designation, supported versions/adapter and actual/dataset evidence modes.
+- The requested line, sample count and probability triple.
+- Exact selected feature identity/metadata, knowledge/cutoff/computed/checkpoint
+  clocks, source snapshot IDs, selection reasons and final freshness flags.
+- Both check receipts, including check clocks and profile/decision pairs.
+
+Every container is owned and only named fields are copied. Microsecond clocks,
+last-valid reasons, stale/superseded flags and retrospective
+`historical-availability-unverified` pass through unchanged. No new clock is
+read, selection/freshness/rights recomputed, or private descriptor/history/target
+extra copied. The helper trusts the validated composition; it is not a second
+authorization or consistency guard. #167 calls it only after Q2, then performs
+serialization and its final cancellation/deadline/delivery gate. It adds session
+disposition and maps failures to a bounded unavailable envelope with no partial
+forecast. No standalone helper result permits delivery.
+
+## Validation and CI work budgets
 
 The focused in-memory tests cover actual publisher/Q1 shapes, one/two modes,
 order independence, exact identity and every exposed pin/spec field, malformed
@@ -105,9 +142,37 @@ compatibility. Poisoned unused fields fail if history, labels, membership,
 reports, transport-only claims or clocks are inspected. Hash/serialization spies
 and frozen-input/output-mutation controls cover the Step 1 purity contract.
 The fixtures are synthetic contract controls, not a new real-fixture benchmark.
+The three focused files contain **145 passing cases**:
+`prediction-helpers.test.ts`, `prediction-forecast.test.ts` and
+`prediction-purity.test.ts`, all in the regular Node unit-test lane.
 
-Step 2 will add shared-kernel arithmetic for n=2–16, response data from Q2,
-hand-calculated probability controls, target invariance, preserved clocks/flags/
-receipts and final structural work/import/export checks. #167 retains integrated
-SQL/rights/GET counts, races, LOGIN/deadline tests and the final speed gate.
-No helper-only result qualifies the completed handler's latency.
+| Budget/contract | Deterministic proof |
+| --- | --- |
+| 0 SQL/authorization/ObjectStore/file/network work | Emitted runtime dependency graph allows only the named util/empirical functions; empirical is checked for no dependencies. Negative controls reject reader, evaluator, I/O, dynamic import and re-export paths. Helpers accept no client/store/callback. |
+| 0 hash/serialization/delivery/clock work | Runtime throwing spies cover hash, JSON parse/stringify, fetch and clocks across all three helpers. Structural controls reject clocks, process/global access, timers, eval and randomness. |
+| 0 per-example verification | At every n=2–16, a proxy permits only one `yards` access per row and throws on every other field. No target value, training membership or eligibility can affect arithmetic. |
+| Shared math, fixed helper calls | Exactly one support construction and one probability evaluation at every n; hand-calculated triples, ties, half-lines, all-push and invalid/count/container controls. |
+| Q2 semantics and field boundary | Q1/Q2 freshness differs; response uses supplied final flags and preserves exact microsecond clocks, reasons, lineage and both distinct receipts. Poisoned extras fail if read; two same-game QBs remain distinct with the same forecast for the same yards. |
+| Ownership | Frozen inputs, repeat calls and mutation of every returned container prove no input mutation or output aliasing. |
+| Private workspace API | Public and deep private package subpaths refuse resolution; normal import-boundary checks remain in place. |
+
+Run the focused checks with Node 24:
+
+```sh
+node node_modules/vitest/vitest.mjs run --config vitest.node.config.ts \
+  services/pipeline/tests/feature-store/prediction-helpers.test.ts \
+  services/pipeline/tests/feature-store/prediction-forecast.test.ts \
+  services/pipeline/tests/feature-store/prediction-purity.test.ts
+```
+
+| #235 acceptance | Proof |
+| --- | --- |
+| Descriptor format/scope/version/identity/exposed pins | Step 1 mismatch matrix, order-independent one/two-mode sets and exact policy checks. |
+| Feature mode compatibility without training eligibility | Strict-only retrospective refusal and both-mode acceptance; no membership/label reads. |
+| Pure shared forecast over n=2–16 | Step 2 numeric/line/count matrix and deterministic kernel/yard-read budgets. |
+| Response data preserving Q2 policy metadata | Exact passthrough, clocks/receipts, target poisoning and complete container-ownership tests. |
+| Private API, no hidden work | Emitted import graph, negative controls, throwing spies and workspace resolution checks. |
+
+#167 retains integrated SQL/rights/GET counts, races, LOGIN/deadline tests and the
+final speed gate. No helper-only result qualifies the completed handler's latency;
+CI contains no machine-speed assertions for this work.

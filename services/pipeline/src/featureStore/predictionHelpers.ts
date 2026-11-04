@@ -1,5 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
-import type { ModelReadPins } from "./modelArtifacts.ts";
+import { equalMassSupport, probabilityAt, type Triple } from "@dfs-ev/domain/empirical";
+import type { ModelFeatureHistory, ModelReadPins, ModelRightsReceipt } from "./modelArtifacts.ts";
 import type { ModelContext, ModelContextRequest } from "./modelContext.ts";
 
 // Private functional core. The handler supplies this policy from canonical
@@ -16,7 +17,7 @@ export type PredictionRequestPins = Readonly<Pick<ModelContextRequest,
   runId: string; modelVersion: string; scoringPolicy: string;
 }>;
 export type PredictionValidationCode = "invalid-request" | "unsupported-model-policy"
-  | "descriptor-mismatch" | "evidence-mode-mismatch";
+  | "descriptor-mismatch" | "evidence-mode-mismatch" | "materialization-refused";
 export class PredictionValidationError extends Error {
   readonly code: PredictionValidationCode;
   constructor(code: PredictionValidationCode) {
@@ -101,3 +102,68 @@ export const validateModelDescriptor = ({ descriptor, request, model, context, s
     adapter: { id: supported.adapter.id, version: supported.adapter.version },
     evidenceMode: context.feature.evidenceMode, datasetModes: [...modes].sort() };
 };
+
+export type PredictionForecast = { line: number; sampleCount: number; probabilities: Triple };
+
+// Q1/producer owns example eligibility and lineage. Only yards enter arithmetic;
+// finite support is a math backstop, not a second per-example qualification pass.
+export const computePredictionForecast = ({ history, sampleSize, line }: {
+  history: readonly Pick<ModelFeatureHistory[number], "yards">[] | undefined;
+  sampleSize: number; line: number;
+}): PredictionForecast => {
+  if (!Number.isFinite(line)) refused("invalid-request");
+  if (!Array.isArray(history) || !Number.isInteger(sampleSize) || sampleSize < 2 || sampleSize > 16
+    || history.length !== sampleSize) refused("materialization-refused");
+  const support = equalMassSupport(history.map(row => row?.yards));
+  if (support.some(point => !Number.isFinite(point.value))) refused("materialization-refused");
+  const probabilities = probabilityAt(support, line);
+  if (!probabilities) refused("materialization-refused");
+  return { line, sampleCount: sampleSize, probabilities };
+};
+
+export type PredictionResponseData = {
+  status: "available"; playerId: string; gameId: string;
+  model: ValidatedPredictionModel; forecast: PredictionForecast; context: ModelContext;
+  authorization: ModelRightsReceipt; delivery: ModelRightsReceipt;
+};
+const copyReceipt = (receipt: ModelRightsReceipt): ModelRightsReceipt => ({
+  checkedAt: receipt.checkedAt,
+  decisions: receipt.decisions.map(({ profileId, decisionId }) => ({ profileId, decisionId })),
+});
+
+// Trusted composition only: #167 calls this after Q2, then serializes and applies
+// its final deadline/delivery gate. Copy explicit fields to keep extra private
+// caller data out of the response. No clocks or freshness policy are evaluated.
+export const buildPredictionResponse = ({ request, model, forecast, context, authorization, delivery }: {
+  request: PredictionRequestPins; model: ValidatedPredictionModel; forecast: PredictionForecast;
+  context: ModelContext; authorization: ModelRightsReceipt; delivery: ModelRightsReceipt;
+}): PredictionResponseData => ({
+  status: "available", playerId: request.playerId, gameId: request.gameId,
+  model: { runId: model.runId, descriptorSha256: model.descriptorSha256,
+    rightsScope: model.rightsScope, designation: model.designation,
+    modelVersion: model.modelVersion, featureVersion: model.featureVersion, labelVersion: model.labelVersion,
+    historyPolicy: model.historyPolicy, scoringPolicy: model.scoringPolicy,
+    adapter: { id: model.adapter.id, version: model.adapter.version },
+    evidenceMode: model.evidenceMode, datasetModes: [...model.datasetModes] },
+  forecast: { line: forecast.line, sampleCount: forecast.sampleCount,
+    probabilities: { overProbability: forecast.probabilities.overProbability,
+      underProbability: forecast.probabilities.underProbability, pushProbability: forecast.probabilities.pushProbability } },
+  context: {
+    request: { playerId: context.request.playerId, gameId: context.request.gameId,
+      knownAsOf: context.request.knownAsOf, featureVersion: context.request.featureVersion,
+      historyPolicy: context.request.historyPolicy, evidenceMode: context.request.evidenceMode },
+    feature: { featureId: context.feature.featureId, jobId: context.feature.jobId,
+      playerId: context.feature.playerId, gameId: context.feature.gameId, stat: context.feature.stat,
+      season: context.feature.season, cutoff: context.feature.cutoff, checkpoint: context.feature.checkpoint,
+      computedAt: context.feature.computedAt, featureVersion: context.feature.featureVersion,
+      historyPolicy: context.feature.historyPolicy, evidenceMode: context.feature.evidenceMode,
+      sampleSize: context.feature.sampleSize, flags: [...context.feature.flags] },
+    snapshotIds: [...context.snapshotIds],
+    selection: { visibleHeadId: context.selection.visibleHeadId, lastValid: context.selection.lastValid,
+      reasons: [...context.selection.reasons] },
+    freshness: { observedAt: context.freshness.observedAt, headId: context.freshness.headId,
+      checkpoint: context.freshness.checkpoint, computedAt: context.freshness.computedAt,
+      superseded: context.freshness.superseded, stale: context.freshness.stale, reasons: [...context.freshness.reasons] },
+  },
+  authorization: copyReceipt(authorization), delivery: copyReceipt(delivery),
+});

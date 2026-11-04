@@ -3,7 +3,7 @@ import { QB_EVALUATOR_VERSION, type QbEvidenceMode } from "@dfs-ev/domain/qb-eva
 import { FEATURE_VERSION, LABEL_VERSION, HISTORY_POLICY } from "../../src/featureStore/derived.ts";
 import { EMPIRICAL_ADAPTER } from "../../src/featureStore/empiricalAdapter.ts";
 import { MODEL_PREREGISTRATION } from "../../src/featureStore/modelManifests.ts";
-import type { ModelReadPins } from "../../src/featureStore/modelArtifacts.ts";
+import type { ModelReadPins, ModelRightsReceipt } from "../../src/featureStore/modelArtifacts.ts";
 import type { ModelContext } from "../../src/featureStore/modelContext.ts";
 import type { PredictionRequestPins, SupportedPredictionPolicy } from "../../src/featureStore/predictionHelpers.ts";
 
@@ -51,4 +51,22 @@ export const predictionFixture = (modes: readonly QbEvidenceMode[] = ["strict-po
     }), reports: datasets.map(pin => ({ mode: pin.mode, datasetId: pin.datasetId, objectKey: "audits/" + "b".repeat(64),
       sha256: "b".repeat(64), byteSize: 300, logicalSha256: "c".repeat(64) })) };
   return { descriptor, request, model, context, supported };
+};
+
+export const predictionDeliveryFixture = () => {
+  const input = predictionFixture();
+  input.context.selection = { ...input.context.selection, lastValid: true, reasons: ["insufficient-history"] };
+  const finalContext = structuredClone(input.context);
+  finalContext.freshness = { observedAt: "2026-10-31T01:02:05.987654+00:00",
+    headId: "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee", checkpoint: "2026-10-31T00:00:00.123457+00:00",
+    computedAt: "2026-10-31T00:00:01.654322+00:00", superseded: true, stale: true,
+    reasons: ["insufficient-history", "newest-revision-unavailable"] };
+  const authorization: ModelRightsReceipt = { checkedAt: "2026-10-31T01:02:04.123456+00:00",
+    decisions: [{ profileId: "profile-model", decisionId: "decision-model-q1" },
+      { profileId: "profile-feature", decisionId: "decision-feature-q1" }] };
+  const delivery: ModelRightsReceipt = { checkedAt: "2026-10-31T01:02:05.987654+00:00",
+    decisions: [{ profileId: "profile-model", decisionId: "decision-model-q2" },
+      { profileId: "profile-feature", decisionId: "decision-feature-q2" }] };
+  return { ...input, finalContext, authorization, delivery,
+    history: [100, 200, 300].map((yards, i) => ({ gameId: `prior-${i}`, kickoff: "2026-09-01T12:00:00Z", yards })) };
 };
