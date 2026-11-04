@@ -16,7 +16,9 @@ export const discardUnpublishedReport = async (client:Database,store:ObjectStore
    pg_has_role(session_user,'fs138_pipeline_writer','member') AS writer`,[key])).rows[0];
   if(!writer)throw new Error('report-cleanup-writer-required');
   const referenced=registry&&(await client.query<{referenced:boolean}>(
-   'SELECT EXISTS(SELECT 1 FROM fs138.model_artifacts WHERE object_key=$1) AS referenced',[key])).rows[0].referenced;
+   `SELECT EXISTS(SELECT 1 FROM fs138.model_artifacts WHERE object_key=$1)
+    OR EXISTS(SELECT 1 FROM fs138.object_removals WHERE object_key=$1) AS referenced`,[key])).rows[0].referenced;
+  // Re-read ownership after the advisory lock wait, in a fresh statement.
   if(!referenced)await store.delete(key);
   await client.query('COMMIT');
  }catch(error){
@@ -69,8 +71,32 @@ export const cleanupDeletedObjects = async (client:Database,store:ObjectStore) =
  }
  return {removed,shared};
 };
+// #229 maintenance capability; #138/#166 pending-only callers remain compatible.
+// Two independently bounded pages: recovery never displaces ordinary pending work.
+// No recurring legacy-adoption scan: queue-time triggers consume observations.
+export const cleanupDeletedObjectsWithRecovery = async (client:Database,store:ObjectStore) => {
+ const pending=await cleanupDeletedObjects(client,store);
+ const candidates=(await client.query<{object_key:string}>(`SELECT r.object_key FROM fs138.object_removals r
+  WHERE r.completed_at IS NOT NULL AND r.recovery_until IS NOT NULL
+   AND r.recovery_due<=now() AND r.remove_after<=now()
+  ORDER BY r.recovery_due,r.object_key LIMIT 1024`)).rows;
+ const recovered:string[]=[],deferred:string[]=[];
+ for(const {object_key:key} of candidates){
+  try{
+   await client.query('BEGIN');
+   const allowed=(await client.query<{allowed:boolean}>('SELECT fs138.recovery_removal_recheck($1) AS allowed',[key])).rows[0].allowed;
+   if(allowed){await store.delete(key);await client.query('SELECT fs138.ack_recovery_removal($1)',[key]);recovered.push(key);}
+   else deferred.push(key);
+   await client.query('COMMIT');
+  }catch(error){
+   if(connectionInterrupted(error))throw new Error('cleanup-connection-interrupted-replace',{cause:error});
+   try{await client.query('ROLLBACK');}catch(rollbackError){throw new Error('cleanup-connection-interrupted-replace',{cause:rollbackError});}throw error;
+  }
+ }
+ return {...pending,recovered,deferred};
+};
 // Explicit writer action only. This re-arms the existing tombstone without
-// clearing it or changing its grace; automatic completed-removal recovery is #229.
+// clearing it or changing its grace. Use the #229 combined entry point for recovery.
 export const requeueRemovedObject = async (client:Database,key:string):Promise<void> => {
  await client.query('SELECT fs138.requeue_removed_object($1)',[key]);
 };
