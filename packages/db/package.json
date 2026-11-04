@@ -17,8 +17,9 @@
     "./assets/163_empirical_reader.sql": "./proposals/163_empirical_reader.sql",
     "./assets/165_model_manifests.sql": "./proposals/165_model_manifests.sql",
     "./assets/166_artifact_governance.sql": "./proposals/166_artifact_governance.sql",
-    "./assets/schema.sql": "./schema.sql",
-    "./assets/229_mandatory_recovery.sql": "./proposals/229_mandatory_recovery.sql"
+    "./assets/229_mandatory_recovery.sql": "./proposals/229_mandatory_recovery.sql",
+    "./assets/231_composite_authorization.sql": "./proposals/231_composite_authorization.sql",
+    "./assets/schema.sql": "./schema.sql"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
