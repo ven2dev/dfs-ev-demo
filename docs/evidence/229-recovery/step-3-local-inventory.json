@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-02",
+  "scope": "read-only standard local fixture, allow-connection dfs_ev_test* databases only; no hosted connection",
+  "databases": [
+    {
+      "name": "dfs_ev_test",
+      "modelruns165": false,
+      "modelreader166": false,
+      "adoption229": false
+    },
+    {
+      "name": "dfs_ev_test_7bb0fa13d26abece4cf3",
+      "modelruns165": false,
+      "modelreader166": false,
+      "adoption229": false
+    }
+  ],
+  "repositoryEvidence": [
+    "docs/feature-store-artifact-governance.md: proposal SQL without frozen migration/hosted rollout",
+    "services/pipeline/scripts/feature-store/harness.ts: applies #165/#166 only in registered scratch fixtures",
+    "packages/db/tooling/tests/scratch.mjs: removes registered database in finally"
+  ],
+  "limits": "No claim about manually created databases outside the documented deployment/test workflow."
+}
