@@ -1,0 +1,299 @@
+# #229 — mandatory-owner late-PUT recovery (approved with backoff amendment)
+
+Status: owner-approved November 2, 2026, subject to the measured backoff amendment below. Implementation proceeds per-step; no commit or push without approval.
+
+## Design basis
+
+Pattern: single-owner garbage collection with a retained recovery horizon and
+existing per-address transaction advisory lock. Extend the existing removal row;
+keep pending and recovery pages separate, pending first. No new table/scheduler.
+Alternatives: co-own with orphan GC (conflicting grace/completion); fence uploads
+(changes the approved ObjectStore contract); new scheduling subsystem (unneeded
+if a second bounded predicate on the existing queue works). A single mixed LIMIT
+is rejected because completed recovery rows could displace pending removals.
+Targets: 1,024 pending candidates plus at most 1,024 recovery candidates per
+invocation; no recovery selection in the pending lane. Proposed measured client budget: 2 + 4P + 4R statements,
+P,R <=1,024, maximum 8,194; refused/adoption-only candidates may use fewer. No elapsed-time target exists in #229; local timings are
+context, not a new acceptance threshold or hosted claim.
+Assumptions: trusted pipeline, local ObjectStore, PUT completion within 24 hours,
+300-second orphan grace, no fencing; preserve any longer mandatory grace.
+Permanent tombstones prevent re-publication of identically addressed content.
+Sorted address locks preserve deletion/publication ordering and avoid deadlocks.
+
+## Owner decisions
+
+1. Owner agreed: latest actual orphan enrollment +24 hours; no restart at
+   handoff or scans.
+2. Owner agreed: exponential revisit backoff: 60s, 120s, 240s, doubling up to a
+   one-hour cap, with the final due timestamp clipped exactly to the fixed
+   24-hour horizon. Actual opportunities depend on cleaner invocation
+   frequency; this issue adds no scheduler or wall-clock service guarantee.
+3. Owner agreed: preserve shared-live-reference refusal and re-arm semantics;
+   mandatory ownership never authorizes deleting another live reference.
+
+The shared-reference behavior preserves #166 safety semantics.
+
+## Intake findings
+
+#166 is on main through PR #230. Existing queue has completed_at/outcome but no
+recovery metadata. Current query excludes observations and completed rows before
+LIMIT. Its *unchanged* predicate cannot revisit completed removals. A second
+bounded page on the same table can carry the predicate; spike below tests this
+before any new subsystem is considered. Pending must run first so it cannot be
+starved by recovery work. #164 discardUnpublishedReport currently checks registry
+only: it must defer to a tombstone after locking. orphan_recheck's model branch
+also needs a mandatory-owner check before deleting or retiring an observation.
+
+Prototype SQL is deliberately admin-only, not production permission/role code.
+It tests scheduling/handoff primitives against the real #138/#165/#166 schema.
+Full authorization, shared-reference and failure matrix belong in the approved
+implementation, not assertions inferred from synthetic queue measurements.
+
+## Original spike results and limits — adoption superseded by review
+
+The proposal adds recovery_until/recovery_due to the existing removal row and
+uses the existing address lock. Handoff transfers latest enrollment +24h and
+preserves max(mandatory grace, enrollment +300s), then deletes the observation in
+the same transaction. Repeat scans/adoption do not extend the horizon. A repeat
+deletion can extend its mandatory grace without resetting recovery metadata.
+
+The unchanged queue predicate cannot carry completed recovery. The *same table*
+can: retain the pending page, add one bounded recovery/adoption page joining
+orphan observations for pre-existing rows, including completed rows. No new table
+or scheduler is needed. The prototype's recovery index is not a promise that the
+mixed observation predicate is index-only; assess actual plans at the fixture.
+
+Measured on the real #138/#163/#165/#166 schema and standard local PostgreSQL
+18.6 fixture: pending 1,024+2 page progress despite 1,025 observed addresses;
+pre-existing observation adoption 1,024+1; completed recovery 1,024+1. Each full
+allowed pending/recovery page executed 4,097 client statements and 1,024 actual
+idempotent local ObjectStore DELETEs. Thus the proposed maximum is 8,194 client
+statements and 2,048 DELETE calls per invocation, with zero GET/HEAD/LIST/PUT in
+the cleanup loops. Two empty selections cost two statements. BEGIN/COMMIT count;
+function-internal statements do not vanish from server-work review.
+
+Actual local bytes validated absent-then-late arrival and unlink-before-ack
+rollback/resume. Both actual address-lock orders were observed through
+pg_blocking_pids. Final expired revisit cleared scheduling metadata only.
+Six alternating selection trials are in the receipt; timings are contextual.
+
+Limits: queue controls do not prove live dependency graph permissions; full
+paused-PUT/publication/rights races remain implementation tests. Prototype APIs
+are admin-only and not application APIs. Existing tombstone publication refusal
+was inspected, not retested through a full publication envelope in this spike.
+These limits prevent presenting the scheduling spike as completed #229 delivery.
+
+## Atomic roadmap and LOE
+
+Total estimate **4.5–5 engineering hours including intake/spike**, hard stop at
+five hours. Roughly 0.75–1 hour is intake/spike; the remainder is implementation
+and verification after approval. Stop with evidence and propose a split if the
+remaining work no longer fits. The approved issue branch is created from fresh main.
+
+1. **Transfer ownership in proposal SQL (0.75–1h).** Extend the existing removal
+   row; integrate adoption into deletion's existing sorted address-lock phase
+   and queue-time ownership transfer. Preserve horizon and both
+   grace deadlines. Add same-lock mandatory-owner refusal to orphan_recheck,
+   retire_model_observation and #164 discard cleanup. Preserve the tombstone and
+   existing writer-only mutation surface; tests use real restricted logins.
+2. **Bounded recovery adapter (0.5–0.75h).** Pending lane first, unchanged limit;
+   separate due-only recovery selection <=1,024. Recheck under lock, delete
+   idempotently, then acknowledge/advance backoff in the same transaction.
+   Start at 60s and double to a 3,600s cap; next due is the earlier of that delay
+   and recovery_until. Persist the capped step; scans and repeated deletion events
+   never reset it. Backoff advances only after a committed revisit, so a crash
+   cannot skip the final deletion attempt. Due time is not a scheduler guarantee: a
+   delayed invocation performs the final revisit after the horizon before retiring.
+   New queue intents adopt observations atomically at insertion/upsert; recovery
+   never discovers unqueued observations. Shared references are never deleted: recheck advances
+   their revisit scheduling or retires expired metadata so they cannot pin the
+   first recovery page forever. Final expired revisit deletes eligible bytes
+   before retiring metadata. Preserve existing connection-interruption policy.
+3. **Behavior and races (1.25h).** Implement every matrix row below, with controlled
+   barriers and observed lock waits; no sleep-only race assertions. Compare
+   server table counters as well as client counts, including ack's recheck.
+4. **Validation and review checkpoint (0.75–1h).** Run feature-store and both
+   standard PostgreSQL suites, typecheck, lint, catalog/readiness and boundaries;
+   compare frozen hashes and existing case inventories. Save compact evidence,
+   full logs outside Git. Independent review before separately approved push.
+
+Each implementation step ends at owner commit approval. No migration is frozen
+before measured behavior/work proof. All SQL changes remain proposals here.
+
+## Acceptance test matrix
+
+| Acceptance/probe | Required implementation test |
+|---|---|
+| Common-lock handoff | Deletion adopts observation atomically; both lock orders, orphan-first and handoff-first, prove a single owner and no deadlock. Include #164 cleanup waiting behind handoff. |
+| Paused PUT across handoff | Enroll, pause real local PUT before completion, adopt and complete mandatory removal, resume PUT/lost response, revisit reclaims bytes; publication still refused. |
+| Absent then late | Completed removal sees absent bytes, retains horizon, later arrival is deleted by mandatory owner, never re-enrolled. |
+| Monotone finite horizon | Retry enrollment before handoff sets latest start; repeated deletion/adoption/scans never shorten or endlessly extend horizon; longer mandatory grace still wins. |
+| Unlink before ack crash | Delete succeeds, transaction/socket fails before ack; fresh connection resumes idempotently with tombstone/horizon intact. Include unknown COMMIT outcome handling. |
+| Backoff | SQL schedule proves 60/120/240/480/960/1920/3600s, cap and final due exactly at horizon; delayed invocation and crash rollback cannot skip final revisit; repeated scans/events cannot reset backoff. |
+| Recovery expiry | Boundary before/at/after horizon; final authorized delete then retire only schedule metadata; identical content remains publication-refused. |
+| #174 progress | 1,025 observed +1,025 genuinely shared live addresses +later removable target, plus >1,024 recovery candidates; independent bounded lanes, shared attempts cannot monopolize either page. |
+| Rollout/invariant | Inventory the supported installation before rollout. No persistent #165/#166 schema is deployed; no backfill is shipped. Enroll, recheck and queue-trigger order tests prove no new model/audit observation can pair with a tombstone. A manually managed legacy installation would need separately reviewed one-time backfill, never a recurring scan. |
+| Grace/shared safety | Pending owner cannot bypass grace; live model/raw/dataset references survive both lanes and repeated events re-arm as before. |
+| Permissions/work | Reader/outsider/direct mutations refused; bad keys rejected; <=2+4P+4R client statements, no cleanup GET/HEAD/LIST/PUT; internal counters show no example/member scans. |
+
+## Non-goals and review gate
+
+No fencing/upload deadlines, new scheduler, hosted writes, UI, frozen migration
+changes, or changes to invalidation closure. #86 does not block this local work.
+Owner approved proceeding after these changes; post the amended measured roadmap
+and use feature/dfsEV-229-mandatory-recovery. Push and merge gates remain
+separate. No action on the never-merge hosted harness is implied.
+
+## Measured backoff amendment
+
+SQL virtual-time schedule gives **29 revisits** across a full
+24-hour window (excluding the initial removal), including exactly one final due
+at 86,400 seconds. No interval exceeds one hour. Shorter remaining horizons
+produce fewer revisits. The prior late-arrival, crash/resume, both-lock-order and
+1,024-page proofs pass unchanged; the 8,194-statement bound is unchanged.
+A delayed worker can leave bytes longer than an hour; this issue adds no scheduler
+SLA. The tombstone continues to refuse publication throughout.
+
+## Step 1 checkpoint — November 2, 2026
+
+Ownership transfer is implemented locally in `229_mandatory_recovery.sql`: an
+AFTER queue INSERT/event-update trigger adopts observations atomically, including
+UPSERT conflicts; a validated writer-only helper handles old rows. Horizon and
+grace are preserved, rollback retains the observation, and orphan retirement and
+#164 cleanup defer under the common lock. Live shared references remain retained.
+10 new PostgreSQL checks, 26 existing orphan/cleaner checks, 23 boundary/layout
+checks, normal root typecheck and focused lint pass. Frozen assets are unchanged.
+Recovery selection/execution and backoff persistence are Step 2; the amended
+spike proves the schedule but this checkpoint does not claim that adapter is done.
+No commit or push yet; owner commit approval is the next gate.
+
+## Step 2 checkpoint — November 2, 2026
+
+Step 1 committed as `7e41f2a`. The combined maintenance capability is
+`cleanupDeletedObjectsWithRecovery`, exported through the existing governance
+package entry point. It drains the compatible pending-only `cleanupDeletedObjects`
+first, then one separate recovery/adoption page; callers choosing #229 maintenance
+use the combined entry point. The existing #138 dataset spike deliberately keeps
+its pending-only foundation API; it does not load the #229 schema. The combined
+capability requires the #229 proposal schema.
+
+Both ordinary ack and shared-retained completion initialize a 60-second due time
+and step 1. Private scheduling advances only after a committed revisit, caps at
+one hour, clips to the fixed horizon, and clears only scheduling metadata after
+the final authorized deletion (or shared-reference refusal). Repeated events keep
+existing backoff. Tests cover both hooks, real late bytes at the final revisit,
+rollback after a lost DELETE response, shared retirement and bounded old-row
+adoption. Two full pages measured exactly 8,194 client statements, 2,048 idempotent
+DELETE calls and no cleanup GET/HEAD/LIST/PUT; both 1,025th rows progress on the
+next invocation. Client-count proof does not replace Step 3 server-work counters.
+
+46 affected PostgreSQL checks, TypeScript, focused lint and 23 package-boundary/
+layout checks pass. Step 3 still covers the complete paused-PUT/handoff and
+interruption matrix, #174 mixed shared/observed controls and internal counters;
+Step 4 runs both complete database suites and final review. Step 2 is uncommitted
+and awaits owner approval; nothing pushed or hosted.
+
+## Superseded Step 3 checkpoint — adoption scan rejected in review
+
+Step 2 committed as `c5c3136`. Recovery selection now materializes separately
+capped due and adoption branches, combines them with UNION ALL, orders due first,
+and limits the combined page to 1,024. The outer sort sees at most 2,048 rows.
+An anti-join against the bounded due CTE excludes duplicate adoption candidates
+without a full-table DISTINCT. Due uses stable now() and the recovery partial
+index; adoption starts at observations and uses a parameterized primary-key
+lookup into removals. A partial observation index supports its first_seen order.
+The existing pending lane gets a partial unfinished-row index too, preventing
+its empty page from walking historical tombstones. Client statement counts and
+the pending/recovery separation are unchanged.
+
+On the standard PostgreSQL 18.6/512 MiB fixture, 10,000 and 50,000 inactive
+tombstones with four due and four adoption controls cost 32/23 execution shared
+buffers for recovery and 1/1 for pending. Neither recovery branch nor pending
+sequentially scans object_removals; due and pending partial indexes and adoption
+PK probes appear in the captured plans. CI caps execution hit+read blocks at 128
+per selection and permits at most 16 blocks growth across fixture sizes. The
+replaced shape costs 911 blocks and fails the same gate. No planner settings
+were forced. This qualifies bounded active-work/index lookup at the fixture; it
+is not an elapsed-time or infinite-scale constant-cost claim.
+
+Five behavior/work groups pass: paused real PUT across handoff (normal/lost upload
+reply), unlink-before-ack exception and actual disconnect, lost COMMIT reply, both
+recovery/repeated-deletion lock orders, and mixed #174 queue progress with 1,025
+legacy observations plus 1,025 actual live model references. The later pending
+target is reached within three invocations; every page stays bounded and shared
+bytes remain. Internal counters at 0/2,504 members show no example-table reads
+or writes and fixed queue DML, including nested ack checks. Definer scan/write
+negative controls prove that the observer detects hidden work. Scheduling metadata
+is aged only in synthetic controls; real producer knowledge clocks are untouched.
+
+53 affected PostgreSQL checks, 23 boundary/layout checks, TypeScript and focused
+lint pass. Plans and buffer counts are in step-3-selection-and-races.json; full
+race/counter records and all logs are retained outside Git. Step 4 still runs
+both complete database suites and final checks/review. Step 3 is uncommitted;
+no code push or hosted action has occurred.
+
+## Step 3 review correction — no recurring adoption
+
+**Inventory decision.** Read-only inventory on November 2 found no #165/#166
+objects in either connectable dfs_ev_test* database on the standard local fixture.
+The #165/#166 rollout records describe proposals applied only in registered
+disposable scratch databases, removed in finally; #166 explicitly has no frozen
+migration or hosted rollout. Thus no persistent legacy dataset exists in the
+supported repository setup, and **no backfill is added**. No hosted connection
+was made. This is not an inventory claim about manually created databases outside
+that workflow. Such a target would require separate one-time migration review
+before applying #229. Local inventory bytes are preserved in the revised receipt.
+
+**Pattern correction.** The previous adoption branch was the wrong pattern for
+one-time legacy states: it walked unrelated in-flight/unswept observations on
+every invocation. The selection fixture missed that population. Both that
+branch and its unused observation index are removed. Recovery now selects only
+completed due removal rows, ordered by recovery_due/object_key through the
+partial index; one LIMIT 1,024 remains. Pending runs first through its own
+partial index and LIMIT 1,024. The 8,194-statement bound remains unchanged.
+Queue INSERT/UPSERT consumes observations, enrollment refuses tombstones, and
+model/audit rechecks never create observations. New tests cover both orders,
+both namespaces and all these paths. Historical receipts/prototype measurements
+are retained unchanged and superseded by the review-fix receipt.
+
+The mixed #174 probe now uses 1,025 **unqueued** observations plus 1,025 actual
+live shared references and the later removable target. The observations remain
+untouched and the pending target is reached in two invocations. The plan fixture
+now grows inactive tombstones **and unqueued audits observations** together to
+10,000 and 50,000. The same 128-block and 16-block growth gates apply, including
+the old shape as a failing negative control. No recurring work is justified by
+the presence of synthetic legacy controls in tests.
+
+Final review-fix measurements: at 10,000/10,000 and 50,000/50,000 inactive
+tombstones/unqueued observations, recovery uses 2/2 execution buffers and pending
+uses 1/1. The rejected query costs 1,583 blocks on the larger fixture and fails
+the fixed budget. All 54 affected PostgreSQL checks, 23 boundary/layout checks,
+typecheck and focused lint pass. The 8,194-statement cap is unchanged. Step 3
+remains uncommitted; the original step-3 receipt is preserved byte-for-byte and
+superseded by step-3-review-fix.json.
+
+## Step 4 final validation checkpoint — November 2, 2026
+
+Step 3 (including the review fix, both receipts, local inventory and tests) is
+committed as `0f4e71c1d8c09016b6c72f630209e6f2d33ad64e`. No trailer or push.
+
+Both complete PostgreSQL suites pass on the standard PostgreSQL 18.6 fixture
+(512 MiB tmpfs, 128 MiB shared memory): the database suite verifies 2 template
+checks, 74 Node checks, 25 Vitest checks and 12 catalog contracts across all 11
+frozen migration versions; the complete feature-store suite passes 187 checks
+across all 18 discovered files with zero failures/skips. Both ran through the
+standard run lock, sequentially, without hosted access or stopping the existing
+local service. After completion, the cluster has zero scratch databases and zero
+generated fs138_job_ LOGINs.
+
+Full lint/import boundaries (11 checks), normal typecheck/readiness/typegen,
+CI/layout (22 checks) and Turborepo layout/selection (29 checks) all pass. All 20
+pre-existing database assets and all 14 original feature-store DB test files
+remain byte-identical to the main baseline; four new test files add #229 coverage.
+No implementation changes were needed during final validation. The Step 3
+source/blob identities remain those in its committed review-fix receipt.
+
+Step 4 consists only of this checkpoint and the compact final validation receipt;
+full logs are outside Git. Owner review and commit approval are the next gate.
+Independent final review and fresh per-instance push approval remain separate;
+no issue closure or merge is performed by this work.

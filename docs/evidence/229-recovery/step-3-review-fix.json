@@ -1,0 +1,803 @@
+{
+  "issue": 229,
+  "step": 3,
+  "revision": "review-fix: no perpetual legacy scan",
+  "date": "2026-11-02",
+  "base": "c5c31361ee5c8f032853883fb4f8f64ef169210e",
+  "status": "ready for owner review; no commit",
+  "supersedes": {
+    "path": "docs/evidence/229-recovery/step-3-selection-and-races.json",
+    "sha256": "87e12b917943b8b0d093a4dbc460f55ffaffca8ff4bba4968ebf3fadaa432963",
+    "preservedUnchanged": true
+  },
+  "source": {
+    "docs/229-late-put-recovery-roadmap.md": {
+      "gitBlob": "98ae3ffbf493819629b2b3a30ca9707f0e5d5626",
+      "sha256": "ad51e87970183992b869512815e85462ff2f442d1b712adbf0885d514ae1ac60"
+    },
+    "packages/db/proposals/229_mandatory_recovery.sql": {
+      "gitBlob": "bc247c12e98359b60f0695a5880214ed0dfe1916",
+      "sha256": "059ca1fa5a9144a5bb485fbb00c92eb96c452e76479f8fac4c2443e97609027d"
+    },
+    "services/pipeline/src/featureStore/governance.ts": {
+      "gitBlob": "4a29d1daea080acd222256ed46c6e817055b38dd",
+      "sha256": "7fe4f91ec857a8a80b1e8b917c7a68cec21ca21ba765266391df42922fb96e27"
+    },
+    "services/pipeline/tests/feature-store/mandatory-recovery-pages.check.mts": {
+      "gitBlob": "b1b9c621243a314b6aae7190bd7e510cf64bee72",
+      "sha256": "d528f262b0db5bc4bc5d77809ec8b1e25a677ff302c8ff8685f638a60f16584c"
+    },
+    "services/pipeline/tests/feature-store/mandatory-recovery.check.mts": {
+      "gitBlob": "57257f5870468f57d8086a9cad8075f2e9d60d74",
+      "sha256": "48d5f98501fb180ade995c2d7f7066a04fa4ede399c60400550f3eeb879d8bd0"
+    },
+    "services/pipeline/tests/feature-store/mandatory-recovery-selection.check.mts": {
+      "gitBlob": "5ea1650cf19fe5294fc24dd3ac286ad941fdfff1",
+      "sha256": "8d89cbaa0c345e010af89f6976f23440d140a9eca29411b865a6024182e9f405"
+    },
+    "services/pipeline/tests/feature-store/mandatory-recovery-races.check.mts": {
+      "gitBlob": "a9b32e6a43761aca66707058dc996db72177407d",
+      "sha256": "4d94dc8124825fa8466ce44fc7ce4f00f882155a1a9f0d42f99463310567ac68"
+    },
+    "docs/evidence/229-recovery/step-3-local-inventory.json": {
+      "gitBlob": "24793c5bf0f80baa3ada744036f4f8d79f871810",
+      "sha256": "03a110782806f56346f5b29107f23b39ff7b9918d7346283ef0dc7d109fc4e69"
+    }
+  },
+  "legacyInventory": {
+    "date": "2026-11-02",
+    "scope": "read-only standard local fixture, allow-connection dfs_ev_test* databases only; no hosted connection",
+    "databases": [
+      {
+        "name": "dfs_ev_test",
+        "modelruns165": false,
+        "modelreader166": false,
+        "adoption229": false
+      },
+      {
+        "name": "dfs_ev_test_7bb0fa13d26abece4cf3",
+        "modelruns165": false,
+        "modelreader166": false,
+        "adoption229": false
+      }
+    ],
+    "repositoryEvidence": [
+      "docs/feature-store-artifact-governance.md: proposal SQL without frozen migration/hosted rollout",
+      "services/pipeline/scripts/feature-store/harness.ts: applies #165/#166 only in registered scratch fixtures",
+      "packages/db/tooling/tests/scratch.mjs: removes registered database in finally"
+    ],
+    "limits": "No claim about manually created databases outside the documented deployment/test workflow."
+  },
+  "rolloutDecision": {
+    "persistent165166InstallFound": false,
+    "backfillAdded": false,
+    "basis": "documented #165/#166 rollout is proposal-only registered disposable scratch schemas; local inventory found neither schema",
+    "limits": "No hosted connection, and no claim about manually created targets outside documented workflow. Such a target requires separate one-time migration review before #229."
+  },
+  "patternCorrection": {
+    "removed": "recurring adoption branch and unused removal_observation_adoption index",
+    "runtimeSelection": "due-only completed removals, indexed recovery_due/object_key, limit1024",
+    "pendingPartialIndexRetained": true,
+    "noNewModelAuditObservationPair": "enroll refuses tombstones; queue INSERT/UPSERT consumes observations; model/audit rechecks do not create observations",
+    "regressionOrders": [
+      "observation first then removal, models and audits",
+      "removal first then enrollment attempt, models and audits",
+      "orphan and pending recheck after removal",
+      "removal UPSERT after removal"
+    ]
+  },
+  "selectionProof": {
+    "issue": 229,
+    "step": 3,
+    "selectionBudget": 128,
+    "growthBudget": 16,
+    "qualification": "execution shared hit+read blocks, not elapsed time; no planner hints; equal inactive tombstone and unqueued-observation populations",
+    "measurements": [
+      {
+        "inactiveTombstones": 10000,
+        "unqueuedObservations": 10000,
+        "candidates": 4,
+        "executionBlocks": 2,
+        "plan": {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0.13,
+            "Total Cost": 8.16,
+            "Plan Rows": 1,
+            "Plan Width": 80,
+            "Actual Startup Time": 0.01,
+            "Actual Total Time": 0.011,
+            "Actual Rows": 4,
+            "Actual Loops": 1,
+            "Disabled": false,
+            "Shared Hit Blocks": 2,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0,
+            "Plans": [
+              {
+                "Node Type": "Index Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Forward",
+                "Index Name": "removal_recovery_due",
+                "Relation Name": "object_removals",
+                "Alias": "r",
+                "Startup Cost": 0.13,
+                "Total Cost": 8.16,
+                "Plan Rows": 1,
+                "Plan Width": 80,
+                "Actual Startup Time": 0.008,
+                "Actual Total Time": 0.009,
+                "Actual Rows": 4,
+                "Actual Loops": 1,
+                "Disabled": false,
+                "Index Cond": "(recovery_due <= now())",
+                "Rows Removed by Index Recheck": 0,
+                "Filter": "(remove_after <= now())",
+                "Rows Removed by Filter": 0,
+                "Index Searches": 1,
+                "Shared Hit Blocks": 2,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0
+              }
+            ]
+          },
+          "Planning": {
+            "Shared Hit Blocks": 135,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning Time": 0.559,
+          "Triggers": [],
+          "Execution Time": 0.036
+        },
+        "pendingExecutionBlocks": 1,
+        "pendingPlan": {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0.12,
+            "Total Cost": 12.57,
+            "Plan Rows": 1,
+            "Plan Width": 72,
+            "Actual Startup Time": 0.005,
+            "Actual Total Time": 0.005,
+            "Actual Rows": 0,
+            "Actual Loops": 1,
+            "Disabled": false,
+            "Shared Hit Blocks": 1,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0,
+            "Plans": [
+              {
+                "Node Type": "Index Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Forward",
+                "Index Name": "removal_pending_addresses",
+                "Relation Name": "object_removals",
+                "Alias": "r",
+                "Startup Cost": 0.12,
+                "Total Cost": 12.57,
+                "Plan Rows": 1,
+                "Plan Width": 72,
+                "Actual Startup Time": 0.004,
+                "Actual Total Time": 0.004,
+                "Actual Rows": 0,
+                "Actual Loops": 1,
+                "Disabled": false,
+                "Filter": "((remove_after <= clock_timestamp()) AND ((object_key !~ '^(models|audits)/'::text) OR (NOT EXISTS(SubPlan 1))))",
+                "Rows Removed by Filter": 0,
+                "Index Searches": 1,
+                "Shared Hit Blocks": 1,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0,
+                "Plans": [
+                  {
+                    "Node Type": "Index Only Scan",
+                    "Parent Relationship": "SubPlan",
+                    "Subplan Name": "SubPlan 1",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Scan Direction": "Forward",
+                    "Index Name": "orphan_observations_pkey",
+                    "Relation Name": "orphan_observations",
+                    "Alias": "o",
+                    "Startup Cost": 0.41,
+                    "Total Cost": 8.43,
+                    "Plan Rows": 1,
+                    "Plan Width": 0,
+                    "Actual Startup Time": 0,
+                    "Actual Total Time": 0,
+                    "Actual Rows": 0,
+                    "Actual Loops": 0,
+                    "Disabled": false,
+                    "Index Cond": "(object_key = r.object_key)",
+                    "Rows Removed by Index Recheck": 0,
+                    "Heap Fetches": 0,
+                    "Index Searches": 0,
+                    "Shared Hit Blocks": 0,
+                    "Shared Read Blocks": 0,
+                    "Shared Dirtied Blocks": 0,
+                    "Shared Written Blocks": 0,
+                    "Local Hit Blocks": 0,
+                    "Local Read Blocks": 0,
+                    "Local Dirtied Blocks": 0,
+                    "Local Written Blocks": 0,
+                    "Temp Read Blocks": 0,
+                    "Temp Written Blocks": 0
+                  }
+                ]
+              }
+            ]
+          },
+          "Planning": {
+            "Shared Hit Blocks": 29,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning Time": 1.149,
+          "Triggers": [],
+          "Execution Time": 0.017
+        }
+      },
+      {
+        "inactiveTombstones": 50000,
+        "unqueuedObservations": 50000,
+        "candidates": 4,
+        "executionBlocks": 2,
+        "plan": {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0.13,
+            "Total Cost": 8.16,
+            "Plan Rows": 1,
+            "Plan Width": 80,
+            "Actual Startup Time": 0.021,
+            "Actual Total Time": 0.023,
+            "Actual Rows": 4,
+            "Actual Loops": 1,
+            "Disabled": false,
+            "Shared Hit Blocks": 2,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0,
+            "Plans": [
+              {
+                "Node Type": "Index Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Forward",
+                "Index Name": "removal_recovery_due",
+                "Relation Name": "object_removals",
+                "Alias": "r",
+                "Startup Cost": 0.13,
+                "Total Cost": 8.16,
+                "Plan Rows": 1,
+                "Plan Width": 80,
+                "Actual Startup Time": 0.02,
+                "Actual Total Time": 0.021,
+                "Actual Rows": 4,
+                "Actual Loops": 1,
+                "Disabled": false,
+                "Index Cond": "(recovery_due <= now())",
+                "Rows Removed by Index Recheck": 0,
+                "Filter": "(remove_after <= now())",
+                "Rows Removed by Filter": 0,
+                "Index Searches": 1,
+                "Shared Hit Blocks": 2,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0
+              }
+            ]
+          },
+          "Planning": {
+            "Shared Hit Blocks": 33,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning Time": 0.283,
+          "Triggers": [],
+          "Execution Time": 0.046
+        },
+        "pendingExecutionBlocks": 1,
+        "pendingPlan": {
+          "Plan": {
+            "Node Type": "Limit",
+            "Parallel Aware": false,
+            "Async Capable": false,
+            "Startup Cost": 0.12,
+            "Total Cost": 12.58,
+            "Plan Rows": 1,
+            "Plan Width": 72,
+            "Actual Startup Time": 0.006,
+            "Actual Total Time": 0.007,
+            "Actual Rows": 0,
+            "Actual Loops": 1,
+            "Disabled": false,
+            "Shared Hit Blocks": 1,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0,
+            "Plans": [
+              {
+                "Node Type": "Index Scan",
+                "Parent Relationship": "Outer",
+                "Parallel Aware": false,
+                "Async Capable": false,
+                "Scan Direction": "Forward",
+                "Index Name": "removal_pending_addresses",
+                "Relation Name": "object_removals",
+                "Alias": "r",
+                "Startup Cost": 0.12,
+                "Total Cost": 12.58,
+                "Plan Rows": 1,
+                "Plan Width": 72,
+                "Actual Startup Time": 0.006,
+                "Actual Total Time": 0.006,
+                "Actual Rows": 0,
+                "Actual Loops": 1,
+                "Disabled": false,
+                "Filter": "((remove_after <= clock_timestamp()) AND ((object_key !~ '^(models|audits)/'::text) OR (NOT EXISTS(SubPlan 1))))",
+                "Rows Removed by Filter": 0,
+                "Index Searches": 1,
+                "Shared Hit Blocks": 1,
+                "Shared Read Blocks": 0,
+                "Shared Dirtied Blocks": 0,
+                "Shared Written Blocks": 0,
+                "Local Hit Blocks": 0,
+                "Local Read Blocks": 0,
+                "Local Dirtied Blocks": 0,
+                "Local Written Blocks": 0,
+                "Temp Read Blocks": 0,
+                "Temp Written Blocks": 0,
+                "Plans": [
+                  {
+                    "Node Type": "Index Only Scan",
+                    "Parent Relationship": "SubPlan",
+                    "Subplan Name": "SubPlan 1",
+                    "Parallel Aware": false,
+                    "Async Capable": false,
+                    "Scan Direction": "Forward",
+                    "Index Name": "orphan_observations_pkey",
+                    "Relation Name": "orphan_observations",
+                    "Alias": "o",
+                    "Startup Cost": 0.41,
+                    "Total Cost": 8.43,
+                    "Plan Rows": 1,
+                    "Plan Width": 0,
+                    "Actual Startup Time": 0,
+                    "Actual Total Time": 0,
+                    "Actual Rows": 0,
+                    "Actual Loops": 0,
+                    "Disabled": false,
+                    "Index Cond": "(object_key = r.object_key)",
+                    "Rows Removed by Index Recheck": 0,
+                    "Heap Fetches": 0,
+                    "Index Searches": 0,
+                    "Shared Hit Blocks": 0,
+                    "Shared Read Blocks": 0,
+                    "Shared Dirtied Blocks": 0,
+                    "Shared Written Blocks": 0,
+                    "Local Hit Blocks": 0,
+                    "Local Read Blocks": 0,
+                    "Local Dirtied Blocks": 0,
+                    "Local Written Blocks": 0,
+                    "Temp Read Blocks": 0,
+                    "Temp Written Blocks": 0
+                  }
+                ]
+              }
+            ]
+          },
+          "Planning": {
+            "Shared Hit Blocks": 17,
+            "Shared Read Blocks": 0,
+            "Shared Dirtied Blocks": 0,
+            "Shared Written Blocks": 0,
+            "Local Hit Blocks": 0,
+            "Local Read Blocks": 0,
+            "Local Dirtied Blocks": 0,
+            "Local Written Blocks": 0,
+            "Temp Read Blocks": 0,
+            "Temp Written Blocks": 0
+          },
+          "Planning Time": 0.26,
+          "Triggers": [],
+          "Execution Time": 0.019
+        }
+      }
+    ],
+    "negativeControl": {
+      "executionBlocks": 1583,
+      "plan": {
+        "Plan": {
+          "Node Type": "Limit",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 6083.27,
+          "Total Cost": 6085.83,
+          "Plan Rows": 1024,
+          "Plan Width": 80,
+          "Actual Startup Time": 65.73,
+          "Actual Total Time": 65.735,
+          "Actual Rows": 4,
+          "Actual Loops": 1,
+          "Disabled": false,
+          "Shared Hit Blocks": 1583,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Plans": [
+            {
+              "Node Type": "Sort",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 6083.27,
+              "Total Cost": 6208.27,
+              "Plan Rows": 49999,
+              "Plan Width": 80,
+              "Actual Startup Time": 65.729,
+              "Actual Total Time": 65.733,
+              "Actual Rows": 4,
+              "Actual Loops": 1,
+              "Disabled": false,
+              "Sort Key": [
+                "(COALESCE(r.recovery_due, o.first_seen))",
+                "r.object_key"
+              ],
+              "Sort Method": "quicksort",
+              "Sort Space Used": 25,
+              "Sort Space Type": "Memory",
+              "Shared Hit Blocks": 1583,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Hash Join",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Join Type": "Left",
+                  "Startup Cost": 1792,
+                  "Total Cost": 3333.32,
+                  "Plan Rows": 49999,
+                  "Plan Width": 80,
+                  "Actual Startup Time": 12.944,
+                  "Actual Total Time": 65.678,
+                  "Actual Rows": 4,
+                  "Actual Loops": 1,
+                  "Disabled": false,
+                  "Inner Unique": true,
+                  "Hash Cond": "(r.object_key = o.object_key)",
+                  "Filter": "(((r.object_key ~ '^(models|audits)/'::text) AND (o.object_key IS NOT NULL)) OR ((r.completed_at IS NOT NULL) AND (r.recovery_until IS NOT NULL) AND (r.recovery_due <= clock_timestamp()) AND (r.remove_after <= clock_timestamp())))",
+                  "Rows Removed by Filter": 50000,
+                  "Shared Hit Blocks": 1577,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0,
+                  "Plans": [
+                    {
+                      "Node Type": "Seq Scan",
+                      "Parent Relationship": "Outer",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Relation Name": "object_removals",
+                      "Alias": "r",
+                      "Startup Cost": 0,
+                      "Total Cost": 1410.04,
+                      "Plan Rows": 50004,
+                      "Plan Width": 104,
+                      "Actual Startup Time": 0.008,
+                      "Actual Total Time": 5.705,
+                      "Actual Rows": 50004,
+                      "Actual Loops": 1,
+                      "Disabled": false,
+                      "Shared Hit Blocks": 910,
+                      "Shared Read Blocks": 0,
+                      "Shared Dirtied Blocks": 0,
+                      "Shared Written Blocks": 0,
+                      "Local Hit Blocks": 0,
+                      "Local Read Blocks": 0,
+                      "Local Dirtied Blocks": 0,
+                      "Local Written Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0
+                    },
+                    {
+                      "Node Type": "Hash",
+                      "Parent Relationship": "Inner",
+                      "Parallel Aware": false,
+                      "Async Capable": false,
+                      "Startup Cost": 1167,
+                      "Total Cost": 1167,
+                      "Plan Rows": 50000,
+                      "Plan Width": 80,
+                      "Actual Startup Time": 12.759,
+                      "Actual Total Time": 12.761,
+                      "Actual Rows": 50000,
+                      "Actual Loops": 1,
+                      "Disabled": false,
+                      "Hash Buckets": 65536,
+                      "Original Hash Buckets": 65536,
+                      "Hash Batches": 1,
+                      "Original Hash Batches": 1,
+                      "Peak Memory Usage": 5981,
+                      "Shared Hit Blocks": 667,
+                      "Shared Read Blocks": 0,
+                      "Shared Dirtied Blocks": 0,
+                      "Shared Written Blocks": 0,
+                      "Local Hit Blocks": 0,
+                      "Local Read Blocks": 0,
+                      "Local Dirtied Blocks": 0,
+                      "Local Written Blocks": 0,
+                      "Temp Read Blocks": 0,
+                      "Temp Written Blocks": 0,
+                      "Plans": [
+                        {
+                          "Node Type": "Seq Scan",
+                          "Parent Relationship": "Outer",
+                          "Parallel Aware": false,
+                          "Async Capable": false,
+                          "Relation Name": "orphan_observations",
+                          "Alias": "o",
+                          "Startup Cost": 0,
+                          "Total Cost": 1167,
+                          "Plan Rows": 50000,
+                          "Plan Width": 80,
+                          "Actual Startup Time": 0.007,
+                          "Actual Total Time": 4.494,
+                          "Actual Rows": 50000,
+                          "Actual Loops": 1,
+                          "Disabled": false,
+                          "Shared Hit Blocks": 667,
+                          "Shared Read Blocks": 0,
+                          "Shared Dirtied Blocks": 0,
+                          "Shared Written Blocks": 0,
+                          "Local Hit Blocks": 0,
+                          "Local Read Blocks": 0,
+                          "Local Dirtied Blocks": 0,
+                          "Local Written Blocks": 0,
+                          "Temp Read Blocks": 0,
+                          "Temp Written Blocks": 0
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "Planning": {
+          "Shared Hit Blocks": 48,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0
+        },
+        "Planning Time": 0.523,
+        "Triggers": [],
+        "Execution Time": 66.475
+      }
+    },
+    "productionSql": "SELECT r.object_key FROM fs138.object_removals r\n  WHERE r.completed_at IS NOT NULL AND r.recovery_until IS NOT NULL\n   AND r.recovery_due<=now() AND r.remove_after<=now()\n  ORDER BY r.recovery_due,r.object_key LIMIT 1024",
+    "verdict": "pass"
+  },
+  "behavior": [
+    {
+      "name": "paused real PUT across handoff/completion is reclaimed even after its upload response is lost",
+      "details": [
+        {
+          "lostUploadResponse": false,
+          "completedWhilePutPaused": true,
+          "mandatoryOwnerReclaimed": true,
+          "publicationRefused": "P1662"
+        },
+        {
+          "lostUploadResponse": true,
+          "completedWhilePutPaused": true,
+          "mandatoryOwnerReclaimed": true,
+          "publicationRefused": "P1662"
+        }
+      ]
+    },
+    {
+      "name": "unlink-before-ack exception/disconnect and lost COMMIT use fresh connections without skipping or repeating a committed revisit",
+      "details": [
+        {
+          "failure": "exception",
+          "rollback": true,
+          "retryDeletes": 1,
+          "horizonPreserved": true
+        },
+        {
+          "failure": "disconnect",
+          "rollback": false,
+          "retryDeletes": 1,
+          "horizonPreserved": true
+        },
+        {
+          "failure": "lost-commit",
+          "rollback": false,
+          "retryDeletes": 0,
+          "horizonPreserved": true
+        }
+      ]
+    },
+    {
+      "name": "both lock orders serialize recovery against a repeated real deletion event and preserve longer grace",
+      "details": [
+        {
+          "recoveryFirst": false,
+          "actualLockWait": true,
+          "horizonPreserved": true,
+          "longerGracePreserved": true
+        },
+        {
+          "recoveryFirst": true,
+          "actualLockWait": true,
+          "horizonPreserved": true,
+          "longerGracePreserved": true
+        }
+      ]
+    },
+    {
+      "name": "#174 mixed page progress: 1025 unqueued observations, 1025 live shared references and a later removable target",
+      "details": {
+        "unqueuedObservations": 1025,
+        "liveSharedReferences": 1025,
+        "pages": [
+          {
+            "pendingRemoved": 0,
+            "shared": 1024,
+            "recovered": 0,
+            "adoptedOrDeferred": 0,
+            "statements": 3074,
+            "targetReached": false
+          },
+          {
+            "pendingRemoved": 1,
+            "shared": 1,
+            "recovered": 0,
+            "adoptedOrDeferred": 0,
+            "statements": 9,
+            "targetReached": true
+          }
+        ],
+        "ordinaryPendingProgress": true,
+        "sharedBytesPreserved": true
+      }
+    }
+  ],
+  "serverWork": {
+    "matchedDeterministicWork": true,
+    "fullCountersPreserved": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-step3-review-fix/full-record.json.gz",
+    "negativeControlsDetected": 2
+  },
+  "checks": {
+    "affectedPostgres": 54,
+    "boundaryLayout": 23,
+    "typescript": "pass",
+    "targetedLint": "pass",
+    "diffCheck": "pass",
+    "maximumClientStatements": 8194,
+    "pendingCap": 1024,
+    "recoveryCap": 1024,
+    "unchangedMainDbAssets": 20
+  },
+  "fullRecord": {
+    "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-step3-review-fix/full-record.json.gz",
+    "uncompressedBytes": 56112,
+    "uncompressedSha256": "60eb27764d654e779e8fd7f8e571a6ec858427948f6a10cf798360489ab07c62",
+    "compressedSha256": "e6ed792524bf53d4cffc9320856f96537cedecd9dcc6fe0f5ccad2c8f87c0a5f"
+  },
+  "cleanup": "registered scratch databases, generated LOGINs and private ObjectStore removed; standard existing local PostgreSQL service retained",
+  "remaining": [
+    "Step 4 full database suites, final validation and review"
+  ],
+  "commit": false,
+  "push": false,
+  "hostedActions": false
+}

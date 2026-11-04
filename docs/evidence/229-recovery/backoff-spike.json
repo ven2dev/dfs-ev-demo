@@ -1,0 +1,251 @@
+{
+  "issue": 229,
+  "qualification": "prototype scheduling/handoff only, not full implementation or authorization proof",
+  "fixture": "real #138/#163/#165/#166 schema, PostgreSQL18.6 512MiB; 1025 observed,1025 shared queue controls,1 pending target,1025 completed recovery; actual local ObjectStore for late upload",
+  "checks": [
+    "backoff 60/120/240/480/960/1920 then 3600 cap; final due exactly at fixed 24-hour horizon",
+    "atomic adoption preserves enrollment horizon; repeat adoption/requeue does not extend; orphan defers after handoff",
+    "absent then late PUT reclaimed; unlink-before-ack rollback resumes idempotently",
+    "expired final revisit retires only scheduling metadata; tombstone remains",
+    "both real lock orders: handoff blocks orphan then refuses it; orphan blocks handoff then adoption succeeds",
+    "bounded same-table join discovers and adopts pre-existing observations in pages 1024+1",
+    "pending pages 1024+2 reach later target; recovery 1024+1 independently progresses; no mixed-limit starvation"
+  ],
+  "backoffSchedule": [
+    {
+      "n": 0,
+      "seconds": 0
+    },
+    {
+      "n": 1,
+      "seconds": 60
+    },
+    {
+      "n": 2,
+      "seconds": 180
+    },
+    {
+      "n": 3,
+      "seconds": 420
+    },
+    {
+      "n": 4,
+      "seconds": 900
+    },
+    {
+      "n": 5,
+      "seconds": 1860
+    },
+    {
+      "n": 6,
+      "seconds": 3780
+    },
+    {
+      "n": 7,
+      "seconds": 7380
+    },
+    {
+      "n": 8,
+      "seconds": 10980
+    },
+    {
+      "n": 9,
+      "seconds": 14580
+    },
+    {
+      "n": 10,
+      "seconds": 18180
+    },
+    {
+      "n": 11,
+      "seconds": 21780
+    },
+    {
+      "n": 12,
+      "seconds": 25380
+    },
+    {
+      "n": 13,
+      "seconds": 28980
+    },
+    {
+      "n": 14,
+      "seconds": 32580
+    },
+    {
+      "n": 15,
+      "seconds": 36180
+    },
+    {
+      "n": 16,
+      "seconds": 39780
+    },
+    {
+      "n": 17,
+      "seconds": 43380
+    },
+    {
+      "n": 18,
+      "seconds": 46980
+    },
+    {
+      "n": 19,
+      "seconds": 50580
+    },
+    {
+      "n": 20,
+      "seconds": 54180
+    },
+    {
+      "n": 21,
+      "seconds": 57780
+    },
+    {
+      "n": 22,
+      "seconds": 61380
+    },
+    {
+      "n": 23,
+      "seconds": 64980
+    },
+    {
+      "n": 24,
+      "seconds": 68580
+    },
+    {
+      "n": 25,
+      "seconds": 72180
+    },
+    {
+      "n": 26,
+      "seconds": 75780
+    },
+    {
+      "n": 27,
+      "seconds": 79380
+    },
+    {
+      "n": 28,
+      "seconds": 82980
+    },
+    {
+      "n": 29,
+      "seconds": 86400
+    }
+  ],
+  "timings": [
+    {
+      "round": 0,
+      "pendingMs": 5.650875000000042,
+      "recoveryMs": 5.915624999999864
+    },
+    {
+      "round": 1,
+      "recoveryMs": 5.1469999999999345,
+      "pendingMs": 5.741207999999915
+    },
+    {
+      "round": 2,
+      "pendingMs": 8.421707999999853,
+      "recoveryMs": 6.113041000000067
+    },
+    {
+      "round": 3,
+      "recoveryMs": 5.660750000000007,
+      "pendingMs": 4.751874999999927
+    },
+    {
+      "round": 4,
+      "pendingMs": 5.370374999999967,
+      "recoveryMs": 4.583165999999892
+    },
+    {
+      "round": 5,
+      "recoveryMs": 4.117666999999983,
+      "pendingMs": 4.291375000000016
+    }
+  ],
+  "measuredFullPages": {
+    "pendingStatements": 4097,
+    "recoveryStatements": 4097,
+    "pendingDeletes": 1024,
+    "recoveryDeletes": 1024
+  },
+  "statementBudget": {
+    "emptyInvocation": 2,
+    "pendingPerAllowed": 4,
+    "recoveryPerAllowed": 4,
+    "maxPerFullInvocation": 8194,
+    "objectDeletesPerFullInvocation": 2048,
+    "objectGetsHeadsListsPutsDuringCleanup": 0
+  },
+  "plan": [
+    {
+      "Plan": {
+        "Node Type": "Function Scan",
+        "Parallel Aware": false,
+        "Async Capable": false,
+        "Function Name": "spike229_recovery_page",
+        "Alias": "spike229_recovery_page",
+        "Startup Cost": 0.25,
+        "Total Cost": 10.25,
+        "Plan Rows": 1000,
+        "Plan Width": 32,
+        "Actual Startup Time": 2.881,
+        "Actual Total Time": 2.882,
+        "Actual Rows": 1,
+        "Actual Loops": 1,
+        "Disabled": false,
+        "Shared Hit Blocks": 75,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning": {
+        "Shared Hit Blocks": 0,
+        "Shared Read Blocks": 0,
+        "Shared Dirtied Blocks": 0,
+        "Shared Written Blocks": 0,
+        "Local Hit Blocks": 0,
+        "Local Read Blocks": 0,
+        "Local Dirtied Blocks": 0,
+        "Local Written Blocks": 0,
+        "Temp Read Blocks": 0,
+        "Temp Written Blocks": 0
+      },
+      "Planning Time": 0.009,
+      "Triggers": [],
+      "Execution Time": 2.885
+    }
+  ],
+  "limits": [
+    "shared queue rows are controls, not live registry graphs; per-item adoption page work is not yet production-qualified",
+    "both handoff/orphan lock orders proven; full paused-PUT/publication races remain implementation tests",
+    "owner-approved exponential backoff starting60s capped1h; final due at horizon; no elapsed-time acceptance target",
+    "authorization and complete shared-reference recheck not implemented in spike"
+  ],
+  "date": "2026-11-02",
+  "supersedes": "local-spike.json scheduling policy only; historical measurements preserved",
+  "runner": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-recovery-backoff-spike.mts",
+  "source": {
+    "docs/229-late-put-recovery-roadmap.md": {
+      "gitBlob": "cdb0963609f2de3d5138ce11137a65595c328775",
+      "sha256": "c842e5a6c9e6d591842778965efb0ab7c168d006d2694066c25a41f362c2a8e5"
+    },
+    "packages/db/proposals/229_recovery_qualification.sql": {
+      "gitBlob": "691414590bf772820da8339dc1c091c49d60729c",
+      "sha256": "022ac799e17b924d985acbcfa3bb2dfe9fa4d0fef201a1cfd6be7cfdc83f4326"
+    },
+    "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-recovery-backoff-spike.mts": {
+      "gitBlob": "8b3369270a1d66caaa0f9dfff5887ffbd5c411f3",
+      "sha256": "eeaf013b154258dd1d600e5024a893e3f59455824139ae9cddfb48e76a81c041"
+    }
+  },
+  "cleanup": "registered scratch database, generated roles and private ObjectStore removed"
+}
