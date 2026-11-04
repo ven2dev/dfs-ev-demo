@@ -1,0 +1,81 @@
+{
+  "issue": 229,
+  "step": 2,
+  "date": "2026-11-02",
+  "base": "7e41f2a7de2f952b0ae040b1d7fdbaec9c8e219e",
+  "status": "ready for owner commit approval; local only",
+  "source": {
+    "docs/229-late-put-recovery-roadmap.md": {
+      "gitBlob": "54ab5eadf147a595d3718c54a301d948b3702c84",
+      "sha256": "6ff87cdd2ae5c613c043dff59da92878ff41faf83ddf9ddc5b798b700acc70fa"
+    },
+    "packages/db/proposals/229_mandatory_recovery.sql": {
+      "gitBlob": "0810e62d010c09b5cb828e9027610a71197373ea",
+      "sha256": "da08685a4cb354a870f83fbafbe05a890614cea3d3f375be0c3110518682123f"
+    },
+    "services/pipeline/src/featureStore/governance.ts": {
+      "gitBlob": "79bf320f6cc1f3ec447788300042f2ebda31b429",
+      "sha256": "c74b75de911fe72d70e6e18516e74468a1d811cbf816b1de5c6fd59794aedeb2"
+    },
+    "services/pipeline/tests/feature-store/mandatory-recovery-pages.check.mts": {
+      "gitBlob": "1c91b9712460c87fca45a71a2a1773db660116bc",
+      "sha256": "11f206eef3a49841b5897dab63fe29eb3c742592bf01b52374c126ccaca9578d"
+    }
+  },
+  "capability": "@dfs-ev/pipeline/feature-store/governance.cleanupDeletedObjectsWithRecovery",
+  "compatibility": "existing pending-only cleanupDeletedObjects remains unchanged; combined capability opts into the #229 schema",
+  "completionHooks": {
+    "removed": "ack_removal schedules first revisit",
+    "sharedRetained": "removal_recheck schedules first revisit"
+  },
+  "schedule": {
+    "firstSeconds": 60,
+    "nextDelaysSeconds": [
+      120,
+      240,
+      480,
+      960,
+      1920,
+      3600,
+      3600
+    ],
+    "horizon": "latest enrollment +24h, unchanged",
+    "finalDue": "exactly horizon when next interval would exceed it",
+    "expiry": "final DELETE under address lock before retiring metadata; live shared references preserved",
+    "crash": "rollback preserves previous due/step"
+  },
+  "measuredWork": {
+    "pendingCandidates": 1024,
+    "recoveryCandidates": 1024,
+    "clientStatements": 8194,
+    "objectDeletes": 2048,
+    "cleanupGets": 0,
+    "cleanupHeads": 0,
+    "cleanupLists": 0,
+    "cleanupPuts": 0,
+    "nextInvocation": {
+      "pending": 1,
+      "recovery": 1,
+      "clientStatements": 10
+    },
+    "internalCounters": "Step 3, not claimed by this client-count proof"
+  },
+  "checks": {
+    "affectedPostgres": 46,
+    "rootTsc": "pass",
+    "targetedLint": "pass",
+    "boundaryLayout": 23,
+    "diffCheck": "pass",
+    "unchangedMainDbAssets": 20
+  },
+  "fixture": "standard guarded PostgreSQL18.6 512MiB; real restricted LOGINs and local ObjectStore",
+  "cleanup": "generated scratch databases, LOGINs and private ObjectStore directories removed",
+  "fullLogs": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-step2",
+  "remaining": [
+    "Step 3 full acceptance race/interruption matrix and internal work counters",
+    "Step 4 complete database suites/final evidence/review"
+  ],
+  "commit": false,
+  "push": false,
+  "hostedActions": false
+}

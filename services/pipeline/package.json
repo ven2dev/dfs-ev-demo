@@ -23,6 +23,7 @@
     "./feature-store/local-object-store": "./src/featureStore/localObjectStore.ts",
     "./feature-store/model-manifests": "./src/featureStore/modelManifests.ts",
     "./feature-store/model-artifacts": "./src/featureStore/modelArtifacts.ts",
+    "./feature-store/model-context": "./src/featureStore/modelContext.ts",
     "./feature-store/normalize": "./src/featureStore/normalize.ts",
     "./feature-store/object-store": "./src/featureStore/objectStore.ts",
     "./feature-store/source": "./src/featureStore/source.ts",

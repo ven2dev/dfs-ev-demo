@@ -1,0 +1,61 @@
+{
+  "issue": 229,
+  "step": 1,
+  "date": "2026-11-02",
+  "base": "6cae8b0df076de0987d81ade3228735e2e2b4897",
+  "branch": "feature/dfsEV-229-mandatory-recovery",
+  "status": "ready for owner commit approval; local only",
+  "pattern": "single-owner GC using the existing address lock/removal row",
+  "roadmapComment": "https://github.com/ven2dev/dfs-ev-demo/issues/229#issuecomment-6592600640",
+  "backoff": {
+    "firstSeconds": 60,
+    "capSeconds": 3600,
+    "finalDue": "fixed recovery horizon; actual execution on next cleaner invocation",
+    "fullWindowRevisits": 29,
+    "qualification": "spike only; execution adapter remains Step 2"
+  },
+  "checks": {
+    "newPostgres": 10,
+    "existingOrphanCleaner": 26,
+    "boundaryLayout": 23,
+    "normalRootTypecheck": "pass after normal route type generation",
+    "finalTsc": "pass",
+    "targetedLint": "pass",
+    "diffCheck": "pass",
+    "existingDbAssetsUnchanged": 20
+  },
+  "fixture": "guarded disposable PostgreSQL 18.6 on standard 512 MiB fixture; actual restricted LOGINs/local ObjectStore",
+  "cleanup": "scratch database, generated LOGINs and private ObjectStore removed; pre-existing local service retained",
+  "initialFailures": "test-only expectation corrected to existing P1662; privileged observer required for cross-LOGIN lock visibility; fresh worktree typecheck needs normal route type generation; original failure log retained",
+  "source": {
+    "docs/229-late-put-recovery-roadmap.md": {
+      "gitBlob": "8c04bead18700682e752c61929eb58a60306aa7a",
+      "sha256": "706643f7d49084347ece1f1ead32309ec6786c46cacae883e2939046d76fc2f7"
+    },
+    "packages/db/package.json": {
+      "gitBlob": "c8b316144694c67b68b28f3c85cba98bf3a7b5fb",
+      "sha256": "fb48b0d7237f4252e920ac97ce59170dd750a9a7d8931727c5f1862a0397bd7a"
+    },
+    "packages/db/proposals/229_mandatory_recovery.sql": {
+      "gitBlob": "d89442cc69bba67dd65cb0b138a6c18b05211c0b",
+      "sha256": "1d8e85707a82f76a093434f50413a37daf99c4a77f83927f9ce9fc7bcedaecb3"
+    },
+    "services/pipeline/src/featureStore/governance.ts": {
+      "gitBlob": "a13935a563e0279f8eaf2d00d0dfa4b18cdeb61c",
+      "sha256": "bd3298bf220981684ec471e126667f60d9f91e9ea029de60a18d0dd1881dfaed"
+    },
+    "services/pipeline/tests/feature-store/mandatory-recovery.check.mts": {
+      "gitBlob": "12cca9cad643d0a2a0b58b6ee75fc1948fdf5db9",
+      "sha256": "38a661c25a258c5a68480b001267b40e7903f315657b6fed3461512ca7db0159"
+    }
+  },
+  "fullLogs": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/229-step1",
+  "remaining": [
+    "Step 2 bounded recovery adapter/backoff and final revisit",
+    "Step 3 complete acceptance races/server budgets",
+    "Step 4 both full PostgreSQL suites and final evidence/review"
+  ],
+  "commit": false,
+  "push": false,
+  "hostedActions": false
+}
