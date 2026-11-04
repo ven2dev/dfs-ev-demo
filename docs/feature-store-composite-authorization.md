@@ -210,6 +210,7 @@ including both feature identity and current freshness clocks. The setting is
 restored on return; it introduces no request-time SET statement. A regression
 resolves under America/Los_Angeles, runs Q1 under Asia/Tokyo and Q2 under
 America/New_York, with a distinct newer freshness head and unchanged 3/2/1 work.
+The resolver's repeated candidate selection was deliberately retained rather than consolidated into a CTE, keeping this correction focused and preserving the measured query shape.
 
 Missing and JSON-null feature IDs refuse as P2317 at either guard mode; genuinely
 pruned features still refuse as P1666 even when an older valid value survives.

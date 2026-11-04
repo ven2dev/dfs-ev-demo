@@ -224,10 +224,14 @@ const compactCounters = (value: unknown): unknown => {
 };
 type CompositeBehavior = {
   issue: number; step: number; fixture: string; verdict: string; sourceHashes: Record<string, string>;
+  kind?: "composite-authorization-behavior";
+  relabelledFrom?: { issue: number; step: number; receipt: string; fullRecord: RecordReference };
   probes: { name: string; verdict: string; details: unknown }[];
   budgets?: { unionProfiles: string[]; rightsCalls: number; rightsBatches: number; work: Record<string, number> }[];
 };
 const compositeBehaviorProjection = (full: CompositeBehavior) => {
+  const carriedStep0 = full.issue === 167 && full.step === 0 && full.kind === "composite-authorization-behavior";
+  assert(full.issue === 231 || carriedStep0, "unexpected-composite-behavior-label");
   assert.equal(full.verdict, "pass"); assert(full.probes.every(p => p.verdict === "pass"));
   const probes = full.probes.map(({ name, verdict, details }) => ({ name, verdict, detailsSha256: sha256(Buffer.from(JSON.stringify(details))) }));
   if (full.step === 1) {
@@ -237,7 +241,8 @@ const compositeBehaviorProjection = (full: CompositeBehavior) => {
     return { issue: full.issue, step: full.step, fixture: full.fixture, verdict: full.verdict, sourceHashes: full.sourceHashes,
       probes, work: first.counts };
   }
-  assert.equal(full.step, 2); assert.equal(probes.length, 15); assert(full.budgets && full.budgets.length === 79);
+  assert(full.step === 2 || carriedStep0, "unexpected-composite-behavior-step");
+  assert.equal(probes.length, 15); assert(full.budgets && full.budgets.length === 79);
   for (const budget of full.budgets) {
     assert(budget.unionProfiles.length > 0); assert.equal(new Set(budget.unionProfiles).size, budget.unionProfiles.length);
     assert([0, 1, 2].includes(budget.rightsBatches)); assert.equal(budget.rightsCalls, budget.rightsBatches * budget.unionProfiles.length);
@@ -258,14 +263,17 @@ const compositeBehaviorProjection = (full: CompositeBehavior) => {
   assert.deepEqual(matched.matched[0].q1, matched.matched[1].q1); assert.deepEqual(matched.matched[0].q2, matched.matched[1].q2);
   for (const m of matched.matched) { verifyCompositeCounters(m.q1); verifyCompositeCounters(m.q2); assert.equal(m.rightsCalls, 2 * m.profiles.length); }
   assert.deepEqual(matched.negativeControls, { scanDetected: true, writeDetected: true }); assert.equal(matched.historyExpansion, 0);
-  return { issue: full.issue, step: full.step, fixture: full.fixture, verdict: full.verdict, sourceHashes: full.sourceHashes, probes,
+  return { issue: full.issue, step: full.step,
+    ...(carriedStep0 ? { kind: full.kind, relabelledFrom: full.relabelledFrom } : {}),
+    fixture: full.fixture, verdict: full.verdict, sourceHashes: full.sourceHashes, probes,
     work: { probes: full.budgets.length, successfulAllNProbes: 30, n: allN, sql: 3, checks: 2, descriptorGets: 1,
       rightsCallBudget: "completed batches * independently derived union profile count; exactly 2P on success",
       matchedRelationalWork: true, readerDml: 0, hiddenExampleReads: 0, ...matched.negativeControls } };
 };
 export const compactBehavior = (bytes: Buffer, path: string): Record<string, unknown> & { schemaVersion: number; fullRecord: ReturnType<typeof fullRecord> } => {
   const full = JSON.parse(bytes.toString());
-  const projection = full.issue === 231 ? compositeBehaviorProjection(full) : compactCounters(full) as Record<string, unknown>;
+  const projection = full.issue === 231 || full.kind === "composite-authorization-behavior"
+    ? compositeBehaviorProjection(full) : compactCounters(full) as Record<string, unknown>;
   return { ...projection, schemaVersion: 2, fullRecord: fullRecord(bytes, path) };
 };
 

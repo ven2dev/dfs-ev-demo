@@ -35,7 +35,8 @@ and bundles unchanged. Later runs also use new names; none overwrite these files
 | Receipt | Full member | Purpose |
 | --- | --- | --- |
 | [Context](step-0-context-20261104T0352Z.json) | behavior bundle: `step-0/full-context.json` | Six resolver/PIT/role/work probe groups. |
-| [Composite](step-0-composite-20261104T0352Z.json) | behavior bundle: `step-0/full-composite.json` | Fifteen probe groups, cross-zone proof, malformed/pruned references, 79 measured delivery budgets and model-only compatibility. |
+| [Composite (corrected label)](step-0-composite-relabel-20261104T0459Z.json) | relabel bundle: `step-0/full-composite-relabelled.json` | Issue 167 / Step 0; fifteen probe groups, cross-zone proof, malformed/pruned references, 79 measured delivery budgets and model-only compatibility. |
+| [Composite (original)](step-0-composite-20261104T0352Z.json) | behavior bundle: `step-0/full-composite.json` | Historical source of the corrected-label record; its issue 231 / step 2 harness labels are superseded. |
 | [Validation](step-0-validation-20261104T0352Z.json) | validation bundle: `step-0/full-validation.json` | Exact base/corrected source blobs, commands, exit codes, output references and limits. |
 | [Supersession](step-0-supersession-20261104T0352Z.json) | validation bundle: `step-0/full-supersession.json` | New behavior records supersede older behavior receipts for corrected sources; no historical bytes or speed result replaced. |
 
@@ -45,6 +46,14 @@ named records plus ten validation output logs. Sorted regular USTAR members have
 fixed uid/gid/mtime, mode 0644 and empty owner names; gzip uses `-n`. Log output
 replaces only the checkout prefix with `<worktree>`; the validation record retains
 both original and normalized output hashes. No executable scratch copy is retained.
+
+The append-only correction `step-0-full-records-relabel-20261104T0459Z.tar.gz`
+contains the composite record with its issue/step labels corrected and a
+hash-bound reference to the original. Every measured value and source hash is
+unchanged; this is a metadata correction, not a rerun or a new performance claim.
+The auditor applies the same composite work-budget checks to both labels, and a
+database-free regression compares all measured fields with the original record.
+The original receipts and bundles remain byte-for-byte unchanged.
 
 ## Audit without dependencies, cache or database
 
@@ -57,7 +66,7 @@ node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON \
 ```
 
 The TypeScript tool checks uncompressed SHA-256 and size before parsing or
-recomputation. It recomputes all four compact projections, all-n/dynamic rights
+recomputation. It recomputes all compact projections, all-n/dynamic rights
 budgets and matched-work assertions. Detailed cross-zone/refusal outcomes and
 command results are hash-bound recorded assertions; audit does not rerun SQL.
 Every referenced output log is also checked. Absolute/unsafe/missing/unreferenced
@@ -104,3 +113,6 @@ Behavior reruns use fresh `FS231_CONTEXT_EVIDENCE` and
 `FS231_COMPOSITE_EVIDENCE` paths; writers refuse to clobber a prior file. A rerun
 produces different IDs/clocks and a new record hash. Compact and bundle those
 exact bytes under new names, retain source identity, then run the audit again.
+
+During later full-suite runs, retain and report any `artifact-cleaner.check.mts`
+failure output before retrying; a later pass does not replace that output.

@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { gunzipSync } from "node:zlib";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { sha256 } from "../../src/featureStore/objectStore.ts";
@@ -55,6 +56,29 @@ test("#167 Step 0 receipts retain hash-matching append-only evidence without DB/
   const results = await verifyEvidenceBundle(directory, false);
   // Later step receipts append to this directory; every reference is audited.
   assert(results.length >= 2); assert(results.every(result => result.verdict === "pass"));
+});
+test("#167 Step 0 relabel preserves every measured value and the strict composite work verifier", async () => {
+  const directory = fileURLToPath(new URL("../../../../docs/evidence/feature-store-167/", import.meta.url));
+  const originalName = "step-0-composite-20261104T0352Z.json";
+  const original = JSON.parse(await readFile(join(directory, originalName), "utf8"));
+  const corrected = JSON.parse(await readFile(join(directory, "step-0-composite-relabel-20261104T0459Z.json"), "utf8"));
+  const fullBytes = (receipt: typeof original) => {
+    const [archive, member] = receipt.fullRecord.path.split("#");
+    return execFileSync("tar", ["-xOzf", join(directory, archive), member]);
+  };
+  const originalBytes = fullBytes(original), correctedBytes = fullBytes(corrected);
+  verifyEvidenceReceipt(original, originalBytes); verifyEvidenceReceipt(corrected, correctedBytes);
+  const { issue: oldIssue, step: oldStep, ...measurements } = JSON.parse(originalBytes.toString());
+  const { issue, step, kind, relabelledFrom, ...retained } = JSON.parse(correctedBytes.toString());
+  assert.deepEqual([issue, step, kind], [167, 0, "composite-authorization-behavior"]);
+  assert.deepEqual(relabelledFrom, { issue: oldIssue, step: oldStep, receipt: originalName, fullRecord: original.fullRecord });
+  assert.deepEqual(retained, measurements, "relabel-must-not-change-measured-evidence");
+  assert.deepEqual(corrected.work, original.work); assert.deepEqual(corrected.probes, original.probes);
+  const tampered = JSON.parse(correctedBytes.toString()); tampered.budgets[0].rightsCalls++;
+  assert.throws(() => compactBehavior(Buffer.from(JSON.stringify(tampered)), corrected.fullRecord.path));
+  assert.throws(() => verifyEvidenceReceipt({ ...corrected, work: { ...corrected.work, checks: 4 } }, correctedBytes), /compact-receipt-mismatch/);
+  tampered.step = 1;
+  assert.throws(() => compactBehavior(Buffer.from(JSON.stringify(tampered)), corrected.fullRecord.path), /unexpected-composite-behavior-label/);
 });
 test("append-only evidence audits distinct named bundles without path escapes or ambiguous members", async () => {
   const directory = await mkdtemp(join(tmpdir(), "fs167-evidence-"));
