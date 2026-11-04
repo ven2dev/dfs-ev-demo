@@ -12,9 +12,12 @@ END $$;
 GRANT fs138_reader TO fs231_model_reader WITH INHERIT FALSE, SET FALSE;
 GRANT USAGE ON SCHEMA fs138 TO fs231_model_reader;
 
+-- Context timestamp JSON is compared exactly across pooled sessions at Q1/Q2.
+-- Pin all three context functions to UTC so feature and freshness timestamps
+-- cannot turn a valid reference into P2317 merely because session zones differ.
 CREATE FUNCTION fs138.resolve_model_context(p_player text,p_game text,p_feature_version text,
  p_history_policy text,p_mode text,p_known_as_of timestamptz)
-RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,fs138 SET TimeZone='UTC' AS $$
 DECLARE selected record; visible_head record; current_head record; inputs uuid[];
  observed_at timestamptz:=statement_timestamp();
 BEGIN
@@ -107,7 +110,7 @@ GRANT EXECUTE ON FUNCTION fs138.resolve_model_context(text,text,text,text,text,t
 -- The private core is executable only by its definer. Narrow readers cannot
 -- omit a context through this function or call the model-only wrapper.
 CREATE FUNCTION fs138.authorize_model_scope(p_run uuid,p_slots text[],p_with_pins boolean,p_context jsonb)
-RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,fs138 SET TimeZone='UTC' AS $$
 DECLARE publication fs138.model_runs; context jsonb; snapshots uuid[]; model_inputs uuid[];
  checked_at timestamptz:=statement_timestamp(); allowed boolean; receipt jsonb; datasets jsonb; artifacts jsonb;
  feature_history jsonb; request jsonb; result jsonb;
@@ -139,10 +142,13 @@ BEGIN
  snapshots:=model_inputs;
 
  IF p_context IS NOT NULL THEN
+  -- A missing/null identity is a malformed caller reference, not evidence of
+  -- withdrawal. Refuse it before re-resolution or the pruning existence check.
   IF jsonb_typeof(p_context) IS DISTINCT FROM 'object'
   OR jsonb_typeof(p_context->'request') IS DISTINCT FROM 'object'
   OR jsonb_typeof(p_context->'feature') IS DISTINCT FROM 'object'
-  OR jsonb_typeof(p_context->'snapshotIds') IS DISTINCT FROM 'array' THEN
+  OR jsonb_typeof(p_context->'snapshotIds') IS DISTINCT FROM 'array'
+  OR p_context->'feature'->>'featureId' IS NULL THEN
    RAISE EXCEPTION 'model-context-reference-refused' USING ERRCODE='P2317';
   END IF;
   request:=p_context->'request';
@@ -232,7 +238,7 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog,fs
 $$;
 
 CREATE FUNCTION fs138.authorize_model_context_read(p_run uuid,p_slots text[],p_with_pins boolean,p_context jsonb)
-RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,fs138 AS $$
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog,fs138 SET TimeZone='UTC' AS $$
 BEGIN
  IF p_context IS NULL OR jsonb_typeof(p_context) IS DISTINCT FROM 'object' THEN
   RAISE EXCEPTION 'model-context-reference-refused' USING ERRCODE='P2317';

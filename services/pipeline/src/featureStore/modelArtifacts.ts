@@ -1,7 +1,7 @@
 import type { Client } from "pg";
 import type { QbEvidenceMode } from "@dfs-ev/domain/qb-evaluation";
 import type { DatasetSpec } from "./datasets.ts";
-import { ArtifactGovernanceError } from "./artifactGovernanceErrors.ts";
+import { ArtifactGovernanceError, artifactGovernanceError } from "./artifactGovernanceErrors.ts";
 import { ModelContextError, modelContextError, type ModelContext } from "./modelContext.ts";
 import type { ObjectStore } from "./objectStore.ts";
 
@@ -68,7 +68,11 @@ export const withModelArtifacts = async <T>(client: Pick<Client, "query">, store
     // Q2 authorize a different run or a narrower set of selected files.
     const last = (await access(false)).access;
     return { value, authorization, delivery: last.authorization, ...(last.context ? { context: last.context } : {}) };
-  } catch (error) { throw modelContextError(error); }
+  } catch (error) {
+    // Scope was captured before awaits; caller mutation cannot change the error
+    // contract. Context timestamp SQLSTATEs do not remap legacy model-only reads.
+    throw scope === undefined ? artifactGovernanceError(error) : modelContextError(error);
+  }
 };
 
 export const readModelArtifacts = (client: Pick<Client, "query">, store: Pick<ObjectStore, "get">, request: ModelReadRequest) =>

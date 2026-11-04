@@ -258,6 +258,7 @@ test("#231 metadata-only point-in-time context and narrow capability", { timeout
       "services/pipeline/tests/feature-store/model-context.check.mts"];
     evidence.sourceHashes = Object.fromEntries(await Promise.all(paths.map(async path =>
       [path, sha256(await readFile(new URL("../../../../" + path, import.meta.url)))])));
-    if (process.env.FS231_CONTEXT_EVIDENCE) await writeFile(process.env.FS231_CONTEXT_EVIDENCE, JSON.stringify(evidence, null, 2) + "\n");
+    if (process.env.FS231_CONTEXT_EVIDENCE) await writeFile(process.env.FS231_CONTEXT_EVIDENCE,
+      JSON.stringify(evidence, null, 2) + "\n", { flag: "wx" });
   }
 });

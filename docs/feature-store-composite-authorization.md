@@ -47,6 +47,7 @@ CI enforces work counts; repeated wall-clock qualification is opt-in.
 | Real computed/checkpoint/job-finished clocks and microsecond knownAsOf selection. | Treating an inserted but unusable feature as known, look-ahead and incorrect revision boundaries. |
 | Metadata only before Q1; no label/training-member reads. | Unauthorized value disclosure and target-dependent availability. |
 | Derive both lineages server-side at Q1/Q2; compare complete references and own scope across awaits. | Omitted sources, forged older selections, mutation or narrowing the final check. |
+| Function-level UTC for context JSON; missing/null featureId is P2317; date-error mapping is context-only. | Cross-session false forgery refusals, malformed references mislabeled as withdrawal, and model-only error-contract regressions. |
 | Last valid value with flags; deletion/current rights refusal still refuses. | Blanketing useful permitted values or reviving withdrawn evidence through fallback. |
 | Three SQL/two checks/one GET; zero reader DML/per-row verification/ordinary hashes/extra I/O. | Hidden nesting, per-example work or repeated producer verification. |
 | Zero explicit reader coordination locks and no transaction across I/O/calculation. | Blocking deletion and delivering under an old rights snapshot. |
@@ -180,8 +181,10 @@ entire immutable feature metadata and complete sorted snapshot reference.
 Withdrawal, missing/pruned features or lost lineage at Q1/Q2 refuse with P1666
 (`model-read-status-refused`), including when re-resolution could fall back to an
 older valid feature. Existing feature references with forged metadata/lineage or
-an older selection for a newer request keep P2317. An absent referenced identity
-is treated as unavailable; this is a refusal, not proof of prior possession.
+an older selection for a newer request keep P2317. A missing or JSON-null
+`feature.featureId` is malformed and raises P2317 before withdrawal checks. A
+well-formed ID whose feature is absent is treated as unavailable; this is a
+refusal, not proof of prior possession.
 Standalone resolution retains its P2314/P2315/P2316 diagnostics. Q2 never
 substitutes an older value. Each check independently derives the model's cited
 dataset sources and the feature's own sources, then checks current status and one
@@ -197,6 +200,30 @@ coordination lock, history expansion/verification or byte hash is introduced.
 The returned `context` is Q2's refreshed metadata/flags for the original value;
 the callback's input metadata describes Q1. Missing bytes, calculation failures
 and a refused/lost Q2 release no result.
+
+### Carried #233 fixes in #167 Step 0
+
+`resolve_model_context`, `authorize_model_scope` and
+`authorize_model_context_read` pin function-level `TimeZone='UTC'`. Exact JSON
+comparison therefore has stable timestamp rendering across pooled connections,
+including both feature identity and current freshness clocks. The setting is
+restored on return; it introduces no request-time SET statement. A regression
+resolves under America/Los_Angeles, runs Q1 under Asia/Tokyo and Q2 under
+America/New_York, with a distinct newer freshness head and unchanged 3/2/1 work.
+
+Missing and JSON-null feature IDs refuse as P2317 at either guard mode; genuinely
+pruned features still refuse as P1666 even when an older valid value survives.
+SQLSTATEs 22007–22009 map to `model-context-request-refused` only for the resolver
+and captured context reads. Model-only reads keep #166's `artifactGovernanceError`
+mapping, which passes these unrelated date errors through unchanged. Recognized
+P166x errors retain their governance types on both paths. Q1/Q2 unit probes also
+mutate the caller request to prove that captured scope selects the error mapper.
+
+[Step 0 evidence](evidence/feature-store-167/README.md) is append-only: fresh
+receipts/full records bind corrected source Git blob IDs and content hashes.
+The existing #231 evidence below remains unchanged historical proof. Step 0
+qualifies behavior/work, not a new speed result; #167 still requires its final
+actual-handler benchmark after independent helper issue #235 merges.
 
 ### Deterministic Step 2 proof
 

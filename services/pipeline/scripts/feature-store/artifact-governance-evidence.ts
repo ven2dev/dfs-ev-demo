@@ -304,34 +304,44 @@ const recordReferences = (value: unknown): RecordReference[] => {
 // Read just the named member to stdout; never extract files or follow archive
 // paths on disk. Validate membership and relative paths before invoking tar.
 export const verifyEvidenceBundle = async (directory: string, recompute = true) => {
-  const bundle = resolve(directory, "full-records.tar.gz");
-  const members = execFileSync("tar", ["-tzf", bundle], { encoding: "utf8" }).trim().split("\n");
-  assert.equal(new Set(members).size, members.length, "duplicate-bundle-member");
   const receipts = await Promise.all((await readdir(directory)).filter(name => name.endsWith(".json"))
     .sort().map(async name => ({ name, receipt: JSON.parse(await readFile(resolve(directory, name), "utf8")) })));
+  // Append-only evidence can retain several uniquely named bundles. Each name
+  // stays a plain relative filename; validate every archive's exact membership.
+  const archives = new Map<string, string[]>();
   const records = new Map<string, Buffer>();
   const verdicts = [];
   for (const { name, receipt } of receipts) {
     for (const record of recordReferences(receipt)) {
       assert(!isAbsolute(record.path), "absolute-full-record-path");
       const [archive, member, extra] = record.path.split("#");
-      assert.equal(archive, "full-records.tar.gz", "unexpected-full-record-bundle");
+      assert(/^[a-zA-Z0-9][a-zA-Z0-9_.-]*\.tar\.gz$/.test(archive), "unexpected-full-record-bundle");
       assert(member && !extra && /^[a-zA-Z0-9][a-zA-Z0-9_./-]*$/.test(member) &&
         member.split("/").every(part => part && part !== "." && part !== ".."), "unsafe-full-record-member");
+      const bundle = resolve(directory, archive);
+      let members = archives.get(archive);
+      if (!members) {
+        members = execFileSync("tar", ["-tzf", bundle], { encoding: "utf8" }).trim().split("\n");
+        assert.equal(new Set(members).size, members.length, "duplicate-bundle-member");
+        archives.set(archive, members);
+      }
       assert(members.includes(member), "missing-full-record-member");
-      const bytes = records.get(member) ?? execFileSync("tar", ["-xOzf", bundle, member], { maxBuffer: 16 * 1024 * 1024 });
+      const bytes = records.get(record.path) ?? execFileSync("tar", ["-xOzf", bundle, member], { maxBuffer: 16 * 1024 * 1024 });
       // SHA-256 precedes JSON parsing or any percentile/counter recomputation.
       verifyRecordBytes(record, bytes);
-      if (!records.has(member)) verdicts.push({ record: member, verdict: "pass", sha256: sha256(bytes), byteSize: bytes.byteLength });
-      records.set(member, bytes);
+      if (!records.has(record.path)) verdicts.push({ record: archive === "full-records.tar.gz" ? member : record.path,
+        verdict: "pass", sha256: sha256(bytes), byteSize: bytes.byteLength });
+      records.set(record.path, bytes);
     }
     if (recompute && receipt.fullRecord) {
-      const bytes = records.get(receipt.fullRecord.path.split("#")[1])!;
+      const bytes = records.get(receipt.fullRecord.path)!;
       verifyEvidenceReceipt(receipt, bytes);
     }
     assert(recordReferences(receipt).length, `receipt-without-full-record:${name}`);
   }
-  assert.deepEqual([...records.keys()].sort(), [...members].sort(), "unreferenced-bundle-member");
+  for (const [archive, members] of archives)
+    assert.deepEqual([...records.keys()].filter(path => path.startsWith(archive + "#")).sort(),
+      members.map(member => archive + "#" + member).sort(), "unreferenced-bundle-member");
   return verdicts;
 };
 

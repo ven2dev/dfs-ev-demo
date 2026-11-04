@@ -121,6 +121,16 @@ test("#231 composite model/served-feature authorization and per-probe work budge
         });
         await check("exact reference refuses omitted/extra/forged lineage and metadata, older revision and alternate policy", async () => {
           const world = await fixture.world(), context = await resolveModelContext(client, world.feature.request);
+          const malformedIds = [];
+          for (const pins of [true, false]) for (const kind of ["missing", "null"] as const) {
+            const changed = structuredClone(context) as unknown as { feature: { featureId?: string | null } };
+            if (kind === "missing") delete changed.feature.featureId; else changed.feature.featureId = null;
+            rights.reset();
+            await assert.rejects(client.query("SELECT fs138.authorize_model_context_read($1,ARRAY['descriptor'],$2,$3)",
+              [world.runId, pins, changed]), { code: "P2317" });
+            assert.equal(rights.profiles.length, 0);
+            malformedIds.push({ stage: pins ? "Q1" : "Q2", kind, sqlstate: "P2317", rightsCalls: 0 });
+          }
           for (const changed of [
             { ...context, snapshotIds: [] }, { ...context, snapshotIds: [randomUUID()] }, { ...context, snapshotIds: [...context.snapshotIds, randomUUID()] },
             { ...context, feature: { ...context.feature, playerId: "forged" } }, { ...context, feature: { ...context.feature, computedAt: "2020-01-01" } },
@@ -138,9 +148,67 @@ test("#231 composite model/served-feature authorization and per-probe work budge
           // Old request history remains valid at its own knownAsOf. It is not
           // permission to forge an older selection for a later request.
           await deliver(world, { context });
-          return { invalidReferencesRefused: 8, forgedQ2Sqlstate: "P2317", forgedQ2RightsCalls: 0, olderAtOriginalKnownAsOfStillValid: true };
+          return { invalidReferencesRefused: 8, malformedIds, forgedQ2Sqlstate: "P2317", forgedQ2RightsCalls: 0, olderAtOriginalKnownAsOfStillValid: true };
         });
         await check("Q2 retains selected values while refreshing flags; caller/callback mutation cannot narrow private scope", async () => {
+          // Real distinct sessions simulate a trusted pool while the request
+          // still has exactly one resolver, two checks and one descriptor GET.
+          const zones = ["America/Los_Angeles", "Asia/Tokyo", "America/New_York"];
+          const zoneWorld = await fixture.world();
+          const head = await fixture.feature([zoneWorld.served.snapshot], { playerId: zoneWorld.feature.request.playerId,
+            gameId: zoneWorld.feature.request.gameId, supersedes: zoneWorld.feature.id, unavailable: true });
+          const sessions = [client, new Client(config), new Client(config)];
+          const priorZone = (await client.query("SHOW TimeZone")).rows[0].TimeZone as string;
+          let timezoneProof;
+          await sessions[1].connect(); await sessions[2].connect();
+          const calls = sessions.map(observeRightsCalls);
+          try {
+            // SETs/SHOWs are fixture setup/inspection, outside measured work.
+            for (const [i, session] of sessions.entries()) await session.query("SELECT set_config('TimeZone',$1,false)", [zones[i]]);
+            const profiles = await unionProfiles(admin, zoneWorld.runId, zoneWorld.feature.id);
+            const work = { statements: 0, checks: 0, gets: 0 }, contexts: ModelContext[] = [];
+            const resolve = { query: async (...args: unknown[]) => {
+              work.statements++; return Reflect.apply(sessions[0].query, sessions[0], args);
+            } } as Pick<Client, "query">;
+            const context = await resolveModelContext(resolve, zoneWorld.feature.request);
+            const checks = { query: async (...args: unknown[]) => {
+              const session = sessions[++work.checks]; work.statements++;
+              const result = await Reflect.apply(session.query, session, args);
+              contexts.push(structuredClone(result.rows[0].access.context)); return result;
+            } } as Pick<Client, "query">;
+            const result = await withModelArtifacts(checks, { get: key => { work.gets++; return store.get(key); } },
+              { runId: zoneWorld.runId, slots: ["descriptor"], context }, math);
+            assert.equal((result.value as { featureId: string }).featureId, zoneWorld.feature.id);
+            for (const c of [context, ...contexts]) {
+              assert.deepEqual(c.feature, context.feature); assert.deepEqual(c.request, context.request);
+              assert.deepEqual(c.selection, context.selection); assert.deepEqual(c.snapshotIds, context.snapshotIds);
+              assert.equal(c.freshness.headId, head.id); assert.equal(c.freshness.stale, true);
+              assert.equal(c.freshness.checkpoint, context.freshness.checkpoint);
+              assert.equal(c.freshness.computedAt, context.freshness.computedAt);
+              for (const value of [c.request.knownAsOf, c.feature.cutoff, c.feature.checkpoint, c.feature.computedAt,
+                c.freshness.checkpoint, c.freshness.computedAt, c.freshness.observedAt]) assert.match(value, /\+00:00$/);
+            }
+            assert(Date.parse(contexts[0].freshness.observedAt) >= Date.parse(context.freshness.observedAt));
+            assert(Date.parse(contexts[1].freshness.observedAt) >= Date.parse(contexts[0].freshness.observedAt));
+            for (const receipt of [result.authorization, result.delivery]) {
+              assert.match(receipt.checkedAt, /\+00:00$/); assert.deepEqual(receipt.decisions.map(d => d.profileId), profiles);
+            }
+            assert.deepEqual(work, { statements: 3, checks: 2, gets: 1 });
+            assert.equal(calls[0].profiles.length, 0);
+            for (const observed of calls.slice(1)) assert.deepEqual([...observed.profiles].sort(), profiles);
+            const restoredZones = await Promise.all(sessions.map(async session => (await session.query("SHOW TimeZone")).rows[0].TimeZone));
+            assert.deepEqual(restoredZones, zones);
+            const settings = (await admin.query(`SELECT proname,proconfig FROM pg_proc WHERE oid=ANY(ARRAY[
+              'fs138.resolve_model_context(text,text,text,text,text,timestamptz)'::regprocedure,
+              'fs138.authorize_model_scope(uuid,text[],boolean,jsonb)'::regprocedure,
+              'fs138.authorize_model_context_read(uuid,text[],boolean,jsonb)'::regprocedure]) ORDER BY proname`)).rows;
+            assert.equal(settings.length, 3); for (const row of settings) assert(row.proconfig.includes("TimeZone=UTC"));
+            timezoneProof = { zones, restoredZones, settings, work, profiles, rightsCalls: calls.flatMap(c => c.profiles).length,
+              context, q1: contexts[0], q2: contexts[1], receipts: [result.authorization, result.delivery] };
+          } finally {
+            calls.forEach(c => c.close()); await client.query("SELECT set_config('TimeZone',$1,false)", [priorZone]);
+            await Promise.all(sessions.slice(1).map(session => session.end()));
+          }
           const world = await fixture.world(), reference = await resolveModelContext(client, world.feature.request), selected = reference.feature.featureId;
           const pending = await fixture.feature([world.served.snapshot], { playerId: world.feature.request.playerId,
             gameId: world.feature.request.gameId, supersedes: world.feature.id, unavailable: true, running: true });
@@ -155,7 +223,7 @@ test("#231 composite model/served-feature authorization and per-probe work budge
           assert.equal(result.context?.feature.featureId, selected); assert.deepEqual(result.context?.snapshotIds, [world.served.snapshot]);
           assert.equal(result.context?.freshness.stale, true); assert.equal(result.context?.freshness.superseded, true);
           assert.equal((result.value as { n: number }).n, 3);
-          return { immutableScope: true, originalValues: true, updatedFlags: result.context?.freshness };
+          return { timezoneProof, immutableScope: true, originalValues: true, updatedFlags: result.context?.freshness };
         });
         await check("pruning the selected revision refuses instead of returning an older still-valid feature", async () => {
           const details = [];
@@ -369,6 +437,7 @@ test("#231 composite model/served-feature authorization and per-probe work budge
       "services/pipeline/tests/feature-store/composite-read-work.ts", "services/pipeline/tests/feature-store/composite-authorization.check.mts"];
     evidence.sourceHashes = Object.fromEntries(await Promise.all(paths.map(async path =>
       [path, sha256(await readFile(new URL("../../../../" + path, import.meta.url)))])));
-    if (process.env.FS231_COMPOSITE_EVIDENCE) await writeFile(process.env.FS231_COMPOSITE_EVIDENCE, JSON.stringify(evidence, null, 2) + "\n");
+    if (process.env.FS231_COMPOSITE_EVIDENCE) await writeFile(process.env.FS231_COMPOSITE_EVIDENCE,
+      JSON.stringify(evidence, null, 2) + "\n", { flag: "wx" });
   }
 });

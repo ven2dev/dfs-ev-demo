@@ -37,4 +37,12 @@ describe("model context request and refusal boundary without a database", () => 
     for (const error of [new Error("socket closed"), { code: "42501" }, { code: "08006" }, { code: "constructor" }])
       expect(modelContextError(error)).toBe(error);
   });
+  it("resolver keeps all three date SQLSTATEs in the context request contract", async () => {
+    for (const code of ["22007", "22008", "22009"]) {
+      const cause = { code }; let queries = 0;
+      const client = { query: async () => { queries++; throw cause; } } as unknown as Pick<Client, "query">;
+      await expect(resolveModelContext(client, request)).rejects.toMatchObject({ code: "model-context-request-refused", cause });
+      expect(queries).toBe(1);
+    }
+  });
 });
