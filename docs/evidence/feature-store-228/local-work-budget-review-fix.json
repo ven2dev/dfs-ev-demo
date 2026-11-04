@@ -1,0 +1,75 @@
+{
+  "issue": 228,
+  "status": "review fixes validated",
+  "base": "739ff1d4213bb6994f234a41e2320582cbfc8c71",
+  "supersedes": "docs/evidence/feature-store-228/local-work-budget.json",
+  "source": {
+    "services/pipeline/src/featureStore/objectStore.ts": {
+      "gitBlob": "0ee0d73a30866b58e6a2d2bc95ba77251c692d02",
+      "sha256": "e467ee210821416ca595349dee4eaaa415c4f1e0d305155d6591fce8283bb3ae"
+    },
+    "services/pipeline/src/featureStore/datasets.ts": {
+      "gitBlob": "6bd8fe394fd456ab8979933e7c09d0f86711323a",
+      "sha256": "47febb579b546a6570291332723b6e19fc25f16867b264e93389cab3706e0b54"
+    },
+    "services/pipeline/tests/feature-store/datasets.check.mts": {
+      "gitBlob": "fdb4c04110dbe08dc00680b3628bf4cdef7984fa",
+      "sha256": "26a3f4b2b3793d7076b453b2a918bcc706b346809387f70e3d7e58161f9fc3c5"
+    },
+    "services/pipeline/tests/feature-store/dataset-publication-work.ts": {
+      "gitBlob": "6f06cb3e0ff7747e12ab2ba15d5d487d95ce7f81",
+      "sha256": "b39d7fedcbcaf5f16b01665da88ca879d8188683f4de212db8eb6f661e011791"
+    },
+    "services/pipeline/tests/feature-store/dataset-evidence.ts": {
+      "gitBlob": "021421e0d7c7f91c4f10f6e5bc4f572d4a46ac5c",
+      "sha256": "13c9014dc74d865477284be445b2f3c3497e085de997f2d81cc34977fa0da9d4"
+    }
+  },
+  "identity": {
+    "previousSyntheticDigest": "c0a9ae28cf34cd899552d4781b22247f806f3a2caf2052b7f8e0c37ec61c956f",
+    "previousAddress": "datasets/c0a9ae28cf34cd899552d4781b22247f806f3a2caf2052b7f8e0c37ec61c956f",
+    "currentSynthetic": {
+      "rows": 2,
+      "exclusions": {
+        "warm-up-only": 4,
+        "feature-unavailable": 2
+      },
+      "statements": 8,
+      "rightsQueries": 2,
+      "repeatedHash": "6069e1e59c5593d42dbb78b52229e11bf40ea9020c9e914fcd9c7e3ef11de499",
+      "contentSha256": "e6220862ba4a38a8683a47588f33e658ae7f183b345668f22923ff7863da37b0",
+      "byteSize": 2241
+    },
+    "sameInputParity": "Focused check asserts the original datasets/<SHA-256 of bytes> formula and equal repeated publication digest for identical inputs. Independent scratch runs allocate fresh IDs and clocks.",
+    "historicalContentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+    "historicalPinSource": "docs/evidence/feature-store-165/step-4-benchmark.json"
+  },
+  "receiptWrite": {
+    "mode": "wx after successful probes",
+    "forcedFailure": "same original error object with existing receipt",
+    "existingFilePreserved": true,
+    "successfulCollision": "EEXIST"
+  },
+  "checks": {
+    "dataset": {
+      "command": "node --test services/pipeline/tests/feature-store/datasets.check.mts",
+      "passed": 19,
+      "failed": 0
+    },
+    "featureStore": {
+      "command": "npm run test:feature-store:db",
+      "passed": 217,
+      "failed": 0,
+      "note": "The focused rerun includes the final explicit original-address-formula assertion."
+    },
+    "typecheck": {
+      "command": "npm run typecheck",
+      "result": "pass"
+    },
+    "lint": {
+      "command": "npm run lint",
+      "result": "pass",
+      "importBoundaryChecks": 11
+    }
+  }
+}

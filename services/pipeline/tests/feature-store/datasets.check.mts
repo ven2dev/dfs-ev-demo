@@ -1,3 +1,4 @@
+import { withDatasetEvidence } from "./dataset-evidence.ts";
 import { measureDatasetPublication } from "./dataset-publication-work.ts";
 import assert from "node:assert/strict";
 import { mkdtemp,realpath,rm,writeFile,readFile,utimes } from "node:fs/promises";
@@ -20,7 +21,27 @@ const mode="retrospective-reconstruction-v1" as const;
 const probes:{name:string;verdict:string;details:unknown}[]=[];
 const paths=["packages/db/proposals/163_effective_rights.sql","services/pipeline/src/featureStore/datasets.ts","services/pipeline/src/featureStore/governance.ts","packages/db/proposals/138_dataset_governance.sql","packages/db/proposals/138_feature_store.sql","services/pipeline/src/featureStore/derived.ts","services/pipeline/tests/feature-store/datasets.check.mts"];
 const codeHashes=Object.fromEntries(await Promise.all(paths.map(async p=>[p,sha256(await readFile(new URL("../../../../"+p,import.meta.url)))])));
-test("#138 pinned datasets, rights, two-step deletion and bounded derived retention",{timeout:120000},async t=>{
+test("#228 an existing receipt cannot mask a failing probe", async () => {
+ const root = await mkdtemp(join(tmpdir(), "dfs228-receipt-"));
+ const path = join(root, "receipt.json");
+ const failure = new Error("forced dataset probe failure");
+ try {
+  await writeFile(path, "original receipt", { flag: "wx" });
+  await assert.rejects(
+   withDatasetEvidence(path, async () => { throw failure; }, () => "replacement"),
+   error => error === failure,
+  );
+  await assert.rejects(
+   withDatasetEvidence(path, async () => {}, () => "replacement"),
+   { code: "EEXIST" },
+  );
+  assert.equal(await readFile(path, "utf8"), "original receipt");
+ } finally {
+  await rm(root, { recursive: true, force: true });
+ }
+});
+
+test("#138 pinned datasets, rights, two-step deletion and bounded derived retention",{timeout:120000},async t=>withDatasetEvidence(process.env.FEATURE_STORE_EVIDENCE_PATH,async()=>{
  const root=await realpath(await mkdtemp(join(tmpdir(),"dfs138-datasets-")));
  const store=await openLocalObjectStore(root);
  try{await withFeatureStoreDatabase(async({admin,writer,reader,openWriter,queryCounts})=>{
@@ -83,6 +104,8 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
    first=(await measureDatasetPublication([writer,store,spec,code]))!;
    assert.equal(queryCounts.writer-before,8);assert.equal(first.work.rightsQueries,2);assert.equal(first.rowCount,2);
    const bytes=await readDataset(reader,store,first.datasetId);assert.equal(sha256(bytes),first.fileSha256);
+   assert.equal(first.objectKey,"datasets/"+sha256(bytes));
+   assert.equal(objectKey("datasets",bytes),first.objectKey);
    firstRows=JSON.parse(bytes.toString());assert(firstRows.rows.every(r=>r.season>=2022&&r.sampleSize>=2));
    assert.equal(first.contentSha256,JSON.parse(bytes.toString()).contentSha256);
    assert.equal((await reader.query('SELECT content_sha256 FROM fs138.dataset_manifests WHERE dataset_id=$1',[first.datasetId])).rows[0].content_sha256,first.contentSha256);
@@ -342,6 +365,7 @@ test("#138 pinned datasets, rights, two-step deletion and bounded derived retent
   });
  });}finally{
   await rm(root,{recursive:true,force:true});
-  if(process.env.FEATURE_STORE_EVIDENCE_PATH)await writeFile(process.env.FEATURE_STORE_EVIDENCE_PATH,JSON.stringify({issue:138,step:5,recordedAt:new Date().toISOString(),fixture:'synthetic only; not an observed source correction',codeHashes,verdict:probes.length===17&&probes.every(p=>p.verdict==='pass')?'pass':'fail',probes},null,2)+'\n',{flag:'wx'});
  }
-});
+},()=>probes.length===17&&probes.every(p=>p.verdict==="pass")
+ ? JSON.stringify({issue:138,step:5,recordedAt:new Date().toISOString(),fixture:"synthetic only; not an observed source correction",codeHashes,verdict:"pass",probes},null,2)+"\n"
+ : undefined));

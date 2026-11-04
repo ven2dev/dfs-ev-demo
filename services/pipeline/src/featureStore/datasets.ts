@@ -1,7 +1,7 @@
 import type { Client } from "pg";
 import { FEATURE_VERSION, LABEL_VERSION, HISTORY_POLICY, type CodeIdentity } from "./derived.ts";
 import type { EvidenceMode } from "./asOf.ts";
-import { sha256, type ObjectStore } from "./objectStore.ts";
+import { objectKeyForDigest, sha256, type ObjectStore } from "./objectStore.ts";
 
 type Database = Pick<Client, "query">;
 export type DatasetSpec = {
@@ -131,7 +131,7 @@ export const buildDataset = async (client: Database, store: ObjectStore, spec: D
     rights: authorization.decisions, exclusions: selection.exclusions, rows: selection.rows };
   const bytes = Buffer.from(JSON.stringify(pinned) + "\n");
   const fileSha256 = sha256(bytes);
-  const key = `datasets/${fileSha256}`;
+  const key = objectKeyForDigest("datasets", fileSha256);
   const inputSha256 = sha256(Buffer.from(JSON.stringify({spec, snapshots: selection.snapshots,
     members: selection.rows.map(r => [r.featureId,r.labelId]), code})));
   const publicationValues = [
