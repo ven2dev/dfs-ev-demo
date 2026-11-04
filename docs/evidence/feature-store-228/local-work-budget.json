@@ -1,0 +1,127 @@
+{
+  "issue": 228,
+  "base": "da5e502875418684a5e8773059e57d908872a0ae",
+  "baselinePublisherBlob": "67aaf6875b440ace1e5ceafc1ec7108d24cd390c",
+  "source": {
+    "services/pipeline/src/featureStore/datasets.ts": {
+      "gitBlob": "4558dca457c5cbc6130fd5009305ee20f9ab424f",
+      "sha256": "fb6b9f45dbe6106ec4abf56a4709c5e0a9fbbc85bab15b1ffeb42c2c6265e6d9"
+    },
+    "services/pipeline/tests/feature-store/dataset-publication-work.ts": {
+      "gitBlob": "6f06cb3e0ff7747e12ab2ba15d5d487d95ce7f81",
+      "sha256": "b39d7fedcbcaf5f16b01665da88ca879d8188683f4de212db8eb6f661e011791"
+    },
+    "services/pipeline/tests/feature-store/datasets.check.mts": {
+      "gitBlob": "fb97c229cdee89d4f5f19f5c2fbfc700d1118e9c",
+      "sha256": "997c4d6b5e78170e1b3c9436e6dd3a1eb849284ccd73a407048b3fb5db747c1a"
+    },
+    "docs/228-dataset-publication-work-roadmap.md": {
+      "gitBlob": "af9747a571339f0a2e14f904c3aa2ef3502a7a9e",
+      "sha256": "0f63c6162a42ecd8aa07e678d30169b4d7346d28b2a955a5aa82b12613919baa"
+    }
+  },
+  "baselineOracle": {
+    "expectedExitCode": 1,
+    "expectedHashes": 0,
+    "actualHashes": 2,
+    "note": "Dependent fixture cases also failed after the first publication assertion aborted setup."
+  },
+  "candidateBudget": {
+    "transactionHashes": 0,
+    "transactionPayloadReads": 0,
+    "metadataHeadsAfterLock": 1,
+    "uploadsCompletedBeforeBegin": 1,
+    "successSql": [
+      "join",
+      "rights",
+      "BEGIN",
+      "timeout",
+      "lock",
+      "manifest",
+      "COMMIT",
+      "rights"
+    ],
+    "missingOrMismatchSql": [
+      "join",
+      "rights",
+      "BEGIN",
+      "timeout",
+      "lock",
+      "ROLLBACK",
+      "requeue"
+    ],
+    "failedManifestSql": [
+      "join",
+      "rights",
+      "BEGIN",
+      "timeout",
+      "lock",
+      "manifest",
+      "ROLLBACK",
+      "requeue"
+    ]
+  },
+  "identity": {
+    "sqlTemplatesByteIdentical": true,
+    "pinnedSerializationByteIdentical": true,
+    "syntheticFixture": {
+      "rows": 2,
+      "exclusions": {
+        "warm-up-only": 4,
+        "feature-unavailable": 2
+      },
+      "statements": 8,
+      "rightsQueries": 2,
+      "repeatedHash": "c0a9ae28cf34cd899552d4781b22247f806f3a2caf2052b7f8e0c37ec61c956f",
+      "contentSha256": "e6220862ba4a38a8683a47588f33e658ae7f183b345668f22923ff7863da37b0",
+      "byteSize": 2241
+    },
+    "historicalCohort": {
+      "rows": 2504,
+      "fileBytes": 3527908,
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+    }
+  },
+  "hashCost": {
+    "node": "v24.18.1",
+    "arch": "arm64",
+    "cpu": "Apple M3 Pro",
+    "samplesMsPerMiB": [
+      0.3786505546875,
+      0.37541096875000013,
+      0.36922412109375014,
+      0.3709340820312501,
+      0.372615234375,
+      0.37199105078124983,
+      0.36885433203124984,
+      0.3707745742187498,
+      0.39056559375000033
+    ],
+    "msPerMiB": 0.37199105078124983,
+    "computedTwoHashes": [
+      {
+        "bytes": 306544,
+        "ms": 0.21749806341302386
+      },
+      {
+        "bytes": 3527908,
+        "ms": 2.503109367331653
+      }
+    ],
+    "note": "Computed from median 1 MiB throughput. The brief references the 306,544-byte report. The pinned 2,504-example dataset in the same historical receipt is 3,527,908 bytes. Informational only."
+  },
+  "checks": {
+    "completeFeatureStore": 216,
+    "focusedDatasetAfterReceiptUpdate": 18,
+    "datasetProbes": 17,
+    "typecheck": "pass",
+    "lintAndBoundaries": "pass",
+    "ciLayout": 22,
+    "latestDatasetFileLint": "pass"
+  },
+  "fullRecord": {
+    "path": "/Users/vernonneilly/.codex/visualizations/2026/10/20/01a15791-1e78-7a32-835c-66df7c6a005a/228-work-budget/local-record.json.gz",
+    "sha256": "5917bcb0dc4860d97b24fc6803f266320bf2e96df735bbe4541a2c46dea9102d"
+  },
+  "status": "ready for owner review before commit"
+}
