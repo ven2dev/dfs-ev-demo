@@ -1,10 +1,14 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
 import { gunzipSync } from "node:zlib";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { sha256 } from "../../src/featureStore/objectStore.ts";
 import { compactCompositeBenchmark, compositeCohortSummary, verifyCompositeBenchmark,
-  verifyEvidenceReceipt, verifyEvidenceBundle, type FullCompositeBenchmark } from "../../scripts/feature-store/artifact-governance-evidence.ts";
+  verifyEvidenceReceipt, verifyEvidenceBundle, compactBehavior, type FullCompositeBenchmark } from "../../scripts/feature-store/artifact-governance-evidence.ts";
 import type { CompositeCase, CompositeSample } from "../../scripts/feature-store/composite-authorization-measure.ts";
 import { deterministicEvidenceBundle } from "../../scripts/feature-store/evidence-bundle.ts";
 
@@ -46,6 +50,60 @@ test("#231 committed receipts resolve only to checksum-matching durable bundle m
   // CI validates bytes/membership only. No live or recorded speed assertion.
   const results = await verifyEvidenceBundle(directory, false);
   assert.equal(results.length, 3); assert(results.every(result => result.verdict === "pass"));
+});
+test("#167 Step 0 receipts retain hash-matching append-only evidence without DB/cache", async () => {
+  const directory = fileURLToPath(new URL("../../../../docs/evidence/feature-store-167/", import.meta.url));
+  const results = await verifyEvidenceBundle(directory, false);
+  // Later step receipts append to this directory; every reference is audited.
+  assert(results.length >= 2); assert(results.every(result => result.verdict === "pass"));
+});
+test("#167 Step 0 relabel preserves every measured value and the strict composite work verifier", async () => {
+  const directory = fileURLToPath(new URL("../../../../docs/evidence/feature-store-167/", import.meta.url));
+  const originalName = "step-0-composite-20261104T0352Z.json";
+  const original = JSON.parse(await readFile(join(directory, originalName), "utf8"));
+  const corrected = JSON.parse(await readFile(join(directory, "step-0-composite-relabel-20261104T0459Z.json"), "utf8"));
+  const fullBytes = (receipt: typeof original) => {
+    const [archive, member] = receipt.fullRecord.path.split("#");
+    return execFileSync("tar", ["-xOzf", join(directory, archive), member]);
+  };
+  const originalBytes = fullBytes(original), correctedBytes = fullBytes(corrected);
+  verifyEvidenceReceipt(original, originalBytes); verifyEvidenceReceipt(corrected, correctedBytes);
+  const { issue: oldIssue, step: oldStep, ...measurements } = JSON.parse(originalBytes.toString());
+  const { issue, step, kind, relabelledFrom, ...retained } = JSON.parse(correctedBytes.toString());
+  assert.deepEqual([issue, step, kind], [167, 0, "composite-authorization-behavior"]);
+  assert.deepEqual(relabelledFrom, { issue: oldIssue, step: oldStep, receipt: originalName, fullRecord: original.fullRecord });
+  assert.deepEqual(retained, measurements, "relabel-must-not-change-measured-evidence");
+  assert.deepEqual(corrected.work, original.work); assert.deepEqual(corrected.probes, original.probes);
+  const tampered = JSON.parse(correctedBytes.toString()); tampered.budgets[0].rightsCalls++;
+  assert.throws(() => compactBehavior(Buffer.from(JSON.stringify(tampered)), corrected.fullRecord.path));
+  assert.throws(() => verifyEvidenceReceipt({ ...corrected, work: { ...corrected.work, checks: 4 } }, correctedBytes), /compact-receipt-mismatch/);
+  tampered.step = 1;
+  assert.throws(() => compactBehavior(Buffer.from(JSON.stringify(tampered)), corrected.fullRecord.path), /unexpected-composite-behavior-label/);
+});
+test("append-only evidence audits distinct named bundles without path escapes or ambiguous members", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "fs167-evidence-"));
+  try {
+    const bytes = Buffer.from(JSON.stringify({ issue: 167, step: 0, verdict: "pass", probes: [] }));
+    for (const archive of ["step-0-full-records-first.tar.gz", "step-0-full-records-second.tar.gz"]) {
+      // Same member name in different bundles remains a distinct hash reference.
+      const receipt = compactBehavior(bytes, archive + "#full.json");
+      await writeFile(join(directory, archive), deterministicEvidenceBundle([{ member: "full.json", bytes }]));
+      await writeFile(join(directory, archive + ".json"), JSON.stringify(receipt));
+    }
+    assert.equal((await verifyEvidenceBundle(directory)).length, 2);
+    const receiptPath = join(directory, "step-0-full-records-first.tar.gz.json");
+    for (const path of ["../escape.tar.gz#full.json", "/absolute.tar.gz#full.json", "-option.tar.gz#full.json",
+      "step-0-full-records-first.tar.gz#../escape", "step-0-full-records-first.tar.gz#missing.json"]) {
+      await writeFile(receiptPath, JSON.stringify(compactBehavior(bytes, path)));
+      await assert.rejects(verifyEvidenceBundle(directory), /unexpected-full-record-bundle|absolute-full-record-path|unsafe-full-record-member|missing-full-record-member/);
+    }
+    await writeFile(receiptPath, JSON.stringify(compactBehavior(Buffer.from("{}"), "step-0-full-records-first.tar.gz#full.json")));
+    await assert.rejects(verifyEvidenceBundle(directory), /full-record-sha256-mismatch/);
+    await writeFile(receiptPath, JSON.stringify(compactBehavior(bytes, "step-0-full-records-first.tar.gz#full.json")));
+    await writeFile(join(directory, "step-0-full-records-first.tar.gz"), deterministicEvidenceBundle([
+      { member: "full.json", bytes }, { member: "unreferenced.json", bytes }]));
+    await assert.rejects(verifyEvidenceBundle(directory), /unreferenced-bundle-member/);
+  } finally { await rm(directory, { recursive: true, force: true }); }
 });
 test("#231 receipt recomputes full-path cohort percentiles and setup shares after checking the member hash", () => {
   const bytes = Buffer.from(JSON.stringify(fixture())), receipt = compactCompositeBenchmark(bytes, "full-records.tar.gz#final/full-samples.json");

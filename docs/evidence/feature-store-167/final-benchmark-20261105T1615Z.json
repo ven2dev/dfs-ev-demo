@@ -1,0 +1,2745 @@
+{
+  "kind": "local-prediction-benchmark",
+  "schemaVersion": 1,
+  "issue": 167,
+  "step": 3,
+  "verdict": "pass",
+  "startedAt": "2026-11-05T16:00:43.877Z",
+  "runtime": "v24.18.1",
+  "machine": {
+    "arch": "arm64",
+    "platform": "darwin",
+    "release": "27.2.0"
+  },
+  "code": {
+    "gitSha": "4d8f200475930d438dbe366c15d34749383e701e",
+    "contentSha256": "814d243f5a0dee25cf61d34e3162a88642052229b1be5059e68028b57669deb1"
+  },
+  "codeHashes": {
+    "compose.test.yml": "44798ea481282096048bf44d02c33cf338eed4520165559dc1115e3e769e40b7",
+    "package-lock.json": "857a7ec5c2d89b61836a15e3d98e40c30b5cb1ddecf779dd1aa5d8a101daf6f2",
+    "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "packages/db/proposals/165_model_manifests.sql": "1915e84e505be95eba819562e47aa4bc7936d15429d3d431fd9e319380800853",
+    "packages/db/proposals/166_artifact_governance.sql": "600402ed383510e91bf75f625af203ec2ec82e20fa521efec601dd47a00f7666",
+    "packages/db/proposals/229_mandatory_recovery.sql": "059ca1fa5a9144a5bb485fbb00c92eb96c452e76479f8fac4c2443e97609027d",
+    "packages/db/proposals/231_composite_authorization.sql": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681",
+    "packages/domain/package.json": "34e81b6f0dcc082e7b3a47f0e5a53b2b667e8da166e3f98b4f1c97f358c72144",
+    "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "packages/domain/src/projection/evaluation.ts": "0852560f81b50968d83088f3de661c07611a9ba852c896aa8527f807a5046fe6",
+    "packages/domain/src/projection/qb-evaluation.ts": "a6c6536b85bf98633b05af1528b212a15cce0d7a0c3227cbce5b0c1a9625e489",
+    "services/pipeline/package.json": "38ad80e5bf371065ba12620740430a310e71692f5cd8e064d29b280e83d3d063",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "82b8e646712c8f636dc51f6b83696f173685ab192cb1ecefb04db17a3a046496",
+    "services/pipeline/scripts/feature-store/composite-authorization-benchmark.ts": "348d57c7d1c55ba13d0eebe36b2051e0de89766cdfdd4425dfab65638ac056df",
+    "services/pipeline/scripts/feature-store/composite-authorization-measure.ts": "99d9e5e96a4d9d5cdf843be27985549b51ba93ba31ab576f97c96db7b22e6755",
+    "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "23163c515afc6e14d86ba663f8ae54807a00e812ac6f07d4f1f3f5aaff6dc1cb",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "fa2d82a3105a601ab33a3c72deb827a17ad27cd759827134267fd61806dc5336",
+    "services/pipeline/scripts/feature-store/evaluation-measure.ts": "c6aee7cc7462dbe17ef1957a1b3a2f25094ef5eaa1e7612e11bbc25fef32873b",
+    "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts": "e6f9b3170a4a13fc6c6a0d8518a3247e76c4f1b09cd0898d4dc9c8bd7469b2e6",
+    "services/pipeline/scripts/feature-store/evaluation-run.ts": "cd13a88ead8eddebfe4a9b198208906654bd172a1219ae7b6a7caba76533c2d5",
+    "services/pipeline/scripts/feature-store/evaluation-worker.ts": "702d74737b3a307989f5132175c2cde479e07d64c2689610496120a08f94ccb5",
+    "services/pipeline/scripts/feature-store/harness.ts": "f9d74c2ede8c342c8cdc65b800ff3107176cc7d12154a482edcc4d431bec84cb",
+    "services/pipeline/scripts/feature-store/model-publication-identity.ts": "beaef66634ca1bc1e2ad68d4329869dc1a1109c57cc5c15c837c2706d0d5aa3a",
+    "services/pipeline/scripts/feature-store/model-publication-measure.ts": "e9de10a392e645c736d68634228f8e3bd873120155e05f0c8f827450b45082b5",
+    "services/pipeline/scripts/feature-store/model-publication-run.ts": "5ee9d7cd849d4ac112df045f30e167e8f418aead40be7c22910b039114625012",
+    "services/pipeline/scripts/feature-store/prediction-benchmark.ts": "13bca79a8223bde244c0f14b9f3f57fe630dad3556a991f0e93ec650baaa28b3",
+    "services/pipeline/scripts/feature-store/prediction-measure.ts": "fa670ed9d7d37cea80bbafd15cbbcefffd2f0bebffd27c40272ec7660c020175",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+    "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+    "services/pipeline/src/featureStore/connections.ts": "37970dc14cdbcbed94fc5d4bb20808bc0f686317eadb77cf635f7b657ba8ef6c",
+    "services/pipeline/src/featureStore/datasets.ts": "47febb579b546a6570291332723b6e19fc25f16867b264e93389cab3706e0b54",
+    "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "8bddf06f546033ba1714224ec26a8b60c623e5fd8d0d4af54a0ff9658f65187b",
+    "services/pipeline/src/featureStore/governance.ts": "7fe4f91ec857a8a80b1e8b917c7a68cec21ca21ba765266391df42922fb96e27",
+    "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+    "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388",
+    "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
+    "services/pipeline/src/featureStore/modelManifests.ts": "c677d0443177748fee090b9d5bb3607bc82f7bafd28ad5609a3922d76a109802",
+    "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "services/pipeline/src/featureStore/objectStore.ts": "e467ee210821416ca595349dee4eaaa415c4f1e0d305155d6591fce8283bb3ae",
+    "services/pipeline/src/featureStore/predict.ts": "f16c916ce755c1662aa90e2f56070108576862f205d56ebf3ccd1e927d514fde",
+    "services/pipeline/src/featureStore/predictionHelpers.ts": "d552ee1f61255f0805d5fa1a558b82bfae9029611c0f7bc435fa78e3f2140281",
+    "services/pipeline/src/featureStore/qbReports.ts": "91fa70d5e8a05e1dbbbd0a9968a557da04e4e7b22c8c8f431c5ef475f8a8465e",
+    "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7",
+    "services/pipeline/tests/feature-store/artifact-read-work.ts": "44626f9bfd3826db45cd7289bf79e9aa06c21743e9ef744e96885b596da63d5c",
+    "services/pipeline/tests/feature-store/composite-read-work.ts": "443a086aad0f54b91bbff22d56618ae729f36ab86e41b5619da1d9992e8911ef"
+  },
+  "codeBlobIds": {
+    "compose.test.yml": "ab874ba42f4ffb24cd5c71d23205fc6d962e4046",
+    "package-lock.json": "ce76a5b675d95def197b8b99b8f71606b122f3c8",
+    "packages/db/proposals/138_dataset_governance.sql": "68131cf08c62aa194339ee0329ecbf7f8c12189f",
+    "packages/db/proposals/138_feature_store.sql": "816aecde0c799165ccba681275380ab779e87115",
+    "packages/db/proposals/163_effective_rights.sql": "4f4901d8eb69ffca985d749e2d08dfcb83e92212",
+    "packages/db/proposals/165_model_manifests.sql": "9ec1a3c608f4d0770df7febce7e21e360c6f8c18",
+    "packages/db/proposals/166_artifact_governance.sql": "56a2518564d41a5f232b2bbd75801e07ca93a242",
+    "packages/db/proposals/229_mandatory_recovery.sql": "bc247c12e98359b60f0695a5880214ed0dfe1916",
+    "packages/db/proposals/231_composite_authorization.sql": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+    "packages/domain/package.json": "0d5dd66e70daa268ef10e17811ba4281f3db2f94",
+    "packages/domain/src/projection/baseline.ts": "e90f2f18c551b2a866013b7a9f6f23963508b4fb",
+    "packages/domain/src/projection/empirical.ts": "15e5c6f3ddcce591f5dc4bed425113da7fdd06fe",
+    "packages/domain/src/projection/evaluation.ts": "61005eb792bf0bd0c9ce26c600374694cb270efe",
+    "packages/domain/src/projection/qb-evaluation.ts": "b479630a88b408c8f129c4afa06b679d31095145",
+    "services/pipeline/package.json": "96803d130aa5c582da3ff3a130baffe602c6635b",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "6801a8597567ae8431f4af251390c8b2b223a613",
+    "services/pipeline/scripts/feature-store/composite-authorization-benchmark.ts": "05887ba2d48d6e1205b5e616e5950544d67cc606",
+    "services/pipeline/scripts/feature-store/composite-authorization-measure.ts": "3860f1ac91fafbf9420c6118da2967e1b38bf5cd",
+    "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "5acc6d330f7a30668269a2308d72429fbc75fdf0",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "5ee303d51324d5c59a446e43c3af441add9199af",
+    "services/pipeline/scripts/feature-store/evaluation-measure.ts": "f216fafcaf529a97c6a2d825220cff606ddb3bdc",
+    "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "3ceee58e594b358532a398a7c57b8c23229dc56f",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts": "06640ca05ec7855bb8f5970a5573790001f0671b",
+    "services/pipeline/scripts/feature-store/evaluation-run.ts": "5338c719fed22224e7d91cd08829aa528b8ed4b6",
+    "services/pipeline/scripts/feature-store/evaluation-worker.ts": "c8ddea1e4435730030d8d5b2197bd4c4e74ed654",
+    "services/pipeline/scripts/feature-store/harness.ts": "f172af04e8822c378a4013d0f74bf324cd73353d",
+    "services/pipeline/scripts/feature-store/model-publication-identity.ts": "567b7ac8d94d3202ee4582b11e3dfabde6e69b6b",
+    "services/pipeline/scripts/feature-store/model-publication-measure.ts": "6959e02100d135bb9824eafd9bceb0aa7b4222e2",
+    "services/pipeline/scripts/feature-store/model-publication-run.ts": "09b582985b4236b465c865dc58ea15a0ae4c7fa1",
+    "services/pipeline/scripts/feature-store/prediction-benchmark.ts": "9c301b2e4c63ff5ece1fae1666206ecd54e36a7c",
+    "services/pipeline/scripts/feature-store/prediction-measure.ts": "eeb1cca9947f18504db14efd33c56897815aac01",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "2b85a7b0792398bf903f0e0256343d6effee114c",
+    "services/pipeline/src/featureStore/asOf.ts": "0eca3645c7b91c2e9638794947fefed2c31938ad",
+    "services/pipeline/src/featureStore/connections.ts": "8f2254abe7c3d952c7db824a05138fb451c91124",
+    "services/pipeline/src/featureStore/datasets.ts": "6bd8fe394fd456ab8979933e7c09d0f86711323a",
+    "services/pipeline/src/featureStore/derived.ts": "da6f0744a1bc903ca3d10d56055ef07fa1024dec",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "dbdde5fa7b35489b84eea443f2fa8927735cb06d",
+    "services/pipeline/src/featureStore/governance.ts": "4a29d1daea080acd222256ed46c6e817055b38dd",
+    "services/pipeline/src/featureStore/ingest.ts": "9a77b85a73d492417ee87108534032cd401af575",
+    "services/pipeline/src/featureStore/jobs.ts": "e5db86aa5f51215df8bf49b97b4595aa5ceeda8b",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "f2bf259faa6aca4fa2967ae6fc710664919c977e",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+    "services/pipeline/src/featureStore/modelContext.ts": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+    "services/pipeline/src/featureStore/modelManifests.ts": "812ae66e5b582cb70917f3eec9133fc8dde0bef5",
+    "services/pipeline/src/featureStore/normalize.ts": "e5c73009b857275cce211834699a3eac63a2c870",
+    "services/pipeline/src/featureStore/objectStore.ts": "0ee0d73a30866b58e6a2d2bc95ba77251c692d02",
+    "services/pipeline/src/featureStore/predict.ts": "6581034540347efb7f119fc9a3550de47360248b",
+    "services/pipeline/src/featureStore/predictionHelpers.ts": "76778189b8c0f53d5a96e72ffea647a4642c9e70",
+    "services/pipeline/src/featureStore/qbReports.ts": "eaa16e1a713808710da1658308f00b5e925693a0",
+    "services/pipeline/src/featureStore/source.ts": "567436773f98ec2b6c4250f6e3ece9713df499ff",
+    "services/pipeline/tests/feature-store/artifact-read-work.ts": "a8b30849a9132081731d29e10260efd818e568de",
+    "services/pipeline/tests/feature-store/composite-read-work.ts": "69c7495b56cc1cb391db205bcbdee2b626cf8c73"
+  },
+  "inputGeneration": {
+    "code": {
+      "gitSha": "4d8f200475930d438dbe366c15d34749383e701e",
+      "contentSha256": "9e0764776549b9fcb4682ed0be22f144ba05384a99edec83eadc18c33349236a"
+    },
+    "codeHashes": {
+      "package-lock.json": "857a7ec5c2d89b61836a15e3d98e40c30b5cb1ddecf779dd1aa5d8a101daf6f2",
+      "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+      "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+      "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+      "packages/domain/package.json": "34e81b6f0dcc082e7b3a47f0e5a53b2b667e8da166e3f98b4f1c97f358c72144",
+      "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+      "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+      "packages/domain/src/projection/evaluation.ts": "0852560f81b50968d83088f3de661c07611a9ba852c896aa8527f807a5046fe6",
+      "packages/domain/src/projection/qb-evaluation.ts": "a6c6536b85bf98633b05af1528b212a15cce0d7a0c3227cbce5b0c1a9625e489",
+      "services/pipeline/package.json": "38ad80e5bf371065ba12620740430a310e71692f5cd8e064d29b280e83d3d063",
+      "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "23163c515afc6e14d86ba663f8ae54807a00e812ac6f07d4f1f3f5aaff6dc1cb",
+      "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "fa2d82a3105a601ab33a3c72deb827a17ad27cd759827134267fd61806dc5336",
+      "services/pipeline/scripts/feature-store/evaluation-measure.ts": "c6aee7cc7462dbe17ef1957a1b3a2f25094ef5eaa1e7612e11bbc25fef32873b",
+      "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+      "services/pipeline/scripts/feature-store/evaluation-report.ts": "e6f9b3170a4a13fc6c6a0d8518a3247e76c4f1b09cd0898d4dc9c8bd7469b2e6",
+      "services/pipeline/scripts/feature-store/evaluation-run.ts": "cd13a88ead8eddebfe4a9b198208906654bd172a1219ae7b6a7caba76533c2d5",
+      "services/pipeline/scripts/feature-store/evaluation-worker.ts": "702d74737b3a307989f5132175c2cde479e07d64c2689610496120a08f94ccb5",
+      "services/pipeline/scripts/feature-store/harness.ts": "f9d74c2ede8c342c8cdc65b800ff3107176cc7d12154a482edcc4d431bec84cb",
+      "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+      "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+      "services/pipeline/src/featureStore/connections.ts": "37970dc14cdbcbed94fc5d4bb20808bc0f686317eadb77cf635f7b657ba8ef6c",
+      "services/pipeline/src/featureStore/datasets.ts": "47febb579b546a6570291332723b6e19fc25f16867b264e93389cab3706e0b54",
+      "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+      "services/pipeline/src/featureStore/empiricalAdapter.ts": "8bddf06f546033ba1714224ec26a8b60c623e5fd8d0d4af54a0ff9658f65187b",
+      "services/pipeline/src/featureStore/governance.ts": "7fe4f91ec857a8a80b1e8b917c7a68cec21ca21ba765266391df42922fb96e27",
+      "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+      "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+      "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+      "services/pipeline/src/featureStore/modelArtifacts.ts": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388",
+      "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
+      "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+      "services/pipeline/src/featureStore/objectStore.ts": "e467ee210821416ca595349dee4eaaa415c4f1e0d305155d6591fce8283bb3ae",
+      "services/pipeline/src/featureStore/predict.ts": "f16c916ce755c1662aa90e2f56070108576862f205d56ebf3ccd1e927d514fde",
+      "services/pipeline/src/featureStore/predictionHelpers.ts": "d552ee1f61255f0805d5fa1a558b82bfae9029611c0f7bc435fa78e3f2140281",
+      "services/pipeline/src/featureStore/qbReports.ts": "91fa70d5e8a05e1dbbbd0a9968a557da04e4e7b22c8c8f431c5ef475f8a8465e",
+      "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7"
+    }
+  },
+  "cohorts": [
+    {
+      "temperature": "cold",
+      "cohort": 1,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 38.46591699999408,
+      "referenceP95Ms": 33.317957999999635,
+      "headroom": 0.8717802766666864,
+      "candidateSetupP95Ms": 11.247042000002693,
+      "candidateWarmPathP95Ms": 29.61370899999747,
+      "candidateMeanSetupShare": 0.2668592387176454,
+      "candidateAggregateSetupShare": 0.27751833311900415,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    },
+    {
+      "temperature": "cold",
+      "cohort": 2,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 31.846000000005006,
+      "referenceP95Ms": 34.36970900000597,
+      "headroom": 0.89384666666665,
+      "candidateSetupP95Ms": 9.663125000006403,
+      "candidateWarmPathP95Ms": 23.850167000011425,
+      "candidateMeanSetupShare": 0.25456910412786254,
+      "candidateAggregateSetupShare": 0.2557107076075918,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    },
+    {
+      "temperature": "cold",
+      "cohort": 3,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 35.091125000006286,
+      "referenceP95Ms": 44.12204100000963,
+      "headroom": 0.8830295833333124,
+      "candidateSetupP95Ms": 8.588124999994761,
+      "candidateWarmPathP95Ms": 27.207374999998137,
+      "candidateMeanSetupShare": 0.22944622816595595,
+      "candidateAggregateSetupShare": 0.22830968549498412,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    },
+    {
+      "temperature": "warm",
+      "cohort": 1,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 8.168666999990819,
+      "referenceP95Ms": 11.76029199999175,
+      "headroom": 0.9727711100000306,
+      "candidateSetupP95Ms": 0,
+      "candidateWarmPathP95Ms": 8.168666999990819,
+      "candidateMeanSetupShare": 0,
+      "candidateAggregateSetupShare": 0,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    },
+    {
+      "temperature": "warm",
+      "cohort": 2,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 10.947584000008646,
+      "referenceP95Ms": 12.197833000012906,
+      "headroom": 0.9635080533333045,
+      "candidateSetupP95Ms": 0,
+      "candidateWarmPathP95Ms": 10.947584000008646,
+      "candidateMeanSetupShare": 0,
+      "candidateAggregateSetupShare": 0,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    },
+    {
+      "temperature": "warm",
+      "cohort": 3,
+      "candidateSamples": 100,
+      "referenceSamples": 100,
+      "candidateP95Ms": 7.0427919999929145,
+      "referenceP95Ms": 10.02887500001816,
+      "headroom": 0.9765240266666902,
+      "candidateSetupP95Ms": 0,
+      "candidateWarmPathP95Ms": 7.0427919999929145,
+      "candidateMeanSetupShare": 0,
+      "candidateAggregateSetupShare": 0,
+      "n": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "pass": true
+    }
+  ],
+  "fixtureConfig": {
+    "postgresTmpfsBytes": 536870912,
+    "sharedMemoryBytes": 134217728
+  },
+  "method": {
+    "baselineFirstRequests": 45,
+    "temperatures": [
+      "cold",
+      "warm"
+    ],
+    "cohortsPerTemperature": 3,
+    "order": [
+      "baseline",
+      "candidate",
+      "candidate",
+      "baseline"
+    ],
+    "requestsPerPosition": 50,
+    "candidateRequestsPerCohort": 100,
+    "referenceRequestsPerCohort": 100,
+    "gate": "Every candidate cohort nearest-rank full-path p95 <=210 ms, >=30% headroom under 300 ms; failures stop and are retained.",
+    "composition": "Public predictQbModel: request validation -> resolver -> composite Q1 -> descriptor GET/parse/compatibility -> pure forecast -> Q2 -> response/serialization -> final delivery/deadline check.",
+    "reference": "Unchanged #163 createEmpiricalAdapter; measured first before #231 SQL installation; target-independent requests selected from feature metadata.",
+    "cold": "Fresh restricted PostgreSQL connection in a running Node process; setup included in total and reported separately. Close outside timing.",
+    "warm": "Existing dedicated idle READ COMMITTED connection; setup zero. Cold/warm are connection states, not cache states.",
+    "observation": "SQL/ObjectStore/hash observers on both arms; authentication hashes are setup, not artifact rehashing. Server counters/rights instrumentation removed before timing. Candidate computeMs/serializationMs are zero (not separately instrumented); both remain inside totalMs. Observer validation overhead is included. Cold deadline starts before connect."
+  },
+  "qualification": "LOCAL-FIXTURE ONLY. OS/DB/file caches unflushed; no hosted RTT/wake/region (#220), cold-cache or fresh-process claim.",
+  "limitations": [
+    "Strict historical eligibility remains zero; all real requests are retrospective and retain real producer knowledge clocks.",
+    "Reference authorizes the feature only and performs its unchanged per-row qualification; candidate authorizes model plus feature and trusts producer-qualified materialization. Ratios are informational.",
+    "Synthetic PIT/correction/race/independent-lineage controls live in the behavior receipts; no synthetic histories qualify this real-fixture speed result.",
+    "Internal math and serialization are deliberately not instrumented; only the public handler and its full serialized output qualify the candidate."
+  ],
+  "database": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+  "fixture": {
+    "wireFiles": 16,
+    "inputs": [
+      {
+        "name": "games.csv.gz",
+        "expectedWireSha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+        "status": "ingested",
+        "jobId": "58edf744-f4f5-4af5-bf39-d491df45bd8b",
+        "snapshotId": "7b9e5a79-dd77-4732-aebd-5d0156c29cba",
+        "profileId": "nflverse.schedules.all.v1",
+        "objectKey": "raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+        "wireSha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+        "decodedSha256": "ac9f51116270f6dbe67aa842092801862a702a0764104ea79275a7e940bcd616",
+        "headerSha256": "6cdacf455895ebf361cdd8162b5655acfbfbc5598de01e47effb801282fdb779",
+        "wireBytes": 515250,
+        "decodedBytes": 2185203,
+        "rawRows": 7548,
+        "normalizedRows": 1359,
+        "diagnostics": {
+          "selectedRows": 1359,
+          "filteredRows": 6189,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 255.62354099999993,
+        "stagesMs": {
+          "download": 0.14458300000001145,
+          "validationAndNormalization": 154.89420799999994,
+          "objectWrite": 8.709540999999945,
+          "databasePublication": 91.88762600000018
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "pbp_participation_2021.csv",
+        "expectedWireSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+        "status": "ingested",
+        "jobId": "044258ed-8b94-4761-9617-3c50b691a726",
+        "snapshotId": "e773dea5-8a92-4870-b7c3-9e1c8c1a7086",
+        "profileId": "nflverse.pbp_participation.2021.v1",
+        "objectKey": "raw/b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+        "wireSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+        "decodedSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+        "headerSha256": "84bf2347f6d70d204ddb241c6607197eac0c9c60448cb70ec99e2f1a01ea0642",
+        "wireBytes": 22498246,
+        "decodedBytes": 22498246,
+        "rawRows": 50714,
+        "normalizedRows": 18309,
+        "diagnostics": {
+          "selectedRows": 18309,
+          "filteredRows": 2298,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 4189,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 1375.309459,
+        "stagesMs": {
+          "download": 0.6000839999999243,
+          "validationAndNormalization": 982.0441659999999,
+          "objectWrite": 38.896334000000024,
+          "databasePublication": 353.7739580000002
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "pbp_participation_2022.csv",
+        "expectedWireSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+        "status": "ingested",
+        "jobId": "45bf2b48-2537-4c1b-9430-9a664799420a",
+        "snapshotId": "d9c61d02-fea0-4ff2-b25b-cc97e4453639",
+        "profileId": "nflverse.pbp_participation.2022.v1",
+        "objectKey": "raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+        "wireSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+        "decodedSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+        "headerSha256": "84bf2347f6d70d204ddb241c6607197eac0c9c60448cb70ec99e2f1a01ea0642",
+        "wireBytes": 22245804,
+        "decodedBytes": 22245804,
+        "rawRows": 50150,
+        "normalizedRows": 18193,
+        "diagnostics": {
+          "selectedRows": 18193,
+          "filteredRows": 2306,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 4100,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 1423.065584,
+        "stagesMs": {
+          "download": 0.07608399999980975,
+          "validationAndNormalization": 1031.1883750000002,
+          "objectWrite": 38.500708999999915,
+          "databasePublication": 353.30470700000023
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "pbp_participation_2023.csv",
+        "expectedWireSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+        "status": "ingested",
+        "jobId": "8286270d-4b3a-481a-ab59-bc78e8376f6c",
+        "snapshotId": "e5654d29-9331-452a-9cc7-ca3be24b68df",
+        "profileId": "nflverse.pbp_participation.2023.v1",
+        "objectKey": "raw/ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+        "wireSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+        "decodedSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+        "headerSha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+        "wireBytes": 49967956,
+        "decodedBytes": 49967956,
+        "rawRows": 46168,
+        "normalizedRows": 17670,
+        "diagnostics": {
+          "selectedRows": 17670,
+          "filteredRows": 2111,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 2289.6706670000003,
+        "stagesMs": {
+          "download": 0.09537499999987631,
+          "validationAndNormalization": 1704.7709169999998,
+          "objectWrite": 63.96050000000014,
+          "databasePublication": 520.8489580000005
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "pbp_participation_2024.csv",
+        "expectedWireSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+        "status": "ingested",
+        "jobId": "40f6c7da-fbd9-4762-8664-542558473ffe",
+        "snapshotId": "021647e9-1611-4b2d-a33f-ea8dc9cf3acb",
+        "profileId": "nflverse.pbp_participation.2024.v1",
+        "objectKey": "raw/b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+        "wireSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+        "decodedSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+        "headerSha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+        "wireBytes": 49688308,
+        "decodedBytes": 49688308,
+        "rawRows": 45919,
+        "normalizedRows": 17564,
+        "diagnostics": {
+          "selectedRows": 17564,
+          "filteredRows": 2053,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 1,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 2076.283375,
+        "stagesMs": {
+          "download": 0.09895899999992253,
+          "validationAndNormalization": 1598.216375,
+          "objectWrite": 64.58125000000109,
+          "databasePublication": 413.3905829999985
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "pbp_participation_2025.csv",
+        "expectedWireSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+        "status": "ingested",
+        "jobId": "e2e8b675-195d-491b-aa22-36160f80726b",
+        "snapshotId": "c8c24d21-b5dd-407b-b715-d6b26f8e41ba",
+        "profileId": "nflverse.pbp_participation.2025.v1",
+        "objectKey": "raw/59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+        "wireSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+        "decodedSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+        "headerSha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+        "wireBytes": 49094943,
+        "decodedBytes": 49094943,
+        "rawRows": 45184,
+        "normalizedRows": 17707,
+        "diagnostics": {
+          "selectedRows": 17707,
+          "filteredRows": 2135,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 2582.658875000001,
+        "stagesMs": {
+          "download": 0.056958000001031905,
+          "validationAndNormalization": 1982.5886249999985,
+          "objectWrite": 64.05804100000023,
+          "databasePublication": 535.9697510000005
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "roster_weekly_2021.csv",
+        "expectedWireSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+        "status": "ingested",
+        "jobId": "c6936ba5-f7df-4b64-9a2f-ab25d1c921f3",
+        "snapshotId": "0bc261c3-313c-441b-8bd0-7e0194250117",
+        "profileId": "nflverse.weekly_rosters.2021.v1",
+        "objectKey": "raw/88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+        "wireSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+        "decodedSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+        "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+        "wireBytes": 15242660,
+        "decodedBytes": 15242660,
+        "rawRows": 46696,
+        "normalizedRows": 1916,
+        "diagnostics": {
+          "selectedRows": 1916,
+          "filteredRows": 44780,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 734.4273749999993,
+        "stagesMs": {
+          "download": 0.16370800000004238,
+          "validationAndNormalization": 633.6072919999988,
+          "objectWrite": 30.745084000000134,
+          "databasePublication": 69.9150410000002
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "roster_weekly_2022.csv",
+        "expectedWireSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+        "status": "ingested",
+        "jobId": "41b99231-0742-4efd-8531-0017b7055397",
+        "snapshotId": "b5101a52-e133-4ec5-9c47-b7e13bd6a43d",
+        "profileId": "nflverse.weekly_rosters.2022.v1",
+        "objectKey": "raw/bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+        "wireSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+        "decodedSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+        "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+        "wireBytes": 14790824,
+        "decodedBytes": 14790824,
+        "rawRows": 46163,
+        "normalizedRows": 1844,
+        "diagnostics": {
+          "selectedRows": 1844,
+          "filteredRows": 44319,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 734.6463339999991,
+        "stagesMs": {
+          "download": 0.06720899999891117,
+          "validationAndNormalization": 633.8904160000002,
+          "objectWrite": 24.606832999999824,
+          "databasePublication": 76.08533399999942
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "roster_weekly_2023.csv",
+        "expectedWireSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+        "status": "ingested",
+        "jobId": "8a501680-523f-429b-9d58-4222171b1d08",
+        "snapshotId": "8c1f09f7-b18d-4d03-a55e-47ef3e29e66a",
+        "profileId": "nflverse.weekly_rosters.2023.v1",
+        "objectKey": "raw/1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+        "wireSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+        "decodedSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+        "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+        "wireBytes": 14612235,
+        "decodedBytes": 14612235,
+        "rawRows": 45655,
+        "normalizedRows": 1812,
+        "diagnostics": {
+          "selectedRows": 1812,
+          "filteredRows": 43843,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 703.8676660000001,
+        "stagesMs": {
+          "download": 0.1029579999994894,
+          "validationAndNormalization": 605.7439169999998,
+          "objectWrite": 24.085250000000087,
+          "databasePublication": 73.94066600000042
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "roster_weekly_2024.csv.gz",
+        "expectedWireSha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+        "status": "ingested",
+        "jobId": "c195490e-a855-497b-a307-1df599af6def",
+        "snapshotId": "f6c05f53-17ee-4b33-9ee7-f4ad00d80a15",
+        "profileId": "nflverse.weekly_rosters.2024.v1",
+        "objectKey": "raw/330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+        "wireSha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+        "decodedSha256": "074ecaeb9325de943c11f7bbc941425626985090ef8386f90cd837fa5cb5d4b3",
+        "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+        "wireBytes": 699786,
+        "decodedBytes": 14926918,
+        "rawRows": 46579,
+        "normalizedRows": 1867,
+        "diagnostics": {
+          "selectedRows": 1867,
+          "filteredRows": 44712,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 686.5123329999988,
+        "stagesMs": {
+          "download": 0.05474999999933061,
+          "validationAndNormalization": 604.6043330000011,
+          "objectWrite": 8.64837500000067,
+          "databasePublication": 73.20874999999796
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "roster_weekly_2025.csv.gz",
+        "expectedWireSha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+        "status": "ingested",
+        "jobId": "e53927fe-e168-4552-aa31-767e66fb5f44",
+        "snapshotId": "faed6bec-7c63-4c07-a7e8-d419bdf23461",
+        "profileId": "nflverse.weekly_rosters.2025.v1",
+        "objectKey": "raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+        "wireSha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+        "decodedSha256": "c2f7a1ffebe06058400af1989d1cd2900cc5c9659f084623708a06d4e28de35b",
+        "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+        "wireBytes": 708144,
+        "decodedBytes": 15385661,
+        "rawRows": 46849,
+        "normalizedRows": 1948,
+        "diagnostics": {
+          "selectedRows": 1948,
+          "filteredRows": 44901,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 717.959291000001,
+        "stagesMs": {
+          "download": 0.060708000000886386,
+          "validationAndNormalization": 625.1119169999984,
+          "objectWrite": 8.817166999999245,
+          "databasePublication": 83.97249900000133
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "stats_player_week_2021.csv.gz",
+        "expectedWireSha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+        "status": "ingested",
+        "jobId": "523a275a-1f59-4079-af04-172ff9aa7ef0",
+        "snapshotId": "c3864eae-252a-4b70-91ad-a4fae8a0efcd",
+        "profileId": "nflverse.stats_player.2021.v1",
+        "objectKey": "raw/1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+        "wireSha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+        "decodedSha256": "41915fb49238902ad1f129ebf0405b11a1e710454ae0fe8f7b3e4f9145875f48",
+        "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+        "wireBytes": 1254611,
+        "decodedBytes": 8477784,
+        "rawRows": 18969,
+        "normalizedRows": 655,
+        "diagnostics": {
+          "selectedRows": 655,
+          "filteredRows": 18314,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 638.0177920000006,
+        "stagesMs": {
+          "download": 0.05575000000135333,
+          "validationAndNormalization": 584.3293749999993,
+          "objectWrite": 10.743540999999823,
+          "databasePublication": 42.89020900000105
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "stats_player_week_2022.csv.gz",
+        "expectedWireSha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+        "status": "ingested",
+        "jobId": "6b7c3fb6-29d8-4ea0-9ff5-2c55992bce8c",
+        "snapshotId": "c15b7330-f09a-42b1-9e15-c402563e50bb",
+        "profileId": "nflverse.stats_player.2022.v1",
+        "objectKey": "raw/0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+        "wireSha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+        "decodedSha256": "ad426c3fe5bf1cc30c3f137fdfe96d054e19d400879ee4413129da49fa7b54be",
+        "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+        "wireBytes": 1241515,
+        "decodedBytes": 8408729,
+        "rawRows": 18831,
+        "normalizedRows": 633,
+        "diagnostics": {
+          "selectedRows": 633,
+          "filteredRows": 18198,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 647.2647079999988,
+        "stagesMs": {
+          "download": 0.04441700000097626,
+          "validationAndNormalization": 592.8635829999985,
+          "objectWrite": 9.791042000000743,
+          "databasePublication": 44.56658299999981
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "stats_player_week_2023.csv.gz",
+        "expectedWireSha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+        "status": "ingested",
+        "jobId": "2eda787d-d8f3-492f-b396-3e3ebcaf5bec",
+        "snapshotId": "894cc0fc-1376-407b-a59d-1a71ce6ce041",
+        "profileId": "nflverse.stats_player.2023.v1",
+        "objectKey": "raw/6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+        "wireSha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+        "decodedSha256": "f19cb71a5de0dce7fd09376026237c9ee9d5a93fe13815a2ea3ec2d37204cb17",
+        "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+        "wireBytes": 1237909,
+        "decodedBytes": 8332874,
+        "rawRows": 18643,
+        "normalizedRows": 663,
+        "diagnostics": {
+          "selectedRows": 663,
+          "filteredRows": 17980,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 626.901167,
+        "stagesMs": {
+          "download": 0.0693329999994603,
+          "validationAndNormalization": 571.8005840000005,
+          "objectWrite": 11.62016699999731,
+          "databasePublication": 43.41170800000327
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "stats_player_week_2024.csv.gz",
+        "expectedWireSha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+        "status": "ingested",
+        "jobId": "0d6b6dd3-fd8a-489b-9faa-78da78300e1a",
+        "snapshotId": "83efd127-e69d-4ec9-b251-b412f25245a1",
+        "profileId": "nflverse.stats_player.2024.v1",
+        "objectKey": "raw/61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+        "wireSha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+        "decodedSha256": "3ddc45a84f759aa348ce465ae001752c530575455717657cdfe1f8abfcdb4759",
+        "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+        "wireBytes": 1244175,
+        "decodedBytes": 8470040,
+        "rawRows": 18983,
+        "normalizedRows": 664,
+        "diagnostics": {
+          "selectedRows": 664,
+          "filteredRows": 18319,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 621.8103749999973,
+        "stagesMs": {
+          "download": 0.02787499999976717,
+          "validationAndNormalization": 568.2694579999988,
+          "objectWrite": 8.686041999997542,
+          "databasePublication": 44.82800000000134
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      },
+      {
+        "name": "stats_player_week_2025.csv.gz",
+        "expectedWireSha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+        "status": "ingested",
+        "jobId": "9996058f-9351-4954-b46e-20f9de63411e",
+        "snapshotId": "6a79a29e-8159-4b1d-90f1-8202dd4adc10",
+        "profileId": "nflverse.stats_player.2025.v1",
+        "objectKey": "raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+        "wireSha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+        "decodedSha256": "e5e0615b3d96a3eaebfaee91e55afb4a4e7fe0caf057454177bcd7d6ad4bcfc2",
+        "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+        "wireBytes": 1262421,
+        "decodedBytes": 8656387,
+        "rawRows": 19422,
+        "normalizedRows": 664,
+        "diagnostics": {
+          "selectedRows": 664,
+          "filteredRows": 18758,
+          "duplicateRows": 0,
+          "conflictingRows": 0,
+          "missingOffenseRows": 0,
+          "invalidParticipationRows": 0,
+          "refusedRows": 0
+        },
+        "newObject": true,
+        "elapsedMs": 644.3452080000025,
+        "stagesMs": {
+          "download": 0.04308300000047893,
+          "validationAndNormalization": 585.2624170000017,
+          "objectWrite": 11.86712500000067,
+          "databasePublication": 47.17362499999945
+        },
+        "work": {
+          "downloadRequests": 0,
+          "csvValidationPasses": 1,
+          "normalizationPasses": 1,
+          "bulkNormalizedInserts": 1
+        }
+      }
+    ],
+    "modes": [
+      {
+        "mode": "retrospective-reconstruction-v1",
+        "rowCount": 2504,
+        "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+      },
+      {
+        "mode": "strict-point-in-time-v1",
+        "rowCount": 0,
+        "contentSha256": "7858bc13cfd59085549e3c61fc1d42685f5a9134114316bbb623e79aaff43caf"
+      }
+    ],
+    "inputPinsArtifact": {
+      "objectKey": "audits/76f545066ef762afa89f2680da415900b8faabeaf75b4f4ca2eae1e62d43ab2f",
+      "sha256": "76f545066ef762afa89f2680da415900b8faabeaf75b4f4ca2eae1e62d43ab2f",
+      "byteSize": 36886
+    }
+  },
+  "requests": {
+    "cases": [
+      {
+        "featureId": "a177d25d-7c82-498d-8fd9-1d30d0a1d2d6",
+        "n": 2,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_03_TB_LA",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "e654da24-7029-445b-9233-fd80fbdbdf31",
+        "n": 3,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_04_TB_NE",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "ab3af5d8-4125-429a-b26d-1c3f0982f65b",
+        "n": 4,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_05_MIA_TB",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "cce6b58e-0f88-4a37-a287-a19f02dc3fc6",
+        "n": 5,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_06_TB_PHI",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "df0df166-dc6b-4f35-b017-040d04223aad",
+        "n": 6,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_07_CHI_TB",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "5f6c4e6b-9459-479a-a01d-c68cbbdc23f6",
+        "n": 7,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_08_TB_NO",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "a6520181-f8d7-431b-9c6e-7a181ec00c5e",
+        "n": 8,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_10_TB_WAS",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "975939c3-1c0c-4e71-82ed-abe82b259f6a",
+        "n": 9,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_11_NYG_TB",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "0596e984-bb9b-4abc-929e-fe140840c413",
+        "n": 10,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_12_TB_IND",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "b2e7b228-04ad-4aa3-b955-620b6dc3b511",
+        "n": 11,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_13_TB_ATL",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "942f390c-ceda-4222-bdfd-7c601015360c",
+        "n": 12,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_14_BUF_TB",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "0cc7dd07-b55a-498c-9291-d93b6e078bdc",
+        "n": 13,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_15_NO_TB",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "a643242f-eeee-4b24-a0e7-3bdd1f198cbe",
+        "n": 14,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_16_TB_CAR",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "0484ffc9-0d2a-475f-a588-858bba280922",
+        "n": 15,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_17_TB_NYJ",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      },
+      {
+        "featureId": "c4cbf316-8676-4b10-a91a-1d16a55b484b",
+        "n": 16,
+        "request": {
+          "playerId": "00-0019596",
+          "gameId": "2021_18_CAR_TB",
+          "knownAsOf": "2026-11-05 16:02:35.116017+00",
+          "featureVersion": "qb-passing-yards-feature-v1",
+          "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+          "evidenceMode": "retrospective-reconstruction-v1"
+        }
+      }
+    ],
+    "sha256": "ce041cd42bb854e5fd636e0ffcf8c1655d9b6085e01dfc30fb32bd69558cac6d",
+    "selection": "Feature metadata only; one real request at every n=2..16; no label/membership gate."
+  },
+  "baselineFirstP95Ms": 11.507459000000381,
+  "handlerRequests": {
+    "values": [
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_03_TB_LA",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_04_TB_NE",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_05_MIA_TB",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_06_TB_PHI",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_07_CHI_TB",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_08_TB_NO",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_10_TB_WAS",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_11_NYG_TB",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_12_TB_IND",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_13_TB_ATL",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_14_BUF_TB",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_15_NO_TB",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_16_TB_CAR",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_17_TB_NYJ",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      },
+      {
+        "playerId": "00-0019596",
+        "gameId": "2021_18_CAR_TB",
+        "knownAsOf": "2026-11-05 16:02:35.116017+00",
+        "featureVersion": "qb-passing-yards-feature-v1",
+        "historyPolicy": "prior-eligible-reg-max16-min2-cutoff1h-v1",
+        "evidenceMode": "retrospective-reconstruction-v1",
+        "runId": "fbd16f49-1427-4dcd-9fd7-6e27d5e57ace",
+        "modelVersion": "empirical-integer-v1",
+        "scoringPolicy": "qb-empirical-evaluation-v1",
+        "line": 225.5
+      }
+    ],
+    "sha256": "c9bec233dabbe8e41ec6bbc1639c0431fe7ed93d77d6789a38dc3ef8c5638425"
+  },
+  "modelOnly": {
+    "sql": 2,
+    "descriptorGets": 1,
+    "verdict": "pass"
+  },
+  "sourceUnchanged": true,
+  "finishedAt": "2026-11-05T16:03:01.458Z",
+  "fullRecord": {
+    "path": "final-benchmark-full-records-20261105T1615Z.tar.gz#final-benchmark/full-samples.json",
+    "sha256": "b172c6549d7e9936592366fa11f2dfa8548514d405a4de36217a98fbd4c6186d",
+    "byteSize": 1475153,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  },
+  "verification": {
+    "samples": 1245,
+    "candidateSamples": 600,
+    "candidateCohorts": 6,
+    "rightsBudget": "2 * independently derived union profile count",
+    "workBudgetsVerified": true,
+    "allCohortsAtLeast30PercentHeadroom": true,
+    "worstCandidateP95Ms": 38.46591699999408,
+    "minimumHeadroom": 0.8717802766666864
+  },
+  "workCounts": [
+    {
+      "arm": "baseline",
+      "samples": 645,
+      "work": [
+        {
+          "sql": 3,
+          "checks": 2,
+          "gets": 0,
+          "heads": 0,
+          "puts": 0,
+          "deletes": 0,
+          "lists": 0,
+          "hashes": 0
+        }
+      ]
+    },
+    {
+      "arm": "candidate",
+      "samples": 600,
+      "work": [
+        {
+          "sql": 3,
+          "checks": 2,
+          "gets": 1,
+          "heads": 0,
+          "puts": 0,
+          "deletes": 0,
+          "lists": 0,
+          "hashes": 0
+        }
+      ]
+    }
+  ],
+  "serverWork": [
+    {
+      "n": 2,
+      "featureId": "a177d25d-7c82-498d-8fd9-1d30d0a1d2d6",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 40,
+          "idx_tup_fetch": 72,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 40,
+          "idx_tup_fetch": 72,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 37,
+          "idx_tup_fetch": 68,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 37,
+          "idx_tup_fetch": 68,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 3,
+      "featureId": "e654da24-7029-445b-9233-fd80fbdbdf31",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 40,
+          "idx_tup_fetch": 72,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 212,
+          "idx_scan": 40,
+          "idx_tup_fetch": 72,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 37,
+          "idx_tup_fetch": 68,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 37,
+          "idx_tup_fetch": 68,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 4,
+      "featureId": "ab3af5d8-4125-429a-b26d-1c3f0982f65b",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 37,
+          "idx_tup_fetch": 69,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 37,
+          "idx_tup_fetch": 69,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 34,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 34,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 5,
+      "featureId": "cce6b58e-0f88-4a37-a287-a19f02dc3fc6",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 6,
+      "featureId": "df0df166-dc6b-4f35-b017-040d04223aad",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 7,
+      "featureId": "5f6c4e6b-9459-479a-a01d-c68cbbdc23f6",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 8,
+      "featureId": "a6520181-f8d7-431b-9c6e-7a181ec00c5e",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 9,
+      "featureId": "975939c3-1c0c-4e71-82ed-abe82b259f6a",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 10,
+      "featureId": "0596e984-bb9b-4abc-929e-fe140840c413",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 11,
+      "featureId": "b2e7b228-04ad-4aa3-b955-620b6dc3b511",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 12,
+      "featureId": "942f390c-ceda-4222-bdfd-7c601015360c",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 13,
+      "featureId": "0cc7dd07-b55a-498c-9291-d93b6e078bdc",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 14,
+      "featureId": "a643242f-eeee-4b24-a0e7-3bdd1f198cbe",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 15,
+      "featureId": "0484ffc9-0d2a-475f-a588-858bba280922",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    },
+    {
+      "n": 16,
+      "featureId": "c4cbf316-8676-4b10-a91a-1d16a55b484b",
+      "rightsCalls": 32,
+      "verdict": "pass",
+      "unionProfiles": 16,
+      "q1": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 7,
+          "idx_tup_fetch": 4,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 33,
+          "idx_tup_fetch": 65,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      },
+      "q2": {
+        "tablesMeasured": 22,
+        "allTables": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "exampleTables": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 6,
+          "idx_tup_fetch": 3,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "queue": {
+          "seq_scan": 0,
+          "seq_tup_read": 0,
+          "idx_scan": 0,
+          "idx_tup_fetch": 0,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        },
+        "nonQueue": {
+          "seq_scan": 10,
+          "seq_tup_read": 155,
+          "idx_scan": 30,
+          "idx_tup_fetch": 61,
+          "inserted": 0,
+          "updated": 0,
+          "deleted": 0
+        }
+      }
+    }
+  ]
+}

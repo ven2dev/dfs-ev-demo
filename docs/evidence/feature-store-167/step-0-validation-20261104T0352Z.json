@@ -1,0 +1,236 @@
+{
+  "issue": 167,
+  "step": 0,
+  "kind": "step-0-validation",
+  "verdict": "pass",
+  "runtime": {
+    "node": "v24.18.1",
+    "postgres": "18.6",
+    "fixture": "loopback 127.0.0.1:54329; 512 MiB data tmpfs; 128 MiB shared memory"
+  },
+  "sourceIdentity": {
+    "baseCommit": "da5e502875418684a5e8773059e57d908872a0ae",
+    "objectFormat": "sha1",
+    "sources": {
+      "packages/db/proposals/231_composite_authorization.sql": {
+        "baseBlob": "d06cfcd8a6dd78722e985cc83655f61641d2e217",
+        "correctedBlob": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+        "sha256": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681"
+      },
+      "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": {
+        "baseBlob": "fd62df9fadd698694cdf4ee8a9a50bbeea699d5e",
+        "correctedBlob": "0a34c986fd16cc5a2e3859b2988bf15a7b480349",
+        "sha256": "4713c86c6d7fc9d34a17072ff5d79b3383ce026ebd98c7bf497543c028e9a16d"
+      },
+      "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": {
+        "baseBlob": "2b85a7b0792398bf903f0e0256343d6effee114c",
+        "correctedBlob": "2b85a7b0792398bf903f0e0256343d6effee114c",
+        "sha256": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc"
+      },
+      "services/pipeline/src/featureStore/modelArtifacts.ts": {
+        "baseBlob": "076d5e4ec701467982103aa2624d477e42efb82b",
+        "correctedBlob": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+        "sha256": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388"
+      },
+      "services/pipeline/src/featureStore/modelContext.ts": {
+        "baseBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+        "correctedBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+        "sha256": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b"
+      },
+      "services/pipeline/tests/feature-store/composite-authorization.check.mts": {
+        "baseBlob": "a6b9e63f2b9c5d987837fa3327f544a78ef7e832",
+        "correctedBlob": "85367cfec2d73dd7addb3403ec421e366713377d",
+        "sha256": "c233f8f47e5dc4d33e29d246119e973ddb7397ff066326b0e761861c7788989c"
+      },
+      "services/pipeline/tests/feature-store/composite-authorization.test.ts": {
+        "baseBlob": "10caf345c961b40010f9400b50e47ccafc54fc87",
+        "correctedBlob": "4fe4ef1c0e54924c03c0b053d7dec9169098583a",
+        "sha256": "2e40fdc45f68601f2a00c0b81e45d2460cc1446c68c4e3e605eb876f22eb52dc"
+      },
+      "services/pipeline/tests/feature-store/composite-evidence.check.mts": {
+        "baseBlob": "81079996dc2c1a27f83a47861b3b6cd95eb5f74f",
+        "correctedBlob": "1eb01050d6d8693b902478493057c6e862e417fd",
+        "sha256": "0b08890cbdf382543a09f00152193c2f75a22d3c49352b81d576a441d095ca15"
+      },
+      "services/pipeline/tests/feature-store/model-context.check.mts": {
+        "baseBlob": "15f65fa36e415a6c820078b16bc02755bd24f50d",
+        "correctedBlob": "32bfddfffb0e86cf0c4a9e74cc47f11ba4e2b5ef",
+        "sha256": "4eb9f7644c2ab724b260543b6601a34d57373b916375831669e11be437783e5a"
+      },
+      "services/pipeline/tests/feature-store/model-context.test.ts": {
+        "baseBlob": "e183e6b2a5ee54aa12a2fdbcbefbbfaf70f0007c",
+        "correctedBlob": "4268bc373a0813ac3b78f0f9972452a1e474c0a9",
+        "sha256": "bee7204debc9ef3a6f585331a39074a551438b4ee9ddb5564e251e7d73b16247"
+      }
+    }
+  },
+  "sourceHashes": {
+    "packages/db/proposals/231_composite_authorization.sql": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "4713c86c6d7fc9d34a17072ff5d79b3383ce026ebd98c7bf497543c028e9a16d",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388",
+    "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
+    "services/pipeline/tests/feature-store/composite-authorization.check.mts": "c233f8f47e5dc4d33e29d246119e973ddb7397ff066326b0e761861c7788989c",
+    "services/pipeline/tests/feature-store/composite-authorization.test.ts": "2e40fdc45f68601f2a00c0b81e45d2460cc1446c68c4e3e605eb876f22eb52dc",
+    "services/pipeline/tests/feature-store/composite-evidence.check.mts": "0b08890cbdf382543a09f00152193c2f75a22d3c49352b81d576a441d095ca15",
+    "services/pipeline/tests/feature-store/model-context.check.mts": "4eb9f7644c2ab724b260543b6601a34d57373b916375831669e11be437783e5a",
+    "services/pipeline/tests/feature-store/model-context.test.ts": "bee7204debc9ef3a6f585331a39074a551438b4ee9ddb5564e251e7d73b16247"
+  },
+  "commands": [
+    {
+      "command": "npm test",
+      "exitCode": 0,
+      "summary": "98 files; 942 browser-lane + 312 Node-lane = 1254 tests passed",
+      "output": {
+        "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/logs/unit.log",
+        "sha256": "d7da99afe0d7bcdc54e9562648ba5f40c707f71cc368ab76c0a5fd782137a9e0",
+        "byteSize": 2167
+      },
+      "originalOutputSha256": "8f9830b3455884dbae8dd335a5e34d819c16615f7cc5e63976393bd33077e2e2",
+      "normalization": "worktree prefix only replaced by <worktree>; recorded output otherwise unchanged"
+    },
+    {
+      "command": "npm run test:feature-store:db (initial loopback-enabled run)",
+      "exitCode": 0,
+      "summary": "216 tests passed before adding the new Step 0 receipt check",
+      "output": {
+        "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/logs/feature-store-db.log",
+        "sha256": "216fcb07b1c7b854b8c73f41eca3696c3873a1921761ef4a243eb5551efcbba9",
+        "byteSize": 24029
+      },
+      "originalOutputSha256": "216fcb07b1c7b854b8c73f41eca3696c3873a1921761ef4a243eb5551efcbba9",
+      "normalization": "worktree prefix only replaced by <worktree>; recorded output otherwise unchanged"
+    },
+    {
+      "command": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test --test-concurrency=1 services/pipeline/tests/feature-store/model-context.check.mts services/pipeline/tests/feature-store/composite-authorization.check.mts",
+      "exitCode": 0,
+      "summary": "23 tests passed; final SQL/source hashes match fresh behavior records",
+      "output": {
+        "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/logs/focused-final.log",
+        "sha256": "4c33308b34acd5abc2cc6b60d7f898d36b026905f7cb70b2efdfe9bfcc1489db",
+        "byteSize": 2831
+      },
+      "originalOutputSha256": "4c33308b34acd5abc2cc6b60d7f898d36b026905f7cb70b2efdfe9bfcc1489db",
+      "normalization": "worktree prefix only replaced by <worktree>; recorded output otherwise unchanged"
+    },
+    {
+      "command": "npm run test:feature-store:db (unleased final attempt)",
+      "exitCode": 1,
+      "summary": "212 passed, 4 failed, 1 cancelled; #165 publication connection terminated by administrator during concurrent local test activity; retained, not treated as a code pass",
+      "output": {
+        "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/logs/feature-store-final.log",
+        "sha256": "df2a0e499d995ed7d3a18e0c6791ad2718d068b884314f5b39531637a5e2045d",
+        "byteSize": 27536
+      },
+      "originalOutputSha256": "a41415a86e4c46c5378e7b99f015cafdf3fa5fdb663f36bcb79b25e208aa3a2e",
+      "normalization": "worktree prefix only replaced by <worktree>; recorded output otherwise unchanged"
+    },
+    {
+      "command": "existing test-run lease (namespace 153045), no startup sweep; npm run test:feature-store:db",
+      "exitCode": 0,
+      "summary": "217 tests passed; includes all four #229 suites and all 12 database-free evidence checks",
+      "output": {
+        "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/logs/feature-store-leased-final.log",
+        "sha256": "125d309c005eb44cf4116b6e1d4b877631a9c2874a8dc0ad7ad1493059e772e3",
+        "byteSize": 24205
+      },
+      "originalOutputSha256": "125d309c005eb44cf4116b6e1d4b877631a9c2874a8dc0ad7ad1493059e772e3",
+      "normalization": "worktree prefix only replaced by <worktree>; recorded output otherwise unchanged"
+    },
+    {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "summary": "readiness manifest, route types and tsc passed",
+      "output": {
+        "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/logs/typecheck-final.log",
+        "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+        "byteSize": 314
+      },
+      "originalOutputSha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+      "normalization": "worktree prefix only replaced by <worktree>; recorded output otherwise unchanged"
+    },
+    {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "summary": "eslint and 11 import-boundary checks passed",
+      "output": {
+        "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/logs/lint-final.log",
+        "sha256": "efb4119e9d0ef2d477f6ed1d4764fe99ad11f8bf1ade3c3190d95d9aeeecadba",
+        "byteSize": 1388
+      },
+      "originalOutputSha256": "efb4119e9d0ef2d477f6ed1d4764fe99ad11f8bf1ade3c3190d95d9aeeecadba",
+      "normalization": "worktree prefix only replaced by <worktree>; recorded output otherwise unchanged"
+    },
+    {
+      "command": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test services/pipeline/tests/feature-store/artifact-evidence.check.mts services/pipeline/tests/feature-store/composite-evidence.check.mts",
+      "exitCode": 0,
+      "summary": "12 database-free checks passed; unsafe/missing/unreferenced members and hash tampering refused",
+      "output": {
+        "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/logs/evidence-checks.log",
+        "sha256": "c7187298d1236613ad5bad14c7f2dbb5df89ecc7613e40f336fca1895a698d1a",
+        "byteSize": 1393
+      },
+      "originalOutputSha256": "c7187298d1236613ad5bad14c7f2dbb5df89ecc7613e40f336fca1895a698d1a",
+      "normalization": "worktree prefix only replaced by <worktree>; recorded output otherwise unchanged"
+    },
+    {
+      "command": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON services/pipeline/scripts/feature-store/artifact-governance-evidence.ts audit docs/evidence/feature-store-166",
+      "exitCode": 0,
+      "summary": "8 historical full records hash-check and recompute",
+      "output": {
+        "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/logs/audit-166.log",
+        "sha256": "06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+        "byteSize": 1378
+      },
+      "originalOutputSha256": "06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+      "normalization": "worktree prefix only replaced by <worktree>; recorded output otherwise unchanged"
+    },
+    {
+      "command": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON services/pipeline/scripts/feature-store/artifact-governance-evidence.ts audit docs/evidence/feature-store-231",
+      "exitCode": 0,
+      "summary": "3 historical full records hash-check and recompute",
+      "output": {
+        "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/logs/audit-231.log",
+        "sha256": "2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+        "byteSize": 452
+      },
+      "originalOutputSha256": "2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+      "normalization": "worktree prefix only replaced by <worktree>; recorded output otherwise unchanged"
+    }
+  ],
+  "work": {
+    "context": {
+      "sql": 3,
+      "combinedRightsStatusChecks": 2,
+      "descriptorGets": 1,
+      "n": [
+        2,
+        16
+      ],
+      "rightsCalls": "2 × independently derived union profile count"
+    },
+    "modelOnly": {
+      "sql": 2
+    },
+    "readerDml": 0,
+    "explicitReaderCoordinationLocks": 0
+  },
+  "limits": [
+    "Behavior and work only; no Step 0 latency qualification or new benchmark.",
+    "Historical #231 timing receipts bind older sources; final #167 handler benchmark remains required.",
+    "CI has no live or recorded timing assertion."
+  ],
+  "unchanged": {
+    "migrations": true,
+    "evidence166": true,
+    "evidence231": true
+  },
+  "gitState": "Uncommitted owner-review candidate; corrected blobs computed without git hash-object -w.",
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/full-validation.json",
+    "sha256": "8c0667e506e7b764f562316143a426fcee954be6d48d3c1d3fcc559c68dfbd30",
+    "byteSize": 12497,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}
