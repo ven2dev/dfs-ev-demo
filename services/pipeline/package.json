@@ -26,6 +26,7 @@
     "./feature-store/model-context": "./src/featureStore/modelContext.ts",
     "./feature-store/normalize": "./src/featureStore/normalize.ts",
     "./feature-store/object-store": "./src/featureStore/objectStore.ts",
+    "./feature-store/predict": "./src/featureStore/predict.ts",
     "./feature-store/source": "./src/featureStore/source.ts",
     "./creator/manifest": "./src/creator/creatorCorpusManifest.ts",
     "./creator/captures": "./src/creator/creatorCaptures.ts",
