@@ -270,10 +270,51 @@ const compositeBehaviorProjection = (full: CompositeBehavior) => {
       rightsCallBudget: "completed batches * independently derived union profile count; exactly 2P on success",
       matchedRelationalWork: true, readerDml: 0, hiddenExampleReads: 0, ...matched.negativeControls } };
 };
+type PredictionBehavior = {
+  issue: number; step: number; kind: string; verdict: string; fixture: string; sourceHashes: Record<string, string>;
+  probes: { name: string; verdict: string; details: unknown }[];
+  budgets: { profiles: string[]; rightsCalls: number; available: boolean; trace: string[];
+    expected: { sql: number; checks: number; gets: number; batches: number }; work: Record<string, number> }[];
+};
+const predictionBehaviorProjection = (full: PredictionBehavior) => {
+  assert.equal(full.issue, 167); assert.equal(full.step, 2); assert.equal(full.verdict, "pass");
+  assert.equal(full.probes.length, 16); assert(full.probes.every(p => p.verdict === "pass"));
+  for (const b of full.budgets) {
+    assert(b.profiles.length > 0); assert.equal(new Set(b.profiles).size, b.profiles.length);
+    assert.deepEqual([b.work.sql, b.work.checks, b.work.gets], [b.expected.sql, b.expected.checks, b.expected.gets]);
+    assert.equal(b.rightsCalls, b.expected.batches * b.profiles.length);
+    assert(b.work.sql <= 3 && b.work.checks <= 2 && b.work.gets <= 1 && b.expected.batches <= b.work.checks);
+    assert.equal(b.work.heads + b.work.puts + b.work.deletes + b.work.lists + b.work.hashes, 0);
+    assert.deepEqual(b.trace, ["context", "Q1", "GET:descriptor", "Q2"].slice(0, b.work.sql + b.work.gets));
+    if (b.available) assert.deepEqual([b.work.sql, b.work.checks, b.work.gets, b.expected.batches], [3, 2, 1, 2]);
+  }
+  const all = full.probes[0].details as { n: number; overlap: boolean; budget: PredictionBehavior["budgets"][number] }[];
+  assert.equal(all.length, 30);
+  for (const n of allN) for (const overlap of [false, true]) {
+    const controls = all.filter(p => p.n === n && p.overlap === overlap); assert.equal(controls.length, 1);
+    assert(controls[0].budget.available); assert(full.budgets.some(b => isSame(b, controls[0].budget)));
+  }
+  const measured = full.probes.find(p => p.name.startsWith("actual handler Q1/Q2 database work"))!.details as {
+    matched: { n: number; q1: ReadCounters; q2: ReadCounters }[]; negativeControls: { scanDetected: boolean; writeDetected: boolean } };
+  assert.deepEqual(measured.matched.map(m => m.n), [2, 16]);
+  assert.deepEqual(measured.matched[0].q1, measured.matched[1].q1); assert.deepEqual(measured.matched[0].q2, measured.matched[1].q2);
+  for (const m of measured.matched) { verifyCompositeCounters(m.q1); verifyCompositeCounters(m.q2); }
+  assert.deepEqual(measured.negativeControls, { scanDetected: true, writeDetected: true });
+  const modelOnly = full.probes.find(p => p.name.startsWith("real narrow LOGIN"))!.details as { modelOnlySql: number };
+  assert.equal(modelOnly.modelOnlySql, 2);
+  return { issue: full.issue, step: full.step, kind: full.kind, verdict: full.verdict, fixture: full.fixture,
+    sourceHashes: full.sourceHashes, probes: full.probes.map(({ name, verdict, details }) => ({ name, verdict,
+      detailsSha256: sha256(Buffer.from(JSON.stringify(details))) })),
+    work: { measuredProbes: full.budgets.length, allNSuccessControls: 30, n: allN,
+      sql: 3, combinedChecks: 2, descriptorGets: 1, rightsCalls: "2 × independently derived union profile count per success; exact stage budgets on refusal",
+      matchedDatabaseWork: true, readerDml: 0, hiddenExampleReads: 0, modelOnlySql: 2 } };
+};
+const isSame = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 export const compactBehavior = (bytes: Buffer, path: string): Record<string, unknown> & { schemaVersion: number; fullRecord: ReturnType<typeof fullRecord> } => {
   const full = JSON.parse(bytes.toString());
   const projection = full.issue === 231 || full.kind === "composite-authorization-behavior"
-    ? compositeBehaviorProjection(full) : compactCounters(full) as Record<string, unknown>;
+    ? compositeBehaviorProjection(full) : full.kind === "local-prediction-behavior" ? predictionBehaviorProjection(full)
+      : compactCounters(full) as Record<string, unknown>;
   return { ...projection, schemaVersion: 2, fullRecord: fullRecord(bytes, path) };
 };
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Client } from "pg";
 import { predictQbModel, type PredictionRequest } from "@dfs-ev/pipeline/feature-store/predict";
 import { predictionDeliveryFixture, predictionFixture } from "./prediction-helpers-fixture.ts";
@@ -6,14 +6,16 @@ import { predictionDeliveryFixture, predictionFixture } from "./prediction-helpe
 // Actual resolver, composite reader and helpers; only transport replies are
 // synthetic here. PostgreSQL selection/rights/race proof belongs to Step 2.
 const transport = (input = predictionDeliveryFixture()) => {
-  const trace: string[] = [], queries: { sql: string; values: unknown[] }[] = [];
+  const trace: string[] = [], queries: { sql: string; values: unknown[]; timeout: number }[] = [];
   const bytes = Buffer.from(JSON.stringify(input.descriptor));
   let q2 = false, ended = 0;
   const options = { failAt: "", code: "", bytes, missingFinalContext: false,
-    onGet: () => {}, afterContext: () => {} };
-  const client = { query: async (sql: string, values: unknown[]) => {
+    onGet: () => {}, afterContext: () => {}, beforeQuery: undefined as undefined | ((stage: string) => Promise<void>) };
+  const client = { query: async (config: { text: string; values: unknown[]; query_timeout: number }) => {
+    const { text: sql, values } = config;
     const stage = sql.includes("resolve_model_context") ? "context" : values[2] ? "Q1" : "Q2";
-    trace.push(stage); queries.push({ sql, values: structuredClone(values) });
+    trace.push(stage); queries.push({ sql, values: structuredClone(values), timeout: config.query_timeout });
+    await options.beforeQuery?.(stage);
     if (stage === options.failAt) throw Object.assign(new Error("private provider diagnostics"), { code: options.code });
     if (stage === "context") { options.afterContext(); return { rows: [{ context: structuredClone(input.context) }] }; }
     if (stage === "Q1") return { rows: [{ access: { ...input.model, context: structuredClone(input.context),
@@ -25,7 +27,7 @@ const transport = (input = predictionDeliveryFixture()) => {
   }, end: async () => { ended++; } } as unknown as Pick<Client, "query" | "end">;
   const store = { get: async (key: string) => {
     expect(key).toBe("models/" + input.model.run.descriptorSha256);
-    trace.push("GET:descriptor"); options.onGet();
+    trace.push("GET:descriptor"); await options.onGet();
     if (options.failAt === "GET") throw new Error("private storage diagnostic");
     return options.bytes;
   } };
@@ -103,6 +105,15 @@ describe("#167 thin governed prediction handler", () => {
     expect(result.response).toMatchObject({ status: "available", playerId: original.playerId,
       forecast: { line: original.line }, context: { request: { knownAsOf: original.knownAsOf } } });
     expect(t.queries[1].values[0]).toBe(original.runId); expect(t.queries[2].values[0]).toBe(original.runId);
+  });
+
+  it("captures request pins synchronously before control returns to the caller", async () => {
+    const t = transport(), original = { ...t.request };
+    const pending = predictQbModel(t.client, t.store, t.request);
+    Object.assign(t.request, { runId: "changed", playerId: "other", line: 999, knownAsOf: "changed" });
+    const response = (await pending).response;
+    expect(response).toMatchObject({ status: "available", playerId: original.playerId,
+      forecast: { line: original.line }, model: { runId: original.runId } });
   });
 
   it("keeps two QBs in one game distinct without requiring training membership or labels", async () => {
@@ -189,5 +200,111 @@ describe("#167 thin governed prediction handler", () => {
     const other = transport(); Object.assign(other.options, { failAt: "Q2", code: "XX000" });
     expectRefusal(await predictQbModel(other.client, other.store, other.request), "prediction-unavailable", true);
     expect(other.ended()).toBe(1);
+  });
+});
+
+describe("#167 one deadline and no late continuation", () => {
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
+  const fakeTime = () => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "performance"] });
+
+  it.each(["expired", "aborted", "invalid"])("%s before start issues no SQL or GET and keeps an idle client reusable", async kind => {
+    fakeTime(); const t = transport(), controller = new AbortController();
+    if (kind === "aborted") controller.abort();
+    const result = await predictQbModel(t.client, t.store, t.request, { signal: controller.signal,
+      ...(kind === "expired" ? { deadlineAt: -1 } : kind === "invalid" ? { deadlineAt: NaN } : {}) });
+    expectRefusal(result, kind === "expired" ? "deadline-exceeded" : kind === "invalid" ? "invalid-request" : "cancelled");
+    expect(t.trace).toEqual([]); expect(t.ended()).toBe(0); expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each(["timeout", "abort"])("a pending GET %s returns without waiting and its late bytes cannot trigger math, Q2 or delivery", async kind => {
+    fakeTime(); const t = transport(), entered = Promise.withResolvers<void>(), release = Promise.withResolvers<void>();
+    const controller = new AbortController(), remove = vi.spyOn(controller.signal, "removeEventListener");
+    let mathReads = 0;
+    t.input.history = t.input.history.map(row => ({ ...row, get yards() { mathReads++; return 100; } }));
+    t.options.onGet = async () => { entered.resolve(); await release.promise; };
+    const pending = predictQbModel(t.client, t.store, t.request, { signal: controller.signal });
+    await entered.promise;
+    if (kind === "timeout") await vi.advanceTimersByTimeAsync(301); else controller.abort();
+    const refused = await pending;
+    expectRefusal(refused, kind === "timeout" ? "deadline-exceeded" : "cancelled");
+    expect(t.trace).toEqual(["context", "Q1", "GET:descriptor"]); expect(t.ended()).toBe(0);
+    release.resolve(); await vi.advanceTimersByTimeAsync(0);
+    expect(mathReads).toBe(0); expect(t.trace).toEqual(["context", "Q1", "GET:descriptor"]);
+    expectRefusal(refused, kind === "timeout" ? "deadline-exceeded" : "cancelled");
+    expect(remove).toHaveBeenCalledTimes(1); expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it.each(["context", "Q1", "Q2"])("interrupts %s SQL, ends once and refuses a late query result without any following work", async stage => {
+    fakeTime(); const t = transport(), entered = Promise.withResolvers<void>(), release = Promise.withResolvers<void>();
+    t.options.beforeQuery = async point => { if (point === stage) { entered.resolve(); await release.promise; } };
+    const pending = predictQbModel(t.client, t.store, t.request);
+    await entered.promise; await vi.advanceTimersByTimeAsync(301);
+    expectRefusal(await pending, "deadline-exceeded", true); expect(t.ended()).toBe(1);
+    const trace = [...t.trace]; release.resolve(); await vi.advanceTimersByTimeAsync(0);
+    expect(t.trace).toEqual(trace); expect(t.ended()).toBe(1); expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("shrinks each query timeout from one deadline instead of giving stages fresh allocations", async () => {
+    fakeTime(); const t = transport();
+    t.options.beforeQuery = async stage => { vi.advanceTimersByTime(stage === "Q2" ? 61 : 80); };
+    t.options.onGet = () => { vi.advanceTimersByTime(80); };
+    expectRefusal(await predictQbModel(t.client, t.store, t.request), "deadline-exceeded", true);
+    expect(t.queries.map(q => q.timeout)).toEqual([300, 220, 60]); expect(t.ended()).toBe(1);
+  });
+
+  it("captures the earlier caller deadline and signal before awaits", async () => {
+    fakeTime(); const t = transport(), entered = Promise.withResolvers<void>(), release = Promise.withResolvers<void>();
+    const original = new AbortController(), replacement = new AbortController();
+    const options = { signal: original.signal, deadlineAt: 70 };
+    t.options.onGet = async () => { entered.resolve(); await release.promise; };
+    const pending = predictQbModel(t.client, t.store, t.request, options);
+    await entered.promise; Object.assign(options, { signal: replacement.signal, deadlineAt: 10000 });
+    replacement.abort(); await vi.advanceTimersByTimeAsync(71);
+    expectRefusal(await pending, "deadline-exceeded"); expect(t.queries[0].timeout).toBe(70);
+    release.resolve(); await vi.advanceTimersByTimeAsync(0); expect(t.queries).toHaveLength(2);
+  });
+
+  it.each(["descriptor", "math", "serialization"])("a synchronous %s overrun is withheld even before a timer can run", async stage => {
+    fakeTime(); const t = transport(); let now = 0;
+    vi.spyOn(performance, "now").mockImplementation(() => now);
+    if (stage === "descriptor") {
+      const parse = JSON.parse;
+      vi.spyOn(JSON, "parse").mockImplementation((...args) => {
+        const value = Reflect.apply(parse, JSON, args);
+        if (value?.format === "qb-model-descriptor-v1") now = 301;
+        return value;
+      });
+      t.input.history = t.input.history.map(row => ({ ...row, get yards(): number { throw new Error("late math"); } }));
+    } else if (stage === "math") t.input.history = t.input.history.map(row => ({ ...row, get yards() { now = 301; return 100; } }));
+    else {
+      const stringify = JSON.stringify;
+      vi.spyOn(JSON, "stringify").mockImplementation((...args) => {
+        const bytes = Reflect.apply(stringify, JSON, args);
+        if (args[0]?.status === "available") now = 301;
+        return bytes;
+      });
+    }
+    expectRefusal(await predictQbModel(t.client, t.store, t.request), "deadline-exceeded");
+    expect(t.queries).toHaveLength(stage === "serialization" ? 3 : 2); expect(t.ended()).toBe(0);
+  });
+
+  it.each(["57014", "query-timeout"])("%s is a deadline refusal and discards without more SQL", async kind => {
+    fakeTime(); const t = transport();
+    if (kind === "57014") Object.assign(t.options, { failAt: "Q1", code: kind });
+    else t.options.beforeQuery = async stage => { if (stage === "Q1") throw new Error("Query read timeout"); };
+    expectRefusal(await predictQbModel(t.client, t.store, t.request), "deadline-exceeded", true);
+    expect(t.queries).toHaveLength(2); expect(t.ended()).toBe(1);
+  });
+
+  it("abort during math prevents Q2 and a hung close handshake cannot delay an interruption response", async () => {
+    fakeTime(); const t = transport(), controller = new AbortController();
+    t.input.history = t.input.history.map(row => ({ ...row, get yards() { controller.abort(); return 100; } }));
+    expectRefusal(await predictQbModel(t.client, t.store, t.request, { signal: controller.signal }), "cancelled");
+    expect(t.queries).toHaveLength(2); expect(t.ended()).toBe(0);
+    const broken = transport(), never = Promise.withResolvers<void>();
+    Object.assign(broken.options, { failAt: "context", code: "08006" });
+    const close = vi.spyOn(broken.client, "end").mockImplementation(() => never.promise);
+    expectRefusal(await predictQbModel(broken.client, broken.store, broken.request), "connection-interrupted", true);
+    expect(close).toHaveBeenCalledTimes(1); never.resolve();
   });
 });

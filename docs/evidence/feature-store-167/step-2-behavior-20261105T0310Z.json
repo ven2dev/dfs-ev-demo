@@ -1,0 +1,135 @@
+{
+  "issue": 167,
+  "step": 2,
+  "kind": "local-prediction-behavior",
+  "verdict": "pass",
+  "fixture": "Synthetic producer/registry controls on loopback PostgreSQL 18.6 / 512 MiB; not real-fixture speed qualification",
+  "sourceHashes": {
+    "services/pipeline/src/featureStore/predict.ts": "f16c916ce755c1662aa90e2f56070108576862f205d56ebf3ccd1e927d514fde",
+    "services/pipeline/src/featureStore/predictionHelpers.ts": "d552ee1f61255f0805d5fa1a558b82bfae9029611c0f7bc435fa78e3f2140281",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388",
+    "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
+    "packages/db/proposals/231_composite_authorization.sql": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681",
+    "services/pipeline/tests/feature-store/prediction-db-fixture.ts": "e62cbf32396215f6fd3cdc20931856e3daeb8fda1124c2119b45366a618e4239",
+    "services/pipeline/tests/feature-store/prediction-handler.check.mts": "07c74320b43d9125b904a3f889c8369b559374b5c2b1afd8513705ba0b639a3c",
+    "services/pipeline/tests/feature-store/composite-read-work.ts": "443a086aad0f54b91bbff22d56618ae729f36ab86e41b5619da1d9992e8911ef"
+  },
+  "probes": [
+    {
+      "name": "every n=2..16 and overlapping/independent lineage uses 3 SQL / 2 checks / 1 descriptor GET / 2P rights calls",
+      "verdict": "pass",
+      "detailsSha256": "293be1d03a68451ef26077ff35d0ac0997a23c4787a4d6195ffa2c48dff85859"
+    },
+    {
+      "name": "Q1 declared sampleSize drives math; mismatched history refuses before Q2 with no partial fields",
+      "verdict": "pass",
+      "detailsSha256": "cb9212eecab5a53f0ed277ff4550def6d0ba54cac2f73544a65fb4d0a51c5c01"
+    },
+    {
+      "name": "new permitted revisions during GET retain selected values but refresh Q2 flags and distinct receipt decisions",
+      "verdict": "pass",
+      "detailsSha256": "fb10ab2fd675ea9483876bdf52b143234c5deda68d27a0b9fbfcf93d3312a64e"
+    },
+    {
+      "name": "target labels never affect availability or probabilities and same-game QBs remain distinct",
+      "verdict": "pass",
+      "detailsSha256": "c0991ad7f494069d25d22cfd36dc631b5f715a37debfa9fd79a6344e9c1ca9c3"
+    },
+    {
+      "name": "mode compatibility permits both modes and explicitly refuses retrospective serving under a strict-only run",
+      "verdict": "pass",
+      "detailsSha256": "539ad5a84932f91596c0b912627ba6470714ea4cd40142aa1b216dbcbd72a2e4"
+    },
+    {
+      "name": "knowledge time uses job completion and preserves the pinned previous answer after completion",
+      "verdict": "pass",
+      "detailsSha256": "7c337f4e80e814b06bc9da1308cd7df89878751c854b88ab08593f5cc6970aab"
+    },
+    {
+      "name": "P2311–P2316 initial diagnostics remain distinct and refuse without partial results",
+      "verdict": "pass",
+      "detailsSha256": "f2eac0314b9d9e1eac306637cf8aa96b4cce8fcaadded098109189e6e6004346"
+    },
+    {
+      "name": "forged references stay P2317; genuine pruning with an older survivor stays P1666 at Q1 and Q2",
+      "verdict": "pass",
+      "detailsSha256": "4180c47e755f6dd2a708608916fa981f0da636de144ff7e6b7f21ebd317f7a7f"
+    },
+    {
+      "name": "independent model/feature rights refusals before Q1, during GET and after math withhold every field",
+      "verdict": "pass",
+      "detailsSha256": "412bff96508e33809c1bb3c56546b2316065e4479bccec4f30b3c4c022cb4eea"
+    },
+    {
+      "name": "both deletion APIs and independent served-source deletion win over retained values at every boundary",
+      "verdict": "pass",
+      "detailsSha256": "256b289d532e73527b2cd3ca61117993701229bed9aefc272f7aa63d72f13610"
+    },
+    {
+      "name": "actual handler Q1/Q2 database work matches n=2/16 and observers detect hidden scans and DML",
+      "verdict": "pass",
+      "detailsSha256": "703c6d57e2764b0056d183cb2378be622de00e3d51f46445b3b8a4f3965ca33f"
+    },
+    {
+      "name": "paused GET/private math handoff holds no reader transaction or locks while deletion commits",
+      "verdict": "pass",
+      "detailsSha256": "0fb44583288e51cc9527786c373b2dc4a86085493d0714a133d020a017279034"
+    },
+    {
+      "name": "real narrow LOGIN cannot read private tables, switch roles or execute writer/unscoped functions; model-only remains 2 SQL",
+      "verdict": "pass",
+      "detailsSha256": "120a9edde5e3f7838b1d0451638f6da98453e88d2a5cc6092ff7f0fd414911d3"
+    },
+    {
+      "name": "missing/corrupt descriptor and a lost Q2 reply deliver no partial result",
+      "verdict": "pass",
+      "detailsSha256": "4d637d7509c4dd4c226bbf91e9788b1aaa814fd3081f935237ef42a53bcd75c8"
+    },
+    {
+      "name": "pre-expiry/abort does zero work and reuses the idle connection; late GET completion cannot run Q2",
+      "verdict": "pass",
+      "detailsSha256": "4213166f152360b59239f78cc8d13c4252b38603fc9512ed49fc7f8d2f812d59"
+    },
+    {
+      "name": "real sleeping SQL is interrupted at context/Q1/Q2 and ends each dedicated connection without follow-up SQL",
+      "verdict": "pass",
+      "detailsSha256": "3da5b947f26779e2c9fae3b6e237bc36c03c468d2ea2c608daf8c63a198da139"
+    }
+  ],
+  "work": {
+    "measuredProbes": 87,
+    "allNSuccessControls": 30,
+    "n": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "sql": 3,
+    "combinedChecks": 2,
+    "descriptorGets": 1,
+    "rightsCalls": "2 × independently derived union profile count per success; exact stage budgets on refusal",
+    "matchedDatabaseWork": true,
+    "readerDml": 0,
+    "hiddenExampleReads": 0,
+    "modelOnlySql": 2
+  },
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-2-behavior-full-records-20261105T0310Z.tar.gz#step-2/full-handler.json",
+    "sha256": "85910133179b2df50fd5ee5ef80d128d58f4817f343cb19ba1a51f71e99cb73e",
+    "byteSize": 162051,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

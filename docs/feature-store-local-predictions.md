@@ -110,16 +110,54 @@ compatibility; same-game QBs; poisoned labels/caller histories/example fields;
 and exact prefix traces with no partial fields for refusals. These are contract
 controls, not PostgreSQL rights/race or latency qualification.
 
-## Remaining acceptance: Steps 2 and 3
+## Step 2: one deadline and integrated delivery proofs
 
-Step 2 adds the single 300 ms deadline/cancellation latch, shortened caller
+`predictQbModel` accepts optional `signal` and absolute monotonic `deadlineAt`.
+One 300 ms deadline/cancellation latch, shortened caller
 deadline, remaining query timeout and GET-abandonment containment, without SQL
-changes. Pre-expiry/abort does no work. Interrupted SQL clients are ended;
+changes, covers the complete operation. Pre-expiry/abort does no work. Interrupted SQL clients are ended;
 abandoned GETs stay private and cannot trigger math, Q2 or delivery. Checks after
 synchronous math and complete serialization withhold late results. Real LOGIN
 tests exercise permissions, completion-time/correction semantics, deletion,
 rights races, distinct refreshed receipts, no reader coordination locks, dynamic
 2P budgets and matched n=2/16 database work. No machine-speed assertions run in CI.
+
+The interruption promise races the whole private task. Its persistent latch is
+checked before/after SQL and GET, before/after math, after response construction,
+after serialization and immediately before return. An ignored/late GET or SQL
+completion cannot resume a refused request. Each SQL call receives the remaining
+`query_timeout` in its existing query configuration; no SET, BEGIN, cancellation,
+rollback, retry or health-check query is added. Options and request scalars are
+captured before the first await. A non-finite caller deadline refuses immediately.
+
+SQL interruption initiates one `client.end()` and returns a discard disposition
+without waiting for a possibly broken close handshake. The eventual end/task
+outcomes are observed. Cancellation during storage or calculation keeps an idle
+SQL client reusable because the latch prevents any later query. JavaScript
+synchronous work remains non-preemptible, so post-work clock checks withhold an
+over-budget success even if the timer has not run. Timeout/cancellation reasons
+win over a lower reader's wrapper error and reveal no partial fields.
+
+The actual-handler PostgreSQL tests independently measure distinct union profiles
+for every invocation and assert exact prefix work even on refusals. Thirty all-n
+success controls cover shared and separate lineage. A measurement-only wrapper
+samples database counters around the original Q1/Q2 functions during matched
+n=2/16 handler calls; deliberate scan/DML controls prove the observers detect
+hidden work. Pauses in descriptor GET and after private math show an idle backend
+with no transaction or locks while another writer deletes a cited dataset. This
+is test-only instrumentation; proposal SQL and production authorization remain
+unchanged. Model-only delivery retains its two-query compatibility control.
+
+The real database probes also exercise selected-count mismatch, label
+create/change/removal invariance, same-game QBs, evidence-mode refusal,
+job-completion knowledge time and last-valid flags, P2311–P2317/P1666 distinctions,
+independent model/feature rights races, both deletion APIs, missing/corrupt
+descriptors, lost Q2 reply, pre-expiry/cancellation, late GET containment and
+sleeping SQL timeout/cancellation at all three query stages. Deterministic unit
+clocks additionally cover a shared shrinking allocation, hung GET/end handshakes,
+abort during math and synchronous math/serialization exhaustion.
+
+## Remaining acceptance: Step 3
 
 Step 3 measures the actual final handler on the real fixture. Three cold and
 three warm cohorts independently need p95 ≤210 ms / ≥30% headroom; cold connection
