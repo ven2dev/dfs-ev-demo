@@ -157,16 +157,66 @@ sleeping SQL timeout/cancellation at all three query stages. Deterministic unit
 clocks additionally cover a shared shrinking allocation, hung GET/end handshakes,
 abort during math and synchronous math/serialization exhaustion.
 
-## Remaining acceptance: Step 3
+## Step 3: final qualification and durable evidence
 
-Step 3 measures the actual final handler on the real fixture. Three cold and
-three warm cohorts independently need p95 ≤210 ms / ≥30% headroom; cold connection
-setup is included and its share reported separately. Keep every failed sample;
-do not pool cohorts or add stage percentiles. Add new compact receipts and exact
-deterministic compressed full records; the TypeScript auditor checks member
-hash/size before recomputation from a checkout with no cache or database.
+Final local-fixture qualification passed: cold cohort p95 values **38.466,
+31.846, 35.091 ms**; warm **8.169, 10.948, 7.043 ms**. The worst cohort retains
+**87.18% headroom**. All 600 candidate samples meet 3 SQL / 2 checks / 1 GET;
+the separate model-only compatibility control remains 2 SQL. See the evidence
+README below for setup shares, precise receipts and reproduction commands.
 
-The issue remains incomplete until those stages pass. Stop and propose a split
-if total work exceeds the owner-approved 3.75–4.5-hour estimate. Each step stops
-for commit approval; pushes require fresh consent. Retain and report any
-`artifact-cleaner.check.mts` failure from a full-suite run before retrying it.
+The opt-in `prediction-benchmark.ts` runner calls the public `predictQbModel`
+unchanged. It first measures 45 unchanged #163 reference requests before
+installing model/composite proposals. Six separate cohorts follow: three fresh
+connections and three dedicated warm connections. Each uses ABBA, 50 reads per
+position (100 candidate and 100 reference); every n=2–16 appears in both arms.
+The reference authorizes features only and repeats its original per-row
+qualification; its ratios are informational, not a substitute gate.
+
+Each candidate cohort independently needs nearest-rank full-path p95 ≤210 ms
+and ≥30% headroom under 300 ms. Cold setup starts before Client construction and
+consumes the same absolute deadline passed to the handler. Connection close is
+outside timing. Each individual duration includes lookup, Q1, descriptor GET and
+validation, math, Q2, complete response/serialization and final delivery check.
+SQL/storage/hash observers and output assertions add included overhead. Math and
+serialization are not individually instrumented: their sample stage fields are
+zero, while their actual work remains in total duration. Never add stage
+percentiles or pool cohorts to qualify a slow one. Failures stop qualification
+and remain in the full record.
+
+The same real fixture is rebuilt from 16 retained inputs and checked against the
+2,504-row content hash above. Request selection uses feature metadata only, with
+one real player/game at each n; neither labels nor training membership gate
+selection. Model-only compatibility and independently derived 2P/database work
+are measured outside timing; instrumentation is restored before timed reads.
+Step 2's handler probes additionally prove matched n=2/16 work and no locks.
+
+New compact receipts and exact deterministic compressed full records live under
+[the final #167 evidence guide](evidence/feature-store-167/final-qualification-20261105T1615Z.md). Each measured
+SQL/TypeScript source has SHA-256 and a git blob ID, including uncommitted harness
+bytes; the base HEAD alone does not identify a candidate. The TypeScript auditor
+checks each member's hash and size before recomputing the schedule, six
+percentiles, setup shares and work counts. Database-free CI checks membership,
+hashes and recorded arithmetic without a speed assertion. Synthetic negative
+controls prove the opt-in gate rejects one slow cohort, duplicate coordinates,
+tampered counts, missing cohorts and incorrect setup arithmetic.
+
+Local-fixture qualification does not establish hosted RTT/region (#220), cold
+data/OS caches, fresh-process startup or product clearance. Both arms share a
+running Node process and unflushed OS/file/database caches. Historical strict
+eligibility remains zero; synthetic strict/prospective behavior controls do not
+qualify speed.
+
+| Acceptance | Proof |
+| --- | --- |
+| Session-independent clocks and typed malformed/withdrawn references | Reviewed Step 0 cross-zone and refusal receipts; append-only relabel retained. |
+| Explicit pins, compatible evidence mode, unlabeled contexts and target independence | Handler descriptor/refusal tests and real handler label/same-game probes. |
+| Selected sample count and Q2 flags/both receipts | Actual-handler mismatch refusal and paused-GET refreshed-context probes. |
+| Fixed n-independent client/server work | Thirty all-n controls, 2P per probe, matched n=2/16 database counters and negative controls; model-only 2 SQL. |
+| Permissions, deletion, pruning and rights races with no reader coordination locks | Real restricted LOGIN and concurrent-writer handler probes. |
+| One deadline, no late queries or partial delivery | Shrinking timeout, sleeping SQL/abort, late GET, math/serialization and lost-Q2 controls. |
+| Final speed and reproducible evidence | Six actual-handler cohorts, exact samples in-tree, hash-first TypeScript audit. |
+
+Each step stops for commit approval; pushes require fresh consent. Retain and
+report any `artifact-cleaner.check.mts` failure from a full-suite run before
+retrying it. Stop and propose a split if work exceeds the approved estimate.

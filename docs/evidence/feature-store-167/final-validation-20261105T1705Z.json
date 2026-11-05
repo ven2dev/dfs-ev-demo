@@ -1,0 +1,217 @@
+{
+  "issue": 167,
+  "step": 3,
+  "kind": "local-prediction-final-validation",
+  "at": "2026-11-05T17:08:27.371Z",
+  "verdict": "pass",
+  "node": "v24.18.1",
+  "baseCommit": "4d8f200475930d438dbe366c15d34749383e701e",
+  "sourceIdentity": {
+    "docs/feature-store-local-predictions.md": {
+      "baseBlob": "d09a90944950d85f1afa75d9420fe7fc0c965855",
+      "candidateBlob": "7cff2ef2b1ca475f39d02e07d6c8745e65470ab4",
+      "sha256": "c38d081aed5f1a9cccecd3233a837d7a0121f408ca3c9e507b000bb49aae11cc"
+    },
+    "docs/evidence/feature-store-167/final-qualification-20261105T1615Z.md": {
+      "baseBlob": null,
+      "candidateBlob": "861f18ea19fcf26dbe2e5d336a81fb645797695a",
+      "sha256": "0d868db7485b4ad9d111d25af3f116f1300d79febc645081f3715b8907cb3550"
+    },
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": {
+      "baseBlob": "b5868c844e07532fe55969c8c2347be5fb2618aa",
+      "candidateBlob": "6801a8597567ae8431f4af251390c8b2b223a613",
+      "sha256": "82b8e646712c8f636dc51f6b83696f173685ab192cb1ecefb04db17a3a046496"
+    },
+    "services/pipeline/scripts/feature-store/prediction-benchmark.ts": {
+      "baseBlob": null,
+      "candidateBlob": "9c301b2e4c63ff5ece1fae1666206ecd54e36a7c",
+      "sha256": "13bca79a8223bde244c0f14b9f3f57fe630dad3556a991f0e93ec650baaa28b3"
+    },
+    "services/pipeline/scripts/feature-store/prediction-measure.ts": {
+      "baseBlob": null,
+      "candidateBlob": "eeb1cca9947f18504db14efd33c56897815aac01",
+      "sha256": "fa670ed9d7d37cea80bbafd15cbbcefffd2f0bebffd27c40272ec7660c020175"
+    },
+    "services/pipeline/tests/feature-store/prediction-benchmark.check.mts": {
+      "baseBlob": null,
+      "candidateBlob": "9ce1de03035f51441e7becd96d05b9f03542490d",
+      "sha256": "91487fc2cc8417a0e091d30e3c526d1ef6a6abb7e2205974a673a195ed8ba79e"
+    },
+    "services/pipeline/src/featureStore/predict.ts": {
+      "baseBlob": "6581034540347efb7f119fc9a3550de47360248b",
+      "candidateBlob": "6581034540347efb7f119fc9a3550de47360248b",
+      "sha256": "f16c916ce755c1662aa90e2f56070108576862f205d56ebf3ccd1e927d514fde"
+    },
+    "services/pipeline/src/featureStore/predictionHelpers.ts": {
+      "baseBlob": "76778189b8c0f53d5a96e72ffea647a4642c9e70",
+      "candidateBlob": "76778189b8c0f53d5a96e72ffea647a4642c9e70",
+      "sha256": "d552ee1f61255f0805d5fa1a558b82bfae9029611c0f7bc435fa78e3f2140281"
+    },
+    "services/pipeline/src/featureStore/modelArtifacts.ts": {
+      "baseBlob": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+      "candidateBlob": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+      "sha256": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388"
+    },
+    "services/pipeline/src/featureStore/modelContext.ts": {
+      "baseBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+      "candidateBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+      "sha256": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b"
+    },
+    "packages/db/proposals/231_composite_authorization.sql": {
+      "baseBlob": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+      "candidateBlob": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+      "sha256": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681"
+    }
+  },
+  "commands": [
+    {
+      "command": "Loopback leased actual-handler benchmark; six cohorts",
+      "verdict": "pass",
+      "exitCode": 0,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/benchmark-attempt1.log",
+        "sha256": "ed20cb89c0e2b70938d2ba920ffa8b094808f2584dc4c34fc84999b029ecb9b3",
+        "byteSize": 7103
+      }
+    },
+    {
+      "command": "npm run typecheck; initial benchmark hash-map type inference",
+      "verdict": "fail",
+      "exitCode": 2,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/typecheck-initial.log",
+        "sha256": "3c1ffe0832c2a0f1441ecfb7a210efbbc5d05dbe525a86c75759cf9914795691",
+        "byteSize": 1517
+      }
+    },
+    {
+      "command": "npm run typecheck; corrected harness before timing",
+      "verdict": "pass",
+      "exitCode": 0,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/typecheck-prebenchmark.log",
+        "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+        "byteSize": 314
+      }
+    },
+    {
+      "command": "npm run typecheck; final sources",
+      "verdict": "pass",
+      "exitCode": 0,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/typecheck-final.log",
+        "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+        "byteSize": 314
+      }
+    },
+    {
+      "command": "npm run lint; includes import-boundary checks",
+      "verdict": "pass",
+      "exitCode": 0,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/lint-final.log",
+        "sha256": "28641256100e4dd6883e5b6bdee44e343a9e3b49a59b0c3ecb87b383eac04994",
+        "byteSize": 1389
+      }
+    },
+    {
+      "command": "node --test artifact/composite/prediction/prediction-benchmark evidence checks",
+      "verdict": "pass",
+      "exitCode": 0,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/evidence-checks-final.log",
+        "sha256": "08b7642456f3d0c3d39526b8a7d4490afc4e7333adb939481442bf62106b9246",
+        "byteSize": 2105
+      }
+    },
+    {
+      "command": "npm test under sandbox; existing creator review-server listen EPERM",
+      "verdict": "environment-refusal",
+      "exitCode": 1,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/unit-final.log",
+        "sha256": "36ee53811b23699c3752e521d1b96b49f3a1f18ae6d5b50ef7152658c7fc105c",
+        "byteSize": 15894
+      }
+    },
+    {
+      "command": "npm test under Node 24 with loopback allowed",
+      "verdict": "pass",
+      "exitCode": 0,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/unit-final-unrestricted.log",
+        "sha256": "51f7b42a52bb015c75764a312c076c84bb0ee5f156e166d3098c1127006a6ed9",
+        "byteSize": 2252
+      }
+    },
+    {
+      "command": "npm run test:feature-store:db; serial under namespace 153045 lease",
+      "verdict": "pass",
+      "exitCode": 0,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/feature-store-final.log",
+        "sha256": "7adb6e2c42e3b0026b670d12a1adb84569d61a61c5ddb8eab924fbce5b83d7f1",
+        "byteSize": 27177
+      }
+    },
+    {
+      "command": "Audit 166/231/167 from temporary no-dependency/no-cache/no-DB copy",
+      "verdict": "pass",
+      "exitCode": 0,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/minimal-audit-prevalidation.log",
+        "sha256": "1a8640e7dd7125791cd80371bc9e9b071e2e31a8dd697753411943560e98ef97",
+        "byteSize": 14056
+      }
+    },
+    {
+      "command": "52 measured source SHA-256/blob matches; deterministic archive; no trailers",
+      "verdict": "pass",
+      "exitCode": 0,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/final-source-and-bundle.log",
+        "sha256": "760a297bec4868648e360e9dd7eda1a68b16256900f859dac007512f4a04649f",
+        "byteSize": 152
+      }
+    },
+    {
+      "command": "Docker image/tmpfs/shared-memory/health read-only inspection",
+      "verdict": "pass",
+      "exitCode": 0,
+      "output": {
+        "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/logs/fixture-inspection.log",
+        "sha256": "0466b284a79aff14bd74546c45951bad702880470ab3dc7c9cc6d8f51efe753e",
+        "byteSize": 156
+      }
+    }
+  ],
+  "validation": {
+    "unitTests": 1468,
+    "featureStoreChecks": 242,
+    "evidenceChecks": 18,
+    "typecheck": "pass",
+    "lint": "pass",
+    "artifactCleaner": "pass; no failed cleaner run",
+    "benchmarkRuns": 1,
+    "benchmarkFailedSamples": 0,
+    "sql": 3,
+    "checks": 2,
+    "descriptorGets": 1,
+    "modelOnlySql": 2,
+    "measuredSources": 52
+  },
+  "benchmarkReceipt": "final-benchmark-20261105T1615Z.json",
+  "limitations": [
+    "Local-fixture-only; unflushed caches; no hosted RTT/cold-process qualification.",
+    "Prepackaging minimal audit precedes this validation archive; the documented audit checks this archive too.",
+    "Initial typecheck and sandbox unit failures are retained, not silently replaced.",
+    "Step 3 adds no SQL, migration, src/ or package/dependency changes; no push is authorized."
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "final-validation-full-records-20261105T1705Z.tar.gz#final-validation/full-validation.json",
+    "sha256": "08241eb72bbbbf9b22eb5de6c370ab001f514a7bf87d7102ac3ccb81e05766a1",
+    "byteSize": 8804,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

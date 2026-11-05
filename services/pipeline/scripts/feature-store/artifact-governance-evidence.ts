@@ -6,6 +6,7 @@ import { pathToFileURL } from "node:url";
 import { sha256 } from "../../src/featureStore/objectStore.ts";
 import type { CompositeCase, CompositeSample } from "./composite-authorization-measure.ts";
 import type { ReadCounters } from "../../tests/feature-store/artifact-read-work.ts";
+import type { PredictionRequest } from "@dfs-ev/pipeline/feature-store/predict";
 
 type Sample = { phase: string; shape: string; arm: string; block: number; position: number; read: number;
   q1Ms: number; q2Ms: number; sumMs: number; endToEndMs: number; verdict: string;
@@ -34,8 +35,8 @@ export const compositeCohortSummary = (samples: CompositeSample[], temperature: 
     n: [...new Set(candidate.map(s => s.n))].sort((a, b) => a - b),
     pass: candidate.length === 100 && reference.length === 100 && samples.every(s => s.verdict === "pass") && candidateP95Ms <= 210 };
 };
-export type FullCompositeBenchmark = Record<string, unknown> & {
-  kind: "composite-authorization-benchmark"; issue: number; verdict: string; schemaVersion: number;
+type ScheduledBenchmark = Record<string, unknown> & {
+  kind: "composite-authorization-benchmark" | "local-prediction-benchmark"; issue: number; verdict: string; schemaVersion: number;
   samples: CompositeSample[]; cohorts: ReturnType<typeof compositeCohortSummary>[];
   baselineFirstP95Ms?: number;
   requests?: { cases: CompositeCase[]; sha256: string; selection: string };
@@ -43,6 +44,10 @@ export type FullCompositeBenchmark = Record<string, unknown> & {
   fixture?: { wireFiles: number; modes: { mode: string; rowCount: number; contentSha256: string }[]; [key: string]: unknown };
   serverWork?: { n: number; featureId: string; profiles: string[]; rightsCalls: number; q1: ReadCounters; q2: ReadCounters; verdict: string }[];
 };
+export type FullCompositeBenchmark = ScheduledBenchmark & { kind: "composite-authorization-benchmark" };
+export type FullPredictionBenchmark = ScheduledBenchmark & { kind: "local-prediction-benchmark";
+  handlerRequests?: { values: PredictionRequest[]; sha256: string };
+  code: { gitSha: string; contentSha256: string }; codeHashes: Record<string, string>; codeBlobIds: Record<string, string> };
 const allN = Array.from({ length: 15 }, (_, i) => i + 2);
 const verifyCompositeCounters = (rows: ReadCounters) => {
   assert(rows.length > 0);
@@ -52,8 +57,8 @@ const verifyCompositeCounters = (rows: ReadCounters) => {
       assert(Object.entries(row).every(([key, value]) => key === "table" || value === 0), "composite-hidden-example-work");
   }
 };
-export const verifyCompositeBenchmark = (full: FullCompositeBenchmark) => {
-  assert.equal(full.kind, "composite-authorization-benchmark"); assert.equal(full.issue, 231); assert.equal(full.verdict, "pass");
+const verifyScheduledBenchmark = (full: ScheduledBenchmark, enforceSpeed = true) => {
+  assert.equal(full.verdict, "pass");
   assert.equal(full.sourceUnchanged, true);
   assert.equal(full.samples.length, 1245); assert.equal(full.cohorts.length, 6);
   assert(full.requests && full.fixture && full.serverWork);
@@ -107,19 +112,59 @@ export const verifyCompositeBenchmark = (full: FullCompositeBenchmark) => {
     const selected = full.samples.filter(s => s.phase === "interleaved" && s.temperature === result.temperature && s.cohort === result.cohort);
     const expected = compositeCohortSummary(selected, result.temperature, result.cohort);
     assert.deepEqual(result, expected, "composite-cohort-recomputation-mismatch");
-    assert.deepEqual(result.n, allN); assert(result.pass && result.headroom >= .3, "composite-full-path-headroom-gate-failed");
+    assert.deepEqual(result.n, allN);
+    if (enforceSpeed) assert(result.pass && result.headroom >= .3, "composite-full-path-headroom-gate-failed");
     // Each arm uses the same request schedule within each cohort.
     for (const input of full.requests.cases)
       assert.equal(selected.filter(s => s.arm === "baseline" && s.featureId === input.featureId).length,
         selected.filter(s => s.arm === "candidate" && s.featureId === input.featureId).length);
   }
   return { samples: 1245, candidateSamples: 600, candidateCohorts: 6, rightsBudget: "2 * independently derived union profile count",
-    workBudgetsVerified: true, allCohortsAtLeast30PercentHeadroom: true,
+    workBudgetsVerified: true, allCohortsAtLeast30PercentHeadroom: full.cohorts.every(c => c.pass && c.headroom >= .3),
     worstCandidateP95Ms: Math.max(...full.cohorts.map(c => c.candidateP95Ms)), minimumHeadroom: Math.min(...full.cohorts.map(c => c.headroom)) };
+};
+export const verifyCompositeBenchmark = (full: FullCompositeBenchmark) => {
+  assert.equal(full.kind, "composite-authorization-benchmark"); assert.equal(full.issue, 231);
+  return verifyScheduledBenchmark(full);
+};
+export const verifyPredictionBenchmark = (full: FullPredictionBenchmark, enforceSpeed = true) => {
+  assert.equal(full.kind, "local-prediction-benchmark"); assert.equal(full.issue, 167); assert.equal(full.step, 3);
+  assert.equal(full.schemaVersion, 1);
+  const verification = verifyScheduledBenchmark(full, enforceSpeed);
+  assert(full.handlerRequests && full.requests);
+  assert.equal(sha256(Buffer.from(JSON.stringify(full.handlerRequests.values))), full.handlerRequests.sha256,
+    "handler-request-hash-mismatch");
+  assert.equal(full.handlerRequests.values.length, 15);
+  const runIds = new Set(full.handlerRequests.values.map(r => r.runId)); assert.equal(runIds.size, 1);
+  for (const [i, request] of full.handlerRequests.values.entries()) {
+    assert.deepEqual(request, { ...full.requests.cases[i].request, runId: request.runId,
+      modelVersion: "empirical-integer-v1", scoringPolicy: "qb-empirical-evaluation-v1", line: 225.5 });
+  }
+  assert.equal(full.code.contentSha256, sha256(Buffer.from(JSON.stringify(full.codeHashes))), "benchmark-source-hash-mismatch");
+  assert.deepEqual(Object.keys(full.codeHashes), Object.keys(full.codeBlobIds));
+  for (const path of ["services/pipeline/src/featureStore/predict.ts", "services/pipeline/src/featureStore/predictionHelpers.ts",
+    "services/pipeline/src/featureStore/modelArtifacts.ts", "services/pipeline/src/featureStore/modelContext.ts",
+    "services/pipeline/scripts/feature-store/prediction-benchmark.ts", "services/pipeline/scripts/feature-store/prediction-measure.ts",
+    "packages/db/proposals/231_composite_authorization.sql"]) assert(path in full.codeHashes, "missing-measured-source");
+  for (const path of Object.keys(full.codeHashes)) {
+    assert(/^[a-f0-9]{64}$/.test(full.codeHashes[path])); assert(/^[a-f0-9]{40}$/.test(full.codeBlobIds[path]));
+  }
+  return verification;
 };
 export const compactCompositeBenchmark = (bytes: Buffer, path: string) => {
   const full = JSON.parse(bytes.toString()) as FullCompositeBenchmark;
   const verification = full.verdict === "pass" ? verifyCompositeBenchmark(full) : { verdict: "not-qualified" };
+  const { samples, serverWork, ...metadata } = full;
+  delete metadata.storageRoot; delete metadata.publication;
+  return { ...metadata, fullRecord: fullRecord(bytes, path), verification,
+    workCounts: ["baseline", "candidate"].map(arm => ({ arm, samples: samples.filter(s => s.arm === arm).length,
+      work: [...new Set(samples.filter(s => s.arm === arm).map(s => JSON.stringify(s.work)))].map(w => JSON.parse(w)) })),
+    serverWork: serverWork?.map(({ q1, q2, profiles, ...probe }) => ({ ...probe, unionProfiles: profiles.length,
+      q1: compactCounters(q1), q2: compactCounters(q2) })) };
+};
+export const compactPredictionBenchmark = (bytes: Buffer, path: string) => {
+  const full = JSON.parse(bytes.toString()) as FullPredictionBenchmark;
+  const verification = full.verdict === "pass" ? verifyPredictionBenchmark(full) : { verdict: "not-qualified" };
   const { samples, serverWork, ...metadata } = full;
   delete metadata.storageRoot; delete metadata.publication;
   return { ...metadata, fullRecord: fullRecord(bytes, path), verification,
@@ -323,7 +368,8 @@ const verifyRecordBytes = (record: RecordReference, bytes: Buffer) => {
   assert.equal(sha256(bytes), record.sha256, "full-record-sha256-mismatch");
   if (record.byteSize !== undefined) assert.equal(bytes.byteLength, record.byteSize, "full-record-byte-size-mismatch");
 };
-export const verifyEvidenceReceipt = (receipt: ReturnType<typeof compactBenchmark> | ReturnType<typeof compactBehavior> | ReturnType<typeof compactCompositeBenchmark>, bytes: Buffer) => {
+export const verifyEvidenceReceipt = (receipt: ReturnType<typeof compactBenchmark> | ReturnType<typeof compactBehavior>
+  | ReturnType<typeof compactCompositeBenchmark> | ReturnType<typeof compactPredictionBenchmark>, bytes: Buffer) => {
   verifyRecordBytes(receipt.fullRecord, bytes);
   // The disposable prototype used a different sample shape. Preserve its
   // original summary/probe projection rather than claiming final qualification.
@@ -338,7 +384,8 @@ export const verifyEvidenceReceipt = (receipt: ReturnType<typeof compactBenchmar
     return;
   }
   const full = JSON.parse(bytes.toString());
-  const expected = full.kind === "composite-authorization-benchmark" ? compactCompositeBenchmark(bytes, receipt.fullRecord.path)
+  const expected = full.kind === "local-prediction-benchmark" ? compactPredictionBenchmark(bytes, receipt.fullRecord.path)
+    : full.kind === "composite-authorization-benchmark" ? compactCompositeBenchmark(bytes, receipt.fullRecord.path)
     : "samples" in full ? compactBenchmark(bytes, receipt.fullRecord.path) : compactBehavior(bytes, receipt.fullRecord.path);
   assert.deepEqual(receipt, expected, "compact-receipt-mismatch");
 };
@@ -402,14 +449,15 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     assert(receiptPath && !fullPath, "usage: artifact-governance-evidence.ts audit EVIDENCE_DIRECTORY");
     for (const verdict of await verifyEvidenceBundle(receiptPath)) console.log(JSON.stringify(verdict));
   } else {
-    assert(receiptPath && fullPath && ["benchmark", "composite", "behavior", "verify"].includes(operation),
-      "usage: artifact-governance-evidence.ts benchmark|composite|behavior|verify RECEIPT FULL_RECORD");
+    assert(receiptPath && fullPath && ["benchmark", "composite", "prediction", "behavior", "verify"].includes(operation),
+      "usage: artifact-governance-evidence.ts benchmark|composite|prediction|behavior|verify RECEIPT FULL_RECORD");
     const bytes = await readFile(fullPath);
     if (operation === "verify") {
       const receipt = JSON.parse(await readFile(receiptPath, "utf8"));
       verifyEvidenceReceipt(receipt, bytes);
       console.log(JSON.stringify({ verdict: "pass", sha256: sha256(bytes), ...receipt.verification }));
     } else await writeFile(receiptPath, JSON.stringify(operation === "benchmark" ? compactBenchmark(bytes, fullPath)
-      : operation === "composite" ? compactCompositeBenchmark(bytes, fullPath) : compactBehavior(bytes, fullPath), null, 2) + "\n");
+      : operation === "composite" ? compactCompositeBenchmark(bytes, fullPath)
+        : operation === "prediction" ? compactPredictionBenchmark(bytes, fullPath) : compactBehavior(bytes, fullPath), null, 2) + "\n");
   }
 }
