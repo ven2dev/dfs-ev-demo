@@ -1,0 +1,392 @@
+{
+  "issue": 167,
+  "step": 0,
+  "kind": "main-merge-validation",
+  "runId": "20261105T012821Z",
+  "recordedAt": "2026-11-05T01:43:06.656Z",
+  "verdict": "pass",
+  "runtime": {
+    "node": "v24.18.1",
+    "npm": "11.16.0"
+  },
+  "merge": {
+    "branch": "feature/dfsEV-167-local-predictions",
+    "previousHead": "aca8968c94b5131be238030a79cf2ea8ca3bb425",
+    "main": "e70776ba08a1efede3cb4b762ca93826379738ef",
+    "conflicts": 0,
+    "committed": false,
+    "inheritedFiles": [
+      ".github/workflows/codeql.yml",
+      "compose.test.yml",
+      "docs/228-dataset-publication-work-roadmap.md",
+      "docs/evidence/feature-store-228/local-work-budget-review-fix.json",
+      "docs/evidence/feature-store-228/local-work-budget.json",
+      "docs/feature-store-prediction-helpers.md",
+      "package-lock.json",
+      "package.json",
+      "services/pipeline/src/featureStore/datasets.ts",
+      "services/pipeline/src/featureStore/objectStore.ts",
+      "services/pipeline/src/featureStore/predictionHelpers.ts",
+      "services/pipeline/tests/feature-store/dataset-evidence.ts",
+      "services/pipeline/tests/feature-store/dataset-publication-work.ts",
+      "services/pipeline/tests/feature-store/datasets.check.mts",
+      "services/pipeline/tests/feature-store/prediction-forecast.test.ts",
+      "services/pipeline/tests/feature-store/prediction-helpers-fixture.ts",
+      "services/pipeline/tests/feature-store/prediction-helpers.test.ts",
+      "services/pipeline/tests/feature-store/prediction-purity.test.ts"
+    ],
+    "inheritedDiffSha256": "dcc2ba0e198d55025a4f6789bbf4e8611c830143eb7b3a029f329ed39fc79eea"
+  },
+  "sourceIdentity": {
+    "compose.test.yml": {
+      "previousHeadBlob": "6784de5bbc434024cdacdeca40f588053906e780",
+      "mainBlob": "ab874ba42f4ffb24cd5c71d23205fc6d962e4046",
+      "mergedBlob": "ab874ba42f4ffb24cd5c71d23205fc6d962e4046",
+      "sha256": "44798ea481282096048bf44d02c33cf338eed4520165559dc1115e3e769e40b7"
+    },
+    "package-lock.json": {
+      "previousHeadBlob": "827e3c939f2737944b3e835b4ef83b8a2b0899ac",
+      "mainBlob": "ce76a5b675d95def197b8b99b8f71606b122f3c8",
+      "mergedBlob": "ce76a5b675d95def197b8b99b8f71606b122f3c8",
+      "sha256": "857a7ec5c2d89b61836a15e3d98e40c30b5cb1ddecf779dd1aa5d8a101daf6f2"
+    },
+    "package.json": {
+      "previousHeadBlob": "e061eccdf10be7d41a98c581e0f4039d0cb8fb7b",
+      "mainBlob": "6aef02621d5dd37478877ff3a69e68a727a2d79d",
+      "mergedBlob": "6aef02621d5dd37478877ff3a69e68a727a2d79d",
+      "sha256": "a5ade9a7eae62697b8a862e30739860431a5a903db4bc8b18fafc93465274529"
+    },
+    "packages/db/package.json": {
+      "previousHeadBlob": "e932e59d8ebbe689e019674b5c0837a212f514a7",
+      "mainBlob": "e932e59d8ebbe689e019674b5c0837a212f514a7",
+      "mergedBlob": "e932e59d8ebbe689e019674b5c0837a212f514a7",
+      "sha256": "ac5fc77f3e94476f376f3ebdd79368bbb89ac9e9937292b7c71258f0f05e8c12"
+    },
+    "packages/db/proposals/231_composite_authorization.sql": {
+      "previousHeadBlob": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+      "mainBlob": "d06cfcd8a6dd78722e985cc83655f61641d2e217",
+      "mergedBlob": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+      "sha256": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681"
+    },
+    "services/pipeline/package.json": {
+      "previousHeadBlob": "8321305eb27bc69144348015b19977c49d12b376",
+      "mainBlob": "8321305eb27bc69144348015b19977c49d12b376",
+      "mergedBlob": "8321305eb27bc69144348015b19977c49d12b376",
+      "sha256": "0c57f17b81cc13c57b99aa1ea7f5ed9defe3532bb23f77a377d42e12e8aab26f"
+    },
+    "services/pipeline/src/featureStore/datasets.ts": {
+      "previousHeadBlob": "67aaf6875b440ace1e5ceafc1ec7108d24cd390c",
+      "mainBlob": "6bd8fe394fd456ab8979933e7c09d0f86711323a",
+      "mergedBlob": "6bd8fe394fd456ab8979933e7c09d0f86711323a",
+      "sha256": "47febb579b546a6570291332723b6e19fc25f16867b264e93389cab3706e0b54"
+    },
+    "services/pipeline/src/featureStore/modelArtifacts.ts": {
+      "previousHeadBlob": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+      "mainBlob": "076d5e4ec701467982103aa2624d477e42efb82b",
+      "mergedBlob": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+      "sha256": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388"
+    },
+    "services/pipeline/src/featureStore/modelContext.ts": {
+      "previousHeadBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+      "mainBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+      "mergedBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+      "sha256": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b"
+    },
+    "services/pipeline/src/featureStore/objectStore.ts": {
+      "previousHeadBlob": "b7b02f0517b53fd7261fc74c2f2493cf1ba0a40f",
+      "mainBlob": "0ee0d73a30866b58e6a2d2bc95ba77251c692d02",
+      "mergedBlob": "0ee0d73a30866b58e6a2d2bc95ba77251c692d02",
+      "sha256": "e467ee210821416ca595349dee4eaaa415c4f1e0d305155d6591fce8283bb3ae"
+    },
+    "services/pipeline/src/featureStore/predictionHelpers.ts": {
+      "previousHeadBlob": null,
+      "mainBlob": "76778189b8c0f53d5a96e72ffea647a4642c9e70",
+      "mergedBlob": "76778189b8c0f53d5a96e72ffea647a4642c9e70",
+      "sha256": "d552ee1f61255f0805d5fa1a558b82bfae9029611c0f7bc435fa78e3f2140281"
+    },
+    "services/pipeline/tests/feature-store/composite-authorization-fixture.ts": {
+      "previousHeadBlob": "8f1dd5856972e589961516a6ce9b353593771e44",
+      "mainBlob": "8f1dd5856972e589961516a6ce9b353593771e44",
+      "mergedBlob": "8f1dd5856972e589961516a6ce9b353593771e44",
+      "sha256": "ce21e6cafa8db3b89fc24b8b3d8d253746cedbe3a8282b293856a522ade4e68f"
+    },
+    "services/pipeline/tests/feature-store/composite-authorization.check.mts": {
+      "previousHeadBlob": "85367cfec2d73dd7addb3403ec421e366713377d",
+      "mainBlob": "a6b9e63f2b9c5d987837fa3327f544a78ef7e832",
+      "mergedBlob": "85367cfec2d73dd7addb3403ec421e366713377d",
+      "sha256": "c233f8f47e5dc4d33e29d246119e973ddb7397ff066326b0e761861c7788989c"
+    },
+    "services/pipeline/tests/feature-store/composite-read-work.ts": {
+      "previousHeadBlob": "69c7495b56cc1cb391db205bcbdee2b626cf8c73",
+      "mainBlob": "69c7495b56cc1cb391db205bcbdee2b626cf8c73",
+      "mergedBlob": "69c7495b56cc1cb391db205bcbdee2b626cf8c73",
+      "sha256": "443a086aad0f54b91bbff22d56618ae729f36ab86e41b5619da1d9992e8911ef"
+    },
+    "services/pipeline/tests/feature-store/model-context.check.mts": {
+      "previousHeadBlob": "32bfddfffb0e86cf0c4a9e74cc47f11ba4e2b5ef",
+      "mainBlob": "15f65fa36e415a6c820078b16bc02755bd24f50d",
+      "mergedBlob": "32bfddfffb0e86cf0c4a9e74cc47f11ba4e2b5ef",
+      "sha256": "4eb9f7644c2ab724b260543b6601a34d57373b916375831669e11be437783e5a"
+    }
+  },
+  "fixture": {
+    "image": "postgres:18.6-alpine3.24@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5",
+    "imageId": "sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5",
+    "health": "healthy",
+    "tmpfs": {
+      "/var/lib/postgresql": "rw,size=512m"
+    },
+    "sharedMemoryBytes": 134217728,
+    "memoryLimitBytes": 0,
+    "ports": {
+      "5432/tcp": [
+        {
+          "HostIp": "127.0.0.1",
+          "HostPort": "54329"
+        }
+      ]
+    },
+    "postgresVersion": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit"
+  },
+  "commands": [
+    {
+      "command": "Node 24 npm ci (initial sandbox attempt)",
+      "exitCode": 1,
+      "summary": "Sandbox DNS refusal: ENOTFOUND registry.npmjs.org; retained, not a passing install.",
+      "output": {
+        "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/npm-ci.log",
+        "sha256": "8e9ced72a3df09a4dcc0569380da1385a85593fabb5f77f15bffd5603803603e",
+        "byteSize": 1427
+      },
+      "originalOutputSha256": "8e9ced72a3df09a4dcc0569380da1385a85593fabb5f77f15bffd5603803603e",
+      "normalization": "Checkout prefix only replaced with <worktree>; otherwise unchanged."
+    },
+    {
+      "command": "Node 24 npm ci (network permitted)",
+      "exitCode": 0,
+      "summary": "Merged lockfile installed.",
+      "output": {
+        "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/npm-ci-permitted.log",
+        "sha256": "f7906fd8fee72112b73acf5b8daf3482aa6086ff5ec3ec03316bcb8144def41d",
+        "byteSize": 1869
+      },
+      "originalOutputSha256": "f7906fd8fee72112b73acf5b8daf3482aa6086ff5ec3ec03316bcb8144def41d",
+      "normalization": "Checkout prefix only replaced with <worktree>; otherwise unchanged."
+    },
+    {
+      "command": "Node 24 npm run typecheck",
+      "exitCode": 0,
+      "summary": "Readiness, type generation and TypeScript pass.",
+      "output": {
+        "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/typecheck.log",
+        "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+        "byteSize": 314
+      },
+      "originalOutputSha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+      "normalization": "Checkout prefix only replaced with <worktree>; otherwise unchanged."
+    },
+    {
+      "command": "Node 24 npm run lint",
+      "exitCode": 0,
+      "summary": "ESLint and 11 import-boundary checks pass.",
+      "output": {
+        "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/lint.log",
+        "sha256": "e4337fc3180dc699fb71ee0e97b10b77c67389e5e0a5d641ab40336daf6bfff5",
+        "byteSize": 1384
+      },
+      "originalOutputSha256": "e4337fc3180dc699fb71ee0e97b10b77c67389e5e0a5d641ab40336daf6bfff5",
+      "normalization": "Checkout prefix only replaced with <worktree>; otherwise unchanged."
+    },
+    {
+      "command": "Node 24 npm test",
+      "exitCode": 0,
+      "summary": "942 browser-lane + 457 Node-lane = 1399 tests, 101 files pass.",
+      "output": {
+        "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/unit.log",
+        "sha256": "5d231052953cdb282638d028ab30f2eb3ca7a347612864aed3cbdc96cf07c0b9",
+        "byteSize": 2167
+      },
+      "originalOutputSha256": "c8c41b41552ac1f6ad207dc745b0b998e711dcafa4e9619fc0686fb22720855b",
+      "normalization": "Checkout prefix only replaced with <worktree>; otherwise unchanged."
+    },
+    {
+      "command": "Node 24 npm run test:feature-store:db, serial with session lease 153045 and no startup sweep",
+      "exitCode": 0,
+      "summary": "220 tests pass; zero failures, cancelled, skipped or todo. Lease retained. Includes #229 and artifact-cleaner.",
+      "output": {
+        "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/feature-store-db.log",
+        "sha256": "8a395aa7cc208f09b25490015b42dd1a94796749fe0f3d6106bf193a490162b7",
+        "byteSize": 24679
+      },
+      "originalOutputSha256": "8a395aa7cc208f09b25490015b42dd1a94796749fe0f3d6106bf193a490162b7",
+      "normalization": "Checkout prefix only replaced with <worktree>; otherwise unchanged."
+    },
+    {
+      "command": "Node 24 artifact-governance-evidence.ts audit docs/evidence/feature-store-166",
+      "exitCode": 0,
+      "summary": "All prior records hash-check and recompute.",
+      "output": {
+        "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/audit-166.log",
+        "sha256": "06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+        "byteSize": 1378
+      },
+      "originalOutputSha256": "06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+      "normalization": "Checkout prefix only replaced with <worktree>; otherwise unchanged."
+    },
+    {
+      "command": "Node 24 artifact-governance-evidence.ts audit docs/evidence/feature-store-231",
+      "exitCode": 0,
+      "summary": "All prior records hash-check and recompute.",
+      "output": {
+        "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/audit-231.log",
+        "sha256": "2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+        "byteSize": 452
+      },
+      "originalOutputSha256": "2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+      "normalization": "Checkout prefix only replaced with <worktree>; otherwise unchanged."
+    },
+    {
+      "command": "Node 24 artifact-governance-evidence.ts audit docs/evidence/feature-store-167",
+      "exitCode": 0,
+      "summary": "All prior records hash-check and recompute.",
+      "output": {
+        "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/audit-167.log",
+        "sha256": "6b93f111bcacace1861455eaf2ed67e15455ba2b5a29d3adf9e3468e50035c4e",
+        "byteSize": 3079
+      },
+      "originalOutputSha256": "6b93f111bcacace1861455eaf2ed67e15455ba2b5a29d3adf9e3468e50035c4e",
+      "normalization": "Checkout prefix only replaced with <worktree>; otherwise unchanged."
+    },
+    {
+      "command": "docker compose standard fixture refresh (initial sandbox attempt)",
+      "exitCode": 1,
+      "summary": "Sandbox Docker socket denial; retained.",
+      "output": {
+        "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/compose-up.log",
+        "sha256": "eb2195de39e409231cba499e7f9890d0c3c57694b9bfc2a3b2cf20b382afe469",
+        "byteSize": 114
+      },
+      "originalOutputSha256": "eb2195de39e409231cba499e7f9890d0c3c57694b9bfc2a3b2cf20b382afe469",
+      "normalization": "Checkout prefix only replaced with <worktree>; otherwise unchanged."
+    },
+    {
+      "command": "docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml up -d --wait --wait-timeout 60",
+      "exitCode": 0,
+      "summary": "Merged image pulled; standard container healthy.",
+      "output": {
+        "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/compose-up-permitted.log",
+        "sha256": "1b560c7a4ff5cb4837c9636e7e2cc5292be27b2d97c6fb0bb11bd7900b12dee2",
+        "byteSize": 2591
+      },
+      "originalOutputSha256": "1b560c7a4ff5cb4837c9636e7e2cc5292be27b2d97c6fb0bb11bd7900b12dee2",
+      "normalization": "Checkout prefix only replaced with <worktree>; otherwise unchanged."
+    }
+  ],
+  "behaviorRecords": [
+    {
+      "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/full-context.json",
+      "sha256": "1732f059e8753c8bbf13b1a28e2596e02ba156bb725e5d1dd974992d25995645",
+      "byteSize": 15348
+    },
+    {
+      "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/full-composite.json",
+      "sha256": "67e22bddae7ea1f6fa3c979a24c5c85705ee0fcf006b0b2a3257f67ae802351f",
+      "byteSize": 123402
+    }
+  ],
+  "work": {
+    "successfulAllNControls": 30,
+    "n": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "context": {
+      "sql": 3,
+      "combinedRightsStatusChecks": 2,
+      "descriptorGets": 1,
+      "rightsCalls": "2 × independently derived distinct union profile count"
+    },
+    "modelOnly": {
+      "sql": 2,
+      "measuredControls": [
+        {
+          "rows": 0,
+          "selectedFiles": 1,
+          "statements": 2,
+          "gets": 1,
+          "unionProfiles": 1,
+          "rightsCalls": 2
+        },
+        {
+          "rows": 0,
+          "selectedFiles": 2,
+          "statements": 2,
+          "gets": 2,
+          "unionProfiles": 1,
+          "rightsCalls": 2
+        },
+        {
+          "rows": 2504,
+          "selectedFiles": 1,
+          "statements": 2,
+          "gets": 1,
+          "unionProfiles": 1,
+          "rightsCalls": 2
+        },
+        {
+          "rows": 2504,
+          "selectedFiles": 2,
+          "statements": 2,
+          "gets": 2,
+          "unionProfiles": 1,
+          "rightsCalls": 2
+        }
+      ]
+    },
+    "zeroPerExampleVerification": true,
+    "readerDml": 0,
+    "readerCoordinationLocks": 0
+  },
+  "artifactCleaner": {
+    "passed": true,
+    "failuresInThisRun": 0,
+    "output": {
+      "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/logs/feature-store-db.log",
+      "sha256": "8a395aa7cc208f09b25490015b42dd1a94796749fe0f3d6106bf193a490162b7",
+      "byteSize": 24679
+    }
+  },
+  "evidenceLabels": "Resolver retains original #231 harness labels; composite metadata is relabelled #167 step 0 with exact original bytes also retained. Measured values unchanged.",
+  "unchanged": {
+    "step0SqlAndReaders": true,
+    "frozenMigrations": true,
+    "evidence166": true,
+    "evidence231": true,
+    "earlierEvidence167": true
+  },
+  "limits": [
+    "Local behavior/work regression only, not handler latency qualification.",
+    "Final actual-handler benchmark is still required after implementation.",
+    "No handler code, new SQL, hosted access, Production commands, commit or push at this checkpoint."
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/full-validation.json",
+    "sha256": "424478e82e868a6fc3e238e247959609a44acd247af68ba6c297715af7379411",
+    "byteSize": 16809,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

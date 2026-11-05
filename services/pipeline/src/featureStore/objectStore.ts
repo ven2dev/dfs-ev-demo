@@ -22,8 +22,11 @@ export const parseObjectKey = (key: string): { namespace: ObjectNamespace; sha25
   return { namespace: match[1] as ObjectNamespace, sha256: match[2] };
 };
 
-export const objectKey = (namespace: ObjectNamespace, bytes: Uint8Array): string => {
-  const key = `${namespace}/${sha256(bytes)}`;
+export const objectKeyForDigest = (namespace: ObjectNamespace, digest: string): string => {
+  const key = `${namespace}/${digest}`;
   parseObjectKey(key);
   return key;
 };
+
+export const objectKey = (namespace: ObjectNamespace, bytes: Uint8Array): string =>
+  objectKeyForDigest(namespace, sha256(bytes));
