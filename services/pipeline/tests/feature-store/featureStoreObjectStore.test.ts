@@ -1,9 +1,10 @@
+import { randomBytes } from "node:crypto";
 import { mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
-import { objectKey, parseObjectKey } from "../../src/featureStore/objectStore.ts";
+import { OBJECT_NAMESPACES, objectKey, parseObjectKey, type ObjectStore } from "../../src/featureStore/objectStore.ts";
 
 const roots: string[] = [];
 const fixture = async (maxObjectBytes?: number) => {
@@ -13,22 +14,60 @@ const fixture = async (maxObjectBytes?: number) => {
 };
 afterEach(async () => { await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true }))); });
 
+const checkObjectStore = async (store: ObjectStore, payloads: Buffer[]) => {
+  const keys = payloads.map((bytes) => objectKey("raw", bytes));
+  const written = await store.putIfAbsent(keys[0], payloads[0]);
+  expect(written).toEqual({
+    created: true, object: { key: keys[0], sha256: keys[0].slice(4), byteSize: payloads[0].length },
+  });
+  expect(await store.putIfAbsent(keys[0], payloads[0])).toEqual({ ...written, created: false });
+  expect(await store.get(keys[0])).toEqual(payloads[0]);
+  expect(await store.head(keys[0])).toEqual(written.object);
+  for (const [index, bytes] of payloads.entries()) {
+    if (index > 0) expect((await store.putIfAbsent(keys[index], bytes)).created).toBe(true);
+  }
+  expect((await store.list("raw")).map(({ key }) => key).sort()).toEqual([...keys].sort());
+  expect(await store.list("datasets")).toEqual([]);
+  for (const key of keys) await store.delete(key);
+  await store.delete(keys[0]);
+  expect(await store.head(keys[0])).toBeNull();
+  expect(await store.list("raw")).toEqual([]);
+  await expect(store.get(keys[0])).rejects.toMatchObject({ code: "ENOENT" });
+};
+
+it.skipIf(process.env.R2_LIVE_CONTRACT !== "1")("runs the shared contract on the dedicated R2 test bucket", async () => {
+  const { loadR2TestClient } = await import("../../src/featureStore/r2TestConfig.ts");
+  const { openR2ObjectStore } = await import("../../src/featureStore/r2ObjectStore.ts");
+  const { client, bucket } = loadR2TestClient();
+  const counts = { A: 0, B: 0, delete: 0 };
+  client.middlewareStack.add((next, context) => async (args) => {
+    const kind = context.commandName === "DeleteObjectCommand" ? "delete"
+      : ["HeadObjectCommand", "GetObjectCommand"].includes(context.commandName ?? "") ? "B" : "A";
+    if (kind !== "delete" && counts[kind] >= 50) throw new Error("R2 request cap exceeded");
+    counts[kind]++;
+    return next(args);
+  }, { step: "build", name: "countLiveContractRequests" });
+  const store = openR2ObjectStore(client, bucket, 2);
+  const payloads = Array.from({ length: 3 }, () => randomBytes(32));
+  try {
+    for (const namespace of OBJECT_NAMESPACES) expect(await store.list(namespace)).toEqual([]);
+    try {
+      await checkObjectStore(store, payloads);
+    } finally {
+      const cleanup = await Promise.allSettled(payloads.map((bytes) => store.delete(objectKey("raw", bytes))));
+      for (const namespace of OBJECT_NAMESPACES) expect(await store.list(namespace)).toEqual([]);
+      expect(cleanup.every(({ status }) => status === "fulfilled")).toBe(true);
+    }
+  } finally {
+    client.destroy();
+    console.info("R2 contract request attempts", counts);
+  }
+}, 30_000);
+
 describe("#138 local ObjectStore", () => {
   it("preserves binary wire bytes, metadata, namespace listing and idempotent deletion", async () => {
     const { store } = await fixture();
-    const bytes = Buffer.from([0x1f, 0x8b, 0x00, 0xff, 0x80, 0x0a]);
-    const key = objectKey("raw", bytes);
-    const written = await store.putIfAbsent(key, bytes);
-    expect(written).toEqual({ created: true, object: { key, sha256: key.slice(4), byteSize: 6 } });
-    expect(await store.get(key)).toEqual(bytes);
-    expect(await store.head(key)).toEqual(written.object);
-    expect(await store.list("raw")).toEqual([written.object]);
-    expect(await store.list("datasets")).toEqual([]);
-    await store.delete(key);
-    await store.delete(key);
-    expect(await store.head(key)).toBeNull();
-    expect(await store.list("raw")).toEqual([]);
-    await expect(store.get(key)).rejects.toMatchObject({ code: "ENOENT" });
+    await checkObjectStore(store, [Buffer.from([0x1f, 0x8b, 0x00, 0xff, 0x80, 0x0a])]);
   });
 
   it("has exactly one winner for concurrent create-once writes and survives reopening", async () => {
