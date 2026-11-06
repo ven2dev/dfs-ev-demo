@@ -1,0 +1,154 @@
+{
+  "issue": 168,
+  "step": 0,
+  "kind": "local-prediction-behavior",
+  "verdict": "pass",
+  "fixture": "Synthetic producer/registry controls on loopback PostgreSQL 18.6 / 512 MiB; not real-fixture speed qualification",
+  "sourceHashes": {
+    "services/pipeline/src/featureStore/predict.ts": "fe6e0c8b057f99d67923ca0be67e91b03a723116d4139195c4d92c0962b6580e",
+    "services/pipeline/src/featureStore/predictionHelpers.ts": "d552ee1f61255f0805d5fa1a558b82bfae9029611c0f7bc435fa78e3f2140281",
+    "services/pipeline/src/featureStore/predictionClock.ts": "898c5f288ae7d4346889ff72855051ad5cf7f6282c44b2be623afb42eeabb6ea",
+    "services/pipeline/src/featureStore/predictionOwner.ts": "a547d841034856a463005340ce158adb6bd507138da728365ab1aea6d6e142db",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388",
+    "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
+    "packages/db/proposals/231_composite_authorization.sql": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681",
+    "services/pipeline/tests/feature-store/prediction-db-fixture.ts": "e62cbf32396215f6fd3cdc20931856e3daeb8fda1124c2119b45366a618e4239",
+    "services/pipeline/tests/feature-store/prediction-handler.check.mts": "a275ac81aeb75370c9cbf56817c9a905cf26c42b9171f42eabde382dc3cb9d3a",
+    "services/pipeline/tests/feature-store/composite-read-work.ts": "443a086aad0f54b91bbff22d56618ae729f36ab86e41b5619da1d9992e8911ef"
+  },
+  "sourceBlobIds": {
+    "services/pipeline/src/featureStore/predict.ts": "21d26184facf9cb0a1565be03cf9ba6d515aed3b",
+    "services/pipeline/src/featureStore/predictionHelpers.ts": "76778189b8c0f53d5a96e72ffea647a4642c9e70",
+    "services/pipeline/src/featureStore/predictionClock.ts": "dad94b3d7e9fdb6dce1c09ace67dd32414c2f2b1",
+    "services/pipeline/src/featureStore/predictionOwner.ts": "1d31f8d2ab1f5b07cc221afacb8eca0261e74551",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+    "services/pipeline/src/featureStore/modelContext.ts": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+    "packages/db/proposals/231_composite_authorization.sql": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+    "services/pipeline/tests/feature-store/prediction-db-fixture.ts": "c82ef3d61257788a32b107a9e746ce3a6fa18797",
+    "services/pipeline/tests/feature-store/prediction-handler.check.mts": "b950786a1f42f8b460314b2500343444f2e23528",
+    "services/pipeline/tests/feature-store/composite-read-work.ts": "69c7495b56cc1cb391db205bcbdee2b626cf8c73"
+  },
+  "probes": [
+    {
+      "name": "every n=2..16 and overlapping/independent lineage uses 3 SQL / 2 checks / 1 descriptor GET / 2P rights calls",
+      "verdict": "pass",
+      "detailsSha256": "123290df0c3a3cdffed00483a9098cf2c7e36f6e99969e0913d33efb05ede50f"
+    },
+    {
+      "name": "Q1 declared sampleSize drives math; mismatched history refuses before Q2 with no partial fields",
+      "verdict": "pass",
+      "detailsSha256": "09934b9e1f47e8ead3a088e80dcd407a160a97c94d75ba877c7872e627c250d1"
+    },
+    {
+      "name": "new permitted revisions during GET retain selected values but refresh Q2 flags and distinct receipt decisions",
+      "verdict": "pass",
+      "detailsSha256": "8fa12ea44c97eaffc501936a7d45b127089784bd661a3a0fe26f09135c928717"
+    },
+    {
+      "name": "target labels never affect availability or probabilities and same-game QBs remain distinct",
+      "verdict": "pass",
+      "detailsSha256": "c0991ad7f494069d25d22cfd36dc631b5f715a37debfa9fd79a6344e9c1ca9c3"
+    },
+    {
+      "name": "mode compatibility permits both modes and explicitly refuses retrospective serving under a strict-only run",
+      "verdict": "pass",
+      "detailsSha256": "539ad5a84932f91596c0b912627ba6470714ea4cd40142aa1b216dbcbd72a2e4"
+    },
+    {
+      "name": "knowledge time uses job completion and preserves the pinned previous answer after completion",
+      "verdict": "pass",
+      "detailsSha256": "e04e83aa7b867036e9b98b2310eb34e286edb9e0281cedefd74f28adf5906976"
+    },
+    {
+      "name": "P2311–P2316 initial diagnostics remain distinct and refuse without partial results",
+      "verdict": "pass",
+      "detailsSha256": "b8b20b8fed42c7715511fe669021d63c05c67374ea4ca19858b65dabafa146d9"
+    },
+    {
+      "name": "forged references stay P2317; genuine pruning with an older survivor stays P1666 at Q1 and Q2",
+      "verdict": "pass",
+      "detailsSha256": "6ca57e7aeb95fe140a7a338f389963804059251beec99d0f714ef1c6d0a7feac"
+    },
+    {
+      "name": "independent model/feature rights refusals before Q1, during GET and after math withhold every field",
+      "verdict": "pass",
+      "detailsSha256": "fa3597e170f983bc3300afac24c3c4be3e060447f8f84fef3e440e62b447aa2b"
+    },
+    {
+      "name": "both deletion APIs and independent served-source deletion win over retained values at every boundary",
+      "verdict": "pass",
+      "detailsSha256": "ae95b800e18f8f167e63b8c578e3c09d001f95b16f963bf4147d4fe32d881ad7"
+    },
+    {
+      "name": "actual handler Q1/Q2 database work matches n=2/16 and observers detect hidden scans and DML",
+      "verdict": "pass",
+      "detailsSha256": "ff05587a4caddf5b83de5b008b47ea2e9179267d22901def48123e300b522f3c"
+    },
+    {
+      "name": "paused GET/private math handoff holds no reader transaction or locks while deletion commits",
+      "verdict": "pass",
+      "detailsSha256": "0fb44583288e51cc9527786c373b2dc4a86085493d0714a133d020a017279034"
+    },
+    {
+      "name": "real narrow LOGIN cannot read private tables, switch roles or execute writer/unscoped functions; model-only remains 2 SQL",
+      "verdict": "pass",
+      "detailsSha256": "c78a2c495d6180daa4a8af0d7756078ed136c53b965f6a02be5cdddd299396f4"
+    },
+    {
+      "name": "missing/corrupt descriptor and a lost Q2 reply deliver no partial result",
+      "verdict": "pass",
+      "detailsSha256": "4d637d7509c4dd4c226bbf91e9788b1aaa814fd3081f935237ef42a53bcd75c8"
+    },
+    {
+      "name": "pre-expiry/abort does zero work and reuses the idle connection; late GET completion cannot run Q2",
+      "verdict": "pass",
+      "detailsSha256": "62ae3efcd55f7dbd3fc3db5e1cecffe0381630de82f4aeba1dd261b5d18d8aac"
+    },
+    {
+      "name": "real sleeping SQL is interrupted at context/Q1/Q2 and ends each dedicated connection without follow-up SQL",
+      "verdict": "pass",
+      "detailsSha256": "02142e2d726b200cd2aa7dfb719a3793a066f6b7a2958f3d067255d6d5f1ee43"
+    }
+  ],
+  "work": {
+    "measuredProbes": 87,
+    "allNSuccessControls": 30,
+    "n": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "sql": 3,
+    "combinedChecks": 2,
+    "descriptorGets": 1,
+    "rightsCalls": "2 × independently derived union profile count per success; exact stage budgets on refusal",
+    "matchedDatabaseWork": true,
+    "readerDml": 0,
+    "hiddenExampleReads": 0,
+    "modelOnlySql": 2
+  },
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-0-full-records-20261106T013729Z.tar.gz#step-0/handler-full.json",
+    "sha256": "5ade4ce2a78a87c0ba6c65ff9795066003ab37b364db13b90cd2392e316d62f0",
+    "byteSize": 163401,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  },
+  "objectStore": {
+    "objectKey": "audits/5ade4ce2a78a87c0ba6c65ff9795066003ab37b364db13b90cd2392e316d62f0",
+    "sha256": "5ade4ce2a78a87c0ba6c65ff9795066003ab37b364db13b90cd2392e316d62f0",
+    "byteSize": 163401
+  }
+}

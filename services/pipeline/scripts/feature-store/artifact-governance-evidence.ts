@@ -317,12 +317,14 @@ const compositeBehaviorProjection = (full: CompositeBehavior) => {
 };
 type PredictionBehavior = {
   issue: number; step: number; kind: string; verdict: string; fixture: string; sourceHashes: Record<string, string>;
+  sourceBlobIds?: Record<string, string>;
   probes: { name: string; verdict: string; details: unknown }[];
   budgets: { profiles: string[]; rightsCalls: number; available: boolean; trace: string[];
     expected: { sql: number; checks: number; gets: number; batches: number }; work: Record<string, number> }[];
 };
 const predictionBehaviorProjection = (full: PredictionBehavior) => {
-  assert.equal(full.issue, 167); assert.equal(full.step, 2); assert.equal(full.verdict, "pass");
+  assert((full.issue === 167 && full.step === 2) || (full.issue === 168 && full.step === 0), "unexpected-prediction-behavior-label");
+  assert.equal(full.verdict, "pass");
   assert.equal(full.probes.length, 16); assert(full.probes.every(p => p.verdict === "pass"));
   for (const b of full.budgets) {
     assert(b.profiles.length > 0); assert.equal(new Set(b.profiles).size, b.profiles.length);
@@ -348,19 +350,47 @@ const predictionBehaviorProjection = (full: PredictionBehavior) => {
   const modelOnly = full.probes.find(p => p.name.startsWith("real narrow LOGIN"))!.details as { modelOnlySql: number };
   assert.equal(modelOnly.modelOnlySql, 2);
   return { issue: full.issue, step: full.step, kind: full.kind, verdict: full.verdict, fixture: full.fixture,
-    sourceHashes: full.sourceHashes, probes: full.probes.map(({ name, verdict, details }) => ({ name, verdict,
+    sourceHashes: full.sourceHashes, ...(full.sourceBlobIds ? { sourceBlobIds: full.sourceBlobIds } : {}),
+    probes: full.probes.map(({ name, verdict, details }) => ({ name, verdict,
       detailsSha256: sha256(Buffer.from(JSON.stringify(details))) })),
     work: { measuredProbes: full.budgets.length, allNSuccessControls: 30, n: allN,
       sql: 3, combinedChecks: 2, descriptorGets: 1, rightsCalls: "2 × independently derived union profile count per success; exact stage budgets on refusal",
       matchedDatabaseWork: true, readerDml: 0, hiddenExampleReads: 0, modelOnlySql: 2 } };
+};
+const ownerBehaviorProjection = (full: { issue: number; step: number; kind: string; verdict: string;
+  probes: { name: string; verdict: string; details: unknown }[];
+  sourceHashes: Record<string, string>; sourceBlobIds: Record<string, string> }) => {
+  assert.equal(full.issue, 168); assert.equal(full.step, 0); assert.equal(full.verdict, "pass");
+  assert.equal(full.probes.length, 6); assert(full.probes.every(p => p.verdict === "pass"));
+  const success = full.probes[0].details as { pooled: boolean; sql: number; checks: number; gets: number; ownerEnds: number; poolReleases: number }[];
+  assert.deepEqual(success, [false, true].map(pooled => ({ pooled, sql: 3, checks: 2, gets: 1,
+    ownerEnds: pooled ? 0 : 1, poolReleases: pooled ? 1 : 0 })));
+  const pool = full.probes[1].details as { stage: string; sql: number; gets: number; ownerEnds: number;
+    poolReleases: number; destroyingReleases: number; backendInactive: boolean; noLateQuery: boolean }[];
+  assert.deepEqual(pool, ["context", "Q1", "Q2"].map((stage, i) => ({ stage, sql: i + 1, gets: i === 2 ? 1 : 0,
+    ownerEnds: 1, poolReleases: 1, destroyingReleases: 1, backendInactive: true, noLateQuery: true })));
+  const borrowed = full.probes[2].details as unknown[];
+  assert.deepEqual(borrowed, ["context", "Q1", "Q2"].map((stage, i) => ({ stage, sql: i + 1, gets: i === 2 ? 1 : 0,
+    handlerEndCapability: false, ownerEndCalls: 1, backendInactive: true, noLateQuery: true })));
+  assert.deepEqual(full.probes[3].details, { statementTimeoutMs: 300, sqlstate: "57014", disposalDelayedUntilServerRefusal: true });
+  assert.deepEqual(full.probes[4].details, { invalidClocks: 4, unboundedPoolRefused: true, connections: 0, gets: 0 });
+  assert.deepEqual(full.probes[5].details, { ownerEndCalls: 1, providerDiagnosticsPrivate: true });
+  assert(Object.keys(full.sourceHashes).length > 0);
+  assert.deepEqual(Object.keys(full.sourceBlobIds).sort(), Object.keys(full.sourceHashes).sort());
+  return { issue: full.issue, step: full.step, kind: full.kind, verdict: full.verdict,
+    sourceHashes: full.sourceHashes, sourceBlobIds: full.sourceBlobIds,
+    probes: full.probes.map(({ name, verdict, details }) => ({ name, verdict, detailsSha256: sha256(Buffer.from(JSON.stringify(details))) })),
+    work: { sql: 3, combinedChecks: 2, descriptorGets: 1, handlerEndCapability: false,
+      exactlyOnceDisposal: true, sleepingStages: ["context", "Q1", "Q2"], noLateQuery: true, startupStatementTimeoutMs: 300 } };
 };
 const isSame = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 export const compactBehavior = (bytes: Buffer, path: string): Record<string, unknown> & { schemaVersion: number; fullRecord: ReturnType<typeof fullRecord> } => {
   const full = JSON.parse(bytes.toString());
   const projection = full.issue === 231 || full.kind === "composite-authorization-behavior"
     ? compositeBehaviorProjection(full) : full.kind === "local-prediction-behavior" ? predictionBehaviorProjection(full)
-      : compactCounters(full) as Record<string, unknown>;
-  return { ...projection, schemaVersion: 2, fullRecord: fullRecord(bytes, path) };
+      : full.kind === "prediction-owner-behavior" ? ownerBehaviorProjection(full) : compactCounters(full) as Record<string, unknown>;
+  return { ...projection, schemaVersion: 2, fullRecord: fullRecord(bytes, path),
+    ...(full.issue === 168 ? { objectStore: { objectKey: "audits/" + sha256(bytes), sha256: sha256(bytes), byteSize: bytes.byteLength } } : {}) };
 };
 
 type RecordReference = { path: string; sha256: string; byteSize?: number };
