@@ -5,6 +5,7 @@ import { mkdtemp, realpath, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { test } from "node:test";
+import { execFileSync } from "node:child_process";
 import { Client, type QueryConfig } from "pg";
 import { predictQbModel, type PredictionRead, type PredictionRequest } from "@dfs-ev/pipeline/feature-store/predict";
 import { withFeatureStoreDatabase } from "../../scripts/feature-store/harness.ts";
@@ -19,20 +20,22 @@ import { assertCompositeWork, installCompositeWorkOracle, measureCompositeWork, 
 import { readCounterDelta, type ReadCounters } from "./artifact-read-work.ts";
 
 const refused = (read: PredictionRead, reason: string, disposition = "reusable") => {
-  const response = { status: "unavailable", reason, connectionDisposition: disposition };
+  const response = { status: "unavailable", reason };
   assert.deepEqual(read.response, response); assert.deepEqual(JSON.parse(read.serialized), response);
+  assert.equal(read.connectionDisposition, disposition);
 };
 const available = (read: PredictionRead) => {
   assert.equal(read.response.status, "available", JSON.stringify(read.response));
   if (read.response.status !== "available") throw new Error("expected available prediction");
   assert.deepEqual(JSON.parse(read.serialized), read.response);
+  assert(!("connectionDisposition" in read.response));
   return read.response;
 };
 type BoundedQuery = QueryConfig & { query_timeout: number };
 
 test("#167 actual handler: composite work, point-in-time delivery, withdrawal and interruption", { timeout: 120_000 }, async t => {
   const probes: { name: string; verdict: string; details: unknown }[] = [], budgets: unknown[] = [];
-  const evidence: Record<string, unknown> = { issue: 167, step: 2, kind: "local-prediction-behavior",
+  const evidence: Record<string, unknown> = { issue: 168, step: 0, kind: "local-prediction-behavior",
     fixture: "Synthetic producer/registry controls on loopback PostgreSQL 18.6 / 512 MiB; not real-fixture speed qualification", probes, budgets };
   const root = await realpath(await mkdtemp(join(tmpdir(), "fs167-handler-"))), store = await openLocalObjectStore(root);
   const sessions: Client[] = [];
@@ -40,7 +43,7 @@ test("#167 actual handler: composite work, point-in-time delivery, withdrawal an
     await withFeatureStoreDatabase(async ({ admin, writer, reader, createReaderConfig, openWriter }) => {
       for (const name of ["165_model_manifests.sql", "166_artifact_governance.sql", "229_mandatory_recovery.sql", "231_composite_authorization.sql"])
         await admin.query(await readFile(new URL(import.meta.resolve(`@dfs-ev/db/assets/${name}`)), "utf8"));
-      const config = await createReaderConfig(); await admin.query(`REVOKE fs138_reader FROM ${config.user}`);
+      const config = { ...await createReaderConfig(), statement_timeout: 300 }; await admin.query(`REVOKE fs138_reader FROM ${config.user}`);
       await admin.query(`GRANT fs231_model_reader TO ${config.user} WITH INHERIT TRUE, SET FALSE`);
       const open = async () => { const c = new Client(config); c.on("error", () => {}); sessions.push(c); await c.connect(); return c; };
       const client = await open(), fixture = predictionDatabaseFixture(writer, store);
@@ -99,7 +102,7 @@ test("#167 actual handler: composite work, point-in-time delivery, withdrawal an
             if (stage === "Q2" && options.loseQ2) throw Object.assign(new Error("synthetic lost final SQL reply"), { code: "08006" });
           }
           return result;
-        }, end: () => session.end() } as Pick<Client, "query" | "end">;
+        } } as Pick<Client, "query">;
         const objects = new Proxy({ get: async (key: string) => {
           work.gets++; trace.push("GET:descriptor"); assert.equal(key, world.descriptor.objectKey);
           const bytes = await (options.objects ?? store).get(key); await change(options.duringGet); return bytes;
@@ -116,6 +119,8 @@ test("#167 actual handler: composite work, point-in-time delivery, withdrawal an
         try {
           const result = await predictQbModel(observed, objects, options.request ?? world.request,
             { signal: options.signal, deadlineAt: options.deadlineAt });
+          // This harness owns the session; the handler only reports disposition.
+          if (result.connectionDisposition === "discard") void session.end().catch(() => {});
           const expected = options.expected ?? { sql: 3, checks: 2, gets: 1, batches: 2 };
           assert.equal(work.sql, expected.sql); assert.equal(work.checks, expected.checks); assert.equal(work.gets, expected.gets);
           assert.equal(work.hashes, 0); assert.equal(observer.profiles.length, expected.batches * profiles.length,
@@ -369,13 +374,16 @@ test("#167 actual handler: composite work, point-in-time delivery, withdrawal an
   } catch (error) { evidence.verdict = "fail"; evidence.error = String(error); throw error; }
   finally {
     const paths = ["services/pipeline/src/featureStore/predict.ts", "services/pipeline/src/featureStore/predictionHelpers.ts",
+      "services/pipeline/src/featureStore/predictionClock.ts", "services/pipeline/src/featureStore/predictionOwner.ts",
       "services/pipeline/src/featureStore/modelArtifacts.ts", "services/pipeline/src/featureStore/modelContext.ts",
       "packages/db/proposals/231_composite_authorization.sql", "services/pipeline/tests/feature-store/prediction-db-fixture.ts",
       "services/pipeline/tests/feature-store/prediction-handler.check.mts", "services/pipeline/tests/feature-store/composite-read-work.ts"];
     evidence.sourceHashes = Object.fromEntries(await Promise.all(paths.map(async path =>
       [path, sha256(await readFile(new URL("../../../../" + path, import.meta.url)))])));
+    evidence.sourceBlobIds = Object.fromEntries(paths.map(path => [path,
+      execFileSync("git", ["hash-object", path], { encoding: "utf8" }).trim()]));
     await rm(root, { recursive: true, force: true });
-    if (process.env.FS167_HANDLER_EVIDENCE) await writeFile(process.env.FS167_HANDLER_EVIDENCE,
+    if (process.env.FS168_HANDLER_EVIDENCE) await writeFile(process.env.FS168_HANDLER_EVIDENCE,
       JSON.stringify(evidence, null, 2) + "\n", { flag: "wx" });
   }
 });
