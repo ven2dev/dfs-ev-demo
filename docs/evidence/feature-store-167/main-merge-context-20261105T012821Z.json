@@ -1,0 +1,144 @@
+{
+  "issue": 231,
+  "step": 1,
+  "fixture": "synthetic metadata/role controls; real database knowledge clocks",
+  "verdict": "pass",
+  "sourceHashes": {
+    "packages/db/proposals/231_composite_authorization.sql": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681",
+    "packages/db/package.json": "ac5fc77f3e94476f376f3ebdd79368bbb89ac9e9937292b7c71258f0f05e8c12",
+    "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
+    "services/pipeline/package.json": "0c57f17b81cc13c57b99aa1ea7f5ed9defe3532bb23f77a377d42e12e8aab26f",
+    "services/pipeline/tests/feature-store/model-context.check.mts": "4eb9f7644c2ab724b260543b6601a34d57373b916375831669e11be437783e5a"
+  },
+  "probes": [
+    {
+      "name": "one metadata statement at every n=2..16; no label/training eligibility, histories or rights release",
+      "verdict": "pass",
+      "detailsSha256": "645bd15e8904052868141fa103dbe34f57c107761580c99dd68be609d25d9a07"
+    },
+    {
+      "name": "exact player/game/version/policy/mode, successful jobs and real knowledge visibility",
+      "verdict": "pass",
+      "detailsSha256": "9ff6633f212742100af499f22b708e456e1cebb7c1ea38d74f281de041e889ae"
+    },
+    {
+      "name": "latest valid at knownAsOf, last-valid flags, later-known values never replace selection",
+      "verdict": "pass",
+      "detailsSha256": "00a9c7eae8115e4f02c8b7eb030f7796e92df0136d2d32112bcfdd4509f72b78"
+    },
+    {
+      "name": "typed refusals at both TypeScript and direct SQL boundaries",
+      "verdict": "pass",
+      "detailsSha256": "23e92825d6555bc2b50591e3142ebb1cf21f5775f769fc782c38b62995a4b466"
+    },
+    {
+      "name": "real LOGIN can only execute the narrow metadata surface; PUBLIC/role-switch bypasses refuse",
+      "verdict": "pass",
+      "detailsSha256": "0522a2d44ff30dc05bb98219f546a703b2ae49af649610967d4372d59a04e30e"
+    },
+    {
+      "name": "indexed metadata work, zero reader DML/rights/history expansion and no transaction after resolution",
+      "verdict": "pass",
+      "detailsSha256": "5a6b96b85636a3d5293986fab2d927f37cbc6829813b6131714cdac1cbcd4569"
+    }
+  ],
+  "work": [
+    {
+      "n": 2,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 3,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 4,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 5,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 6,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 7,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 8,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 9,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 10,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 11,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 12,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 13,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 14,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 15,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    },
+    {
+      "n": 16,
+      "statements": 1,
+      "rightsChecks": 0,
+      "historyReads": 0
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "main-merge-full-records-20261105T012821Z.tar.gz#main-merge/full-context.json",
+    "sha256": "1732f059e8753c8bbf13b1a28e2596e02ba156bb725e5d1dd974992d25995645",
+    "byteSize": 15348,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

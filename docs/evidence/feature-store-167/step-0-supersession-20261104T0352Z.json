@@ -1,0 +1,98 @@
+{
+  "issue": 167,
+  "step": 0,
+  "kind": "step-0-supersession",
+  "verdict": "pass",
+  "historical": [
+    {
+      "historicalReceipt": "docs/evidence/feature-store-231/final-context.json",
+      "historicalReceiptSha256": "5994f312943a159556db4aa7a6ee6124ccb3f9a036777b70f9c9197280dd0e81",
+      "currentBehaviorReceipt": "step-0-context-20261104T0352Z.json",
+      "reason": "#167 Step 0 source corrections; historical receipt/bundle bytes retained unchanged"
+    },
+    {
+      "historicalReceipt": "docs/evidence/feature-store-231/final-composite.json",
+      "historicalReceiptSha256": "47a5fa7be3edb875c176c4a56c1f7e3badcfc79c33bcc398928a5300ca243772",
+      "currentBehaviorReceipt": "step-0-composite-20261104T0352Z.json",
+      "reason": "#167 Step 0 source corrections; historical receipt/bundle bytes retained unchanged"
+    }
+  ],
+  "benchmark": "No replacement speed result. #231 final-benchmark.json remains historical proof of its exact source set; #167 final actual-handler qualification is still required.",
+  "ownership": "Step 0 stays in #167. Pure helper issue #235 is independent and has its own triage/roadmap approval.",
+  "sourceIdentity": {
+    "baseCommit": "da5e502875418684a5e8773059e57d908872a0ae",
+    "objectFormat": "sha1",
+    "sources": {
+      "packages/db/proposals/231_composite_authorization.sql": {
+        "baseBlob": "d06cfcd8a6dd78722e985cc83655f61641d2e217",
+        "correctedBlob": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+        "sha256": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681"
+      },
+      "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": {
+        "baseBlob": "fd62df9fadd698694cdf4ee8a9a50bbeea699d5e",
+        "correctedBlob": "0a34c986fd16cc5a2e3859b2988bf15a7b480349",
+        "sha256": "4713c86c6d7fc9d34a17072ff5d79b3383ce026ebd98c7bf497543c028e9a16d"
+      },
+      "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": {
+        "baseBlob": "2b85a7b0792398bf903f0e0256343d6effee114c",
+        "correctedBlob": "2b85a7b0792398bf903f0e0256343d6effee114c",
+        "sha256": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc"
+      },
+      "services/pipeline/src/featureStore/modelArtifacts.ts": {
+        "baseBlob": "076d5e4ec701467982103aa2624d477e42efb82b",
+        "correctedBlob": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+        "sha256": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388"
+      },
+      "services/pipeline/src/featureStore/modelContext.ts": {
+        "baseBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+        "correctedBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+        "sha256": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b"
+      },
+      "services/pipeline/tests/feature-store/composite-authorization.check.mts": {
+        "baseBlob": "a6b9e63f2b9c5d987837fa3327f544a78ef7e832",
+        "correctedBlob": "85367cfec2d73dd7addb3403ec421e366713377d",
+        "sha256": "c233f8f47e5dc4d33e29d246119e973ddb7397ff066326b0e761861c7788989c"
+      },
+      "services/pipeline/tests/feature-store/composite-authorization.test.ts": {
+        "baseBlob": "10caf345c961b40010f9400b50e47ccafc54fc87",
+        "correctedBlob": "4fe4ef1c0e54924c03c0b053d7dec9169098583a",
+        "sha256": "2e40fdc45f68601f2a00c0b81e45d2460cc1446c68c4e3e605eb876f22eb52dc"
+      },
+      "services/pipeline/tests/feature-store/composite-evidence.check.mts": {
+        "baseBlob": "81079996dc2c1a27f83a47861b3b6cd95eb5f74f",
+        "correctedBlob": "1eb01050d6d8693b902478493057c6e862e417fd",
+        "sha256": "0b08890cbdf382543a09f00152193c2f75a22d3c49352b81d576a441d095ca15"
+      },
+      "services/pipeline/tests/feature-store/model-context.check.mts": {
+        "baseBlob": "15f65fa36e415a6c820078b16bc02755bd24f50d",
+        "correctedBlob": "32bfddfffb0e86cf0c4a9e74cc47f11ba4e2b5ef",
+        "sha256": "4eb9f7644c2ab724b260543b6601a34d57373b916375831669e11be437783e5a"
+      },
+      "services/pipeline/tests/feature-store/model-context.test.ts": {
+        "baseBlob": "e183e6b2a5ee54aa12a2fdbcbefbbfaf70f0007c",
+        "correctedBlob": "4268bc373a0813ac3b78f0f9972452a1e474c0a9",
+        "sha256": "bee7204debc9ef3a6f585331a39074a551438b4ee9ddb5564e251e7d73b16247"
+      }
+    }
+  },
+  "sourceHashes": {
+    "packages/db/proposals/231_composite_authorization.sql": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "4713c86c6d7fc9d34a17072ff5d79b3383ce026ebd98c7bf497543c028e9a16d",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388",
+    "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
+    "services/pipeline/tests/feature-store/composite-authorization.check.mts": "c233f8f47e5dc4d33e29d246119e973ddb7397ff066326b0e761861c7788989c",
+    "services/pipeline/tests/feature-store/composite-authorization.test.ts": "2e40fdc45f68601f2a00c0b81e45d2460cc1446c68c4e3e605eb876f22eb52dc",
+    "services/pipeline/tests/feature-store/composite-evidence.check.mts": "0b08890cbdf382543a09f00152193c2f75a22d3c49352b81d576a441d095ca15",
+    "services/pipeline/tests/feature-store/model-context.check.mts": "4eb9f7644c2ab724b260543b6601a34d57373b916375831669e11be437783e5a",
+    "services/pipeline/tests/feature-store/model-context.test.ts": "bee7204debc9ef3a6f585331a39074a551438b4ee9ddb5564e251e7d73b16247"
+  },
+  "appendOnly": true,
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-0-full-records-20261104T0352Z-validation.tar.gz#step-0/full-supersession.json",
+    "sha256": "5cffc04e5b428338c843ce5da2239b5fb96e2ea463bd3fd93dae904e05112088",
+    "byteSize": 5708,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

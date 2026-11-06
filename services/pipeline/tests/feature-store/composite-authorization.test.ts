@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Client } from "pg";
-import { withModelArtifacts, readModelArtifacts } from "../../src/featureStore/modelArtifacts.ts";
-import type { ModelContext } from "../../src/featureStore/modelContext.ts";
+import { withModelArtifacts, readModelArtifacts, ArtifactGovernanceError } from "../../src/featureStore/modelArtifacts.ts";
+import { ModelContextError, type ModelContext } from "../../src/featureStore/modelContext.ts";
 
 const id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const context = () => ({ request: { playerId: "QB-A", knownAsOf: "2026-10-31T00:00:00.123456Z" },
@@ -59,5 +59,35 @@ describe("shared composite/model-only private read boundary", () => {
       { runId: id, slots: ["descriptor"], context: context() }, () => "secret")
       .then(result => { delivered = true; return result; })).rejects.toMatchObject({ code: "model-context-reference-refused" });
     expect(delivered).toBe(false); expect(queries).toBe(2);
+  });
+  it("maps date SQLSTATEs only for captured context reads at Q1 and Q2", async () => {
+    for (const code of ["22007", "22008", "22009", "P1666"]) for (const scoped of [false, true]) for (const failAt of [1, 2]) {
+      const cause = { code, message: "provider text varies" };
+      const request = { runId: id, slots: ["descriptor" as const], ...(scoped ? { context: context() } : {}) };
+      let queries = 0, gets = 0, delivered = false;
+      const client = { query: async () => {
+        if (++queries === failAt) throw cause;
+        return { rows: [first()] };
+      } } as unknown as Pick<Client, "query">;
+      try {
+        await withModelArtifacts(client, { get: async () => { gets++; return Buffer.from("{}"); } }, request, () => {
+          // Error classification follows the owned scope, not the mutable request.
+          if (scoped) delete request.context; else request.context = context();
+          return "private";
+        }).then(result => { delivered = true; return result; });
+        expect.fail("SQLSTATE must refuse delivery");
+      } catch (error) {
+        if (code === "P1666") {
+          expect(error).toBeInstanceOf(ArtifactGovernanceError);
+          expect(error).toMatchObject({ code: "model-read-status-refused", cause });
+        } else if (scoped) {
+          expect(error).toBeInstanceOf(ModelContextError);
+          expect(error).toMatchObject({ code: "model-context-request-refused", cause });
+        } else {
+          expect(error).toBe(cause); expect(error).not.toBeInstanceOf(ModelContextError);
+        }
+      }
+      expect(queries).toBe(failAt); expect(gets).toBe(failAt - 1); expect(delivered).toBe(false);
+    }
   });
 });

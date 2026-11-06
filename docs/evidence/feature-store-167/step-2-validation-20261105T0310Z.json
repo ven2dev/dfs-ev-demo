@@ -1,0 +1,343 @@
+{
+  "issue": 167,
+  "step": 2,
+  "kind": "handler-deadline-validation",
+  "runId": "20261105T0310Z",
+  "recordedAt": "2026-11-05T15:44:34.427Z",
+  "verdict": "pass",
+  "node": "v24.18.1",
+  "baseCommit": "48759dd424b57e88342f25e6f7117d249b7fb4ac",
+  "sourceIdentity": {
+    "docs/feature-store-local-predictions.md": {
+      "baseBlob": "11ff518e576e75e7e376860b8865c26ba3181d2c",
+      "candidateBlob": "d09a90944950d85f1afa75d9420fe7fc0c965855",
+      "sha256": "e879d6bf025dd696492fe065ad4de05a5c2af448dbe8089786dcffe6b0bcb5d7"
+    },
+    "packages/db/proposals/231_composite_authorization.sql": {
+      "baseBlob": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+      "candidateBlob": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+      "sha256": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681"
+    },
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": {
+      "baseBlob": "7bd34bf266d8db5119a28b2c32625de9441229c1",
+      "candidateBlob": "b5868c844e07532fe55969c8c2347be5fb2618aa",
+      "sha256": "d4853911f647e63c380f794b02e6f4d743e5376b33db1975f3beab53cbaf693d"
+    },
+    "services/pipeline/src/featureStore/modelArtifacts.ts": {
+      "baseBlob": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+      "candidateBlob": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+      "sha256": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388"
+    },
+    "services/pipeline/src/featureStore/modelContext.ts": {
+      "baseBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+      "candidateBlob": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+      "sha256": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b"
+    },
+    "services/pipeline/src/featureStore/predict.ts": {
+      "baseBlob": "f0b560e16a7f233950ba81b88f1395cb226faff7",
+      "candidateBlob": "6581034540347efb7f119fc9a3550de47360248b",
+      "sha256": "f16c916ce755c1662aa90e2f56070108576862f205d56ebf3ccd1e927d514fde"
+    },
+    "services/pipeline/src/featureStore/predictionHelpers.ts": {
+      "baseBlob": "76778189b8c0f53d5a96e72ffea647a4642c9e70",
+      "candidateBlob": "76778189b8c0f53d5a96e72ffea647a4642c9e70",
+      "sha256": "d552ee1f61255f0805d5fa1a558b82bfae9029611c0f7bc435fa78e3f2140281"
+    },
+    "services/pipeline/tests/feature-store/composite-read-work.ts": {
+      "baseBlob": "69c7495b56cc1cb391db205bcbdee2b626cf8c73",
+      "candidateBlob": "69c7495b56cc1cb391db205bcbdee2b626cf8c73",
+      "sha256": "443a086aad0f54b91bbff22d56618ae729f36ab86e41b5619da1d9992e8911ef"
+    },
+    "services/pipeline/tests/feature-store/prediction-db-fixture.ts": {
+      "baseBlob": null,
+      "candidateBlob": "c82ef3d61257788a32b107a9e746ce3a6fa18797",
+      "sha256": "e62cbf32396215f6fd3cdc20931856e3daeb8fda1124c2119b45366a618e4239"
+    },
+    "services/pipeline/tests/feature-store/prediction-evidence.check.mts": {
+      "baseBlob": null,
+      "candidateBlob": "dffc991fedf76e5d11d0e3a47f5cd0d062edd1f2",
+      "sha256": "92dc20ae76755fef98d35a18733dca2518087cdac641a2811589deba99b4f40b"
+    },
+    "services/pipeline/tests/feature-store/prediction-handler.check.mts": {
+      "baseBlob": null,
+      "candidateBlob": "97325cc398920e7a4f892e70f7c649c44cd71731",
+      "sha256": "07c74320b43d9125b904a3f889c8369b559374b5c2b1afd8513705ba0b639a3c"
+    },
+    "services/pipeline/tests/feature-store/prediction-handler.test.ts": {
+      "baseBlob": "221a2e7c0eea8af0eab4b7504f1e23f13d8476a5",
+      "candidateBlob": "ec5be8af8f67fa8b4fa5ec84b3ee80e7cc739feb",
+      "sha256": "4881bbc6146ff7166c9c6d381409996aa0b345f91baffa43f1060b7caa0c7819"
+    }
+  },
+  "commands": [
+    {
+      "log": "handler-db-attempt1.log",
+      "exitCode": 1,
+      "summary": "New handler DB controls: Node strip-only runtime refused a TypeScript parameter property before any behavior test; replaced with an ordinary property.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/handler-db-attempt1.log",
+        "sha256": "3266f1a04917220c4e7a9486f22f93733d86fe17ae901d659dc6790a3057ef72",
+        "byteSize": 1684
+      },
+      "originalOutputSha256": "e8a1744bf0141d477d473b41b09796b6db8850f8ed37d0a469d216845aba82ad",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "handler-db-attempt2.log",
+      "exitCode": 1,
+      "summary": "New handler DB fixture: macOS symlink spelling failed the ObjectStore root guard; fixed by realpath before opening.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/handler-db-attempt2.log",
+        "sha256": "0e9bbcdc10ec41d277fe15a957adf7b3616c63a221e62a87f8f72d9df1675585",
+        "byteSize": 897
+      },
+      "originalOutputSha256": "70fae17fa08d10b7d71e46e20fce788b9ca1794427e547e45422e32490d2bfcb",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "types-initial.log",
+      "exitCode": 2,
+      "summary": "pg type definitions omit query_timeout from QueryConfig; retained supported runtime option in an inferred config variable, as the existing adapter does.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/types-initial.log",
+        "sha256": "81930425c94f8aeb8157ba7efe0b12bd789d40d50e1adeeaa4ff052bb6a95504",
+        "byteSize": 268
+      },
+      "originalOutputSha256": "81930425c94f8aeb8157ba7efe0b12bd789d40d50e1adeeaa4ff052bb6a95504",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "handler-db-attempt3.log",
+      "exitCode": 0,
+      "summary": "17 real handler checks passed before the final additional deadline/control refinements.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/handler-db-attempt3.log",
+        "sha256": "60b76e26afafd517719307900d872425cc1dab690e2f9f6162e89dcbf33efaf8",
+        "byteSize": 2271
+      },
+      "originalOutputSha256": "60b76e26afafd517719307900d872425cc1dab690e2f9f6162e89dcbf33efaf8",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "handler-db-final.log",
+      "exitCode": 0,
+      "summary": "17 checks including six real timeout/abort stage controls passed before the extra descriptor-to-math gate.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/handler-db-final.log",
+        "sha256": "62801a8b6db62e1b2209d4720be312475b28ecc2a25dbca833dc1adfdb2f7e52",
+        "byteSize": 2268
+      },
+      "originalOutputSha256": "62801a8b6db62e1b2209d4720be312475b28ecc2a25dbca833dc1adfdb2f7e52",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "handler-db-final-guard.log",
+      "exitCode": 0,
+      "summary": "Final source-bound handler controls: 17 checks passed; 16 probe groups / 87 measured invocations.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/handler-db-final-guard.log",
+        "sha256": "5def1ed548a4ee53b8f08d30c63943083745aa5eb0332d7c960e8f4fae42f458",
+        "byteSize": 2269
+      },
+      "originalOutputSha256": "5def1ed548a4ee53b8f08d30c63943083745aa5eb0332d7c960e8f4fae42f458",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "feature-store-full.log",
+      "exitCode": 0,
+      "summary": "Complete serial suite with namespace 153045 lease: 239 checks passed; zero failed/cancelled/skipped/todo. artifact-cleaner passed.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/feature-store-full.log",
+        "sha256": "e721bcb96c9ecb025855a503aadda2409b635e5df999434b64892d5568acbe0a",
+        "byteSize": 26984
+      },
+      "originalOutputSha256": "e721bcb96c9ecb025855a503aadda2409b635e5df999434b64892d5568acbe0a",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "handler-final-guard.log",
+      "exitCode": 0,
+      "summary": "Final 69 handler unit controls passed, including immediate scalar capture and descriptor/math/serialization exhaustion.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/handler-final-guard.log",
+        "sha256": "8454119bbb814c1c7087c06ded747290f2c830bbc0356298d2cfb9e6c33c44dd",
+        "byteSize": 713
+      },
+      "originalOutputSha256": "893747f586ab1f1b7ab4063d178b0defb8843b8d46b678127ee7c2c345157c5f",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "typecheck-qualified.log",
+      "exitCode": 0,
+      "summary": "Final Node 24 npm run typecheck passed.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/typecheck-qualified.log",
+        "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+        "byteSize": 314
+      },
+      "originalOutputSha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "lint-qualified.log",
+      "exitCode": 0,
+      "summary": "Final Node 24 npm run lint passed, including 11 import-boundary controls.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/lint-qualified.log",
+        "sha256": "2e49dcce3f36a34a0bdcaece917cacfdaa80559070b5ad0fe94e068b4c4bf3c9",
+        "byteSize": 1383
+      },
+      "originalOutputSha256": "2e49dcce3f36a34a0bdcaece917cacfdaa80559070b5ad0fe94e068b4c4bf3c9",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "unit-qualified.log",
+      "exitCode": 0,
+      "summary": "Final Node 24 npm test: 942 browser-lane + 526 Node-lane = 1468 tests, 102 files pass.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/unit-qualified.log",
+        "sha256": "527daef57453a9ac8d511bed450d19a7f47cfee9c66ca3788dfb3e0c39303345",
+        "byteSize": 2368
+      },
+      "originalOutputSha256": "2293160974566842681c86b11b4935ba580d854b9e0183bdd7020f4cc12fd66b",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "evidence-qualified.log",
+      "exitCode": 0,
+      "summary": "15 database-free evidence controls pass; hash-first tampering and hidden-work negative controls included.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/evidence-qualified.log",
+        "sha256": "79c81a0f4c8f0fac23d90881ac78d8f8d4ee0fcfe9868fabecc5a7934d6bf7b3",
+        "byteSize": 1744
+      },
+      "originalOutputSha256": "79c81a0f4c8f0fac23d90881ac78d8f8d4ee0fcfe9868fabecc5a7934d6bf7b3",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "audit-166.log",
+      "exitCode": 0,
+      "summary": "All referenced #166 records hash-check and recompute.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/audit-166.log",
+        "sha256": "06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+        "byteSize": 1378
+      },
+      "originalOutputSha256": "06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "audit-231.log",
+      "exitCode": 0,
+      "summary": "All referenced #231 records hash-check and recompute.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/audit-231.log",
+        "sha256": "2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+        "byteSize": 452
+      },
+      "originalOutputSha256": "2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "audit-167.log",
+      "exitCode": 0,
+      "summary": "All referenced #167 records hash-check and recompute.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/audit-167.log",
+        "sha256": "ad548bef736d4cdf091241fb64c425ac7e02bb89698ca7c9bc8806681a4bfc19",
+        "byteSize": 8026
+      },
+      "originalOutputSha256": "ad548bef736d4cdf091241fb64c425ac7e02bb89698ca7c9bc8806681a4bfc19",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    },
+    {
+      "log": "fixture-permitted.log",
+      "exitCode": 0,
+      "summary": "Standard loopback container remains healthy: PostgreSQL 18.6, 512 MiB data tmpfs and 128 MiB shared memory.",
+      "output": {
+        "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/logs/fixture-permitted.log",
+        "sha256": "6fa0eb193dd12120535d06cf969b330a07b2dfda3799f6765723e6e20b4760a3",
+        "byteSize": 211
+      },
+      "originalOutputSha256": "6fa0eb193dd12120535d06cf969b330a07b2dfda3799f6765723e6e20b4760a3",
+      "normalization": "Checkout prefix only replaced with <worktree>; all other output unchanged."
+    }
+  ],
+  "focusedResults": {
+    "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/handler-unit-results.json",
+    "sha256": "1f2c3b119aa60bc5ccf2868d5b4b2217f1799d4c02ad882b39ed86409b42e7d8",
+    "byteSize": 28231
+  },
+  "originalFocusedResultsSha256": "147308667099dd579256400efe5fa44eeb5171b1229b8bfb927d1781bc9319d3",
+  "behaviorRecord": {
+    "path": "step-2-behavior-full-records-20261105T0310Z.tar.gz#step-2/full-handler.json",
+    "sha256": "85910133179b2df50fd5ee5ef80d128d58f4817f343cb19ba1a51f71e99cb73e",
+    "byteSize": 162051,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  },
+  "work": {
+    "measuredProbes": 87,
+    "allNSuccessControls": 30,
+    "n": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "sql": 3,
+    "combinedChecks": 2,
+    "descriptorGets": 1,
+    "rightsCalls": "2 × independently derived union profile count per success; exact stage budgets on refusal",
+    "matchedDatabaseWork": true,
+    "readerDml": 0,
+    "hiddenExampleReads": 0,
+    "modelOnlySql": 2
+  },
+  "validation": {
+    "unitTests": 1468,
+    "handlerUnitTests": 69,
+    "featureStoreChecks": 239,
+    "finalHandlerDbChecks": 17,
+    "dbProbeGroups": 16,
+    "measuredInvocations": 87,
+    "evidenceChecks": 15,
+    "importBoundaries": 11,
+    "typecheck": "pass",
+    "lint": "pass",
+    "artifactCleaner": "pass; no cleaner failures in this full-suite run; complete output retained"
+  },
+  "deadline": {
+    "maximumMs": 300,
+    "earlierCallerDeadline": true,
+    "onePersistentLatch": true,
+    "queryTimeout": "Remaining shared budget only; no extra statements",
+    "noLateGetContinuation": true,
+    "synchronousDescriptorMathSerializationChecks": true,
+    "sqlInterruption": "Initiates one observed client.end and returns discard; no SQL cleanup/retry and no wait for a hung close handshake"
+  },
+  "limits": [
+    "Behavior/work qualification only; final real-2504-row six-cohort benchmark remains Step 3.",
+    "Database controls use synthetic producer/registry content and real restricted LOGINs on the standard local fixture; no historical availability or hosted speed claim.",
+    "The complete suite passed after the first behavior receipt; final pre-math descriptor gate and final source identities are additionally qualified by the subsequent 17-check real handler run and 1468-test unit suite.",
+    "No proposal SQL, frozen migration, existing authorization/helper change, hosted/Production command or push."
+  ],
+  "gitState": "Uncommitted Step 2 review candidate; stop for owner commit approval.",
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-2-validation-full-records-20261105T0310Z.tar.gz#step-2/full-validation.json",
+    "sha256": "4c6a09c2b7dc70df7a55d2e883776571c5bbfdb788ae8fdde6dbf15fd404de46",
+    "byteSize": 16378,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}
