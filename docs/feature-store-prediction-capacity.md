@@ -178,3 +178,85 @@ tar, without node_modules, a database or local cache.
 it exercises one cold and one warm request, all-n server work/model-only controls,
 and the warm revocation/deletion controls. It cannot qualify the six-trial speed
 target. The final qualification runs only after Step 1 approval and commit.
+
+## Final qualification — 2026-11-06
+
+The first final run passed on committed measurement/runtime sources at
+`a9a81e1ade238deb61df6491f1332ecc692c71f4`. All 59 recorded source SHA-256s
+and Git blob IDs matched HEAD before the run and remained unchanged afterward.
+The combined source digest is
+`63f3f88e82a8b71725f5788b69e08f376c2d7b698afdd8e6452073c86bc47280`.
+The following evidence/documentation commit does not change those sources.
+
+| Trial | Available / attempts | Full-path p95 | Headroom under 300 ms | Maximum | Startup p95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| C1 | 100 / 100 | 123.947 ms | 58.68% | 142.130 ms | 97.734 ms |
+| W1 | 100 / 100 | 6.022 ms | 97.99% | 26.326 ms | setup separate |
+| C2 | 100 / 100 | 127.873 ms | 57.38% | 235.586 ms | 101.509 ms |
+| W2 | 100 / 100 | 5.722 ms | 98.09% | 24.613 ms | setup separate |
+| C3 | 100 / 100 | 137.044 ms | 54.32% | 215.118 ms | 104.952 ms |
+| W3 | 100 / 100 | 5.682 ms | 98.11% | 30.349 ms | setup separate |
+
+Each trial independently meets p95 ≤210 ms and ≥30% headroom; the minimum
+headroom is 54.32%. There are no refused/failed measured samples, retries,
+replacements or pooled gates. The two expected warm rights/deletion refusals
+are retained separately and contribute no successes or latency samples.
+
+There are 300 distinct cold worker PIDs and three distinct warm worker PIDs.
+Cold timing includes spawn/import/connect, the complete handler and serialized
+IPC delivery. Across cold samples, startup p95 is 101.791 ms, maximum
+209.445 ms and aggregate setup share 77.42%. That maximum remained below the
+approved 210 ms startup stop threshold; startup tail variation remains visible.
+Warm worker setup is 86.186 / 82.841 / 86.702 ms for W1/W2/W3, disclosed outside
+warm request timing. Warm handler-only p95 is 5.279 ms; full-path trial gates use
+the larger complete parent-observed durations above.
+
+The manifest was written and hashed before timing:
+`d10d1238dad39bcf8bc3621f8f1f7567f4aca09aaae355dbac82ce76e02dbce2`.
+Every trial uses the same 100 distinct QB/game coordinates: 100 QBs, 32 teams,
+1% maximum player share, every n=2–16 and all five seasons × three history bands
+(6–7 requests per cell). Feature/job and roster/schedule metadata alone select
+requests; neither labels nor training membership participates.
+
+Every one of the 600 measured predictions has exactly 3 SQL / 2 combined
+rights-status checks / 1 descriptor GET / 0 request hashes. All-n server probes
+independently derive P (16 profiles here) and observe 2P rights calls, zero
+reader DML, hidden example-table work or explicit coordination locks. Model-only
+reads retain 2 SQL. The warm controls demonstrate current rights and deletion
+status are observed on the same existing process/connection. Earlier matched
+n=2/16 relational-work and full-path/deadline controls remain in Step 0 evidence.
+
+This is local-fixture qualification: Node 24.18.1 native type stripping,
+Apple M3 Pro / arm64 / 18 GiB RAM / Darwin 27.2.0, loopback PostgreSQL 18.6,
+512 MiB data tmpfs / 128 MiB shared memory. OS/file/database caches were not
+flushed and fixture preparation warmed them. Fresh application processes do not
+establish cold storage/database, hosted latency or concurrency throughput.
+The retained 16 input files reproduce the natural 2,504-row dataset and expected
+content hash. Strict historical eligibility remains zero; retrospective outputs
+retain historical-availability-unverified. No population-completeness claim is
+made, and no producer knowledge clock is backdated.
+
+Final Node 24 validation passes 1,545 repository unit tests, 253 feature-store
+checks, typecheck and lint. The 22 evidence tests and 11 import-boundary checks
+also pass, including a final rerun after making the shared Step 0 bundle check
+hash-only in CI. No artifact-cleaner failure occurred. Both compressed bundles
+reproduce byte for byte, and an isolated checkout without node_modules or cache
+passes the four issue audits plus final/owner evidence tests.
+
+## Acceptance mapping
+
+| Requirement | Final proof |
+| --- | --- |
+| Step 0 payload/deadline/ownership fixes | Separate response/serialization/disposition; same-process shortening-only deadline; query-only handler; exported owner helper. Step 0 behavior/unit/real-LOGIN records qualify disposal, fallback timeout and no late work. |
+| Pinned diverse requests and exact response boundary | Pre-timing manifest hash, complete ordered requests and coverage in the final full record; nearest-rank p95 on parent-observed spawn/send through serialized receipt. |
+| New process/connection for every cold sample | 300 distinct cold PIDs, positive per-sample bootstrap/import/connect diagnostics; three dedicated warm workers with separate setup. |
+| Current warm rights/status and cache disclosure | Separate retained same-process allowed → rights-refused → deletion-refused controls; unflushed OS/file/DB caches disclosed above. |
+| Six independent ≤210 ms / ≥30% headroom gates | Six 100/100 trials above; 600 retained individual durations and no replacement/pooled pass. No optimization comparison or ABBA claim is made. |
+| Fixed work and no per-example verification/locks | Per-sample 3/2/1 and zero hash traces; independent all-n 2P/server-counter/lock probes and model-only 2 SQL. |
+| Durable compact receipts and detailed ObjectStore records | Every duration/status/work verdict, pins, environment/input/source hashes and safe member SHA-256/size; exact deterministic bundle persisted through ObjectStore before the in-tree mirror. |
+
+[Final evidence and audit instructions](evidence/feature-store-168/FINAL.md)
+include cold-phase diagnostics and the exact full-record digest. The new final
+evidence tests hash before parsing and recompute schedule/work/provenance with
+the speed gate disabled in CI. The opt-in audit also enforces all six recorded
+speed gates. #167 and earlier #168 evidence remain unchanged history.

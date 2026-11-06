@@ -17,7 +17,9 @@ const load = async (prefix: string) => {
 };
 
 test("#168 Step 0 evidence is independently auditable without a database/cache or timing gate", async () => {
-  const records = await verifyEvidenceBundle(directory);
+  // Final speed receipts now share this directory. CI checks all member hashes;
+  // the opt-in audit owns recorded latency gates, not this Step 0 owner test.
+  const records = await verifyEvidenceBundle(directory, false);
   assert(records.length >= 2 && records.every(r => r.verdict === "pass"));
   for (const prefix of ["step-0-handler-", "step-0-owner-"]) {
     const { receipt, bytes } = await load(prefix);
