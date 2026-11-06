@@ -1,6 +1,9 @@
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 import assert from "node:assert/strict";
-import { test } from "vitest";
-import { r2TestConfig } from "../../src/featureStore/r2TestConfig.ts";
+import { expect, test, vi } from "vitest";
+import { r2TestConfig } from "../support/r2TestConfig.ts";
+
+vi.mock("@smithy/node-http-handler", { spy: true });
 
 const values = {
   R2_ACCOUNT_ID: "0123456789abcdef0123456789abcdef",
@@ -17,6 +20,9 @@ test("R2 test config pins the account endpoint and SDK request behavior", () => 
   assert.equal(config.responseChecksumValidation, "WHEN_REQUIRED");
   assert.equal(config.maxAttempts, 1);
   assert.equal(config.forcePathStyle, true);
+  expect(NodeHttpHandler).toHaveBeenCalledWith({
+    connectionTimeout: 2_000, requestTimeout: 4_000, throwOnRequestTimeout: true,
+  });
 });
 
 test("R2 test config refuses any bucket other than the exact test bucket", () => {

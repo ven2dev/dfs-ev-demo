@@ -67,6 +67,7 @@ export const openR2ObjectStore = (
         }));
         for (const entry of page.Contents ?? []) {
           const key = entry.Key ?? "";
+          // Reject foreign keys, including manually uploaded files without content addresses.
           const parsed = parseObjectKey(key);
           if (parsed.namespace !== namespace) throw new Error("object-key-refused");
           // LIST exposes the digest claimed by the address. HEAD and GET verify integrity.

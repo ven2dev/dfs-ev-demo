@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { parseEnv } from "node:util";
 import { S3Client, type S3ClientConfig } from "@aws-sdk/client-s3";
+import { NodeHttpHandler } from "@smithy/node-http-handler";
 
 const testBucket = "edgetrace-fs-test";
 const credentialFile = new URL("../../.env.r2.local", import.meta.url);
@@ -23,6 +24,11 @@ export const r2TestConfig = (values: Record<string, string | undefined>): S3Clie
     requestChecksumCalculation: "WHEN_REQUIRED",
     responseChecksumValidation: "WHEN_REQUIRED",
     maxAttempts: 1,
+    requestHandler: new NodeHttpHandler({
+      connectionTimeout: 2_000,
+      requestTimeout: 4_000,
+      throwOnRequestTimeout: true,
+    }),
     credentials: {
       accessKeyId: values.R2_ACCESS_KEY_ID,
       secretAccessKey: values.R2_SECRET_ACCESS_KEY,

@@ -36,7 +36,7 @@ const checkObjectStore = async (store: ObjectStore, payloads: Buffer[]) => {
 };
 
 it.skipIf(process.env.R2_LIVE_CONTRACT !== "1")("runs the shared contract on the dedicated R2 test bucket", async () => {
-  const { loadR2TestClient } = await import("../../src/featureStore/r2TestConfig.ts");
+  const { loadR2TestClient } = await import("../support/r2TestConfig.ts");
   const { openR2ObjectStore } = await import("../../src/featureStore/r2ObjectStore.ts");
   const { client, bucket } = loadR2TestClient();
   const counts = { A: 0, B: 0, delete: 0 };

@@ -1,5 +1,6 @@
 {
   "issue": 172,
+  "supersededBy": "adapter-contract-review-fix.json",
   "setupCommit": "3f9f725",
   "sdkVersion": "3.1163.0",
   "bucket": "edgetrace-fs-test",

@@ -4,7 +4,7 @@ import {
   DeleteObjectCommand, GetBucketLifecycleConfigurationCommand, GetObjectCommand,
   GetObjectLockConfigurationCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand,
 } from "@aws-sdk/client-s3";
-import { loadR2TestClient } from "../src/featureStore/r2TestConfig.ts";
+import { loadR2TestClient } from "../tests/support/r2TestConfig.ts";
 
 const { client, bucket } = loadR2TestClient();
 const counts = { A: 0, B: 0, delete: 0 };
