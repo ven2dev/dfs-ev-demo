@@ -35,9 +35,10 @@ const transport = (input = predictionDeliveryFixture()) => {
   return { input, client, store, request, trace, queries, options, delivered: () => q2, ended: () => ended };
 };
 const expectRefusal = (result: Awaited<ReturnType<typeof predictQbModel>>, reason: string, discard = false) => {
-  const expected = { status: "unavailable", reason, connectionDisposition: discard ? "discard" : "reusable" };
+  const expected = { status: "unavailable", reason };
   expect(result.response).toEqual(expected); expect(JSON.parse(result.serialized)).toEqual(expected);
-  expect(Object.keys(result)).toEqual(["response", "serialized"]);
+  expect(result.connectionDisposition).toBe(discard ? "discard" : "reusable");
+  expect(Object.keys(result)).toEqual(["response", "serialized", "connectionDisposition"]);
 };
 
 describe("#167 thin governed prediction handler", () => {
@@ -65,6 +66,8 @@ describe("#167 thin governed prediction handler", () => {
     expect(result.response.forecast.probabilities.underProbability).toBeCloseTo(1 / n, 14);
     expect(result.response.forecast.probabilities.pushProbability).toBeCloseTo(1 / n, 14);
     expect(JSON.parse(result.serialized)).toEqual(result.response);
+    expect(result.response).not.toHaveProperty("connectionDisposition");
+    expect(result.connectionDisposition).toBe("reusable");
   });
 
   it("uses the selected sampleSize rather than substituting history.length, refusing a mismatched boundary materialization", async () => {
@@ -190,16 +193,16 @@ describe("#167 thin governed prediction handler", () => {
   it.each(["context", "Q1", "Q2"])("discards %s connection failures without retry or cleanup SQL", async stage => {
     const t = transport(); Object.assign(t.options, { failAt: stage, code: "08006" });
     expectRefusal(await predictQbModel(t.client, t.store, t.request), "connection-interrupted", true);
-    expect(t.ended()).toBe(1);
+    expect(t.ended()).toBe(0);
     expect(t.queries).toHaveLength(stage === "context" ? 1 : stage === "Q1" ? 2 : 3);
   });
   it("discards an unsafe reader session and keeps unexpected provider diagnostics private", async () => {
     const t = transport(); Object.assign(t.options, { failAt: "Q1", code: "P1667" });
     expectRefusal(await predictQbModel(t.client, t.store, t.request), "model-read-session-refused", true);
-    expect(t.ended()).toBe(1);
+    expect(t.ended()).toBe(0);
     const other = transport(); Object.assign(other.options, { failAt: "Q2", code: "XX000" });
     expectRefusal(await predictQbModel(other.client, other.store, other.request), "prediction-unavailable", true);
-    expect(other.ended()).toBe(1);
+    expect(other.ended()).toBe(0);
   });
 });
 
@@ -234,14 +237,14 @@ describe("#167 one deadline and no late continuation", () => {
     expect(remove).toHaveBeenCalledTimes(1); expect(vi.getTimerCount()).toBe(0);
   });
 
-  it.each(["context", "Q1", "Q2"])("interrupts %s SQL, ends once and refuses a late query result without any following work", async stage => {
+  it.each(["context", "Q1", "Q2"])("interrupts %s SQL, never ends the borrowed client and refuses late results", async stage => {
     fakeTime(); const t = transport(), entered = Promise.withResolvers<void>(), release = Promise.withResolvers<void>();
     t.options.beforeQuery = async point => { if (point === stage) { entered.resolve(); await release.promise; } };
     const pending = predictQbModel(t.client, t.store, t.request);
     await entered.promise; await vi.advanceTimersByTimeAsync(301);
-    expectRefusal(await pending, "deadline-exceeded", true); expect(t.ended()).toBe(1);
+    expectRefusal(await pending, "deadline-exceeded", true); expect(t.ended()).toBe(0);
     const trace = [...t.trace]; release.resolve(); await vi.advanceTimersByTimeAsync(0);
-    expect(t.trace).toEqual(trace); expect(t.ended()).toBe(1); expect(vi.getTimerCount()).toBe(0);
+    expect(t.trace).toEqual(trace); expect(t.ended()).toBe(0); expect(vi.getTimerCount()).toBe(0);
   });
 
   it("shrinks each query timeout from one deadline instead of giving stages fresh allocations", async () => {
@@ -249,7 +252,7 @@ describe("#167 one deadline and no late continuation", () => {
     t.options.beforeQuery = async stage => { vi.advanceTimersByTime(stage === "Q2" ? 61 : 80); };
     t.options.onGet = () => { vi.advanceTimersByTime(80); };
     expectRefusal(await predictQbModel(t.client, t.store, t.request), "deadline-exceeded", true);
-    expect(t.queries.map(q => q.timeout)).toEqual([300, 220, 60]); expect(t.ended()).toBe(1);
+    expect(t.queries.map(q => q.timeout)).toEqual([300, 220, 60]); expect(t.ended()).toBe(0);
   });
 
   it("captures the earlier caller deadline and signal before awaits", async () => {
@@ -293,10 +296,10 @@ describe("#167 one deadline and no late continuation", () => {
     if (kind === "57014") Object.assign(t.options, { failAt: "Q1", code: kind });
     else t.options.beforeQuery = async stage => { if (stage === "Q1") throw new Error("Query read timeout"); };
     expectRefusal(await predictQbModel(t.client, t.store, t.request), "deadline-exceeded", true);
-    expect(t.queries).toHaveLength(2); expect(t.ended()).toBe(1);
+    expect(t.queries).toHaveLength(2); expect(t.ended()).toBe(0);
   });
 
-  it("abort during math prevents Q2 and a hung close handshake cannot delay an interruption response", async () => {
+  it("abort during math prevents Q2 and the handler never touches a borrowed close handshake", async () => {
     fakeTime(); const t = transport(), controller = new AbortController();
     t.input.history = t.input.history.map(row => ({ ...row, get yards() { controller.abort(); return 100; } }));
     expectRefusal(await predictQbModel(t.client, t.store, t.request, { signal: controller.signal }), "cancelled");
@@ -305,6 +308,20 @@ describe("#167 one deadline and no late continuation", () => {
     Object.assign(broken.options, { failAt: "context", code: "08006" });
     const close = vi.spyOn(broken.client, "end").mockImplementation(() => never.promise);
     expectRefusal(await predictQbModel(broken.client, broken.store, broken.request), "connection-interrupted", true);
-    expect(close).toHaveBeenCalledTimes(1); never.resolve();
+    expect(close).not.toHaveBeenCalled(); never.resolve();
+  });
+
+  it.each([Infinity, -Infinity, NaN, "later", null, Date.now()])("refuses invalid/wrong-clock deadline %s with zero work", async deadlineAt => {
+    fakeTime(); const t = transport();
+    expectRefusal(await predictQbModel(t.client, t.store, t.request, { deadlineAt: deadlineAt as number }), "invalid-request");
+    expect(t.trace).toEqual([]); expect(t.ended()).toBe(0); expect(vi.getTimerCount()).toBe(0);
+  });
+  it("accepts the exact default boundary but refuses later deadlines rather than clamping", async () => {
+    fakeTime(); const now = performance.now(), t = transport();
+    expect((await predictQbModel(t.client, t.store, t.request, { deadlineAt: now + 300 })).response.status).toBe("available");
+    expect(t.queries[0].timeout).toBe(300);
+    const later = transport();
+    expectRefusal(await predictQbModel(later.client, later.store, later.request, { deadlineAt: now + 301 }), "invalid-request");
+    expect(later.trace).toEqual([]);
   });
 });

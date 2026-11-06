@@ -1,0 +1,300 @@
+{
+  "kind": "prediction-capacity-validation",
+  "schemaVersion": 2,
+  "issue": 168,
+  "step": 2,
+  "verdict": "pass",
+  "measurementCommit": "a9a81e1ade238deb61df6491f1332ecc692c71f4",
+  "sourceHashes": {
+    "compose.test.yml": "44798ea481282096048bf44d02c33cf338eed4520165559dc1115e3e769e40b7",
+    "package-lock.json": "857a7ec5c2d89b61836a15e3d98e40c30b5cb1ddecf779dd1aa5d8a101daf6f2",
+    "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+    "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+    "packages/db/proposals/165_model_manifests.sql": "1915e84e505be95eba819562e47aa4bc7936d15429d3d431fd9e319380800853",
+    "packages/db/proposals/166_artifact_governance.sql": "600402ed383510e91bf75f625af203ec2ec82e20fa521efec601dd47a00f7666",
+    "packages/db/proposals/229_mandatory_recovery.sql": "059ca1fa5a9144a5bb485fbb00c92eb96c452e76479f8fac4c2443e97609027d",
+    "packages/db/proposals/231_composite_authorization.sql": "0a43711275a090e5454969805262e61093c0493f46cf37cb36254f75c8818681",
+    "packages/domain/package.json": "34e81b6f0dcc082e7b3a47f0e5a53b2b667e8da166e3f98b4f1c97f358c72144",
+    "packages/domain/src/projection/baseline.ts": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+    "packages/domain/src/projection/empirical.ts": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+    "packages/domain/src/projection/evaluation.ts": "0852560f81b50968d83088f3de661c07611a9ba852c896aa8527f807a5046fe6",
+    "packages/domain/src/projection/qb-evaluation.ts": "a6c6536b85bf98633b05af1528b212a15cce0d7a0c3227cbce5b0c1a9625e489",
+    "services/pipeline/package.json": "6db675f73337d3e4a553e673b5d104fbd109ab626d519984dc2f5dde37845c93",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "2fabb50f693242ed9ef4bc56522b724f18c45e6a7a3824ba79a42aa81602c502",
+    "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "23163c515afc6e14d86ba663f8ae54807a00e812ac6f07d4f1f3f5aaff6dc1cb",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "fa2d82a3105a601ab33a3c72deb827a17ad27cd759827134267fd61806dc5336",
+    "services/pipeline/scripts/feature-store/evaluation-measure.ts": "c6aee7cc7462dbe17ef1957a1b3a2f25094ef5eaa1e7612e11bbc25fef32873b",
+    "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "12b5fe755b008790980426ef37ec541edd87e9bd9580a56cefc1d7595e733e5a",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts": "e6f9b3170a4a13fc6c6a0d8518a3247e76c4f1b09cd0898d4dc9c8bd7469b2e6",
+    "services/pipeline/scripts/feature-store/evaluation-run.ts": "cd13a88ead8eddebfe4a9b198208906654bd172a1219ae7b6a7caba76533c2d5",
+    "services/pipeline/scripts/feature-store/evaluation-worker.ts": "702d74737b3a307989f5132175c2cde479e07d64c2689610496120a08f94ccb5",
+    "services/pipeline/scripts/feature-store/evidence-bundle.ts": "67010fcf5c0b9883ba1e075efd8c22fd94de33855dd8b869b756a5347212b1c6",
+    "services/pipeline/scripts/feature-store/harness.ts": "f9d74c2ede8c342c8cdc65b800ff3107176cc7d12154a482edcc4d431bec84cb",
+    "services/pipeline/scripts/feature-store/model-publication-identity.ts": "beaef66634ca1bc1e2ad68d4329869dc1a1109c57cc5c15c837c2706d0d5aa3a",
+    "services/pipeline/scripts/feature-store/model-publication-measure.ts": "e9de10a392e645c736d68634228f8e3bd873120155e05f0c8f827450b45082b5",
+    "services/pipeline/scripts/feature-store/model-publication-run.ts": "5ee9d7cd849d4ac112df045f30e167e8f418aead40be7c22910b039114625012",
+    "services/pipeline/scripts/feature-store/prediction-benchmark.ts": "99034141f0c62989e1504c17d7f9e3d124728edb01148f986e4844d355c3ac24",
+    "services/pipeline/scripts/feature-store/prediction-capacity-benchmark.ts": "1a60f43cde3659f7bbf6d17097dbcc6cbb4881e83152d6013364a0bb42c21ff6",
+    "services/pipeline/scripts/feature-store/prediction-capacity-bootstrap.mjs": "85b9334d567eb06742fe1e59247b4858dd9cd8745fa87d0702631cd9cdf43beb",
+    "services/pipeline/scripts/feature-store/prediction-capacity-evidence.ts": "4b3af1c567cfab450887aaec063e6ef7dbae53b9c9bcf7bcd13aad0b5629aab0",
+    "services/pipeline/scripts/feature-store/prediction-capacity-process.ts": "7282e69cd078b88de1f5f2a78b31801424332a9d64157cecc752c3bd6629ec54",
+    "services/pipeline/scripts/feature-store/prediction-capacity-worker.ts": "7110e10f3a945cacb7c47c120291c881e74f3147757a9339c4127b92149d60ec",
+    "services/pipeline/scripts/feature-store/prediction-capacity-workload.ts": "4c55cc523ebcad8252c7daafec44cf230387d4fad064775491a3c8fcd59de466",
+    "services/pipeline/scripts/feature-store/prediction-measure.ts": "36ad6117277406c82b17f09d6720174268732f44e1fa427e5af5d334fbe65dfc",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "dcfd0d3bddf3c3da75fc7bde36e4d0551f27e95cef6cc7ba584d1e0d4d63f5cc",
+    "services/pipeline/src/featureStore/asOf.ts": "73f6f9a2f922386b24d191f442e4a03282875c30c02fa67b3a9d092423689178",
+    "services/pipeline/src/featureStore/connections.ts": "37970dc14cdbcbed94fc5d4bb20808bc0f686317eadb77cf635f7b657ba8ef6c",
+    "services/pipeline/src/featureStore/datasets.ts": "47febb579b546a6570291332723b6e19fc25f16867b264e93389cab3706e0b54",
+    "services/pipeline/src/featureStore/derived.ts": "9de9fbe306a0bd3d4732cdb825fd8013bf6f0795d23c1b5e7a3a0161088f4563",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "8bddf06f546033ba1714224ec26a8b60c623e5fd8d0d4af54a0ff9658f65187b",
+    "services/pipeline/src/featureStore/governance.ts": "7fe4f91ec857a8a80b1e8b917c7a68cec21ca21ba765266391df42922fb96e27",
+    "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+    "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "d4fd216bd4339b6a070787da4a0dc7e6112ab157e7e3b702a1e23f41c817d388",
+    "services/pipeline/src/featureStore/modelContext.ts": "f5fc5357ac5168f221e14f45e7c1f7513d9991c7ed196368cd197f414c0cb47b",
+    "services/pipeline/src/featureStore/modelManifests.ts": "c677d0443177748fee090b9d5bb3607bc82f7bafd28ad5609a3922d76a109802",
+    "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "services/pipeline/src/featureStore/objectStore.ts": "e467ee210821416ca595349dee4eaaa415c4f1e0d305155d6591fce8283bb3ae",
+    "services/pipeline/src/featureStore/predict.ts": "fe6e0c8b057f99d67923ca0be67e91b03a723116d4139195c4d92c0962b6580e",
+    "services/pipeline/src/featureStore/predictionClock.ts": "898c5f288ae7d4346889ff72855051ad5cf7f6282c44b2be623afb42eeabb6ea",
+    "services/pipeline/src/featureStore/predictionHelpers.ts": "d552ee1f61255f0805d5fa1a558b82bfae9029611c0f7bc435fa78e3f2140281",
+    "services/pipeline/src/featureStore/predictionOwner.ts": "a547d841034856a463005340ce158adb6bd507138da728365ab1aea6d6e142db",
+    "services/pipeline/src/featureStore/qbReports.ts": "91fa70d5e8a05e1dbbbd0a9968a557da04e4e7b22c8c8f431c5ef475f8a8465e",
+    "services/pipeline/src/featureStore/source.ts": "99a7b18840900584339a3f8916fb20dfda5fb6d463349137151eafdface90eb7",
+    "services/pipeline/tests/feature-store/artifact-read-work.ts": "44626f9bfd3826db45cd7289bf79e9aa06c21743e9ef744e96885b596da63d5c",
+    "services/pipeline/tests/feature-store/composite-read-work.ts": "443a086aad0f54b91bbff22d56618ae729f36ab86e41b5619da1d9992e8911ef"
+  },
+  "sourceBlobIds": {
+    "compose.test.yml": "ab874ba42f4ffb24cd5c71d23205fc6d962e4046",
+    "package-lock.json": "ce76a5b675d95def197b8b99b8f71606b122f3c8",
+    "packages/db/proposals/138_dataset_governance.sql": "68131cf08c62aa194339ee0329ecbf7f8c12189f",
+    "packages/db/proposals/138_feature_store.sql": "816aecde0c799165ccba681275380ab779e87115",
+    "packages/db/proposals/163_effective_rights.sql": "4f4901d8eb69ffca985d749e2d08dfcb83e92212",
+    "packages/db/proposals/165_model_manifests.sql": "9ec1a3c608f4d0770df7febce7e21e360c6f8c18",
+    "packages/db/proposals/166_artifact_governance.sql": "56a2518564d41a5f232b2bbd75801e07ca93a242",
+    "packages/db/proposals/229_mandatory_recovery.sql": "bc247c12e98359b60f0695a5880214ed0dfe1916",
+    "packages/db/proposals/231_composite_authorization.sql": "1b76bbadad364ea557f336ba2ee0239d6844e5dc",
+    "packages/domain/package.json": "0d5dd66e70daa268ef10e17811ba4281f3db2f94",
+    "packages/domain/src/projection/baseline.ts": "e90f2f18c551b2a866013b7a9f6f23963508b4fb",
+    "packages/domain/src/projection/empirical.ts": "15e5c6f3ddcce591f5dc4bed425113da7fdd06fe",
+    "packages/domain/src/projection/evaluation.ts": "61005eb792bf0bd0c9ce26c600374694cb270efe",
+    "packages/domain/src/projection/qb-evaluation.ts": "b479630a88b408c8f129c4afa06b679d31095145",
+    "services/pipeline/package.json": "a3cd919ffe3ba088719427cab74d74a69b2ccfaa",
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "6036c9c048334d14eb1497f59cc21017dba3dae6",
+    "services/pipeline/scripts/feature-store/evaluation-benchmark.ts": "5acc6d330f7a30668269a2308d72429fbc75fdf0",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "5ee303d51324d5c59a446e43c3af441add9199af",
+    "services/pipeline/scripts/feature-store/evaluation-measure.ts": "f216fafcaf529a97c6a2d825220cff606ddb3bdc",
+    "services/pipeline/scripts/feature-store/evaluation-prepare.ts": "3ceee58e594b358532a398a7c57b8c23229dc56f",
+    "services/pipeline/scripts/feature-store/evaluation-report.ts": "06640ca05ec7855bb8f5970a5573790001f0671b",
+    "services/pipeline/scripts/feature-store/evaluation-run.ts": "5338c719fed22224e7d91cd08829aa528b8ed4b6",
+    "services/pipeline/scripts/feature-store/evaluation-worker.ts": "c8ddea1e4435730030d8d5b2197bd4c4e74ed654",
+    "services/pipeline/scripts/feature-store/evidence-bundle.ts": "b2d5318c79a9fa2ed1ce6eec8b9757584dd1a08e",
+    "services/pipeline/scripts/feature-store/harness.ts": "f172af04e8822c378a4013d0f74bf324cd73353d",
+    "services/pipeline/scripts/feature-store/model-publication-identity.ts": "567b7ac8d94d3202ee4582b11e3dfabde6e69b6b",
+    "services/pipeline/scripts/feature-store/model-publication-measure.ts": "6959e02100d135bb9824eafd9bceb0aa7b4222e2",
+    "services/pipeline/scripts/feature-store/model-publication-run.ts": "09b582985b4236b465c865dc58ea15a0ae4c7fa1",
+    "services/pipeline/scripts/feature-store/prediction-benchmark.ts": "223a5e951a428a881be3de2a0093ab460f8e579e",
+    "services/pipeline/scripts/feature-store/prediction-capacity-benchmark.ts": "6e6e27fab6849b148aff9bdb11019a52b314ef1b",
+    "services/pipeline/scripts/feature-store/prediction-capacity-bootstrap.mjs": "4c24b6239eee624e138edd1fb6db0fd97de1b278",
+    "services/pipeline/scripts/feature-store/prediction-capacity-evidence.ts": "f85aec8cb657382f295b87886c55d9054f8c6790",
+    "services/pipeline/scripts/feature-store/prediction-capacity-process.ts": "f6501d53184a6a528f1e598b056f000460276734",
+    "services/pipeline/scripts/feature-store/prediction-capacity-worker.ts": "0f762eaf7adfb8c24c5b36133875310e9a3d0122",
+    "services/pipeline/scripts/feature-store/prediction-capacity-workload.ts": "d6e19a23dbf67be239c1c424be0e4ae5f38d8fe3",
+    "services/pipeline/scripts/feature-store/prediction-measure.ts": "844a6feb30dc774865129030b632e33277dfd53c",
+    "services/pipeline/src/featureStore/artifactGovernanceErrors.ts": "2b85a7b0792398bf903f0e0256343d6effee114c",
+    "services/pipeline/src/featureStore/asOf.ts": "0eca3645c7b91c2e9638794947fefed2c31938ad",
+    "services/pipeline/src/featureStore/connections.ts": "8f2254abe7c3d952c7db824a05138fb451c91124",
+    "services/pipeline/src/featureStore/datasets.ts": "6bd8fe394fd456ab8979933e7c09d0f86711323a",
+    "services/pipeline/src/featureStore/derived.ts": "da6f0744a1bc903ca3d10d56055ef07fa1024dec",
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": "dbdde5fa7b35489b84eea443f2fa8927735cb06d",
+    "services/pipeline/src/featureStore/governance.ts": "4a29d1daea080acd222256ed46c6e817055b38dd",
+    "services/pipeline/src/featureStore/ingest.ts": "9a77b85a73d492417ee87108534032cd401af575",
+    "services/pipeline/src/featureStore/jobs.ts": "e5db86aa5f51215df8bf49b97b4595aa5ceeda8b",
+    "services/pipeline/src/featureStore/localObjectStore.ts": "f2bf259faa6aca4fa2967ae6fc710664919c977e",
+    "services/pipeline/src/featureStore/modelArtifacts.ts": "3857fb0480243fac7578a2dcf66cf027f26b5e1f",
+    "services/pipeline/src/featureStore/modelContext.ts": "f6df312d6e376c6c9d9d7fdecd671ba16db84cde",
+    "services/pipeline/src/featureStore/modelManifests.ts": "812ae66e5b582cb70917f3eec9133fc8dde0bef5",
+    "services/pipeline/src/featureStore/normalize.ts": "e5c73009b857275cce211834699a3eac63a2c870",
+    "services/pipeline/src/featureStore/objectStore.ts": "0ee0d73a30866b58e6a2d2bc95ba77251c692d02",
+    "services/pipeline/src/featureStore/predict.ts": "21d26184facf9cb0a1565be03cf9ba6d515aed3b",
+    "services/pipeline/src/featureStore/predictionClock.ts": "dad94b3d7e9fdb6dce1c09ace67dd32414c2f2b1",
+    "services/pipeline/src/featureStore/predictionHelpers.ts": "76778189b8c0f53d5a96e72ffea647a4642c9e70",
+    "services/pipeline/src/featureStore/predictionOwner.ts": "1d31f8d2ab1f5b07cc221afacb8eca0261e74551",
+    "services/pipeline/src/featureStore/qbReports.ts": "eaa16e1a713808710da1658308f00b5e925693a0",
+    "services/pipeline/src/featureStore/source.ts": "567436773f98ec2b6c4250f6e3ece9713df499ff",
+    "services/pipeline/tests/feature-store/artifact-read-work.ts": "a8b30849a9132081731d29e10260efd818e568de",
+    "services/pipeline/tests/feature-store/composite-read-work.ts": "69c7495b56cc1cb391db205bcbdee2b626cf8c73"
+  },
+  "measuredSourcesUnchanged": true,
+  "priorEvidenceUnchanged": true,
+  "tests": {
+    "runtime": "v24.18.1",
+    "applicationUnit": 942,
+    "nodeUnit": 603,
+    "totalUnit": 1545,
+    "featureStore": 253,
+    "evidence": 22,
+    "importBoundaries": 11,
+    "typecheck": "pass",
+    "lint": "pass",
+    "cleanerFailure": false,
+    "note": "Full 253-check database suite passed; after restricting the shared Step 0 evidence test to hash-only CI mode, all 33 evidence/import controls passed again. Measured sources did not change."
+  },
+  "qualification": {
+    "attempts": 1,
+    "samples": 600,
+    "available": 600,
+    "trials": 6,
+    "failedMeasuredSamples": 0,
+    "refusedMeasuredSamples": 0,
+    "retries": 0,
+    "replacements": 0,
+    "worstP95Ms": 137.04408300000068,
+    "minimumHeadroom": 0.5431863899999978,
+    "coldProcesses": 300,
+    "warmProcesses": 3,
+    "expectedRefusalsOutsideTrials": 2,
+    "targetsUnchanged": true
+  },
+  "benchmark": {
+    "path": "final-benchmark-full-records-20261106T161720Z.tar.gz#final-benchmark/full-samples.json",
+    "sha256": "2e97bb8ec7cef19e40e4678542ddc8a7d36e88cd2bf713a374cc70eeef0acee3",
+    "byteSize": 4708455
+  },
+  "manifest": {
+    "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/request-list.json",
+    "sha256": "d10d1238dad39bcf8bc3621f8f1f7567f4aca09aaae355dbac82ce76e02dbce2",
+    "byteSize": 52776
+  },
+  "benchmarkBundle": {
+    "archiveName": "final-benchmark-full-records-20261106T161720Z.tar.gz",
+    "objectKey": "audits/fd084c933d1ce975e4656105d0baae28b50668ff0fb80be846de062c4f310e47",
+    "sha256": "fd084c933d1ce975e4656105d0baae28b50668ff0fb80be846de062c4f310e47",
+    "byteSize": 211356
+  },
+  "objectStorePolicy": "All full records and both compressed bundles first persisted through local ObjectStore; exact deterministic in-tree mirrors are the owner-approved exception.",
+  "fixturePreflight": {
+    "container": "dfs-ev-demo-test-postgres-1",
+    "health": "healthy",
+    "postgresVersion": "18.6",
+    "dataTmpfsBytes": 536870912,
+    "sharedMemoryBytes": 134217728,
+    "image": "postgres:18.6-alpine3.24@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5",
+    "loopbackOnly": true,
+    "exclusiveLease": true
+  },
+  "cleanAudit": {
+    "verdict": "pass",
+    "method": "Complete git archive plus exact pending final evidence/docs/tests; no node_modules, cache or Git metadata",
+    "audits": {
+      "166": {
+        "records": 8,
+        "verdict": "pass"
+      },
+      "167": {
+        "records": 72,
+        "verdict": "pass"
+      },
+      "168": {
+        "records": 20,
+        "verdict": "pass"
+      },
+      "231": {
+        "records": 3,
+        "verdict": "pass"
+      }
+    },
+    "finalAndOwnerEvidenceTests": 4,
+    "benchmarkBundle": {
+      "archive": "final-benchmark-full-records-20261106T161720Z.tar.gz",
+      "byteSize": 211356,
+      "sha256": "fd084c933d1ce975e4656105d0baae28b50668ff0fb80be846de062c4f310e47",
+      "reproducible": true
+    },
+    "measuredSourceHashesAndBlobIdsMatch": 59,
+    "priorEvidenceUnchanged": true,
+    "auditAttemptNote": "A separate audit attempt completed its checks but stalled in a Git hash-object stdin subprocess before writing its summary; that process was stopped. This run uses the standard Git blob SHA-1 formula directly and command timeouts."
+  },
+  "ownerWaiver": "Owner waived the issue’s 5-hour split rule on 2026-11-05; #168 includes step 0 at an approved 5.5–6.5 h.",
+  "limitations": [
+    "Local fixture with unflushed OS/file/database caches warmed by preparation; no hosted/cold-storage/concurrency claim.",
+    "Strict historical eligibility remains zero; retrospective flags and actual producer knowledge clocks are retained.",
+    "Server timeout remains statement-relative; owner disposal and handler latch do not claim immediate backend cessation.",
+    "Cold startup maximum 209.444833 ms remains visible; no sample crossed the configured 210 ms startup stop threshold."
+  ],
+  "logs": {
+    "benchmark-attempt1.log": {
+      "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/logs/benchmark-attempt1.log",
+      "sha256": "140878b817d0198ecb97f4947eea01f00513a84ab0289a2df652a18ac33344c7",
+      "byteSize": 5886
+    },
+    "unit.log": {
+      "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/logs/unit.log",
+      "sha256": "6003ee7137c532e9fbbbf695b2b8c20e65849ae1b805271ac1a4f7e27e60e2e4",
+      "byteSize": 1975
+    },
+    "feature-store-full.log": {
+      "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/logs/feature-store-full.log",
+      "sha256": "790b7df957756303d721c9b2c3be0839462e91979ca0c2b2d58540649f9b06bf",
+      "byteSize": 28172
+    },
+    "typecheck.log": {
+      "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/logs/typecheck.log",
+      "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+      "byteSize": 314
+    },
+    "lint.log": {
+      "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/logs/lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteSize": 0
+    },
+    "evidence-tests-initial.log": {
+      "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/logs/evidence-tests-initial.log",
+      "sha256": "ca67db392a382df4063d662646f5c4b5bf44dd28079d8bfc40b1956e7147dc59",
+      "byteSize": 3686
+    },
+    "evidence-tests-ci-final.log": {
+      "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/logs/evidence-tests-ci-final.log",
+      "sha256": "d15ab1faa7c87abac1648eae775d9d37771008bb817d8f9a3f6a139bf6fcd44a",
+      "byteSize": 3676
+    },
+    "clean-audit.json": {
+      "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/logs/clean-audit.json",
+      "sha256": "5bed054a8c75dd6886cc540cce675213f7864efd1455694182e3d5f9acbe658c",
+      "byteSize": 1021
+    },
+    "clean-audit.log": {
+      "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/logs/clean-audit.log",
+      "sha256": "820b9db833081fdbc22213b23bf5e0d601871c859984167fe0eb0f58ce299143",
+      "byteSize": 21199
+    },
+    "issue-at-qualification.json": {
+      "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/logs/issue-at-qualification.json",
+      "sha256": "a6c1166f330411adffce805b67164a6633f6c0ff5ece2e0e32317a1bdb951604",
+      "byteSize": 3613
+    }
+  },
+  "evidenceTests": {
+    "services/pipeline/tests/feature-store/prediction-capacity-evidence.check.mts": {
+      "sha256": "36d46e693a411f566f913e697bdd38f8c8aa8a12f6eb3ccbf3864a17c52c08ee",
+      "blobId": "605b56c05a82a69e91bf8040f5de0fa2cadf7bf7"
+    },
+    "services/pipeline/tests/feature-store/prediction-owner-evidence.check.mts": {
+      "sha256": "b5c22298ecd0ae103abb6f1643503c3052a4e17eefa3a7f52694ca50c579729f",
+      "blobId": "f30ce22c7bbb8cfc09bbbce1fa52f5ebbb8e4064"
+    }
+  },
+  "fullRecord": {
+    "path": "final-validation-full-records-20261106T163555Z.tar.gz#final-validation/full-validation.json",
+    "sha256": "cd25c17f0a422f6a5c36154235dcd53f03719ed44b93ea6325f6668e039f2215",
+    "byteSize": 21056,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  },
+  "objectStore": {
+    "objectKey": "audits/cd25c17f0a422f6a5c36154235dcd53f03719ed44b93ea6325f6668e039f2215",
+    "sha256": "cd25c17f0a422f6a5c36154235dcd53f03719ed44b93ea6325f6668e039f2215",
+    "byteSize": 21056
+  }
+}

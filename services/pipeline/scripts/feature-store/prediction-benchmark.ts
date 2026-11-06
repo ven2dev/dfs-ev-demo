@@ -37,6 +37,7 @@ const sourceIdentity = async () => {
     [path, execFileSync("git", ["hash-object", "--stdin"], { input: await readFile(new URL(path, EVALUATION_ROOT)), encoding: "utf8" }).trim()])));
   return { code: { gitSha: base.code.gitSha, contentSha256: sha256(Buffer.from(JSON.stringify(codeHashes))) }, codeHashes, codeBlobIds };
 };
+const runLegacyPredictionBenchmark = async () => {
 const directory = resolve(process.env.FS167_BENCHMARK_DIRECTORY ?? "codex-briefs/167-final");
 await mkdir(directory, { recursive: true, mode: 0o700 });
 const root = await mkdtemp(join(directory, "benchmark-"));
@@ -159,3 +160,9 @@ finally {
   await writeFile(join(root, "receipt.json"), JSON.stringify(compactPredictionBenchmark(await readFile(fullPath), relative(process.cwd(), fullPath)), null, 2) + "\n");
 }
 console.log(JSON.stringify({ verdict: full.verdict, fullPath: relative(process.cwd(), fullPath), error: full.error }));
+
+};
+if (process.argv.includes("--capacity")) {
+  const { runPredictionCapacity } = await import("./prediction-capacity-benchmark.ts");
+  await runPredictionCapacity(process.argv.includes("--controls-only"));
+} else await runLegacyPredictionBenchmark();

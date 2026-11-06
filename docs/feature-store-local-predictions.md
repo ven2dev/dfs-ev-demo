@@ -88,12 +88,14 @@ setup or application route. The existing readers supply every SQL statement.
 | Q2 | The same composite boundary rechecks the original immutable scope and refreshes context. |
 | Delivery | `buildPredictionResponse` receives Q2 context plus Q1 authorization and Q2 delivery receipts; serialize one complete response. |
 
-The result is `{ response, serialized }`. Available responses include the explicit
+The result is `{ response, serialized, connectionDisposition }` after #168 Step 0.
+Available responses include the explicit
 model and feature identities, versions/mode/policies, line/sample count and
 Over/Under/Push probabilities, clocks, last-valid/freshness flags, lineage and both
-receipts. Histories, descriptor bytes and reports remain private. Each response
-includes `connectionDisposition`. Refusals contain only status, stable reason
-and connection disposition, including when Q2 fails after private computation.
+receipts. Histories, descriptor bytes and reports remain private. Internal
+connection disposition is alongside the response and is absent from both the
+response and serialized JSON. Refusals contain only status and stable reason,
+including when Q2 fails after private computation.
 
 Existing P2311–P2316 diagnostics, P2317 reference refusal, P1666 withdrawal,
 P1665 rights and other typed reader errors retain their existing names. Handler
@@ -112,10 +114,14 @@ controls, not PostgreSQL rights/race or latency qualification.
 
 ## Step 2: one deadline and integrated delivery proofs
 
-`predictQbModel` accepts optional `signal` and absolute monotonic `deadlineAt`.
+`predictQbModel` accepts optional `signal` and absolute same-process
+`performance.now()` `deadlineAt`. A caller deadline can only shorten the 300 ms
+default. Non-finite or later values, including Date.now() clocks, refuse with
+invalid-request before SQL/GET; expired values remain deadline-exceeded.
 One 300 ms deadline/cancellation latch, shortened caller
 deadline, remaining query timeout and GET-abandonment containment, without SQL
-changes, covers the complete operation. Pre-expiry/abort does no work. Interrupted SQL clients are ended;
+changes, covers the complete operation. Pre-expiry/abort does no work. The handler
+borrows query-only access and marks interrupted SQL clients discard;
 abandoned GETs stay private and cannot trigger math, Q2 or delivery. Checks after
 synchronous math and complete serialization withhold late results. Real LOGIN
 tests exercise permissions, completion-time/correction semantics, deletion,
@@ -128,15 +134,28 @@ after serialization and immediately before return. An ignored/late GET or SQL
 completion cannot resume a refused request. Each SQL call receives the remaining
 `query_timeout` in its existing query configuration; no SET, BEGIN, cancellation,
 rollback, retry or health-check query is added. Options and request scalars are
-captured before the first await. A non-finite caller deadline refuses immediately.
+captured before the first await.
 
-SQL interruption initiates one `client.end()` and returns a discard disposition
-without waiting for a possibly broken close handshake. The eventual end/task
-outcomes are observed. Cancellation during storage or calculation keeps an idle
+The handler never calls end/release. The exported
+`@dfs-ev/pipeline/feature-store/prediction-owner` helper opens/acquires a serving
+connection with startup statement_timeout ≤300 ms, invokes the handler and
+disposes exactly once (standalone end(), pool release()/release(true)). Acquisition
+consumes the same deadline; late checkouts are destroyed without running SQL.
+Explicit pg config fields are required: connectionString/pipelining and pools
+without a bounded startup timeout refuse before acquisition, preventing config
+overrides from disabling the fallback. Pool/session settings remain owner-controlled.
+The owner starts disposal immediately without waiting indefinitely for a broken
+close handshake; server timeout bounds each statement from arrival, not to the
+absolute request deadline. Cancellation during storage or calculation keeps an idle
 SQL client reusable because the latch prevents any later query. JavaScript
 synchronous work remains non-preemptible, so post-work clock checks withhold an
 over-budget success even if the timer has not run. Timeout/cancellation reasons
 win over a lower reader's wrapper error and reveal no partial fields.
+
+#168's [capacity design](feature-store-prediction-capacity.md) documents the
+owner contract, measured feasibility and new qualification. The historical #167
+receipts below remain unchanged and qualify their recorded sources; #168's final
+six trials qualify the changed handler and helper on final committed sources.
 
 The actual-handler PostgreSQL tests independently measure distinct union profiles
 for every invocation and assert exact prefix work even on refusals. Thirty all-n
