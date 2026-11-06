@@ -130,3 +130,51 @@ record SQL/TypeScript source SHA-256 and git blob IDs. Every available request
 retains 3 SQL / 2 checks / 1 descriptor GET; the handler has no end/release capability.
 This is behavior/work verification only. Final capacity qualification remains
 pending approved commits for the remaining measured sources.
+
+## Step 1 measurement contract
+
+`prediction-benchmark.ts --capacity` extends the existing benchmark entry
+point; its original #167 ABBA mode and evidence remain available unchanged.
+The capacity mode refuses uncommitted measured source bytes. Setup rebuilds the
+same fixture, publishes the model, derives requests from feature/job and
+roster/schedule metadata, and writes a hashed manifest before any request runs.
+The manifest includes all pins, expected feature/cutoff, season/team and the
+approved diversity rules. No labels or dataset membership select requests.
+
+The fixed trial order is C1/W1/C2/W2/C3/W3. Each has 100 attempts in the same
+manifest order. Each cold attempt forks a fresh Node 24 process with native type
+stripping, disabled compile cache, no inherited loader options and a fresh
+restricted connection. A tiny bootstrap sends only a boot notice before its
+dynamic application import. Timing starts in the parent before fork and ends
+when the complete serialized result arrives. Cleanup is outside timing. Warm
+trials have one dedicated process and idle pool connection, with setup disclosed
+separately. Every request still reads current rights/status twice and GETs the
+descriptor; there is no forecast, descriptor or rights cache.
+
+The parent enforces the full 300 ms deadline and ignores late messages. Only a
+remaining duration crosses IPC; the child derives its deadline on its own
+performance.now() clock. The production owner helper controls checkout and
+exactly-once disposal. A terminal parent deadline/abort kills that worker and
+prevents later delivery; the configured server timeout remains the accepted
+statement-relative backend fallback. No refusal or failed attempt is replaced.
+
+Every cold record separates parent spawn-event time (overlapping bootstrap),
+spawn-to-bootstrap, dynamic import, ObjectStore setup, connect, handler through
+serialization and the IPC/observer residual. Bootstrap + import + store + connect
+defines startup; per-sample startup above 210 ms stops for owner direction. Full
+durations alone determine nearest-rank per-trial p95; phase percentiles are never
+added. The 210/300 ms gates apply independently to every trial, never to a pool
+of the six groups. Failures and all preceding samples are retained immediately.
+
+The existing TypeScript hash-first auditor additionally recomputes the request
+hash/coverage, trial schedule, every sample's 3/2/1 and zero-hash work, process
+provenance, setup shares, independently derived 2P probes and model-only 2 SQL.
+Separate warm-process controls prove rights revocation and legal deletion are
+visible without restarting it. Normal CI uses synthetic durations and structural
+work proofs; it does not measure machine speed. Audits still need only Node and
+tar, without node_modules, a database or local cache.
+
+`--capacity --controls-only` is an explicitly unqualified Step 1 control run:
+it exercises one cold and one warm request, all-n server work/model-only controls,
+and the warm revocation/deletion controls. It cannot qualify the six-trial speed
+target. The final qualification runs only after Step 1 approval and commit.
