@@ -1,0 +1,17 @@
+{
+  "issue": 172,
+  "supersededBy": "adapter-contract-review-fix.json",
+  "setupCommit": "3f9f725",
+  "sdkVersion": "3.1163.0",
+  "bucket": "edgetrace-fs-test",
+  "offlineNode": { "filesPassed": 36, "passed": 537, "failed": 0, "liveSkipped": 1 },
+  "live": {
+    "runsPassed": 2,
+    "sharedR2CasesPassedPerRun": 1,
+    "syntheticObjectsPerRun": 3,
+    "maxKeys": 2,
+    "countedRun": { "classA": 16, "classB": 5, "delete": 7 },
+    "perRunCaps": { "classA": 50, "classB": 50 },
+    "cleanup": "All four namespace listings empty after both runs."
+  }
+}
