@@ -135,7 +135,9 @@ const readLastValidDerived = async (client: Pick<Client,"query">,kind:"features"
     ? {table:"feature_values",id:"feature_id",clock:"computed_at",cutoff:"checkpoint",version:"feature_version",value:"history",versionValue:FEATURE_VERSION}
     : {table:"outcome_labels",id:"label_id",clock:"known_at",cutoff:"label_cutoff",version:"label_version",value:"value",versionValue:LABEL_VERSION};
   const result = await client.query(`WITH visible AS (
-    SELECT * FROM fs138.${names.table} WHERE player_id=$1 AND game_id=$2 AND evidence_mode=$3
+    SELECT d.* FROM fs138.${names.table} d
+    JOIN fs138.completed_jobs_at($4::timestamptz) j USING(job_id)
+    WHERE player_id=$1 AND game_id=$2 AND evidence_mode=$3
       AND ${names.version}=$5 AND ${names.clock}<=$4::timestamptz
   ), head AS (SELECT * FROM visible ORDER BY ${names.cutoff} DESC,${names.clock} DESC,${names.id} DESC LIMIT 1),
   valid AS (SELECT * FROM visible WHERE state='usable' ORDER BY ${names.cutoff} DESC,${names.clock} DESC,${names.id} DESC LIMIT 1)

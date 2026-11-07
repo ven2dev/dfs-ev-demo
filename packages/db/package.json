@@ -19,6 +19,7 @@
     "./assets/166_artifact_governance.sql": "./proposals/166_artifact_governance.sql",
     "./assets/229_mandatory_recovery.sql": "./proposals/229_mandatory_recovery.sql",
     "./assets/231_composite_authorization.sql": "./proposals/231_composite_authorization.sql",
+    "./assets/241_job_visibility.sql": "./proposals/241_job_visibility.sql",
     "./assets/schema.sql": "./schema.sql"
   },
   "scripts": {
