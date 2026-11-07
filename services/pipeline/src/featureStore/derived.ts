@@ -91,9 +91,8 @@ export const runDerivedJob = async (client: Pick<Client, "query">, kind: "featur
       SELECT coalesce($1::timestamptz,now) AS checkpoint,now FROM clock
     ) SELECT checkpoint::text,checkpoint<=now AS valid,
       coalesce((SELECT jsonb_agg(jsonb_build_object('snapshot_id',s.snapshot_id,'sha256',s.sha256) ORDER BY s.snapshot_id)
-        FROM fs138.source_snapshots s JOIN fs138.job_runs j ON j.job_id=s.job_id
-        WHERE s.ingested_at<=checkpoint AND s.deleted_at IS NULL AND j.status='succeeded'
-          AND s.snapshot_id IN(SELECT snapshot_id FROM fs138.qb_job_snapshot_ids($2,checkpoint,$3,$4))),'[]') AS inputs FROM selected`, [request.checkpoint ?? null,request.season,kind,NORMALIZER_VERSION])).rows[0];
+        FROM fs138.source_snapshots s
+        JOIN LATERAL fs138.qb_job_snapshot_ids($2,selected.checkpoint,$3,$4) eligible USING(snapshot_id)),'[]') AS inputs FROM selected`, [request.checkpoint ?? null,request.season,kind,NORMALIZER_VERSION])).rows[0];
   if (!plan.valid) throw new Error("future-checkpoint-refused");
   const snapshotIds = plan.inputs.map((input) => input.snapshot_id);
   const policy = { kind,season: request.season,mode: request.mode,checkpoint: plan.checkpoint,

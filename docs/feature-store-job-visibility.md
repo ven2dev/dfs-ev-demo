@@ -42,6 +42,16 @@ Opt-in speed gates remain <=84 s for the full-season producer under 120 s,
 300 ms, preserving at least 30% deadline headroom. CI enforces work counts and
 buffer/plan bounds, with no wall-clock assertion.
 
+The owner-approved resource tiers keep CI on the unchanged 512 MiB
+`compose.test.yml`. The live producer context gate is read-only on the pinned
+portable graph; existing small-cohort tests prove statement counts and aggregate
+loops. Full-season materialization EXPLAIN and the producer speed benchmark are
+opt-in on the existing 2 GiB `compose.feature-store-spike.yml` override. Receipts
+record the actual mount size and sampled disk peak. This separation prevents
+full materialization's WAL from exhausting the server shared by CI/local lanes;
+CHECKPOINT alone cannot guarantee reclaimed WAL. No other PostgreSQL setting or
+application target changes. The separate disk follow-up is not a #241 blocker.
+
 **Requirement reasons.**
 
 | Requirement | Risk prevented |
@@ -53,6 +63,7 @@ buffer/plan bounds, with no wall-clock assertion.
 | Use real DB clocks and retain previous evidence unchanged. | Fabricated temporal eligibility or erased qualification failures. |
 | Proposal SQL and workspace package exports only. | Premature migration rollout or cross-package private imports. |
 | Stop on a new 53100, gate miss or the 8.5-hour cap. | Concealing resource failures, relaxed targets or unreviewed scope growth. |
+| Keep full-season materialization outside the standard CI test glob. | WAL exhaustion can restart every backend on the shared 512 MiB server. |
 
 **Assumptions.** Trusted atomic pipeline producers, private ObjectStore, research
 use, Node 24 and local PostgreSQL 18.6. Current deletion/pruning and rights still
@@ -136,6 +147,77 @@ freshness flags without changing selected values or the 2,504-row logical hash.
 Negative controls reject an extra pass and an extra page. Exact plans, catalog
 page measurements and failed attempts remain durable alongside the receipt.
 These are CI work/behavior checks; final speed qualification remains step 4.
+
+## Step 3 historical implementation stop
+
+The proposed normalized selector uses one internal relation carrying both source
+and normalizer job IDs. Its legacy projection is preserved. The shared completion
+relation applies to both owners before ranking: reconstruction uses the checkpoint,
+strict reads use the cutoff, and strict producer context additionally uses each
+request's event boundary. Producer planning reuses authoritative eligible snapshot
+IDs. The canonical producer SQL definitions move from the mutable #138 proposal
+into #241's proposal, avoiding two maintained copies. Correction links and
+retention remain unchanged.
+
+Six new behavior groups pass with real knowledge clocks, including separate
+source/normalizer owners, all four normalized families, inclusive completion,
+running/failed fallback, strict per-game fallback, one-statement normalized reads,
+eight-statement producer traces and atomic rollback. Two initial assertions
+mistakenly counted unrelated contexts in the shared synthetic population; their
+failed attempts remain retained. The assertions now match the full player/game/
+context-game tuple. Existing synthetic ingestion/derived expectations are updated
+to completion eligibility without backdating job clocks.
+
+The final-source live work run is **not qualified**. On 2026-11-07 at
+22:28:53.257 UTC PostgreSQL PANICed writing `pg_wal/xlogtemp.1176876` during
+the full-materialization EXPLAIN: no space left on device. It terminated all
+backends and recovered. No target or resource setting changed, and the gate
+was not retried. The parent telemetry connection also died before the work
+record or its in-flight telemetry could be flushed; no complete plan/buffer
+receipt or peak-disk claim is made for this attempt. The PostgreSQL log and
+last durable boundary measurements are retained. The verified scratch database
+was removed after recovery. Typecheck, lint, eleven import checks and one focused
+unit test pass, but remaining DB/compatibility and final speed proof are pending.
+
+## Step 3 resumed validation and resource tiers
+
+After the owner changed the resource policy, the read-only producer context CI
+gate passes on a freshly recreated standard container. It consumes 1,659,581
+hits and zero reads against the unchanged 1,745,394 ceiling. All nine required
+CTEs execute once with real rows, including 16 snapshots, 1,948 targets and
+119,515 requests. Neither a shared-helper Function Scan nor LockRows appears;
+negative controls reject repeated execution and excess buffers. The cost is
+about 14.1% above the original 1,454,495-hit candidate diagnostic, still inside
+its approved 20% allowance; the margin has not been rebased. All 103,468 selected
+normalized rows match the legacy post-completion projection exactly.
+
+The standard-container behavior run passes 28 results across the new completion,
+ingestion and existing derived suites. Another 44 results pass dataset work and
+behavior plus #166/#231 compatibility. This preserves one normalized statement,
+eight new-producer statements at small/large cohorts, dataset 8/2 build and
+3/2/1 delivery, direct-reader 2P rights calls at every n, and two-SQL model-only
+reads. Actual standard mount size is 536,870,912 bytes; sampled peak across that
+run is 466,530,304 bytes (444.918 MiB, 86.898%).
+
+The full materialization plan/parity test is deliberately named
+`job-visibility-producer-plan.mts`, outside the `*.check.mts` CI glob. It requires
+explicit opt-in and the measured spike mount size before connecting. Run it with
+Node 24 after starting Compose with both the standard file and
+`compose.feature-store-spike.yml`; supply `FEATURE_STORE_241_FULL_PLAN=1` and
+the measured byte count as `FEATURE_STORE_241_TMPFS_BYTES`.
+
+On the actual 2,147,483,648-byte mount, full-season materialization/parity passes:
+1,948 outputs and 31,168 snapshot links match, with histories/gaps executing once.
+Sampled peak use is 538,312,704 bytes (513.375 MiB, 25.067% of that mount), above
+the entire standard mount capacity. max_wal_size=1 GB, shared_buffers=128 MB and
+work_mem=4 MB match the standard run. Sampling is once per second plus gate
+boundaries, not an exact allocation peak. No new failure was retried or ignored.
+
+Final producer speed qualification remains step 4: four fixed-version samples
+only on the 2 GiB override, each eight statements and <=84 s under 120 s. The
+retained baseline resource exception and prior stopped receipts are unchanged.
+The standard fixture is restored after opt-in validation. Permanent source
+identities and exact new records are appended under the #241 evidence folder.
 
 ## Qualification carried from the disposable proof
 

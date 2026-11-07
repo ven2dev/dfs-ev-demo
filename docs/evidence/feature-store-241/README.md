@@ -121,3 +121,76 @@ qualification remains step 4. No full-suite or artifact-cleaner run is claimed.
 The hash-first audit passes all 24 named records across step 1, stopped step 2
 and resumed step 2. As above, the generic audit verifies the retained records
 and receipt projections; the live DB checks enforce current plan/work budgets.
+
+## Step 3 disk stop: not qualified
+
+`step-3-stopped-20261107T223140Z.json` and
+`step-3-stopped-full-records-20261107T223140Z.tar.gz` retain the source SHA/blob
+identities, six passing behavior groups, two prior test-identity assertion
+failures, the initial sandbox denial, non-DB validation logs, PostgreSQL failure
+log and last saved gate-boundary telemetry.
+
+The fixed-version full-materialization EXPLAIN hit a PostgreSQL PANIC at
+22:28:53.257 UTC on 2026-11-07: writing `pg_wal/xlogtemp.1176876` failed with
+no space left on device. The server terminated its backends and recovered.
+The client observed connection termination, not a returned `53100` code. The
+gate was stopped and not retried; settings and targets remain unchanged.
+
+The restart also killed the parent telemetry connection before it flushed the
+work record and in-flight disk observations. The last durable boundary is
+before fixture preparation; neither a peak-disk figure nor numeric work-gate
+qualification is claimed. After recovery WAL measured 218,103,808 bytes and
+tmpfs usage was 384,752/524,288 KiB. The verified probe database was deleted;
+zero scratch databases/connections remained and usage fell to 244,640 KiB.
+Four throwaway roles without shared dependencies were left untouched because
+the interrupted run had not recorded which role names it owned.
+
+The new behavior suite passes seven Node results (six groups plus parent).
+Typecheck, lint, eleven import checks and one focused unit test pass. Existing
+DB suites, compatibility and final qualification remain pending. The hash-first
+audit passes all 40 retained records; that verifies bytes/projections and does
+not convert this stopped work run into a success.
+
+## Step 3 resumed validation: standard CI and opt-in capacity tiers
+
+`step-3-resumed-20261107T225754Z.json` and
+`step-3-resumed-full-records-20261107T225754Z.tar.gz` retain the passing new
+runs separately, including the exact plans, durable disk JSONL, validation logs,
+runner source and 18 current source SHA-256/Git blob identities. The historical
+stop above stays unchanged. The hash-first audit passes all 65 retained records;
+it verifies bytes/projections, while live DB tests enforce current work budgets.
+
+| Tier / proof | Actual mount bytes | Sampled peak bytes | Verdict |
+| --- | ---: | ---: | --- |
+| Fresh standard container: read-only producer gate, 28 behavior and 44 compatibility results | 536,870,912 | 466,530,304 (86.898%) | Pass |
+| Fresh standard final read-only gate, after test-helper whitespace cleanup | 536,870,912 | 465,317,888 (86.672%) | Pass |
+| Opt-in full-season materialization plan/parity | 2,147,483,648 | 538,312,704 (25.067%) | Pass |
+
+The CI producer gate consumes 1,659,581 hits + zero reads, below the unchanged
+1,745,394 ceiling, with all nine named CTEs executing once. Snapshot/target/
+context counts stay 16/1,948/119,515. Negative controls reject repeated work or
+excess buffers. The cost is about 14.1% above the original candidate diagnostic,
+within the existing 20% allowance; no ceiling was raised. Normalized parity
+matches all 103,468 selected rows in one statement. The existing small-cohort
+producer tests retain eight statements and one histories/gaps execution.
+
+Full-season materialization is outside the CI `*.check.mts` glob in
+`job-visibility-producer-plan.mts`. It runs only with explicit opt-in and the
+measured 2 GiB mount prerequisite. Its 1,948 outputs and 31,168 snapshot links
+match, with histories/gaps executing once. The 513.375 MiB sampled peak exceeds
+the standard mount's total capacity. max_wal_size=1 GB, shared_buffers=128 MB
+and work_mem=4 MB match both tiers; only the existing Compose mount override is
+used. One-second/boundary snapshots disclose sampled peaks rather than exact
+allocation peaks. No new gate failed and no failed sample was replaced.
+
+The container is restored to the standard 512 MiB configuration. No scratch
+database, connection or throwaway LOGIN remains. Typecheck, lint, eleven import
+checks, one focused unit test and the #166/#231 evidence audits pass. No full
+suite or artifact-cleaner run is claimed here. Final producer speed qualification
+remains step 4 on the 2 GiB override: four fixed-version-only samples, unchanged
+84 s/120 s target and eight statements. Dataset/#163 speed gates remain unchanged.
+
+The separate unfiled disk-follow-up draft is narrowed to early safe failure,
+standard WAL budgeting and documentation of workloads needing the override;
+it is not a #241 blocker. Combined forecast is now 7.75–8.5 h, including remaining
+step 4; the hard cap remains 8.5 h.

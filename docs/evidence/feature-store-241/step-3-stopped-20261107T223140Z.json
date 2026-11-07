@@ -1,0 +1,237 @@
+{
+  "issue": 241,
+  "step": 3,
+  "kind": "normalized-and-producer-stopped-validation",
+  "recordedAt": "2026-11-07T22:31:41.113Z",
+  "verdict": "stopped-not-qualified",
+  "runtime": "v24.18.1",
+  "baseCommit": "865b6a14001406eadd2623e062f1701729ce7f69",
+  "sourceIdentity": {
+    "packages/db/proposals/138_feature_store.sql": {
+      "sha256": "183007219f71c27ed98138bbc3a1c10d86782e3660d20fda225f314bfb89c97a",
+      "blobId": "2da976de20e6be3a7bc8cdf65fc51124bfd175e7"
+    },
+    "packages/db/proposals/241_job_visibility.sql": {
+      "sha256": "13c7cedb65a2dcce133d8e1daff07bcd8f27f7330dca097c5390df66b6d3007a",
+      "blobId": "a993e3b5d8e4add22c5013eb34551fa14dcc90ec"
+    },
+    "services/pipeline/src/featureStore/asOf.ts": {
+      "sha256": "3f8eed34d9dc4583db3906976e65bdf66fb028e0ea648dbd63fea2dedc9e4ce7",
+      "blobId": "7b70cdbced4fa4b83f2f675641ef6150fc956f12"
+    },
+    "services/pipeline/src/featureStore/derived.ts": {
+      "sha256": "9044cf04c9d39e788aa1943373ffc2ca8d74df8244ead12165e618bc502e7310",
+      "blobId": "ab99abf6d79dcb3241f7eae14a072731e7a9dbe3"
+    },
+    "services/pipeline/tests/feature-store/derived.check.mts": {
+      "sha256": "38ca271af164a1e0d53a4a4ea1a862ec5407c073ba7ae94be69c2a4ab1c2c58c",
+      "blobId": "aa4a7b697f2092860ec26015790b22d7f0d5f84c"
+    },
+    "services/pipeline/tests/feature-store/ingest.check.mts": {
+      "sha256": "32314283c011fdcdd95d0ceb243ec378faa614757b4fc6118b34374839073f1e",
+      "blobId": "489a166622c6d3fa451bf1bfab42aa51c501b919"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer.check.mts": {
+      "sha256": "d0e26e0a2b88971414d600cbb70bb73f6c12b8c4bdbc2157289e357d490aba2c",
+      "blobId": "c00158f972d10f782b23eafb3acb98dd29b7bfc0"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer-work.check.mts": {
+      "sha256": "c130fede07e05f8ee7312890f5fe26b22dd567fe5623e11fb7e74c1405c52d6e",
+      "blobId": "78759a6737e1f3f768423038ea5ef0d9e7690b74"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work-fixture.ts": {
+      "sha256": "ed1264437a15b03ba95c7431553efa4648575eae215b27c7477c66551eee4074",
+      "blobId": "0e42ae476b29dff06ac43906310fd28db971f87b"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.manifest.json": {
+      "sha256": "3d7763a4645ca3c55b2159016dd2eab72123e420db778a9e4eeda7a8d30779cc",
+      "blobId": "a11b869258d26a233b75a309bb689ee258cd3861"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz": {
+      "sha256": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+      "blobId": "faec950141d0d1aae2854b939a0f78f21995398b"
+    },
+    "docs/feature-store-job-visibility.md": {
+      "sha256": "52ad3d6a142f6018eb3e8ca0976e511f794a082665e596fe14bd2a8a7dca4e01",
+      "blobId": "b2ed5f3309f8afd59126b6c19d70a85860df0323"
+    }
+  },
+  "stop": {
+    "at": "2026-11-07 22:28:53.257 UTC",
+    "stage": "full materialization EXPLAIN on fixed-version sources",
+    "backendPid": 1176876,
+    "message": "PANIC: could not write to file \"pg_wal/xlogtemp.1176876\": No space left on device",
+    "clientMessage": "Connection terminated unexpectedly",
+    "sqlState": null,
+    "sqlStateNote": "PANIC/restart terminated clients; no 53100 SQLSTATE was returned to the parent.",
+    "probeJobId": "8a393172-de76-40b3-bd00-147de61dbbe8",
+    "scratchDatabase": "dfs_ev_test_85cc614b50e81492fc28",
+    "settingsChanged": false,
+    "retried": false,
+    "workVerdict": "not qualified; complete work record lost on backend restart",
+    "telemetryLimitation": "Parent maintenance connection died before work record and in-flight telemetry could be flushed. Last durable boundary is before fixture preparation; no peak or numeric work pass is asserted.",
+    "recoveredInspection": {
+      "walBytes": 218103808,
+      "tmpfsUsedKiB": 384752,
+      "tmpfsTotalKiB": 524288,
+      "tempFiles": 0
+    },
+    "cleanup": {
+      "verifiedOwnProbeJob": true,
+      "databaseRemoved": true,
+      "scratchDatabases": 0,
+      "scratchConnections": 0,
+      "tmpfsUsedKiBAfter": 244640,
+      "throwawayRoles": "Four fs138_job roles observed without shared dependencies; left untouched because ownership was not recorded."
+    }
+  },
+  "probes": [
+    {
+      "name": "source: four families replay before finish, inclusive microseconds, scope and discovery agree",
+      "verdict": "pass",
+      "detailsSha256": "d65eff29997a13e05084ca2a86b4c87c46a5997c3083edd6aec67fcea7145e20"
+    },
+    {
+      "name": "normalizer: four families replay before finish, inclusive microseconds, scope and discovery agree",
+      "verdict": "pass",
+      "detailsSha256": "4307b491d441d47fdfbfbd90fac89842119ee6e59eae03a6be7e2fcb315606a3"
+    },
+    {
+      "name": "running/failed normalized and source owners never hide the previous valid head",
+      "verdict": "pass",
+      "detailsSha256": "576c13790a0237821b206f93d9a13e4f89d5fab891d8f5dc5716ba9911764c5a"
+    },
+    {
+      "name": "strict per-game context falls back when a later job finishes after the event boundary",
+      "verdict": "pass",
+      "detailsSha256": "42e726a5223ed4d2e9f34e53d16aa3bb1356288b17cf6d1af573f9c5e7a49460"
+    },
+    {
+      "name": "one normalized statement inlines and keeps the legacy data projection",
+      "verdict": "pass",
+      "detailsSha256": "1fe23bd9b9455a4e2b89581e93caeb62bef39fe27029c09322e3d087794dbaec"
+    },
+    {
+      "name": "new producer uses eight statements, authoritative plan inputs and atomic rollback",
+      "verdict": "pass",
+      "detailsSha256": "f3f1b1e00c9edec7914fafe37648f5ca8055dcc7976bc31c66b45303fb4a1891"
+    }
+  ],
+  "validation": [
+    {
+      "command": "new DB behavior suite",
+      "passed": 7,
+      "probeGroups": 6
+    },
+    {
+      "command": "Node 24 npm run typecheck",
+      "exitCode": 0
+    },
+    {
+      "command": "Node 24 eslint excluding codex-briefs/**",
+      "exitCode": 0
+    },
+    {
+      "command": "Node 24 import-boundary checks",
+      "passed": 11
+    },
+    {
+      "command": "Node 24 focused derived connection ownership unit test",
+      "passed": 1
+    }
+  ],
+  "priorAttempts": [
+    "Sandbox EPERM before any DB probe.",
+    "First behavior attempt counted unrelated player games.",
+    "Second behavior attempt omitted context_game_id from its target match."
+  ],
+  "limitations": [
+    "Existing ingest/derived DB suites, compatibility DB suites and final step-4 speed qualification remain pending.",
+    "No artifact-cleaner or full-suite invocation in step 3.",
+    "Audit verifies retained bytes/projections, not a successful qualification or independent DB reexecution."
+  ],
+  "supplementalRecords": [
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/run-20261107T222737Z-validation.json",
+      "sha256": "a8360b2135d64336283b3aa1d5da2f1e5783221f095e01a30271be2b054df895",
+      "byteSize": 352
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/run-20261107T222748Z-validation.json",
+      "sha256": "d62022347b2d878e87d219c90cbdcfaa961b24e1f725200d2dcb8118e6077fb1",
+      "byteSize": 2863
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/run-20261107T222748Z-behavior.json",
+      "sha256": "cf292b6ceeceaed65d5321c5df2ee3b221da1084459c7009fc7a4ae3611841ab",
+      "byteSize": 1489
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/run-20261107T222748Z-behavior.log",
+      "sha256": "127548df84d800816ffc31e877f0aab958f3d8209af3b7ed2045b99e6f1092e3",
+      "byteSize": 3864
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/run-20261107T222802Z-validation.json",
+      "sha256": "b9ae5ff0de7a5cbbdb96f08fde05f306eae49447e9902e468e20ec52715289f6",
+      "byteSize": 2862
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/run-20261107T222802Z-behavior.json",
+      "sha256": "d715674bdbae0c672cd815d44c6158e6e031f61ac1257ba95f5e207d05ac0cc0",
+      "byteSize": 2188
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/run-20261107T222802Z-behavior.log",
+      "sha256": "9891725a0c22311e08b2709f78cf15b487b22bdb1f47f07f686f7acba715fca0",
+      "byteSize": 4073
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/run-20261107T222821Z-validation.json",
+      "sha256": "7509e8c304ecdf856d79c98a241b71bdf33c0210b72391604f13c28eee7d8788",
+      "byteSize": 3676
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/run-20261107T222821Z-behavior.json",
+      "sha256": "26f1b5f7c0ff87eadd2db66edb5f2ca4cdd0fd6be69237d66827cbbf7809a435",
+      "byteSize": 59673
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/run-20261107T222821Z-behavior.log",
+      "sha256": "35156cd6a9ec4e163e276bedc8efcf4e54141f23543d725f642a1c12190994c3",
+      "byteSize": 873
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/disk-stop-postgres.log",
+      "sha256": "1abde5a39ffca536e101146e4a0e6132c638fcd42d79ec093677fc1d2187dc8a",
+      "byteSize": 10075
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/typecheck-20261107T222852Z.log",
+      "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+      "byteSize": 314
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/lint-20261107T222852Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteSize": 0
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/imports-20261107T222852Z.log",
+      "sha256": "2a60b653816c9117f9cebd7d7f47f8478d48bef5cb6afbe26c599260cc19e53a",
+      "byteSize": 1223
+    },
+    {
+      "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/unit-20261107T222852Z.log",
+      "sha256": "3fcf623adb850fab91f377c01454ccfeaddcd64db4a7bf2c4884533de4346ab1",
+      "byteSize": 821
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-3-stopped-full-records-20261107T223140Z.tar.gz#step-3-stop/stop.json",
+    "sha256": "30d3f841561c25a8dafe9de157cadee473868597472ae1bd32b17ef4f5fe277a",
+    "byteSize": 10208,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}
