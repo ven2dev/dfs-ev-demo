@@ -4,14 +4,18 @@ WITH clock AS MATERIALIZED(SELECT clock_timestamp() AS now),
 feature AS MATERIALIZED(
  SELECT f.feature_id,f.job_id,f.player_id,f.game_id,f.season,f.stat,f.cutoff,
   f.checkpoint,f.computed_at,f.feature_version,f.history_policy,f.evidence_mode,
-  f.state,f.reasons,f.flags,f.sample_size,j.status AS job_status
- FROM fs138.feature_values f JOIN fs138.job_runs j USING(job_id) WHERE f.feature_id=$1::uuid
+  f.state,f.reasons,f.flags,f.sample_size,j.status AS job_status,
+  v.job_id IS NOT NULL AS completed_by_pin
+ FROM fs138.feature_values f JOIN fs138.job_runs j USING(job_id)
+ LEFT JOIN fs138.completed_jobs_at($2::timestamptz) v USING(job_id)
+ WHERE f.feature_id=$1::uuid
 ), eligibility AS(
  SELECT CASE
   WHEN $2::timestamptz>now THEN 'future-knowledge-as-of'
   WHEN NOT EXISTS(SELECT 1 FROM feature) THEN 'feature-missing'
   WHEN EXISTS(SELECT 1 FROM feature WHERE feature_version<>$3 OR history_policy<>$4 OR evidence_mode<>$5) THEN 'unsupported-version'
-  WHEN EXISTS(SELECT 1 FROM feature WHERE computed_at>$2::timestamptz OR checkpoint>$2::timestamptz) THEN 'feature-after-as-of'
+  WHEN EXISTS(SELECT 1 FROM feature WHERE computed_at>$2::timestamptz OR checkpoint>$2::timestamptz
+    OR (job_status='succeeded' AND NOT completed_by_pin)) THEN 'feature-after-as-of'
   WHEN EXISTS(SELECT 1 FROM feature WHERE sample_size<2) THEN 'insufficient-history'
   WHEN EXISTS(SELECT 1 FROM feature WHERE sample_size>16) THEN 'history-limit-exceeded'
   WHEN EXISTS(SELECT 1 FROM feature WHERE state<>'usable' OR job_status<>'succeeded' OR stat<>'passing_yards' OR cutoff IS NULL) THEN 'feature-unavailable'
@@ -32,8 +36,9 @@ decisions AS MATERIALIZED(
  SELECT n.feature_id,n.state FROM feature f JOIN fs138.feature_values n
   ON (n.player_id,n.game_id,n.stat,n.feature_version,n.history_policy,n.evidence_mode)
    =(f.player_id,f.game_id,f.stat,f.feature_version,f.history_policy,f.evidence_mode)
- JOIN fs138.job_runs j ON j.job_id=n.job_id CROSS JOIN clock
- WHERE j.status='succeeded' AND n.computed_at<=now AND n.checkpoint<=now
+ CROSS JOIN clock
+ JOIN LATERAL fs138.completed_jobs_at(clock.now) j ON j.job_id=n.job_id
+ WHERE n.computed_at<=now AND n.checkpoint<=now
  ORDER BY n.checkpoint DESC,n.computed_at DESC,n.feature_id DESC LIMIT 1
 )
 SELECT now::text AS checked_at,eligibility.reason AS selection_reason,

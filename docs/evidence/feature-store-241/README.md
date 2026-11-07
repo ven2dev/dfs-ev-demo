@@ -38,3 +38,86 @@ executed assertions, not an independent plan or temporal proof engine.
 
 Future runs add new receipts and bundles; a rerun produces a new record hash.
 Existing #166/#167/#231 evidence remains unchanged.
+
+## Step 2 stopped work gate
+
+`step-2-stopped-20261107T2208Z.json` and its uniquely named bundle retain the
+first live CI plan failure, test output, disk observations and source SHA/blob
+identities. The receipt is **stopped-not-qualified**. A passing hash audit of
+these records does not turn the failed work gate into a success.
+
+The first dataset plan uses 4 hits for `current_jobs` against the approved 3.
+Its root uses 8,631/10,349, `current_f` 2,656/3,190 and `current_l` 691/825;
+both heads execute once with 9,381 rows. No later plan case was run and no
+ceiling was changed. The portable loader batches all job inserts before their
+terminal updates; this likely changes heap layout relative to normal producer
+preparation, but no rerun has established that diagnosis.
+
+The database run reports 43 passing results from the existing dataset/#163
+suites and two failures: the work gate above and the new behavior test's
+noncanonical temporary ObjectStore path. The latter fails before any probe or
+database setup. TypeScript and touched-file lint pass. No artifact-cleaner test
+or speed qualification ran. The earlier administrator-terminated preparation
+and the successful fresh preparation are both retained; no failed attempt is
+counted as a qualifying sample.
+
+The new portable work fixture is a 5,003,909-byte gzip containing the exact
+relational graph captured from the sixteen retained files. Its manifest binds
+the compressed/uncompressed hashes and cardinalities. It reproduces the 2,504
+retrospective/zero strict cohorts without a workstation cache. Ordinary writer
+triggers supply new clocks on restore; captured clocks are not temporal proof.
+The original receipt remains unchanged. The owner subsequently approved the
+fixture lifecycle and temporary-path corrections, and replaced only the
+`current_jobs` ceiling as described below.
+
+## Step 2 resumed budget policy
+
+The fixture now inserts each running job, writes its outputs in a publication
+transaction, performs ANALYZE and its terminal UPDATE, then commits before
+starting the next job. This matches real producer ownership; it is not a layout
+adjustment to fit a numeric ceiling. The ObjectStore test uses a canonical
+temporary directory.
+
+Only `current_jobs` uses a relation-size formula: Actual Loops=1 and measured
+hits+reads <= heap pages + pages of indexes actually used by the subtree. The
+observer records `pg_relation_size`, `pg_class.relpages`, block size, measured
+hits/reads and the resulting ceiling after ANALYZE in the EXPLAIN transaction.
+Unused indexes add no allowance. A two-page baseline with a 20% margin gave
+only one spare page, so it did not meaningfully express the intended one-pass
+work bound. Root/current_f/current_l retain 10,349/3,190/825 unchanged. Negative
+controls require repeated materialization and an extra page to fail.
+
+The 5,003,909-byte pinned gzip under the test fixtures is an owner-accepted
+in-tree dependency for independent CI work measurements; the final PR body
+will disclose that size. It is separate from the compact evidence bundles.
+Each resumed run is appended with new names; the stopped receipt above and its
+bundle remain byte-for-byte unchanged.
+
+## Step 2 resumed validation
+
+`step-2-resumed-20261107T221412Z.json` and
+`step-2-resumed-full-records-20261107T221412Z.tar.gz` retain the passing work,
+behavior and compatibility checks, source SHA-256/Git blob IDs, command logs
+and disk observations. All three plans (retrospective, strict and active
+corrections) use 8,624 root hits, 2,657 current-feature hits and 686 current-label
+hits, below their unchanged ceilings. Each materializes `current_jobs` once,
+using 2 hits and zero reads against the measured two-page heap allowance; no
+index is used. Both heads execute with 9,381 rows, and negative controls reject
+repeated materialization or an extra page.
+
+The seven new behavior groups pass (eight Node test results including their
+parent). The 43 existing dataset/direct-reader results and 45 compatibility
+results also pass. Dataset build/delivery retain 8 SQL / 2 checks and
+3 SQL / 2 checks / 1 GET respectively; direct #163 reads retain 3 SQL / 2 checks
+and exactly 2P rights calls for every n=2–16. Model-only reads remain at 2 SQL.
+Typecheck, lint, 11 import-boundary checks and five focused unit tests pass.
+
+The first resumed behavior setup failed before any probe with `42P08` (a test
+INSERT parameter inferred as both text and a SHA-256 domain). Explicit test-only
+text casts corrected it. Its empty probe record, log and telemetry remain in the
+new bundle; the successful rerun does not erase that attempt. Final speed
+qualification remains step 4. No full-suite or artifact-cleaner run is claimed.
+
+The hash-first audit passes all 24 named records across step 1, stopped step 2
+and resumed step 2. As above, the generic audit verifies the retained records
+and receipt projections; the live DB checks enforce current plan/work budgets.

@@ -49,15 +49,32 @@ export const datasetContentSha256 = (spec: Pick<DatasetSpec,"mode"|"featureVersi
 // One point-in-time join. Event-time no-look-ahead was already enforced by the
 // trusted feature job; this does not reopen or revalidate normalized evidence.
 export const DATASET_JOIN_SQL = `WITH clock AS MATERIALIZED(SELECT clock_timestamp() AS now),
+current_jobs AS MATERIALIZED(
+ SELECT j.job_id FROM clock c CROSS JOIN LATERAL fs138.completed_jobs_at(c.now) j
+), current_f AS MATERIALIZED(
+ SELECT DISTINCT ON(d.player_id,d.game_id,d.stat) d.* FROM fs138.feature_values d
+ JOIN current_jobs USING(job_id) CROSS JOIN clock
+ WHERE d.feature_version=$1 AND d.history_policy=$3 AND d.evidence_mode=$4
+  AND d.computed_at<=clock.now AND d.checkpoint<=clock.now
+ ORDER BY d.player_id,d.game_id,d.stat,d.checkpoint DESC,d.computed_at DESC,d.feature_id DESC
+), current_l AS MATERIALIZED(
+ SELECT DISTINCT ON(d.player_id,d.game_id,d.stat) d.* FROM fs138.outcome_labels d
+ JOIN current_jobs USING(job_id) CROSS JOIN clock
+ WHERE d.label_version=$2 AND d.evidence_mode=$4
+  AND d.known_at<=clock.now AND d.label_cutoff<=clock.now
+ ORDER BY d.player_id,d.game_id,d.stat,d.label_cutoff DESC,d.known_at DESC,d.label_id DESC
+),
 f AS MATERIALIZED(
- SELECT *,row_number() OVER(PARTITION BY player_id,game_id,stat ORDER BY checkpoint DESC,computed_at DESC,feature_id DESC) AS head,
+ SELECT d.*,row_number() OVER(PARTITION BY player_id,game_id,stat ORDER BY checkpoint DESC,computed_at DESC,feature_id DESC) AS head,
   row_number() OVER(PARTITION BY player_id,game_id,stat,state ORDER BY checkpoint DESC,computed_at DESC,feature_id DESC) AS valid_head
- FROM fs138.feature_values WHERE feature_version=$1 AND history_policy=$3 AND evidence_mode=$4
+ FROM fs138.feature_values d JOIN fs138.completed_jobs_at($5::timestamptz) j USING(job_id)
+ WHERE feature_version=$1 AND history_policy=$3 AND evidence_mode=$4
   AND computed_at<=$5::timestamptz AND checkpoint<=$5::timestamptz
 ), l AS MATERIALIZED(
- SELECT *,row_number() OVER(PARTITION BY player_id,game_id,stat ORDER BY label_cutoff DESC,known_at DESC,label_id DESC) AS head,
+ SELECT d.*,row_number() OVER(PARTITION BY player_id,game_id,stat ORDER BY label_cutoff DESC,known_at DESC,label_id DESC) AS head,
   row_number() OVER(PARTITION BY player_id,game_id,stat,state ORDER BY label_cutoff DESC,known_at DESC,label_id DESC) AS valid_head
- FROM fs138.outcome_labels WHERE label_version=$2 AND evidence_mode=$4
+ FROM fs138.outcome_labels d JOIN fs138.completed_jobs_at($6::timestamptz) j USING(job_id)
+ WHERE label_version=$2 AND evidence_mode=$4
   AND known_at<=$6::timestamptz AND label_cutoff<=$6::timestamptz
 ) , fv AS MATERIALIZED(SELECT * FROM f WHERE state='usable' AND valid_head=1),
 lv AS MATERIALIZED(SELECT * FROM l WHERE state='usable' AND valid_head=1),
@@ -65,10 +82,12 @@ keys AS MATERIALIZED(SELECT player_id,game_id,stat,season FROM f WHERE head=1),
 selected AS MATERIALIZED(
  SELECT k.*,f.feature_id,l.label_id,f.cutoff,f.sample_size,f.history,l.label_cutoff,l.value,
   coalesce(f.flags,'{}')||coalesce(l.flags,'{}')||
-   CASE WHEN f.feature_id IS NOT NULL AND EXISTS(SELECT 1 FROM fs138.feature_values n WHERE n.player_id=f.player_id AND n.game_id=f.game_id AND n.stat=f.stat AND n.feature_version=f.feature_version AND n.evidence_mode=f.evidence_mode AND (n.checkpoint,n.computed_at,n.feature_id)>(f.checkpoint,f.computed_at,f.feature_id)) THEN ARRAY['superseded-feature'] ELSE '{}'::text[] END||
-   CASE WHEN l.label_id IS NOT NULL AND EXISTS(SELECT 1 FROM fs138.outcome_labels n WHERE n.player_id=l.player_id AND n.game_id=l.game_id AND n.stat=l.stat AND n.label_version=l.label_version AND n.evidence_mode=l.evidence_mode AND (n.label_cutoff,n.known_at,n.label_id)>(l.label_cutoff,l.known_at,l.label_id)) THEN ARRAY['superseded-label'] ELSE '{}'::text[] END||
-   CASE WHEN f.head>1 THEN ARRAY['stale-feature'] ELSE '{}'::text[] END||CASE WHEN l.head>1 THEN ARRAY['stale-label'] ELSE '{}'::text[] END AS flags
+   CASE WHEN f.feature_id IS NOT NULL AND (cf.checkpoint,cf.computed_at,cf.feature_id)>(f.checkpoint,f.computed_at,f.feature_id) THEN ARRAY['superseded-feature'] ELSE '{}'::text[] END||
+   CASE WHEN l.label_id IS NOT NULL AND (cl.label_cutoff,cl.known_at,cl.label_id)>(l.label_cutoff,l.known_at,l.label_id) THEN ARRAY['superseded-label'] ELSE '{}'::text[] END||
+   CASE WHEN f.feature_id IS NOT NULL AND cf.feature_id<>f.feature_id AND cf.state='unavailable' THEN ARRAY['stale-feature'] ELSE '{}'::text[] END||
+   CASE WHEN l.label_id IS NOT NULL AND cl.label_id<>l.label_id AND cl.state='unavailable' THEN ARRAY['stale-label'] ELSE '{}'::text[] END AS flags
  FROM keys k LEFT JOIN fv f USING(player_id,game_id,stat) LEFT JOIN lv l USING(player_id,game_id,stat)
+ LEFT JOIN current_f cf USING(player_id,game_id,stat) LEFT JOIN current_l cl USING(player_id,game_id,stat)
 ), classified AS MATERIALIZED(
  SELECT *,CASE WHEN season=2021 THEN 'warm-up-only' WHEN feature_id IS NULL THEN 'feature-unavailable'
   WHEN label_id IS NULL THEN 'label-unavailable'

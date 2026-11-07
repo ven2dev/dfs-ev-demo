@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "issue": 241,
+  "fixture": "Pinned graph captured from prepareEvaluationFixture on the retained sixteen exact source files; no downloads.",
+  "baseCommit": "53970ca3432f1b4d3ed06029bf431af433d222d7",
+  "sourceManifestSha256": "2086cbbde03664d99eccbec64c12f659262f848c31ccb97d90aaff2c1c601f30",
+  "wireFiles": [
+    {
+      "name": "games.csv.gz",
+      "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd"
+    },
+    {
+      "name": "pbp_participation_2021.csv",
+      "sha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785"
+    },
+    {
+      "name": "pbp_participation_2022.csv",
+      "sha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4"
+    },
+    {
+      "name": "pbp_participation_2023.csv",
+      "sha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9"
+    },
+    {
+      "name": "pbp_participation_2024.csv",
+      "sha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9"
+    },
+    {
+      "name": "pbp_participation_2025.csv",
+      "sha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac"
+    },
+    {
+      "name": "roster_weekly_2021.csv",
+      "sha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7"
+    },
+    {
+      "name": "roster_weekly_2022.csv",
+      "sha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312"
+    },
+    {
+      "name": "roster_weekly_2023.csv",
+      "sha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3"
+    },
+    {
+      "name": "roster_weekly_2024.csv.gz",
+      "sha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72"
+    },
+    {
+      "name": "roster_weekly_2025.csv.gz",
+      "sha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec"
+    },
+    {
+      "name": "stats_player_week_2021.csv.gz",
+      "sha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a"
+    },
+    {
+      "name": "stats_player_week_2022.csv.gz",
+      "sha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a"
+    },
+    {
+      "name": "stats_player_week_2023.csv.gz",
+      "sha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113"
+    },
+    {
+      "name": "stats_player_week_2024.csv.gz",
+      "sha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d"
+    },
+    {
+      "name": "stats_player_week_2025.csv.gz",
+      "sha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b"
+    }
+  ],
+  "payload": {
+    "filename": "job-visibility-work-v1.json.gz",
+    "sha256": "455ac7df5ed5a4b4fa8e84957da11ee5627abf2f6029a84edd1c878120c1fc68",
+    "byteSize": 146651894,
+    "gzipSha256": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+    "gzipByteSize": 5003909
+  },
+  "counts": {
+    "source_profiles": 16,
+    "job_runs": 36,
+    "source_snapshots": 16,
+    "job_inputs": 156,
+    "norm_schedule": 1359,
+    "norm_player_game_stats": 3279,
+    "norm_identity": 9387,
+    "norm_participation": 89443,
+    "feature_values": 18762,
+    "outcome_labels": 18762,
+    "feature_inputs": 188178,
+    "label_inputs": 75048
+  },
+  "modes": [
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "rows": 2504,
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+    },
+    {
+      "mode": "strict-point-in-time-v1",
+      "rows": 0,
+      "contentSha256": "7858bc13cfd59085549e3c61fc1d42685f5a9134114316bbb623e79aaff43caf"
+    }
+  ],
+  "sourceHashes": {
+    "packages/db/proposals/138_feature_store.sql": "c21e55048de7a2fda2cf074d098173d959849029d86da4f634e33d93eca630cf",
+    "services/pipeline/src/featureStore/derived.ts": "cf5842d76e3c12dd9c5031397903e89384b2ffb8befb833cfd3891ef09767112",
+    "services/pipeline/src/featureStore/ingest.ts": "414a006f7ab82be6e3c5370458d3e3ad0c08a7f7283c61c55595ef33667dd5ca",
+    "services/pipeline/src/featureStore/normalize.ts": "2fcff2903786e2b4e4948f7d20f16cc167d246c868490c4c6a1d43361184bdcc",
+    "services/pipeline/scripts/feature-store/evaluation-fixture.ts": "fa2d82a3105a601ab33a3c72deb827a17ad27cd759827134267fd61806dc5336"
+  }
+}

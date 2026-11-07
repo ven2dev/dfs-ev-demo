@@ -3,8 +3,9 @@
 The owner approved the [measured roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/241#issuecomment-6713355392).
 Implementation is proposal-only, in four reviewed steps. Step 1 supplies the
 shared completion relation and repairs the existing derived display reader.
-Dataset/#163, normalized/producer selection and final qualification follow in
-separate steps. Existing #231 authorization stays in its current owner.
+Step 2 repairs dataset selection/freshness and the narrow #163 reader.
+Normalized/producer selection and final qualification follow in separate steps.
+Existing #231 authorization stays in its current owner.
 
 ## Design basis
 
@@ -99,6 +100,43 @@ relation lock held after the read. This is behavior/work proof; final speed
 qualification remains step 4. Exact records, source SHA-256 and Git blob IDs
 are retained in [the step-1 evidence folder](evidence/feature-store-241/README.md).
 
+## Step 2: dataset pins, freshness and the direct #163 reader
+
+Dataset feature and label sets join the shared completion relation independently
+at `featuresAsOf` and `labelsAsOf` before their head/last-valid ranking. One
+captured database observation clock supplies one materialized current-job set
+and both current-head sets. A newer completed unavailable head retains the
+pinned last valid value with both stale and superseded flags; running/failed
+heads and other versions/policies do not change those flags. The existing
+`includeSuperseded=false` policy can exclude that retained row on rebuild.
+
+The #163 exact-feature check uses the same relation at `knownAsOf`. A successful
+job completed after the pin refuses with `feature-after-as-of`; running/failed
+jobs retain `feature-unavailable`. Current freshness uses the shared relation
+at the statement's database clock. The restricted reader gains only the
+`finished_at` column and shared-function execute grant needed for this rule;
+it still cannot read labels, normalized values or job counts. Current rights,
+deletion/pruning refusals and the no-partial-delivery contract stay in place.
+Neither #166 nor #231 authorization SQL changes.
+
+The resumed step-2 validation passes seven new behavior probes, the existing
+dataset/#163 suites, and 45 shared-rule/#166/#231 compatibility test results.
+At every n=2–16 the direct reader uses three statements/two checks and exactly
+2P effective-rights calls for the independently observed profile set. Dataset
+build/delivery stay at 8 SQL/2 checks and 3 SQL/2 checks/1 GET, with zero hashes
+or payload reads inside publication transactions. Typecheck, lint, eleven
+import-boundary checks and five focused unit tests pass under Node 24.
+
+All three live dataset plans (retrospective, strict and active corrections)
+pass: root 8,624/10,349 hits, current_f 2,657/3,190 and current_l 686/825, each
+with zero reads. Both heads execute once for 9,381 natural keys. current_jobs
+executes once at 2 hits/0 reads, with a measured two-page heap and no used
+index: relation-size ceiling 2. Executed unavailable corrections set all four
+freshness flags without changing selected values or the 2,504-row logical hash.
+Negative controls reject an extra pass and an extra page. Exact plans, catalog
+page measurements and failed attempts remain durable alongside the receipt.
+These are CI work/behavior checks; final speed qualification remains step 4.
+
 ## Qualification carried from the disposable proof
 
 Eleven behavior/scope checks and eighteen #166/#231 controls pass. Six candidate
@@ -120,13 +158,15 @@ complete finish-clock inventory; universal historical non-impact is unproved.
 The added checks cost relational work: candidate context execution/hits rose
 from 2,432.989 ms/771,335 to 3,944.134 ms/1,454,495 in the diagnostic pair.
 The query still inlines, and full-operation targets pass. This is not a speedup
-claim. The approved CI ceilings are ceil(candidate hits × 1.20):
+claim. The producer, dataset root and feature/label-head CI ceilings remain
+ceil(candidate hits × 1.20). The owner replaced only the tiny current-job
+subtree's page budget after the retained step-2 stop:
 
 | Scope | Measured candidate hits | CI ceiling |
 | --- | ---: | ---: |
 | Producer context root | 1,454,495 | 1,745,394 |
 | Dataset selection root | 8,624 | 10,349 |
-| Dataset current_jobs | 2 | 3 |
+| Dataset current_jobs | 2 in the original probe | Heap pages + pages of indexes actually used; loops=1 |
 | Dataset current_f | 2,658 maximum | 3,190 |
 | Dataset current_l | 687 maximum | 825 |
 
@@ -136,6 +176,26 @@ execute once with rows>0, and producer histories/gaps execute once. No helper
 Function Scan or explicit reader LockRows node is allowed, preventing a policy
 refactor from hiding per-row procedural work. These live SQL CI gates land with
 the corresponding dataset and producer steps on a pinned work fixture.
+
+For `current_jobs`, a 20% margin on two pages left only one page of slack and
+made normal heap-layout differences into failures. Its revised bound is one
+relation pass: hits+reads <= the job table's heap pages plus pages of only the
+index(es) used by that subtree, with Actual Loops=1. The observer reads
+`pg_relation_size` and `pg_class.relpages` after ANALYZE in the same transaction
+as EXPLAIN and records physical/analyzed page counts, used indexes and measured
+hits/reads alongside the computed ceiling. Unused indexes supply no slack.
+This changes only that node; root/current_f/current_l keep their fixed ceilings
+to prevent overall cost growth. Setup/observer SQL is outside product work
+counts and timings, and performs the plan under the existing reader role.
+
+The portable CI fixture replays each producer's lifecycle: insert its running
+job, then in its publication transaction insert its outputs, ANALYZE, terminal
+UPDATE and COMMIT. It supplies fresh clocks through the ordinary triggers; no
+clock trigger is disabled. A pinned, hash-checked 5,003,909-byte gzip is committed
+for this real relational graph so CI needs no workstation ObjectStore or
+downloads. The owner accepted this fixture size; the final PR body will call it
+out. It reproduces the sixteen-file graph, 9,381 natural keys and 2,504
+retrospective/zero strict rows, not historical clock visibility.
 
 Disk telemetry measured 224 MiB WAL even after CHECKPOINT while max_wal_size is
 1 GB above the 512 MiB tmpfs. The failed comparison's peak sampled usage was
