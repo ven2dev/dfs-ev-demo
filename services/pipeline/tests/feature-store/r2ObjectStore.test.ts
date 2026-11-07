@@ -72,3 +72,28 @@ it("uses one LIST per page without issuing HEADs", async () => {
   expect(calls[0].query).toMatchObject({ "list-type": "2", "max-keys": "2", prefix: "raw/" });
   expect(calls[1].query).toMatchObject({ "continuation-token": "next" });
 });
+
+it("resumes bounded inventory with StartAfter and one LIST per range", async () => {
+  const { calls, store } = fixture(
+    { body: `<ListBucketResult><IsTruncated>true</IsTruncated><Contents><Key>${key}</Key><Size>9</Size></Contents></ListBucketResult>` },
+    { body: "<ListBucketResult><IsTruncated>false</IsTruncated></ListBucketResult>" },
+  );
+  const first = await store.listPage("raw", { limit: 1 });
+  expect(first).toEqual({ entries: [{ key, sha256: digest, byteSize: 9 }], nextStartAfter: key });
+  expect(await store.listPage("raw", { limit: 1, startAfter: key })).toEqual({ entries: [], nextStartAfter: null });
+  expect(calls).toHaveLength(2);
+  expect(calls[0].query).toMatchObject({ "max-keys": "1", prefix: "raw/" });
+  expect(calls[1].query).toMatchObject({ "max-keys": "1", "start-after": key });
+});
+
+it("verifies a bounded GET and rejects a body larger than its declared length", async () => {
+  const { calls, store } = fixture(
+    { headers: { "content-length": "9" }, body: "synthetic" },
+    { headers: { "content-length": "8" }, body: "synthetic" },
+  );
+  const verified = await store.getVerified(key, 9);
+  expect(verified.wireSha256).toBe(digest);
+  expect(verified.byteSize).toBe(9);
+  await expect(store.getVerified(key, 9)).rejects.toThrow("object-size-changed");
+  expect(calls.map(({ method }) => method)).toEqual(["GET", "GET"]);
+});

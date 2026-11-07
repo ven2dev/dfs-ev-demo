@@ -17,7 +17,7 @@ test('#229 candidate selection avoids permanent-tombstone scans and has fixed bu
  const statements:string[]=[];
  const client={query:async(sql:string)=>{statements.push(sql);return {rows:[]};}} as unknown as Parameters<typeof cleanupDeletedObjectsWithRecovery>[0];
  const never=async()=>{throw Error('selection must not access ObjectStore');};
- await cleanupDeletedObjectsWithRecovery(client,{get:never,head:never,list:never,putIfAbsent:never,delete:never} as ObjectStore);
+ await cleanupDeletedObjectsWithRecovery(client,{get:never,getVerified:never,head:never,list:never,listPage:never,putIfAbsent:never,delete:never} satisfies ObjectStore);
  assert.equal(statements.length,2);const sql=statements[1];assert(!sql.includes('orphan_observations'));assert(!sql.includes('coalesce('));
  await withFeatureStoreDatabase(async({admin,writer})=>{
   for(const name of ['165_model_manifests.sql','166_artifact_governance.sql','229_mandatory_recovery.sql'])
