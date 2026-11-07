@@ -8,19 +8,24 @@ import { connectionInterrupted } from "./connections.ts";
 import { withModelArtifacts } from "./modelArtifacts.ts";
 import { ModelContextError, resolveModelContext, type ModelContextCode } from "./modelContext.ts";
 import type { ObjectStore } from "./objectStore.ts";
+import { predictionDeadline } from "./predictionClock.ts";
 import { buildPredictionResponse, computePredictionForecast, validateModelDescriptor, PredictionValidationError,
   type PredictionRequestPins, type PredictionResponseData, type PredictionValidationCode,
   type SupportedPredictionPolicy } from "./predictionHelpers.ts";
 
 export type PredictionRequest = PredictionRequestPins & { knownAsOf: string; line: number };
-export type PredictionOptions = { signal?: AbortSignal; deadlineAt?: number };
+export type PredictionOptions = {
+  signal?: AbortSignal;
+  /** Same-process performance.now() clock; can only shorten the 300 ms default. */
+  deadlineAt?: number;
+};
 export const PREDICTION_DEADLINE_MS = EMPIRICAL_DEADLINE_MS;
-type Connection = Pick<Client, "query" | "end">;
+type Connection = Pick<Client, "query">;
 type Disposition = { connectionDisposition: "reusable" | "discard" };
 export type PredictionRefusal = ModelContextCode | ArtifactGovernanceCode | PredictionValidationCode
   | "deadline-exceeded" | "cancelled" | "connection-interrupted" | "prediction-unavailable";
-export type PredictionResponse = Disposition & (PredictionResponseData | { status: "unavailable"; reason: PredictionRefusal });
-export type PredictionRead = { response: PredictionResponse; serialized: string };
+export type PredictionResponse = PredictionResponseData | { status: "unavailable"; reason: PredictionRefusal };
+export type PredictionRead = Disposition & { response: PredictionResponse; serialized: string };
 
 // Policy comes from the producer/domain constants, never caller or descriptor
 // claims. Capture the exported adapter's scalars rather than its mutable object.
@@ -41,20 +46,17 @@ class PredictionInterruption extends Error {
 export const predictQbModel = async (client: Connection, store: Pick<ObjectStore, "get">,
   request: PredictionRequest, options: PredictionOptions = {}): Promise<PredictionRead> => {
   const started = performance.now(), { signal, deadlineAt } = options;
-  const deadline = Math.min(started + PREDICTION_DEADLINE_MS, deadlineAt ?? Infinity);
+  const deadline = predictionDeadline(started, deadlineAt);
   let connectionDisposition: Disposition["connectionDisposition"] = "reusable";
-  const serialize = (response: PredictionResponse): PredictionRead => ({ response, serialized: JSON.stringify(response) });
-  if (deadlineAt !== undefined && !Number.isFinite(deadlineAt))
-    return serialize({ status: "unavailable", reason: "invalid-request", connectionDisposition });
-  let inFlightSql = false, ending: Promise<unknown> | undefined;
+  const serialize = (response: PredictionResponse): PredictionRead =>
+    ({ response, serialized: JSON.stringify(response), connectionDisposition });
+  if (deadline === undefined) return serialize({ status: "unavailable", reason: "invalid-request" });
+  let inFlightSql = false;
   let interrupted: PredictionInterruption | undefined;
   let rejectInterruption: (error: PredictionInterruption) => void;
   const interruption = new Promise<never>((_, reject) => { rejectInterruption = reject; });
   const discard = () => {
     connectionDisposition = "discard";
-    // Initiate termination once, observing its eventual outcome without making
-    // response latency depend on a broken connection's close handshake.
-    ending ??= Promise.resolve().then(() => client.end()).catch(() => {});
   };
   const interrupt = (code: PredictionInterruption["code"]) => {
     if (interrupted) return;
@@ -129,8 +131,8 @@ export const predictQbModel = async (client: Connection, store: Pick<ObjectStore
     if (!result.context) throw new ModelContextError("model-context-reference-refused");
     // Only Q2 permits response construction. Its context refreshes flags while
     // the forecast keeps Q1's selected values and declared sample size.
-    const response: PredictionResponse = { ...buildPredictionResponse({ request: pins, ...result.value, context: result.context,
-      authorization: result.authorization, delivery: result.delivery }), connectionDisposition };
+    const response = buildPredictionResponse({ request: pins, ...result.value, context: result.context,
+      authorization: result.authorization, delivery: result.delivery });
     remaining();
     const read = serialize(response);
     remaining();
@@ -155,7 +157,7 @@ export const predictQbModel = async (client: Connection, store: Pick<ObjectStore
     }
     // No private context, bytes, receipts or partially computed forecast survive
     // any refusal. Provider messages/causes stay inside the trusted operation.
-    return serialize({ status: "unavailable", reason, connectionDisposition });
+    return serialize({ status: "unavailable", reason });
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener("abort", onAbort);

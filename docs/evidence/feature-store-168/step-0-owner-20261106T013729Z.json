@@ -1,0 +1,76 @@
+{
+  "issue": 168,
+  "step": 0,
+  "kind": "prediction-owner-behavior",
+  "verdict": "pass",
+  "sourceHashes": {
+    "services/pipeline/src/featureStore/predict.ts": "fe6e0c8b057f99d67923ca0be67e91b03a723116d4139195c4d92c0962b6580e",
+    "services/pipeline/src/featureStore/predictionOwner.ts": "a547d841034856a463005340ce158adb6bd507138da728365ab1aea6d6e142db",
+    "services/pipeline/src/featureStore/predictionClock.ts": "898c5f288ae7d4346889ff72855051ad5cf7f6282c44b2be623afb42eeabb6ea",
+    "services/pipeline/tests/feature-store/prediction-owner.check.mts": "5cda68dd67158912b2ea05b30df09c5d7bdaa10dff2782bb020dc771952f258a"
+  },
+  "sourceBlobIds": {
+    "services/pipeline/src/featureStore/predict.ts": "21d26184facf9cb0a1565be03cf9ba6d515aed3b",
+    "services/pipeline/src/featureStore/predictionOwner.ts": "1d31f8d2ab1f5b07cc221afacb8eca0261e74551",
+    "services/pipeline/src/featureStore/predictionClock.ts": "dad94b3d7e9fdb6dce1c09ace67dd32414c2f2b1",
+    "services/pipeline/tests/feature-store/prediction-owner.check.mts": "cbc94cb058b2b8446a20bc590aac2ec22993ccfd"
+  },
+  "probes": [
+    {
+      "name": "real standalone and pool ownership keep 3/2/1 and dispose once",
+      "verdict": "pass",
+      "detailsSha256": "d482769ee7586ddf28a5bfb1e91029721b0bda7d4c143659fdd2e62812797e46"
+    },
+    {
+      "name": "real pool discard destroys exactly once on sleeping context/Q1/Q2 and cannot run later SQL",
+      "verdict": "pass",
+      "detailsSha256": "032ae1061190fa1f4383fe6d5ba456bff3839f6a0d96e8ca08ca700ed2d5cbc6"
+    },
+    {
+      "name": "query-only handler reports discard without ending; owner stops backend; no private or late result",
+      "verdict": "pass",
+      "detailsSha256": "96b9ac80764c0c2482eaf3fcb2ddd7b73b9d272cd9b13b988dbb5247c2aee316"
+    },
+    {
+      "name": "server startup timeout cancels a sleeping statement when owner disposal is deliberately delayed",
+      "verdict": "pass",
+      "detailsSha256": "e08706a4531e84bce095ebaade85927f14a1e0c81cb330bbadc8ab9eb8d1cdeb"
+    },
+    {
+      "name": "invalid clocks and unbounded pools refuse before connection or artifact I/O",
+      "verdict": "pass",
+      "detailsSha256": "54c95973d661e41bc50f0c85e9f1729c3996fd5acb4b2f4d3d76986bc9748c91"
+    },
+    {
+      "name": "failed standalone authentication is cleaned up once and exposes no provider diagnostics",
+      "verdict": "pass",
+      "detailsSha256": "0a9d0e0990bc2933ecf2644e76df901b1a54680c606674f7851c23017860ddbd"
+    }
+  ],
+  "work": {
+    "sql": 3,
+    "combinedChecks": 2,
+    "descriptorGets": 1,
+    "handlerEndCapability": false,
+    "exactlyOnceDisposal": true,
+    "sleepingStages": [
+      "context",
+      "Q1",
+      "Q2"
+    ],
+    "noLateQuery": true,
+    "startupStatementTimeoutMs": 300
+  },
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-0-full-records-20261106T013729Z.tar.gz#step-0/owner-full.json",
+    "sha256": "f7520d98446ec507dafe8e61fc167f7dc0ca27b7d5e42f478384519875cc28b5",
+    "byteSize": 4133,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  },
+  "objectStore": {
+    "objectKey": "audits/f7520d98446ec507dafe8e61fc167f7dc0ca27b7d5e42f478384519875cc28b5",
+    "sha256": "f7520d98446ec507dafe8e61fc167f7dc0ca27b7d5e42f478384519875cc28b5",
+    "byteSize": 4133
+  }
+}

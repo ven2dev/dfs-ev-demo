@@ -24,6 +24,7 @@ export const createPredictionMeasurement = async (store: ObjectStore, runId: str
     const work = { sql: 0, checks: 0, gets: 0, heads: 0, puts: 0, deletes: 0, lists: 0, hashes: 0 };
     const request = predictionRequest(runId, input);
     let setupMs = 0, getMs = 0, outputBytes = 0, failure: string | undefined, client: Client | undefined;
+    let closing: Promise<void> | undefined;
     const originalHash = crypto.createHash, started = performance.now();
     try {
       if (temperature === "cold") {
@@ -58,6 +59,7 @@ export const createPredictionMeasurement = async (store: ObjectStore, runId: str
       };
       // Cold setup consumes the same allocation; the handler cannot renew it.
       const read = await predictQbModel(observed, objects, request, { deadlineAt: started + 300 });
+      if (read.connectionDisposition === "discard") closing = client.end().catch(() => {});
       assert.equal(read.response.status, "available", JSON.stringify(read.response));
       if (read.response.status === "available") {
         assert.equal(read.response.forecast.sampleCount, input.n);
@@ -69,7 +71,7 @@ export const createPredictionMeasurement = async (store: ObjectStore, runId: str
     } catch (error) { failure = String(error); }
     const totalMs = performance.now() - started;
     crypto.createHash = originalHash; syncBuiltinESMExports();
-    if (temperature === "cold") await client?.end();
+    if (temperature === "cold") await (closing ?? client?.end());
     return { arm: "candidate" as const, temperature, featureId: input.featureId, n: input.n,
       verdict: failure ? "fail" : "pass", ...(failure ? { error: failure } : {}), totalMs, setupMs,
       warmPathMs: totalMs - setupMs, setupShare: setupMs / totalMs, getMs,
