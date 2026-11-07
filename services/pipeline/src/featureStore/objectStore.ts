@@ -49,12 +49,12 @@ export const checkObjectPageRequest = (namespace: ObjectNamespace, { limit, star
 const verifiedWireBrand = Symbol("verified-wire");
 
 export class VerifiedWire {
-  readonly #bytes: Buffer;
+  readonly #allocation: ArrayBuffer;
   readonly #wireSha256: string;
 
-  private constructor(brand: typeof verifiedWireBrand, bytes: Buffer, wireSha256: string) {
+  private constructor(brand: typeof verifiedWireBrand, allocation: ArrayBuffer, wireSha256: string) {
     if (brand !== verifiedWireBrand) throw new Error("object-verification-required");
-    this.#bytes = bytes;
+    this.#allocation = allocation;
     this.#wireSha256 = wireSha256;
     Object.freeze(this);
   }
@@ -66,11 +66,19 @@ export class VerifiedWire {
     if (!(allocation instanceof ArrayBuffer) || input.byteOffset !== 0 || input.byteLength !== allocation.byteLength) {
       throw new Error("object-verification-buffer-refused");
     }
-    const bytes = Buffer.from(structuredClone(allocation, { transfer: [allocation] }));
-    if (sha256(bytes) !== expected) throw new Error("object-digest-mismatch");
-    return new VerifiedWire(verifiedWireBrand, bytes, expected);
+    const owned = allocation.transfer();
+    if (sha256(Buffer.from(owned)) !== expected) {
+      owned.transfer(0);
+      throw new Error("object-digest-mismatch");
+    }
+    return new VerifiedWire(verifiedWireBrand, owned, expected);
   };
 
   get wireSha256(): string { return this.#wireSha256; }
-  get byteSize(): number { return this.#bytes.byteLength; }
+  get byteSize(): number { return this.#allocation.byteLength; }
+
+  release(): void {
+    // Shrink and detach the backing allocation now instead of waiting for GC.
+    if (!this.#allocation.detached) this.#allocation.transfer(0);
+  }
 }

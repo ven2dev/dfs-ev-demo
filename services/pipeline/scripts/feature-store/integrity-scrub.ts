@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import { isAbsolute } from "node:path";
+import { isAbsolute, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { Client } from "pg";
@@ -40,13 +40,22 @@ const run = async () => {
     import.meta.url, import.meta.resolve("../../src/featureStore/integrityScrub.ts"),
     import.meta.resolve("../../src/featureStore/localObjectStore.ts"), import.meta.resolve("../../src/featureStore/objectStore.ts"),
   ];
-  const code = {
-    gitSha: execFileSync("git", ["rev-parse", "HEAD"], {
-      cwd: fileURLToPath(new URL(".", import.meta.url)), encoding: "utf8",
-    }).trim(),
-    contentSha256: sha256(Buffer.from(JSON.stringify(await Promise.all(files.map(async (file) =>
-      sha256(await readFile(new URL(file)))))))),
-  };
+  const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
+  const git = (cwd: string, ...args: string[]) => execFileSync("git", args, { cwd });
+  const repo = git(scriptDirectory, "rev-parse", "--show-toplevel").toString().trim();
+  const gitSha = git(repo, "rev-parse", "HEAD").toString().trim();
+  const paths = files.map((file) => relative(repo, fileURLToPath(file)));
+  if (git(repo, "status", "--porcelain", "--untracked-files=all", "--", ...paths).length) {
+    throw new Error("integrity-scrub-dirty-code");
+  }
+  const hashes = await Promise.all(files.map(async (file, index) => {
+    const bytes = await readFile(new URL(file));
+    if (!bytes.equals(git(repo, "show", `${gitSha}:${paths[index]}`))) {
+      throw new Error("integrity-scrub-dirty-code");
+    }
+    return sha256(bytes);
+  }));
+  const code = { gitSha, contentSha256: sha256(Buffer.from(JSON.stringify(hashes))) };
   const store = await openLocalObjectStore(values.root, { maxObjectBytes: 64 * 1024 * 1024 });
   const db = new Client({ connectionString: target.href, connectionTimeoutMillis: 3_000,
     statement_timeout: 15_000, options: "-c default_transaction_read_only=on" });

@@ -23,6 +23,7 @@ type Snapshot = {
 };
 type ScrubState = {
   checkedAt: string;
+  checkedAtEpochMicros: string;
   rightsChangedSince: boolean;
   snapshots: Snapshot[];
   removals: { key: string; eventId: string; completedAt: string | null; removeAfter: string; outcome: string | null }[];
@@ -51,9 +52,9 @@ const captureState = async (
     ), addresses AS (
       SELECT object_key FROM snapshots UNION SELECT unnest($4::text[])
     )
-    SELECT now::text AS "checkedAt",
+    SELECT now::text AS "checkedAt", (extract(epoch FROM now) * 1000000)::bigint::text AS "checkedAtEpochMicros",
       EXISTS (SELECT 1 FROM profiles p JOIN fs138.rights_decisions r USING (profile_id)
-        WHERE r.recorded_at >= $5::timestamptz AND r.recorded_at <= now) AS "rightsChangedSince",
+        WHERE r.recorded_at >= TIMESTAMPTZ 'epoch' + $5::bigint * INTERVAL '1 microsecond' AND r.recorded_at <= now) AS "rightsChangedSince",
       coalesce((SELECT jsonb_agg(jsonb_build_object(
         'key', s.object_key, 'snapshotId', s.snapshot_id, 'profileId', s.profile_id,
         'byteSize', s.byte_size::text, 'deletedAt', s.deleted_at, 'decisionId', d.decision_id,
@@ -138,7 +139,9 @@ export const inspectRawScrubRange = async (db: Database, store: ObjectStore, {
   for (const { key, byteSize, references } of reads) {
     try {
       const wire = await store.getVerified(key, byteSize);
-      if (wire.byteSize !== byteSize) {
+      const actualSize = wire.byteSize;
+      wire.release();
+      if (actualSize !== byteSize) {
         findings.push({ key, kind: "size-mismatch" });
         continue;
       }
@@ -163,6 +166,7 @@ export const inspectRawScrubRange = async (db: Database, store: ObjectStore, {
 
 const summarizeState = (state: ScrubState) => ({
   checkedAt: state.checkedAt,
+  checkedAtEpochMicros: state.checkedAtEpochMicros,
   snapshotReferences: state.snapshots.length,
   removalRecords: state.removals.length,
   stateSha256: sha256(Buffer.from(JSON.stringify([state.snapshots, state.removals]))),
@@ -174,10 +178,10 @@ export const certifyRawScrubRange = async (
 ) => {
   const { range, initialState, listedKeys, counts, findings } = await inspectRawScrubRange(db, store, options);
   const finalState = await captureState(db, range.startAfter ?? "raw/", range.endInclusive,
-    options.snapshotLimit ?? 32, listedKeys, initialState.checkedAt);
+    options.snapshotLimit ?? 32, listedKeys, initialState.checkedAtEpochMicros);
   const initial = summarizeState(initialState);
   const final = summarizeState(finalState);
-  const changed = finalState.rightsChangedSince || final.checkedAt < initial.checkedAt ||
+  const changed = finalState.rightsChangedSince || BigInt(final.checkedAtEpochMicros) < BigInt(initial.checkedAtEpochMicros) ||
     initial.stateSha256 !== final.stateSha256;
   if (changed || findings.length) return { status: "failed" as const, changed, findings, range, counts, initial, final };
 

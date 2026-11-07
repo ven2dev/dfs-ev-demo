@@ -113,6 +113,21 @@ test("#170 classifies and verifies bounded raw ranges with the restricted reader
           syncBuiltinESMExports();
         }
       });
+      await t.test("compares knowledge clocks independently of the session time zone", async () => {
+        await reader.query("SET TIME ZONE 'Pacific/Kiritimati'");
+        const changingZone = { ...store, getVerified: async (key: string, maxBytes: number) => {
+          const wire = await store.getVerified(key, maxBytes);
+          await reader.query("SET TIME ZONE 'Pacific/Honolulu'");
+          return wire;
+        } };
+        try {
+          const result = await certifyRawScrubRange(reader, changingZone, {}, join(root, "zone.json"), code);
+          assert.equal(result.status, "range-verified");
+          assert.ok(BigInt(result.final.checkedAtEpochMicros) >= BigInt(result.initial.checkedAtEpochMicros));
+        } finally {
+          await reader.query("RESET TIME ZONE");
+        }
+      });
       await t.test("withholds a receipt for an intervening rights decision even if effective rights are unchanged", async () => {
         const path = join(root, "changed.json");
         const changingStore = { ...store, getVerified: async (key: string, maxBytes: number) => {
