@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
+import crypto from "node:crypto";
+import fs, { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
 import { withFeatureStoreDatabase } from "../../scripts/feature-store/harness.ts";
+import { deleteSources } from "../../src/featureStore/governance.ts";
 import { ingestSource } from "../../src/featureStore/ingest.ts";
-import { inspectRawScrubRange } from "../../src/featureStore/integrityScrub.ts";
+import { certifyRawScrubRange, inspectRawScrubRange } from "../../src/featureStore/integrityScrub.ts";
 import { openLocalObjectStore } from "../../src/featureStore/localObjectStore.ts";
 import { objectKey, sha256 } from "../../src/featureStore/objectStore.ts";
 import { profileId } from "../../src/featureStore/source.ts";
@@ -65,15 +68,92 @@ test("#170 classifies and verifies bounded raw ranges with the restricted reader
         assert.deepEqual(readKeys.splice(0), [key]);
         await store.delete(orphanKey);
       });
+      const code = { gitSha: "a".repeat(40), contentSha256: sha256(bytes) };
+      await t.test("certifies with two SQL captures, one payload read and one wire hash", async () => {
+        const receiptPath = join(root, "pass.json");
+        const before = queryCounts.reader;
+        const originalHash = crypto.createHash;
+        const originalOpen = fs.open;
+        let hashesDuringRead = 0;
+        let payloadReads = 0;
+        let reading = false;
+        crypto.createHash = (algorithm, options) => {
+          if (reading && algorithm === "sha256") hashesDuringRead++;
+          return originalHash(algorithm, options);
+        };
+        fs.open = async (...args) => {
+          const handle = await originalOpen(...args);
+          const read = handle.read.bind(handle);
+          let counted = false;
+          handle.read = ((...readArgs: unknown[]) => {
+            if (!counted) payloadReads++;
+            counted = true;
+            return Reflect.apply(read, handle, readArgs);
+          }) as typeof handle.read;
+          return handle;
+        };
+        syncBuiltinESMExports();
+        try {
+          const measuredStore = { ...store, getVerified: async (key: string, maxBytes: number) => {
+            reading = true;
+            try { return await store.getVerified(key, maxBytes); }
+            finally { reading = false; }
+          } };
+          const receipt = await certifyRawScrubRange(reader, measuredStore, {}, receiptPath, code);
+          assert.equal(receipt.status, "range-verified");
+          assert.equal(queryCounts.reader - before, 2);
+          assert.equal(payloadReads, 1);
+          assert.equal(hashesDuringRead, 1);
+          const bytes = await readFile(receiptPath);
+          await assert.rejects(certifyRawScrubRange(reader, store, {}, receiptPath, code), { code: "EEXIST" });
+          assert.deepEqual(await readFile(receiptPath), bytes);
+        } finally {
+          crypto.createHash = originalHash;
+          fs.open = originalOpen;
+          syncBuiltinESMExports();
+        }
+      });
+      await t.test("withholds a receipt for an intervening rights decision even if effective rights are unchanged", async () => {
+        const path = join(root, "changed.json");
+        const changingStore = { ...store, getVerified: async (key: string, maxBytes: number) => {
+          const wire = await store.getVerified(key, maxBytes);
+          await writer.query(`INSERT INTO fs138.rights_decisions(profile_id,allowed_uses,valid_from,rationale)
+            VALUES ($1,'{}',now()+interval '1 day','future decision during scrub')`, [profile]);
+          return wire;
+        } };
+        const outcome = await certifyRawScrubRange(reader, changingStore, {}, path, code);
+        assert.equal(outcome.status, "failed");
+        assert.ok(outcome.status === "failed" && outcome.changed);
+        await assert.rejects(readFile(path), { code: "ENOENT" });
+      });
       await t.test("reports byte corruption and a missing object on an empty terminal page", async () => {
         await writeFile(join(root, key), Buffer.alloc(bytes.length, 0));
         assert.deepEqual((await inspectRawScrubRange(reader, tracedStore)).findings, [{ key, kind: "corrupt" }]);
         assert.deepEqual(readKeys.splice(0), [key]);
+        const path = join(root, "corrupt.json");
+        const outcome = await certifyRawScrubRange(reader, store, {}, path, code);
+        assert.equal(outcome.status, "failed");
+        await assert.rejects(readFile(path), { code: "ENOENT" });
         await store.delete(key);
         const result = await inspectRawScrubRange(reader, tracedStore);
         assert.equal(result.range.lastListedKey, null);
         assert.deepEqual(result.findings, [{ key, kind: "missing" }]);
         assert.deepEqual(readKeys, []);
+      });
+      await t.test("withholds a receipt when an eligible snapshot is deleted after its read", async () => {
+        await store.putIfAbsent(key, bytes);
+        const { rows: [snapshot] } = await reader.query<{ snapshot_id: string }>(
+          "SELECT snapshot_id FROM fs138.source_snapshots WHERE profile_id=$1", [profile],
+        );
+        const path = join(root, "deleted.json");
+        const changingStore = { ...store, getVerified: async (key: string, maxBytes: number) => {
+          const wire = await store.getVerified(key, maxBytes);
+          await deleteSources(writer, [snapshot.snapshot_id], "deleted during scrub", 0);
+          return wire;
+        } };
+        const outcome = await certifyRawScrubRange(reader, changingStore, {}, path, code);
+        assert.ok(outcome.status === "failed" && outcome.changed);
+        await assert.rejects(readFile(path), { code: "ENOENT" });
       });
     });
   } finally {

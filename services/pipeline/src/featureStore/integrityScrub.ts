@@ -1,5 +1,6 @@
+import { writeFile } from "node:fs/promises";
 import type { Client } from "pg";
-import { checkObjectPageRequest, type ObjectStore } from "./objectStore.ts";
+import { checkObjectPageRequest, sha256, type ObjectStore } from "./objectStore.ts";
 
 const MiB = 1024 * 1024;
 const maxObjectBytes = 64 * MiB;
@@ -22,8 +23,9 @@ type Snapshot = {
 };
 type ScrubState = {
   checkedAt: string;
+  rightsChangedSince: boolean;
   snapshots: Snapshot[];
-  removals: { key: string; eventId: string; completedAt: string | null; outcome: string | null }[];
+  removals: { key: string; eventId: string; completedAt: string | null; removeAfter: string; outcome: string | null }[];
 };
 type Finding = {
   key: string;
@@ -31,7 +33,7 @@ type Finding = {
 };
 
 const captureState = async (
-  db: Database, startAfter: string, endInclusive: string, snapshotLimit: number, listedKeys: string[],
+  db: Database, startAfter: string, endInclusive: string, snapshotLimit: number, listedKeys: string[], since?: string,
 ): Promise<ScrubState> => {
   const result = await db.query<ScrubState>(`
     WITH clock AS MATERIALIZED (SELECT clock_timestamp() AS now),
@@ -50,6 +52,8 @@ const captureState = async (
       SELECT object_key FROM snapshots UNION SELECT unnest($4::text[])
     )
     SELECT now::text AS "checkedAt",
+      EXISTS (SELECT 1 FROM profiles p JOIN fs138.rights_decisions r USING (profile_id)
+        WHERE r.recorded_at >= $5::timestamptz AND r.recorded_at <= now) AS "rightsChangedSince",
       coalesce((SELECT jsonb_agg(jsonb_build_object(
         'key', s.object_key, 'snapshotId', s.snapshot_id, 'profileId', s.profile_id,
         'byteSize', s.byte_size::text, 'deletedAt', s.deleted_at, 'decisionId', d.decision_id,
@@ -57,10 +61,10 @@ const captureState = async (
       ) ORDER BY s.object_key COLLATE "C", s.snapshot_id)
       FROM snapshots s JOIN decisions d USING (profile_id)), '[]') AS snapshots,
       coalesce((SELECT jsonb_agg(jsonb_build_object(
-        'key', r.object_key, 'eventId', r.event_id, 'completedAt', r.completed_at, 'outcome', r.outcome
+        'key', r.object_key, 'eventId', r.event_id, 'completedAt', r.completed_at, 'removeAfter', r.remove_after, 'outcome', r.outcome
       ) ORDER BY r.object_key COLLATE "C")
       FROM addresses a JOIN fs138.object_removals r USING (object_key)), '[]') AS removals
-    FROM clock`, [startAfter, endInclusive, snapshotLimit + 1, listedKeys]);
+    FROM clock`, [startAfter, endInclusive, snapshotLimit + 1, listedKeys, since ?? null]);
   const state = result.rows[0];
   if (!state) throw new Error("integrity-scrub-state-unavailable");
   if (state.snapshots.length > snapshotLimit) throw new Error("integrity-scrub-snapshot-budget");
@@ -79,8 +83,7 @@ const readFailure = (error: unknown): Finding["kind"] => {
   throw error;
 };
 
-// This checkpoint returns in-process findings. Certification also requires the
-// final state check and receipt boundary.
+// The initial inspection is kept separate from certification for diagnostic callers.
 export const inspectRawScrubRange = async (db: Database, store: ObjectStore, {
   startAfter, inventoryLimit = 32, snapshotLimit = 32, wireByteLimit = 256 * MiB,
 }: ScrubOptions = {}) => {
@@ -151,8 +154,41 @@ export const inspectRawScrubRange = async (db: Database, store: ObjectStore, {
     range: { startAfter: startAfter ?? null, endInclusive, lastListedKey: page.entries.at(-1)?.key ?? null,
       nextStartAfter: page.nextStartAfter },
     initialState: state,
+    listedKeys: [...listed.keys()],
     counts: { listed: listed.size, snapshotReferences: state.snapshots.length, withdrawnReferences,
       verifiedObjects, verifiedReferences, verifiedWireBytes },
     findings,
   };
+};
+
+const summarizeState = (state: ScrubState) => ({
+  checkedAt: state.checkedAt,
+  snapshotReferences: state.snapshots.length,
+  removalRecords: state.removals.length,
+  stateSha256: sha256(Buffer.from(JSON.stringify([state.snapshots, state.removals]))),
+});
+
+export const certifyRawScrubRange = async (
+  db: Database, store: ObjectStore, options: ScrubOptions,
+  receiptPath: string, code: { gitSha: string; contentSha256: string },
+) => {
+  const { range, initialState, listedKeys, counts, findings } = await inspectRawScrubRange(db, store, options);
+  const finalState = await captureState(db, range.startAfter ?? "raw/", range.endInclusive,
+    options.snapshotLimit ?? 32, listedKeys, initialState.checkedAt);
+  const initial = summarizeState(initialState);
+  const final = summarizeState(finalState);
+  const changed = finalState.rightsChangedSince || final.checkedAt < initial.checkedAt ||
+    initial.stateSha256 !== final.stateSha256;
+  if (changed || findings.length) return { status: "failed" as const, changed, findings, range, counts, initial, final };
+
+  const receipt = {
+    schemaVersion: 1, issue: 170, status: "range-verified" as const, code, range, counts,
+    peakRssBytes: process.resourceUsage().maxRSS * 1024,
+    inputSha256: sha256(Buffer.from(JSON.stringify(listedKeys))),
+    initial, final,
+    policy: { inventoryLimit: options.inventoryLimit ?? 32, snapshotLimit: options.snapshotLimit ?? 32,
+      wireByteLimit: options.wireByteLimit ?? 256 * MiB, maxObjectBytes, requiredUse: "research" },
+  };
+  await writeFile(receiptPath, JSON.stringify(receipt, null, 2) + "\n", { flag: "wx", mode: 0o600 });
+  return receipt;
 };
