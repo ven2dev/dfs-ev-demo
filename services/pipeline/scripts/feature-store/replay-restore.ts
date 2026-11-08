@@ -42,12 +42,24 @@ export const readReplayBaseline = async () => {
   const manifest = JSON.parse((await checked(graphRoot + ".manifest.json")).toString()) as {
     payload: { sha256: string; byteSize: number };
   };
-  const graph = gunzipSync(await checked(graphRoot + ".json.gz"), { maxOutputLength: manifest.payload.byteSize });
-  if (graph.byteLength !== manifest.payload.byteSize || sha256(graph) !== manifest.payload.sha256) {
-    throw new Error("replay-baseline-graph-mismatch");
+  const compressed = await checked(graphRoot + ".json.gz");
+  // One output allocation, with a spare byte so zlib does not allocate a
+  // second full-size chunk at the exact output boundary.
+  const graph = gunzipSync(compressed, {
+    maxOutputLength: manifest.payload.byteSize, chunkSize: manifest.payload.byteSize + 1,
+  });
+  let records: Records;
+  try {
+    if (graph.byteLength !== manifest.payload.byteSize || sha256(graph) !== manifest.payload.sha256) {
+      throw new Error("replay-baseline-graph-mismatch");
+    }
+    ({ records } = JSON.parse(graph.toString()) as { records: Records });
+  } finally {
+    if (graph.buffer instanceof ArrayBuffer) graph.buffer.transfer(0);
+    if (compressed.buffer instanceof ArrayBuffer) compressed.buffer.transfer(0);
   }
-  const { records } = JSON.parse(graph.toString()) as { records: Records };
-  return { records, baselineHashes: { ...pins, ...members, inflatedGraph: manifest.payload.sha256 } };
+  return { records, baselineHashes: { ...pins, ...members, inflatedGraph: manifest.payload.sha256 },
+    memoryAfterBaseline: process.memoryUsage() };
 };
 
 export const restoreReplayMetadata = async (admin: Pick<Client, "query">, records: Records) => {

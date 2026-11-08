@@ -19,9 +19,9 @@ const normalized = {
 } as const;
 
 const hash = (value: unknown) => sha256(Buffer.from(JSON.stringify(value)));
-const kickoff = (value: unknown): string => {
+export const canonicalReplayTimestamp = (value: unknown): string => {
   const text = String(value);
-  const fraction = /\.(\d{1,6})(?=Z|[+-]\d{2}:\d{2}$)/.exec(text)?.[1] ?? "";
+  const fraction = /\.(\d{1,6})(?=Z|[+-]\d{2}(?::?\d{2})?$)/.exec(text)?.[1] ?? "";
   return new Date(text).toISOString().slice(0, -1) + fraction.padEnd(6, "0").slice(3) + "Z";
 };
 
@@ -35,7 +35,7 @@ export const hashNormalizedRows = (feed: Feed, rows: Row[]) => {
     const values: Row = {};
     for (const field of Object.keys(row).sort()) {
       if (field === "snapshot_id" || field === "job_id" || field === "normalizer_version") continue;
-      values[field] = field === "kickoff" ? kickoff(row[field]) : row[field];
+      values[field] = field === "kickoff" ? canonicalReplayTimestamp(row[field]) : row[field];
     }
     entries.set(key, values);
   }
@@ -99,6 +99,10 @@ export const stageReplayNormalization = async (
   let verifiedWireBytes = 0;
   let normalizedRows = 0;
   const normalizedParity = [];
+  const payloadMemory = [];
+  const arrayBuffers = () => process.memoryUsage().arrayBuffers;
+  const baselineArrayBuffers = arrayBuffers();
+  const slackBytes = 16 * MiB;
   for (const [key, snapshots] of objects) {
     const byteSize = Number(snapshots[0].byte_size);
     checkObjectReadLimit(byteSize);
@@ -106,7 +110,9 @@ export const stageReplayNormalization = async (
         snapshots.some((snapshot) => Number(snapshot.byte_size) !== byteSize || snapshot.sha256 !== parseObjectKey(key).sha256)) {
       throw new Error("replay-wire-budget-or-pin-mismatch");
     }
+    const beforeRead = arrayBuffers();
     const wire = await store.getVerified(key, byteSize);
+    const afterRead = arrayBuffers();
     try {
       if (wire.byteSize !== byteSize) throw new Error("replay-wire-size-mismatch");
       verifiedWireBytes += wire.byteSize;
@@ -134,7 +140,16 @@ export const stageReplayNormalization = async (
         await loadNormalizedRows(db.writer, asset.feed, snapshotId, owner, rows);
         normalizedParity.push({ snapshotId, ...parity });
       }
-    } finally { wire.release(); }
+    } finally {
+      const beforeRelease = arrayBuffers();
+      wire.release();
+      if (wire.byteSize !== 0) throw new Error("replay-wire-release-failed");
+      payloadMemory.push({ byteSize, beforeRead, afterRead, beforeRelease, afterRelease: arrayBuffers() });
+    }
   }
-  return { initial, withdrawn, verifiedObjects: objects.size, verifiedWireBytes, normalizedRows, normalizedParity };
+  const largestObjectBytes = Math.max(0, ...payloadMemory.map(({ byteSize }) => byteSize));
+  const peakArrayBuffers = Math.max(baselineArrayBuffers,
+    ...payloadMemory.flatMap(({ beforeRead, afterRead, beforeRelease, afterRelease }) => [beforeRead, afterRead, beforeRelease, afterRelease]));
+  return { initial, withdrawn, verifiedObjects: objects.size, verifiedWireBytes, normalizedRows, normalizedParity,
+    memory: { baselineArrayBuffers, largestObjectBytes, slackBytes, peakArrayBuffers, samples: payloadMemory } };
 };

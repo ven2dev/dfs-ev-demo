@@ -3,6 +3,7 @@ import type { VerifiedWire } from "./objectStore.ts";
 const allocations = new WeakMap<VerifiedWire, ArrayBuffer>();
 
 export const rememberVerifiedWire = (wire: VerifiedWire, allocation: ArrayBuffer): void => {
+  if (allocations.has(wire)) throw new Error("object-verification-already-registered");
   allocations.set(wire, allocation);
 };
 

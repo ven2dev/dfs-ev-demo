@@ -41,3 +41,19 @@ it("compares normalized natural keys and values independently of ordering and ow
   expect(() => hashNormalizedRows("schedules", [first, { ...first, state: "usable" }]))
     .toThrow("replay-normalized-duplicate-key");
 });
+
+it("refuses to replace a registered verified wire allocation", async () => {
+  // Vitest reaches the private registration function for this runtime test.
+  const access = await vi.importActual<{
+    rememberVerifiedWire: (wire: objectStore.VerifiedWire, allocation: ArrayBuffer) => void;
+  }>("../../src/featureStore/verifiedWireAccess.ts");
+  const { bytes, asset } = sourceFixture();
+  const input = Buffer.from(new ArrayBuffer(bytes.length));
+  bytes.copy(input);
+  const wire = objectStore.VerifiedWire.verify(objectStore.objectKey("raw", bytes), input);
+  try {
+    expect(() => access.rememberVerifiedWire(wire, new ArrayBuffer(bytes.length)))
+      .toThrow("object-verification-already-registered");
+    await expect(normalizeVerifiedSource(wire, asset, AbortSignal.timeout(5_000))).resolves.toMatchObject({ rowCount: 1 });
+  } finally { wire.release(); }
+});
