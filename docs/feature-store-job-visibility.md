@@ -121,6 +121,13 @@ pinned last valid value with both stale and superseded flags; running/failed
 heads and other versions/policies do not change those flags. The existing
 `includeSuperseded=false` policy can exclude that retained row on rebuild.
 
+Dataset `stale-feature` and `stale-label` describe today's newest completed
+revision only: the flag is set when that current head is unavailable and differs
+from the selected value. A value selected as a fallback at the requested time
+is no longer marked stale once today's newest revision is usable; an older pin
+can still be marked superseded. These flags describe current freshness, not
+whether historical selection used a fallback.
+
 The #163 exact-feature check uses the same relation at `knownAsOf`. A successful
 job completed after the pin refuses with `feature-after-as-of`; running/failed
 jobs retain `feature-unavailable`. Current freshness uses the shared relation
@@ -429,6 +436,35 @@ pass under Node 24, excluding `codex-briefs/**`. Initial unit attempts retain
 attempts are preserved and are not benchmark failures. No product or benchmark
 source changed after qualification, and all source SHA-256/Git blob identities
 are retained with the new evidence.
+
+## Rejected shared-clock cleanup and restored plan
+
+Step 4 is committed as `e78e175`. A subsequent cleanup attempt materialized one
+`knowledge_clock` in `qb_job_context`'s requests relation and used it in all
+eight completion joins. Its first producer plan run exceeded the
+unchanged context ceiling: 1,898,609 shared hits plus zero reads versus
+1,745,394 (153,215 hits, 8.778% over). No helper Function Scan appears, and all
+nine required CTEs execute once with the expected nonzero cardinalities.
+
+The run stopped without a retry or ceiling change; producer behavior tests did
+not run. `cleanup-stopped-20261108T045418Z.json` and its bundle retain the failed
+candidate, plan, source identities, output and sampled disk observations.
+
+The reviewer withdrew that rewrite after the gate failed. Keeping the CASE at each completion join lets
+constant `p_mode` fold reconstruction reads to a fixed checkpoint job set.
+Moving it into the materialized requests relation makes the completion check
+depend on each request row. The executable SQL is restored exactly to `e78e175`;
+only the explanatory comment above the first repeated join is new. Step 4's
+speed records keep their original source hashes, and the new receipt binds the
+comment-only file to that exact measured executable SQL.
+
+The restored producer plan passes at 1,659,581 hits plus zero reads under the
+unchanged 1,745,394 ceiling. All nine required CTEs execute once with the expected
+nonzero cardinalities; no helper Function Scan or reader LockRows appears.
+Negative controls reject repeated execution and excess buffers, and all 103,468
+normalized rows match the legacy projection. The standard 512 MiB fixture has
+zero scratch databases/connections or throwaway LOGINs after the check. The
+stopped evidence remains unchanged; the passing result is a separate record.
 
 ## Why it escaped
 

@@ -1,0 +1,178 @@
+{
+  "issue": 241,
+  "step": "post-step-4-comment-and-doc-cleanup",
+  "kind": "restored-producer-plan",
+  "recordedAt": "2026-11-08T05:00:17.955Z",
+  "runtime": "v24.18.1",
+  "verdict": "pass",
+  "baseCommit": "e78e1753955baf16cacd2b9fe8229af5391c3a5c",
+  "sourceIdentity": {
+    "packages/db/proposals/241_job_visibility.sql": {
+      "sha256": "bfddb84b4305c09469e7ae2bf85813157ee40fb4b175cc02e8b088ca257b4869",
+      "blobId": "f6732f70a70364f074c30315da7231021d2dc95a"
+    },
+    "docs/feature-store-job-visibility.md": {
+      "sha256": "7be6c523fe1e9a1aeaa76d4ed0bd72ba3d3f96f2abe4a4c78cd12cf1526e4e49",
+      "blobId": "10c9260f0696e20cf9853020b2d4e2e29462dcbf"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer-work.check.mts": {
+      "sha256": "08913fa6c5bfcf0685f0a26443cca4a61a16e976ea2becb615ddb82f25e43398",
+      "blobId": "df48ce6c988d2019d820fe7fd3239204b5d14117"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer-work.ts": {
+      "sha256": "170c00473f6aab2ef4cb4c23df611ec7cb992a87ac491d87b6b98863ded74bb0",
+      "blobId": "12bdc20b7146fcc19889886bca0715f8b956412a"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work-fixture.ts": {
+      "sha256": "c0333e5741264f5ff32163d7f65ec86ca11bc75c26e480a6e12d74b9dded3584",
+      "blobId": "b9d81352c702b7d0d4459bdcacce8f4203eec440"
+    }
+  },
+  "sqlIdentity": {
+    "exactStep4SqlAfterRemovingRequestedComment": true,
+    "step4Sha256": "13c7cedb65a2dcce133d8e1daff07bcd8f27f7330dca097c5390df66b6d3007a",
+    "commentedSha256": "bfddb84b4305c09469e7ae2bf85813157ee40fb4b175cc02e8b088ca257b4869",
+    "comment": "  -- Keep this CASE at each join: a constant p_mode folds it to a fixed checkpoint\n  -- job set in reconstruction mode. Computing it as a column of a precomputed\n  -- (materialized) step makes the check run per row, measured at +8.78% context\n  -- buffer hits; see cleanup-stopped-20261108T045418Z.json.\n"
+  },
+  "step4Qualification": {
+    "sourceCount": 27,
+    "allOtherQualifiedSourceHashesUnchanged": true,
+    "sqlRestoredExactlyApartFromComment": true,
+    "newSpeedRun": false
+  },
+  "plan": {
+    "hits": 1659581,
+    "reads": 0,
+    "ceiling": 1745394,
+    "ctes": [
+      {
+        "name": "snapshots",
+        "loops": 1,
+        "rows": 16
+      },
+      {
+        "name": "discovery_schedule",
+        "loops": 1,
+        "rows": 1359
+      },
+      {
+        "name": "population",
+        "loops": 1,
+        "rows": 9381
+      },
+      {
+        "name": "targets",
+        "loops": 1,
+        "rows": 1948
+      },
+      {
+        "name": "requests",
+        "loops": 1,
+        "rows": 119515
+      },
+      {
+        "name": "schedules",
+        "loops": 1,
+        "rows": 119515
+      },
+      {
+        "name": "stats",
+        "loops": 1,
+        "rows": 50352
+      },
+      {
+        "name": "identities",
+        "loops": 1,
+        "rows": 119515
+      },
+      {
+        "name": "participation",
+        "loops": 1,
+        "rows": 52188
+      }
+    ],
+    "helperFunctionScans": 0,
+    "explicitLocks": 0,
+    "negativeControls": {
+      "repeatedCteRefused": true,
+      "excessWorkRefused": true
+    },
+    "normalizedParity": {
+      "rows": 103468,
+      "sha256": "99648a6453e85b84248cad119ae1ad8ffe77d2bb8c56d6818101be963e0c5f04",
+      "statements": 1
+    }
+  },
+  "resource": {
+    "mountBytes": 536870912,
+    "peakSampledUsedBytes": 254668800,
+    "sampling": "one-second snapshots plus boundaries; sampled not absolute peak",
+    "cleanup": {
+      "scratch_databases": 0,
+      "scratch_connections": 0,
+      "throwaway_logins": 0
+    }
+  },
+  "preservedStoppedEvidence": [
+    {
+      "filename": "cleanup-stopped-20261108T045418Z.json",
+      "sha256": "c3821fbaa2c9982c8ef7012be1bc5915f178e87b2b11ff391878cd6d7130d968"
+    },
+    {
+      "filename": "cleanup-stopped-full-records-20261108T045418Z.tar.gz",
+      "sha256": "9bc02d2f9c6b556ce80703ea922342eb47b6612e065c72708a6299fa18402a65"
+    }
+  ],
+  "scope": {
+    "sqlChange": "comment only; rejected request knowledge_clock column discarded",
+    "docs": "dataset stale flags reflect current newest completed head, not fallback at historical request time",
+    "behaviorRerun": false,
+    "reason": "Owner requested producer plan recheck after exact executable SQL restoration; no behavior changed.",
+    "committed": false,
+    "pushed": false
+  },
+  "supplementalRecords": [
+    {
+      "path": "cleanup-restored-full-records-20261108T045912Z.tar.gz#cleanup-restored/plan.json",
+      "sha256": "162c0938766d71130de802d8ece6c94908c73f71a558d98f316aea9b71f63bbc",
+      "byteSize": 229389
+    },
+    {
+      "path": "cleanup-restored-full-records-20261108T045912Z.tar.gz#cleanup-restored/plan.log",
+      "sha256": "03699603fbe8add9d22aac90f41aefb4eb931472a2d2717b33b55df8e4de0a8f",
+      "byteSize": 206
+    },
+    {
+      "path": "cleanup-restored-full-records-20261108T045912Z.tar.gz#cleanup-restored/validation.json",
+      "sha256": "99829a678f3d9d7495208a9f32ff6dc94594757123dc4d8b5dd9af6f13fd34b8",
+      "byteSize": 13695
+    },
+    {
+      "path": "cleanup-restored-full-records-20261108T045912Z.tar.gz#cleanup-restored/disk.jsonl",
+      "sha256": "b9dd6539ac6f862edc19c866bad4fdfb8264fb9e2d939e2316d14f878a47d667",
+      "byteSize": 7705
+    },
+    {
+      "path": "cleanup-restored-full-records-20261108T045912Z.tar.gz#cleanup-restored/runner.mjs",
+      "sha256": "022bd774f6e6476b645bb2e546d584f20aec2536bc8ffdb0fcf6513b3be109ff",
+      "byteSize": 3515
+    },
+    {
+      "path": "cleanup-restored-full-records-20261108T045912Z.tar.gz#cleanup-restored/commented.sql",
+      "sha256": "bfddb84b4305c09469e7ae2bf85813157ee40fb4b175cc02e8b088ca257b4869",
+      "byteSize": 13047
+    },
+    {
+      "path": "cleanup-restored-full-records-20261108T045912Z.tar.gz#cleanup-restored/step4.sql",
+      "sha256": "13c7cedb65a2dcce133d8e1daff07bcd8f27f7330dca097c5390df66b6d3007a",
+      "byteSize": 12743
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "cleanup-restored-full-records-20261108T045912Z.tar.gz#cleanup-restored/summary.json",
+    "sha256": "a96c04aae1836e1565491d4cb9a1f6df2be2b1e8b7210c6ad8044e0ba9dffda6",
+    "byteSize": 5966,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

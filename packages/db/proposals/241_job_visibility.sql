@@ -93,6 +93,10 @@ WITH snapshots AS MATERIALIZED (
     n.home_score IS NOT NULL AND n.away_score IS NOT NULL AS completed,
     count(*) OVER(PARTITION BY r.player_id,r.game_id,r.context_game_id,s.available_at,s.ingested_at) AS heads
   FROM requests r JOIN fs138.norm_schedule n ON n.game_id=r.context_game_id JOIN snapshots s USING(snapshot_id)
+  -- Keep this CASE at each join: a constant p_mode folds it to a fixed checkpoint
+  -- job set in reconstruction mode. Computing it as a column of a precomputed
+  -- (materialized) step makes the check run per row, measured at +8.78% context
+  -- buffer hits; see cleanup-stopped-20261108T045418Z.json.
   JOIN fs138.completed_jobs_at(CASE WHEN p_mode='strict-point-in-time-v1' THEN least(p_checkpoint,r.eligibility_clock) ELSE p_checkpoint END) sj ON sj.job_id=s.job_id
   JOIN fs138.completed_jobs_at(CASE WHEN p_mode='strict-point-in-time-v1' THEN least(p_checkpoint,r.eligibility_clock) ELSE p_checkpoint END) nj ON nj.job_id=n.job_id
   WHERE n.normalizer_version=p_normalizer AND (p_mode='retrospective-reconstruction-v1'
