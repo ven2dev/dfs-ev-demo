@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CAPACITY_RULES, capacityHash, selectCapacityManifest, validateCapacityManifest,
   type CapacityManifest, type CapacityRequest } from "../../scripts/feature-store/prediction-capacity-workload.ts";
-import { CAPACITY_ORDER, capacityTrial, compactCapacityBenchmark, verifyCapacityBenchmark, verifyCapacityControls,
+import { CAPACITY_ORDER, CAPACITY_STARTUP_GATE, capacitySampleDeadlineError, capacityTrial, compactCapacityBenchmark, verifyCapacityBenchmark, verifyCapacityControls,
   type FullCapacityBenchmark } from "../../scripts/feature-store/prediction-capacity-evidence.ts";
 import { verifyEvidenceReceipt } from "../../scripts/feature-store/artifact-governance-evidence.ts";
 import type { CapacitySample } from "../../scripts/feature-store/prediction-capacity-process.ts";
@@ -46,6 +46,23 @@ const fullRecord = (): FullCapacityBenchmark => {
       rightsCalls: 2 * (1 + n % 3), q1: [{ table: "feature_values", seq_scan: 0, seq_tup_read: 0, idx_scan: 1,
         idx_tup_fetch: 1, inserted: 0, updated: 0, deleted: 0 }], q2: [{ table: "feature_values", seq_scan: 0,
         seq_tup_read: 0, idx_scan: 1, idx_tup_fetch: 1, inserted: 0, updated: 0, deleted: 0 }] })) };
+};
+const currentRecord = (): FullCapacityBenchmark => {
+  const old = fullRecord(), codeHashes = { ...old.codeHashes, "packages/db/proposals/241_job_visibility.sql": "a".repeat(64) };
+  return { ...old, issue: 242, schemaVersion: 2, startupGate: CAPACITY_STARTUP_GATE, codeHashes,
+    code: { ...old.code, contentSha256: capacityHash(codeHashes) },
+    codeBlobIds: { ...old.codeBlobIds, "packages/db/proposals/241_job_visibility.sql": "c".repeat(40) },
+    trials: CAPACITY_ORDER.map((name, i) => capacityTrial(old.samples.slice(i * 100, (i + 1) * 100), name, "trial-p95-v2")) };
+};
+const setStartup = (sample: CapacitySample, startupMs: number) => {
+  sample.importMs += startupMs - sample.startupMs; sample.startupMs = startupMs;
+  // Keep phase accounting consistent, including the exact inclusive deadline.
+  sample.handlerMs = Math.min(3, Math.max(0, 300 - startupMs)); sample.residualMs = 0;
+  sample.totalMs = startupMs + sample.handlerMs;
+};
+const refreshTrials = (full: FullCapacityBenchmark) => {
+  full.trials = CAPACITY_ORDER.map((name, i) => capacityTrial(full.samples.slice(i * 100, (i + 1) * 100), name,
+    full.schemaVersion === 1 ? "sample-max-v1" : "trial-p95-v2"));
 };
 
 describe("#168 pinned workload", () => {
@@ -109,5 +126,73 @@ describe("#168 hash-first capacity audit", () => {
     expect(() => verifyCapacityBenchmark(f)).toThrow(/per-trial-headroom/);
     expect(verifyCapacityBenchmark(f, false).allTrialsAtLeast30PercentHeadroom).toBe(false);
     expect(() => compactCapacityBenchmark(Buffer.from(JSON.stringify(f)), "x.tar.gz#full.json")).toThrow();
+  });
+});
+
+describe("#242 trial startup contract and historical compatibility", () => {
+  it.each([1, 5])("accepts %i startups between 210 and 300 in one otherwise passing trial", count => {
+    const f = currentRecord(); for (const s of f.samples.slice(0, count)) setStartup(s, 240);
+    refreshTrials(f);
+    expect(f.trials[0]).toMatchObject({ pass: true, startupP95Ms: 70, startupMaximumMs: 240 });
+    expect(f.trials[0].startupTail).toHaveLength(5);
+    expect(verifyCapacityBenchmark(f).allTrialsAtLeast30PercentHeadroom).toBe(true);
+    const bytes = Buffer.from(JSON.stringify(f)); verifyEvidenceReceipt(compactCapacityBenchmark(bytes, "new.tar.gz#full.json"), bytes);
+  });
+  it("refuses a cold trial with six slow startups, without pooling other trials", () => {
+    const f = currentRecord(); for (const s of f.samples.slice(0, 6)) setStartup(s, 211);
+    refreshTrials(f); expect(f.trials[0]).toMatchObject({ startupP95Ms: 211, pass: false });
+    expect(() => verifyCapacityBenchmark(f)).toThrow(/per-trial-headroom/);
+    expect(verifyCapacityBenchmark(f, false).allTrialsAtLeast30PercentHeadroom).toBe(false);
+  });
+  it("accepts startup and full-path p95 exactly 210", () => {
+    const f = currentRecord();
+    for (const s of f.samples.slice(0, 100)) { setStartup(s, 210); s.handlerMs = 0; s.totalMs = 210; }
+    refreshTrials(f); expect(f.trials[0]).toMatchObject({ startupP95Ms: 210, p95Ms: 210, pass: true });
+    expect(verifyCapacityBenchmark(f).allTrialsAtLeast30PercentHeadroom).toBe(true);
+  });
+  it.each([300, 300.001])("checks the inclusive sample startup deadline at %s ms", startupMs => {
+    const f = currentRecord(); setStartup(f.samples[0], startupMs); refreshTrials(f);
+    expect(capacitySampleDeadlineError(f.samples[0])).toBe(startupMs === 300 ? undefined : "capacity-startup-deadline-exceeded");
+    if (startupMs === 300) expect(verifyCapacityBenchmark(f).allTrialsAtLeast30PercentHeadroom).toBe(true);
+    else expect(() => verifyCapacityBenchmark(f)).toThrow(/per-trial-headroom/);
+  });
+  it("independently refuses a full-path deadline miss", () => {
+    const f = currentRecord(); f.samples[0].totalMs = 300.001; f.samples[0].residualMs = 227.001; refreshTrials(f);
+    expect(capacitySampleDeadlineError(f.samples[0])).toBe("capacity-parent-deadline-exceeded");
+    expect(() => verifyCapacityBenchmark(f)).toThrow(/per-trial-headroom/);
+  });
+  it.each(["maximum", "tail-duration", "tail-index", "tail-order"])("detects %s diagnostic tampering", kind => {
+    const f = currentRecord(), trial = f.trials[0];
+    if (kind === "maximum") trial.startupMaximumMs!++;
+    if (kind === "tail-duration") trial.startupTail![0].startupMs++;
+    if (kind === "tail-index") trial.startupTail![0].index++;
+    if (kind === "tail-order") trial.startupTail!.reverse();
+    expect(() => verifyCapacityBenchmark(f, false)).toThrow(/trial-recomputation/);
+  });
+  it("keeps the original per-sample 210 rule and exact summary shape for #168", () => {
+    const f = fullRecord(); expect(f.trials[0]).not.toHaveProperty("startupTail");
+    expect(f.trials[0]).not.toHaveProperty("startupMaximumMs");
+    expect(verifyCapacityBenchmark(f).samples).toBe(600);
+    setStartup(f.samples[0], 240); refreshTrials(f);
+    expect(f.trials[0]).toMatchObject({ startupP95Ms: 70, pass: false });
+    expect(() => verifyCapacityBenchmark(f)).toThrow(/per-trial-headroom/);
+  });
+  it.each(["issue", "version", "legacy-version", "rule", "limit", "tail-count", "legacy-rule"])("rejects unsupported %s", kind => {
+    const f = currentRecord();
+    if (kind === "issue") Object.assign(f, { issue: 168 });
+    if (kind === "version") Object.assign(f, { schemaVersion: 3 });
+    if (kind === "legacy-version") Object.assign(f, { schemaVersion: 1 });
+    if (kind === "rule") Object.assign(f, { startupGate: { ...CAPACITY_STARTUP_GATE, rule: "sample-max" } });
+    if (kind === "limit") Object.assign(f, { startupGate: { ...CAPACITY_STARTUP_GATE, p95Ms: 211 } });
+    if (kind === "tail-count") Object.assign(f, { startupGate: { ...CAPACITY_STARTUP_GATE, tailSamples: 1 } });
+    if (kind === "legacy-rule") Object.assign(f, { schemaVersion: 1, issue: 168 });
+    expect(() => verifyCapacityBenchmark(f)).toThrow();
+    f.verdict = "fail";
+    expect(() => compactCapacityBenchmark(Buffer.from(JSON.stringify(f)), "x.tar.gz#full.json")).toThrow();
+  });
+  it("requires the loaded #241 SQL in the new source inventory", () => {
+    const f = currentRecord(); delete f.codeHashes["packages/db/proposals/241_job_visibility.sql"];
+    delete f.codeBlobIds["packages/db/proposals/241_job_visibility.sql"]; f.code.contentSha256 = capacityHash(f.codeHashes);
+    expect(() => verifyCapacityBenchmark(f, false)).toThrow(/missing-visibility-source/);
   });
 });
