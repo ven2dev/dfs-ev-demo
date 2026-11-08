@@ -7,7 +7,7 @@ import { assertNoApplicationCredentials, parseTestDatabaseUrl } from "./target.m
 export async function createScratchHarness(environment) {
   assertNoApplicationCredentials(environment);
   if (environment.MIGRATION_DATABASE_URL !== undefined) throw new Error("Remote credentials are refused in the scratch harness.");
-  const base = Object.freeze(parseTestDatabaseUrl(environment.TEST_DATABASE_URL));
+  const base = Object.freeze(parseTestDatabaseUrl(environment.TEST_DATABASE_URL, environment.DB_TEST_LANE ?? "default"));
   const active = new Set();
   const admin = new Client(base);
   try {

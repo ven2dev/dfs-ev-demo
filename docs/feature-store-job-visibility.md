@@ -209,9 +209,18 @@ run is 466,530,304 bytes (444.918 MiB, 86.898%).
 The full materialization plan/parity test is deliberately named
 `job-visibility-producer-plan.mts`, outside the `*.check.mts` CI glob. It requires
 explicit opt-in and the measured spike mount size before connecting. Run it with
-Node 24 after starting Compose with both the standard file and
-`compose.feature-store-spike.yml`; supply `FEATURE_STORE_241_FULL_PLAN=1` and
-the measured byte count as `FEATURE_STORE_241_TMPFS_BYTES`.
+Node 24 on an exclusively owned non-default lane. The harness applies the
+2 GiB override to that lane only:
+
+```sh
+export DB_TEST_LANE=lane-2 DB_TEST_TIER=large
+export TEST_DATABASE_URL="$(env -u TEST_DATABASE_URL node scripts/db/test-db.mjs url)"
+node scripts/db/test-db.mjs up
+```
+
+Supply `FEATURE_STORE_241_FULL_PLAN=1` and the measured byte count as
+`FEATURE_STORE_241_TMPFS_BYTES`. After the run, execute
+`node scripts/db/test-db.mjs down` with the same lane selected.
 
 On the actual 2,147,483,648-byte mount, full-season materialization/parity passes:
 1,948 outputs and 31,168 snapshot links match, with histories/gaps executing once.

@@ -1,8 +1,9 @@
 import { DatabaseTestRunActiveError, startDatabaseTestRun } from "@dfs-ev/db-tooling/test-support/lifecycle";
 import { createTemplateRun } from "@dfs-ev/db-tooling/test-support/templates";
+import { requireDatabaseDiskBudget } from "./db-test-disk.mjs";
 import { databaseTestWorkers } from "./db-test-workers.mjs";
 import { validateDatabaseReport } from "./db-test-lanes.mjs";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -10,15 +11,54 @@ import { fileURLToPath } from "node:url";
 import { NODE_REQUIRED_CASES, validateCorpusDbReport, validateLeaseDbReport, validateNodeDbReport, validateReadinessDbReport } from "./db-test-contract.mjs";
 import {
   assertNoApplicationCredentials,
-  LOCAL_TEST_DATABASE_URL,
+  getTestDatabaseLane,
   parseTestDatabaseUrl,
 } from "@dfs-ev/db-tooling/test-support/target";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const composeArgs = [
-  "compose", "--env-file", "/dev/null", "--project-name", "dfs-ev-demo-test",
-  "-f", fileURLToPath(new URL("../../compose.test.yml", import.meta.url)),
-];
+const tierLabel = "dev.dfs-ev.test-tier";
+const fixtureFor = (environment) => {
+  const selected = getTestDatabaseLane(environment.DB_TEST_LANE);
+  if (environment.TEST_DATABASE_URL !== undefined) parseTestDatabaseUrl(environment.TEST_DATABASE_URL, environment.DB_TEST_LANE);
+  const tier = environment.DB_TEST_TIER ?? "standard";
+  if (tier !== "standard" && tier !== "large") throw new Error("Unknown DB_TEST_TIER. Use standard or large.");
+  if (tier === "large" && selected === getTestDatabaseLane()) {
+    throw new Error("The default DB test lane is fixed at 512 MiB. Select a non-default lane for the 2 GiB tier.");
+  }
+  const compose = ["compose", "--env-file", "/dev/null", "--project-name", selected.project,
+    "-f", fileURLToPath(new URL("../../compose.test.yml", import.meta.url))];
+  if (tier === "large") compose.push("-f", fileURLToPath(new URL("../../compose.feature-store-spike.yml", import.meta.url)));
+  return { selected, tier, compose, env: { ...environment, DB_TEST_COMPOSE_PORT: String(selected.port) },
+    suiteEnv: { ...environment, TEST_DATABASE_URL: selected.url } };
+};
+
+const assertFixtureTier = ({ selected, tier, compose, env }) => {
+  if (selected === getTestDatabaseLane()) return; // Default is protected by the fixed tier and --no-recreate.
+  const docker = (args) => execFileSync("docker", args, { cwd: root, env, encoding: "utf8" }).trim();
+  const id = docker([...compose, "ps", "--all", "--quiet", "postgres"]);
+  if (id && docker(["inspect", "--format", `{{index .Config.Labels "${tierLabel}"}}`, id]) !== tier) {
+    throw new Error("Existing DB test fixture uses another disk tier. Stop it explicitly before selecting a different tier.");
+  }
+};
+
+const checkFixtureDisk = ({ selected, tier, compose, env }) => {
+  let output;
+  try {
+    output = execFileSync("docker", [...compose, "exec", "-T", "postgres", "sh", "-ec", [
+      'df -Pk "$PGDATA" | tail -1',
+      'df -Pk "$PGDATA/pg_wal" | tail -1',
+      'du -sk "$PGDATA/pg_wal"',
+    ].join("\n")], { cwd: root, env, encoding: "utf8", timeout: 5_000, stdio: ["ignore", "pipe", "pipe"] });
+  } catch {
+    throw new Error(`Unable to measure PostgreSQL fixture space on ${selected.project}. Start the selected Compose lane first.`);
+  }
+  console.log(JSON.stringify({ diskPreflight: requireDatabaseDiskBudget(output, { project: selected.project, tier }) }));
+};
+
+const startFixture = (fixture) => run("docker",
+  [...fixture.compose, "up", "--no-recreate", "-d", "--wait", "--wait-timeout", "60"], fixture.env);
+const stopFixture = (fixture) => run("docker",
+  [...fixture.compose, "down", "--volumes", "--remove-orphans"], fixture.env);
 const stop = new AbortController();
 const activeChildren = new Set();
 let interrupted;
@@ -48,7 +88,7 @@ function run(command, args, environment = process.env, signal) {
 
 async function runSuite(environment, filters, leaseSignal) {
   assertNoApplicationCredentials(environment);
-  parseTestDatabaseUrl(environment.TEST_DATABASE_URL);
+  parseTestDatabaseUrl(environment.TEST_DATABASE_URL, environment.DB_TEST_LANE ?? "default");
   leaseSignal.throwIfAborted();
   const reportDir = await mkdtemp(join(tmpdir(), "dfs-ev-db-test-"));
   let templates;
@@ -106,36 +146,51 @@ async function runSuite(environment, filters, leaseSignal) {
 
 async function main() {
   const [mode, ...filters] = process.argv.slice(2);
-  if (mode === "down") return run("docker", [...composeArgs, "down", "--volumes", "--remove-orphans"]);
   assertNoApplicationCredentials(process.env);
+  const fixture = fixtureFor(process.env);
+  if (mode === "url") { console.log(fixture.selected.url); return 0; }
+  if (mode === "down") return stopFixture(fixture);
+  if (mode === "up") {
+    assertFixtureTier(fixture);
+    const result = await startFixture(fixture);
+    if (result === 0) assertFixtureTier(fixture);
+    return result;
+  }
+  if (mode === "preflight") {
+    checkFixtureDisk(fixture);
+    return 0;
+  }
   if (mode === "run") {
     const lease = await startDatabaseTestRun(process.env);
     lease.failureSignal.addEventListener("abort", lostLock, { once: true });
-    try { return await runSuite(process.env, filters, lease.failureSignal); }
-    finally { await lease.close(); }
+    try {
+      lease.failureSignal.throwIfAborted();
+      checkFixtureDisk(fixture);
+      return await runSuite(process.env, filters, lease.failureSignal);
+    } finally { await lease.close(); }
   }
-  if (mode !== "local" && mode !== "repeat") throw new Error("Expected DB test mode: run, local, repeat, or down.");
+  if (mode !== "local" && mode !== "repeat") throw new Error("Expected DB test mode: run, local, repeat, up, down, preflight, or url.");
   const repetitions = mode === "repeat" ? Number(filters.shift() ?? 20) : 1;
   if (!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 100 || (mode === "repeat" && filters.length)) {
     throw new Error("DB repetitions must be an integer from 1 to 100 with no test filters.");
   }
 
-  // Local/CI lifecycle uses only the Compose service's public test URL.
-  // A supplied override must agree with it; don't start one DB and test another.
-  if (process.env.TEST_DATABASE_URL && process.env.TEST_DATABASE_URL !== LOCAL_TEST_DATABASE_URL) {
-    throw new Error("test:db:local uses its fixed disposable database; use test:db for another validated loopback target.");
-  }
+  assertFixtureTier(fixture);
   let result = 1;
   let lease;
   let contention = false;
+  let tierMismatch = false;
   try {
-    const started = await run("docker", [...composeArgs, "up", "-d", "--wait", "--wait-timeout", "60"]);
+    const started = await startFixture(fixture);
     if (started === 0 && !interrupted) {
-      lease = await startDatabaseTestRun({ ...process.env, TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL });
+      try { assertFixtureTier(fixture); } catch (error) { tierMismatch = true; throw error; }
+      lease = await startDatabaseTestRun(fixture.suiteEnv);
       lease.failureSignal.addEventListener("abort", lostLock, { once: true });
       for (let index = 0; index < repetitions && !interrupted; index++) {
         if (mode === "repeat") console.log(`DB suite repetition ${index + 1}/${repetitions}`);
-        result = await runSuite({ ...process.env, TEST_DATABASE_URL: LOCAL_TEST_DATABASE_URL }, filters, lease.failureSignal);
+        lease.failureSignal.throwIfAborted();
+        checkFixtureDisk(fixture);
+        result = await runSuite(fixture.suiteEnv, filters, lease.failureSignal);
         if (result !== 0) break;
       }
     }
@@ -145,8 +200,8 @@ async function main() {
   } finally {
     lease?.failureSignal.removeEventListener("abort", lostLock);
     try {
-      if (!contention) {
-        const cleaned = await run("docker", [...composeArgs, "down", "--volumes", "--remove-orphans"]);
+      if (!contention && !tierMismatch) {
+        const cleaned = await stopFixture(fixture);
         if (cleaned !== 0) result = 1;
       }
     } finally { await lease?.close(); }

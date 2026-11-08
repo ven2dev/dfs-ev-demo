@@ -79,7 +79,7 @@ async function readPrivateJson(path: string): Promise<unknown> {
 
 export async function getTemplateReference(environment: Environment, version?: number): Promise<TemplateReference> {
   assertNoApplicationCredentials(environment);
-  const base = parseTestDatabaseUrl(environment.TEST_DATABASE_URL);
+  const base = parseTestDatabaseUrl(environment.TEST_DATABASE_URL, environment.DB_TEST_LANE ?? "default");
   if (!environment.TEST_DATABASE_TEMPLATE_MANIFEST) throw new Error("DB template manifest required; run npm run test:db:local or test:db.");
   const path = resolve(environment.TEST_DATABASE_TEMPLATE_MANIFEST);
   let registry = registries.get(path);
@@ -127,7 +127,7 @@ export async function registerTemplateClone(admin: Client, reference: TemplateRe
 
 export async function createTemplateRun(environment: Environment, directory: string, signal?: AbortSignal) {
   assertNoApplicationCredentials(environment);
-  const base = Object.freeze(parseTestDatabaseUrl(environment.TEST_DATABASE_URL));
+  const base = Object.freeze(parseTestDatabaseUrl(environment.TEST_DATABASE_URL, environment.DB_TEST_LANE ?? "default"));
   signal?.throwIfAborted();
   await privateDirectory(directory);
   if ((await readdir(directory)).length) throw new Error("DB template run requires an empty private directory.");

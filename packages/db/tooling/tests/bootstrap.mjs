@@ -10,7 +10,7 @@ import { assertNoApplicationCredentials, parseTestDatabaseUrl } from "./target.m
 // adopts an existing unversioned schema.
 export async function bootstrapPrimaryTestDatabase(client, environment) {
   assertNoApplicationCredentials(environment);
-  const expected = Object.freeze(parseTestDatabaseUrl(environment.TEST_DATABASE_URL));
+  const expected = Object.freeze(parseTestDatabaseUrl(environment.TEST_DATABASE_URL, environment.DB_TEST_LANE ?? "default"));
   const files = await checkMigrationArtifacts();
   const context = await prepareMigrationContext(files, await loadCatalogContracts(files));
   const options = { expected, files: context.files, verify: createCatalogVerifier(context.contracts),
