@@ -117,6 +117,15 @@ Historical receipts keep their original paths and hashes; use these translations
 when reading them against this checkout. Explicit historical commit:path
 references retain the path that existed in that commit.
 
+The permanent relocation guard keeps baseline hashes for frozen migrations,
+catalogs, schema and readiness artifacts. Proposal SQL was also frozen during
+the relocation itself, but remains mutable after relocation under the approved
+per-issue workflow. The guard checks that every baseline proposal asset still
+exists at its relocated path without requiring its historical bytes. Regression
+controls reject missing proposal assets and mutations to every frozen baseline
+artifact. The historical baseline receipt remains unchanged; updating it to
+accept proposal edits would rewrite the relocation evidence.
+
 The root workspace shell retains all 42 existing command names and adds
 test:repo-layout. Runtime dependency versions are unchanged. Root dev/build/start
 use the native app command with the documented @next/env loader for existing
