@@ -104,14 +104,15 @@ the byte-preserved `IF NOT EXISTS` statements from masking drift.
 `db:migrate up` currently refuses before connecting while owner rollout
 evidence is pending; only the registered scratch engine can mutate a target.
 
-Use Node 24, no application credentials and the existing Compose service:
+Use Node 24 and an unused non-default lane with no application credentials.
 
 ```bash
-docker compose --env-file /dev/null --project-name dfs-ev-demo-test \
-  -f compose.test.yml up -d --wait --wait-timeout 60
-TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test \
-  npm run db:migrate:dev
-npm run test:db:down
+export DB_TEST_LANE=lane-2 DB_TEST_TIER=standard
+export TEST_DATABASE_URL="$(env -u TEST_DATABASE_URL node scripts/db/test-db.mjs url)"
+node scripts/db/test-db.mjs up
+node scripts/db/test-db.mjs preflight
+npm run db:migrate:dev
+node scripts/db/test-db.mjs down
 ```
 
 The dev command creates a randomly named, registered scratch database, checks
@@ -120,7 +121,7 @@ install plan, applies it, then computes and applies a fresh no-op plan. It
 closes and removes the scratch database in finally. It
 reports versions only after scratch cleanup. It does not migrate the shared
 `dfs_ev_test` database. The container lifecycle above is manual: run
-`test:db:down` even if the dev command fails. The #45 test harness now uses this
+`node scripts/db/test-db.mjs down` with the same lane selected even if the dev command fails. The #45 test harness now uses this
 runner's guarded empty/prefix bootstrap and full catalog verification on its
 fixed disposable primary database.
 

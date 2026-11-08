@@ -38,10 +38,13 @@ Both usable bundles explicitly say `modelValidated: false`, `populationCoverage:
 Start the pinned disposable service in [the database testing guide](database-testing.md). `test:db:local` starts and removes it automatically for the full suite; the following manual workflow keeps it running for the proof. Supply an existing mode-0700 artifact directory outside the checkout. No API key is needed. Do not export application, Neon or remote database credentials into this shell.
 
 ```sh
-docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml up -d --wait
+export DB_TEST_LANE=lane-2 DB_TEST_TIER=standard
+export TEST_DATABASE_URL="$(env -u TEST_DATABASE_URL node scripts/db/test-db.mjs url)"
+node scripts/db/test-db.mjs up
+node scripts/db/test-db.mjs preflight
 artifact_root=$(mktemp -d "${TMPDIR:-/tmp}/dfs-ev-52-proof.XXXXXX")
-TEST_DATABASE_URL=postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test npm run predictive:local -- demo --artifact-root "$artifact_root"
-npm run test:db:down
+npm run predictive:local -- demo --artifact-root "$artifact_root"
+node scripts/db/test-db.mjs down
 ```
 
 The command accepts only the registered scratch harness and creates, migrates and removes fresh random databases in the disposable service. It refuses the shared primary database as a mutation target, unregistered targets and ambient application credentials. The supplied artifact directory survives database cleanup; keep it private. It contains a registration marker, exact source bytes addressed by SHA-256, and a content-addressed JSON journal of run IDs, capture metadata and artifact references. SQL stores relative content references, never this local directory path.
