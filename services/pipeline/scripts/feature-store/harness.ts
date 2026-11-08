@@ -6,7 +6,15 @@ import { runScratchMigrations } from "@dfs-ev/db-tooling/migrations/core";
 import { checkMigrationArtifacts } from "@dfs-ev/db-tooling/migrations/files";
 import { prepareMigrationContext } from "@dfs-ev/db-tooling/migrations/plans";
 import { createScratchHarness } from "@dfs-ev/db-tooling/test-support/scratch";
-import { parseTestDatabaseUrl } from "@dfs-ev/db-tooling/test-support/target";
+import { assertReplayScratchTarget, parseTestDatabaseUrl } from "@dfs-ev/db-tooling/test-support/target";
+
+const replayTargets = new WeakMap<Pick<Client, "query">, () => void>();
+
+export const assertFeatureStoreReplayTarget = (client: Pick<Client, "query">): void => {
+  const verify = replayTargets.get(client);
+  if (!verify) throw new Error("Unregistered replay scratch client refused.");
+  verify();
+};
 
 export const withFeatureStoreDatabase = async <T>(run: (context: {
   admin: Client; writer: Client; reader: Client; openWriter: () => Promise<Client>; createWriterConfig: () => Promise<ClientConfig>; createReaderConfig: () => Promise<ClientConfig>; queryCounts: { writer: number; reader: number };
@@ -50,8 +58,12 @@ export const withFeatureStoreDatabase = async <T>(run: (context: {
             };
           } });
         };
+        replayTargets.set(admin, () => assertReplayScratchTarget(process.env, config, harness.assertTarget));
         return await run({ admin, writer: await login("writer"), reader: await login("reader"), openWriter: () => login("writer"), createWriterConfig: () => loginConfig("writer"), createReaderConfig: () => loginConfig("reader"), queryCounts });
-      } finally { await Promise.all(clients.map((client) => client.end())); }
+      } finally {
+        replayTargets.delete(admin);
+        await Promise.all(clients.map((client) => client.end()));
+      }
     });
   } finally {
     const cleanup = new Client(parseTestDatabaseUrl(process.env.TEST_DATABASE_URL));

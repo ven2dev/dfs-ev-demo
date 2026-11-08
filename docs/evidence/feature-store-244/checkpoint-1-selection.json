@@ -1,0 +1,26 @@
+{
+  "issue": 244,
+  "checkpoint": 1,
+  "base": "4ce685a",
+  "baselineHashes": {
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.manifest.json": "3d7763a4645ca3c55b2159016dd2eab72123e420db778a9e4eeda7a8d30779cc",
+    "docs/evidence/feature-store-241/step-3-resumed-full-records-20261107T225754Z.tar.gz": "4f9f27537817b644ccb6321c60a2e6c3bac49072964b01ff5996255af13d595c",
+    "step-3-resumed/standard-20261107T225550Z-work.json": "e0905f690dea9033e681cd3dabd6c5e6caf866253e720e70b17d4e98c33240e0",
+    "step-3-resumed/opt-in-20261107T224935Z-full-plan.json": "0e06f0a22830c98989ab1aac7f2a8077e4c637afed2eed515f4e5b88d9c5492c",
+    "inflatedGraph": "455ac7df5ed5a4b4fa8e84957da11ee5627abf2f6029a84edd1c878120c1fc68"
+  },
+  "restore": {
+    "restoreStartedAt": "2026-11-08 15:56:30.050843+00",
+    "restoreCheckedAt": "2026-11-08 15:56:30.073592+00",
+    "profiles": 16,
+    "inputJobs": 16,
+    "snapshots": 16
+  },
+  "pinnedCheckpoint": "2026-11-07T21:59:46.011236+00:00",
+  "replayCheckedAt": "2026-11-08 15:56:30.318477+00",
+  "normalizedRows": 1359,
+  "selectedBeforeStage": false,
+  "selectedAfterStage": true,
+  "scratchCleanup": true
+}

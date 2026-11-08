@@ -1,3 +1,5 @@
+import type { ClientConfig } from "pg";
+
 // Only the disposable database's public test credentials belong here.
 // Never load an application .env file or fall back to DATABASE_URL.
 const lane = (project: string, port: number) => Object.freeze({
@@ -83,3 +85,24 @@ export function parseTestDatabaseUrl(value: string | undefined, selector = proce
     query_timeout: 20_000,
   };
 }
+
+export const parseReplayDatabaseTarget = (environment: NodeJS.ProcessEnv) => {
+  assertNoApplicationCredentials(environment);
+  if (environment.DB_TEST_LANE !== "lane-2" || environment.DB_TEST_TIER !== "large") {
+    throw new Error("Replay requires the registered lane-2 large fixture.");
+  }
+  return parseTestDatabaseUrl(environment.TEST_DATABASE_URL, environment.DB_TEST_LANE);
+};
+
+export const assertReplayScratchTarget = (
+  environment: NodeJS.ProcessEnv,
+  config: ClientConfig,
+  assertRegistered: (config: ClientConfig) => void,
+): void => {
+  const base = parseReplayDatabaseTarget(environment);
+  if (!/^dfs_ev_test_[a-f0-9]{20}$/.test(config.database ?? "") ||
+      Object.entries(base).some(([key, value]) => key !== "database" && config[key as keyof typeof base] !== value)) {
+    throw new Error("Replay scratch target refused.");
+  }
+  assertRegistered(config);
+};
