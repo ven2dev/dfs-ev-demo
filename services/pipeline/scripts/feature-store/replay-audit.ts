@@ -16,18 +16,21 @@ const sourceFiles = [
   "package-lock.json", "packages/db/tooling/tests/target.mts",
   ...["harness", "replay-audit", "replay-derived", "replay-normalized", "replay-restore", "recompute-replay"]
     .map((name) => `services/pipeline/scripts/feature-store/${name}.ts`),
-  ...["derived", "ingest", "jobs", "localObjectStore", "normalize", "objectStore", "source", "verifiedWireAccess"]
+  ...["asOf", "derived", "ingest", "jobs", "localObjectStore", "normalize", "objectStore", "source", "verifiedWireAccess"]
     .map((name) => `services/pipeline/src/featureStore/${name}.ts`),
   ...["138_feature_store.sql", "138_dataset_governance.sql", "163_effective_rights.sql", "241_job_visibility.sql"]
     .map((name) => `packages/db/proposals/${name}`),
 ];
 
-export const replayCodeIdentity = async () => {
-  const git = (...args: string[]) => execFileSync("git", args, { cwd: fileURLToPath(root), encoding: "utf8" }).trim();
+export const replayCodeIdentity = async (repository = root) => {
+  const git = (...args: string[]) => execFileSync("git", args, { cwd: fileURLToPath(repository), encoding: "utf8" }).trim();
+  const trackedChanges = git("status", "--porcelain", "--untracked-files=no");
+  const untrackedInputs = git("ls-files", "--others", "--exclude-standard", "--", "services/pipeline/", "packages/db/", "scripts/db/");
+  if (trackedChanges || untrackedInputs) throw new Error("replay-dirty-code");
+
   const gitSha = git("rev-parse", "HEAD");
-  const dirty = Boolean(git("status", "--porcelain", "--untracked-files=all", "--", ...sourceFiles));
-  const hashes = await Promise.all(sourceFiles.map(async (path) => [path, sha256(await readFile(new URL(path, root)))]));
-  return { gitSha, dirty, contentSha256: sha256(Buffer.from(JSON.stringify(hashes))) };
+  const hashes = await Promise.all(sourceFiles.map(async (path) => [path, sha256(await readFile(new URL(path, repository)))]));
+  return { gitSha, dirty: false, contentSha256: sha256(Buffer.from(JSON.stringify(hashes))) };
 };
 
 type Source = Pick<Client, "query">;

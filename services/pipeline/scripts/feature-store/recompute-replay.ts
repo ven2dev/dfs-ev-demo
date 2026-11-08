@@ -26,7 +26,6 @@ const run = async () => {
     throw new Error("replay-source-database-refused");
   }
   const code = await replayCodeIdentity();
-  if (code.dirty) throw new Error("replay-dirty-code");
   const baseline = await readReplayBaseline();
   const store = await openLocalObjectStore(values.root, { maxObjectBytes: 64 * 1024 ** 2 });
   const lease = await startDatabaseTestRun(process.env);
