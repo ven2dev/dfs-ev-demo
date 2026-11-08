@@ -1,4 +1,5 @@
 import { sha256 } from "./objectStore.ts";
+import { downloadPinnedWire } from "./sourceTransfer.ts";
 
 export const NORMALIZER_VERSION = "fs138-normalizer-v1";
 export const INGEST_LIMITS = { wireBytes: 64 * 1024 * 1024, decodedBytes: 192 * 1024 * 1024,
@@ -24,59 +25,9 @@ export const checkLimits = (limits: IngestLimits): void => {
   }
 };
 
-const checkedUrl = (value: string, initial: boolean): URL => {
-  const url = new URL(value);
-  if (url.protocol !== "https:" || url.username || url.password || url.port || url.hash ||
-      !(initial ? ["github.com"] : ["github.com", "release-assets.githubusercontent.com"]).includes(url.hostname) ||
-      (initial && (url.search || !url.pathname.startsWith("/nflverse/nflverse-data/releases/download/")))) {
-    throw new Error("ingest-url-refused");
-  }
-  return url;
-};
-
 export const downloadSource = async (
   asset: SourceAsset, signal: AbortSignal, limits: IngestLimits = INGEST_LIMITS, fetcher: typeof fetch = fetch,
 ): Promise<{ bytes: Buffer; capturedAt: string; requests: number }> => {
   checkLimits(limits);
-  if (!Number.isSafeInteger(asset.wire_bytes) || asset.wire_bytes < 0 || asset.wire_bytes > limits.wireBytes) throw new Error("ingest-wire-budget-exceeded");
-  let url = checkedUrl(asset.url, true).href;
-  for (let redirects = 0; redirects <= 3; redirects++) {
-    const response = await fetcher(url, { signal, redirect: "manual", headers: {
-      "Accept-Encoding": "identity", "User-Agent": "dfs-ev-demo-feature-store-spike", Accept: "application/octet-stream",
-    } });
-    if ([301, 302, 303, 307, 308].includes(response.status)) {
-      await response.body?.cancel();
-      const location = response.headers.get("location");
-      if (!location || redirects === 3) throw new Error("ingest-redirect-refused");
-      url = checkedUrl(new URL(location, url).href, false).href;
-      continue;
-    }
-    if (!response.ok || response.status !== 200 || !response.body) {
-      await response.body?.cancel(); throw new Error("ingest-http-refused");
-    }
-    // fetch transparently decodes Content-Encoding. Refuse that transformation
-    // so the stored hash continues to identify exact release-asset wire bytes.
-    const encoding = response.headers.get("content-encoding");
-    const length = response.headers.get("content-length");
-    if ((encoding && encoding !== "identity") || (length !== null &&
-        (!/^\d+$/.test(length) || Number(length) !== asset.wire_bytes))) {
-      await response.body.cancel(); throw new Error("ingest-wire-metadata-refused");
-    }
-    const reader = response.body.getReader();
-    const chunks: Uint8Array[] = [];
-    let count = 0;
-    try {
-      for (;;) {
-        signal.throwIfAborted();
-        const { done, value } = await reader.read();
-        if (done) break;
-        count += value.byteLength;
-        if (count > limits.wireBytes || count > asset.wire_bytes) throw new Error("ingest-wire-budget-exceeded");
-        chunks.push(value);
-      }
-    } finally { await reader.cancel().catch(() => {}); }
-    if (count !== asset.wire_bytes) throw new Error("ingest-wire-size-mismatch");
-    return { bytes: Buffer.concat(chunks, count), capturedAt: new Date().toISOString(), requests: redirects + 1 };
-  }
-  throw new Error("ingest-redirect-refused");
+  return downloadPinnedWire(asset.url, asset.wire_bytes, signal, limits.wireBytes, fetcher);
 };
