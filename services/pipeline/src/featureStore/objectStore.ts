@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { rememberVerifiedWire } from "./verifiedWireAccess.ts";
 
 // Keys carry the digest, independent of media type. Identical wire bytes in one
 // namespace have one address; media/codec metadata belongs to the snapshot row.
@@ -56,6 +57,7 @@ export class VerifiedWire {
     if (brand !== verifiedWireBrand) throw new Error("object-verification-required");
     this.#allocation = allocation;
     this.#wireSha256 = wireSha256;
+    rememberVerifiedWire(this, allocation);
     Object.freeze(this);
   }
 

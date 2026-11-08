@@ -1,0 +1,543 @@
+{
+  "issue": 244,
+  "schemaVersion": 1,
+  "status": "replay-verified",
+  "code": {
+    "gitSha": "a946c823d3a93ed9c66c311f01782293c863ed3c",
+    "dirty": false,
+    "contentSha256": "6f56e7d2e319488d8d2ebaa03ac8a47ebc8058db1437737ba626bb33b858a57d"
+  },
+  "baselineHashes": {
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.manifest.json": "3d7763a4645ca3c55b2159016dd2eab72123e420db778a9e4eeda7a8d30779cc",
+    "docs/evidence/feature-store-241/step-3-resumed-full-records-20261107T225754Z.tar.gz": "4f9f27537817b644ccb6321c60a2e6c3bac49072964b01ff5996255af13d595c",
+    "step-3-resumed/standard-20261107T225550Z-work.json": "e0905f690dea9033e681cd3dabd6c5e6caf866253e720e70b17d4e98c33240e0",
+    "step-3-resumed/opt-in-20261107T224935Z-full-plan.json": "0e06f0a22830c98989ab1aac7f2a8077e4c637afed2eed515f4e5b88d9c5492c",
+    "inflatedGraph": "455ac7df5ed5a4b4fa8e84957da11ee5627abf2f6029a84edd1c878120c1fc68"
+  },
+  "versions": {
+    "normalizer": "fs138-normalizer-v1",
+    "features": "qb-passing-yards-feature-v1",
+    "labels": "qb-passing-yards-label-v1",
+    "history": "prior-eligible-reg-max16-min2-cutoff1h-v1"
+  },
+  "boundaries": {
+    "initial": {
+      "checkedAt": "2026-11-08 20:55:18.530375+00",
+      "epochMicros": "1794171318530375",
+      "stateSha256": "16baac1eddff0fda77cf611cd659b2b113b5b21c4e2e220443d64e7cccbf1926"
+    },
+    "final": {
+      "checkedAt": "2026-11-08 20:57:18.173208+00",
+      "epochMicros": "1794171438173208",
+      "stateSha256": "16baac1eddff0fda77cf611cd659b2b113b5b21c4e2e220443d64e7cccbf1926"
+    }
+  },
+  "restore": {
+    "restoreStartedAt": "2026-11-08 20:55:18.503027+00",
+    "restoreCheckedAt": "2026-11-08 20:55:18.522544+00",
+    "profiles": 16,
+    "inputJobs": 16,
+    "snapshots": 16
+  },
+  "replayFinishedAt": "2026-11-08 20:57:18.123739+00",
+  "normalized": {
+    "verifiedObjects": 16,
+    "verifiedWireBytes": 246304787,
+    "normalizedRows": 103468,
+    "normalizedParity": [
+      {
+        "snapshotId": "9596365c-71f5-4a3c-ab71-f3b13890a4e4",
+        "count": 1359,
+        "keySha256": "4f4f2457f572cc026ed045600e32a5a8191af61d874b3b7bd0533d5ee2af454e",
+        "valueSha256": "ed886b1628005ee949de23d336643403fa155842dd6b8bf094f3d226ee2f7301"
+      },
+      {
+        "snapshotId": "29ac513a-bc92-488f-970c-baf091345f49",
+        "count": 18309,
+        "keySha256": "8b8135949443288149b7892ba21481096c99571654e62ba0cc8dd08d56e206ec",
+        "valueSha256": "1091e1a70cc4c62107ff8f81907976bee48a29c29a2c49b7bed32ab32d028cce"
+      },
+      {
+        "snapshotId": "363196e4-f343-413c-a884-d8e8bc9678d5",
+        "count": 18193,
+        "keySha256": "23e118d6e3a0c033369a675a10ee4a78c1c9ba7c86b4342155d1a255c5ba49b6",
+        "valueSha256": "c75f27e7263c6ea4c08e614ed4791d838a7e488d85a2790dd256be0cfc205d44"
+      },
+      {
+        "snapshotId": "a7cff87b-a819-4ff4-a479-50e06db6c119",
+        "count": 17670,
+        "keySha256": "f9fd5c9c10688a1a4be5368de742d5b96b044b178fdce156419a6e9dd9483a82",
+        "valueSha256": "3052660b68dfaf30b67ba5ec5ea12fe71f1381c657e337392938e2f441dfa727"
+      },
+      {
+        "snapshotId": "62fe6219-1805-4ff7-b170-f4b775637743",
+        "count": 17564,
+        "keySha256": "448ec93ad2e5d221b29dc086d60677dc5e95d19347dca4c87cf909d9b01354c7",
+        "valueSha256": "484f90753a48b78a2b1513a75cbd2760f71078496a070a062420e775b08ae801"
+      },
+      {
+        "snapshotId": "ab604074-89ec-4752-9a35-c8bb63f30416",
+        "count": 17707,
+        "keySha256": "490bca319286bbca9645501e61e732c6fad4be7f292a8e106dd3a3df2d545bac",
+        "valueSha256": "6e8a00d29a928cb7ccc65c1227e13929b19ab940c1a0c3bb731b5f1712ef6a97"
+      },
+      {
+        "snapshotId": "594651a8-213f-4e1e-ae62-3c2f943c8121",
+        "count": 1916,
+        "keySha256": "b30c98327c2e2a3fe96a44a5ab70a5096dd907c19d838178c5eafd2e26b94d88",
+        "valueSha256": "7b7f5c83bc14fba5f977fd59317c612d2df83509bf1386fe4f9b7f791783bc21"
+      },
+      {
+        "snapshotId": "67203ac9-1527-4bda-89ce-8fff5f6f2537",
+        "count": 1844,
+        "keySha256": "701e5ae448c2895eb90c34c7d334afb1de0f355046b2c717b93bb624c4640468",
+        "valueSha256": "a8813e5272bd51a3466c25c82e1e57a65ce7d8a4bf6681a8d3dc97244e785147"
+      },
+      {
+        "snapshotId": "4152f873-9e85-4520-8a85-3a2e59f33026",
+        "count": 1812,
+        "keySha256": "82b20652f188c7ba1068ad966ec34893e88062c9d6603e3003063a46ce3633a4",
+        "valueSha256": "bed01fcc41e008de0dd4a11d72123e55759e03de9cad7c3cad9ff57bd3169668"
+      },
+      {
+        "snapshotId": "060a6582-b119-466d-8ec1-46834a08364d",
+        "count": 1867,
+        "keySha256": "1df375fac88265da69a115a3d78f6162ae4aaac3e1cd523ce870fadb5ddb0f00",
+        "valueSha256": "930a9c237bec8cba35d848db0226aed80e4d07850099af731d574e25eeaacf1f"
+      },
+      {
+        "snapshotId": "cc406e3a-08e8-4cae-9c87-71e880ecad79",
+        "count": 1948,
+        "keySha256": "42932d799bf2b0c1e0ac2fc5ac7ebb0d6cb6c35726dea22c60534cf20e33dd3b",
+        "valueSha256": "8990d4ba35c3b415e19d23829459e3961fafbfdbe09f9db16a4425afa3418106"
+      },
+      {
+        "snapshotId": "70247211-830d-4d8d-93ea-8c430c8d7d97",
+        "count": 655,
+        "keySha256": "da80ec1b138f43aa37fef84a9df0febeec6d6e739de8804939af418aae96e1fb",
+        "valueSha256": "08ba18afb3f00851941d1ce0e22eb1e5f005757f054000e557f07ca2682fbe68"
+      },
+      {
+        "snapshotId": "0f67487d-52ce-49ae-b9bb-5fe081ab18c1",
+        "count": 633,
+        "keySha256": "32b09810640ba6b30ba7bf7ad827b31752745f1b5f9a94e7a24a5ddb3c064600",
+        "valueSha256": "35c71b4a6f10f276524171b541b35440c8f99fc026eca9c3ceb6331ba9e5b5e5"
+      },
+      {
+        "snapshotId": "516f2773-6baa-45ed-98a5-d5f9602d6280",
+        "count": 663,
+        "keySha256": "aca919797d192e85d45e4a816b242c5a9f8cb6559ca83b7e29e793785561eca5",
+        "valueSha256": "648dee4fb11f5894ec61b4538a4c2abc537cad84f6c654380c91f038fc77a3b8"
+      },
+      {
+        "snapshotId": "673ce0a4-8c25-4988-a8a1-a947290a3c02",
+        "count": 664,
+        "keySha256": "381d9927857f355e28ee7c2e381acab7c8b3bb96f2df5492c14fa0d809528738",
+        "valueSha256": "db971ca249d00878d2582ee46c93b890d8bca698812a31919070e302047deb62"
+      },
+      {
+        "snapshotId": "cb30d9a6-b3af-470d-a82f-5e4dc4e144a6",
+        "count": 664,
+        "keySha256": "9b9bbae63981d37d6d9457f0d60a046a1ac3ec10ebd54a24f2633e311115a0b3",
+        "valueSha256": "cf3fadfa1dfab10f622a08c711597bd2845dd86199a9b55823d739acbd03f351"
+      }
+    ],
+    "memory": {
+      "baselineArrayBuffers": 989625,
+      "largestObjectBytes": 49967956,
+      "slackBytes": 16777216,
+      "peakArrayBuffers": 59125079,
+      "samples": [
+        {
+          "byteSize": 515250,
+          "beforeRead": 989625,
+          "afterRead": 1505451,
+          "beforeRelease": 4149110,
+          "afterRelease": 3633860
+        },
+        {
+          "byteSize": 22498246,
+          "beforeRead": 3633860,
+          "afterRead": 26132682,
+          "beforeRelease": 24754465,
+          "afterRelease": 2256219
+        },
+        {
+          "byteSize": 22245804,
+          "beforeRead": 2256219,
+          "afterRead": 24502599,
+          "beforeRelease": 29201461,
+          "afterRelease": 6955657
+        },
+        {
+          "byteSize": 49967956,
+          "beforeRead": 6955657,
+          "afterRead": 56924189,
+          "beforeRelease": 52355759,
+          "afterRelease": 2387803
+        },
+        {
+          "byteSize": 49688308,
+          "beforeRead": 2387803,
+          "afterRead": 52076687,
+          "beforeRelease": 59125079,
+          "afterRelease": 9436771
+        },
+        {
+          "byteSize": 49094943,
+          "beforeRead": 9436771,
+          "afterRead": 58532290,
+          "beforeRelease": 51548794,
+          "afterRelease": 2453851
+        },
+        {
+          "byteSize": 15242660,
+          "beforeRead": 2453851,
+          "afterRead": 17697087,
+          "beforeRelease": 18335668,
+          "afterRelease": 3093008
+        },
+        {
+          "byteSize": 14790824,
+          "beforeRead": 3093008,
+          "afterRead": 17884408,
+          "beforeRelease": 17328724,
+          "afterRelease": 2537900
+        },
+        {
+          "byteSize": 14612235,
+          "beforeRead": 2537900,
+          "afterRead": 17150711,
+          "beforeRelease": 17213637,
+          "afterRelease": 2601402
+        },
+        {
+          "byteSize": 699786,
+          "beforeRead": 2601402,
+          "afterRead": 3301764,
+          "beforeRelease": 4933530,
+          "afterRelease": 4233744
+        },
+        {
+          "byteSize": 708144,
+          "beforeRead": 4233744,
+          "afterRead": 4942464,
+          "beforeRelease": 6946971,
+          "afterRelease": 6238827
+        },
+        {
+          "byteSize": 1254611,
+          "beforeRead": 6238827,
+          "afterRead": 7494014,
+          "beforeRelease": 5637289,
+          "afterRelease": 4382678
+        },
+        {
+          "byteSize": 1241515,
+          "beforeRead": 4382678,
+          "afterRead": 5624769,
+          "beforeRelease": 4499332,
+          "afterRelease": 3257817
+        },
+        {
+          "byteSize": 1237909,
+          "beforeRead": 3257817,
+          "afterRead": 4496302,
+          "beforeRelease": 4969130,
+          "afterRelease": 3731221
+        },
+        {
+          "byteSize": 1244175,
+          "beforeRead": 3731221,
+          "afterRead": 4975972,
+          "beforeRelease": 5565871,
+          "afterRelease": 4321696
+        },
+        {
+          "byteSize": 1262421,
+          "beforeRead": 4321696,
+          "afterRead": 5584693,
+          "beforeRelease": 5387728,
+          "afterRelease": 4125307
+        }
+      ]
+    }
+  },
+  "derived": {
+    "derivedParity": [
+      {
+        "kind": "features",
+        "season": 2021,
+        "mode": "retrospective-reconstruction-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1916,
+        "keySha256": "3a2046f7f434d9b5fd5a0d04862eae3e4f4a12c892ede58a1d1eff3f69255774",
+        "valueSha256": "2e1be1c3982c84d7afd932e0ed9b0640316bd1806c99d76005274d508e4cfc2b",
+        "inputs": 4,
+        "lineageSha256": "f9069b5bf132389c83834f169ed0055276d8d6e5e2886246d00f4563fd7e9bf4",
+        "inputSetSha256": "1db732e09462fb52b121c5830506043be5fe763644f12968e90941312e1fbdac",
+        "originalPolicySha256": "99d75c38a3d6a73d55f78d92896b09907ed9b68a7c4445d01264e8cb873b9abc"
+      },
+      {
+        "kind": "labels",
+        "season": 2021,
+        "mode": "retrospective-reconstruction-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1916,
+        "keySha256": "0cd3e75930e2fdf169df41005d49b45604cde28abd08b09744012be446031478",
+        "valueSha256": "235a39a1641a9d877bf2a6f5fcb402ae8bfce4bedabd3728d350149befd75d43",
+        "inputs": 4,
+        "lineageSha256": "f9069b5bf132389c83834f169ed0055276d8d6e5e2886246d00f4563fd7e9bf4",
+        "inputSetSha256": "1db732e09462fb52b121c5830506043be5fe763644f12968e90941312e1fbdac",
+        "originalPolicySha256": "2eaf9c2b9ecad868ba7adaf3e6941acf7bbe8a70b9847feceae2bab65cb8c3d4"
+      },
+      {
+        "kind": "features",
+        "season": 2021,
+        "mode": "strict-point-in-time-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1916,
+        "keySha256": "b02ddddd7e3dfe62e6bef2da04a047eff7ef952b440b40ec0717f6aa3342f0dc",
+        "valueSha256": "3c18e8e7237771e17db89b36cfe43f1c190df49062e85b72ef3739dc590f6f36",
+        "inputs": 4,
+        "lineageSha256": "f9069b5bf132389c83834f169ed0055276d8d6e5e2886246d00f4563fd7e9bf4",
+        "inputSetSha256": "1db732e09462fb52b121c5830506043be5fe763644f12968e90941312e1fbdac",
+        "originalPolicySha256": "ba133ad6e7e066e35db1707bee4daca2304b4cd34737541ae3e82fe41b555e18"
+      },
+      {
+        "kind": "labels",
+        "season": 2021,
+        "mode": "strict-point-in-time-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1916,
+        "keySha256": "bcf4fd29978336b3aba4caa5bddf09ab36502850ec102607f80a0790ec187700",
+        "valueSha256": "c13698f0ca9119e5ea1cf0f8753364d89ffe2fa301e9f82cde5f92b6e35c42be",
+        "inputs": 4,
+        "lineageSha256": "f9069b5bf132389c83834f169ed0055276d8d6e5e2886246d00f4563fd7e9bf4",
+        "inputSetSha256": "1db732e09462fb52b121c5830506043be5fe763644f12968e90941312e1fbdac",
+        "originalPolicySha256": "43c8769194734d5738449d49ec12e0f6221277e428ddd7b1cbb09fe29ed10142"
+      },
+      {
+        "kind": "features",
+        "season": 2022,
+        "mode": "retrospective-reconstruction-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1838,
+        "keySha256": "03e231a5bfc43dc9d9b841b00421c8aafe9e2dac5a212814de538161f9ebd20a",
+        "valueSha256": "37e743472f4a772adcf4b73eb2dddde7b9bbd62485fe8610e943339de875cc7f",
+        "inputs": 7,
+        "lineageSha256": "ad910d4b0c598f035778993b4dd67b2ec49c392339aba6e2ccade7b2032d6ea2",
+        "inputSetSha256": "0e2bb8b14aa9a58dd6f52bc5289cf3055c17e29a3b261bcf43c0524e32b0b51d",
+        "originalPolicySha256": "a91a9cb65380c299d689fbca957996cfc9c083c3db4122aba282deaa7c24e1ae"
+      },
+      {
+        "kind": "labels",
+        "season": 2022,
+        "mode": "retrospective-reconstruction-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1838,
+        "keySha256": "645965e3e52427b32a70a71da41e12f746fba1dcc5773c1c4683fa1455b7e960",
+        "valueSha256": "720414b853626bb4a23fcd8839bd243b207280c463b1842ac920da61f0703e82",
+        "inputs": 4,
+        "lineageSha256": "2ddaf0fbb9b1b52eebb69a7cd249a0a17cd048e5b897e84501a1159c9f48e502",
+        "inputSetSha256": "3dfdcac81c1df7846bbd5ced81974f7ad2d7702682d66eab42c1d3e19f33db04",
+        "originalPolicySha256": "131c4ad5b257c8e700f9221277884944dac0646e797037e394b8de25c23ebd30"
+      },
+      {
+        "kind": "features",
+        "season": 2022,
+        "mode": "strict-point-in-time-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1838,
+        "keySha256": "b78117fbdef90e2a60c3b6db2e9cf3c96f996c759805c7635877d6b33d03ad7b",
+        "valueSha256": "175e81ab7eb0357f4390e62a1643eab562006f1121bc6f12d370b37cf9200f86",
+        "inputs": 7,
+        "lineageSha256": "ad910d4b0c598f035778993b4dd67b2ec49c392339aba6e2ccade7b2032d6ea2",
+        "inputSetSha256": "0e2bb8b14aa9a58dd6f52bc5289cf3055c17e29a3b261bcf43c0524e32b0b51d",
+        "originalPolicySha256": "8e6a7ba4550aeda330f49ce5d902c817f9d5bd54f4c45310f0a7b75d9f820efb"
+      },
+      {
+        "kind": "labels",
+        "season": 2022,
+        "mode": "strict-point-in-time-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1838,
+        "keySha256": "d3696aea857229b38c29e71247a5eb81ab399bf308ed9ba624b5042e0e37ed78",
+        "valueSha256": "9ce28666006d2800fc5feef4f3982e0abd106e4c97755c1bd2f05751db30f1e3",
+        "inputs": 4,
+        "lineageSha256": "2ddaf0fbb9b1b52eebb69a7cd249a0a17cd048e5b897e84501a1159c9f48e502",
+        "inputSetSha256": "3dfdcac81c1df7846bbd5ced81974f7ad2d7702682d66eab42c1d3e19f33db04",
+        "originalPolicySha256": "c3f7ae2e3d2405646e01514f54105f6ab1bdd5a2c72f6a26494cc48379f9e4b8"
+      },
+      {
+        "kind": "features",
+        "season": 2023,
+        "mode": "retrospective-reconstruction-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1812,
+        "keySha256": "954b12a11fad2370df61d819da27304e4ceea68971742447251922c0f232491f",
+        "valueSha256": "40352768ac06141747f160fcbd343c090d4d459c1db7e7dfc68a78e0c3b9b424",
+        "inputs": 10,
+        "lineageSha256": "5bf82087c631927121d4f46632ecbd15a0c423ef68115f3e933bcd88573511af",
+        "inputSetSha256": "24f16a614bc47be32e6cdcf222483f03c8374ccedd63128e0c3671145709122e",
+        "originalPolicySha256": "3901c2c663e23562c76349852fe998171026c3e3a7a7369ca77835a5986d2235"
+      },
+      {
+        "kind": "labels",
+        "season": 2023,
+        "mode": "retrospective-reconstruction-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1812,
+        "keySha256": "c9e5dde0956118edeebbdc98ee3ccbfe4ce9919618d1c5a701f5aa75ae79a5e9",
+        "valueSha256": "cf7b8fa5ed6791386ef3209d17f2ea8371391b0347ab0028960131f5cd5f0ba8",
+        "inputs": 4,
+        "lineageSha256": "9f1419b9c3416dd83bea93d33686d65d6f089ed4b71e5933fddc7dbf7025d2d7",
+        "inputSetSha256": "07a399fdbbeb71d1dce5d9face96b001c8b7a464351514da53739a808caec728",
+        "originalPolicySha256": "645bdcf786314e43e1ae5dad24c8d161ef0a688dce73bde4f4a86764de27d577"
+      },
+      {
+        "kind": "features",
+        "season": 2023,
+        "mode": "strict-point-in-time-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1812,
+        "keySha256": "668f49f2e5b156ef6ebbf0162062137a0ab34d24acc4adeafc091f01a15587fe",
+        "valueSha256": "0d78bc3d78aebc78aa3cdbc357a5be71975efad30c939094492d84a96de21a0f",
+        "inputs": 10,
+        "lineageSha256": "5bf82087c631927121d4f46632ecbd15a0c423ef68115f3e933bcd88573511af",
+        "inputSetSha256": "24f16a614bc47be32e6cdcf222483f03c8374ccedd63128e0c3671145709122e",
+        "originalPolicySha256": "defb358c4900eb5520bb4e892f928d54478ad65f110b8e0f1cfb6632ac5f73d3"
+      },
+      {
+        "kind": "labels",
+        "season": 2023,
+        "mode": "strict-point-in-time-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1812,
+        "keySha256": "b633450f3cf6671d3ee22b68f35738c3314cd4491f6ffe74901dab623f743736",
+        "valueSha256": "45dfb6901d088be28b009aeee303571baa97a050ddc9c29bfc1b14cb15269a8b",
+        "inputs": 4,
+        "lineageSha256": "9f1419b9c3416dd83bea93d33686d65d6f089ed4b71e5933fddc7dbf7025d2d7",
+        "inputSetSha256": "07a399fdbbeb71d1dce5d9face96b001c8b7a464351514da53739a808caec728",
+        "originalPolicySha256": "529907022309af033e16d6caacc3a2f2667fe95e6e0c7027edbd15e3e56658c2"
+      },
+      {
+        "kind": "features",
+        "season": 2024,
+        "mode": "retrospective-reconstruction-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1867,
+        "keySha256": "851fe090e4b0ae37b4f2fae87b82742537ee589038ccae470879c7bdb0d17556",
+        "valueSha256": "1cab2c35e516d7854eadf86a3116a8af5c58e7afce1a35b61d1fa52d888bea27",
+        "inputs": 13,
+        "lineageSha256": "7e2865cfbffb892e022c80bf81d9bb3a670d79ba921d11b80239cf6f53899ed7",
+        "inputSetSha256": "00e71816419deb77ef094a6b53049d463048af898fba6e4bebaee00a91a968fc",
+        "originalPolicySha256": "8d04a470cec4927bf41c72f95846298c76a8f5b8eff55a03d17b8ee529068621"
+      },
+      {
+        "kind": "labels",
+        "season": 2024,
+        "mode": "retrospective-reconstruction-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1867,
+        "keySha256": "f75fd469b37d16f7f51bc6d79fe85e423ca3fec244c2efacf36c983bc576afcd",
+        "valueSha256": "d62b116d5d3ef92cf5127de537f091eb5e0193a16c5f5697de942b620bec33e5",
+        "inputs": 4,
+        "lineageSha256": "72e5cef490262357c4bcbf55051d5dd647021d69ccaf9b82b02187d240928b45",
+        "inputSetSha256": "8d1a0b9d1ba424366ddaf501acf6fee2eb36f35f5b37effbc84fb43224fc161e",
+        "originalPolicySha256": "d526a4048287489a61e998788468594aae5f979bba8fb1fe0246efa9990f76f4"
+      },
+      {
+        "kind": "features",
+        "season": 2024,
+        "mode": "strict-point-in-time-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1867,
+        "keySha256": "9ff259cdb00502490615056922febfdb214a2c2f6823a123ce71506f0f721689",
+        "valueSha256": "d8d8c1ced6ecfd0df8c549b3702253082264a600d81fd3aacb6e2996740cb429",
+        "inputs": 13,
+        "lineageSha256": "7e2865cfbffb892e022c80bf81d9bb3a670d79ba921d11b80239cf6f53899ed7",
+        "inputSetSha256": "00e71816419deb77ef094a6b53049d463048af898fba6e4bebaee00a91a968fc",
+        "originalPolicySha256": "a973a331aa11735c198f7161730668612ce59f780ff08f65befdd699192189e8"
+      },
+      {
+        "kind": "labels",
+        "season": 2024,
+        "mode": "strict-point-in-time-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1867,
+        "keySha256": "49871fbb6029c6c2d5837b05cf82a624346301a9e3907f4d49980f4593f029da",
+        "valueSha256": "d902754dc0d5e7ce637c19cfac682f8266df77e7a3820c6273855607ebfcece4",
+        "inputs": 4,
+        "lineageSha256": "72e5cef490262357c4bcbf55051d5dd647021d69ccaf9b82b02187d240928b45",
+        "inputSetSha256": "8d1a0b9d1ba424366ddaf501acf6fee2eb36f35f5b37effbc84fb43224fc161e",
+        "originalPolicySha256": "181e7532c69ad532ad0b83acd8b9ff44b9435926b90aa1135331cbd43bd06402"
+      },
+      {
+        "kind": "features",
+        "season": 2025,
+        "mode": "retrospective-reconstruction-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1948,
+        "keySha256": "44a3951e3badbfd00ade374106304c9eaa00702717e09f304a921806fe69ddf6",
+        "valueSha256": "5f721fae3f6a5473d3ce54c0a12f9f048a8039637b4931a6a04733b49a893132",
+        "inputs": 16,
+        "lineageSha256": "69f20987da3ef57628e926508457438f158baebecea307654562a3e8f3fc4eb2",
+        "inputSetSha256": "7884546fae87c4494688b78efdfd23f2af2963137d7b87a0937e5de52118f832",
+        "originalPolicySha256": "64bb051cc38e269953809a5e7b83507c6c49aa077bcd71bdfd08c067bc136122"
+      },
+      {
+        "kind": "labels",
+        "season": 2025,
+        "mode": "retrospective-reconstruction-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1948,
+        "keySha256": "b46967247c14d37812c75d6f47d557bda5465e2f5ceb961f741523779ba6d1d0",
+        "valueSha256": "3b74b465ba22cb78388be0d96c985affdffbb1ad82ffbc57d4ce4747312d705e",
+        "inputs": 4,
+        "lineageSha256": "13dfe7ddef83c11f514c950d49b9ea3b7fe6a54f958add88b5cb045f3cd07d6d",
+        "inputSetSha256": "344426cbe7821a06f6759fdec551dba0602dd90e5a4752de2b9a9ea6af7a0980",
+        "originalPolicySha256": "296772724281d3c66f6f1cea4fd4579f8f1b4995285f7680b101284fef4f5583"
+      },
+      {
+        "kind": "features",
+        "season": 2025,
+        "mode": "strict-point-in-time-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1948,
+        "keySha256": "ad35096d17ab16eca765fe8a061be5341c02496a402420274e18bc3f5c844d04",
+        "valueSha256": "ae79aa722669b0ac343fde32789ddda211266788a860dd86e22b4b69f8425bec",
+        "inputs": 16,
+        "lineageSha256": "69f20987da3ef57628e926508457438f158baebecea307654562a3e8f3fc4eb2",
+        "inputSetSha256": "7884546fae87c4494688b78efdfd23f2af2963137d7b87a0937e5de52118f832",
+        "originalPolicySha256": "2789dcb4f8844040baf5339c756043b4aa60156b3b523424cb2e19f81c3ee8c4"
+      },
+      {
+        "kind": "labels",
+        "season": 2025,
+        "mode": "strict-point-in-time-v1",
+        "checkpoint": "2026-11-07T21:59:46.011236+00:00",
+        "rows": 1948,
+        "keySha256": "cd3e7e142934883ef050d3cef52b2bcddec25cff803c2ae5a20430dd3d29b5bc",
+        "valueSha256": "94be6c907022bf64ee255dffd8f886217adc0a7a8c40ac9461f3d38242a535dc",
+        "inputs": 4,
+        "lineageSha256": "13dfe7ddef83c11f514c950d49b9ea3b7fe6a54f958add88b5cb045f3cd07d6d",
+        "inputSetSha256": "344426cbe7821a06f6759fdec551dba0602dd90e5a4752de2b9a9ea6af7a0980",
+        "originalPolicySha256": "f49de364f136c1a78dee0baccf09d48d30c75ac8b4feacb9ac80e7cef95acb11"
+      }
+    ],
+    "selectionQueries": 20,
+    "materializations": 20,
+    "perExampleQueries": 0
+  },
+  "memoryAfterBaseline": {
+    "rss": 823836672,
+    "heapTotal": 413614080,
+    "heapUsed": 278865080,
+    "external": 156491622,
+    "arrayBuffers": 625185
+  },
+  "scratchCleanup": true,
+  "peakRssBytes": 864845824
+}
