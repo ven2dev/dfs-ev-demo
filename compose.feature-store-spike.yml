@@ -1,6 +1,8 @@
 # Selected by the DB harness for a registered non-default lane.
 services:
   postgres:
+    # Preserve the PostgreSQL defaults used by the full-season benchmarks.
+    command: [postgres]
     labels:
       dev.dfs-ev.test-tier: large
     tmpfs: !override

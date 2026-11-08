@@ -196,6 +196,7 @@ jobs:
           TEST_DATABASE_URL: postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test
         run: |
           docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml up -d --wait --wait-timeout 60
+          node scripts/db/test-db.mjs preflight
           npm run test:feature-store:db
 
       - name: Remove disposable PostgreSQL

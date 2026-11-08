@@ -1,0 +1,143 @@
+{
+  "issue": 247,
+  "checkpoint": 2,
+  "codeSha": "0fdccd8f5a355745a9767aa4b4954310224e2f57",
+  "lane": "lane-2",
+  "postgres": "18.6",
+  "settings": {
+    "max_wal_size": "96MB",
+    "min_wal_size": "32MB",
+    "fsync": "off",
+    "synchronous_commit": "off",
+    "full_page_writes": "off",
+    "temp_file_limit": "128MB",
+    "log_temp_files": "0"
+  },
+  "stages": [
+    {
+      "name": "core",
+      "admission": {
+        "totalBytes": 536870912,
+        "usedBytes": 48439296,
+        "freeBytes": 488431616,
+        "baseBytes": 30998528,
+        "walBytes": 16777216,
+        "tempBytes": 0
+      },
+      "peak": {
+        "usedBytes": 245047296,
+        "baseBytes": 172802048,
+        "walBytes": 83886080,
+        "tempBytes": 0
+      },
+      "after": {
+        "totalBytes": 536870912,
+        "usedBytes": 70131712,
+        "freeBytes": 466739200,
+        "baseBytes": 34832384,
+        "walBytes": 33554432,
+        "tempBytes": 0
+      },
+      "samples": 86,
+      "peakGrowthBytes": 196608000,
+      "minFreeFraction": 0.5435638427734375
+    },
+    {
+      "name": "feature-store",
+      "admission": {
+        "totalBytes": 536870912,
+        "usedBytes": 70131712,
+        "freeBytes": 466739200,
+        "baseBytes": 34832384,
+        "walBytes": 33554432,
+        "tempBytes": 0
+      },
+      "peak": {
+        "usedBytes": 251236352,
+        "baseBytes": 182931456,
+        "walBytes": 67108864,
+        "tempBytes": 103583744
+      },
+      "after": {
+        "totalBytes": 536870912,
+        "usedBytes": 103448576,
+        "freeBytes": 433422336,
+        "baseBytes": 35127296,
+        "walBytes": 67108864,
+        "tempBytes": 0
+      },
+      "samples": 434,
+      "peakGrowthBytes": 181104640,
+      "minFreeFraction": 0.5320358276367188
+    }
+  ],
+  "loggedTemporaryFiles": 24,
+  "maxLoggedTempFileBytes": 24084480,
+  "tempLimitProbe": {
+    "queryRefusedSqlstate": "53400",
+    "samePostmasterAndSelectOne": true
+  },
+  "after": {
+    "totalBytes": 536870912,
+    "usedBytes": 103448576,
+    "freeBytes": 433422336,
+    "baseBytes": 35127296,
+    "walBytes": 67108864,
+    "tempBytes": 0
+  },
+  "cleanupVerified": true,
+  "measurement": "Samples at admission, completion and approximately every 250 ms plus Docker command overhead; peaks are sampled, not exact.",
+  "outcomes": {
+    "core": {
+      "nodeRequiredCases": 74,
+      "leaseRequiredCases": 13,
+      "readinessRequiredCases": 4,
+      "corpusRequiredCases": 8,
+      "result": "verified"
+    },
+    "featureStore": {
+      "tests": 289,
+      "pass": 289,
+      "fail": 0,
+      "skipped": 0
+    }
+  },
+  "rejected64MiBTrial": {
+    "featureStore": {
+      "tests": 289,
+      "pass": 288,
+      "fail": 1,
+      "skipped": 0
+    },
+    "sqlstate": "53400",
+    "test": "#241 live producer context work ceiling and final relational parity",
+    "logSha256": "9b28c5f1eb66fa76ac7ca2c74bbe1523b57737f3c0bd11d591867cc9e3c0cb0e"
+  },
+  "standard": {
+    "measuredGrowthBytes": 202797056,
+    "marginBytes": 67108864,
+    "requiredFreeBytes": 285212672,
+    "basis": "Both standard lanes of CI work on a fresh lane-2 server. Largest used sample relative to fresh admission."
+  },
+  "large": {
+    "measuredGrowthBytes": 489472000,
+    "marginBytes": 134217728,
+    "requiredFreeBytes": 637534208,
+    "planArchive": "docs/evidence/feature-store-241/step-3-resumed-full-records-20261107T225754Z.tar.gz",
+    "planMember": "step-3-resumed/opt-in-20261107T224935Z-disk.jsonl",
+    "plan": {
+      "samples": 25,
+      "admissionUsedBytes": 48840704,
+      "peakUsedBytes": 538312704
+    },
+    "producerReceipt": "docs/evidence/feature-store-241/step-4-final-benchmark-20261108T011159Z.json",
+    "producer": {
+      "samples": 117,
+      "admissionUsedBytes": 257138688,
+      "peakUsedBytes": 605462528
+    }
+  },
+  "proposedAdmissionCadence": "After exclusive ownership and before dispatch, once for run and before every repeat iteration.",
+  "headroomFloorFraction": 0.25,
+  "headroomPassed": true
+}

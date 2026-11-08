@@ -1,5 +1,6 @@
 import { DatabaseTestRunActiveError, startDatabaseTestRun } from "@dfs-ev/db-tooling/test-support/lifecycle";
 import { createTemplateRun } from "@dfs-ev/db-tooling/test-support/templates";
+import { requireDatabaseDiskBudget } from "./db-test-disk.mjs";
 import { databaseTestWorkers } from "./db-test-workers.mjs";
 import { validateDatabaseReport } from "./db-test-lanes.mjs";
 import { execFileSync, spawn } from "node:child_process";
@@ -38,6 +39,20 @@ const assertFixtureTier = ({ selected, tier, compose, env }) => {
   if (id && docker(["inspect", "--format", `{{index .Config.Labels "${tierLabel}"}}`, id]) !== tier) {
     throw new Error("Existing DB test fixture uses another disk tier. Stop it explicitly before selecting a different tier.");
   }
+};
+
+const checkFixtureDisk = ({ selected, tier, compose, env }) => {
+  let output;
+  try {
+    output = execFileSync("docker", [...compose, "exec", "-T", "postgres", "sh", "-ec", [
+      'df -Pk "$PGDATA" | tail -1',
+      'df -Pk "$PGDATA/pg_wal" | tail -1',
+      'du -sk "$PGDATA/pg_wal"',
+    ].join("\n")], { cwd: root, env, encoding: "utf8", timeout: 5_000, stdio: ["ignore", "pipe", "pipe"] });
+  } catch {
+    throw new Error(`Unable to measure PostgreSQL fixture space on ${selected.project}. Start the selected Compose lane first.`);
+  }
+  console.log(JSON.stringify({ diskPreflight: requireDatabaseDiskBudget(output, { project: selected.project, tier }) }));
 };
 
 const startFixture = (fixture) => run("docker",
@@ -141,13 +156,20 @@ async function main() {
     if (result === 0) assertFixtureTier(fixture);
     return result;
   }
+  if (mode === "preflight") {
+    checkFixtureDisk(fixture);
+    return 0;
+  }
   if (mode === "run") {
     const lease = await startDatabaseTestRun(process.env);
     lease.failureSignal.addEventListener("abort", lostLock, { once: true });
-    try { return await runSuite(process.env, filters, lease.failureSignal); }
-    finally { await lease.close(); }
+    try {
+      lease.failureSignal.throwIfAborted();
+      checkFixtureDisk(fixture);
+      return await runSuite(process.env, filters, lease.failureSignal);
+    } finally { await lease.close(); }
   }
-  if (mode !== "local" && mode !== "repeat") throw new Error("Expected DB test mode: run, local, repeat, up, down, or url.");
+  if (mode !== "local" && mode !== "repeat") throw new Error("Expected DB test mode: run, local, repeat, up, down, preflight, or url.");
   const repetitions = mode === "repeat" ? Number(filters.shift() ?? 20) : 1;
   if (!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 100 || (mode === "repeat" && filters.length)) {
     throw new Error("DB repetitions must be an integer from 1 to 100 with no test filters.");
@@ -166,6 +188,8 @@ async function main() {
       lease.failureSignal.addEventListener("abort", lostLock, { once: true });
       for (let index = 0; index < repetitions && !interrupted; index++) {
         if (mode === "repeat") console.log(`DB suite repetition ${index + 1}/${repetitions}`);
+        lease.failureSignal.throwIfAborted();
+        checkFixtureDisk(fixture);
         result = await runSuite(fixture.suiteEnv, filters, lease.failureSignal);
         if (result !== 0) break;
       }
