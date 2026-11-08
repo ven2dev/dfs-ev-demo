@@ -1,0 +1,12 @@
+{
+  "issue": 170,
+  "machineReceipt": {
+    "file": "checkpoint-4-machine-receipt.json",
+    "sha256": "a36b909c395e177104baa2eeaa65e5268758383035821c9e6d3fbde5ea078cc1"
+  },
+  "supersedes": "checkpoint-3-qualification.json",
+  "fixturePin": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+  "database": "Disposable local PostgreSQL metadata seeded from pinned file identities with synthetic research grants.",
+  "scratchCleanup": "Completed successfully before this wrapper was written.",
+  "node": "v24.21.0"
+}
