@@ -12,7 +12,7 @@ export class DatabaseTestRunActiveError extends Error {
 
 export async function startDatabaseTestRun(environment: NodeJS.ProcessEnv) {
   assertNoApplicationCredentials(environment);
-  const base = parseTestDatabaseUrl(environment.TEST_DATABASE_URL);
+  const base = parseTestDatabaseUrl(environment.TEST_DATABASE_URL, environment.DB_TEST_LANE ?? "default");
   const admin = new Client(base);
   const failure = new AbortController();
   admin.on("error", (cause: Error) => {

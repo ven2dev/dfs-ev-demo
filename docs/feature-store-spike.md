@@ -558,14 +558,15 @@ validation receipt for exact results and source hashes.
 - [Superseded connection-cold run](evidence/feature-store-138/step-4-real-derived-connection-cold.json)
 - [Initial timed plan-count probe](evidence/feature-store-138/step-4-plan-probe-timing-failure.json)
 
-Reproduce with Node 24, locked dependencies and only the disposable
-`TEST_DATABASE_URL` from step 2. No `.env` or application credentials are loaded.
+Reproduce with Node 24, locked dependencies and an exclusively owned non-default lane. The harness supplies the registered disposable URL. No `.env` or application credentials are loaded.
 
 ```sh
-docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml -f compose.feature-store-spike.yml up -d --wait
+export DB_TEST_LANE=lane-2 DB_TEST_TIER=large
+export TEST_DATABASE_URL="$(env -u TEST_DATABASE_URL node scripts/db/test-db.mjs url)"
+node scripts/db/test-db.mjs up
 npm run test:feature-store:db
 npm run feature-store:derived:spike
-docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml -f compose.feature-store-spike.yml down --volumes
+node scripts/db/test-db.mjs down
 ```
 
 The proposal/harness applies main and proposal SQL only in registered scratch

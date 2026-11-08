@@ -34,7 +34,7 @@ export function parseCatalogOptions(args, environment) {
   if (values.environment === "test") {
     assertNoApplicationCredentials(environment);
     if (environment.MIGRATION_DATABASE_URL !== undefined) refuse("remote-url-refused-in-test-mode");
-    config = parseTestDatabaseUrl(environment.TEST_DATABASE_URL);
+    config = parseTestDatabaseUrl(environment.TEST_DATABASE_URL, environment.DB_TEST_LANE ?? "default");
   } else {
     let url;
     try { url = new URL(environment.MIGRATION_DATABASE_URL); } catch { refuse("explicit-migration-url-required"); }

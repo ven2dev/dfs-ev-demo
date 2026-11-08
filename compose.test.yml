@@ -9,10 +9,12 @@ services:
       POSTGRES_USER: dfs_ev_test
       POSTGRES_PASSWORD: dfs_ev_test
     ports:
-      - "127.0.0.1:54329:5432"
+      - "127.0.0.1:${DB_TEST_COMPOSE_PORT:-54329}:5432"
     tmpfs:
       # PostgreSQL 18's data directory is beneath this mount.
       - /var/lib/postgresql:rw,size=512m
+    labels:
+      dev.dfs-ev.test-tier: standard
     shm_size: 128mb
     healthcheck:
       test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "dfs_ev_test", "-d", "dfs_ev_test"]
