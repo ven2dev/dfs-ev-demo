@@ -2,7 +2,7 @@
 
 The #168 results below retain their original contract. The approved
 [#242 startup-gate update](https://github.com/ven2dev/dfs-ev-demo/issues/242#issuecomment-6718023389)
-is described at the end of this document; its new qualification is pending.
+is described at the end of this document, together with its final qualification.
 
 Approved [measured roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/168#issuecomment-6674037913),
 based on merged #167/#239 at `17e07d6`. Owner waived the issue’s 5-hour split
@@ -341,3 +341,38 @@ The owner confirms a quiet host window with ALT before fixture preparation and
 timing. A miss stops the run and keeps its samples; there is no larger-disk or
 settings substitution. Estimate is 2.5–3.5 hours. Each step stops for commit
 approval; push/PR needs fresh consent. #169 waits for #247 to merge.
+
+### Final #242 qualification — 2026-11-08
+
+The first attempt passed on committed sources `4edb69881e0ebb2388ae4b81be7d319a9b78626e`;
+all 62 source hashes and Git blob IDs match. The standard 512 MiB
+PostgreSQL fixture reproduced the unchanged 2,504-row dataset. No settings or
+mount sizes changed. ALT's quiet window covered preparation and timing; Relay
+gave the owner the all-clear after the process exited.
+
+| Trial | Available/attempts | Full-path p95 ms | Headroom under 300 ms | Startup p95 ms | Startup maximum ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| C1 | 100/100 | 170.547 | 43.15% | 133.561 | 139.986 |
+| W1 | 100/100 | 7.202 | 97.60% | setup separate | — |
+| C2 | 100/100 | 169.319 | 43.56% | 131.608 | 142.633 |
+| W2 | 100/100 | 8.563 | 97.15% | setup separate | — |
+| C3 | 100/100 | 162.780 | 45.74% | 133.548 | 175.631 |
+| W3 | 100/100 | 8.676 | 97.11% | setup separate | — |
+
+All 600 requests retain 3 SQL / 2 combined checks / 1 GET / 0 hashes, plus all-n
+2P/model-only controls and same-process warm rights/deletion refusals. Minimum
+headroom is 43.15%. There are no refused measured samples,
+retries or replacements, and no startup/full-path sample exceeds 300 ms.
+The same ordered player/game/history coordinates as #168 cover 100 QBs, 32 teams,
+maximum player share 1%, all 15 season/history cells and every n=2–16. The
+manifest was pinned before timing; fresh fixture identities make its hash new.
+
+Across cold samples, startup p95 is 133.548 ms and maximum
+175.631 ms; aggregate setup share is 78.95%.
+Warm setup remains separate (W1 119.783 ms; W2 135.209 ms; W3 126.608 ms).
+The existing unflushed-cache/local-fixture limitations remain. These runs are
+absolute qualification, not an interleaved performance comparison with #168.
+
+[Full results, startup top-five records, phase breakdown and audit instructions](evidence/feature-store-242/README.md)
+point to the new hash-first receipts and deterministic ObjectStore/in-tree
+mirrors. #168 evidence remains byte-for-byte unchanged under its original rule.
