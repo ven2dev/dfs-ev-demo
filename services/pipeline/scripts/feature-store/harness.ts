@@ -10,9 +10,9 @@ import { assertReplayScratchTarget, parseTestDatabaseUrl } from "@dfs-ev/db-tool
 
 const replayTargets = new WeakMap<Pick<Client, "query">, () => void>();
 
-export const assertFeatureStoreReplayTarget = (client: Pick<Client, "query">): void => {
+export const assertFeatureStoreReplayTarget = (client: Pick<Client, "query">, writer?: Pick<Client, "query">): void => {
   const verify = replayTargets.get(client);
-  if (!verify) throw new Error("Unregistered replay scratch client refused.");
+  if (!verify || (writer && replayTargets.get(writer) !== verify)) throw new Error("Unregistered replay scratch client refused.");
   verify();
 };
 
@@ -58,10 +58,19 @@ export const withFeatureStoreDatabase = async <T>(run: (context: {
             };
           } });
         };
-        replayTargets.set(admin, () => assertReplayScratchTarget(process.env, config, harness.assertTarget));
-        return await run({ admin, writer: await login("writer"), reader: await login("reader"), openWriter: () => login("writer"), createWriterConfig: () => loginConfig("writer"), createReaderConfig: () => loginConfig("reader"), queryCounts });
+        const writer = await login("writer");
+        const reader = await login("reader");
+        const verifyReplayTarget = () => assertReplayScratchTarget(process.env, config, harness.assertTarget);
+        replayTargets.set(admin, verifyReplayTarget);
+        replayTargets.set(writer, verifyReplayTarget);
+        try {
+          return await run({ admin, writer, reader, openWriter: () => login("writer"),
+            createWriterConfig: () => loginConfig("writer"), createReaderConfig: () => loginConfig("reader"), queryCounts });
+        } finally {
+          replayTargets.delete(writer);
+          replayTargets.delete(admin);
+        }
       } finally {
-        replayTargets.delete(admin);
         await Promise.all(clients.map((client) => client.end()));
       }
     });
