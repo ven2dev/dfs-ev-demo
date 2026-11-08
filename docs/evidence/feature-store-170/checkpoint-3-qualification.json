@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "issue": 170,
+  "status": "range-verified",
+  "code": {
+    "gitSha": "12ce9dbdcc97fc07e80a65c2ffa2b4e2175c5932",
+    "contentSha256": "bc75cbfe4115c8f14dcf3ebc52dd03b4829eb2db44e3ba0800a3ed78efd716a5"
+  },
+  "range": {
+    "startAfter": null,
+    "endInclusive": "raw/ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "lastListedKey": "raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+    "nextStartAfter": null
+  },
+  "counts": {
+    "listed": 16,
+    "snapshotReferences": 16,
+    "withdrawnReferences": 0,
+    "verifiedObjects": 16,
+    "verifiedReferences": 16,
+    "verifiedWireBytes": 246304787
+  },
+  "peakRssBytes": 322191360,
+  "inputSha256": "59e07c0cc03a1bb6c5a9b4e672e7aaadf13195cdefc5b110ce9ad1c0acc2664a",
+  "initial": {
+    "checkedAt": "2026-11-07 21:56:32.655968+00",
+    "snapshotReferences": 16,
+    "removalRecords": 0,
+    "stateSha256": "09ca1c190371b663494dd1ccdabc53851ae3f00ac7aeb4b3ab2d645b939e99b4"
+  },
+  "final": {
+    "checkedAt": "2026-11-07 21:56:32.977378+00",
+    "snapshotReferences": 16,
+    "removalRecords": 0,
+    "stateSha256": "09ca1c190371b663494dd1ccdabc53851ae3f00ac7aeb4b3ab2d645b939e99b4"
+  },
+  "policy": {
+    "inventoryLimit": 32,
+    "snapshotLimit": 32,
+    "wireByteLimit": 268435456,
+    "maxObjectBytes": 67108864,
+    "requiredUse": "research"
+  },
+  "fixturePin": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+  "database": "disposable metadata seeded from pinned file identities, with synthetic research grants",
+  "scratchCleanup": "passed"
+}

@@ -1,0 +1,225 @@
+{
+  "issue": 170,
+  "fixturePin": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+  "command": "node [--expose-gc] services/pipeline/scripts/feature-store/qualify-integrity-memory.ts <preserved-object-root>",
+  "methodology": "Real object payloads and local scrub loop. Snapshot metadata and eligibility are supplied by the fixture, with no database access. Sampled immediately before and after each verified read and again after final release. RSS is contextual.",
+  "passRule": "Sampled peak arrayBuffers <= largest object + 8 MiB, and pre-read and final-release samples <= initial baseline + 8 MiB.",
+  "runs": [
+    {
+      "node": "v24.21.0",
+      "gcBetweenReads": false,
+      "baseline": 167139,
+      "samples": [
+        {
+          "key": "raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+          "bytes": 515250,
+          "beforeRead": 174339,
+          "afterRead": 690165
+        },
+        {
+          "key": "raw/b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+          "bytes": 22498246,
+          "beforeRead": 174915,
+          "afterRead": 22673737
+        },
+        {
+          "key": "raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+          "bytes": 22245804,
+          "beforeRead": 175491,
+          "afterRead": 22421871
+        },
+        {
+          "key": "raw/ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+          "bytes": 49967956,
+          "beforeRead": 176067,
+          "afterRead": 50144599
+        },
+        {
+          "key": "raw/b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+          "bytes": 49688308,
+          "beforeRead": 176643,
+          "afterRead": 49865527
+        },
+        {
+          "key": "raw/59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+          "bytes": 49094943,
+          "beforeRead": 177219,
+          "afterRead": 49272738
+        },
+        {
+          "key": "raw/88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+          "bytes": 15242660,
+          "beforeRead": 177795,
+          "afterRead": 15421031
+        },
+        {
+          "key": "raw/bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+          "bytes": 14790824,
+          "beforeRead": 178371,
+          "afterRead": 14969771
+        },
+        {
+          "key": "raw/1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+          "bytes": 14612235,
+          "beforeRead": 178947,
+          "afterRead": 14791758
+        },
+        {
+          "key": "raw/330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+          "bytes": 699786,
+          "beforeRead": 179523,
+          "afterRead": 879885
+        },
+        {
+          "key": "raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+          "bytes": 708144,
+          "beforeRead": 180099,
+          "afterRead": 888819
+        },
+        {
+          "key": "raw/1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+          "bytes": 1254611,
+          "beforeRead": 180675,
+          "afterRead": 1435862
+        },
+        {
+          "key": "raw/0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+          "bytes": 1241515,
+          "beforeRead": 181251,
+          "afterRead": 1423342
+        },
+        {
+          "key": "raw/6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+          "bytes": 1237909,
+          "beforeRead": 181827,
+          "afterRead": 1420312
+        },
+        {
+          "key": "raw/61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+          "bytes": 1244175,
+          "beforeRead": 182403,
+          "afterRead": 1427154
+        },
+        {
+          "key": "raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+          "bytes": 1262421,
+          "beforeRead": 182979,
+          "afterRead": 1445976
+        }
+      ],
+      "afterLastRelease": 183555,
+      "peakArrayBuffers": 50144599,
+      "peakRssBytes": 160940032,
+      "largest": 49967956,
+      "slack": 8388608
+    },
+    {
+      "node": "v24.21.0",
+      "gcBetweenReads": true,
+      "baseline": 143615,
+      "samples": [
+        {
+          "key": "raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+          "bytes": 515250,
+          "beforeRead": 143615,
+          "afterRead": 659441
+        },
+        {
+          "key": "raw/b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+          "bytes": 22498246,
+          "beforeRead": 143615,
+          "afterRead": 22642437
+        },
+        {
+          "key": "raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+          "bytes": 22245804,
+          "beforeRead": 143615,
+          "afterRead": 22389995
+        },
+        {
+          "key": "raw/ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+          "bytes": 49967956,
+          "beforeRead": 143615,
+          "afterRead": 50112147
+        },
+        {
+          "key": "raw/b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+          "bytes": 49688308,
+          "beforeRead": 143615,
+          "afterRead": 49832499
+        },
+        {
+          "key": "raw/59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+          "bytes": 49094943,
+          "beforeRead": 143615,
+          "afterRead": 49239134
+        },
+        {
+          "key": "raw/88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+          "bytes": 15242660,
+          "beforeRead": 143615,
+          "afterRead": 15386851
+        },
+        {
+          "key": "raw/bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+          "bytes": 14790824,
+          "beforeRead": 143615,
+          "afterRead": 14935015
+        },
+        {
+          "key": "raw/1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+          "bytes": 14612235,
+          "beforeRead": 143615,
+          "afterRead": 14756426
+        },
+        {
+          "key": "raw/330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+          "bytes": 699786,
+          "beforeRead": 143615,
+          "afterRead": 843977
+        },
+        {
+          "key": "raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+          "bytes": 708144,
+          "beforeRead": 143615,
+          "afterRead": 852335
+        },
+        {
+          "key": "raw/1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+          "bytes": 1254611,
+          "beforeRead": 143615,
+          "afterRead": 1398802
+        },
+        {
+          "key": "raw/0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+          "bytes": 1241515,
+          "beforeRead": 143615,
+          "afterRead": 1385706
+        },
+        {
+          "key": "raw/6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+          "bytes": 1237909,
+          "beforeRead": 143615,
+          "afterRead": 1382100
+        },
+        {
+          "key": "raw/61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+          "bytes": 1244175,
+          "beforeRead": 143615,
+          "afterRead": 1388366
+        },
+        {
+          "key": "raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+          "bytes": 1262421,
+          "beforeRead": 143615,
+          "afterRead": 1406612
+        }
+      ],
+      "afterLastRelease": 144191,
+      "peakArrayBuffers": 50112147,
+      "peakRssBytes": 161218560,
+      "largest": 49967956,
+      "slack": 8388608
+    }
+  ]
+}

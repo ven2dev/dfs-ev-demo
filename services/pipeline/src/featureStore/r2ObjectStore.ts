@@ -2,7 +2,7 @@ import {
   DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand,
   type S3Client,
 } from "@aws-sdk/client-s3";
-import { OBJECT_NAMESPACES, parseObjectKey, sha256, type ObjectStore } from "./objectStore.ts";
+import { checkObjectPageRequest, checkObjectReadLimit, OBJECT_NAMESPACES, parseObjectKey, sha256, VerifiedWire, type ObjectNamespace, type ObjectStore } from "./objectStore.ts";
 
 const hasStatus = (error: unknown, status: number): boolean =>
   typeof error === "object" && error !== null && "$metadata" in error &&
@@ -27,6 +27,24 @@ export const openR2ObjectStore = (
     return { key, sha256: expected, byteSize: checkedSize(result.ContentLength) };
   };
 
+  const getObject = async (key: string) => {
+    const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key })).catch((error: unknown) => {
+      if (hasStatus(error, 404)) throw Object.assign(new Error("object-not-found", { cause: error }), { code: "ENOENT" });
+      throw error;
+    });
+    if (!result.Body) throw new Error("object-body-missing");
+    return { ...result, Body: result.Body };
+  };
+
+  const listEntry = (namespace: ObjectNamespace, entry: { Key?: string; Size?: number }) => {
+    const key = entry.Key ?? "";
+    // Reject foreign keys, including manually uploaded files without content addresses.
+    const parsed = parseObjectKey(key);
+    if (parsed.namespace !== namespace) throw new Error("object-key-refused");
+    // LIST exposes the digest claimed by the address.
+    return { key, sha256: parsed.sha256, byteSize: checkedSize(entry.Size) };
+  };
+
   return {
     head,
     putIfAbsent: async (key, bytes) => {
@@ -48,14 +66,36 @@ export const openR2ObjectStore = (
     },
     get: async (key) => {
       const expected = parseObjectKey(key).sha256;
-      const result = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key })).catch((error: unknown) => {
-        if (hasStatus(error, 404)) throw Object.assign(new Error("object-not-found", { cause: error }), { code: "ENOENT" });
-        throw error;
-      });
-      if (!result.Body) throw new Error("object-body-missing");
+      const result = await getObject(key);
       const bytes = Buffer.from(await result.Body.transformToByteArray());
       if (sha256(bytes) !== expected) throw new Error("object-digest-mismatch");
       return bytes;
+    },
+    getVerified: async (key, maxBytes) => {
+      parseObjectKey(key);
+      checkObjectReadLimit(maxBytes);
+      const result = await getObject(key);
+      const reader = result.Body.transformToWebStream().getReader();
+      let complete = false;
+      try {
+        const size = checkedSize(result.ContentLength);
+        if (size > maxBytes) throw new Error("object-size-refused");
+        const bytes = Buffer.from(new ArrayBuffer(size));
+        let offset = 0;
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (offset + value.byteLength > size) throw new Error("object-size-changed");
+          bytes.set(value, offset);
+          offset += value.byteLength;
+        }
+        complete = true;
+        if (offset !== size) throw new Error("object-size-changed");
+        return VerifiedWire.verify(key, bytes);
+      } finally {
+        if (!complete) await reader.cancel().catch(() => {});
+        reader.releaseLock();
+      }
     },
     list: async (namespace) => {
       if (!OBJECT_NAMESPACES.includes(namespace)) throw new Error("object-key-refused");
@@ -65,20 +105,29 @@ export const openR2ObjectStore = (
         const page = await client.send(new ListObjectsV2Command({
           Bucket: bucket, Prefix: namespace + "/", MaxKeys: maxKeys, ContinuationToken: token,
         }));
-        for (const entry of page.Contents ?? []) {
-          const key = entry.Key ?? "";
-          // Reject foreign keys, including manually uploaded files without content addresses.
-          const parsed = parseObjectKey(key);
-          if (parsed.namespace !== namespace) throw new Error("object-key-refused");
-          // LIST exposes the digest claimed by the address. HEAD and GET verify integrity.
-          objects.push({ key, sha256: parsed.sha256, byteSize: checkedSize(entry.Size) });
-        }
+        for (const entry of page.Contents ?? []) objects.push(listEntry(namespace, entry));
         const next = page.NextContinuationToken;
         if (!page.IsTruncated) break;
         if (!next || next === token) throw new Error("object-list-pagination-failed");
         token = next;
       } while (token);
       return objects;
+    },
+    listPage: async (namespace, request) => {
+      checkObjectPageRequest(namespace, request);
+      const page = await client.send(new ListObjectsV2Command({
+        Bucket: bucket, Prefix: namespace + "/", MaxKeys: request.limit, StartAfter: request.startAfter,
+      }));
+      const entries = (page.Contents ?? []).map((entry) => listEntry(namespace, entry));
+      let previous = request.startAfter ?? "";
+      for (const entry of entries) {
+        if (entry.key <= previous) throw new Error("object-list-pagination-failed");
+        previous = entry.key;
+      }
+      if (entries.length > request.limit || (page.IsTruncated && !entries.length)) {
+        throw new Error("object-list-pagination-failed");
+      }
+      return { entries, nextStartAfter: page.IsTruncated ? previous : null };
     },
     delete: async (key) => {
       parseObjectKey(key);

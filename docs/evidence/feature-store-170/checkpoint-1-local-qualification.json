@@ -1,0 +1,44 @@
+{
+  "issue": 170,
+  "checkpoint": 1,
+  "status": "qualified-local-contract",
+  "baseCommit": "dc0050a6a9f071c149098047d1428757245829cd",
+  "testedBlobs": {
+    "services/pipeline/src/featureStore/localObjectStore.ts": "d07a39608ec7fde4b0a910b1abd0000de4780ca6",
+    "services/pipeline/src/featureStore/objectStore.ts": "22dde6b027da97ff853eaaf96c6e4627f2bb74d0",
+    "services/pipeline/src/featureStore/r2ObjectStore.ts": "283c6141456108be0c5c978e4eecd4e338c067af"
+  },
+  "fixturePin": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+  "node": "v24.21.0",
+  "pageLimit": 5,
+  "pages": [
+    {
+      "startAfter": null,
+      "entries": 5,
+      "nextStartAfter": "raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4"
+    },
+    {
+      "startAfter": "raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+      "entries": 5,
+      "nextStartAfter": "raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd"
+    },
+    {
+      "startAfter": "raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+      "entries": 5,
+      "nextStartAfter": "raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b"
+    },
+    {
+      "startAfter": "raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+      "entries": 1,
+      "nextStartAfter": null
+    }
+  ],
+  "wireBudget": 268435456,
+  "verifiedObjects": 16,
+  "verifiedReadCalls": 16,
+  "wireHashes": 16,
+  "wireBytes": 246304787,
+  "largestObjectBytes": 49967956,
+  "peakRssBytes": 311574528,
+  "liveR2": "not run"
+}
