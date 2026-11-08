@@ -138,7 +138,8 @@ test("#163 versioned materialized research adapter", { timeout: 120_000 }, async
           unavailable(await predict(reader, await seed({ version: "unknown" })), "unsupported-version");
         });
         await check("real database knowledge clocks have inclusive as-of selection without backdating", async () => {
-          const times = (await admin.query("SELECT computed_at::text AS exact,(computed_at-interval '1 microsecond')::text AS earlier FROM fs138.feature_values WHERE feature_id=$1", [request.featureId])).rows[0];
+          const times = (await admin.query(`SELECT finished_at::text AS exact,(finished_at-interval '1 microsecond')::text AS earlier
+            FROM fs138.feature_values JOIN fs138.job_runs USING(job_id) WHERE feature_id=$1`, [request.featureId])).rows[0];
           assert.equal((await predict(reader, { ...request, knownAsOf: times.exact })).response.status, "available");
           unavailable(await predict(reader, { ...request, knownAsOf: times.earlier }), "feature-after-as-of");
           unavailable(await predict(reader, { ...request, knownAsOf: "2099-01-01T00:00:00Z" }), "future-knowledge-as-of");

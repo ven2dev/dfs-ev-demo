@@ -1,0 +1,157 @@
+{
+  "issue": 241,
+  "step": 1,
+  "kind": "job-visibility-validation",
+  "recordedAt": "2026-11-07T21:48:13.644Z",
+  "verdict": "pass",
+  "baseCommit": "dc0050a6a9f071c149098047d1428757245829cd",
+  "branch": "feature/dfsEV-241-point-in-time-completion",
+  "runtime": "v24.18.1",
+  "scope": "Shared invoker-rights completion relation and feature/label display only; no final speed qualification.",
+  "sourceIdentity": {
+    "packages/db/proposals/241_job_visibility.sql": {
+      "baseBlob": null,
+      "candidateBlob": "3946ddf51d0ca83c939991082258214fec050de5",
+      "sha256": "39ff3f47edb4de424246bcd222d4ab742fe5db632079fe46210d7166720c4448"
+    },
+    "packages/db/package.json": {
+      "baseBlob": "e932e59d8ebbe689e019674b5c0837a212f514a7",
+      "candidateBlob": "72ac95d09cc65aa1fe50c9f24584f110ce066464",
+      "sha256": "7cbaea6dcefdb3197401ce000b47819ec9cbc442e306dd92008a6d1be14def0d"
+    },
+    "services/pipeline/src/featureStore/derived.ts": {
+      "baseBlob": "da6f0744a1bc903ca3d10d56055ef07fa1024dec",
+      "candidateBlob": "683c1f68c791b0c164363ff7637f075f7bf19f45",
+      "sha256": "cf5842d76e3c12dd9c5031397903e89384b2ffb8befb833cfd3891ef09767112"
+    },
+    "services/pipeline/scripts/feature-store/harness.ts": {
+      "baseBlob": "f172af04e8822c378a4013d0f74bf324cd73353d",
+      "candidateBlob": "de9f17121ae264a7436df7105347e4c3f0d5f195",
+      "sha256": "2fa87332d950277941acfd1a43a51e39f9d986b0a695f4bdaec36373a36520d9"
+    },
+    "services/pipeline/tests/feature-store/job-visibility.check.mts": {
+      "baseBlob": null,
+      "candidateBlob": "a10fce092e7686017b1474ae917a32fa7969529d",
+      "sha256": "9a468abd3da3ea1eb2af14d221efda8df11e8129f38b35dcd05f06c7302b828a"
+    },
+    "docs/feature-store-job-visibility.md": {
+      "baseBlob": null,
+      "candidateBlob": "cb4e5edb2b6c2c332746e04e4d8e983455a05ff9",
+      "sha256": "2bbab88e7948dfa6ae56cdcd93a2920f3326a64a5d6736740c1455583b486597"
+    }
+  },
+  "commands": [
+    {
+      "command": "node --test --test-concurrency=1 services/pipeline/tests/feature-store/job-visibility.check.mts services/pipeline/tests/feature-store/derived.check.mts",
+      "exitCode": 0,
+      "tests": 20,
+      "failed": 0,
+      "summary": "Nine new and nine existing subtests, plus two parent tests; loopback PostgreSQL 18.6."
+    },
+    {
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    {
+      "command": "./node_modules/.bin/eslint --ignore-pattern 'codex-briefs/**'",
+      "exitCode": 0
+    },
+    {
+      "command": "node --test tests/import-boundaries.check.mjs",
+      "exitCode": 0,
+      "tests": 11,
+      "failed": 0
+    },
+    {
+      "command": "./node_modules/.bin/vitest run --config vitest.node.config.ts services/pipeline/tests/feature-store/featureStoreDerived.test.ts --exclude 'codex-briefs/**'",
+      "exitCode": 0,
+      "tests": 1,
+      "failed": 0
+    }
+  ],
+  "setupNotes": [
+    "Initial database setup was denied loopback access by the sandbox; no probes ran. The empty failing record is retained. The authorized loopback run passed.",
+    "The initial typecheck found dependencies absent after switching to fresh main; npm ci --no-audit --no-fund installed main's locked dependencies, and typecheck then passed. No lockfile changed.",
+    "Command summaries record completed runs; full stdout was not retained. Exact new DB probe observations are bundled."
+  ],
+  "probes": [
+    {
+      "name": "invoker-only relational policy has narrow grants on real reader/writer LOGINs",
+      "verdict": "pass"
+    },
+    {
+      "name": "shared relation excludes running/failed jobs and includes exact completion",
+      "verdict": "pass"
+    },
+    {
+      "name": "features: insertion-to-finish replay stays pinned, with inclusive microsecond boundary",
+      "verdict": "pass"
+    },
+    {
+      "name": "features: running/failed heads do not stale values; completed unavailable head retains last valid",
+      "verdict": "pass"
+    },
+    {
+      "name": "features: terminal UPDATE / COMMIT window is recorded as an accepted limitation",
+      "verdict": "pass"
+    },
+    {
+      "name": "labels: insertion-to-finish replay stays pinned, with inclusive microsecond boundary",
+      "verdict": "pass"
+    },
+    {
+      "name": "labels: running/failed heads do not stale values; completed unavailable head retains last valid",
+      "verdict": "pass"
+    },
+    {
+      "name": "labels: terminal UPDATE / COMMIT window is recorded as an accepted limitation",
+      "verdict": "pass"
+    },
+    {
+      "name": "display remains one statement at n=2/16 and SQL relation inlines on executed branches",
+      "verdict": "pass"
+    }
+  ],
+  "work": {
+    "displayStatements": 1,
+    "planCases": 8,
+    "sampleSizes": [
+      2,
+      16
+    ],
+    "evidenceModes": [
+      "retrospective-reconstruction-v1",
+      "strict-point-in-time-v1"
+    ],
+    "visibleLoops": 1,
+    "visibleRows": 2,
+    "helperFunctionScans": 0,
+    "explicitRowLocks": 0,
+    "relationLocksAfterRead": 0
+  },
+  "limitations": [
+    "finished_at is the terminal UPDATE clock, not COMMIT time. Both feature and label probes preserve the accepted same-pin answer change across COMMIT.",
+    "Dataset, direct #163, normalized and producer changes and live buffer ceilings land in later steps. Final-source speed qualification remains step 4.",
+    "The generic auditor checks hashes, byte sizes and exact receipt projection. It does not rerun database tests or independently derive probe verdicts.",
+    "No full-suite run or artifact-cleaner.check.mts invocation in step 1."
+  ],
+  "supplementalRecords": [
+    {
+      "path": "step-1-full-records-20261107T214813Z.tar.gz#step-1/job-visibility.json",
+      "sha256": "394f8b5ce016ed7d99c6549ab86eda143c7e518d8dae1e9e36a1b2737de298ae",
+      "byteSize": 8958
+    },
+    {
+      "path": "step-1-full-records-20261107T214813Z.tar.gz#step-1/sandbox-setup-attempt.json",
+      "sha256": "9a688f8482fc2c872804b788c29d5a2218638d0fa56751b88f9dfe3e80154a4b",
+      "byteSize": 786
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-1-full-records-20261107T214813Z.tar.gz#step-1/validation.json",
+    "sha256": "c7189664874fd0842c4c4a7b09b84b2a727d059826d90cb5fa046819ce58cda8",
+    "byteSize": 6025,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

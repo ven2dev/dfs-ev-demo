@@ -1,0 +1,389 @@
+{
+  "issue": 241,
+  "step": 4,
+  "kind": "final-validation",
+  "recordedAt": "2026-11-08T01:12:00.582Z",
+  "verdict": "pass",
+  "runtime": "v24.18.1",
+  "baseCommit": "441aaf96941e31f7a7f67a5edce906c79cc74ed1",
+  "sourceIdentity": {
+    "compose.feature-store-spike.yml": {
+      "sha256": "65abd96dd3849676b69485c0c0186fd100b31aa5545177dfe82a022c1884b8e8",
+      "blobId": "790b90f846221e5e769aa56c619d375230f8a87b"
+    },
+    "compose.test.yml": {
+      "sha256": "44798ea481282096048bf44d02c33cf338eed4520165559dc1115e3e769e40b7",
+      "blobId": "ab874ba42f4ffb24cd5c71d23205fc6d962e4046"
+    },
+    "docs/feature-store-job-visibility.md": {
+      "sha256": "ae739f24b02daab6477fc55e92d4f2e0e4e58994821b0caaa1a0ec6eb04f2a53",
+      "blobId": "872db84295439904da6534cb043bec76ee1518ae"
+    },
+    "package-lock.json": {
+      "sha256": "d523d8720a932f9dc573446785ab3e97b5a342fe98567b92541a2f5407e573dd",
+      "blobId": "dd1c6c6e9dbde3ef05cd6ca1755777ea0b131f35"
+    },
+    "packages/db/proposals/138_dataset_governance.sql": {
+      "sha256": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+      "blobId": "68131cf08c62aa194339ee0329ecbf7f8c12189f"
+    },
+    "packages/db/proposals/138_feature_store.sql": {
+      "sha256": "183007219f71c27ed98138bbc3a1c10d86782e3660d20fda225f314bfb89c97a",
+      "blobId": "2da976de20e6be3a7bc8cdf65fc51124bfd175e7"
+    },
+    "packages/db/proposals/163_effective_rights.sql": {
+      "sha256": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+      "blobId": "4f4901d8eb69ffca985d749e2d08dfcb83e92212"
+    },
+    "packages/db/proposals/163_empirical_authorize.sql": {
+      "sha256": "c6db3f6f041a1f8280b573e9f21e2e8e04a206119df8c6410a71d897f5059804",
+      "blobId": "aa892576b261d4404d3861b23d00fb7692f28184"
+    },
+    "packages/db/proposals/163_empirical_history.sql": {
+      "sha256": "f6c43d4a16504e4b9ce8e60a4adaa027712323276937dced6867b4c44859d0e2",
+      "blobId": "fda289cfc29641b764c5bf053b147b710ea99573"
+    },
+    "packages/db/proposals/163_empirical_reader.sql": {
+      "sha256": "1e8acb629e2f5ca7a7f7709752d214a22fe76330e8a86dada18f2ee3c32bf012",
+      "blobId": "4e9dd3782ceb884e65da49db9253eadd877c0f24"
+    },
+    "packages/db/proposals/241_job_visibility.sql": {
+      "sha256": "13c7cedb65a2dcce133d8e1daff07bcd8f27f7330dca097c5390df66b6d3007a",
+      "blobId": "a993e3b5d8e4add22c5013eb34551fa14dcc90ec"
+    },
+    "packages/domain/src/projection/baseline.ts": {
+      "sha256": "3841f802ddde52dc46b923b59f9677a032fb782a55789c5865f984edc4bd8ea8",
+      "blobId": "e90f2f18c551b2a866013b7a9f6f23963508b4fb"
+    },
+    "packages/domain/src/projection/empirical.ts": {
+      "sha256": "7cfa979e6aa08da4297cada5443c7058b200fef5ff0f95ef9ca4cd8073405c5d",
+      "blobId": "15e5c6f3ddcce591f5dc4bed425113da7fdd06fe"
+    },
+    "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": {
+      "sha256": "2f508bc7207551c5e6b5188ac492e931f028249533a16b4d6e78235313af3f42",
+      "blobId": "4918f9fca5615fa176af9cbe3d921867df492ebd"
+    },
+    "services/pipeline/scripts/feature-store/harness.ts": {
+      "sha256": "2fa87332d950277941acfd1a43a51e39f9d986b0a695f4bdaec36373a36520d9",
+      "blobId": "de9f17121ae264a7436df7105347e4c3f0d5f195"
+    },
+    "services/pipeline/scripts/feature-store/job-visibility-benchmark.ts": {
+      "sha256": "401a9844e80313a5e4b97cdfbf2d72ff1d50f019dbbdf4df3875918ff94ae51e",
+      "blobId": "7f1a2d0d925c9768254a493946d920c716a97b08"
+    },
+    "services/pipeline/scripts/feature-store/job-visibility-evidence.ts": {
+      "sha256": "68474956c4b5211121a5f1cc4611ba14f2f88115782228716c339a8424c951d5",
+      "blobId": "9f1a62daa3a6e9b3dd7aa7907d4559dd744bdaf7"
+    },
+    "services/pipeline/src/featureStore/asOf.ts": {
+      "sha256": "3f8eed34d9dc4583db3906976e65bdf66fb028e0ea648dbd63fea2dedc9e4ce7",
+      "blobId": "7b70cdbced4fa4b83f2f675641ef6150fc956f12"
+    },
+    "services/pipeline/src/featureStore/datasets.ts": {
+      "sha256": "9dcd5576742d9caa7ca2cd3bdd8b95629a2d87d9c9ae85d9e783ee9f3e4171b9",
+      "blobId": "d0421c54f595f971cbd93bfb8f46385650350468"
+    },
+    "services/pipeline/src/featureStore/derived.ts": {
+      "sha256": "9044cf04c9d39e788aa1943373ffc2ca8d74df8244ead12165e618bc502e7310",
+      "blobId": "ab99abf6d79dcb3241f7eae14a072731e7a9dbe3"
+    },
+    "services/pipeline/src/featureStore/empiricalAdapter.ts": {
+      "sha256": "8bddf06f546033ba1714224ec26a8b60c623e5fd8d0d4af54a0ff9658f65187b",
+      "blobId": "dbdde5fa7b35489b84eea443f2fa8927735cb06d"
+    },
+    "services/pipeline/src/featureStore/jobs.ts": {
+      "sha256": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+      "blobId": "e5db86aa5f51215df8bf49b97b4595aa5ceeda8b"
+    },
+    "services/pipeline/src/featureStore/localObjectStore.ts": {
+      "sha256": "66176be60146f0a73ceab9a004b5951dcfd227b88ba9bc521e7f23b466bf5fd1",
+      "blobId": "f2bf259faa6aca4fa2967ae6fc710664919c977e"
+    },
+    "services/pipeline/src/featureStore/objectStore.ts": {
+      "sha256": "e467ee210821416ca595349dee4eaaa415c4f1e0d305155d6591fce8283bb3ae",
+      "blobId": "0ee0d73a30866b58e6a2d2bc95ba77251c692d02"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-ci-slice-v1.json": {
+      "sha256": "f7dec229c38bd286c51c1af7b545fc33f6532c75c9bfaa18e5de7127d7eac908",
+      "blobId": "76638b543237b3b9b10a69806b6128c7df912f98"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz": {
+      "sha256": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+      "blobId": "faec950141d0d1aae2854b939a0f78f21995398b"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.manifest.json": {
+      "sha256": "3d7763a4645ca3c55b2159016dd2eab72123e420db778a9e4eeda7a8d30779cc",
+      "blobId": "a11b869258d26a233b75a309bb689ee258cd3861"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer-plan.mts": {
+      "sha256": "e19d862ca8f877c43231a89c4103e3b0b52260e0c3ba5fa305e5fa598b912888",
+      "blobId": "25d3f699c7d094c66abf7c1723b7cc777daaf610"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer-work.check.mts": {
+      "sha256": "08913fa6c5bfcf0685f0a26443cca4a61a16e976ea2becb615ddb82f25e43398",
+      "blobId": "df48ce6c988d2019d820fe7fd3239204b5d14117"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer-work.ts": {
+      "sha256": "170c00473f6aab2ef4cb4c23df611ec7cb992a87ac491d87b6b98863ded74bb0",
+      "blobId": "12bdc20b7146fcc19889886bca0715f8b956412a"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work-fixture.ts": {
+      "sha256": "c0333e5741264f5ff32163d7f65ec86ca11bc75c26e480a6e12d74b9dded3584",
+      "blobId": "b9d81352c702b7d0d4459bdcacce8f4203eec440"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work.check.mts": {
+      "sha256": "a199f69af40edb0dcd691b5bf27cc0bdad67862482b34b839eeaf7e0e434632a",
+      "blobId": "d22bf12e8264cacf855f1af0eddaaa93c5fb9fa9"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work.ts": {
+      "sha256": "cbbd52ef63f4ab01faa2942f6be0c5c9bb442a72faac97904d07e189f1b19e28",
+      "blobId": "48709a510fe725c5f948b8f69c798f415d511853"
+    },
+    "services/pipeline/tests/feature-store/jobVisibilityEvidence.test.ts": {
+      "sha256": "c551eaf2963c5115ba1f899ae2a9e7fb8be6ddc885415be2d65ce16302e05e22",
+      "blobId": "4eedac67c7ed64a9fa613b78552122033e2cbe85"
+    }
+  },
+  "ownerHardCapHours": 9,
+  "budgetTiers": {
+    "slice": {
+      "contentSha256": "d0bb28c7205f9047dd85f7bf6894b16031c94803c9cd46ee02b443fa10b8436e",
+      "naturalKeys": 1948,
+      "measured": {
+        "root": 2080,
+        "current_f": 607,
+        "current_l": 145
+      },
+      "ceilings": {
+        "root": 2496,
+        "current_f": 729,
+        "current_l": 174
+      }
+    },
+    "full": {
+      "naturalKeys": 9381,
+      "ceilings": {
+        "root": 10349,
+        "current_f": 3190,
+        "current_l": 825
+      }
+    },
+    "currentJobs": "loops=1; hits+reads <= measured heap plus used-index pages, post-ANALYZE in same transaction",
+    "producerContextCeiling": 1745394
+  },
+  "standard": {
+    "tests": 280,
+    "peakSampledUsedBytes": 229068800,
+    "minimumSampledFreeFraction": 0.5733261108398438,
+    "artifactCleanerFailed": false
+  },
+  "commands": {
+    "readiness": "pass",
+    "typegen": "pass",
+    "typecheck": "pass",
+    "lint": "pass",
+    "importBoundaryChecks": 11,
+    "jsdomTests": 942,
+    "nodeTests": 618,
+    "nodeSkipped": 1,
+    "focusedEvidenceControls": 4
+  },
+  "retainedInfrastructureAttempts": {
+    "jsdom": {
+      "failures": 49,
+      "reason": "sandbox listen EPERM on loopback"
+    },
+    "node": {
+      "failures": 1,
+      "reason": "sandbox listen EPERM in public-package server contract"
+    },
+    "disposition": "Outputs retained; both full lanes pass with loopback permitted. Not speed samples."
+  },
+  "pending": "A fifth hash-only CI test for the newly assembled bundle will run after packaging; its final log is retained in a separate append-only audit receipt.",
+  "cleanup": {
+    "scratchDatabases": 0,
+    "scratchConnections": 0,
+    "throwawayLogins": 0,
+    "standardMountBytes": 536870912
+  },
+  "limitations": [
+    "668.225666 ms spike query remains unexplained and retained by owner decision.",
+    "The producer comparison-side 53100 is retained, never rerun or counted as success.",
+    "finished_at precedes COMMIT: same knownAsOf may change across that accepted visibility gap.",
+    "Disk sampled each second and gate boundaries; not exact allocation peaks."
+  ],
+  "supplementalRecords": [
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#final-speed/full.json",
+      "sha256": "e8841fa90f31d6030ed8792676821fe32c29ed7ae1b24117a3df8fe97a76e981",
+      "byteSize": 590344
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#final-speed/requests.json",
+      "sha256": "626c10a9291439d6b3d9c9c45bd95128dd1eecc2b8d8a6bc01077e8301952690",
+      "byteSize": 1382
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#final-speed/started.jsonl",
+      "sha256": "3dc86f701f0a7b419b045107dadfcb2fd0055a3d5d14ea32666a573e3c5ea748",
+      "byteSize": 96480
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#final-speed/disk.jsonl",
+      "sha256": "caefd194c9cc76da662748abd7766ba7de73d81ac9c584b4733e9ea2c0e77742",
+      "byteSize": 69016
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#final-gates/record.json",
+      "sha256": "6e2319d5123290aefda4104689300f0772632d395542b24f8a2b9d85cfa053a0",
+      "byteSize": 157565
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#final-gates/disk.jsonl",
+      "sha256": "cdb4e42052417b9c0dfa852bba6a4f6c5ebfea11895f801877ef76c260e66136",
+      "byteSize": 93095
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#final-gates/full-plan.log",
+      "sha256": "5cc60431a3fbe2743de34fd97d0df5a8fd623c7e448c049d52fec75b0a6a62aa",
+      "byteSize": 291
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#final-gates/speed.log",
+      "sha256": "e6f9a8bb9ecb499dc100119d6d9d18753af96b345fec05d6ca18857c949951f6",
+      "byteSize": 310282
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#final-gates/dataset-work.json",
+      "sha256": "a07615513c13b4ad3dea74dacd5019688499afdecbe195e5ed6c38bbee28279f",
+      "byteSize": 328085
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#final-gates/producer-plan.json",
+      "sha256": "47ec0ef18624e6f3b897afe4c7356d52039e9ed92927e1ed966e74090d7477ac",
+      "byteSize": 301600
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/slice-calibration.json",
+      "sha256": "8a422e6acbe318033a8cfed58ab5898258ef8ef70caa9f4a4b27e6c8092ed971",
+      "byteSize": 335394
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/slice-enforced.json",
+      "sha256": "f356e0067feea90b6fe95a131e8fcb18554547434a2069da4527a0860c298cd0",
+      "byteSize": 335543
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/run-final.mjs",
+      "sha256": "eede0584cd8d219167fb87f69758922a465bbdc1523f6413baaf3d434a40a2f7",
+      "byteSize": 3318
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/run-disk-suite.mjs",
+      "sha256": "272fef543015fb458f830e97d37d642004be478f5b775fcd1a094b8cb1ce32d2",
+      "byteSize": 4631
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/run-nondb.mjs",
+      "sha256": "a437dca4877a1c19d5d41cd9303dabd08fc33bf05ccdbce16a76f4d49caa4694",
+      "byteSize": 1555
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/nondb-results.json",
+      "sha256": "089d48c6806dea435ccbc6dbd4197a664ba04995694e2e4d5f062e5ecdb61e63",
+      "byteSize": 1331
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/nondb-readiness.log",
+      "sha256": "b3d39904292365304a5950425d734217cdb2d2bc364110eaf9092cbbaed04667",
+      "byteSize": 38
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/nondb-typegen.log",
+      "sha256": "adba4af9194e10e47dda75ff0fd0f8c2b756474896d0eba5612799c527ff372a",
+      "byteSize": 59
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/nondb-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteSize": 0
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/nondb-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteSize": 0
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/nondb-imports.log",
+      "sha256": "387935fd363070c0dfa2ae444d08fbc064843b49570e896bdb9ec609c497180e",
+      "byteSize": 1226
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/nondb-firebase.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteSize": 0
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/nondb-unit-jsdom.log",
+      "sha256": "d616a4b1cb0d1a0a8bc97a7447e4bd694cfbbc0cf44d9fad0a0714dfc86af5e9",
+      "byteSize": 15603
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/nondb-unit-jsdom-unsandboxed.log",
+      "sha256": "442631f37d13014162f754bc2359a4820fe3c862210713ee0cb7b0a8f3efcaa2",
+      "byteSize": 1148
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/nondb-unit-node.log",
+      "sha256": "bed90e5001e6b5ba033207916c5bc4bb9ef4767b8573d2cc5b53c0ebbb8f4f37",
+      "byteSize": 3432
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/nondb-unit-node-unsandboxed.log",
+      "sha256": "757485f639466c038ad9cf1428a17f3c3f195357819d1df525a2106b69001330",
+      "byteSize": 1039
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#standard-final/record.json",
+      "sha256": "4c99c4d1aee849abd80cb27b96a6eeb57b9cfe13753c5159059726087f38cbec",
+      "byteSize": 129945
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#standard-final/disk.jsonl",
+      "sha256": "600b52a43b404287be2c2aea05eedc25a9a81e95a49c669b5bf027800c4d7bd5",
+      "byteSize": 83613
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#standard-final/suite.log",
+      "sha256": "21b5a25ac8ab2796d0da783429a86e2c60292a7c30d4509ace29fbf0bb742a22",
+      "byteSize": 31180
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#history/producer-owner-decision.json",
+      "sha256": "aae5ccadaa52d0ee290444aa53fad1831cf6e1fa9c62d533696daa16a80f3628",
+      "byteSize": 1064
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#history/producer-comparison-stop.json",
+      "sha256": "59c912ad522aaea931f65f20d5ded6fdb60f642e3b63c5745bba239f12459083",
+      "byteSize": 4363
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#history/producer-comparison-full.json",
+      "sha256": "7f2a4df89cd00fdd707b1eca3937991e90a94a493b727a9355024ded134cd0a7",
+      "byteSize": 227829
+    },
+    {
+      "path": "step-4-final-full-records-20261108T011159Z.tar.gz#history/unexplained-query-run.json",
+      "sha256": "f2c8b91e652364d00dbd8e3cc9e2b58e067fe1d4c713539cf88b67571f6868c2",
+      "byteSize": 78923
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-4-final-full-records-20261108T011159Z.tar.gz#validation/final.json",
+    "sha256": "1e29596700bddfc89a37ffdd13a43b54d2537d365e4ea59f0abb7214788d265e",
+    "byteSize": 16829,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

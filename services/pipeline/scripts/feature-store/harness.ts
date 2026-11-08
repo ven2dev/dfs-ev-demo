@@ -25,6 +25,7 @@ export const withFeatureStoreDatabase = async <T>(run: (context: {
         try {
           await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/138_feature_store.sql")), "utf8")); await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/138_dataset_governance.sql")), "utf8"));
           await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/163_effective_rights.sql")), "utf8"));
+          await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/241_job_visibility.sql")), "utf8"));
           await admin.query("COMMIT");
         } catch (error) { await admin.query("ROLLBACK"); throw error; }
         const queryCounts = { writer: 0, reader: 0 };

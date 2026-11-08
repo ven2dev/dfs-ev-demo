@@ -14,15 +14,45 @@ import { webCommand } from "../scripts/web.mjs";
 const root = new URL("../", import.meta.url);
 const launcher = new URL("../scripts/web.mjs", import.meta.url).href;
 const digest = bytes => createHash("sha256").update(bytes).digest("hex");
-
-test("relocation preserves every frozen database artifact and the runtime readiness manifest", async () => {
-  const baseline = JSON.parse(await readFile(new URL("docs/evidence/monorepo-148/baseline.json", root)));
+const relocatedDatabasePath = old => old.startsWith("db/") ? "packages/" + old : "packages/db/src/dbReadinessManifest.ts";
+const assertRelocatedDatabaseArtifacts = (baseline, currentHashes) => {
   for (const [old, hash] of Object.entries(baseline.immutableFiles)) {
-    const current = old.startsWith("db/") ? "packages/" + old : "packages/db/src/dbReadinessManifest.ts";
-    assert.equal(digest(await readFile(new URL(current, root))), hash, current);
+    const current = relocatedDatabasePath(old);
+    assert.ok(currentHashes.has(current), `missing relocated artifact: ${current}`);
+    // #148 froze every asset during relocation. Afterwards proposal SQL remains
+    // mutable by design; only frozen artifacts keep their historical byte guard.
+    if (!old.startsWith("db/proposals/")) assert.equal(currentHashes.get(current), hash, current);
   }
+};
+
+test("relocation preserves frozen database hashes and keeps mutable proposal assets present", async () => {
+  const baseline = JSON.parse(await readFile(new URL("docs/evidence/monorepo-148/baseline.json", root)));
+  const currentHashes = new Map(await Promise.all(Object.keys(baseline.immutableFiles).map(async old => {
+    const current = relocatedDatabasePath(old);
+    return [current, digest(await readFile(new URL(current, root)))];
+  })));
+  assertRelocatedDatabaseArtifacts(baseline, currentHashes);
   const pkg = JSON.parse(await readFile(new URL("package.json", root)));
   for (const name of baseline.rootCommands.names) assert.equal(typeof pkg.scripts[name], "string", name);
+});
+
+test("relocation guard allows proposal edits but rejects missing proposals and every frozen artifact mutation", async () => {
+  const baseline = JSON.parse(await readFile(new URL("docs/evidence/monorepo-148/baseline.json", root)));
+  const hashes = new Map(Object.entries(baseline.immutableFiles).map(([old, hash]) => [relocatedDatabasePath(old), hash]));
+  const changedHash = digest(Buffer.from("intentional relocation guard mutation"));
+  for (const old of Object.keys(baseline.immutableFiles)) {
+    const current = relocatedDatabasePath(old), changed = new Map(hashes);
+    changed.set(current, changedHash);
+    if (old.startsWith("db/proposals/")) {
+      assert.doesNotThrow(() => assertRelocatedDatabaseArtifacts(baseline, changed));
+      changed.delete(current);
+      assert.throws(() => assertRelocatedDatabaseArtifacts(baseline, changed), { message: `missing relocated artifact: ${current}` });
+    } else {
+      assert.throws(() => assertRelocatedDatabaseArtifacts(baseline, changed), error =>
+        error.code === "ERR_ASSERTION" && error.actual === changedHash &&
+        error.expected === baseline.immutableFiles[old] && error.message.startsWith(current));
+    }
+  }
 });
 
 test("root web commands preserve argument boundaries and reject unsupported commands", () => {

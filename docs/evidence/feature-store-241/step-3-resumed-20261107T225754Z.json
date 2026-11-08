@@ -1,0 +1,659 @@
+{
+  "issue": 241,
+  "step": 3,
+  "kind": "normalized-and-producer-tiered-validation",
+  "recordedAt": "2026-11-07T22:57:54.800Z",
+  "verdict": "pass",
+  "runtime": "v24.18.1",
+  "baseCommit": "865b6a14001406eadd2623e062f1701729ce7f69",
+  "sourceIdentity": {
+    "packages/db/proposals/138_feature_store.sql": {
+      "sha256": "183007219f71c27ed98138bbc3a1c10d86782e3660d20fda225f314bfb89c97a",
+      "blobId": "2da976de20e6be3a7bc8cdf65fc51124bfd175e7"
+    },
+    "packages/db/proposals/241_job_visibility.sql": {
+      "sha256": "13c7cedb65a2dcce133d8e1daff07bcd8f27f7330dca097c5390df66b6d3007a",
+      "blobId": "a993e3b5d8e4add22c5013eb34551fa14dcc90ec"
+    },
+    "services/pipeline/src/featureStore/asOf.ts": {
+      "sha256": "3f8eed34d9dc4583db3906976e65bdf66fb028e0ea648dbd63fea2dedc9e4ce7",
+      "blobId": "7b70cdbced4fa4b83f2f675641ef6150fc956f12"
+    },
+    "services/pipeline/src/featureStore/derived.ts": {
+      "sha256": "9044cf04c9d39e788aa1943373ffc2ca8d74df8244ead12165e618bc502e7310",
+      "blobId": "ab99abf6d79dcb3241f7eae14a072731e7a9dbe3"
+    },
+    "services/pipeline/tests/feature-store/derived.check.mts": {
+      "sha256": "38ca271af164a1e0d53a4a4ea1a862ec5407c073ba7ae94be69c2a4ab1c2c58c",
+      "blobId": "aa4a7b697f2092860ec26015790b22d7f0d5f84c"
+    },
+    "services/pipeline/tests/feature-store/ingest.check.mts": {
+      "sha256": "32314283c011fdcdd95d0ceb243ec378faa614757b4fc6118b34374839073f1e",
+      "blobId": "489a166622c6d3fa451bf1bfab42aa51c501b919"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer.check.mts": {
+      "sha256": "d0e26e0a2b88971414d600cbb70bb73f6c12b8c4bdbc2157289e357d490aba2c",
+      "blobId": "c00158f972d10f782b23eafb3acb98dd29b7bfc0"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer-work.check.mts": {
+      "sha256": "45a853c635b908bd4a772bc2081b03d5e3a4ee55c43a727ebacb0f4327ef8584",
+      "blobId": "cab22cc64474e2e8c92f9fcb2dab8376e117a803"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer-work.ts": {
+      "sha256": "170c00473f6aab2ef4cb4c23df611ec7cb992a87ac491d87b6b98863ded74bb0",
+      "blobId": "12bdc20b7146fcc19889886bca0715f8b956412a"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-producer-plan.mts": {
+      "sha256": "e19d862ca8f877c43231a89c4103e3b0b52260e0c3ba5fa305e5fa598b912888",
+      "blobId": "25d3f699c7d094c66abf7c1723b7cc777daaf610"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work-fixture.ts": {
+      "sha256": "ed1264437a15b03ba95c7431553efa4648575eae215b27c7477c66551eee4074",
+      "blobId": "0e42ae476b29dff06ac43906310fd28db971f87b"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.manifest.json": {
+      "sha256": "3d7763a4645ca3c55b2159016dd2eab72123e420db778a9e4eeda7a8d30779cc",
+      "blobId": "a11b869258d26a233b75a309bb689ee258cd3861"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz": {
+      "sha256": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+      "blobId": "faec950141d0d1aae2854b939a0f78f21995398b"
+    },
+    "services/pipeline/scripts/feature-store/harness.ts": {
+      "sha256": "2fa87332d950277941acfd1a43a51e39f9d986b0a695f4bdaec36373a36520d9",
+      "blobId": "de9f17121ae264a7436df7105347e4c3f0d5f195"
+    },
+    "docs/feature-store-job-visibility.md": {
+      "sha256": "4ce0d210ed4f79ccf5fcbd776dd616ba77b637f1fbffe42097f832a7d7d0daf8",
+      "blobId": "fbca6b614eacb1b9dc42c772b020dc3e6227f1be"
+    },
+    "compose.test.yml": {
+      "sha256": "44798ea481282096048bf44d02c33cf338eed4520165559dc1115e3e769e40b7",
+      "blobId": "ab874ba42f4ffb24cd5c71d23205fc6d962e4046"
+    },
+    "compose.feature-store-spike.yml": {
+      "sha256": "65abd96dd3849676b69485c0c0186fd100b31aa5545177dfe82a022c1884b8e8",
+      "blobId": "790b90f846221e5e769aa56c619d375230f8a87b"
+    },
+    ".github/workflows/ci.yml": {
+      "sha256": "50c76d498071dbae82cbacd0553f7fd670cbf88d63a3bb913ffaad466446367b",
+      "blobId": "be2de708d8af99d6d778ef1a6830575b89a71e61"
+    }
+  },
+  "ownerDecision": {
+    "standardCi": "Unchanged compose.test.yml 512 MiB; no full-season materialization EXPLAIN in the CI glob. Read-only context work on the portable graph, small-cohort statement/aggregate checks.",
+    "optIn": "Full-season materialization plans and step-4 producer speed gate use the existing 2 GiB compose.feature-store-spike.yml override; no other setting or target change.",
+    "rejected": "Separate-plus-CHECKPOINT full-materialization rerun on 512 MiB.",
+    "testDiskFollowup": "Early safe failure, standard WAL budget, workload-tier documentation. Draft narrowed; not filed; not a #241 blocker."
+  },
+  "resourceTiers": {
+    "standardSuite": {
+      "mountBytes": 536870912,
+      "peakSampledUsedBytes": 466530304,
+      "peakPercent": 86.89804077148438,
+      "actualTmpfs": {
+        "/var/lib/postgresql": "rw,size=512m"
+      },
+      "settings": {
+        "maxWalSize": "1GB",
+        "sharedBuffers": "128MB",
+        "workMem": "4MB"
+      },
+      "sampling": "one-second snapshots plus gate boundaries; sampled peak, not exact allocation peak"
+    },
+    "standardFinalWork": {
+      "mountBytes": 536870912,
+      "peakSampledUsedBytes": 465317888,
+      "peakPercent": 86.67221069335938,
+      "actualTmpfs": {
+        "/var/lib/postgresql": "rw,size=512m"
+      },
+      "settings": {
+        "maxWalSize": "1GB",
+        "sharedBuffers": "128MB",
+        "workMem": "4MB"
+      },
+      "sampling": "one-second snapshots plus gate boundaries; sampled peak, not exact allocation peak"
+    },
+    "optInPlan": {
+      "mountBytes": 2147483648,
+      "peakSampledUsedBytes": 538312704,
+      "peakPercent": 25.067138671875,
+      "actualTmpfs": {
+        "/var/lib/postgresql": "rw,size=2g"
+      },
+      "settings": {
+        "maxWalSize": "1GB",
+        "sharedBuffers": "128MB",
+        "workMem": "4MB"
+      },
+      "sampling": "one-second snapshots plus gate boundaries; sampled peak, not exact allocation peak"
+    }
+  },
+  "producerContext": {
+    "hits": 1659581,
+    "reads": 0,
+    "ceiling": 1745394,
+    "ctes": [
+      {
+        "name": "snapshots",
+        "loops": 1,
+        "rows": 16
+      },
+      {
+        "name": "discovery_schedule",
+        "loops": 1,
+        "rows": 1359
+      },
+      {
+        "name": "population",
+        "loops": 1,
+        "rows": 9381
+      },
+      {
+        "name": "targets",
+        "loops": 1,
+        "rows": 1948
+      },
+      {
+        "name": "requests",
+        "loops": 1,
+        "rows": 119515
+      },
+      {
+        "name": "schedules",
+        "loops": 1,
+        "rows": 119515
+      },
+      {
+        "name": "stats",
+        "loops": 1,
+        "rows": 50352
+      },
+      {
+        "name": "identities",
+        "loops": 1,
+        "rows": 119515
+      },
+      {
+        "name": "participation",
+        "loops": 1,
+        "rows": 52188
+      }
+    ],
+    "helperFunctionScans": 0,
+    "explicitLocks": 0
+  },
+  "negativeControls": {
+    "repeatedCteRefused": true,
+    "excessWorkRefused": true
+  },
+  "normalizedParity": {
+    "rows": 103468,
+    "sha256": "99648a6453e85b84248cad119ae1ad8ffe77d2bb8c56d6818101be963e0c5f04",
+    "statements": 1
+  },
+  "fullMaterialization": {
+    "rows": 1948,
+    "sha256": "377054f66c2f73d94e4164ea7dccecfc982ccd7e5ed012a40fa8d9942e4e43ee",
+    "inputs": 31168,
+    "snapshots": 16,
+    "historiesLoops": 1,
+    "gapsLoops": 1,
+    "actualMountBytes": 2147483648,
+    "sharedHits": 1686163,
+    "sharedReads": 6,
+    "optInOnly": true,
+    "ciGlobExcluded": true
+  },
+  "datasetPlans": [
+    {
+      "name": "retrospective-reconstruction-v1",
+      "budget": {
+        "observations": [
+          {
+            "name": "root",
+            "hits": 8624,
+            "reads": 0,
+            "ceiling": 10349,
+            "loops": 1,
+            "rows": 1
+          },
+          {
+            "name": "current_f",
+            "hits": 2656,
+            "reads": 0,
+            "ceiling": 3190,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_l",
+            "hits": 687,
+            "reads": 0,
+            "ceiling": 825,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_jobs",
+            "hits": 2,
+            "reads": 0,
+            "ceiling": 2,
+            "loops": 1,
+            "rows": 36,
+            "pageBudget": {
+              "blockSize": 8192,
+              "heap": {
+                "relation": "job_runs",
+                "kind": "r",
+                "bytes": 16384,
+                "pages": 2,
+                "analyzedPages": 2,
+                "blockSize": 8192
+              },
+              "indexes": [],
+              "ceiling": 2
+            }
+          }
+        ],
+        "helperFunctionScans": 0,
+        "explicitRowLocks": 0
+      },
+      "jobPages": {
+        "blockSize": 8192,
+        "heap": {
+          "relation": "job_runs",
+          "kind": "r",
+          "bytes": 16384,
+          "pages": 2,
+          "analyzedPages": 2,
+          "blockSize": 8192
+        },
+        "indexes": [],
+        "ceiling": 2
+      }
+    },
+    {
+      "name": "strict-point-in-time-v1",
+      "budget": {
+        "observations": [
+          {
+            "name": "root",
+            "hits": 8624,
+            "reads": 0,
+            "ceiling": 10349,
+            "loops": 1,
+            "rows": 1
+          },
+          {
+            "name": "current_f",
+            "hits": 2656,
+            "reads": 0,
+            "ceiling": 3190,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_l",
+            "hits": 687,
+            "reads": 0,
+            "ceiling": 825,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_jobs",
+            "hits": 2,
+            "reads": 0,
+            "ceiling": 2,
+            "loops": 1,
+            "rows": 36,
+            "pageBudget": {
+              "blockSize": 8192,
+              "heap": {
+                "relation": "job_runs",
+                "kind": "r",
+                "bytes": 16384,
+                "pages": 2,
+                "analyzedPages": 2,
+                "blockSize": 8192
+              },
+              "indexes": [],
+              "ceiling": 2
+            }
+          }
+        ],
+        "helperFunctionScans": 0,
+        "explicitRowLocks": 0
+      },
+      "jobPages": {
+        "blockSize": 8192,
+        "heap": {
+          "relation": "job_runs",
+          "kind": "r",
+          "bytes": 16384,
+          "pages": 2,
+          "analyzedPages": 2,
+          "blockSize": 8192
+        },
+        "indexes": [],
+        "ceiling": 2
+      }
+    },
+    {
+      "name": "real-active-corrections",
+      "budget": {
+        "observations": [
+          {
+            "name": "root",
+            "hits": 8626,
+            "reads": 0,
+            "ceiling": 10349,
+            "loops": 1,
+            "rows": 1
+          },
+          {
+            "name": "current_f",
+            "hits": 2657,
+            "reads": 0,
+            "ceiling": 3190,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_l",
+            "hits": 687,
+            "reads": 0,
+            "ceiling": 825,
+            "loops": 1,
+            "rows": 9381
+          },
+          {
+            "name": "current_jobs",
+            "hits": 2,
+            "reads": 0,
+            "ceiling": 2,
+            "loops": 1,
+            "rows": 37,
+            "pageBudget": {
+              "blockSize": 8192,
+              "heap": {
+                "relation": "job_runs",
+                "kind": "r",
+                "bytes": 16384,
+                "pages": 2,
+                "analyzedPages": 2,
+                "blockSize": 8192
+              },
+              "indexes": [],
+              "ceiling": 2
+            }
+          }
+        ],
+        "helperFunctionScans": 0,
+        "explicitRowLocks": 0
+      },
+      "jobPages": {
+        "blockSize": 8192,
+        "heap": {
+          "relation": "job_runs",
+          "kind": "r",
+          "bytes": 16384,
+          "pages": 2,
+          "analyzedPages": 2,
+          "blockSize": 8192
+        },
+        "indexes": [],
+        "ceiling": 2
+      }
+    }
+  ],
+  "probes": [
+    {
+      "name": "source: four families replay before finish, inclusive microseconds, scope and discovery agree",
+      "verdict": "pass",
+      "detailsSha256": "2498b5a01bd2779d03528190a68bf759d9e5e1cebfa032a34298a8d5c014d4bf"
+    },
+    {
+      "name": "normalizer: four families replay before finish, inclusive microseconds, scope and discovery agree",
+      "verdict": "pass",
+      "detailsSha256": "b6f3a1c86370b0213d248f3421159a3f40824f6965c944166ad5cfc00226dd1e"
+    },
+    {
+      "name": "running/failed normalized and source owners never hide the previous valid head",
+      "verdict": "pass",
+      "detailsSha256": "576c13790a0237821b206f93d9a13e4f89d5fab891d8f5dc5716ba9911764c5a"
+    },
+    {
+      "name": "strict per-game context falls back when a later job finishes after the event boundary",
+      "verdict": "pass",
+      "detailsSha256": "6ce3e5a1099fc82608f3612b3f4a443dbf64c1ee7a0c6d1106ad9b89385792b5"
+    },
+    {
+      "name": "one normalized statement inlines and keeps the legacy data projection",
+      "verdict": "pass",
+      "detailsSha256": "e60cfacb48d17bbff662a046c126aa2dbb184c25e0e80730c7069f76fe9c4d30"
+    },
+    {
+      "name": "new producer uses eight statements, authoritative plan inputs and atomic rollback",
+      "verdict": "pass",
+      "detailsSha256": "f3f1b1e00c9edec7914fafe37648f5ca8055dcc7976bc31c66b45303fb4a1891"
+    }
+  ],
+  "budgets": {
+    "normalizedSql": 1,
+    "newProducerSql": 8,
+    "producerAggregateLoops": 1,
+    "datasetBuild": "8 SQL / 2 checks",
+    "datasetDelivery": "3 SQL / 2 checks / 1 GET",
+    "contextRead": "3 SQL / 2 checks / 1 GET",
+    "modelOnlySql": 2,
+    "direct163RightsCalls": "2P at every n=2..16, from independently derived profile scope",
+    "producerContextCeiling": 1745394
+  },
+  "validation": [
+    {
+      "command": "standard live producer work gate",
+      "passed": 1
+    },
+    {
+      "command": "standard behavior: normalized/producer + ingestion + derived",
+      "passed": 28
+    },
+    {
+      "command": "standard dataset work/behavior and #166/#231 compatibility",
+      "passed": 44
+    },
+    {
+      "command": "opt-in 2 GiB materialization plan/parity",
+      "passed": 1
+    },
+    {
+      "command": "final fresh standard read-only gate after helper whitespace cleanup",
+      "passed": 1
+    },
+    {
+      "command": "Node 24 typecheck and lint excluding codex-briefs/**",
+      "exitCode": 0
+    },
+    {
+      "command": "Node 24 import-boundary checks",
+      "passed": 11
+    },
+    {
+      "command": "Node 24 focused derived ownership unit test",
+      "passed": 1
+    },
+    {
+      "command": "#166/#231 evidence audits",
+      "records": [
+        8,
+        3
+      ],
+      "exitCode": 0
+    }
+  ],
+  "cleanup": {
+    "standard512MiBRestored": true,
+    "scratchDatabases": 0,
+    "scratchConnections": 0,
+    "throwawayLoginRoles": 0,
+    "noFurtherDbUseThisIteration": true
+  },
+  "historicalStopPreserved": [
+    {
+      "filename": "step-3-stopped-20261107T223140Z.json",
+      "sha256": "818ef4d017bec4f667913c41cb5254292d70b50e3f1669ff9a4e3e94f4682515"
+    },
+    {
+      "filename": "step-3-stopped-full-records-20261107T223140Z.tar.gz",
+      "sha256": "9dbcdbec78efe318d71c905c28da3d2a730f62c062e6c9223e3b3ba4e2ce5d03"
+    }
+  ],
+  "limitations": [
+    "CI buffer cost is about 14.1% above the original candidate diagnostic; unchanged 20% ceiling is not rebased.",
+    "One-second and gate-boundary observations are sampled peaks, not an exact allocation peak; peak use exceeded 512 MiB only in the opt-in 2 GiB run.",
+    "Final four-sample fixed-version producer speed, dataset speed and six #163 cohorts remain step 4. No final latency qualification is claimed here.",
+    "Historical step-3 stop retains its missing work record/in-flight telemetry limitation; resumed success does not erase that failure.",
+    "No full-repo test suite or artifact-cleaner invocation in step 3. Generic auditor verifies bytes/projections, not independent SQL reexecution."
+  ],
+  "estimate": {
+    "combinedHours": [
+      7.75,
+      8.5
+    ],
+    "hardCapHours": 8.5,
+    "includesRemainingStep4": true,
+    "reason": "Additional resource-tier validation and durable packaging; stop if forecast or active work exceeds the cap."
+  },
+  "supplementalRecords": [
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T224118Z-validation.json",
+      "sha256": "512a30c5389a7faf5f19ec20c5de7d7d5ba2fe585009a331cdab8a36783961a8",
+      "byteSize": 91352
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T224118Z-disk.jsonl",
+      "sha256": "e1dd4d1a7a666b29593fbf949efb100552f73dc6a8401c764b916d2eb4473ade",
+      "byteSize": 58549
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T224118Z-work.json",
+      "sha256": "b1952fc81046a2d9dfbac30943c6f0895adfdff30524e065d38a289bfdb0a730",
+      "byteSize": 229375
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T224118Z-work.log",
+      "sha256": "892064aa2a9839af457c60ba952bdce08daabaedfb8acf9d0e575573886f22ca",
+      "byteSize": 206
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T224118Z-behavior.json",
+      "sha256": "7d75b30e79daae969abd911301a174657c0d01409e3fce66c181e107b17e6328",
+      "byteSize": 59675
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T224118Z-behavior.log",
+      "sha256": "483343c08545714477f448801f35e8ad3f090eeda35752a0dee6e89fee8cf7b0",
+      "byteSize": 3018
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T224118Z-compatibility.log",
+      "sha256": "60590e832d4ba60b3ac073ae2a9ae45a204bd0f18e1705545249ea8c90d67f02",
+      "byteSize": 5247
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T224118Z-dataset-work.json",
+      "sha256": "382e8496a25c391823280ac0ea4bee17097d3472aa73130a828348884bb1857e",
+      "byteSize": 327904
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T224118Z-dataset-behavior.json",
+      "sha256": "e1bd7d3dfccb0d293a6dbe55e45664ae56c7f05f0fc6926dcbe19dcda685f919",
+      "byteSize": 7978
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/opt-in-20261107T224935Z-validation.json",
+      "sha256": "8bc18efe0e1cb22e8de2703323bf399b7d963c03a812bb633afbdbefe678ddef",
+      "byteSize": 30752
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/opt-in-20261107T224935Z-disk.jsonl",
+      "sha256": "460be79a131dace860dd8962be74f5d3584aa768f94c9574ee103939a0f99ed1",
+      "byteSize": 19293
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/opt-in-20261107T224935Z-full-plan.json",
+      "sha256": "0e06f0a22830c98989ab1aac7f2a8077e4c637afed2eed515f4e5b88d9c5492c",
+      "byteSize": 301576
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/opt-in-20261107T224935Z-full-plan.log",
+      "sha256": "cf9b2c3980b7fc87e4636fa5a94378092b30828d5cbadff2c8f0446213623eae",
+      "byteSize": 194
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T225550Z-validation.json",
+      "sha256": "d51db8eb1f4a99e5f9177104b0a0073f400e3367439b7f9fadd9515967d4978b",
+      "byteSize": 27069
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T225550Z-disk.jsonl",
+      "sha256": "f26fbc02defe8b1afa0c335f015ffaabd2c2686dae2751c386ba4502e4bb0d53",
+      "byteSize": 16960
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T225550Z-work.json",
+      "sha256": "e0905f690dea9033e681cd3dabd6c5e6caf866253e720e70b17d4e98c33240e0",
+      "byteSize": 229377
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/standard-20261107T225550Z-work.log",
+      "sha256": "81870cee9dca1c6b758bd7f396e4817c355a92ed1335f06c1f7373d15f7bf2e9",
+      "byteSize": 206
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/typecheck-20261107T224201Z.log",
+      "sha256": "f65fd97d2a283a6d774c84d936e0bc3d5153bb69f81b0ebef1975371238ff03e",
+      "byteSize": 314
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/lint-20261107T224201Z.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteSize": 0
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/imports-20261107T224201Z.log",
+      "sha256": "b134b3a6a5229469db38729b48b940eea32533c545db87e949b326bf84ed6809",
+      "byteSize": 1223
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/unit-20261107T224201Z.log",
+      "sha256": "6a0e21671230b44e50d8bd678169f5385a06ab37d681af75ca20800b59b8c932",
+      "byteSize": 822
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/audit-166-20261107T2257Z.log",
+      "sha256": "06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+      "byteSize": 1378
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/audit-231-20261107T2257Z.log",
+      "sha256": "2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+      "byteSize": 452
+    },
+    {
+      "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/run-tiers.mjs",
+      "sha256": "3db8175d2cd633fcfb0507c0705d7b4e23b1c31db8fb717ff470cdc581752aae",
+      "byteSize": 5411
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-3-resumed-full-records-20261107T225754Z.tar.gz#step-3-resumed/validation.json",
+    "sha256": "9ae6124b8c3e7ac786eb23469e4855f95bdbf506f4120b60e03658bd7514bfb1",
+    "byteSize": 22441,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

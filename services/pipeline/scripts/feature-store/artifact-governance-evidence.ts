@@ -8,6 +8,7 @@ import type { CompositeCase, CompositeSample } from "./composite-authorization-m
 import type { ReadCounters } from "../../tests/feature-store/artifact-read-work.ts";
 import type { PredictionRequest } from "@dfs-ev/pipeline/feature-store/predict";
 import { compactCapacityBenchmark } from "./prediction-capacity-evidence.ts";
+import { visibilityProjection } from "./job-visibility-evidence.ts";
 
 type Sample = { phase: string; shape: string; arm: string; block: number; position: number; read: number;
   q1Ms: number; q2Ms: number; sumMs: number; endToEndMs: number; verdict: string;
@@ -387,7 +388,8 @@ const ownerBehaviorProjection = (full: { issue: number; step: number; kind: stri
 const isSame = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 export const compactBehavior = (bytes: Buffer, path: string): Record<string, unknown> & { schemaVersion: number; fullRecord: ReturnType<typeof fullRecord> } => {
   const full = JSON.parse(bytes.toString());
-  const projection = full.issue === 231 || full.kind === "composite-authorization-behavior"
+  const projection = full.kind === "point-in-time-completion-benchmark" ? visibilityProjection(full)
+    : full.issue === 231 || full.kind === "composite-authorization-behavior"
     ? compositeBehaviorProjection(full) : full.kind === "local-prediction-behavior" ? predictionBehaviorProjection(full)
       : full.kind === "prediction-owner-behavior" ? ownerBehaviorProjection(full) : compactCounters(full) as Record<string, unknown>;
   return { ...projection, schemaVersion: 2, fullRecord: fullRecord(bytes, path),
@@ -415,7 +417,8 @@ export const verifyEvidenceReceipt = (receipt: ReturnType<typeof compactBenchmar
     return;
   }
   const full = JSON.parse(bytes.toString());
-  const expected = full.kind === "prediction-capacity-benchmark" ? compactCapacityBenchmark(bytes, receipt.fullRecord.path)
+  const expected = full.kind === "point-in-time-completion-benchmark" ? compactBehavior(bytes, receipt.fullRecord.path)
+    : full.kind === "prediction-capacity-benchmark" ? compactCapacityBenchmark(bytes, receipt.fullRecord.path)
     : full.kind === "local-prediction-benchmark" ? compactPredictionBenchmark(bytes, receipt.fullRecord.path)
     : full.kind === "composite-authorization-benchmark" ? compactCompositeBenchmark(bytes, receipt.fullRecord.path)
     : "samples" in full ? compactBenchmark(bytes, receipt.fullRecord.path) : compactBehavior(bytes, receipt.fullRecord.path);

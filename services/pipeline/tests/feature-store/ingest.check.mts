@@ -48,11 +48,11 @@ test("#138 ingestion and bitemporal selection", { timeout: 120_000 }, async (t) 
         assert.equal((await reader.query('SELECT count(*)::integer AS n FROM fs138.source_snapshots')).rows[0].n,1);
       });
       await check("strict cutoff is inclusive for both clocks and refuses either future clock", async () => {
-        const times = (await reader.query("SELECT ingested_at::text AS ingested FROM fs138.source_snapshots")).rows[0];
-        const before = (await admin.query("SELECT ($1::timestamptz - interval '1 microsecond')::text AS before", [times.ingested])).rows[0].before;
+        const times = (await reader.query("SELECT finished_at::text AS finished FROM fs138.source_snapshots JOIN fs138.job_runs USING(job_id)")).rows[0];
+        const before = (await admin.query("SELECT ($1::timestamptz - interval '1 microsecond')::text AS before", [times.finished])).rows[0].before;
         const checkpoint = (await admin.query("SELECT clock_timestamp()::text AS clock")).rows[0].clock;
         assert.equal((await readNormalizedAsOf(reader, { cutoff: before, checkpoint, mode: "strict-point-in-time-v1" })).length, 0);
-        assert.equal((await readNormalizedAsOf(reader, { cutoff: times.ingested, checkpoint, mode: "strict-point-in-time-v1" })).length, 1);
+        assert.equal((await readNormalizedAsOf(reader, { cutoff: times.finished, checkpoint, mode: "strict-point-in-time-v1" })).length, 1);
         // Owner-only synthetic clock fixture isolates provider availability.
         await admin.query("UPDATE fs138.source_snapshots SET available_at = $1::timestamptz + interval '1 day'", [checkpoint]);
         assert.equal((await readNormalizedAsOf(reader, { cutoff: checkpoint, checkpoint, mode: "strict-point-in-time-v1" })).length, 0);
