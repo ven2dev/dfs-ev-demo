@@ -1,5 +1,9 @@
 # Prediction capacity (#168)
 
+The #168 results below retain their original contract. The approved
+[#242 startup-gate update](https://github.com/ven2dev/dfs-ev-demo/issues/242#issuecomment-6718023389)
+is described at the end of this document, together with its final qualification.
+
 Approved [measured roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/168#issuecomment-6674037913),
 based on merged #167/#239 at `17e07d6`. Owner waived the issue’s 5-hour split
 rule on 2026-11-05; #168 includes step 0 at an approved 5.5–6.5 h. Stop and
@@ -260,3 +264,115 @@ include cold-phase diagnostics and the exact full-record digest. The new final
 evidence tests hash before parsing and recompute schedule/work/provenance with
 the speed gate disabled in CI. The opt-in audit also enforces all six recorded
 speed gates. #167 and earlier #168 evidence remain unchanged history.
+
+## Trial-level startup qualification (#242)
+
+### Design basis
+
+**Pattern.** Versioned benchmark contracts, with one shared pure trial summary
+for the runner and auditor. The process driver reports outcomes and phases,
+enforcing individual deadlines without deciding a trial percentile. This follows
+the existing capacity pattern and changes no handler, owner helper, SQL or work
+budget. Implementation is limited to the capacity process driver, runner and
+auditor; tests, documentation and new evidence accompany those changes.
+
+**Alternatives.** Dropping startup qualification loses an explicit requirement.
+Changing only the runner leaves the process driver and auditor in disagreement.
+Changing the formula globally would reinterpret #168's accepted historical
+records. A separate benchmark framework adds another source of policy drift.
+
+**Targets and reasons.** Each cold trial's startup nearest-rank p95 is ≤210 ms,
+so isolated tail samples do not replace the agreed trial statistic. An individual
+startup above 300 ms fails the sample and stops qualification, preventing a
+pathological tail from qualifying under a percentile. Exactly 300 ms meets this
+inclusive numeric bound; the parent still enforces its real-time deadline and
+ignores late replies. Startup is part of the parent-observed full path, not an
+extra interval outside request timing. The explicit startup bound also guards
+inconsistent phase metadata.
+
+Startups above 210 through 300 ms remain eligible subject to the trial p95.
+Every cold trial reports its maximum and five slowest startups, with original
+sample indices, PIDs and feature IDs; descending duration and ascending index
+break ties deterministically. Every full-path trial still has p95 ≤210 ms and
+≥30% headroom under 300 ms. Refusal, error, work mismatch or either sample
+duration above 300 ms stops the run after retaining the sample, preventing
+retries or fast refusals from disguising failure. Trials are never pooled.
+
+Keep 3 SQL / 2 combined checks / 1 descriptor GET, zero request-path hashes,
+independently derived 2P rights calls and model-only 2 SQL to preserve serving
+work. Keep 100 requests per trial, ≥20 QBs, ≥16 teams, ≤5% per player, all five
+seasons × three history bands and every n=2–16 to prevent cherry-picking.
+CI proves work and synthetic/recorded arithmetic without live timing gates.
+
+**Assumptions.** The unchanged real 16-file / 2,504-row fixture, Node 24 native
+type stripping, loopback PostgreSQL 18.6 and standard compose.test.yml database
+(512 MiB data mount / 128 MiB shared memory), with no setting changes. OS/DB
+caches remain unflushed and fixture preparation warms them. Each cold prediction
+starts a fresh process/connection; warm setup stays separately disclosed. These
+results make no hosted, concurrent-throughput or cold-storage claim.
+
+### Contracts and feasibility
+
+Schema 1 / issue 168 keeps the original per-sample 210 ms startup rule and exact
+summary/receipt shape. Schema 2 / issue 242 records the fixed startupGate policy
+(trial-p95, 210 ms p95, 300 ms sample deadline, five tail samples). Unsupported
+schema/issue/policy combinations refuse, including on failed-run receipts, so a
+new record cannot silently select a different rule. The existing hash-first
+auditor dispatches by that recorded contract. #168's receipts and bundles stay
+byte-for-byte unchanged and continue to audit under their original rule.
+
+Read-only recomputation of #168's hash-verified final record gives cold startup
+p95s 97.734 / 101.509 / 104.952 ms and maxima 121.868 / 209.445 / 186.025 ms.
+All pass both rules. Synthetic nearest-rank arithmetic over 100 samples confirms
+five slow values leave p95 at the 95th fast value; six move it into the slow
+group. This is feasibility evidence, not a new qualification or live timing run.
+
+### Approved delivery
+
+Step 1 changes and tests the contract, including runner stop/persistence,
+inclusive thresholds, historical compatibility and tail tamper controls. It
+needs commit approval before timing. Step 2 qualifies only committed sources
+with the existing C1/W1/C2/W2/C3/W3 schedule and appends new timestamped evidence
+under docs/evidence/feature-store-242/, through ObjectStore and a deterministic
+in-tree mirror. The runner also pins the merged #241 proposal SQL loaded by the
+harness; no SQL changes are part of #242.
+
+The owner confirms a quiet host window with ALT before fixture preparation and
+timing. A miss stops the run and keeps its samples; there is no larger-disk or
+settings substitution. Estimate is 2.5–3.5 hours. Each step stops for commit
+approval; push/PR needs fresh consent. #169 waits for #247 to merge.
+
+### Final #242 qualification — 2026-11-08
+
+The first attempt passed on committed sources `4edb69881e0ebb2388ae4b81be7d319a9b78626e`;
+all 62 source hashes and Git blob IDs match. The standard 512 MiB
+PostgreSQL fixture reproduced the unchanged 2,504-row dataset. No settings or
+mount sizes changed. ALT's quiet window covered preparation and timing; Relay
+gave the owner the all-clear after the process exited.
+
+| Trial | Available/attempts | Full-path p95 ms | Headroom under 300 ms | Startup p95 ms | Startup maximum ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| C1 | 100/100 | 170.547 | 43.15% | 133.561 | 139.986 |
+| W1 | 100/100 | 7.202 | 97.60% | setup separate | — |
+| C2 | 100/100 | 169.319 | 43.56% | 131.608 | 142.633 |
+| W2 | 100/100 | 8.563 | 97.15% | setup separate | — |
+| C3 | 100/100 | 162.780 | 45.74% | 133.548 | 175.631 |
+| W3 | 100/100 | 8.676 | 97.11% | setup separate | — |
+
+All 600 requests retain 3 SQL / 2 combined checks / 1 GET / 0 hashes, plus all-n
+2P/model-only controls and same-process warm rights/deletion refusals. Minimum
+headroom is 43.15%. There are no refused measured samples,
+retries or replacements, and no startup/full-path sample exceeds 300 ms.
+The same ordered player/game/history coordinates as #168 cover 100 QBs, 32 teams,
+maximum player share 1%, all 15 season/history cells and every n=2–16. The
+manifest was pinned before timing; fresh fixture identities make its hash new.
+
+Across cold samples, startup p95 is 133.548 ms and maximum
+175.631 ms; aggregate setup share is 78.95%.
+Warm setup remains separate (W1 119.783 ms; W2 135.209 ms; W3 126.608 ms).
+The existing unflushed-cache/local-fixture limitations remain. These runs are
+absolute qualification, not an interleaved performance comparison with #168.
+
+[Full results, startup top-five records, phase breakdown and audit instructions](evidence/feature-store-242/README.md)
+point to the new hash-first receipts and deterministic ObjectStore/in-tree
+mirrors. #168 evidence remains byte-for-byte unchanged under its original rule.

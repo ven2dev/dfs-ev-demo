@@ -67,11 +67,18 @@ describe("#168 authoritative parent process deadline", () => {
     }
     await p.close(); expect(transport.fork).toHaveBeenCalledTimes(1);
   });
-  it("stops when startup alone crosses 210 even if the complete request is below 300", async () => {
+  it("reports a startup above 210 without refusing a complete request below 300", async () => {
     const p = process(), pending = p.measure(request, "cold", 1, 0);
     await vi.advanceTimersByTimeAsync(190); boot();
     await vi.advanceTimersByTimeAsync(50); child.emit("message", result());
-    expect(await pending).toMatchObject({ verdict: "fail", error: "capacity-startup-alone-threatens-target" });
+    expect(await pending).toMatchObject({ verdict: "pass", totalMs: 240, startupMs: 216 });
+    child.emit("exit"); await p.close();
+  });
+  it("refuses reported startup above 300 even when the worker replies before the parent timer", async () => {
+    const p = process(), pending = p.measure(request, "cold", 1, 0); boot();
+    await vi.advanceTimersByTimeAsync(80);
+    child.emit("message", { ...result(), importMs: 294.001 });
+    expect(await pending).toMatchObject({ verdict: "fail", error: "capacity-startup-deadline-exceeded" });
     child.emit("exit"); await p.close();
   });
 });

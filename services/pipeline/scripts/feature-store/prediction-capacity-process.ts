@@ -2,6 +2,7 @@ import { fork, type ChildProcess } from "node:child_process";
 import type { ClientConfig } from "pg";
 import type { CapacityRequest } from "./prediction-capacity-workload.ts";
 import type { createCapacityWorker } from "./prediction-capacity-worker.ts";
+import { capacitySampleDeadlineError } from "./prediction-capacity-evidence.ts";
 
 type WorkerResult = Awaited<ReturnType<Awaited<ReturnType<typeof createCapacityWorker>>["predict"]>>;
 export type CapacitySample = Partial<WorkerResult> & { temperature: "cold" | "warm"; trial: number; index: number;
@@ -83,7 +84,7 @@ export const createCapacityProcess = (options: CapacityProcessOptions) => {
       const totalMs = performance.now() - start;
       const setup = temperature === "cold" ? bootstrapMs + (result.importMs ?? 0) + (result.storeMs ?? 0) + (result.connectMs ?? 0) : 0;
       const values: Partial<Message> = { ...result }; delete values.kind;
-      const error = result.error ?? (setup > 210 ? "capacity-startup-alone-threatens-target" : undefined);
+      const error = result.error ?? capacitySampleDeadlineError({ totalMs, startupMs: setup });
       return { ...values, temperature, trial, index, featureId: input.featureId, n: input.n,
         verdict: result.verdict === "pass" && !error ? "pass" : "fail", ...(error ? { error } : {}), totalMs,
         pid, spawnMs: temperature === "cold" ? spawnMs : 0, bootstrapMs: temperature === "cold" ? bootstrapMs : 0,
