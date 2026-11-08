@@ -15,7 +15,7 @@ test("#241 live producer context work ceiling and final relational parity", { ti
     await withFeatureStoreDatabase(async database => {
       const { writer, reader, admin } = database;
       assert.match((await admin.query("SELECT version() AS v")).rows[0].v, /PostgreSQL 18\.6\b/);
-      const loaded = await loadJobVisibilityWorkFixture(database); record.fixture = loaded.manifest;
+      const loaded = await loadJobVisibilityWorkFixture(database, "producer-ci"); record.fixture = loaded.manifest;
       const at = loaded.spec.featuresAsOf, mode = loaded.spec.mode;
       const text = "SELECT * FROM fs138.qb_job_context(2025,$1,$2,'features',$3)", values = [at, mode, NORMALIZER_VERSION];
       const plan = (await writer.query("EXPLAIN (ANALYZE,BUFFERS,TIMING OFF,FORMAT JSON) " + text, values)).rows[0]["QUERY PLAN"][0];

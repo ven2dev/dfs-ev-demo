@@ -6,6 +6,13 @@ export const visibilityPlanNodes = (root: VisibilityPlanNode): VisibilityPlanNod
 // Owner-approved ceilings: ceil(measured hits * 1.20). These inclusive counters
 // are checked independently, never summed across ancestor/descendant nodes.
 export const DATASET_VISIBILITY_CEILINGS = { root: 10_349, current_f: 3_190, current_l: 825 } as const;
+// Fresh standard-container calibration, maximum across both modes and active
+// corrections: 2,080 / 607 / 145 hits. ceil(measured * 1.20), not full-graph slack.
+export const DATASET_SLICE_BUDGET = {
+  contentSha256: "d0bb28c7205f9047dd85f7bf6894b16031c94803c9cd46ee02b443fa10b8436e",
+  naturalKeys: 1_948, measured: { root: 2_080, current_f: 607, current_l: 145 },
+  ceilings: { root: 2_496, current_f: 729, current_l: 174 },
+} as const;
 export type JobRelationPages = { relation: string; kind: "r" | "i"; bytes: number; pages: number; analyzedPages: number };
 export type JobPageBudget = { blockSize: number; heap: JobRelationPages; indexes: JobRelationPages[]; ceiling: number };
 const currentJobsNode = (nodes: VisibilityPlanNode[]) => {
@@ -32,7 +39,9 @@ export const jobPageBudget = async (client: Pick<Client, "query">, plan: { Plan:
   }
   return { blockSize: heap.blockSize, heap, indexes, ceiling: heap.pages + indexes.reduce((sum, r) => sum + r.pages, 0) };
 };
-export const assertDatasetVisibilityPlan = (plan: { Plan: VisibilityPlanNode }, jobs: JobPageBudget) => {
+export const assertDatasetVisibilityPlan = (plan: { Plan: VisibilityPlanNode }, jobs: JobPageBudget, naturalKeys = 9381) => {
+  assert([9381, DATASET_SLICE_BUDGET.naturalKeys].includes(naturalKeys), "unrecognized work fixture");
+  const ceilings = naturalKeys === DATASET_SLICE_BUDGET.naturalKeys ? DATASET_SLICE_BUDGET.ceilings : DATASET_VISIBILITY_CEILINGS;
   const nodes = visibilityPlanNodes(plan.Plan);
   assert(!nodes.some(n => n["Node Type"] === "Function Scan" && n["Function Name"] === "completed_jobs_at"), "completion helper must inline");
   assert(!nodes.some(n => n["Node Type"] === "LockRows"), "reader coordination lock");
@@ -40,7 +49,7 @@ export const assertDatasetVisibilityPlan = (plan: { Plan: VisibilityPlanNode }, 
   const jobsNode = currentJobsNode(nodes);
   assert.equal(jobsNode["Actual Loops"], 1, "current_jobs must execute once");
   assert((jobsNode["Actual Rows"] as number) > 0, "current_jobs must actually run");
-  for (const [name, ceiling] of Object.entries({ ...DATASET_VISIBILITY_CEILINGS, current_jobs: jobs.ceiling })) {
+  for (const [name, ceiling] of Object.entries({ ...ceilings, current_jobs: jobs.ceiling })) {
     const matches = name === "root" ? [plan.Plan] : nodes.filter(n => n["Subplan Name"] === "CTE " + name);
     assert.equal(matches.length, 1, "exactly one materialization: " + name);
     const node = matches[0], hits = node["Shared Hit Blocks"] as number, reads = node["Shared Read Blocks"] as number;
@@ -50,7 +59,7 @@ export const assertDatasetVisibilityPlan = (plan: { Plan: VisibilityPlanNode }, 
     if (name !== "root") {
       assert.equal(node["Actual Loops"], 1, name + " must execute once");
       assert((node["Actual Rows"] as number) > 0, name + " must actually run");
-      if (name !== "current_jobs") assert.equal(node["Actual Rows"], 9381, name + " natural-key graph");
+      if (name !== "current_jobs") assert.equal(node["Actual Rows"], naturalKeys, name + " natural-key graph");
     }
     observations.push({ name, hits, reads, ceiling, loops: node["Actual Loops"], rows: node["Actual Rows"],
       ...(name === "current_jobs" ? { pageBudget: jobs } : {}) });

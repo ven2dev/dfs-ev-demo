@@ -1,0 +1,211 @@
+{
+  "issue": 241,
+  "step": 4,
+  "kind": "disk-and-estimate-checkpoint",
+  "recordedAt": "2026-11-08T00:11:02.151Z",
+  "verdict": "stopped-at-owner-cap-before-speed-qualification",
+  "runtime": "v24.18.1",
+  "baseCommit": "441aaf96941e31f7a7f67a5edce906c79cc74ed1",
+  "sourceIdentity": {
+    "services/pipeline/tests/feature-store/job-visibility-producer-work.check.mts": {
+      "sha256": "08913fa6c5bfcf0685f0a26443cca4a61a16e976ea2becb615ddb82f25e43398",
+      "blobId": "df48ce6c988d2019d820fe7fd3239204b5d14117"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work-fixture.ts": {
+      "sha256": "c0333e5741264f5ff32163d7f65ec86ca11bc75c26e480a6e12d74b9dded3584",
+      "blobId": "b9d81352c702b7d0d4459bdcacce8f4203eec440"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work.check.mts": {
+      "sha256": "765d57988dedaf4db3b88298c3e05bfce50ff6079a97c58c73121b066b1ba688",
+      "blobId": "500daeb4b9a9edf411bbfb5bec0c0bf4676dc74a"
+    },
+    "services/pipeline/tests/feature-store/job-visibility-work.ts": {
+      "sha256": "3d8b699c14ab0f0bd7b0f94c46a2b093ba3980aedc263a71bda727143e0565dd",
+      "blobId": "af7456336601770d68708d482be6a62ad4a801f5"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-ci-slice-v1.json": {
+      "sha256": "f7dec229c38bd286c51c1af7b545fc33f6532c75c9bfaa18e5de7127d7eac908",
+      "blobId": "76638b543237b3b9b10a69806b6128c7df912f98"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.manifest.json": {
+      "sha256": "3d7763a4645ca3c55b2159016dd2eab72123e420db778a9e4eeda7a8d30779cc",
+      "blobId": "a11b869258d26a233b75a309bb689ee258cd3861"
+    },
+    "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz": {
+      "sha256": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+      "blobId": "faec950141d0d1aae2854b939a0f78f21995398b"
+    },
+    "packages/db/proposals/241_job_visibility.sql": {
+      "sha256": "13c7cedb65a2dcce133d8e1daff07bcd8f27f7330dca097c5390df66b6d3007a",
+      "blobId": "a993e3b5d8e4add22c5013eb34551fa14dcc90ec"
+    },
+    "services/pipeline/src/featureStore/derived.ts": {
+      "sha256": "9044cf04c9d39e788aa1943373ffc2ca8d74df8244ead12165e618bc502e7310",
+      "blobId": "ab99abf6d79dcb3241f7eae14a072731e7a9dbe3"
+    },
+    "services/pipeline/src/featureStore/datasets.ts": {
+      "sha256": "9dcd5576742d9caa7ca2cd3bdd8b95629a2d87d9c9ae85d9e783ee9f3e4171b9",
+      "blobId": "d0421c54f595f971cbd93bfb8f46385650350468"
+    },
+    "services/pipeline/src/featureStore/asOf.ts": {
+      "sha256": "3f8eed34d9dc4583db3906976e65bdf66fb028e0ea648dbd63fea2dedc9e4ce7",
+      "blobId": "7b70cdbced4fa4b83f2f675641ef6150fc956f12"
+    },
+    "compose.test.yml": {
+      "sha256": "44798ea481282096048bf44d02c33cf338eed4520165559dc1115e3e769e40b7",
+      "blobId": "ab874ba42f4ffb24cd5c71d23205fc6d962e4046"
+    },
+    "compose.feature-store-spike.yml": {
+      "sha256": "65abd96dd3849676b69485c0c0186fd100b31aa5545177dfe82a022c1884b8e8",
+      "blobId": "790b90f846221e5e769aa56c619d375230f8a87b"
+    },
+    "docs/feature-store-job-visibility.md": {
+      "sha256": "6f122aa46bed5ae8e89759acafd57a0f9dc4bf2b64d5f86514c621861bd695e9",
+      "blobId": "93b72802e8e1685a33fdd4a55e35004f46052df9"
+    }
+  },
+  "disk": {
+    "main": {
+      "sourceCommit": "dc0050a6a9f071c149098047d1428757245829cd",
+      "testFiles": 27,
+      "tests": 253,
+      "mountBytes": 536870912,
+      "peakSampledUsedBytes": 108912640,
+      "minimumSampledFreeFraction": 0.7971343994140625,
+      "diskHeadroomBar": 0.25,
+      "diskHeadroomPass": true,
+      "exitCode": 0,
+      "artifactCleanerFailed": false
+    },
+    "originalBranchTargetedSuite": {
+      "mountBytes": 536870912,
+      "peakSampledUsedBytes": 466530304,
+      "peakPercent": 86.89804077148438,
+      "actualTmpfs": {
+        "/var/lib/postgresql": "rw,size=512m"
+      },
+      "settings": {
+        "maxWalSize": "1GB",
+        "sharedBuffers": "128MB",
+        "workMem": "4MB"
+      },
+      "sampling": "one-second snapshots plus gate boundaries; sampled peak, not exact allocation peak"
+    },
+    "branchReducedFullSuite": {
+      "sourceCommit": "441aaf96941e31f7a7f67a5edce906c79cc74ed1",
+      "testFiles": 32,
+      "tests": 280,
+      "mountBytes": 536870912,
+      "peakSampledUsedBytes": 245841920,
+      "minimumSampledFreeFraction": 0.542083740234375,
+      "diskHeadroomBar": 0.25,
+      "diskHeadroomPass": true,
+      "exitCode": 0,
+      "artifactCleanerFailed": false
+    },
+    "incrementalPeakBytes": 136929280,
+    "interpretation": "Suite-level impact includes additional CI tests. The original branch 86.9% result covered targeted suites, not a full-suite comparison. All peaks are sampled; settings and standard mount unchanged."
+  },
+  "ciReduction": {
+    "producer": "normalized inputs only; no unrelated derived outputs. Full context cardinalities/loops and 1,745,394 ceiling unchanged.",
+    "dataset": "2025 season slice: 1,948 natural-key heads, 633 retrospective rows, strict zero, real active corrections. Root 10,349/current_f 3,190/current_l 825 unchanged. current_jobs relation-page rule unchanged.",
+    "fullPayloadUnchanged": true,
+    "sliceExpectationsFile": "job-visibility-ci-slice-v1.json",
+    "speedFixture": "Full 2,504-row fixture remains required; no speed measurement uses the reduced CI slice."
+  },
+  "estimate": {
+    "previousCombinedHours": [
+      7.75,
+      8.5
+    ],
+    "newCombinedForecastHours": [
+      8.25,
+      9
+    ],
+    "ownerHardCapHours": 8.5,
+    "decision": "Stop; no unilateral extension.",
+    "reason": "Added main/branch full-suite disk qualification, CI workload reduction and retained comparison evidence add work beyond the earlier final-step allowance."
+  },
+  "completed": [
+    "Step 3 commit 441aaf9 has exactly 16 files, clean tree at commit and no attribution lines. No push.",
+    "Main and reduced-branch full feature-store DB suites pass under Node 24 on separate fresh standard containers.",
+    "Both suites pass the 25% sampled free-space bar; the disk follow-up is not triggered as a PR blocker by this run."
+  ],
+  "remaining": [
+    "Four final-source fixed-version producer samples on 2 GiB (each 8 SQL, <=84 s); no baseline producer rerun.",
+    "Full-fixture dataset build qualification/comparisons and six #163 p95 cohorts.",
+    "Full-repo non-DB validation and final source/evidence audit, including #241-specific speed reconstruction.",
+    "Owner review and commit approval of step 4, followed by fresh push/PR consent."
+  ],
+  "cleanup": {
+    "scratchDatabases": 0,
+    "scratchConnections": 0,
+    "standardMountBytes": 536870912,
+    "noFurtherDbUseThisIteration": true
+  },
+  "historicalStep3StopPreserved": [
+    {
+      "filename": "step-3-stopped-20261107T223140Z.json",
+      "sha256": "818ef4d017bec4f667913c41cb5254292d70b50e3f1669ff9a4e3e94f4682515"
+    },
+    {
+      "filename": "step-3-stopped-full-records-20261107T223140Z.tar.gz",
+      "sha256": "9dbcdbec78efe318d71c905c28da3d2a730f62c062e6c9223e3b3ba4e2ce5d03"
+    }
+  ],
+  "limitations": [
+    "No speed benchmark started in step 4. This checkpoint does not qualify final latency.",
+    "Disk peaks sampled every second plus boundaries, not absolute peaks. No standard resource/settings changes.",
+    "Reduced CI tests and static TypeScript check are the only step-4 implementation changes so far; not committed.",
+    "Full-repo unit suite and final #241 audit extension remain pending; generic audit proves retained bytes/projection, not independent runtime reexecution."
+  ],
+  "supplementalRecords": [
+    {
+      "path": "step-4-cap-checkpoint-full-records-20261108T001101Z.tar.gz#step-4-checkpoint/main-20261108T000453Z-record.json",
+      "sha256": "c4da6ec2403231faaaf734c90529ce1b83788626438eb7fe3822f9c208259419",
+      "byteSize": 112424
+    },
+    {
+      "path": "step-4-cap-checkpoint-full-records-20261108T001101Z.tar.gz#step-4-checkpoint/main-20261108T000453Z-disk.jsonl",
+      "sha256": "14b18caf6b4ac8b814755760af9f5cbc9a51031a47a5cb8c8dc6cadc01fb6aff",
+      "byteSize": 72375
+    },
+    {
+      "path": "step-4-cap-checkpoint-full-records-20261108T001101Z.tar.gz#step-4-checkpoint/main-20261108T000453Z-suite.log",
+      "sha256": "e16177e222d026dce6c0ab63df8c463389d3073424ef20ea7aea4b2e809447ee",
+      "byteSize": 28195
+    },
+    {
+      "path": "step-4-cap-checkpoint-full-records-20261108T001101Z.tar.gz#step-4-checkpoint/branch-reduced-20261108T000720Z-record.json",
+      "sha256": "6c800e682d85dcf31bce5bb1c84a337a8d3280e166c7aca9f61a889e6b8a7f58",
+      "byteSize": 133389
+    },
+    {
+      "path": "step-4-cap-checkpoint-full-records-20261108T001101Z.tar.gz#step-4-checkpoint/branch-reduced-20261108T000720Z-disk.jsonl",
+      "sha256": "d6491e3b1b359a9b2afb648eeb73e0296eae14edc9b1a1955f305b2e50ad1048",
+      "byteSize": 85786
+    },
+    {
+      "path": "step-4-cap-checkpoint-full-records-20261108T001101Z.tar.gz#step-4-checkpoint/branch-reduced-20261108T000720Z-suite.log",
+      "sha256": "2784a8066af6b9d47a6bee0ef2dd04cf87c3317d7090ecac84064ff30cd75b14",
+      "byteSize": 31159
+    },
+    {
+      "path": "step-4-cap-checkpoint-full-records-20261108T001101Z.tar.gz#step-4-checkpoint/run-disk-suite.mjs",
+      "sha256": "272fef543015fb458f830e97d37d642004be478f5b775fcd1a094b8cb1ce32d2",
+      "byteSize": 4631
+    },
+    {
+      "path": "step-4-cap-checkpoint-full-records-20261108T001101Z.tar.gz#step-4-checkpoint/main-snapshot.json",
+      "sha256": "f652183930da9f2aac61fafa19230c82bad506691004d4e35b9816f98408837b",
+      "byteSize": 178
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-4-cap-checkpoint-full-records-20261108T001101Z.tar.gz#step-4-checkpoint/checkpoint.json",
+    "sha256": "198ad944a05019f7a9c9cffac605fc245f350963ee2cf4c81d2d0d7054befdbd",
+    "byteSize": 9623,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "issue": 241,
+  "kind": "CI season-slice expectations; full portable payload unchanged",
+  "season": 2025,
+  "naturalKeys": 1948,
+  "modes": [
+    {
+      "mode": "retrospective-reconstruction-v1",
+      "rows": 633,
+      "contentSha256": "d0bb28c7205f9047dd85f7bf6894b16031c94803c9cd46ee02b443fa10b8436e"
+    },
+    {
+      "mode": "strict-point-in-time-v1",
+      "rows": 0,
+      "contentSha256": "7858bc13cfd59085549e3c61fc1d42685f5a9134114316bbb623e79aaff43caf"
+    }
+  ]
+}

@@ -293,6 +293,143 @@ results qualify the design, not the final permanent sources. Selected full
 records and compact source-hashed receipts belong under
 `docs/evidence/feature-store-241/`, audited with the existing TypeScript tool.
 
+## Step 4 standard-suite disk and estimate checkpoint
+
+The owner added a minimum 25% free-space requirement at the sampled peak for
+the standard CI suite. Separate fresh 512 MiB containers ran the complete
+feature-store DB lane under Node 24.18.1, excluding `codex-briefs/**`:
+
+| Source / workload | Tests | Sampled peak bytes | Used | Free |
+| --- | ---: | ---: | ---: | ---: |
+| Main `dc0050a`, full lane | 253 | 108,912,640 | 20.287% | 79.713% |
+| Branch step 3, historical targeted run | Targeted suites | 466,530,304 | 86.898% | 13.102% |
+| Branch `441aaf9` plus reduced CI graphs, full lane | 280 | 245,841,920 | 45.792% | 54.208% |
+
+The full branch lane passes the disk bar with 156,811,264 bytes below the
+384 MiB ceiling. Its sampled peak exceeds main by 136,929,280 bytes
+(130.586 MiB). This is a suite-level comparison including additional tests,
+not an isolated attribution of storage to the changed SQL. The historical
+86.898% result covered targeted tests, so it is not a full-suite baseline.
+Sampling is once per second plus boundaries; absolute peaks are not measured.
+Both complete suites pass without an artifact-cleaner failure.
+
+The standard CI producer graph now loads normalized inputs and source lineage
+without unrelated derived outputs. It retains the full 16-snapshot,
+1,948-target, 119,515-request context workload and its unchanged 1,745,394 buffer
+ceiling. The dataset CI graph loads the 2025 derived rows and lineage without
+unneeded normalized tables: 1,948 natural-key heads, 633 retrospective rows,
+zero strict rows, and real active unavailable corrections. Its root/current_f/
+current_l ceilings remain 10,349/3,190/825, and current_jobs retains the
+single-pass relation-page rule. Loop and inlining assertions are unchanged.
+Expected slice hashes are pinned in `job-visibility-ci-slice-v1.json` and the
+full portable payload is still hash-verified before slicing. The original
+5,003,909-byte gzip remains unchanged. These are CI fixture reductions only;
+the final speed gates still require the full 2,504-row fixture on the existing
+2 GiB override.
+
+No PostgreSQL setting or standard mount changed. After the suites, zero scratch
+databases, scratch connections or throwaway LOGINs remain on the standard
+container. This run does not trigger the disk follow-up as a PR blocker.
+
+The added main/branch disk runs and CI reductions raise the combined forecast
+from 7.75–8.5 hours to 8.25–9 hours, above the owner's 8.5-hour cap. Work stops
+at this checkpoint for an owner decision. No step-4 speed benchmark has begun;
+final producer, dataset and six-cohort #163 qualification, full non-DB checks,
+and the final independent speed-receipt audit remain pending. The step-4
+changes are uncommitted, and no push is authorized.
+
+## Final qualification and both work-budget tiers
+
+The owner extended the hard cap to 9 hours, with no further extension. Step 4
+resumes from the retained cap checkpoint; no prior record is overwritten.
+The CI slice now has its own calibrated ceilings rather than inheriting the
+larger graph's allowance. Fresh standard PostgreSQL 18.6 measurements take the
+maximum across retrospective, strict and real active-correction plans, then
+apply `ceil(measured * 1.20)` independently to each inclusive counter:
+
+| Dataset tier | Natural keys | Root measured / ceiling | current_f measured / ceiling | current_l measured / ceiling |
+| --- | ---: | ---: | ---: | ---: |
+| Standard CI 2025 slice | 1,948 | 2,080 / 2,496 | 607 / 729 | 145 / 174 |
+| Full-fixture opt-in, original ceilings | 9,381 | 8,622 / 10,349 | 2,656 / 3,190 | 686 / 825 |
+
+The slice's retrospective content hash is
+`d0bb28c7205f9047dd85f7bf6894b16031c94803c9cd46ee02b443fa10b8436e`,
+recorded beside its constants and enforced against the fixture manifest. The
+strict-zero hash remains unchanged. The full-fixture ceilings were not rebased;
+their original candidate measurements remain in the earlier table. Both hits
+and hits+reads are bounded; all measured reads above are zero. The current_jobs
+page rule and 1,745,394 producer-context ceiling are unchanged. Negative controls
+reject excess buffers at every named scope, as well as repeated current_jobs.
+These tiers prevent a smaller CI graph from silently loosening the cost budget.
+
+CI runs the default slice with no timing assertions. Full plans run with Node 24,
+`FEATURE_STORE_241_FULL_DATASET=1`, `FEATURE_STORE_241_FULL_PLAN=1` and measured
+`FEATURE_STORE_241_TMPFS_BYTES=2147483648`, using the existing Compose override.
+Both use `job-visibility-work.check.mts`; the full materialization separately
+uses `job-visibility-producer-plan.mts`. All three full dataset plans and full
+materialization/parity pass. Materialization reproduces 1,948 outputs and 31,168
+source links; histories/gaps each execute once. Full-fixture dataset content
+remains 2,504 retrospective/zero strict rows with the original logical hashes.
+
+`job-visibility-benchmark.ts` qualifies the permanent read/producer sources on
+that actual 2 GiB mount. Four fixed-version-only full-season feature samples
+take 10,944.316 / 10,929.504 / 10,946.627 / 10,938.936 ms, each eight statements
+and 1,948 outputs. The worst has 90.878% headroom under 120 s, passing 84 s.
+No baseline producer is rerun. The retained comparison failure and explicit
+owner exception remain evidence, not a successful ABBA comparison.
+
+Three dataset ABBA blocks produce six candidate builds in 467.146–504.940 ms,
+each eight SQL/two checks and the original 2,504-row content hash. Worst headroom
+under 30 s is 98.317%, passing 21 s. All twelve baseline/candidate deliveries
+verify the exact file hash and use three SQL/two checks/one GET. The comparator
+substitutes main `dc0050a`'s selection SQL in the same outer builder. The #163
+comparator similarly substitutes main's authorization SQL in the unchanged
+adapter; no second authorization implementation is introduced.
+
+| #163 cohort | Baseline p95 ms | Candidate p95 ms | Candidate headroom |
+| --- | ---: | ---: | ---: |
+| Cold-connection 1 | 18.958 | 20.124 | 93.292% |
+| Warm 1 | 6.168 | 6.327 | 97.891% |
+| Cold-connection 2 | 19.227 | 19.722 | 93.426% |
+| Warm 2 | 5.990 | 6.311 | 97.896% |
+| Cold-connection 3 | 19.399 | 22.516 | 92.495% |
+| Warm 3 | 6.598 | 6.588 | 97.804% |
+
+Each arm/cohort has 100 successful requests and every n=2–16, with exactly
+three SQL/two current rights-status checks. No refusal counts as success.
+Nearest-rank p95 uses `ceil(0.95 * 100)` separately per cohort; no pooling or
+summing stage percentiles. Pins and their hash are written before timing.
+Cold includes a fresh restricted connection through serialized response;
+it does not mean a fresh process or flushed OS/database caches. Cold setup p95s
+are 6.743 / 6.058 / 7.344 ms, with aggregate setup shares 31.240% / 29.538% /
+28.527%; warm setup is outside timing. Warm still reads rights/status twice.
+Fixture preparation uses separate scratch databases for producer, dataset and
+reader gates; it is excluded from request timing. In-flight observer overhead
+is included, and sampled peak across full-plan/speed gates is 608,952,320 bytes
+(580.742 MiB) on the 2 GiB mount. Other settings remain unchanged.
+
+The existing TypeScript hash-first auditor now reconstructs #241 producer and
+dataset gates, per-request work, pinned selection and all six p95s from 1,216
+raw observations. Focused tests reject forged receipts, changed pins, missing
+or duplicate samples, refusals, extra SQL/checks and exceeded timing targets.
+Retained-sample reconstruction in CI makes no assertion about CI machine speed.
+The fresh-process claim belongs to #168, not these cold-connection cohorts.
+
+The final complete standard DB lane passes all 280 tests with the tighter slice
+ceilings, sampled peak 229,068,800 bytes (218.457 MiB, 42.667% used / 57.333%
+free). This passes the 25% free bar and is 114.590 MiB above main's sampled
+full-lane peak. Artifact-cleaner passes without a retry. The standard 512 MiB
+mount is restored with zero scratch databases/connections or throwaway LOGINs.
+The original disk comparison and cap checkpoint remain append-only history.
+
+Readiness/type generation, TypeScript, lint and eleven import-boundary checks
+pass under Node 24, excluding `codex-briefs/**`. Initial unit attempts retain
+49 jsdom failures and one Node public-package failure caused by sandbox
+`listen EPERM` on loopback. Runs allowing loopback pass; these infrastructure
+attempts are preserved and are not benchmark failures. No product or benchmark
+source changed after qualification, and all source SHA-256/Git blob identities
+are retained with the new evidence.
+
 ## Why it escaped
 
 #138 treated insertion clocks as knowledge time; #163 added current success

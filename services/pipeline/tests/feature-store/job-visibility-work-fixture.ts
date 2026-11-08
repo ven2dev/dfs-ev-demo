@@ -13,7 +13,8 @@ const tables = ["source_profiles", "job_runs", "source_snapshots", "job_inputs",
   "norm_player_game_stats", "norm_identity", "norm_participation", "feature_values", "outcome_labels", "feature_inputs", "label_inputs"] as const;
 type Fixture = { records: Record<typeof tables[number], Record<string, unknown>[]> };
 type Database = { writer: Client; admin: Client };
-export const loadJobVisibilityWorkFixture = async ({ writer, admin }: Database) => {
+export const loadJobVisibilityWorkFixture = async ({ writer, admin }: Database,
+  profile: "full" | "producer-ci" | "dataset-ci" = "full") => {
   const manifest = JSON.parse(await readFile(new URL("./fixtures/job-visibility-work-v1.manifest.json", import.meta.url), "utf8"));
   const gzip = await readFile(new URL("./fixtures/job-visibility-work-v1.json.gz", import.meta.url));
   assert.equal(sha256(gzip), manifest.payload.gzipSha256, "work-fixture-compressed-hash");
@@ -21,6 +22,23 @@ export const loadJobVisibilityWorkFixture = async ({ writer, admin }: Database) 
   assert.equal(bytes.length, manifest.payload.byteSize);
   const fixture = JSON.parse(bytes.toString()) as Fixture;
   for (const table of tables) assert.equal(fixture.records[table].length, manifest.counts[table], "work-fixture-count:" + table);
+  // Hash the full pinned payload first. Standard CI provisions only the graph
+  // its query needs, reducing WAL without changing SQL, ceilings or producers.
+  const slice = JSON.parse(await readFile(new URL("./fixtures/job-visibility-ci-slice-v1.json", import.meta.url), "utf8"));
+  if (profile === "producer-ci") {
+    for (const table of ["feature_values", "outcome_labels", "feature_inputs", "label_inputs"] as const) fixture.records[table] = [];
+  } else if (profile === "dataset-ci") {
+    for (const table of ["norm_schedule", "norm_player_game_stats", "norm_identity", "norm_participation"] as const) fixture.records[table] = [];
+    fixture.records.feature_values = fixture.records.feature_values.filter(row => row.season === slice.season);
+    fixture.records.outcome_labels = fixture.records.outcome_labels.filter(row => row.season === slice.season);
+    const features = new Set(fixture.records.feature_values.map(row => row.feature_id));
+    const labels = new Set(fixture.records.outcome_labels.map(row => row.label_id));
+    fixture.records.feature_inputs = fixture.records.feature_inputs.filter(row => features.has(row.feature_id));
+    fixture.records.label_inputs = fixture.records.label_inputs.filter(row => labels.has(row.label_id));
+  }
+  const provisionedCounts = Object.fromEntries(tables.map(table => [table, fixture.records[table].length]));
+  const provisionedManifest = { ...manifest, profile, counts: provisionedCounts,
+    ...(profile === "dataset-ci" ? { modes: slice.modes, naturalKeys: slice.naturalKeys, season: slice.season } : {}) };
   const insert = async (table: typeof tables[number], rows: Record<string, unknown>[]) => {
     if (rows.length) await writer.query(`INSERT INTO fs138.${table} SELECT * FROM jsonb_populate_recordset(NULL::fs138.${table},$1)`, [JSON.stringify(rows)]);
   };
@@ -56,12 +74,12 @@ export const loadJobVisibilityWorkFixture = async ({ writer, admin }: Database) 
       await writer.query("COMMIT");
     } catch (error) { await writer.query("ROLLBACK"); throw error; }
   }
-  for (const table of tables) assert.equal((await admin.query(`SELECT count(*)::integer AS n FROM fs138.${table}`)).rows[0].n, manifest.counts[table]);
+  for (const table of tables) assert.equal((await admin.query(`SELECT count(*)::integer AS n FROM fs138.${table}`)).rows[0].n, provisionedCounts[table]);
   assert.equal(manifest.counts.source_snapshots, 16);
   await writer.query("ANALYZE fs138.job_runs,fs138.source_snapshots,fs138.norm_schedule,fs138.norm_player_game_stats,fs138.norm_identity,fs138.norm_participation,fs138.feature_values,fs138.outcome_labels,fs138.feature_inputs,fs138.label_inputs");
   const at = (await admin.query("SELECT clock_timestamp()::text AS at")).rows[0].at as string;
   const spec: DatasetSpec = { mode: "retrospective-reconstruction-v1", featureVersion: FEATURE_VERSION,
     labelVersion: LABEL_VERSION, historyPolicy: HISTORY_POLICY, featuresAsOf: at, labelsAsOf: at,
     includeRetrospective: true, includeSuperseded: true };
-  return { manifest, spec, counts: manifest.counts as Record<string, number> };
+  return { manifest: provisionedManifest, spec, counts: provisionedCounts };
 };

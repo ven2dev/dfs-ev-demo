@@ -1,0 +1,98 @@
+{
+  "issue": 241,
+  "step": 4,
+  "kind": "final-offline-audit",
+  "recordedAt": "2026-11-08T01:13:18.769Z",
+  "verdict": "pass",
+  "runtime": "v24.18.1",
+  "results": {
+    "evidenceControls": 5,
+    "typecheck": "pass",
+    "lint": "pass",
+    "cleanExportWithoutCacheOrNodeModules": {
+      "records": 108,
+      "verdict": "pass"
+    },
+    "historicalAudits": {
+      "166": 8,
+      "167": 72,
+      "168": 32,
+      "231": 3
+    },
+    "qualifiedSourceHashesUnchanged": 27
+  },
+  "sourceIdentity": {
+    "services/pipeline/tests/feature-store/jobVisibilityEvidence.test.ts": {
+      "sha256": "c551eaf2963c5115ba1f899ae2a9e7fb8be6ddc885415be2d65ce16302e05e22",
+      "blobId": "4eedac67c7ed64a9fa613b78552122033e2cbe85"
+    }
+  },
+  "limitations": [
+    "The clean export independently reconstructs the final p95s and gates; it does not reexecute a benchmark.",
+    "The raw validation bundle retains prior sandbox failures. No artifact-cleaner failure occurred."
+  ],
+  "supplementalRecords": [
+    {
+      "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/final-bundle-unit.log",
+      "sha256": "5b7cc7698dc6b9f6b7c7a6cc40a791a8625ce118a46510f15c24d0b1a5d5706c",
+      "byteSize": 819
+    },
+    {
+      "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/audit-166.log",
+      "sha256": "06e62d5b79c6743f212535280a81955f82237834dcec84ebc85d018cd20c2073",
+      "byteSize": 1378
+    },
+    {
+      "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/audit-231.log",
+      "sha256": "2e169c93998d84c3fd85f0ec46c3ed937aeda90995c472c7ad9bec6ded3f54b3",
+      "byteSize": 452
+    },
+    {
+      "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/audit-167.log",
+      "sha256": "9e94d8b2868ab6cc171f9e634e344359c1a4777e0dc1e5f1230cb32572b525f8",
+      "byteSize": 14816
+    },
+    {
+      "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/audit-168.log",
+      "sha256": "a60ab115e300a9af2ce91253ceb9c9a854d5e8fb99d2549c64ec07d52c4c1fb5",
+      "byteSize": 6571
+    },
+    {
+      "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/audit-241.log",
+      "sha256": "f5b10066d03a961a746190db1e9be717b0e0c652ad4a571b3e6cdaccbec6d554",
+      "byteSize": 22849
+    },
+    {
+      "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/final-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteSize": 0
+    },
+    {
+      "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/final-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteSize": 0
+    },
+    {
+      "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/clean-audit.log",
+      "sha256": "f5b10066d03a961a746190db1e9be717b0e0c652ad4a571b3e6cdaccbec6d554",
+      "byteSize": 22849
+    },
+    {
+      "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/clean-audit.json",
+      "sha256": "bbf58e6d365df88543189f9f12fcabbe3a69d88bec05ed0fba1f780fb8d5fe61",
+      "byteSize": 138
+    },
+    {
+      "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/clean-audit.mjs",
+      "sha256": "4a835bfaf744fb84c68ca9205bcc02f04d972cd749bf10992b982b8cfe887f44",
+      "byteSize": 1334
+    }
+  ],
+  "schemaVersion": 2,
+  "fullRecord": {
+    "path": "step-4-audit-full-records-20261108T011318Z.tar.gz#audit/final.json",
+    "sha256": "c1750213d494fa5cb2867aab451c6039df23475d602a1615f99d730def9b2db0",
+    "byteSize": 3300,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}
