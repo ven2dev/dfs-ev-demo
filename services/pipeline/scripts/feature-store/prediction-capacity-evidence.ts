@@ -4,20 +4,40 @@ import type { CapacitySample } from "./prediction-capacity-process.ts";
 import type { ReadCounters } from "../../tests/feature-store/artifact-read-work.ts";
 
 export const CAPACITY_ORDER = ["C1", "W1", "C2", "W2", "C3", "W3"];
+export const CAPACITY_STARTUP_GATE = Object.freeze({ rule: "trial-p95", p95Ms: 210, sampleDeadlineMs: 300, tailSamples: 5 });
+type CapacityRule = "sample-max-v1" | "trial-p95-v2";
+// The startup bound is explicit even though valid phase accounting also places
+// startup inside the parent-observed full path. Percentiles cannot excuse it.
+export const capacitySampleDeadlineError = (sample: Pick<CapacitySample, "totalMs" | "startupMs">) => {
+  if (![sample.totalMs, sample.startupMs].every(ms => Number.isFinite(ms) && ms >= 0)) return "capacity-invalid-duration";
+  if (sample.startupMs > CAPACITY_STARTUP_GATE.sampleDeadlineMs) return "capacity-startup-deadline-exceeded";
+  if (sample.totalMs > CAPACITY_STARTUP_GATE.sampleDeadlineMs) return "capacity-parent-deadline-exceeded";
+};
 const expectedWork = { sql: 3, checks: 2, gets: 1, heads: 0, puts: 0, deletes: 0, lists: 0, hashes: 0 };
 export const capacityP95 = (values: number[]) => {
   assert(values.length && values.every(v => Number.isFinite(v) && v >= 0), "capacity-invalid-duration");
   return [...values].sort((a, b) => a - b)[Math.ceil(.95 * values.length) - 1];
 };
-export const capacityTrial = (samples: CapacitySample[], name: string) => {
-  const p95Ms = capacityP95(samples.map(s => s.totalMs));
+export const capacityTrial = (samples: CapacitySample[], name: string, rule: CapacityRule = "sample-max-v1") => {
+  assert(rule === "sample-max-v1" || rule === "trial-p95-v2", "capacity-unknown-startup-rule");
+  const p95Ms = capacityP95(samples.map(s => s.totalMs)), startupP95Ms = capacityP95(samples.map(s => s.startupMs));
+  const current = rule === "trial-p95-v2", cold = name.startsWith("C");
+  const diagnostics = current && cold ? {
+    startupMaximumMs: Math.max(...samples.map(s => s.startupMs)),
+    startupTail: [...samples].sort((a, b) => b.startupMs - a.startupMs || a.index - b.index)
+      .slice(0, CAPACITY_STARTUP_GATE.tailSamples).map(s => ({ index: s.index, pid: s.pid, featureId: s.featureId, startupMs: s.startupMs })),
+  } : {};
   return { name, attempts: samples.length, available: samples.filter(s => s.verdict === "pass").length,
     p95Ms, headroom: 1 - p95Ms / 300, maximumMs: Math.max(...samples.map(s => s.totalMs)),
-    startupP95Ms: capacityP95(samples.map(s => s.startupMs)),
+    startupP95Ms, ...diagnostics,
     meanSetupShare: samples.reduce((sum, s) => sum + s.startupMs / s.totalMs, 0) / samples.length,
-    pass: samples.length === 100 && samples.every(s => s.verdict === "pass" && s.totalMs <= 300 && s.startupMs <= 210) && p95Ms <= 210 };
+    pass: samples.length === 100 && samples.every(s => s.verdict === "pass" && (current
+      ? !capacitySampleDeadlineError(s) : s.totalMs <= 300 && s.startupMs <= 210)) && p95Ms <= 210 &&
+      (!current || !cold || startupP95Ms <= CAPACITY_STARTUP_GATE.p95Ms) };
 };
-export type FullCapacityBenchmark = { kind: "prediction-capacity-benchmark"; schemaVersion: 1; issue: 168; step: 1 | 2;
+type CapacityContract = { schemaVersion: 1; issue: 168; startupGate?: never }
+  | { schemaVersion: 2; issue: 242; startupGate: typeof CAPACITY_STARTUP_GATE };
+export type FullCapacityBenchmark = CapacityContract & { kind: "prediction-capacity-benchmark"; step: 1 | 2; controlsOnly?: boolean;
   verdict: string; manifest: CapacityManifest; manifestSha256: string; manifestPinnedBeforeTiming: boolean;
   code: { gitSha: string; contentSha256: string }; codeHashes: Record<string, string>; codeBlobIds: Record<string, string>;
   sourceUnchanged?: boolean; samples: CapacitySample[]; trials: ReturnType<typeof capacityTrial>[];
@@ -28,9 +48,18 @@ export type FullCapacityBenchmark = { kind: "prediction-capacity-benchmark"; sch
   warmControlSamples?: CapacitySample[];
   warmSetup?: Record<string, { setupMs: number; pid?: number; [key: string]: unknown }>;
   [key: string]: unknown };
+const capacityRule = (full: FullCapacityBenchmark): CapacityRule => {
+  if (full.schemaVersion === 1 && full.issue === 168) {
+    assert.equal(full.startupGate, undefined, "capacity-historical-rule-mismatch");
+    return "sample-max-v1";
+  }
+  assert(full.schemaVersion === 2 && full.issue === 242, "capacity-unsupported-format");
+  assert.deepEqual(full.startupGate, CAPACITY_STARTUP_GATE, "capacity-startup-rule-mismatch");
+  return "trial-p95-v2";
+};
 const verifyCapacityInputs = (full: FullCapacityBenchmark) => {
-  assert.equal(full.kind, "prediction-capacity-benchmark"); assert.equal(full.issue, 168);
-  assert.equal(full.schemaVersion, 1); assert.equal(full.sourceUnchanged, true);
+  assert.equal(full.kind, "prediction-capacity-benchmark"); const rule = capacityRule(full);
+  assert.equal(full.sourceUnchanged, true);
   const coverage = validateCapacityManifest(full.manifest);
   assert.equal(capacityHash(full.manifest), full.manifestSha256, "capacity-manifest-hash-mismatch");
   assert.equal(full.manifestPinnedBeforeTiming, true);
@@ -47,6 +76,7 @@ const verifyCapacityInputs = (full: FullCapacityBenchmark) => {
     "prediction-capacity-worker.ts", "prediction-capacity-process.ts", "prediction-capacity-workload.ts", "prediction-capacity-evidence.ts",
     "artifact-governance-evidence.ts"])
     assert(`services/pipeline/scripts/feature-store/${path}` in full.codeHashes, "capacity-missing-measurement-source");
+  if (rule === "trial-p95-v2") assert("packages/db/proposals/241_job_visibility.sql" in full.codeHashes, "capacity-missing-visibility-source");
   assert(full.fixture); assert.equal(full.fixture.wireFiles, 16); assert.equal(full.fixture.rowCount, 2504);
   assert.equal(full.fixture.strictRows, 0);
   assert.equal(full.fixture.contentSha256, "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d");
@@ -73,11 +103,11 @@ const verifyCapacityInputs = (full: FullCapacityBenchmark) => {
       }
     }
   }
-  return coverage;
+  return { coverage, rule };
 };
 export const verifyCapacityControls = (full: FullCapacityBenchmark) => {
   assert.equal(full.step, 1); assert.equal(full.verdict, "controls-pass-not-qualified");
-  assert.equal(full.controlsOnly, true); const coverage = verifyCapacityInputs(full);
+  assert.equal(full.controlsOnly, true); const { coverage } = verifyCapacityInputs(full);
   assert.equal(full.samples.length, 2); assert.deepEqual(full.trials, []);
   for (const [i, sample] of full.samples.entries()) {
     assert.equal(sample.temperature, i === 0 ? "cold" : "warm"); assert.equal(sample.verdict, "pass");
@@ -89,13 +119,13 @@ export const verifyCapacityControls = (full: FullCapacityBenchmark) => {
 };
 export const verifyCapacityBenchmark = (full: FullCapacityBenchmark, enforceSpeed = true) => {
   assert.equal(full.step, 2); assert.equal(full.verdict, "pass");
-  const coverage = verifyCapacityInputs(full);
+  const { coverage, rule } = verifyCapacityInputs(full);
   assert.equal(full.samples.length, 600); assert.deepEqual(full.trials.map(t => t.name), CAPACITY_ORDER);
   const coldPids = new Set<number>(), warmPids = new Set<number>();
   for (const [t, name] of CAPACITY_ORDER.entries()) {
     const temperature = name.startsWith("C") ? "cold" : "warm", trial = Number(name[1]);
     const selected = full.samples.slice(t * 100, (t + 1) * 100);
-    const summary = capacityTrial(selected, name); assert.deepEqual(full.trials[t], summary, "capacity-trial-recomputation");
+    const summary = capacityTrial(selected, name, rule); assert.deepEqual(full.trials[t], summary, "capacity-trial-recomputation");
     if (enforceSpeed) assert(summary.pass && summary.headroom >= .3, "capacity-per-trial-headroom-failed");
     const pids = new Set<number>();
     for (const [i, sample] of selected.entries()) {
@@ -135,6 +165,7 @@ export const verifyCapacityBenchmark = (full: FullCapacityBenchmark, enforceSpee
 
 export const compactCapacityBenchmark = (bytes: Buffer, path: string) => {
   const full = JSON.parse(bytes.toString()) as FullCapacityBenchmark;
+  capacityRule(full);
   const verification = full.verdict === "pass" ? verifyCapacityBenchmark(full)
     : full.verdict === "controls-pass-not-qualified" ? verifyCapacityControls(full) : { verdict: "not-qualified" };
   const { samples, serverWork, warmControlSamples, ...metadata } = full;

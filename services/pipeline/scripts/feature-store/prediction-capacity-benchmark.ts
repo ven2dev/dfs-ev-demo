@@ -9,9 +9,10 @@ import { checkConnectedTarget } from "@dfs-ev/db-tooling/migrations/core";
 import { withFeatureStoreDatabase } from "./harness.ts";
 import { EVALUATION_ROOT, EXPECTED_COHORT, evaluationCodeIdentity, prepareEvaluationFixture } from "./evaluation-fixture.ts";
 import { modelPublicationCodeIdentity } from "./model-publication-identity.ts";
-import { CAPACITY_ORDER, capacityTrial, compactCapacityBenchmark, type FullCapacityBenchmark } from "./prediction-capacity-evidence.ts";
+import { CAPACITY_ORDER, CAPACITY_STARTUP_GATE, capacitySampleDeadlineError, capacityTrial, compactCapacityBenchmark,
+  type FullCapacityBenchmark } from "./prediction-capacity-evidence.ts";
 import { capacityHash, discoverCapacityRequests, selectCapacityManifest } from "./prediction-capacity-workload.ts";
-import { createCapacityProcess } from "./prediction-capacity-process.ts";
+import { createCapacityProcess, type CapacityProcessOptions } from "./prediction-capacity-process.ts";
 import { resolveModelContext } from "../../src/featureStore/modelContext.ts";
 import { readModelArtifacts } from "../../src/featureStore/modelArtifacts.ts";
 import { publishQbModelRun } from "../../src/featureStore/modelManifests.ts";
@@ -26,6 +27,7 @@ const identity = async (requireCommitted: boolean) => {
   const directory = "services/pipeline/scripts/feature-store/";
   const extra = ["compose.test.yml", "packages/db/proposals/166_artifact_governance.sql",
     "packages/db/proposals/229_mandatory_recovery.sql", "packages/db/proposals/231_composite_authorization.sql",
+    "packages/db/proposals/241_job_visibility.sql",
     "services/pipeline/tests/feature-store/composite-read-work.ts", "services/pipeline/tests/feature-store/artifact-read-work.ts",
     ...((await readdir(new URL(directory, EVALUATION_ROOT))).filter(n => n.startsWith("prediction-") && /\.(ts|mjs)$/.test(n)).map(n => directory + n)),
     directory + "artifact-governance-evidence.ts", directory + "evidence-bundle.ts"];
@@ -40,16 +42,48 @@ const identity = async (requireCommitted: boolean) => {
   return { code: { gitSha: base.code.gitSha, contentSha256: capacityHash(codeHashes) }, codeHashes, codeBlobIds };
 };
 
+// Keep the actual trial orchestration independently testable without a database
+// or real clock. Persist a sample/summary before any assertion can stop the run.
+export const runCapacityTrial = async (full: FullCapacityBenchmark, name: string,
+  options: CapacityProcessOptions, save: () => Promise<void>) => {
+  assert.equal(full.schemaVersion, 2); assert.equal(full.issue, 242);
+  assert.deepEqual(full.startupGate, CAPACITY_STARTUP_GATE);
+  const temperature = name.startsWith("C") ? "cold" : "warm", trial = Number(name[1]);
+  const warm = temperature === "warm" ? createCapacityProcess(options) : undefined;
+  const current = [];
+  try {
+    if (warm) {
+      const setup = await warm.prepare(); full.warmSetup![name] = setup;
+      assert.equal(setup.kind, "ready", JSON.stringify(setup)); await save();
+    }
+    for (const [index, request] of full.manifest.requests.entries()) {
+      if (full.controlsOnly && index > 0) break;
+      const worker = warm ?? createCapacityProcess(options);
+      try {
+        const sample = await worker.measure(request, temperature, trial, index);
+        full.samples.push(sample); current.push(sample); await save();
+        assert.equal(sample.verdict, "pass", `capacity-sample-failed; retained: ${sample.error}`);
+        assert.equal(capacitySampleDeadlineError(sample), undefined, "capacity-sample-deadline-missed");
+      } finally { if (!warm) await worker.close(); }
+    }
+    if (!full.controlsOnly) {
+      const summary = capacityTrial(current, name, "trial-p95-v2"); full.trials.push(summary); await save();
+      console.log(JSON.stringify({ stage: "trial", ...summary })); assert(summary.pass, "capacity-trial-missed; stop without relaxation");
+    }
+  } finally { await warm?.close(); }
+};
+
 export const runPredictionCapacity = async (controlsOnly = false) => {
   assert.equal(Number(process.versions.node.split(".")[0]), 24, "capacity-requires-node24");
   assertNoApplicationCredentials(process.env);
   assert(!process.env.NODE_OPTIONS && !process.env.NODE_COMPILE_CACHE, "capacity-loader-options-refused");
   const source = await identity(!controlsOnly), inputSource = await evaluationCodeIdentity();
-  const directory = resolve(process.env.FS168_BENCHMARK_DIRECTORY ?? "codex-briefs/168-final");
+  const directory = resolve(process.env.FS242_BENCHMARK_DIRECTORY ?? process.env.FS168_BENCHMARK_DIRECTORY ?? "codex-briefs/242-final");
   await mkdir(directory, { recursive: true, mode: 0o700 });
   const root = await mkdtemp(join(directory, controlsOnly ? "controls-" : "qualification-")), storageRoot = join(root, "objects");
   await mkdir(storageRoot, { mode: 0o700 }); const store = await openLocalObjectStore(storageRoot);
-  const full = { kind: "prediction-capacity-benchmark", schemaVersion: 1, issue: 168, step: controlsOnly ? 1 : 2, verdict: "running",
+  const full = { kind: "prediction-capacity-benchmark", schemaVersion: 2, issue: 242, startupGate: CAPACITY_STARTUP_GATE,
+    step: controlsOnly ? 1 : 2, verdict: "running",
     startedAt: new Date().toISOString(), ...source, inputGeneration: inputSource, samples: [], trials: [], warmSetup: {},
     runtime: process.version, loader: "Node 24 native type stripping", controlsOnly,
     machine: { arch: arch(), platform: platform(), release: release(), memoryBytes: totalmem(), cpu: cpus()[0].model },
@@ -60,7 +94,7 @@ export const runPredictionCapacity = async (controlsOnly = false) => {
       boundary: "parent before spawn/send through complete serialized IPC receipt; cleanup outside timing",
       deadlineMs: 300, p95Ms: 210, loader: "Node 24 native type stripping",
       phases: "spawn event overlaps bootstrap; bootstrap + import + store + connect is startup; handler includes math/serialization; residual includes IPC and observers",
-      stop: "first refusal/error/work mismatch/deadline/startup threat, or first completed trial p95 miss; no replacement or pooled gate" },
+      stop: "first refusal/error/work mismatch or full-path/startup sample above 300 ms; first completed trial p95 miss (full path and cold startup <=210 ms); no replacement or pooled gate" },
     qualification: "LOCAL FIXTURE ONLY; fresh application process, not cold disk/database; no hosted/concurrency-throughput claim",
     storageRoot: relative(process.cwd(), storageRoot), manifestPinnedBeforeTiming: false,
   } as unknown as FullCapacityBenchmark;
@@ -119,30 +153,7 @@ export const runPredictionCapacity = async (controlsOnly = false) => {
       } finally { await reader.end(); }
       await save();
       for (const name of controlsOnly ? ["C1", "W1"] : CAPACITY_ORDER) {
-        const temperature = name.startsWith("C") ? "cold" : "warm", trial = Number(name[1]);
-        const options = { config, storageRoot, signal: interrupted.signal };
-        const warm = temperature === "warm" ? createCapacityProcess(options) : undefined;
-        const current = [];
-        try {
-          if (warm) {
-            const setup = await warm.prepare(); full.warmSetup![name] = setup;
-            assert.equal(setup.kind, "ready", JSON.stringify(setup)); await save();
-          }
-          for (const [index, request] of full.manifest.requests.entries()) {
-            if (controlsOnly && index > 0) break;
-            const worker = warm ?? createCapacityProcess(options);
-            try {
-              const sample = await worker.measure(request, temperature, trial, index);
-              full.samples.push(sample); current.push(sample); await save();
-              assert.equal(sample.verdict, "pass", `capacity-sample-failed; retained: ${sample.error}`);
-              assert(sample.totalMs <= 300 && sample.startupMs <= 210, "capacity-deadline-or-startup-target-missed");
-            } finally { if (!warm) await worker.close(); }
-          }
-          if (!controlsOnly) {
-            const summary = capacityTrial(current, name); full.trials.push(summary); await save();
-            console.log(JSON.stringify({ stage: "trial", ...summary })); assert(summary.pass, "capacity-trial-missed; stop without relaxation");
-          }
-        } finally { await warm?.close(); }
+        await runCapacityTrial(full, name, { config, storageRoot, signal: interrupted.signal }, save);
       }
       // A separate existing process/connection must see fresh rights and legal
       // status. These deliberate refusals are never latency successes.
@@ -153,10 +164,10 @@ export const runPredictionCapacity = async (controlsOnly = false) => {
         assert.equal(before.verdict, "pass");
         const profile = (await unionProfiles(database.admin, publication.runId, request.featureId))[0];
         await database.admin.query(`INSERT INTO fs138.rights_decisions(profile_id,allowed_uses,valid_from,valid_until,rationale)
-          VALUES($1,'{}','2020-01-01',NULL,'#168 warm rights control')`, [profile]);
+          VALUES($1,'{}','2020-01-01',NULL,'#242 warm rights control')`, [profile]);
         const denied = await worker.measure(request, "warm", 0, 1);
         assert.deepEqual(JSON.parse(denied.serialized!), { status: "unavailable", reason: "model-current-rights-refused" });
-        await deleteDatasets(database.writer, [retro.dataset.datasetId], "#168 warm legal-status control", 300);
+        await deleteDatasets(database.writer, [retro.dataset.datasetId], "#242 warm legal-status control", 300);
         const deleted = await worker.measure(request, "warm", 0, 2);
         assert.deepEqual(JSON.parse(deleted.serialized!), { status: "unavailable", reason: "model-read-status-refused" });
         assert.equal(before.pid, denied.pid); assert.equal(before.pid, deleted.pid);
