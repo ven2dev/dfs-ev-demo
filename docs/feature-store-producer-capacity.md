@@ -91,3 +91,35 @@ sources and records source SHA-256 plus committed git blob IDs, including the
 loaded #241 proposal and migration/bootstrap dependencies. Run the standard-tier
 `producer-capacity.check.mts` separately for behavior/work proofs; it is not a speed
 qualification.
+
+## Independent audit
+
+The run journal now saves each preflight result, scratch database/LOGIN identity,
+initially empty raw destination, worker PID and block/container identity. The
+auditor checks the complete 30-attempt schedule (or a stopped prefix), distinct
+processes and databases, exactly one server reset per block, and completed
+teardown. It recalculates clock offsets from all ten raw observations rather than
+trusting the saved pass flag. Missing markers, replacement samples and work after
+a failure are refused to prevent incomplete evidence from appearing qualified.
+
+Before dispatch, the journal freezes exact source bytes as base64 alongside the
+SHA-256 and committed git blob inventory. The auditor independently calculates
+both addresses from those bytes, including #241's loaded SQL. Base64 preserves
+exact bytes; it does not conceal secrets. Only repository source files enter this
+record. This lets a clean extract audit historical evidence without Git history
+or today's source tree. The sixteen original input pins remain unchanged.
+
+`producer-capacity-evidence.ts check-journal DIRECTORY` performs read-only
+recomputation. It checks live protocol/host outcomes, disclosed drift, the paired
+sum, exact 12/8 work, parent/worker timing arithmetic, loopback pins, raw cleanup,
+feature content/lineage, and required diagnostics. Censored or incomplete attempts
+remain unqualified; even a failed run with an unknown format is refused. CI uses
+synthetic observations and controlled clocks, without asserting machine speed.
+
+Publication uses ObjectStore for the exact detailed record and the existing
+deterministic USTAR/gzip helper for an identical in-tree mirror. New timestamped
+archive and compact receipt files use exclusive creation, preventing historical
+evidence from being overwritten. The common TypeScript evidence auditor verifies
+uncompressed hash/size before parsing, then compares the entire recomputed compact
+projection. Compact receipts keep every duration and refusal verdict; source bytes,
+full statement timings and PostgreSQL observations stay in the detailed record.

@@ -13,7 +13,7 @@ import { openTransferFixture } from "./transfer-fixture.ts";
 import { createProducerProcess } from "./producer-capacity-process.ts";
 import { checkCapacityClock, observeCapacityTrial, sampleCapacityDisk } from "./producer-capacity-observe.ts";
 import { capacitySchedule, attemptId, PRODUCER_CAPACITY_FORMAT, producerAttemptVerdict, type Attempt, type Coordinate } from "./producer-capacity-contract.ts";
-import { cleanupProducerRaw, loadProducerPins, openProducerJournal, pinProducerSources, producerFeatureParity } from "./producer-capacity-runtime.ts";
+import { cleanupProducerRaw, loadProducerPins, openProducerJournal, pinProducerSources, producerFeatureParity, producerSourceBytes } from "./producer-capacity-runtime.ts";
 
 const repository = new URL("../../../../", import.meta.url);
 const container = "dfs-ev-demo-test-lane-3-postgres-1";
@@ -43,12 +43,15 @@ export const qualifyProducerCapacity = async () => {
   const attempts: (Attempt & { verdict: ReturnType<typeof producerAttemptVerdict> })[] = [];
   const code = { gitSha: source.gitSha, contentSha256: source.contentSha256 };
   await journal.record("run-started.json", { format: PRODUCER_CAPACITY_FORMAT, issue: 169, source,
+    lane: "lane-3", tier: "large", port: 54349, parentPid: process.pid,
     at: new Date().toISOString(), quietWindow: process.env.FS169_QUIET_WINDOW, runtime: process.version,
     machine: { arch: arch(), platform: platform(), cpus: cpus().length }, schedule: capacitySchedule(),
     loader: "Node 24 native type stripping", reset: "full down/up once per cold/warm block; fresh database/destination per attempt",
     cache: "tmpfs; preparation warms shared pages; OS/Docker/DNS/CDN uncontrolled", diagnosticsOnly: true });
   try {
+    await journal.record("sources.json", await producerSourceBytes(source));
     const { store: originals, pins } = await loadProducerPins(sourceRoot);
+    await journal.record("inputs.json", { pins });
     // Derive from CLI rather than carrying a literal port or unrelated URL.
     const environment = { ...process.env }; delete environment.TEST_DATABASE_URL;
     process.env.TEST_DATABASE_URL = execFileSync(process.execPath, ["scripts/db/test-db.mjs", "url"], { cwd: repository, env: environment, encoding: "utf8" }).trim();
@@ -70,11 +73,14 @@ export const qualifyProducerCapacity = async () => {
         for (const temperature of ["cold", "warm"] as const) {
           const coordinate: Coordinate = { ...c, temperature }, id = attemptId(coordinate), feature = c.workload === "features-2025";
           await journal.record(id + ".started.json", { ...coordinate, id, at: new Date().toISOString(), clock });
+          const preflight = (stage: string) => journal.record(id + "." + stage + "-preflight.json", JSON.parse(laneCommand("preflight").trim()));
           // Preflight directly before fixture/preparation, then again at dispatch.
-          laneCommand("preflight"); blockSignal.throwIfAborted();
+          await preflight("fixture"); blockSignal.throwIfAborted();
           const destinationRoot = resolve(output, id + "-objects");
           await mkdir(destinationRoot, { mode: 0o700 });
           const destination = await openLocalObjectStore(await realpath(destinationRoot));
+          const initialRawObjects = (await destination.list("raw")).length;
+          if (initialRawObjects !== 0) throw new Error("producer-destination-not-empty");
           const setupMonitor = await observeCapacityTrial(observer, false);
           let censored = true;
           try {
@@ -83,7 +89,7 @@ export const qualifyProducerCapacity = async () => {
               if (feature) {
                 const fixture = await openTransferFixture(originals, pins, { testOnlyLoopback: true });
                 try {
-                  laneCommand("preflight");
+                  await preflight("preparation");
                   for (const pin of pins) {
                     blockSignal.throwIfAborted();
                     const before = db.queryCounts.writer;
@@ -95,6 +101,8 @@ export const qualifyProducerCapacity = async () => {
               }
               const token = "fs169_" + id;
               const config = { ...await db.createWriterConfig(), application_name: token };
+              await journal.record(id + ".context.json", { database: config.database, user: config.user,
+                destination: id + "-objects", initialRawObjects });
               const pin = feature ? undefined : pins.find(p => p.asset.name === c.workload);
               if (!feature && !pin) throw new Error("producer-representative-missing");
               const worker = createProducerProcess({ worker: { config, sourceRoot, destinationRoot, code, pin }, signal: blockSignal,
@@ -104,7 +112,7 @@ export const qualifyProducerCapacity = async () => {
               try {
                 if (temperature === "warm") await journal.record(id + ".setup.json", await worker.prepare());
                 await setupMonitor.finish();
-                laneCommand("preflight"); blockSignal.throwIfAborted();
+                await preflight("work"); blockSignal.throwIfAborted();
                 monitor = await observeCapacityTrial(db.admin, feature);
                 measurement = await worker.measure(temperature);
                 censored = measurement.censored;

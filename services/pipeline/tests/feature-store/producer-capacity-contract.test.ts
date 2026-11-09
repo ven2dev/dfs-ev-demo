@@ -48,4 +48,11 @@ describe("#169 shared verdict", () => {
     a.diagnostics = { before: { wal: { wal_bytes: 99999 } }, after: { wal: { wal_bytes: 0 } }, autovacuum: [{ at: "now", activity: [{ query: "autovacuum" }] }] };
     expect(producerAttemptVerdict(a)).toEqual(before);
   });
+  for (const feature of [false, true]) for (const over of [false, true]) it(`${feature ? "feature" : "ingestion"} deadline ${over ? "over" : "equal"}`, () => {
+    const a = attempt(feature), ms = (feature ? 120_000 : 60_000) + (over ? .001 : 0);
+    a.measurement.totalMs = ms;
+    if (!feature) { a.measurement.liveMs = ms; a.measurement.pinnedMs = 0; }
+    expect(producerAttemptVerdict(a).errors.includes("deadline")).toBe(over);
+    expect(producerAttemptVerdict(a).pass).toBe(false); // Headroom target still applies.
+  });
 });

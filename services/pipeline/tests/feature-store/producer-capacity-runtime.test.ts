@@ -32,6 +32,8 @@ describe("#169 attempt controls", () => {
       await expect(openProducerJournal(directory)).rejects.toThrow(/EEXIST/);
       journal.event({ index: 1 }); journal.event({ index: 2 }); await journal.flush();
       expect(await readFile(join(directory, "events.jsonl"), "utf8")).toBe('{"index":1}\n{"index":2}\n');
+      const mutable = { index: 3 }; journal.event(mutable); mutable.index = 4;
+      await journal.flush(); expect(await readFile(join(directory, "events.jsonl"), "utf8")).toContain('{"index":3}\n');
     } finally { await journal.close(); await rm(root, { recursive: true, force: true }); }
   });
   it("checks hashes/sizes then deletes destination bytes through ObjectStore", async () => {

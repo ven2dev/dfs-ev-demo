@@ -13,6 +13,8 @@ export const PRODUCER_CAPACITY_SOURCES = [
   "services/pipeline/scripts/feature-store/producer-capacity-worker.ts", "services/pipeline/scripts/feature-store/producer-capacity-bootstrap.mjs",
   "services/pipeline/scripts/feature-store/producer-capacity-process.ts", "services/pipeline/scripts/feature-store/producer-capacity-observe.ts",
   "services/pipeline/scripts/feature-store/producer-capacity-benchmark.ts", "services/pipeline/scripts/feature-store/harness.ts",
+  "services/pipeline/scripts/feature-store/producer-capacity-evidence.ts", "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts",
+  "services/pipeline/scripts/feature-store/evidence-bundle.ts",
   "services/pipeline/scripts/feature-store/live-download.ts", "services/pipeline/scripts/feature-store/transfer-fixture.ts",
   "services/pipeline/src/featureStore/ingest.ts", "services/pipeline/src/featureStore/derived.ts", "services/pipeline/src/featureStore/jobs.ts",
   "services/pipeline/src/featureStore/source.ts", "services/pipeline/src/featureStore/sourceTransfer.ts", "services/pipeline/src/featureStore/normalize.ts",
@@ -24,6 +26,7 @@ export const PRODUCER_CAPACITY_SOURCES = [
   "packages/db/tooling/tests/target.mts", "packages/db/tooling/tests/scratch.mjs", "compose.test.yml",
   "packages/db/tooling/tests/templates.mts", "packages/db/tooling/package.json",
   "packages/db/src/assets.mjs", "scripts/db/db-test-workers.mjs", "scripts/db/db-test-lanes.mjs", "scripts/db/db-test-contract.mjs",
+  "packages/db/migration-manifest.json", "packages/db/schema.sql", "packages/db/catalog-contracts/ledger.json",
   "compose.feature-store-spike.yml", "package.json", "package-lock.json", "services/pipeline/package.json", "packages/db/package.json",
 ] as const;
 
@@ -41,6 +44,19 @@ export const pinProducerSources = async (extra: string[] = []) => {
   }
   return { gitSha: execFileSync("git", ["rev-parse", "HEAD"], { cwd: repository, encoding: "utf8" }).trim(), source,
     contentSha256: sha256(Buffer.from(JSON.stringify(source))) };
+};
+
+// Freeze exact source bytes alongside their inventory before starting any lane.
+// This permits durable SHA-256 and git-blob audits without Git history or today's
+// working files, including when a later source-change check stops the run.
+export const producerSourceBytes = async (inventory: Awaited<ReturnType<typeof pinProducerSources>>) => {
+  const bytes: Record<string, string> = {};
+  for (const source of inventory.source) {
+    const body = await readFile(new URL(source.path, repository));
+    if (sha256(body) !== source.sha256) throw new Error("producer-source-changed-before-run");
+    bytes[source.path] = body.toString("base64");
+  }
+  return bytes;
 };
 
 export const loadProducerPins = async (sourceRoot: string) => {
@@ -96,7 +112,8 @@ export const openProducerJournal = async (directory: string) => {
       return writeFile(resolve(directory, name), JSON.stringify(value, null, 2) + "\n", { flag: "wx", mode: 0o600 });
     },
     event: (value: unknown) => {
-      pending = pending.then(() => handle.writeFile(JSON.stringify(value) + "\n")).then(() => {}).catch(e => { failure ??= e; });
+      const line = JSON.stringify(value) + "\n";
+      pending = pending.then(() => handle.writeFile(line)).then(() => {}).catch(e => { failure ??= e; });
     },
     flush: async () => { await pending; await handle.sync(); if (failure) throw failure; },
     close: async () => { try { await pending; await handle.sync(); if (failure) throw failure; } finally { await handle.close(); } },
