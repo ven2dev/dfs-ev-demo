@@ -135,7 +135,7 @@ Run from the repository root on Node 24:
 ~~~sh
 npm run typecheck --workspace @dfs-ev/domain
 node node_modules/vitest/vitest.mjs run --config vitest.config.ts packages/domain/src
-node node_modules/vitest/vitest.mjs run --config vitest.node.config.ts packages/domain/tests/projection services/pipeline/tests/feature-store/domainPackage.test.ts
+node node_modules/vitest/vitest.mjs run --config vitest.node.config.ts packages/domain/tests/projection services/pipeline/tests/feature-store/domainPackage.process.test.ts
 npm run projection:demo
 ~~~
 
