@@ -146,12 +146,50 @@ external copies were outside this main-tree inventory.
 
 ## Checkpoint 2 · Record dispositions and gate #53
 
-Record the owner's disposition per output and channel. The
-[#53 public-serving roadmap addendum](53-public-serving-roadmap.md) makes
-#197 an explicit prerequisite and contains the enforcement test matrix.
-Reconcile that addendum with #53's owner-approved public scope before release.
-The owner can choose a separate issue if fixture remediation extends beyond
-notices. External maintainer contact requires separate owner authorization.
+The owner approved the existing data notices in checkpoint 1. The current
+disposition for prospective participation-derived outputs is **hold public
+delivery pending an output-specific decision**. #171 supplies the owner's
+direction to comply with applicable ShareAlike obligations. The release decision
+still needs the actual output, its lineage and the proposed delivery terms.
+
+| Output and channel | Technical lineage to qualify | Current disposition and handoff |
+| --- | --- | --- |
+| #241 CI fixture and listed #138 excerpts in public Git | Exact paths and source seasons in the inventory. The combined fixture includes participation, schedules, rosters and stats. | Owner-approved notice for the listed data. The owner retains the decision on wording changes after qualified review of the combined fixture and excerpts. |
+| #53 analysis API and stream | Forecasts depend on offensive-participation eligibility in model inputs and history. Fair price, edge/EV and playable line and price inherit that dependency when calculated from the forecast. Sample counts, model identity and provenance are reviewed as separate response fields against their actual lineage. | Hold affected fields. #53 supplies the versioned response schema and tests the delivery gate, including streamed, cached and fallback responses. |
+| #53 matchup cards, EV Tracker and evidence views | Check the lineage of forecasts and dependent values, participation or usage evidence, sample explanations, and edge history. Check source freshness and offer freshness separately. | Hold affected values and dependent summaries. #53 verifies the typed unavailable state, including direct API access and stale or invalidated results. |
+| Downloadable histories, features, labels and analysis exports | Map exact rows, field definitions, eligibility, source snapshots and seasons. A field can inherit participation through row selection even if the count is absent. | Hold export. The export owner supplies the schema, audience, terms and artifact identity before requesting a decision. |
+| #54 descriptors, fitted artifacts, evaluation reports and published evidence | Review training, evaluation and history inputs, plus the exact public artifact. Evaluate parameters, aggregate metrics and row-level excerpts separately. | Hold new affected artifacts. #54 or the publishing owner supplies the exact artifact, intended audience and delivery terms. |
+| Market-only offers, exact-line consensus and independently sourced evidence or presentation | Trace inputs through delivery, including cache and fallback. Confirm independence from participation-derived values and selection. | Assess independently under its own approvals. #53's interim presentation slice can be considered separately if it meets that test. |
+
+Use the exact source snapshot IDs and seasons for each proposed release. The
+current evidence covers 2021–2025, with NFL NextGenStats via nflverse for
+2021–2022 and FTN Data via nflverse for 2023–2025. The season range in this
+roadmap identifies the research cohort. Each release record needs its actual
+source subset and versioned lineage.
+
+### Owner decision required before public delivery
+
+For each output and channel, the delivery owner supplies a versioned field or
+artifact list, exact lineage, audience and delivery terms. The qualified review
+records applicability of attribution, modification notices, adaptation,
+database rights and ShareAlike for that specific output. The owner then records
+one disposition with the review reference:
+
+- **Comply and release within the approved scope.** Record the required credit,
+  source and license links, modification notices, and any applicable
+  downstream license terms. Verify the delivered response or artifact carries
+  the approved terms.
+- **Omit the affected output.** Verify that dependent values and alternate
+  delivery paths also respect the omission.
+- **Replace the source.** Requalify the replacement and demonstrate that the
+  delivered output and its model inputs no longer depend on the old source.
+- **Obtain authoritative permission.** Record the grant and its scope before
+  delivery. External maintainer contact requires separate owner authorization.
+
+The [#53 public-serving roadmap addendum](53-public-serving-roadmap.md) defines
+the prerequisite and test matrix. #53 owns implementation and passing
+enforcement evidence before shipping affected outputs. #197 records the
+dispositions and the gate design.
 
 **LOE.** 1–2 active hours for documentation and the owner decision packet,
 excluding qualified review waits. Estimate fixture remediation separately
