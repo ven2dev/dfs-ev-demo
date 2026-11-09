@@ -126,31 +126,38 @@ full statement timings and PostgreSQL observations stay in the detailed record.
 
 ## Final qualification
 
-The final matrix on committed sources `55d512b15c3e340c128d8b4195783faa00e29385`
-passed all 30 attempts on 2026-11-09. Each row has three cold/warm blocks; values
-below are seconds, with both ingestion legs included. No attempt was retried or
-replaced. The common auditor recalculates every result from the saved observations.
+The current qualification is `benchmark-20261109T061738Z.json`, on committed
+sources `42ef49090748dc947e305a309dd2e3d698d0667e`. All 30 attempts passed on
+2026-11-09 in a fresh owner-confirmed quiet window after the CI follow-up.
+The worker now validates its port through the shared lane registry; its scratch
+host/database/role/password/TLS guards remain. The opt-in runner remains restricted
+to large-tier lane-3. The evidence publication correctness test has a scoped
+30-second liveness timeout; capacity targets and all assertions are unchanged.
+
+Each row has three cold/warm blocks; values below are seconds, with both ingestion
+legs included. No attempt was retried or replaced. The common auditor recalculates
+every result from the saved observations.
 
 | Workload | Cold 1 | Warm 1 | Cold 2 | Warm 2 | Cold 3 | Warm 3 | SQL each |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Schedule | 0.800 | 0.550 | 1.154 | 0.495 | 0.800 | 0.820 | 12 |
-| Stats 2025 | 1.311 | 1.139 | 3.066 | 1.116 | 1.309 | 1.147 | 12 |
-| Roster 2021 | 2.375 | 2.730 | 2.941 | 2.055 | 3.725 | 2.553 | 12 |
-| Participation 2023 | 9.710 | 26.511 | 18.117 | 11.276 | 9.787 | 6.996 | 12 |
-| Features 2025 | 6.602 | 6.732 | 6.835 | 6.435 | 6.949 | 6.507 | 8 |
+| Schedule | 11.477 | 0.579 | 0.602 | 0.603 | 0.608 | 0.553 | 12 |
+| Stats 2025 | 10.783 | 1.049 | 1.320 | 1.550 | 1.595 | 1.046 | 12 |
+| Roster 2021 | 13.101 | 4.416 | 2.104 | 1.693 | 1.978 | 4.811 | 12 |
+| Participation 2023 | 18.139 | 11.023 | 11.865 | 4.594 | 5.132 | 5.642 | 12 |
+| Features 2025 | 7.215 | 6.577 | 7.419 | 6.360 | 6.468 | 6.424 | 8 |
 
-Worst ingestion was 26.511 s against 42 s, with 55.8% headroom under 60 s.
-That participation warm attempt retained its 24.025 s live transfer and 2.486 s
-pinned leg. Every leg met its 60 s deadline. Worst features were 6.949 s against
-84 s, with 94.2% headroom under 120 s. Every feature trial produced the same
+Worst ingestion was 18.139 s against 42 s, with 69.8% headroom under 60 s.
+That participation cold attempt retained its 15.703 s live transfer and 2.436 s
+pinned leg. Every leg met its 60 s deadline. Worst features were 7.419 s against
+84 s, with 93.8% headroom under 120 s. Every feature trial produced the same
 1,948 rows / 31,168 lineage links and content SHA-256
 `315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9`.
 
 All 24 pinned ingestion receipts identify the test-only loopback transport,
 original pin, one request and one ObjectStore read. GitHub observations contacted
 `github.com` then `release-assets.githubusercontent.com`. The live schedule was
-516,594 bytes with SHA-256
-`3844c95be80df89d4756ab8ea0212101f0cc5c3cb628e72f8d2d7eea69c185fb`,
+516,585 bytes with SHA-256
+`805f4d958d94093a0fa37e2e4e2964582590caff8c38ba7af20cc7071cbc1258`,
 versus the unchanged 515,250-byte original. All six observations recorded drift;
 the other three representatives matched their pins. This neither refreshes the
 fixture nor treats changed upstream bytes as a failed transfer. Verified trial
@@ -159,41 +166,54 @@ raw downloads were deleted through ObjectStore; no raw downloads enter git.
 Fifteen distinct block containers confirm one reset before each cold/warm block.
 All 30 attempts used distinct processes, fresh scratch databases and empty
 destinations. The actual mount was 2,147,483,648 bytes. Sampled peak use was
-326,615,040 bytes (311.484 MiB); peak growth was 278,175,744 bytes (265.289 MiB),
+326,344,704 bytes (311.227 MiB); peak growth was 277,905,408 bytes (265.031 MiB),
 below the unchanged 489,472,000-byte growth basis. Ingestion peak was 73.539 MiB.
 All admissions passed the 608 MiB free rule. The largest absolute block clock
-estimate was 1.624 ms, below 250 ms. Lane-3 was removed and absence verified at
-05:08:15.229Z; that quiet window is closed.
+estimate was 1.457 ms, below 250 ms. Lane-3 was removed and absence verified at
+06:23:29.458Z; an independent container/network check also found neither present.
+That quiet window is closed.
 
 ### Final diagnostics
 
-The spike's approximately 57% warm slowdown did not recur: final warm totals
-changed by +1.98%, -5.85% and -6.36% relative to their paired cold totals.
+The spike's approximately 57% warm slowdown did not recur: current warm totals
+changed by -8.84%, -14.27% and -0.68% relative to their paired cold totals.
 Every SQL duration remains in the detailed record; the two dominant statements
 and observed WAL deltas are shown below. These are observations, not gates.
 
 | Feature trial | Input selection (ms) | Materialization (ms) | WAL bytes delta | Sampled active autovacuum |
 | --- | ---: | ---: | ---: | --- |
-| Cold 1 | 2278.254 | 4026.180 | 13,729,935 | none |
-| Warm 1 | 2297.631 | 4281.133 | 14,144,272 | one observation |
-| Cold 2 | 2391.033 | 4098.056 | 13,805,007 | none |
-| Warm 2 | 2282.087 | 4006.097 | 13,736,892 | none |
-| Cold 3 | 2305.516 | 4345.367 | 13,770,100 | none |
-| Warm 3 | 2291.608 | 4066.140 | 13,742,052 | none |
+| Cold 1 | 2566.879 | 4273.433 | 13,730,338 | none |
+| Warm 1 | 2357.610 | 4067.170 | 13,827,206 | none |
+| Cold 2 | 2465.570 | 4563.248 | 13,722,665 | none |
+| Warm 2 | 2257.579 | 3951.551 | 13,769,884 | none |
+| Cold 3 | 2260.796 | 3925.587 | 13,818,448 | none |
+| Warm 3 | 2274.930 | 3999.802 | 14,172,121 | one observation |
 
 Checkpointer snapshots were identical before/after each individual trial.
 This is a statement about the snapshots, whose counters can lag, rather than
-proof of no checkpoint work. WAL record deltas were 104,081–106,805; full-page
-image deltas were one except warm 1's thirteen. Warm 1 sampled a worker running
-`VACUUM ANALYZE fs138.norm_participation` at 05:06:15.233Z, shortly after the
-05:06:15.171Z diagnostics boundary. Its table's autoanalyze count advanced from
-zero to one; its vacuum count stayed one. Other warm table maintenance counters
-were already present before timing, and no other active workers were sampled.
-Short activity can be missed and stats can lag. These observations do not
-establish what caused the earlier spike slowdown.
+proof of no checkpoint work. WAL record deltas were 104,080–106,827; full-page
+image deltas were one except warm 3's thirteen. Warm 3 sampled a worker running
+`VACUUM ANALYZE pg_catalog.pg_constraint` at 06:23:19.963Z. Its after snapshot
+also recorded newly completed autovacuum on `norm_schedule`,
+`norm_player_game_stats`, `norm_identity` and `norm_participation`; all but
+`norm_player_game_stats` also advanced their autoanalyze counts. Other trials
+sampled no active worker or changed table-maintenance counters. Short activity
+can be missed and stats can lag. These observations do not establish what caused
+the earlier spike slowdown.
 
 The [evidence README](evidence/feature-store-169/README.md) identifies the compact
 receipts, exact compressed records, offline audit commands and retained discovery
-stops. The final record freezes all 77 source SHA-256 hashes, git blob IDs and exact
-source bytes, including `241_job_visibility.sql`. Documentation and evidence added
-after this run do not change the measured runner, auditor or producer sources.
+stops. The current record freezes all 77 source SHA-256 hashes, git blob IDs and
+exact source bytes, including `241_job_visibility.sql`. Source bytes and inventory
+match before/after the run. Documentation, evidence and the offline evidence test
+are outside that measured inventory.
+
+### Earlier-source qualification retained as history
+
+`benchmark-20261109T050208Z.json` and `records-20261109T050208Z.tar.gz` remain
+byte-for-byte unchanged. They qualify only the earlier committed sources
+`55d512b15c3e340c128d8b4195783faa00e29385`, before the main merge and CI worker
+fix; they do not qualify the current worker. All 30 earlier attempts passed,
+with worst ingestion 26.511 s and worst features 6.949 s. The earlier warm
+changes were +1.98%, -5.85% and -6.36%, with one warm-1 sampled autovacuum.
+Those observations stay available in their original detailed record.

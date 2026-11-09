@@ -1,12 +1,21 @@
 # Producer capacity evidence (#169)
 
-`benchmark-20261109T050208Z.json` is the final qualification receipt for committed
-sources `55d512b15c3e340c128d8b4195783faa00e29385`. It retains all 30 attempt
-durations, verdicts, 12/8 SQL counts, disk peaks/growth and 77 source identities.
-`records-20261109T050208Z.tar.gz#run-20261109T050208Z.json` contains the exact
-15,843,466-byte detailed record, including source bytes, journals, loopback pins,
+`benchmark-20261109T061738Z.json` is the current qualification receipt for
+committed sources `42ef49090748dc947e305a309dd2e3d698d0667e`, after the main
+merge and CI worker fix. It retains all 30 attempt durations, verdicts, 12/8 SQL
+counts, disk peaks/growth and 77 source identities.
+`records-20261109T061738Z.tar.gz#run-20261109T061738Z.json` contains the exact
+15,855,474-byte detailed record, including source bytes, journals, loopback pins,
 SQL times, WAL/checkpointer/autovacuum observations and raw-cleanup receipts.
-Its SHA-256 is `9daae46fb57f30996dc1c09153a60b41174e314e62671ac7f712ffb918fa1543`.
+Its SHA-256 is `f79f303216ecb8c068ca281ebdd1339fb5d3e2840982c5f677dc21985e535d6f`.
+
+`benchmark-20261109T050208Z.json` and `records-20261109T050208Z.tar.gz` are
+unchanged history qualifying only earlier sources
+`55d512b15c3e340c128d8b4195783faa00e29385`. Their detailed record remains
+15,843,466 bytes with SHA-256
+`9daae46fb57f30996dc1c09153a60b41174e314e62671ac7f712ffb918fa1543`.
+It does not qualify the current worker. The new run adds files and replaces no
+prior receipt, archive or attempt; all 44 records pass the common auditor.
 
 The record was published and read back through a private local ObjectStore at
 `audits/<fullRecord.sha256>`. The compressed in-tree mirror preserves the same
@@ -52,9 +61,9 @@ materialization, no per-example queries and no source-byte reads during the job.
 It produces 1,948 outputs / 31,168 lineage links; this is distinct from the older
 2,504-row dataset qualification. All historical-availability flags are retained.
 
-The final matrix passed: ingestion 0.495–26.511 s, features 6.435–6.949 s,
+The current matrix passed: ingestion 0.553–18.139 s, features 6.360–7.419 s,
 exactly 12/8 SQL. Every attempt has verified raw cleanup. All six live schedule
-observations drifted (516,594 vs 515,250 pinned bytes); the other representatives
+observations drifted (516,585 vs 515,250 pinned bytes); the other representatives
 matched. Detailed values and feature diagnostics are in the
 [design doc](../../feature-store-producer-capacity.md#final-qualification).
 
@@ -68,12 +77,12 @@ DNS and CDN cache states are uncontrolled. No hosted-capacity claim follows.
 
 The owner confirmed a quiet window; only lane-3 / port 54349 was used, with
 `DB_TEST_LANE=lane-3` and `DB_TEST_TIER=large` through teardown. Each workload's
-preflight passed >=608 MiB free. Actual mount: 2 GiB; sampled peak: 311.484 MiB;
-growth: 265.289 MiB against 466.797 MiB. Disk, WAL, temp files and database sizes
+preflight passed >=608 MiB free. Actual mount: 2 GiB; sampled peak: 311.227 MiB;
+growth: 265.031 MiB against 466.797 MiB. Disk, WAL, temp files and database sizes
 are observations at the recorded boundaries and intervals, not continuous exact
 peaks. Ten host/database observations before every block gave a maximum absolute
-midpoint offset of 1.624 ms against 250 ms; timestamps were never adjusted.
-Container absence was verified at 2026-11-09T05:08:15.229Z and the window closed.
+midpoint offset of 1.457 ms against 250 ms; timestamps were never adjusted.
+Container absence was verified at 2026-11-09T06:23:29.458Z and the window closed.
 
 ## Retained discovery history and limitations
 
@@ -96,9 +105,10 @@ qualification, and their original statuses and bytes are unchanged:
 - Disposable transfer observations found idle backends, no open transactions or
   locks, and zero producer SQL during live and loopback downloads. This sampling
   does not make a continuous lock claim or cover publication's expected locks.
-- Spike warm features were about 57% slower; the final measured changes were
-  +1.98%, -5.85% and -6.36%. Final per-SQL and PostgreSQL observations do not
-  establish the cause. See the design doc for the sampled warm-1 autovacuum.
+- Spike warm features were about 57% slower; the earlier qualification's changes
+  were +1.98%, -5.85% and -6.36%, and the current run's changes are -8.84%,
+  -14.27% and -0.68%. Neither run's per-SQL and PostgreSQL observations establish
+  the cause. The design doc describes the current warm-3 maintenance observations.
 
 The original fixture remains pinned. Self-hosting was declined because it would
 measure Cloudflare rather than the production GitHub network path, and the

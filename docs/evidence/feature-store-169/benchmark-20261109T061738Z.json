@@ -1,0 +1,609 @@
+{
+  "schemaVersion": 2,
+  "issue": 169,
+  "kind": "producer-capacity-benchmark",
+  "format": "producer-capacity-v1",
+  "verification": {
+    "qualification": "pass",
+    "started": 30,
+    "completed": 30,
+    "attempts": [
+      {
+        "id": "games.csv.gz-b1-cold",
+        "totalMs": 11476.572208999998,
+        "liveMs": 11233.040084,
+        "pinnedMs": 243.5321249999979,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72695808,
+        "growthBytes": 24256512
+      },
+      {
+        "id": "games.csv.gz-b1-warm",
+        "totalMs": 579.0504170000022,
+        "liveMs": 320.79995899999994,
+        "pinnedMs": 258.25045800000225,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72695808,
+        "growthBytes": 24256512
+      },
+      {
+        "id": "games.csv.gz-b2-cold",
+        "totalMs": 602.2649579999998,
+        "liveMs": 368.2127079999991,
+        "pinnedMs": 234.05225000000064,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72695808,
+        "growthBytes": 24256512
+      },
+      {
+        "id": "games.csv.gz-b2-warm",
+        "totalMs": 602.5192499999976,
+        "liveMs": 369.6820000000007,
+        "pinnedMs": 232.83724999999686,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72695808,
+        "growthBytes": 24256512
+      },
+      {
+        "id": "games.csv.gz-b3-cold",
+        "totalMs": 607.5748339999991,
+        "liveMs": 384.12474999999904,
+        "pinnedMs": 223.45008400000006,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72695808,
+        "growthBytes": 24256512
+      },
+      {
+        "id": "games.csv.gz-b3-warm",
+        "totalMs": 552.6412920000002,
+        "liveMs": 305.03279199999815,
+        "pinnedMs": 247.6085000000021,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72695808,
+        "growthBytes": 24256512
+      },
+      {
+        "id": "stats_player_week_2025.csv.gz-b1-cold",
+        "totalMs": 10782.709083000002,
+        "liveMs": 10114.803041,
+        "pinnedMs": 667.9060420000023,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72507392,
+        "growthBytes": 24068096
+      },
+      {
+        "id": "stats_player_week_2025.csv.gz-b1-warm",
+        "totalMs": 1049.2584169999973,
+        "liveMs": 305.7383339999942,
+        "pinnedMs": 743.5200830000031,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72507392,
+        "growthBytes": 24068096
+      },
+      {
+        "id": "stats_player_week_2025.csv.gz-b2-cold",
+        "totalMs": 1319.869083000005,
+        "liveMs": 611.9080830000021,
+        "pinnedMs": 707.961000000003,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72507392,
+        "growthBytes": 24068096
+      },
+      {
+        "id": "stats_player_week_2025.csv.gz-b2-warm",
+        "totalMs": 1550.119166000004,
+        "liveMs": 818.5090830000045,
+        "pinnedMs": 731.6100829999996,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72507392,
+        "growthBytes": 24068096
+      },
+      {
+        "id": "stats_player_week_2025.csv.gz-b3-cold",
+        "totalMs": 1595.0193330000038,
+        "liveMs": 898.3878330000007,
+        "pinnedMs": 696.6315000000031,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72507392,
+        "growthBytes": 24068096
+      },
+      {
+        "id": "stats_player_week_2025.csv.gz-b3-warm",
+        "totalMs": 1045.8494159999973,
+        "liveMs": 314.3963749999966,
+        "pinnedMs": 731.4530410000007,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72507392,
+        "growthBytes": 24068096
+      },
+      {
+        "id": "roster_weekly_2021.csv-b1-cold",
+        "totalMs": 13101.128041999997,
+        "liveMs": 12282.523958000005,
+        "pinnedMs": 818.6040839999914,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72851456,
+        "growthBytes": 24412160
+      },
+      {
+        "id": "roster_weekly_2021.csv-b1-warm",
+        "totalMs": 4415.763665999999,
+        "liveMs": 3643.3872499999998,
+        "pinnedMs": 772.3764159999992,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72851456,
+        "growthBytes": 24412160
+      },
+      {
+        "id": "roster_weekly_2021.csv-b2-cold",
+        "totalMs": 2103.6249580000003,
+        "liveMs": 1322.6727919999976,
+        "pinnedMs": 780.9521660000028,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72851456,
+        "growthBytes": 24412160
+      },
+      {
+        "id": "roster_weekly_2021.csv-b2-warm",
+        "totalMs": 1692.7181249999994,
+        "liveMs": 904.3432909999974,
+        "pinnedMs": 788.374834000002,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72851456,
+        "growthBytes": 24412160
+      },
+      {
+        "id": "roster_weekly_2021.csv-b3-cold",
+        "totalMs": 1978.4752089999965,
+        "liveMs": 1172.8534169999912,
+        "pinnedMs": 805.6217920000054,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72851456,
+        "growthBytes": 24412160
+      },
+      {
+        "id": "roster_weekly_2021.csv-b3-warm",
+        "totalMs": 4810.86662500001,
+        "liveMs": 3979.477834000005,
+        "pinnedMs": 831.3887910000049,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 72851456,
+        "growthBytes": 24412160
+      },
+      {
+        "id": "pbp_participation_2023.csv-b1-cold",
+        "totalMs": 18139.145374999993,
+        "liveMs": 15703.487332999997,
+        "pinnedMs": 2435.6580419999955,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 77078528,
+        "growthBytes": 28639232
+      },
+      {
+        "id": "pbp_participation_2023.csv-b1-warm",
+        "totalMs": 11023.30137500001,
+        "liveMs": 8002.7070419999945,
+        "pinnedMs": 3020.5943330000155,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 77111296,
+        "growthBytes": 28672000
+      },
+      {
+        "id": "pbp_participation_2023.csv-b2-cold",
+        "totalMs": 11865.239333999984,
+        "liveMs": 9502.999708999996,
+        "pinnedMs": 2362.2396249999874,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 77078528,
+        "growthBytes": 28639232
+      },
+      {
+        "id": "pbp_participation_2023.csv-b2-warm",
+        "totalMs": 4593.775583999988,
+        "liveMs": 2316.7558749999735,
+        "pinnedMs": 2277.0197090000147,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 77078528,
+        "growthBytes": 28639232
+      },
+      {
+        "id": "pbp_participation_2023.csv-b3-cold",
+        "totalMs": 5132.298833000008,
+        "liveMs": 2863.9019160000025,
+        "pinnedMs": 2268.3969170000055,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 77078528,
+        "growthBytes": 28639232
+      },
+      {
+        "id": "pbp_participation_2023.csv-b3-warm",
+        "totalMs": 5641.944332999992,
+        "liveMs": 3327.6891250000044,
+        "pinnedMs": 2314.2552079999878,
+        "sql": 12,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 77078528,
+        "growthBytes": 28639232
+      },
+      {
+        "id": "features-2025-b1-cold",
+        "totalMs": 7214.580166,
+        "liveMs": 0,
+        "pinnedMs": 0,
+        "sql": 8,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 326344704,
+        "growthBytes": 277905408
+      },
+      {
+        "id": "features-2025-b1-warm",
+        "totalMs": 6577.145709000004,
+        "liveMs": 0,
+        "pinnedMs": 0,
+        "sql": 8,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 325148672,
+        "growthBytes": 276709376
+      },
+      {
+        "id": "features-2025-b2-cold",
+        "totalMs": 7418.546082999994,
+        "liveMs": 0,
+        "pinnedMs": 0,
+        "sql": 8,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 326115328,
+        "growthBytes": 277676032
+      },
+      {
+        "id": "features-2025-b2-warm",
+        "totalMs": 6359.59500000003,
+        "liveMs": 0,
+        "pinnedMs": 0,
+        "sql": 8,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 322658304,
+        "growthBytes": 274219008
+      },
+      {
+        "id": "features-2025-b3-cold",
+        "totalMs": 6467.920457999979,
+        "liveMs": 0,
+        "pinnedMs": 0,
+        "sql": 8,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 323903488,
+        "growthBytes": 275464192
+      },
+      {
+        "id": "features-2025-b3-warm",
+        "totalMs": 6424.206791999983,
+        "liveMs": 0,
+        "pinnedMs": 0,
+        "sql": 8,
+        "censored": false,
+        "verdict": {
+          "pass": true,
+          "errors": []
+        },
+        "peakBytes": 322723840,
+        "growthBytes": 274284544
+      }
+    ],
+    "interrupted": [],
+    "sourceCount": 77,
+    "diagnostics": "observations only; no causal inference or capacity gate"
+  },
+  "source": {
+    "gitSha": "42ef49090748dc947e305a309dd2e3d698d0667e",
+    "contentSha256": "53ecba7e72742aa7fedf56088585dddea0ec05465d14b10377c24d4e231e21ee",
+    "hashes": {
+      "compose.feature-store-spike.yml": "035f93c5e49def485c5ac0c632d11bf5234ba27234ee5f2637ba05ed98b383e8",
+      "compose.test.yml": "c930cb6f2cc7c624e579ed9ca6cf93c88c1d37c2b435b2b5a83d30d97922ef70",
+      "docs/evidence/feature-store-138/step-3-real-ingestion.json": "a08d54d2c8a53eb550a900a81ad32ce70d7fc9e44683fea7dcfd2f310e743db9",
+      "docs/evidence/feature-store-138/step-3-source-manifest.json": "2086cbbde03664d99eccbec64c12f659262f848c31ccb97d90aaff2c1c601f30",
+      "package-lock.json": "d523d8720a932f9dc573446785ab3e97b5a342fe98567b92541a2f5407e573dd",
+      "package.json": "925d36c0716564fc63b341295076c708436b4cc53b459e3144893b5f98a44c43",
+      "packages/db/catalog-contracts/0001.json": "7db7ff0f095d4075cbb029887e6531e15638998097aad3f015f3c4dca59a1113",
+      "packages/db/catalog-contracts/0002.json": "68ecc828365667c376ac3ec8385b8ad0c187515494d148324acea571c65994ac",
+      "packages/db/catalog-contracts/0003.json": "1c377f990a00f2c19902d9887c94ce0523376d91adb57ffa0ae6ac6e3069ac78",
+      "packages/db/catalog-contracts/0004.json": "0455b4561315eb3363b087e1380703192bfabe56a1abb90a05a60dee0c93a05f",
+      "packages/db/catalog-contracts/0005.json": "908678b73b9b9ab07ed4668b1a1a01e89d68bf4e5f6a2fbdc922626824fc3e39",
+      "packages/db/catalog-contracts/0006.json": "2f5a7c815955e47be583b5e94c28906ce504b0a76cb2ac704021661e7f9f2433",
+      "packages/db/catalog-contracts/0007.json": "c2095909ebacaa1657e08b120b0b3538665e8a7b19f9587c31b383481f7aa7ef",
+      "packages/db/catalog-contracts/0008.json": "8b1ea894cbda0b9afc1c193e8d4b41fd2026882aabb2c18f3f2fe4691ef52d17",
+      "packages/db/catalog-contracts/0009.json": "8968e7c389f1a2714de8c139282eab4fd5a245eee49cec509f021cd091c2a93d",
+      "packages/db/catalog-contracts/0010.json": "4ed78f91ea0900a1bfd6113ada384a5319d3ea66b6726556da331d8c86204e63",
+      "packages/db/catalog-contracts/0011.json": "fedf66e205ecce73a06c48ebfd47e353a2f7364da5b04bcfae1fe3c1ae6126b1",
+      "packages/db/catalog-contracts/ledger.json": "48e948beb754e9137fcb9d71e6d42714f500db432230fe684414c7fca002cdac",
+      "packages/db/migration-manifest.json": "6a9ec6d3d6627b1f8c0ff5b6be08c89d8fba3ea70901684723f2497e66a768b5",
+      "packages/db/migrations/0001_pre_41_baseline.sql": "a01c8ab5d91939d731c71571ede83bfc4e6123ef1f61b8a0918f4f951f306c98",
+      "packages/db/migrations/0002_market_observation_history.sql": "df35a458b5d6e3f26cbbdd84d8cfa65244e865dd6963b6f0e1f8f5f0e8dd7297",
+      "packages/db/migrations/0003_predictive_evidence.sql": "ec72796bc69169e8a8a487c2dfd2240c86a4dc94c4ab74b29e4c05c83df9e695",
+      "packages/db/migrations/0004_creator_corpus_projection.sql": "85445821073d62a152a029534b207487ea58a6524d66597fd3eb63ad7f62bdba",
+      "packages/db/migrations/0005_predictive_source_claims.sql": "60db0e74c1f805cfbad704d79aa156edba78488769ea42149e8edaab747dd06a",
+      "packages/db/migrations/0006_predictive_source_bindings.sql": "78da7c46a551628766af6045ba11bbf41647a6a8e937b92f43a4efeaacfc6d19",
+      "packages/db/migrations/0007_predictive_unavailable_bindings.sql": "fc10fe50cb8913c2c755db8ff15c0aa3d40e49b5a92d2471fff86c89c4409679",
+      "packages/db/migrations/0008_predictive_source_witnesses.sql": "ea824b2f2b943feafc576ed0cb7130f0f78ea37376859995f7a1fa0b2e139cfb",
+      "packages/db/migrations/0009_predictive_source_decisions.sql": "f861c1afd210c65886628581b78a1f135bb950f6b5e5d00989d065930a49ea31",
+      "packages/db/migrations/0010_predictive_source_consumers.sql": "813ca0e75d014bc5e38c9d454c481a479890f1c43e16128400442da6ad57ee35",
+      "packages/db/migrations/0011_predictive_capture_ingestion_clock.sql": "3908fa33bcb79301a870dca9a6c18dddacf755580a303025610d20bb20716d67",
+      "packages/db/package.json": "7cbaea6dcefdb3197401ce000b47819ec9cbc442e306dd92008a6d1be14def0d",
+      "packages/db/proposals/138_dataset_governance.sql": "69d8b44a1ef81ccf52e8c59f93d10192e51a19c865dbba2610a4af32f41285e7",
+      "packages/db/proposals/138_feature_store.sql": "183007219f71c27ed98138bbc3a1c10d86782e3660d20fda225f314bfb89c97a",
+      "packages/db/proposals/163_effective_rights.sql": "31d3aaf993c74e2d4d616599af463702cb3e597107b58194cfe78fed5d507d0e",
+      "packages/db/proposals/241_job_visibility.sql": "bfddb84b4305c09469e7ae2bf85813157ee40fb4b175cc02e8b088ca257b4869",
+      "packages/db/schema.sql": "993fad84aa8f992c5b3373d869a7260d4bb13557b3e36aa626b8873570e5d34b",
+      "packages/db/src/assets.mjs": "4e19d23790fb5a76cc44d5ab542d1b3516538b7c2e2bfb17859a9dcb559c45d4",
+      "packages/db/tooling/package.json": "42e8e7d8687fb0764080a2ee3e24c2869eeae61bb5e1353a67e98493d0e714d9",
+      "packages/db/tooling/scripts/compare-db-catalog.mjs": "368925f427a4e0569c59a8d27f4401e934992505dd857a7bc873e71c590ef699",
+      "packages/db/tooling/scripts/db-catalog.mjs": "27df2db0535f2d819e8110a3cee9193d3dbca8645a5a7186fa53ca6575159678",
+      "packages/db/tooling/scripts/db-migrations/contracts.mjs": "280308b8a8f414809d2040a0ba761047731d17d535ca28aa2a7d60a2dbe6d00f",
+      "packages/db/tooling/scripts/db-migrations/core.mjs": "4f7b8f45f6ed5127d56ae9e9715ff2d1229b8789b6d00fe77d8bebd6afa27280",
+      "packages/db/tooling/scripts/db-migrations/errors.mjs": "6012a42ce929a34e4da512046fbbbde4bc25fd9ae2f1c27f4d958db165d4fc8e",
+      "packages/db/tooling/scripts/db-migrations/files.mjs": "097517db7f68abc58dcb29c6a123d9942d7c5a3e88c2b7c6a70487b8ac7e39d2",
+      "packages/db/tooling/scripts/db-migrations/plans.mjs": "24fbf67bcde7e0d480170b83b9cac20f01f4819321c11e3af257613fce478143",
+      "packages/db/tooling/tests/scratch.mjs": "4af0e7f0bd68e5efcbd2891528f935e81241775c9b08cf6490a0cf3648576a4f",
+      "packages/db/tooling/tests/startup.mts": "8c9d01989c338aec7f434305b1815dd45d14b1f260b5ec1e33f3573781f16acd",
+      "packages/db/tooling/tests/target.mts": "9d81f0499bb0192807142c6cff937e2ff44793cd66c558618aab037d6dd235d1",
+      "packages/db/tooling/tests/templates.mts": "62a1a9b9b976fb6bc4c688f39c8bdbf1884ea07a808bf200eedf413d6131134f",
+      "scripts/db/db-test-contract.mjs": "1cca62fad143b416f8387e59107de2c004c85ce654a30bf7e5b4b9b78c05074e",
+      "scripts/db/db-test-disk.mjs": "515e276b99f3de6947f1ed06ff5e4ba26455364267751bff160e0ac154612560",
+      "scripts/db/db-test-lanes.mjs": "30d69bbdcbcd1d289d592a1fdc4f82c5cc292290cbdda647888e21f4892f7414",
+      "scripts/db/db-test-workers.mjs": "8a9b0947c664115c383dd3dd8ecc23e675c1d79b8184f7e47c863c80f8d7afb5",
+      "scripts/db/test-db.mjs": "133a437f04c42fd98c64d0f7541b0649a6b8817cc25ff09822bd0aa54c6830ae",
+      "services/pipeline/package.json": "05e32d42af0a8503a74f971c75fa4c84c198469a7035b64b5772f1f5eec43f60",
+      "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "38af6692d43a0c5ea35d9dbf7888e3776aa47fa5e7ed86f40dc4801c64fea27d",
+      "services/pipeline/scripts/feature-store/evidence-bundle.ts": "67010fcf5c0b9883ba1e075efd8c22fd94de33855dd8b869b756a5347212b1c6",
+      "services/pipeline/scripts/feature-store/harness.ts": "52730d21a397a01e20e9e6c9375781d8edbfa64b0c1c0820c952ac0cff74f97e",
+      "services/pipeline/scripts/feature-store/live-download.ts": "0a425d2f3e5630a423c60443368f22764d63e47d1b0d0e92b179ab966cd60b4e",
+      "services/pipeline/scripts/feature-store/producer-capacity-benchmark.ts": "01d562926dcc3599d08cf40469a43e0503ea083168e40bdc10a369e561e1c19d",
+      "services/pipeline/scripts/feature-store/producer-capacity-bootstrap.mjs": "af6d27917bf1148b0c8e217bf9d99c7fbf019dedc699b507d82419c49c437a27",
+      "services/pipeline/scripts/feature-store/producer-capacity-contract.ts": "630022d4c5305b37553d1828f201fcb72c0c84704be7c6d8051e6f0b01db4b8f",
+      "services/pipeline/scripts/feature-store/producer-capacity-evidence.ts": "0d7847d6ef45b51de3979830174133265d4cc40227a8e1ca62db188ba23f006c",
+      "services/pipeline/scripts/feature-store/producer-capacity-observe.ts": "375f1bfa5945d98bd7ee25bf76c70c2fbc5a52458cbdb1533bcdeddc7ad46424",
+      "services/pipeline/scripts/feature-store/producer-capacity-process.ts": "ba65ad317f2c3ea79038d358701d507aa64454a9ed0ca039926aafb15d3a2926",
+      "services/pipeline/scripts/feature-store/producer-capacity-runtime.ts": "771233bc3220cb864cb39b349a0e699bce34c9738ef96a8459c88c9dcab4b8de",
+      "services/pipeline/scripts/feature-store/producer-capacity-worker.ts": "8488c5e05e799b29e315d75ca4cb658d39c3465e4bbfd0e4cf94cb041a21246c",
+      "services/pipeline/scripts/feature-store/transfer-fixture.ts": "4fc926f02c877a9a0f9540c17191856f6e616184082e091bdca7e1a63cdfc185",
+      "services/pipeline/src/featureStore/derived.ts": "9044cf04c9d39e788aa1943373ffc2ca8d74df8244ead12165e618bc502e7310",
+      "services/pipeline/src/featureStore/ingest.ts": "a631e8177dc3e13bbce0e8ec2fe3a7636eced02b7517c98682c65595d7d015f5",
+      "services/pipeline/src/featureStore/jobs.ts": "311da636b18602fdd945d8bf0d686d52d085cc7f5147c664c0090de91e107994",
+      "services/pipeline/src/featureStore/localObjectStore.ts": "0fe1fbe2c6907e6438c096b80fe864da96ac125906798db1f051ef9b5396c231",
+      "services/pipeline/src/featureStore/normalize.ts": "dc2fdfdca667ab023d7565dbf273211d505921690a772b791f728c2f856d39cd",
+      "services/pipeline/src/featureStore/objectStore.ts": "1774c82bac1d38b7aff0d65e0984e2a851eb2aba00a0892885961e01edb1c8be",
+      "services/pipeline/src/featureStore/source.ts": "404619a5ac754ff6f3728e05e90f92daabb7feb1166b943023fbdba265bc2c5d",
+      "services/pipeline/src/featureStore/sourceTransfer.ts": "1769dc2ee9384417a6a1a7c283d7d16f548e5ddd14f7b1fb80c45a83699c0f48",
+      "services/pipeline/src/featureStore/verifiedWireAccess.ts": "466ef6be34a1366478643123ddff8da4e8bf6001a096db3710db4adbb123e64b"
+    },
+    "blobIds": {
+      "compose.feature-store-spike.yml": "e82bdc45efc8fc33a50e69959fc3cd02d13f8b64",
+      "compose.test.yml": "6e0ef09a84ffda78c48f5840d9633ae51d68f230",
+      "docs/evidence/feature-store-138/step-3-real-ingestion.json": "f0a778b9aab5ae73d10521f9a7d00d1305fd1007",
+      "docs/evidence/feature-store-138/step-3-source-manifest.json": "4b299fedde6c82d7ed061ac68ee6b03f59be7dc5",
+      "package-lock.json": "dd1c6c6e9dbde3ef05cd6ca1755777ea0b131f35",
+      "package.json": "c5a03915d15663a37ca02c9bbefc35a4f425a590",
+      "packages/db/catalog-contracts/0001.json": "26ec6dbfb056e493dae4913c17f7839bb2a49e21",
+      "packages/db/catalog-contracts/0002.json": "8ccb29e56c2c1b994e3e1d7caa02a3ecc8768b20",
+      "packages/db/catalog-contracts/0003.json": "ae54d9e86b21641b80a803537d5bc9c1392a42dd",
+      "packages/db/catalog-contracts/0004.json": "21fe7d185af4e15a9b5ac1fa1b6bc1ed4d8a6187",
+      "packages/db/catalog-contracts/0005.json": "2425eb15b4ecf8adc5e10a1f0401953ec816c267",
+      "packages/db/catalog-contracts/0006.json": "b4201316703fd82b4b313ed885309d6a67c92eaf",
+      "packages/db/catalog-contracts/0007.json": "b74dd635ec0964bf4d7c9fc7ee3c05f7ed7a6c9a",
+      "packages/db/catalog-contracts/0008.json": "20a9b8a07e378cbfccc62449ce5ee4b5bb21096e",
+      "packages/db/catalog-contracts/0009.json": "1c6d084e345ccf5fe907ed23883a64b2deb519e0",
+      "packages/db/catalog-contracts/0010.json": "bfadb0c9d29caca16eaa33523beaeef265285f2f",
+      "packages/db/catalog-contracts/0011.json": "56a20814b01983e6e3624aa3843a213429899804",
+      "packages/db/catalog-contracts/ledger.json": "cb65b4312266c05cdcc5237c3294acb2d77182b9",
+      "packages/db/migration-manifest.json": "cee34ef89e1ed5e1d55a7d9ca082aaab3e241655",
+      "packages/db/migrations/0001_pre_41_baseline.sql": "799f2d021e04b692f45ad968abeca8e1b1f1a391",
+      "packages/db/migrations/0002_market_observation_history.sql": "c79310e65e3c5766f40771a765aed535559d4d41",
+      "packages/db/migrations/0003_predictive_evidence.sql": "bcb063dc367e24c3ac7172753332f9124f769b70",
+      "packages/db/migrations/0004_creator_corpus_projection.sql": "0edde4655856771ef7d17679dedf2aa02ba227d4",
+      "packages/db/migrations/0005_predictive_source_claims.sql": "8253676b7d6a60bdeb961ed70cd4d5db1162e16f",
+      "packages/db/migrations/0006_predictive_source_bindings.sql": "822539ac9c6f50b2885aee1a5b16a602424b4a1c",
+      "packages/db/migrations/0007_predictive_unavailable_bindings.sql": "7e0656ef78859afbbb28d9c3fdd8efb982f1f370",
+      "packages/db/migrations/0008_predictive_source_witnesses.sql": "03731942a1188ed9ef88d0649a95591d81c239dc",
+      "packages/db/migrations/0009_predictive_source_decisions.sql": "1da13ef8d2cb77d47cf960d3bba7b38c5a3eb736",
+      "packages/db/migrations/0010_predictive_source_consumers.sql": "52f2b05d9e19c84f6e1e4c999a6508e629dd5273",
+      "packages/db/migrations/0011_predictive_capture_ingestion_clock.sql": "d01fbd2aa845ff232becfbe216c1a9e4c4b101f7",
+      "packages/db/package.json": "72ac95d09cc65aa1fe50c9f24584f110ce066464",
+      "packages/db/proposals/138_dataset_governance.sql": "68131cf08c62aa194339ee0329ecbf7f8c12189f",
+      "packages/db/proposals/138_feature_store.sql": "2da976de20e6be3a7bc8cdf65fc51124bfd175e7",
+      "packages/db/proposals/163_effective_rights.sql": "4f4901d8eb69ffca985d749e2d08dfcb83e92212",
+      "packages/db/proposals/241_job_visibility.sql": "f6732f70a70364f074c30315da7231021d2dc95a",
+      "packages/db/schema.sql": "ddc21190d2004c14e4119a15a8a5d17961bff396",
+      "packages/db/src/assets.mjs": "860429bc54fa658871baafbb2fd1bd4e536b5ebb",
+      "packages/db/tooling/package.json": "d6a55934ff0654c10c814c4a6e6ca7c842c702cf",
+      "packages/db/tooling/scripts/compare-db-catalog.mjs": "a7950621babc27baf9c03c4646ebef8b79f323bd",
+      "packages/db/tooling/scripts/db-catalog.mjs": "2d59cfe28c4cf47a22015d8c0cb503c1666b9c10",
+      "packages/db/tooling/scripts/db-migrations/contracts.mjs": "e3f642eabe08e22eeb02de01ccc573ce35218816",
+      "packages/db/tooling/scripts/db-migrations/core.mjs": "1c838e91bfd10438ed97d275fb4a8394db2002b4",
+      "packages/db/tooling/scripts/db-migrations/errors.mjs": "f06ae62fb68947613fc7efad9b7247b7484ea996",
+      "packages/db/tooling/scripts/db-migrations/files.mjs": "0a1a459e90a6b33ead7906c017c56fbcf7e29f5d",
+      "packages/db/tooling/scripts/db-migrations/plans.mjs": "83b2e998a918b6d84925bd32f319fae5c40ed494",
+      "packages/db/tooling/tests/scratch.mjs": "3e5ca8291032edeb74380bb07294b6ce6aca9f6f",
+      "packages/db/tooling/tests/startup.mts": "5d445c5363de4ce91e7faa95ef0f9ebc90cdfd4a",
+      "packages/db/tooling/tests/target.mts": "e3435f28a855ed19c7b81f70f97d1a757e939edd",
+      "packages/db/tooling/tests/templates.mts": "5ed6434009c990686c298f26659fd8b067a1593f",
+      "scripts/db/db-test-contract.mjs": "2079307354080b22328ba923bdbb0f2697cb4700",
+      "scripts/db/db-test-disk.mjs": "1f7cb7e539222ce74794410be4876de8dfc338b5",
+      "scripts/db/db-test-lanes.mjs": "b19581bcf1936988ecca5bfb00c1a8a48d8b279a",
+      "scripts/db/db-test-workers.mjs": "6cdd3d5a2f268e24f7b35ad6e2322f7e995e3ca7",
+      "scripts/db/test-db.mjs": "77341b570baf1ee753f9ff2f2f06a39954ae7512",
+      "services/pipeline/package.json": "f3c033bbc3ed82cdebe08a103a3067552b926777",
+      "services/pipeline/scripts/feature-store/artifact-governance-evidence.ts": "d4928a45f90359306e16017f8d5404d4c1e6a378",
+      "services/pipeline/scripts/feature-store/evidence-bundle.ts": "b2d5318c79a9fa2ed1ce6eec8b9757584dd1a08e",
+      "services/pipeline/scripts/feature-store/harness.ts": "705866890d1cf390d0cdee0236fefdcc0c5df7e9",
+      "services/pipeline/scripts/feature-store/live-download.ts": "382f79913ccbd84728beb41a0b2da03ddfc17e02",
+      "services/pipeline/scripts/feature-store/producer-capacity-benchmark.ts": "6610bd850cc9cbb647a25556fee3eeb5c30676dc",
+      "services/pipeline/scripts/feature-store/producer-capacity-bootstrap.mjs": "180d0a9dd37fa58414508e57929af3747da98135",
+      "services/pipeline/scripts/feature-store/producer-capacity-contract.ts": "c8dd6dcfbccf9dd43be2aa7f5fe974d7aa14411d",
+      "services/pipeline/scripts/feature-store/producer-capacity-evidence.ts": "73e170d036a1d5e6238458b376f019560f21108a",
+      "services/pipeline/scripts/feature-store/producer-capacity-observe.ts": "22f39bdcf74d942006c1aca6d8fdef61db61b271",
+      "services/pipeline/scripts/feature-store/producer-capacity-process.ts": "78a5f0fe19be4a6099bcb5581f4f9c604da3f74f",
+      "services/pipeline/scripts/feature-store/producer-capacity-runtime.ts": "e42eeb733036694259e3a986bf9022d63ca70194",
+      "services/pipeline/scripts/feature-store/producer-capacity-worker.ts": "ab76b8c10253e23b3a5253edda001a6ebfe5937f",
+      "services/pipeline/scripts/feature-store/transfer-fixture.ts": "3006633019da702558a71d7f66c8f873d55e3871",
+      "services/pipeline/src/featureStore/derived.ts": "ab99abf6d79dcb3241f7eae14a072731e7a9dbe3",
+      "services/pipeline/src/featureStore/ingest.ts": "9f9f4bb0b61614c58b8ce7ea9549f5414c5c5cc6",
+      "services/pipeline/src/featureStore/jobs.ts": "e5db86aa5f51215df8bf49b97b4595aa5ceeda8b",
+      "services/pipeline/src/featureStore/localObjectStore.ts": "d07a39608ec7fde4b0a910b1abd0000de4780ca6",
+      "services/pipeline/src/featureStore/normalize.ts": "6d6ef2866c2f4e14ee3574af120755a1b85fa70d",
+      "services/pipeline/src/featureStore/objectStore.ts": "6ec035ed58b1ff7b9e1d83249cae3add7aa54cf1",
+      "services/pipeline/src/featureStore/source.ts": "6b8fa0d9f22c179f1c9c7cbf73625e901cf7e880",
+      "services/pipeline/src/featureStore/sourceTransfer.ts": "8020335251c7c58b7a75f83213e4a91fa8be569b",
+      "services/pipeline/src/featureStore/verifiedWireAccess.ts": "5b3c6aebcdec80af2ed4c8b201f1461c358b126e"
+    }
+  },
+  "objectStore": {
+    "objectKey": "audits/f79f303216ecb8c068ca281ebdd1339fb5d3e2840982c5f677dc21985e535d6f",
+    "sha256": "f79f303216ecb8c068ca281ebdd1339fb5d3e2840982c5f677dc21985e535d6f",
+    "byteSize": 15855474
+  },
+  "fullRecord": {
+    "path": "records-20261109T061738Z.tar.gz#run-20261109T061738Z.json",
+    "sha256": "f79f303216ecb8c068ca281ebdd1339fb5d3e2840982c5f677dc21985e535d6f",
+    "byteSize": 15855474,
+    "format": "exact uncompressed producer-capacity JSON"
+  }
+}

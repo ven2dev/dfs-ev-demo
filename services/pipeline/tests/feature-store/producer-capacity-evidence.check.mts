@@ -10,9 +10,9 @@ import type { Attempt } from "../../scripts/feature-store/producer-capacity-cont
 
 const directory = fileURLToPath(new URL("../../../../docs/evidence/feature-store-169/", import.meta.url));
 const evidence = async () => {
-  const receipt = JSON.parse(await readFile(directory + "benchmark-20261109T050208Z.json", "utf8"));
+  const receipt = JSON.parse(await readFile(directory + "benchmark-20261109T061738Z.json", "utf8"));
   const [archive, member] = receipt.fullRecord.path.split("#");
-  assert.equal(archive, "records-20261109T050208Z.tar.gz"); assert.equal(member, "run-20261109T050208Z.json");
+  assert.equal(archive, "records-20261109T061738Z.tar.gz"); assert.equal(member, "run-20261109T061738Z.json");
   const bytes = execFileSync("tar", ["-xOzf", directory + archive, member], { maxBuffer: 16 * 1024 * 1024 });
   assert.equal(sha256(bytes), receipt.fullRecord.sha256); assert.equal(bytes.length, receipt.fullRecord.byteSize);
   return { receipt, bytes, full: JSON.parse(bytes.toString()) as ProducerBenchmark };
@@ -21,13 +21,16 @@ const evidence = async () => {
 test("#169 committed evidence recomputes 30 attempts, final sources, 12/8 work and teardown offline", async () => {
   const { receipt, full } = await evidence();
   assert.deepEqual(verifyProducerBenchmark(full), receipt.verification);
-  assert.equal(receipt.source.gitSha, "55d512b15c3e340c128d8b4195783faa00e29385");
+  assert.equal(receipt.source.gitSha, "42ef49090748dc947e305a309dd2e3d698d0667e");
   assert.equal(receipt.verification.sourceCount, 77);
   assert.equal(receipt.verification.qualification, "pass");
   assert.deepEqual(receipt.verification.attempts.map((a: { sql: number }) => a.sql), [...Array(24).fill(12), ...Array(6).fill(8)]);
   assert.equal(Object.keys(full.records).filter(n => n.endsWith(".down.json")).length, 15);
+  const historical = JSON.parse(await readFile(directory + "benchmark-20261109T050208Z.json", "utf8"));
+  assert.equal(historical.source.gitSha, "55d512b15c3e340c128d8b4195783faa00e29385");
+  assert.equal(historical.fullRecord.sha256, "9daae46fb57f30996dc1c09153a60b41174e314e62671ac7f712ffb918fa1543");
   const records = await verifyEvidenceBundle(directory);
-  assert.equal(records.length, 43); assert(records.every(r => r.verdict === "pass"));
+  assert.equal(records.length, 44); assert(records.every(r => r.verdict === "pass"));
 });
 
 test("#169 real records refuse changed bytes, work, loopback provenance and missing diagnostics", async () => {
