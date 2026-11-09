@@ -1,0 +1,48 @@
+{
+  "issue": 244,
+  "checkpoint": 3,
+  "scope": "Committed CLI, exact local wire pins and disposable source catalog with synthetic research grants.",
+  "receipts": [
+    {
+      "file": "checkpoint-3-replay-1.json",
+      "sha256": "0dbc0e58b59026c1702253dd13b0de2a13011e6e2fefd11f429006ebb62d9720"
+    },
+    {
+      "file": "checkpoint-3-replay-2.json",
+      "sha256": "c1108f1aac2c11ae6588c476ad3fdaad843e59aad7e2b8062975410e713739e4"
+    }
+  ],
+  "rerun": {
+    "normalizedAndDerivedHashesMatched": true,
+    "normalizedRows": 103468,
+    "contexts": 20
+  },
+  "scratchCleanup": "No scratch databases remained after each command. The source database and its reader role were removed.",
+  "refusals": [
+    {
+      "test": "missing local object",
+      "exitCode": 1,
+      "reason": "replay-object-missing"
+    },
+    {
+      "test": "same-size corrupt local object",
+      "exitCode": 1,
+      "reason": "replay-object-corrupt"
+    }
+  ],
+  "memory": [
+    {
+      "heapUsedAfterBaseline": 278708104,
+      "arrayBuffersAfterBaseline": 559649,
+      "peakPayloadSampleArrayBuffers": 59059543,
+      "peakRssBytes": 893698048
+    },
+    {
+      "heapUsedAfterBaseline": 278708104,
+      "arrayBuffersAfterBaseline": 559649,
+      "peakPayloadSampleArrayBuffers": 57878684,
+      "peakRssBytes": 1021231104
+    }
+  ],
+  "memoryContext": "Heap after baseline load includes the parsed graph and V8 parsing overhead. The process also holds staged normalized rows, producer results, and Node and PostgreSQL client allocations. RSS is a process peak, not a payload measurement."
+}
