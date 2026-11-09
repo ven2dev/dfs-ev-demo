@@ -1,0 +1,872 @@
+{
+  "issue": 250,
+  "checkpoint": 3,
+  "baseCommit": "1be8deccb4a594186317b6d5234578b8baf853c9",
+  "recordedAt": "2026-11-09T04:16:02.775Z",
+  "lane": "lane-2",
+  "tier": "standard",
+  "capacityBytes": 536870912,
+  "postgres": "18.6",
+  "sourceBlobIds": {
+    "services/pipeline/tests/feature-store/mandatory-recovery-races.check.mts": "0246879261fb16a6cef2328afe7925308e908c01",
+    "services/pipeline/tests/feature-store/removal-queue.check.mts": "660f3fddbcb42e82eced9cbc70ce2f109cee4fb7",
+    "services/pipeline/tests/feature-store/fixture-objects.ts": "9d65a38667b5993043e445f15bc4ef33569db2cd"
+  },
+  "method": {
+    "profile": "Separate Node process per check, fresh scratch database each time. Temporary import hook measured pg client query latency by SQL group, with shared harness timers and standard Node test timings.",
+    "profileCaveat": "Client query times include transport and response work and can overlap. They are diagnostic observations rather than additive server CPU or exclusive phase measurements.",
+    "comparison": "Same lane, tier and fresh scratch per isolated check. Interleave AB, BA, AB. A uses sequential object seeding. B writes independent fixture objects in batches of eight and joins each batch before proceeding. Both variants run all original assertions and race waits. Compare medians of complete Node check times.",
+    "comparisonCaveat": "Docker, filesystem and OS caches were not flushed. These are local measurements. Hosted results require subsequent CI.",
+    "minimumMedianSavingsMs": 3000
+  },
+  "profiles": [
+    {
+      "file": "derived.check.mts",
+      "harnessMs": {
+        "setup": 772.104042,
+        "callback": 28623.592,
+        "cleanup": 29.88087500000256
+      },
+      "result": {
+        "tests": 10,
+        "pass": 10,
+        "fail": 0,
+        "skipped": 0,
+        "duration_ms": 29571.733083
+      },
+      "queries": {
+        "EXPLAIN derived materialization": {
+          "count": 1,
+          "ms": 13914.408584
+        },
+        "derived feature publication": {
+          "count": 7,
+          "ms": 12373.260167
+        },
+        "INSERT norm_player_game_stats": {
+          "count": 1435,
+          "ms": 614.9454140000108
+        },
+        "INSERT norm_participation": {
+          "count": 1408,
+          "ms": 601.9967089999905
+        },
+        "INSERT norm_identity": {
+          "count": 1430,
+          "ms": 591.5322029999993
+        },
+        "other query": {
+          "count": 15,
+          "ms": 310.5571260000001
+        },
+        "other WITH": {
+          "count": 17,
+          "ms": 192.42845800000157
+        },
+        "derived label publication": {
+          "count": 6,
+          "ms": 58.259458000002724
+        },
+        "normalized parity or read": {
+          "count": 1,
+          "ms": 52.357708
+        },
+        "other SELECT": {
+          "count": 45,
+          "ms": 51.65403999999768
+        },
+        "ANALYZE": {
+          "count": 12,
+          "ms": 50.83466699999997
+        },
+        "scratch creation": {
+          "count": 1,
+          "ms": 45.62208299999999
+        },
+        "other UPDATE": {
+          "count": 27,
+          "ms": 26.852586999997243
+        },
+        "removal/revisit statements": {
+          "count": 1,
+          "ms": 22.650792000000024
+        },
+        "INSERT job_runs": {
+          "count": 19,
+          "ms": 21.520665999999096
+        },
+        "INSERT norm_schedule": {
+          "count": 22,
+          "ms": 13.042544000000248
+        },
+        "other CREATE": {
+          "count": 3,
+          "ms": 12.614916999999991
+        },
+        "INSERT source_snapshots": {
+          "count": 8,
+          "ms": 9.78808499999991
+        },
+        "other COMMIT": {
+          "count": 14,
+          "ms": 9.512997999999925
+        },
+        "INSERT public": {
+          "count": 11,
+          "ms": 9.49012399999998
+        },
+        "other BEGIN": {
+          "count": 16,
+          "ms": 8.788334999999961
+        },
+        "other SET": {
+          "count": 19,
+          "ms": 8.021334000000309
+        },
+        "scratch drop": {
+          "count": 1,
+          "ms": 7.442292000003363
+        },
+        "INSERT source_profiles": {
+          "count": 4,
+          "ms": 3.9596259999999575
+        },
+        "other DELETE": {
+          "count": 4,
+          "ms": 2.5723339999999553
+        },
+        "other GRANT": {
+          "count": 3,
+          "ms": 2.556833999998048
+        },
+        "other ROLLBACK": {
+          "count": 2,
+          "ms": 2.052958000000217
+        },
+        "other TRUNCATE": {
+          "count": 4,
+          "ms": 2.004042000000254
+        },
+        "other DROP": {
+          "count": 2,
+          "ms": 1.259541999999783
+        },
+        "INSERT feature_values": {
+          "count": 1,
+          "ms": 1.2114579999999933
+        },
+        "other REVOKE": {
+          "count": 1,
+          "ms": 0.8683339999988675
+        },
+        "INSERT outcome_labels": {
+          "count": 1,
+          "ms": 0.7636659999998301
+        },
+        "INSERT label_inputs": {
+          "count": 1,
+          "ms": 0.6807909999999993
+        },
+        "INSERT feature_inputs": {
+          "count": 1,
+          "ms": 0.5626250000000255
+        }
+      }
+    },
+    {
+      "file": "job-visibility-producer-work.check.mts",
+      "harnessMs": {
+        "setup": 677.7210829999999,
+        "callback": 10924.299458,
+        "cleanup": 34.451334000001225
+      },
+      "result": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0,
+        "duration_ms": 11784.692416
+      },
+      "queries": {
+        "EXPLAIN producer context": {
+          "count": 1,
+          "ms": 4239.133790999999
+        },
+        "ANALYZE": {
+          "count": 37,
+          "ms": 2699.243955
+        },
+        "INSERT norm_participation": {
+          "count": 5,
+          "ms": 1430.914917
+        },
+        "other WITH": {
+          "count": 1,
+          "ms": 563.1138750000009
+        },
+        "producer legacy parity": {
+          "count": 1,
+          "ms": 557.4680419999986
+        },
+        "other query": {
+          "count": 15,
+          "ms": 290.05525099999966
+        },
+        "INSERT norm_identity": {
+          "count": 5,
+          "ms": 156.63004100000035
+        },
+        "INSERT norm_player_game_stats": {
+          "count": 5,
+          "ms": 53.64729200000056
+        },
+        "other UPDATE": {
+          "count": 36,
+          "ms": 52.961250999997674
+        },
+        "INSERT norm_schedule": {
+          "count": 1,
+          "ms": 51.33970799999997
+        },
+        "INSERT job_runs": {
+          "count": 36,
+          "ms": 50.2330400000003
+        },
+        "normalized parity or read": {
+          "count": 1,
+          "ms": 46.04483300000004
+        },
+        "other SELECT": {
+          "count": 23,
+          "ms": 40.777416999999986
+        },
+        "INSERT job_inputs": {
+          "count": 36,
+          "ms": 31.633414999999786
+        },
+        "INSERT source_snapshots": {
+          "count": 16,
+          "ms": 27.694499000000633
+        },
+        "other COMMIT": {
+          "count": 38,
+          "ms": 26.44512499999803
+        },
+        "scratch creation": {
+          "count": 1,
+          "ms": 23.429832999999988
+        },
+        "other BEGIN": {
+          "count": 38,
+          "ms": 22.589208000003282
+        },
+        "removal/revisit statements": {
+          "count": 1,
+          "ms": 18.298125000000027
+        },
+        "scratch drop": {
+          "count": 1,
+          "ms": 12.633458000000246
+        },
+        "other CREATE": {
+          "count": 3,
+          "ms": 11.863292000000115
+        },
+        "INSERT public": {
+          "count": 11,
+          "ms": 9.780291999999974
+        },
+        "INSERT source_profiles": {
+          "count": 1,
+          "ms": 8.157333999999992
+        },
+        "other SET": {
+          "count": 5,
+          "ms": 4.474541999999985
+        },
+        "other DROP": {
+          "count": 2,
+          "ms": 1.352415999999721
+        },
+        "other GRANT": {
+          "count": 2,
+          "ms": 1.196207999999956
+        }
+      }
+    },
+    {
+      "file": "mandatory-recovery-selection.check.mts",
+      "harnessMs": {
+        "setup": 705.48,
+        "callback": 5878.117625000001,
+        "cleanup": 31.788582999999562
+      },
+      "result": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0,
+        "duration_ms": 6745.247667
+      },
+      "queries": {
+        "INSERT object_removals": {
+          "count": 100,
+          "ms": 4302.194924
+        },
+        "INSERT orphan_observations": {
+          "count": 2,
+          "ms": 1394.901459
+        },
+        "other query": {
+          "count": 16,
+          "ms": 308.24104200000005
+        },
+        "EXPLAIN other": {
+          "count": 5,
+          "ms": 82.04654100000062
+        },
+        "ANALYZE": {
+          "count": 4,
+          "ms": 62.01937499999963
+        },
+        "normalized parity or read": {
+          "count": 1,
+          "ms": 46.043249999999944
+        },
+        "scratch creation": {
+          "count": 1,
+          "ms": 31.305833000000007
+        },
+        "removal/revisit statements": {
+          "count": 5,
+          "ms": 28.485959000000776
+        },
+        "other SELECT": {
+          "count": 9,
+          "ms": 17.364252000000036
+        },
+        "other CREATE": {
+          "count": 3,
+          "ms": 11.958125000000052
+        },
+        "scratch drop": {
+          "count": 1,
+          "ms": 10.287083000000166
+        },
+        "INSERT public": {
+          "count": 11,
+          "ms": 9.747707999999648
+        },
+        "other BEGIN": {
+          "count": 2,
+          "ms": 5.672041000000036
+        },
+        "other SET": {
+          "count": 5,
+          "ms": 4.4530829999999355
+        },
+        "other COMMIT": {
+          "count": 2,
+          "ms": 1.7570420000000695
+        },
+        "other DROP": {
+          "count": 2,
+          "ms": 1.3398329999999987
+        },
+        "other GRANT": {
+          "count": 2,
+          "ms": 1.1496249999999009
+        },
+        "INSERT deletion_events": {
+          "count": 1,
+          "ms": 0.7850419999999758
+        }
+      }
+    },
+    {
+      "file": "job-visibility-work.check.mts",
+      "harnessMs": {
+        "setup": 684.007084,
+        "callback": 4779.14525,
+        "cleanup": 48.18129100000078
+      },
+      "result": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0,
+        "duration_ms": 5688.630084
+      },
+      "queries": {
+        "INSERT feature_inputs": {
+          "count": 2,
+          "ms": 1183.0668339999995
+        },
+        "ANALYZE": {
+          "count": 41,
+          "ms": 849.8219599999989
+        },
+        "INSERT feature_values": {
+          "count": 3,
+          "ms": 707.7095410000002
+        },
+        "dataset materialization": {
+          "count": 4,
+          "ms": 307.5115829999995
+        },
+        "other query": {
+          "count": 15,
+          "ms": 278.6630849999998
+        },
+        "INSERT label_inputs": {
+          "count": 2,
+          "ms": 266.5230000000006
+        },
+        "EXPLAIN derived or dataset": {
+          "count": 3,
+          "ms": 203.44275000000016
+        },
+        "INSERT outcome_labels": {
+          "count": 3,
+          "ms": 86.81945900000028
+        },
+        "normalized parity or read": {
+          "count": 1,
+          "ms": 55.19870900000001
+        },
+        "other SELECT": {
+          "count": 26,
+          "ms": 41.442750000001624
+        },
+        "INSERT job_runs": {
+          "count": 37,
+          "ms": 34.89570900000035
+        },
+        "other UPDATE": {
+          "count": 37,
+          "ms": 33.7478790000016
+        },
+        "INSERT job_inputs": {
+          "count": 36,
+          "ms": 23.92320800000016
+        },
+        "other COMMIT": {
+          "count": 41,
+          "ms": 22.608914999997182
+        },
+        "INSERT source_snapshots": {
+          "count": 16,
+          "ms": 20.10158299999989
+        },
+        "other BEGIN": {
+          "count": 41,
+          "ms": 19.61374600000272
+        },
+        "scratch creation": {
+          "count": 1,
+          "ms": 19.26329100000001
+        },
+        "removal/revisit statements": {
+          "count": 1,
+          "ms": 18.964833
+        },
+        "scratch drop": {
+          "count": 1,
+          "ms": 18.893792000000758
+        },
+        "INSERT source_profiles": {
+          "count": 1,
+          "ms": 11.47179200000005
+        },
+        "other CREATE": {
+          "count": 3,
+          "ms": 11.38279
+        },
+        "INSERT public": {
+          "count": 11,
+          "ms": 9.127001000000234
+        },
+        "other SET": {
+          "count": 8,
+          "ms": 6.48766699999976
+        },
+        "other DROP": {
+          "count": 2,
+          "ms": 1.4718329999996058
+        },
+        "other GRANT": {
+          "count": 2,
+          "ms": 1.2646669999999176
+        }
+      }
+    },
+    {
+      "file": "removal-queue.check.mts",
+      "harnessMs": {
+        "setup": 682.38375,
+        "callback": 16751.047000000002,
+        "cleanup": 31.352999999999156
+      },
+      "result": {
+        "tests": 1,
+        "pass": 1,
+        "fail": 0,
+        "skipped": 0,
+        "duration_ms": 17619.28775
+      },
+      "queries": {
+        "other SELECT": {
+          "count": 3110,
+          "ms": 2619.103402999982
+        },
+        "other COMMIT": {
+          "count": 2055,
+          "ms": 780.1655790000174
+        },
+        "other BEGIN": {
+          "count": 2056,
+          "ms": 720.3835219999363
+        },
+        "other query": {
+          "count": 15,
+          "ms": 305.9674170000001
+        },
+        "INSERT source_snapshots": {
+          "count": 2,
+          "ms": 140.72304199999962
+        },
+        "normalized parity or read": {
+          "count": 1,
+          "ms": 46.696292000000085
+        },
+        "scratch creation": {
+          "count": 1,
+          "ms": 30.906042
+        },
+        "removal/revisit statements": {
+          "count": 9,
+          "ms": 30.0979170000021
+        },
+        "other CREATE": {
+          "count": 3,
+          "ms": 11.800083000000086
+        },
+        "INSERT job_runs": {
+          "count": 1,
+          "ms": 10.250583000000915
+        },
+        "INSERT public": {
+          "count": 11,
+          "ms": 9.21225099999998
+        },
+        "scratch drop": {
+          "count": 1,
+          "ms": 7.421166000000085
+        },
+        "INSERT source_profiles": {
+          "count": 1,
+          "ms": 4.205959000000803
+        },
+        "other SET": {
+          "count": 5,
+          "ms": 4.01600099999996
+        },
+        "other UPDATE": {
+          "count": 2,
+          "ms": 2.6167089999999007
+        },
+        "other DROP": {
+          "count": 2,
+          "ms": 1.3601250000028813
+        },
+        "other GRANT": {
+          "count": 2,
+          "ms": 1.1099579999998923
+        },
+        "other ROLLBACK": {
+          "count": 1,
+          "ms": 0.326375000000553
+        }
+      }
+    },
+    {
+      "file": "mandatory-recovery-races.check.mts",
+      "harnessMs": {
+        "setup": 706.4548339999999,
+        "callback": 12258.839041000001,
+        "cleanup": 64.8189999999995
+      },
+      "result": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "skipped": 0,
+        "duration_ms": 13252.264542
+      },
+      "queries": {
+        "other SELECT": {
+          "count": 1175,
+          "ms": 1957.7306730000062
+        },
+        "other COMMIT": {
+          "count": 1056,
+          "ms": 392.01781300002824
+        },
+        "other BEGIN": {
+          "count": 1068,
+          "ms": 341.53814900001714
+        },
+        "other query": {
+          "count": 16,
+          "ms": 292.84029000000004
+        },
+        "derived feature publication": {
+          "count": 1,
+          "ms": 256.1257919999989
+        },
+        "INSERT dataset_members": {
+          "count": 7,
+          "ms": 131.17862400000047
+        },
+        "INSERT object_removals": {
+          "count": 11,
+          "ms": 99.40770800000212
+        },
+        "removal/revisit statements": {
+          "count": 45,
+          "ms": 76.51854400000082
+        },
+        "normalized parity or read": {
+          "count": 1,
+          "ms": 66.40320799999995
+        },
+        "other CREATE": {
+          "count": 12,
+          "ms": 48.49858299999988
+        },
+        "INSERT orphan_observations": {
+          "count": 5,
+          "ms": 36.30554399999892
+        },
+        "scratch creation": {
+          "count": 1,
+          "ms": 26.798208000000017
+        },
+        "scratch drop": {
+          "count": 1,
+          "ms": 20.979874999999083
+        },
+        "other UPDATE": {
+          "count": 16,
+          "ms": 12.628458000002638
+        },
+        "other DROP": {
+          "count": 10,
+          "ms": 11.329541000000972
+        },
+        "INSERT dataset_manifests": {
+          "count": 7,
+          "ms": 9.888749999999504
+        },
+        "INSERT public": {
+          "count": 11,
+          "ms": 8.642584999999997
+        },
+        "INSERT source_snapshots": {
+          "count": 6,
+          "ms": 7.691790999998716
+        },
+        "other GRANT": {
+          "count": 10,
+          "ms": 7.370626000000016
+        },
+        "other ROLLBACK": {
+          "count": 11,
+          "ms": 5.261833000001843
+        },
+        "INSERT dataset_inputs": {
+          "count": 7,
+          "ms": 5.0137089999997215
+        },
+        "INSERT source_profiles": {
+          "count": 6,
+          "ms": 4.892998999999463
+        },
+        "INSERT job_runs": {
+          "count": 6,
+          "ms": 4.3082510000002685
+        },
+        "INSERT rights_decisions": {
+          "count": 6,
+          "ms": 4.005000000000564
+        },
+        "other TRUNCATE": {
+          "count": 1,
+          "ms": 3.346166999999923
+        },
+        "other SET": {
+          "count": 5,
+          "ms": 2.3248320000000717
+        },
+        "INSERT deletion_events": {
+          "count": 1,
+          "ms": 0.8854169999999613
+        }
+      }
+    }
+  ],
+  "derived": {
+    "allIdentityStatsParticipationInsertMs": 1808.4743260000005,
+    "featureSqlAndRequiredExplainMs": 26287.668751,
+    "bulkSeedCandidate": "Deferred. Even removing all measured time across those inserts falls short of 3 seconds locally."
+  },
+  "trials": [
+    {
+      "round": 1,
+      "variant": "baseline",
+      "file": "removal-queue",
+      "seedMs": 8190.407,
+      "checkMs": 17292.9535,
+      "callbackMs": 16334.409166999998,
+      "cases": 1
+    },
+    {
+      "round": 1,
+      "variant": "baseline",
+      "file": "mandatory-recovery-races",
+      "seedMs": 8336.449708,
+      "checkMs": 13220.35175,
+      "callbackMs": 12243.597042,
+      "cases": 6
+    },
+    {
+      "round": 2,
+      "variant": "bounded",
+      "file": "removal-queue",
+      "seedMs": 3113.9247079999996,
+      "checkMs": 12021.747458,
+      "callbackMs": 11122.521791,
+      "cases": 1
+    },
+    {
+      "round": 2,
+      "variant": "bounded",
+      "file": "mandatory-recovery-races",
+      "seedMs": 3148.813208,
+      "checkMs": 7864.818042,
+      "callbackMs": 6855.197583,
+      "cases": 6
+    },
+    {
+      "round": 3,
+      "variant": "bounded",
+      "file": "removal-queue",
+      "seedMs": 3164.804875,
+      "checkMs": 11976.121875,
+      "callbackMs": 11112.653334,
+      "cases": 1
+    },
+    {
+      "round": 3,
+      "variant": "bounded",
+      "file": "mandatory-recovery-races",
+      "seedMs": 3263.9342910000005,
+      "checkMs": 7864.63575,
+      "callbackMs": 6896.591375,
+      "cases": 6
+    },
+    {
+      "round": 4,
+      "variant": "baseline",
+      "file": "removal-queue",
+      "seedMs": 7895.948833999999,
+      "checkMs": 16736.187167,
+      "callbackMs": 15873.792791999998,
+      "cases": 1
+    },
+    {
+      "round": 4,
+      "variant": "baseline",
+      "file": "mandatory-recovery-races",
+      "seedMs": 8361.2615,
+      "checkMs": 13049.932084,
+      "callbackMs": 12060.148875,
+      "cases": 6
+    },
+    {
+      "round": 5,
+      "variant": "baseline",
+      "file": "removal-queue",
+      "seedMs": 8303.366415999999,
+      "checkMs": 17384.18125,
+      "callbackMs": 16496.568833999998,
+      "cases": 1
+    },
+    {
+      "round": 5,
+      "variant": "baseline",
+      "file": "mandatory-recovery-races",
+      "seedMs": 8038.922208,
+      "checkMs": 12806.289417,
+      "callbackMs": 11845.288041,
+      "cases": 6
+    },
+    {
+      "round": 6,
+      "variant": "bounded",
+      "file": "removal-queue",
+      "seedMs": 3222.295083,
+      "checkMs": 12172.251042,
+      "callbackMs": 11266.95925,
+      "cases": 1
+    },
+    {
+      "round": 6,
+      "variant": "bounded",
+      "file": "mandatory-recovery-races",
+      "seedMs": 3113.8639999999996,
+      "checkMs": 7863.765666,
+      "callbackMs": 6932.664417,
+      "cases": 6
+    }
+  ],
+  "comparisons": [
+    {
+      "file": "removal-queue",
+      "baselineMedianMs": 17292.9535,
+      "boundedMedianMs": 12021.747458,
+      "medianSavedMs": 5271.206042,
+      "retain": true
+    },
+    {
+      "file": "mandatory-recovery-races",
+      "baselineMedianMs": 13049.932084,
+      "boundedMedianMs": 7864.63575,
+      "medianSavedMs": 5185.296334,
+      "retain": true
+    }
+  ],
+  "finalLocalValidation": {
+    "featureStore": {
+      "tests": 296,
+      "pass": 296,
+      "fail": 0,
+      "skipped": 0,
+      "duration_ms": 123100.385
+    },
+    "identicalFeatureStoreCaseNames": 296,
+    "lifecycleChecksPassed": 1,
+    "core": {
+      "nodeRequiredCases": 74,
+      "leaseRequiredCases": 13,
+      "readinessRequiredCases": 4,
+      "corpusRequiredCases": 8,
+      "result": "verified"
+    },
+    "minimumFreeBytes": 276893696,
+    "diskSamples": 124,
+    "laneTeardownVerified": true,
+    "scratchDatabasesAndTestLoginsRemaining": 0
+  },
+  "hostedFinalQualification": "Pending three comparable full CI runs of final candidate."
+}

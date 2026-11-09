@@ -10,6 +10,7 @@ import { sha256 } from '../../src/featureStore/objectStore.ts';
 import { cleanupDeletedObjectsWithRecovery,deleteDatasets } from '@dfs-ev/pipeline/feature-store/governance';
 import { governanceFixture,governanceIdentity,governanceExamples } from './artifact-governance-fixture.ts';
 import { waitForCleanerLock,cleanerTrace } from './artifact-cleaner-work.ts';
+import { mapFixtureObjects } from './fixture-objects.ts';
 import { readCounterDelta,deterministicReadWork,type ReadCounters } from './artifact-read-work.ts';
 
 const probes:{name:string;details:unknown}[]=[];
@@ -108,8 +109,10 @@ test('#229 Step 3: late PUT handoff, interruption, lock races and hidden work',{
    // These are ordinary in-flight/unswept addresses, never queued for removal.
    await admin.query("INSERT INTO fs138.orphan_observations SELECT key,clock_timestamp()-interval '10 minutes' FROM unnest($1::text[]) key",[observed]);
    const objects=[];const shared=[];
-   for(let n=0;n<1025;n++){
-    const report=await fixture.persist('audits',{shared:n,cohort:'229-'+event});shared.push(report.objectKey);
+   const reports = await mapFixtureObjects(Array.from({length:1025}, (_,n)=>n),
+    n=>fixture.persist('audits',{shared:n,cohort:'229-'+event}));
+   for(const [n, report] of reports.entries()){
+    shared.push(report.objectKey);
     const descriptor=sha256(Buffer.from('229-shared-descriptor-'+event+'-'+n));
     objects.push([{slot:'descriptor',datasetId:null,objectKey:'models/'+descriptor,fileSha256:descriptor,byteSize:1},
      {slot:data.mode,datasetId:data.datasetId,objectKey:report.objectKey,fileSha256:report.sha256,byteSize:report.byteSize}]);

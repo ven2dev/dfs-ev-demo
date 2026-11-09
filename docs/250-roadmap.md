@@ -49,3 +49,32 @@ cases and the new parity probe. The template build took 0.63 seconds and the
 273.7 MiB, or 53.5% of the 512 MiB fixture. These observations support local
 qualification. A hosted run is still required to evaluate both timing targets.
 See the [qualification receipt](evidence/ci-250/checkpoint-2-template-qualification.json).
+
+## Checkpoint 3 slow-check profile
+
+The lane-2 profile covered all four checks listed in the issue and the two
+additional queue/recovery checks highlighted by intake. The derived test spent
+26.29 seconds in feature publication and its required EXPLAIN. All identity,
+stats and participation inserts together took 1.81 seconds. The producer and
+dataset fixtures already use bulk SQL and retain their per-job transaction and
+ANALYZE sequence. Recovery candidate selection already uses set-based inserts
+in bounded transactions. Its five measured EXPLAIN calls took 82 ms combined.
+
+The removal queue and recovery race files each spent about eight seconds
+writing a cohort of independent fixture files before database publication.
+Batching those writes in groups of eight keeps the same file contents and
+ordered inputs, and all writes complete before the database work starts.
+The comparison used the same lane and tier with a fresh scratch database per
+check. Three interleaved runs per variant produced these medians.
+
+| Check | Sequential seed | Bounded seed | Saved |
+| --- | ---: | ---: | ---: |
+| #174 removal queue | 17.29 s | 12.02 s | 5.27 s |
+| #229 recovery races | 13.05 s | 7.86 s | 5.19 s |
+
+The measured check includes harness setup and cleanup. Only these two
+changes cleared the three-second gate. The real storage adapter, SQL,
+assertions, workload sizes and lock-ordering waits are unchanged. The
+[profile and validation receipt](evidence/ci-250/checkpoint-3-slow-checks.json)
+records the trials and the local full-suite check. Final hosted qualification
+still needs three comparable runs.
