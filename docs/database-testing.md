@@ -316,30 +316,46 @@ It is validation evidence, not a passing integration run.
 
 ## CI enforcement
 
-On PRs to `main` and pushes to `main`, `App checks` and `DB integration` run
-independently on Linux. The database job runs a clean Node 24 `npm ci`, the
-target/bootstrap/report guards, and `npm run test:db:local`. The local command
-requires migration/reference integrity, all named database cases and freshly
-rebuilt contract equality to succeed. This uses the same Compose file,
-image digest, health check, loopback port, throwaway credentials, and tmpfs as
-the laptop command. The separate feature-store CI step also runs preflight
-before dispatch. An additional `always()` cleanup step runs
-`npm run test:db:down`; no production credentials or external database access
-are configured in either CI job.
+The local `npm run test:feature-store:db` command uses fresh migrations for its
+scratch fixtures. For the CI-equivalent template run, start the standard
+fixture, set `TEST_DATABASE_URL` for that lane and run
+`node scripts/db/test-db.mjs feature-store`.
 
-The sole job named `CI` depends on both jobs and uses `if: always()` with
-`permissions: {}` and no checkout. It fails unless both dependency results are
-exactly `success`, including when a dependency failed, was cancelled, or was
-skipped. This retains the existing ruleset's required `CI` check without a
-settings change. Workflow cancellation can cancel the gate itself; cancellation
-does not provide a successful required check. GitHub documents these results
-in the [needs context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context).
+On PRs to `main`, pushes to `main` and manual checkpoints, `App checks`,
+`DB integration / Core` and `DB integration / Feature store` run independently
+on Linux. Each DB job computes and validates the same affected-selection plan
+locally. The core job runs the target/bootstrap/report guards, verifies startup
+and failure cleanup when either DB suite is selected, and runs
+`npm run test:db:local` when selected. The local command requires
+migration/reference integrity, all named database cases and freshly rebuilt
+contract equality.
+
+The feature-store job starts its own standard fixture and runs preflight before
+the selected suite. The guarded runner holds the lane lease, applies the
+migration chain and four default feature-store proposals once, and seals that
+database. Serial harness calls clone it through the private run manifest.
+Schema-specific checks still create a fresh fixture. The runner compares the
+fresh and cloned catalogs and grants, and refuses stale proposal input.
+It logs template build time, shared-harness setup, callback and cleanup times,
+and total command wall time as observations. Each DB job has its own `always()` cleanup step.
+Both use the same Compose file, image digest, health check, loopback port,
+throwaway credentials and tmpfs as the laptop command. CI uses disposable
+PostgreSQL without application credentials or external database access.
+
+The sole job named `CI` depends on all three jobs and uses `if: always()` with
+`permissions: {}` and no checkout. It requires successful dependency results,
+agreement between the DB plans and matching raw outcomes for selection,
+execution and both cleanups. This retains the existing ruleset's required
+`CI` check without a settings change. Workflow cancellation can cancel the
+gate itself. GitHub documents these results in the
+[needs context](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#needs-context).
 
 `npm run test:ci-gate` extracts and executes the actual inline gate shell script
-against all 16 combinations of GitHub's four job results. It also rejects empty
-or unexpected results and checks the gate's always-run condition, dependency
-list, unique check name, empty permissions, and absence of checkout. This runs
-inside `App checks`. The extraction checks the current YAML block layout;
+against all 64 combinations of GitHub's four job results. It also tests missing
+results, contradictory selection, omitted execution and failed cleanup. It
+checks the gate's always-run condition, dependency list, unique check name,
+empty permissions and absence of checkout. This runs inside `App checks`.
+The extraction checks the current YAML block layout.
 `actionlint` remains the workflow syntax validator.
 
 ### Hosted gate validation
@@ -351,11 +367,11 @@ validation branch with separately approved commits and pushes:
 1. Change only the database test command to
    `npm run test:db:local -- --testNamePattern='^bootstraps'`. Open a draft PR to
    `main` so the actual workflow runs. The one-case suite must be rejected by
-   the mandatory-report guard, `DB integration` must fail, and `CI` must run
-   and fail with its database result shown as `failure`. Record the run URL,
-   commit, job results, and cleanup evidence on #45.
+   the mandatory-report guard. `DB integration / Core` and `CI` must fail so
+   incomplete coverage cannot satisfy the required check. Record the run URL,
+   commit, job results and cleanup evidence on #45.
 2. Restore the database command in a follow-up commit without rewriting
-   history. Obtain a complete successful run showing both upstream jobs and
+   history. Obtain a complete successful run showing all upstream jobs and
    `CI` passing and record it. Close the validation PR without merging it, then
    delete its temporary local and remote branches.
 3. Obtain passing checks on the final feature PR before the owner merges it.
