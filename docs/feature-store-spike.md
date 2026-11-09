@@ -159,10 +159,16 @@ it is not an integrity certificate.
   `fs138_reader` has SELECT only. Neither role has schema CREATE or DELETE; a later
   narrow governance path handles mandatory deletion. No default writer grants are
   assumed for future tables, to prevent silently widening access.
-- Database `clock_timestamp()` stamps profile/rights/job knowledge time, snapshot
-  ingestion and job completion. Actual source publication/capture times remain
-  separate. The rights probe proves a new decision is excluded by an earlier
-  knowledge cutoff; the application rights selector is still step 5 work.
+- Database `clock_timestamp()` stamps profile and rights `recorded_at`, job
+  `recorded_at` and `finished_at`, and snapshot `ingested_at`. The worker reports
+  `captured_at` at download completion, and the source asset supplies
+  `available_at`. Store capture time verbatim as an observation so clock skew
+  cannot reject a valid ingest. The producer creates the job before inserting the
+  snapshot, and the foreign key requires that owner to exist. The triggers stamp
+  those inserts in order. That sequence remains causal even if the database wall
+  clock steps backward. Strict visibility still uses source availability, database
+  ingestion and job completion at the requested cutoff. The rights probe proves
+  a new decision is excluded by an earlier knowledge cutoff.
 - Job identity includes kind, input-set digest, code SHA and policy digest. Only
   the insert winner executes. Retrying an existing running/failed/succeeded identity
   returns its state; automatic retry/recovery of abandoned jobs is not implemented.

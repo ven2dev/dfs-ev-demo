@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -25,14 +26,41 @@ test("#138 ingestion and bitemporal selection", { timeout: 120_000 }, async (t) 
       const check = async (name: string, run: () => Promise<void>) => {
         await t.test(name, async () => { await run(); probes.push({ name, verdict: "pass" }); });
       };
-      await check("trusted pipeline ingests atomically and retry does not republish", async () => {
+      const ingestWithCaptureSkew = async (fixture: ReturnType<typeof sourceFixture>, skewSeconds: number) => {
+        const { rows: [clock] } = await admin.query<{ capture: string }>(
+          "SELECT (clock_timestamp() + make_interval(secs => $1))::text AS capture", [skewSeconds]);
         const before = queryCounts.writer;
-        first = await ingestSource(writer, store, initial.asset, code, { download });
-        assert.equal(first.status, "ingested");
+        const result = await ingestSource(writer, store, fixture.asset, code, {
+          download: async () => ({ bytes: fixture.bytes, capturedAt: clock.capture, requests: 1 }),
+        });
+        assert.equal(result.status, "ingested");
         assert.equal(queryCounts.writer - before, 12);
+        const { rows: [snapshot] } = await reader.query(`
+          SELECT s.captured_at = $2::timestamptz AS preserved, s.captured_at > s.ingested_at AS ahead,
+            j.recorded_at <= s.ingested_at AND s.ingested_at <= j.finished_at AS ordered
+          FROM fs138.source_snapshots s JOIN fs138.job_runs j USING (job_id)
+          WHERE s.snapshot_id = $1 AND j.job_id = $3 AND j.status = 'succeeded'`,
+        [result.snapshotId, clock.capture, result.jobId]);
+        assert.deepEqual(snapshot, { preserved: true, ahead: skewSeconds > 0, ordered: true });
+        return result;
+      };
+      await check("trusted pipeline ingests atomically and retry does not republish", async () => {
+        first = await ingestWithCaptureSkew(initial, 30);
         assert.equal((await reader.query("SELECT passing_yards FROM fs138.norm_player_game_stats")).rows[0].passing_yards, 0);
         assert.equal((await ingestSource(writer, store, initial.asset, code, { download })).status, "already-processed");
         assert.equal((await reader.query("SELECT count(*)::int AS n FROM fs138.source_snapshots")).rows[0].n, 1);
+      });
+
+      await check("snapshot with a missing owner is refused by the foreign key", async () => {
+        const digest = sha256(Buffer.from("missing owner snapshot"));
+        await assert.rejects(writer.query(`
+          INSERT INTO fs138.source_snapshots
+            (profile_id, job_id, sha256, byte_size, object_key, media_type, decoded_sha256, header_sha256,
+             row_count, captured_at, available_at, evidence_basis)
+          SELECT profile_id, $2, $3::text, byte_size, 'raw/' || $3, media_type, decoded_sha256, header_sha256,
+                 row_count, captured_at, available_at, evidence_basis
+          FROM fs138.source_snapshots WHERE snapshot_id = $1`,
+        [first.snapshotId, randomUUID(), digest]), { code: "23503", constraint: "source_snapshots_job_id_fkey" });
       });
 
       await check("raw upload is outside the transaction and a cleaner-winning race cannot publish",async()=>{
@@ -86,7 +114,7 @@ test("#138 ingestion and bitemporal selection", { timeout: 120_000 }, async (t) 
         const changed = [...STAT_ROW]; changed[8] = "250";
         const second = sourceFixture(csvFixture(STAT_HEADER, [changed]));
         second.asset.asset_updated_at = "2021-01-02T00:00:00Z";
-        await ingestSource(writer, store, second.asset, code, { download: async () => ({ bytes: second.bytes, capturedAt: new Date().toISOString(), requests: 1 }) });
+        await ingestWithCaptureSkew(second, -30);
         const oldRows = await readNormalizedAsOf(reader, { cutoff: "2021-01-01T00:00:00Z", checkpoint, mode: "retrospective-reconstruction-v1" });
         assert.equal(oldRows[0].data?.passing_yards, 0);
         const now = (await admin.query("SELECT clock_timestamp()::text AS clock")).rows[0].clock;
@@ -155,6 +183,6 @@ test("#138 ingestion and bitemporal selection", { timeout: 120_000 }, async (t) 
     await rm(root, { recursive: true, force: true });
     if (process.env.FEATURE_STORE_EVIDENCE_PATH) await writeFile(process.env.FEATURE_STORE_EVIDENCE_PATH,
       JSON.stringify({ issue: 138, step: 3, workload: "synthetic ingestion/as-of probes", probes,
-        verdict: probes.length === 10 ? "pass" : "fail" }, null, 2) + "\n");
+        verdict: probes.length === 11 ? "pass" : "fail" }, null, 2) + "\n");
   }
 });

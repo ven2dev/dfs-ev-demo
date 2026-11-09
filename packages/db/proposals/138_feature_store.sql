@@ -66,14 +66,13 @@ CREATE TABLE fs138.source_snapshots (
   decoded_sha256 fs138.sha256 NOT NULL,
   header_sha256 fs138.sha256 NOT NULL,
   row_count integer NOT NULL CHECK (row_count >= 0),
-  captured_at timestamptz NOT NULL,
+  captured_at timestamptz NOT NULL, -- Host observation, separate from DB ingestion time.
   available_at timestamptz NOT NULL,
   ingested_at timestamptz NOT NULL,
   evidence_basis text NOT NULL CHECK (evidence_basis IN ('prospective', 'retrospective')),
   deleted_at timestamptz,
   source_manifest jsonb NOT NULL DEFAULT '{}' CHECK (jsonb_typeof(source_manifest) = 'object'),
-  UNIQUE (profile_id, sha256),
-  CHECK (captured_at <= ingested_at)
+  UNIQUE (profile_id, sha256)
 );
 CREATE INDEX snapshot_as_of ON fs138.source_snapshots (profile_id, available_at DESC, ingested_at DESC);
 
