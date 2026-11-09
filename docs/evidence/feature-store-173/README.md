@@ -226,11 +226,36 @@ The cross-clock rule is fixed by #258. Snapshot ordering
 `job.recorded_at <= snapshot.ingested_at <= job.finished_at` is checked by tests,
 not a database constraint; the owner foreign key remains. The #231/#241 commit
 visibility gap is still accepted. The adopted checkpoint retains the separate
-`domainPackage.test.ts` 5 s timeout CI exception, with both DB jobs passing.
+`domainPackage.test.ts` 5 s timeout CI exception
+([#260](https://github.com/ven2dev/dfs-ev-demo/issues/260)), with both DB jobs passing.
 
 Lane-3 teardown was verified at `2026-11-09T09:15:50Z`, with no lane-3 containers
-or networks remaining; ALT received the all-clear. The new qualification awaits
-commit approval. Step 4's integrated go/no-go is still pending.
+or networks remaining; ALT received the all-clear. The new qualification was
+committed as `0cdbe3a` after owner approval.
+
+## Step 4: scoped final verdict
+
+The [written decision](../../feature-store-thin-slice-verdict.md#final-gono-go-at-d661b02)
+records **GO for bounded local retrospective research** on the pinned fixture
+at `d661b02`, and **NO-GO for public or hosted use**. All four capacity targets
+pass: #258 at `cad93c9` qualifies ingestion/features, and the renewed step 3
+receipt qualifies dataset/prediction. No workload or database was started for
+step 4, and no existing ledger, receipt or bundle was rewritten.
+
+The decision keeps historical availability unverified (2,504 retrospective,
+zero strict forecasts), population completeness unestablished (#54), and all
+183 infinite log-loss cases visible. Rights remain scoped by #171/#197, with
+new participation-derived public outputs held and #256's qualified CC BY-SA
+notice review open. The intended hosted pipeline role/driver is unqualified;
+R2's live proof used synthetic data only. Review-provenance gaps and the
+accepted #231/#241 visibility gap remain. #258 fixed the cross-clock rule;
+snapshot ordering is checked by tests, not a database constraint. App and CI
+fail under the checkpoint's owner-accepted #260 timeout exception.
+
+The PR draft and review handoff are prepared locally. Step 4 was committed
+after direct owner approval; independent review and fresh consent remain required
+before any push. No public release, deployment, migration freeze, UI integration
+or #54 completion follows.
 
 ## Publication storage boundary
 
@@ -248,3 +273,9 @@ values, verdicts and source identities were not changed or rerun.
 These archives contain full forecast responses and/or sampled dataset rows,
 not just timing metadata. The original commits and exact bytes remain in a
 local-only backup and private ObjectStore. Do not push the backup tag.
+
+The [publication inventory](publication-inventory.json) records the scan of all
+5 archives / 123 members, including 1,206 JSON-encoded strings. Step 2
+and the stopped-run archive have no row-payload matches and remain in-tree.
+The compact receipts/ledger also have no row-payload matches. The PR remains
+blocked pending review; no backup ref or private archive is approved for push.

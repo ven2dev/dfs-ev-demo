@@ -1,12 +1,11 @@
 # Thin-slice readiness verdict (#173)
 
-Step 1 is committed as `be53387`; step 2 as `43a3802`; the original step 3
-evidence as `6e1daa6`. The owner adopted `d661b02`, merged as `83bb28f`, and
-approved renewing both matrices. They passed in one confirmed quiet window,
-prediction first. The new checkpoint qualification awaits commit approval.
-Lane-3 is down and ALT has the all-clear. The final integrated verdict and
-review handoff remain step 4. This document does not claim that the full thin
-slice passed.
+Original history: step 1 is `be53387`; step 2 is `43a3802`; the original step 3
+evidence is `6e1daa6`. The owner adopted `d661b02`, merged as `83bb28f`, and
+approved renewing both matrices. Their passing qualification is committed as
+`0cdbe3a`. Step 4 records the scoped final engineering verdict below and was
+committed after direct owner approval; independent review remains pending.
+Lane-3 is down and ALT has the all-clear.
 
 Checkpoint: `d661b022780e243dff9e0f126351f43a9e3fc2da`, measured at
 `83bb28f329fcb8b457dff9eba2119dea8ca02b98`. The owner originally created
@@ -15,6 +14,58 @@ unchanged as history. The
 [approved roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/173#issuecomment-6734499691)
 authorizes documentation and the scoped reruns, with commit approval after each
 step and a confirmed quiet window before either rerun.
+
+## Final go/no-go at d661b02
+
+**GO for bounded local retrospective research on the pinned fixture. NO-GO for
+public release or hosted operation.** This is a scoped engineering readiness
+decision, with the owner-accepted CI exception and review-provenance gaps below.
+It does not turn closed successor issues into an unconditional full #138 pass.
+
+| Use or claim | Decision | Basis and boundary |
+| --- | --- | --- |
+| Existing private local research: reproduce the pinned retrospective dataset, scoring and governed predictions | **GO, limited** | Integrated assessment, retained behavior evidence and all four capacity targets pass within their stated fixture/source scope. Use the existing rights checks and trusted owner/restricted-reader model. This grants no new distribution permission. |
+| Strict historical forecasting or a claim of pregame predictive availability | **NO-GO / blocked** | All 2,504 evaluated forecasts are retrospective; strict forecasts are zero. `historical-availability-unverified` remains visible. Correct event-time cutoffs do not prove when corrected historical inputs were actually available. |
+| Population-complete evaluation | **NO-GO / blocked** | Identity and participation gaps remain. This fixture does not establish [#54](https://github.com/ven2dev/dfs-ev-demo/issues/54) completeness. |
+| New participation-derived public API/UI responses, downloads, models, reports or evidence | **NO-GO / blocked** | #171's declarations have limited scope; #197 holds new affected public outputs for output/channel decisions and #53 enforcement. [#256](https://github.com/ven2dev/dfs-ev-demo/issues/256) remains open for qualified CC BY-SA notice-scope review. Existing notices are not blanket clearance. |
+| Hosted pipeline, database or object-store operation | **NO-GO / blocked** | The intended pipeline role and driver have not been qualified. R2's live contract used synthetic data only; newer bounded methods, default-store adoption and hosted latency remain unqualified. Local timing does not establish hosted or concurrent capacity. |
+
+The capacity decision is **PASS for all four targets**, with unchanged deadlines
+and deterministic budgets. Ingestion and features cite #258's requalification
+at `cad93c9`; dataset and prediction cite the renewed step 3 matrix at `83bb28f`.
+The [capacity table](#capacity-verdict-at-the-current-checkpoint) and
+[requalification record](evidence/feature-store-173/step-3-requalification-20261109T091550Z.json)
+bind those results to `d661b02`. No new timing or database run was needed for
+this written decision.
+
+The 183 positive-infinity log-loss cases, excluded/unavailable groups and empty
+strata remain part of the scoring record. Local research GO does not mean the
+model beat an independent baseline, has demonstrated ROI, or passed a new
+statistical threshold; none was preregistered. Genuine market comparison is
+still unavailable. Historical scoring evidence is retained rather than silently
+rescored at this checkpoint.
+
+The cross-clock rule is **fixed by #258**. Host `captured_at` remains an
+observation; snapshot ordering
+`job.recorded_at <= snapshot.ingested_at <= job.finished_at` is checked by tests,
+not a database constraint. The owner foreign key remains. The separate
+#231/#241 terminal-UPDATE-to-COMMIT visibility gap remains accepted.
+
+Two verification limits remain explicit:
+
+- **CI exception:** at `d661b02`, App checks and aggregate CI fail on
+  `domainPackage.test.ts`'s 5 s timeout, tracked by
+  [#260](https://github.com/ven2dev/dfs-ev-demo/issues/260). Both DB jobs pass.
+  The owner accepts this exception for the checkpoint; it is not a green-CI claim.
+- **Review history:** the source/review table and immutable ledger preserve
+  receipt-only reviews, missing exact final reviewed SHAs/ranges and
+  owner-confirmed reviews without a supplied range. Merge, checksum verification
+  and this implementing agent's assessment do not fill those gaps. Independent
+  review of the final #173 branch is still required before push.
+
+This closes the written readiness decision's scope while retaining blocked
+public, hosted, strict-history and population claims. No migration freeze,
+deployment, product UI integration or #54 completion follows from local GO.
 
 ## Design basis
 
@@ -74,7 +125,8 @@ The sole App failure at the pinned checkpoint was
 `services/pipeline/tests/feature-store/domainPackage.test.ts:8` reaching the
 5,000 ms test timeout. The adopted `d661b02` App log has the same sole failed
 test, and both DB jobs pass. The aggregate CI failed because App failed. This
-remains the checkpoint's owner-accepted CI exception, handled separately; the
+remains the checkpoint's owner-accepted CI exception, tracked in
+[#260](https://github.com/ven2dev/dfs-ev-demo/issues/260); the
 earlier green checkpoint does not turn it into a pass. See the
 [original pinned CI run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42575488546)
 and [adopted checkpoint CI run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42589170484).
@@ -152,9 +204,9 @@ The step 2 assessment below covers affected integrated code once.
 | C31–C33 | ≥3 cold and ≥3 warm trials; no no-op capacity substitution; ≥100 predictions/trial; fresh cold process/connection, pinned diversity, disclosed caches; startup percentile/sample rules | #168, #169, #242 | Producer qualification passes on matching sources; step 3 prediction matrix passes at the approved checkpoint. Retain #168's original evidence version. |
 | C34–C35 | Every attempt kept, failures censored, refusals not successes; ABBA for actual comparisons only; ingestion includes network | #138, #169, #241, #242, #251 | Pass for evidence policy. #169 owner amendment measures live GitHub transfer plus exact pinned loopback ingestion; changed upstream bytes are observations. |
 | C36–C37 | Bounded integrity verification and independent recompute from exact raw bytes | #170, #244, #258 | Historical scrub pass: 16 objects / 246,304,787 bytes. #258's two replays at `cad93c9` match 103,468 normalized rows and 20 contexts; replay source content identity matches the adopted checkpoint. No replay rerun here. |
-| C38–C40 | Source declarations and scoped schedule permission; public ShareAlike disposition; actual Neon configuration separate from defaults | #171, #197 | Declaration/notice record passes in its scope. New public participation-derived outputs and intended pipeline-role/driver qualification remain blocked. |
+| C38–C40 | Source declarations and scoped schedule permission; public ShareAlike disposition; actual Neon configuration separate from defaults | #171, #197, #256 | Declaration/notice record passes in its scope. New public participation-derived outputs and intended pipeline-role/driver qualification remain blocked; qualified notice-scope review remains open in #256. |
 | C41 | External adapter owner amendment: R2 replaces original GCS/Blaze gate | #172 | Pass for synthetic live R2 contract at recorded adapter blobs; current bounded methods and public/default-store use are distinct claims. No GCS prerequisite remains active. |
-| C42–C45 | Independent review, integrated CI, original scope/successor split, explicit full go/no-go without deployment or population implications | #138, #173 | Review history gaps retained; pinned CI exception disclosed; final integrated assessment/verdict pending. |
+| C42–C45 | Independent review, integrated CI, original scope/successor split, explicit full go/no-go without deployment or population implications | #138, #173, #260 | Written scoped verdict complete. Review-history gaps remain, final #173 independent review is pending, and App/CI fail under the accepted #260 exception. No unconditional integrated pass. |
 | C46–C47 | Accepted terminal-UPDATE-to-COMMIT limitation and host/database cross-clock constraint | #231, #241, #258 | Visibility gap accepted. Cross-clock rule fixed by #258 at the adopted checkpoint; snapshot ordering is checked by tests, not a database constraint. |
 
 ## Source and review provenance
@@ -182,6 +234,16 @@ following short forms aid reading.
 | #244 / PR #253 | `42f9740` | Two committed CLI runs at `a946c82`; dirty-code guard follow-up | Qualification does not silently move to final head; exact independent reviewed range not supplied |
 | #251 / PR #252 | `00ced71` | Shared transfer/loopback refusal tests | Owner confirms `4ce685a..00ced71` |
 | #197 / PR #257 | `af5c828` | Approved data notices and output/channel hold dispositions | #197 closes its decision/documentation scope; product enforcement belongs to #53 |
+| #258 / PR #259 | `8a1c9f0` | Producer/replay requalification at `cad93c9`; proposal 138 bytes match `d661b02` | Owner directs reuse here; an exact independent final reviewed range was not supplied |
+
+Exact final independent reviewed SHAs/ranges are not established here for
+#138, #163, #164, #165, #170, #172, #244 or #258; this does not erase the scoped
+reviews, tested blobs or receipts listed above. #241's review is owner-confirmed
+without an exact range. #166's receipt identities and #167's session-confirmed
+step reviews retain their stated scope; later affected changes do not inherit
+them. The confirmed #242, #251 and #169 ranges and #168 reviewed head remain
+explicit. This provenance gap limits assurance; no missing review is invented
+to make the final checklist pass.
 
 ## Integrated assessment and offline validation (step 2)
 
@@ -488,7 +550,8 @@ policy; this issue does not copy it into a new bundle.
 
 Lane-3 teardown was verified at `2026-11-09T09:15:50Z`: no lane-3 containers or
 networks remain. The default lane was untouched and ALT received the all-clear.
-Stop for approval of the new qualification commit before step 4's final verdict.
+The qualification was committed as `0cdbe3a` after owner approval. The scoped
+final verdict is recorded above; all original measurement bytes are unchanged.
 
 ## Accepted exceptions and remaining limits
 
@@ -513,6 +576,8 @@ Stop for approval of the new qualification commit before step 4's final verdict.
   release copy, not every third-party right. #197 approves notices for the listed
   existing Git fixture/excerpts. New participation-derived API/UI, exports and
   artifacts remain held for output-specific decisions and #53 enforcement.
+  [#256](https://github.com/ven2dev/dfs-ev-demo/issues/256) remains open for
+  qualified review of the combined fixture/excerpt CC BY-SA notice scope.
   Notices do not clear public model release or change the application license.
 - **Hosted operations.** Console-role Neon timeout observations do not qualify
   the actual pipeline role/driver. Synthetic R2 proof does not establish hosted
@@ -529,7 +594,7 @@ Stop for approval of the new qualification commit before step 4's final verdict.
   convert any of them into a passing performance attempt. #169's earlier-source
   qualification remains history beside its final-source rerun.
 
-## Remaining sequence and estimate
+## Delivery and approval status
 
 1. Evidence/review ledger committed as `be53387` after owner approval.
 2. Integrated assessment and offline validation committed as `43a3802` after
@@ -540,15 +605,18 @@ Stop for approval of the new qualification commit before step 4's final verdict.
    output inventory, earlier stops and teardown evidence are retained. Lane-3
    is down and ALT has the all-clear. The original results are committed as
    `6e1daa6`. After adopting `d661b02` through merge `83bb28f`, both matrices
-   passed again in one owner-confirmed window. Stop for approval of this new
-   qualification before step 4. The original receipts stay unchanged.
-4. Record the final go/no-go and review handoff, then stop for commit approval.
-   Fresh consent after review is required before push.
+   passed again in one owner-confirmed window. Their qualification is committed
+   as `0cdbe3a`. The original receipts stay unchanged.
+4. The final scoped verdict was committed after direct owner approval. The
+   PR draft and handoff await review. Independent review and fresh consent are
+   required
+   before push; the draft's issue-closing reference does not close #173 by hand.
 
 Remaining approved planning range: 3.5–5 active hours including the reruns,
 excluding owner and quiet-window waits. Report and propose a split before
-exceeding five hours or adding repairs. No final qualification, public release,
-deployment, hosted write or Production command is authorized by this ledger.
+exceeding five hours or adding repairs. Step 4 is documentation and focused
+offline validation only. No further timing, public release, deployment, hosted
+write or Production command is authorized by this verdict.
 
 ## Publication storage boundary
 
@@ -559,3 +627,9 @@ ObjectStore. The [evidence index](evidence/feature-store-173/README.md#publicati
 binds their original SHA-256 hashes and byte sizes. The measurement/source
 identities above are the original retained identities, not new measurements
 at rewritten commit hashes. The local review handoff maps old to new commits.
+
+All five archives were scanned, including step 2 and JSON encoded inside
+strings; the [inventory](evidence/feature-store-173/publication-inventory.json)
+records the results. Only the three payload-containing archives were
+excluded. Step 4 had direct owner commit approval in this session; its
+independent review is still pending and the PR remains blocked until review.
