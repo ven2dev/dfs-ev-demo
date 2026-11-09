@@ -123,3 +123,77 @@ evidence from being overwritten. The common TypeScript evidence auditor verifies
 uncompressed hash/size before parsing, then compares the entire recomputed compact
 projection. Compact receipts keep every duration and refusal verdict; source bytes,
 full statement timings and PostgreSQL observations stay in the detailed record.
+
+## Final qualification
+
+The final matrix on committed sources `55d512b15c3e340c128d8b4195783faa00e29385`
+passed all 30 attempts on 2026-11-09. Each row has three cold/warm blocks; values
+below are seconds, with both ingestion legs included. No attempt was retried or
+replaced. The common auditor recalculates every result from the saved observations.
+
+| Workload | Cold 1 | Warm 1 | Cold 2 | Warm 2 | Cold 3 | Warm 3 | SQL each |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Schedule | 0.800 | 0.550 | 1.154 | 0.495 | 0.800 | 0.820 | 12 |
+| Stats 2025 | 1.311 | 1.139 | 3.066 | 1.116 | 1.309 | 1.147 | 12 |
+| Roster 2021 | 2.375 | 2.730 | 2.941 | 2.055 | 3.725 | 2.553 | 12 |
+| Participation 2023 | 9.710 | 26.511 | 18.117 | 11.276 | 9.787 | 6.996 | 12 |
+| Features 2025 | 6.602 | 6.732 | 6.835 | 6.435 | 6.949 | 6.507 | 8 |
+
+Worst ingestion was 26.511 s against 42 s, with 55.8% headroom under 60 s.
+That participation warm attempt retained its 24.025 s live transfer and 2.486 s
+pinned leg. Every leg met its 60 s deadline. Worst features were 6.949 s against
+84 s, with 94.2% headroom under 120 s. Every feature trial produced the same
+1,948 rows / 31,168 lineage links and content SHA-256
+`315806925202863e226a4a93f5d477b8a6d32cd38c5a4977a1d98f889bf242a9`.
+
+All 24 pinned ingestion receipts identify the test-only loopback transport,
+original pin, one request and one ObjectStore read. GitHub observations contacted
+`github.com` then `release-assets.githubusercontent.com`. The live schedule was
+516,594 bytes with SHA-256
+`3844c95be80df89d4756ab8ea0212101f0cc5c3cb628e72f8d2d7eea69c185fb`,
+versus the unchanged 515,250-byte original. All six observations recorded drift;
+the other three representatives matched their pins. This neither refreshes the
+fixture nor treats changed upstream bytes as a failed transfer. Verified trial
+raw downloads were deleted through ObjectStore; no raw downloads enter git.
+
+Fifteen distinct block containers confirm one reset before each cold/warm block.
+All 30 attempts used distinct processes, fresh scratch databases and empty
+destinations. The actual mount was 2,147,483,648 bytes. Sampled peak use was
+326,615,040 bytes (311.484 MiB); peak growth was 278,175,744 bytes (265.289 MiB),
+below the unchanged 489,472,000-byte growth basis. Ingestion peak was 73.539 MiB.
+All admissions passed the 608 MiB free rule. The largest absolute block clock
+estimate was 1.624 ms, below 250 ms. Lane-3 was removed and absence verified at
+05:08:15.229Z; that quiet window is closed.
+
+### Final diagnostics
+
+The spike's approximately 57% warm slowdown did not recur: final warm totals
+changed by +1.98%, -5.85% and -6.36% relative to their paired cold totals.
+Every SQL duration remains in the detailed record; the two dominant statements
+and observed WAL deltas are shown below. These are observations, not gates.
+
+| Feature trial | Input selection (ms) | Materialization (ms) | WAL bytes delta | Sampled active autovacuum |
+| --- | ---: | ---: | ---: | --- |
+| Cold 1 | 2278.254 | 4026.180 | 13,729,935 | none |
+| Warm 1 | 2297.631 | 4281.133 | 14,144,272 | one observation |
+| Cold 2 | 2391.033 | 4098.056 | 13,805,007 | none |
+| Warm 2 | 2282.087 | 4006.097 | 13,736,892 | none |
+| Cold 3 | 2305.516 | 4345.367 | 13,770,100 | none |
+| Warm 3 | 2291.608 | 4066.140 | 13,742,052 | none |
+
+Checkpointer snapshots were identical before/after each individual trial.
+This is a statement about the snapshots, whose counters can lag, rather than
+proof of no checkpoint work. WAL record deltas were 104,081–106,805; full-page
+image deltas were one except warm 1's thirteen. Warm 1 sampled a worker running
+`VACUUM ANALYZE fs138.norm_participation` at 05:06:15.233Z, shortly after the
+05:06:15.171Z diagnostics boundary. Its table's autoanalyze count advanced from
+zero to one; its vacuum count stayed one. Other warm table maintenance counters
+were already present before timing, and no other active workers were sampled.
+Short activity can be missed and stats can lag. These observations do not
+establish what caused the earlier spike slowdown.
+
+The [evidence README](evidence/feature-store-169/README.md) identifies the compact
+receipts, exact compressed records, offline audit commands and retained discovery
+stops. The final record freezes all 77 source SHA-256 hashes, git blob IDs and exact
+source bytes, including `241_job_visibility.sql`. Documentation and evidence added
+after this run do not change the measured runner, auditor or producer sources.
