@@ -160,21 +160,77 @@ All attempts are kept, with no retry or replacement. Both capacity renewals now
 pass; earlier stopped and prediction evidence remains unchanged. Step 3 awaits
 commit approval. The final integrated go/no-go remains step 4.
 
-## Main advanced after qualification
+## Main advanced after the original qualification
 
 After the matrices finished, main advanced to `d661b02` through
 [#258 / PR #259](https://github.com/ven2dev/dfs-ev-demo/pull/259), removing the
 host/database cross-clock constraint. This is not the separate test-timeout fix.
-The approved checkpoint remains `286f4d0`, measured at `43a3802`; receipt source
+Those receipts retain checkpoint `286f4d0`, measured at `43a3802`; their source
 identities are unchanged. Only `packages/db/proposals/138_feature_store.sql`
 differs among the prediction/dataset source maps. Its measured SHA-256 is
 `183007219f71c27ed98138bbc3a1c10d86782e3660d20fda225f314bfb89c97a`;
 new main has `50ea3a7b943d5b9b26766cee0d0930cec2a101979fffe448507f0d2babddc361`.
 The diff removes the CHECK and adds a comment, with no query/function/index
 change. These passes qualify the approved checkpoint, not the newer main.
-Adopting that checkpoint and determining reassessment scope need an owner
-decision; no merge or new timing run is implied. Historical ledgers, receipts
-and bundles remain unchanged.
+The owner then approved adoption and both reruns below. Historical ledgers,
+receipts and bundles remain unchanged.
+
+## Step 3: adopted-checkpoint requalification
+
+[`step-3-requalification-20261109T091550Z.json`](step-3-requalification-20261109T091550Z.json)
+and its [private archive reference](step-3-requalification-records-20261109T091550Z.reference.json)
+qualify `d661b02`, measured at merge `83bb28f`. The earlier nine-file step 3
+evidence was committed as `6e1daa6` before that merge. Both matrices ran in one
+owner-confirmed quiet window on lane-3 large, prediction first, with unchanged
+targets/budgets/deadlines and no retries or replacements.
+
+Prediction: 600/600 pass; worst full-path p95 120.110 ms, maximum sample
+172.723 ms, maximum startup 151.342 ms. All six trials and `trial-p95-v2`
+startup gates pass, with 3 SQL / 2 checks / 1 GET per sample. The existing
+auditor, rights/deletion controls, diversity and 300 cold-process checks pass.
+All 64 measured source hashes/blob IDs match the adopted checkpoint.
+
+Dataset: three fresh-process cold builds (506.727 / 435.916 / 446.178 ms) and
+three warm builds (354.645 / 343.859 / 363.358 ms), each 8 SQL / 2 checks and
+2,504 rows. Exact bytes match within the matrix and the original natural hash
+is preserved. All 48 measured source hashes/blob IDs match the checkpoint.
+The legacy issue/step/deletion-pass label is scoped to the six dataset builds;
+historical deletion/rebuild probes were not rerun.
+
+The `fs173-checkpoint-requalification-v1` wrapper contains observed mount,
+admission and PostgreSQL settings for each matrix. Six offline routing checks
+and all 72 output-file hashes/sizes verify. Explicit new output directories
+were reserved before startup; results came only from those exact paths. The
+three inventories were captured after teardown, before packaging, excluding
+themselves. OS/file/database caches remain unflushed and preparation-warmed;
+no cold-disk or hosted claim follows. The old runner's hardcoded 512 MiB field
+is distinguished from the observed 2 GiB mount.
+
+The owner directed reuse of #258's producer/replay requalification at `cad93c9`.
+The new wrapper binds those receipt hashes: all 30 producer attempts pass,
+maximum ingestion pair 11.588 s / feature job 4.813 s; all 77 producer pins
+match. Both replay hashes and current source content identity verify, with
+103,468 normalized rows and 20 contexts per run. Proposal 138's bytes match
+`d661b02`. These are receipt/source checks, not new producer or replay runs.
+The detailed producer archive remains outside Git per #197 and is not copied.
+
+The 35-member mirror contains both full/compact measurement records, source
+verification and citations, the three output inventories, routing checks,
+driver sources/diffs and lifecycle/settings logs. All members and the bundle
+were persisted/read back through ObjectStore. Verify bundle SHA-256
+`5804fab749f8bc88676092821e1a413a5130d012baa83c7a73df341204211b98`
+and `storage.members`; do not use the older generic receipt-projection schema.
+Raw fixture and full dataset bytes remain in ObjectStore.
+
+The cross-clock rule is fixed by #258. Snapshot ordering
+`job.recorded_at <= snapshot.ingested_at <= job.finished_at` is checked by tests,
+not a database constraint; the owner foreign key remains. The #231/#241 commit
+visibility gap is still accepted. The adopted checkpoint retains the separate
+`domainPackage.test.ts` 5 s timeout CI exception, with both DB jobs passing.
+
+Lane-3 teardown was verified at `2026-11-09T09:15:50Z`, with no lane-3 containers
+or networks remaining; ALT received the all-clear. The new qualification awaits
+commit approval. Step 4's integrated go/no-go is still pending.
 
 ## Publication storage boundary
 
@@ -187,6 +243,7 @@ values, verdicts and source identities were not changed or rerun.
 
 - [step-3-dataset-records-20261109T085139Z.tar.gz](step-3-dataset-records-20261109T085139Z.reference.json): 56,651 bytes, SHA-256 `5b9413ff07e6eb44cfd94c3cd788df96c1217d914893e583b2afb395e3dd3228`.
 - [step-3-prediction-records-20261109T084110Z.tar.gz](step-3-prediction-records-20261109T084110Z.reference.json): 325,665 bytes, SHA-256 `a9c6acac27d007d2fb5b15c8ea7744d9d99e07d2cc04a22a1b1779e273f919d1`.
+- [step-3-requalification-records-20261109T091550Z.tar.gz](step-3-requalification-records-20261109T091550Z.reference.json): 366,041 bytes, SHA-256 `5804fab749f8bc88676092821e1a413a5130d012baa83c7a73df341204211b98`.
 
 These archives contain full forecast responses and/or sampled dataset rows,
 not just timing metadata. The original commits and exact bytes remain in a

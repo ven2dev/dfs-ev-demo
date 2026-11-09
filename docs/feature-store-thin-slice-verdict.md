@@ -1,13 +1,17 @@
 # Thin-slice readiness verdict (#173)
 
-Step 1 is committed as `be53387`; step 2 as `43a3802`. Step 3's large-tier
-prediction and dataset matrices both passed, in separate owner-confirmed quiet
-windows. Step 3 is complete pending commit approval. Lane-3 is down and ALT has
-the all-clear. The final integrated verdict and review handoff remain step 4.
-This document does not claim that the full thin slice passed.
+Step 1 is committed as `be53387`; step 2 as `43a3802`; the original step 3
+evidence as `6e1daa6`. The owner adopted `d661b02`, merged as `83bb28f`, and
+approved renewing both matrices. They passed in one confirmed quiet window,
+prediction first. The new checkpoint qualification awaits commit approval.
+Lane-3 is down and ALT has the all-clear. The final integrated verdict and
+review handoff remain step 4. This document does not claim that the full thin
+slice passed.
 
-Checkpoint: `286f4d05d5d1eb34ec085a1a772f7e21afb40a27`. The owner created
-`feature/dfsEV-173-thin-slice-verdict` from this commit. The
+Checkpoint: `d661b022780e243dff9e0f126351f43a9e3fc2da`, measured at
+`83bb28f329fcb8b457dff9eba2119dea8ca02b98`. The owner originally created
+`feature/dfsEV-173-thin-slice-verdict` from `286f4d0`; its qualifications remain
+unchanged as history. The
 [approved roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/173#issuecomment-6734499691)
 authorizes documentation and the scoped reruns, with commit approval after each
 step and a confirmed quiet window before either rerun.
@@ -64,58 +68,65 @@ follows from a local go verdict.
 | --- | --- | --- | --- | --- | --- |
 | `7d1883f` | Pass | Pass | Pass | Pass | Integrated runtime checkpoint after #169 |
 | `286f4d0` | Fail | Pass | Pass | Fail | Same runtime code; #197 adds only documentation, notices and an inventory |
+| `d661b02` | Fail | Pass | Pass | Fail | Adopted checkpoint after #258; same known 5 s test-timeout exception |
 
 The sole App failure at the pinned checkpoint was
 `services/pipeline/tests/feature-store/domainPackage.test.ts:8` reaching the
-5,000 ms test timeout. The aggregate CI failed because App failed. This is a
-real failed check, handled separately; the earlier green checkpoint does not
-turn it into a pass. Both facts were accepted by the owner for #173's pin.
-See the [pinned CI run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42575488546).
+5,000 ms test timeout. The adopted `d661b02` App log has the same sole failed
+test, and both DB jobs pass. The aggregate CI failed because App failed. This
+remains the checkpoint's owner-accepted CI exception, handled separately; the
+earlier green checkpoint does not turn it into a pass. See the
+[original pinned CI run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42575488546)
+and [adopted checkpoint CI run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42589170484).
 If the timeout fix merges before this issue finishes, advance the checkpoint
 and reassess affected identities and checks. Do not inherit review across an
 affected code change.
 
-After both step 3 matrices finished, main advanced to `d661b02` through
+After the original step 3 matrices finished, main advanced to `d661b02` through
 [#258 / PR #259](https://github.com/ven2dev/dfs-ev-demo/pull/259). This is the
-snapshot-clock repair, not the separate test-timeout fix. The approved pin
-remains `286f4d0`; the measurements retain source `43a3802`. Of prediction's
+snapshot-clock repair, not the separate test-timeout fix. Those earlier
+measurements retain checkpoint `286f4d0` and source `43a3802`. Of prediction's
 64 source identities and dataset's 48, only
 `packages/db/proposals/138_feature_store.sql` differs on that newer main:
 `183007219f71c27ed98138bbc3a1c10d86782e3660d20fda225f314bfb89c97a`
 became `50ea3a7b943d5b9b26766cee0d0930cec2a101979fffe448507f0d2babddc361`.
 The change removes `CHECK (captured_at <= ingested_at)` and adds a clock comment;
-it changes no query, function or index. Neither receipt claims to measure that
-new source. Adoption of the newer main and the scope of any reassessment remain
-an owner decision before step 4; no merge or additional rerun has been performed.
+it changes no query, function or index. The owner approved adopting `d661b02`
+and rerunning prediction then dataset. The new qualification below measures
+that source; the earlier receipts retain their original identities and scope.
 
 ## Capacity verdict at the current checkpoint
 
 | Target | Verdict | Evidence scope |
 | --- | --- | --- |
-| Ingestion ≤42 s; each leg under 60 s; 12 SQL | Pass | #169 final 24 ingestion attempts: maximum pair 18.139 s. All 77 pinned source hashes match this checkpoint. |
-| Full-season features ≤84 s under 120 s; 8 SQL | Pass | #169 final six feature attempts: maximum 7.419 s. Same matching source inventory. |
-| Dataset ≤21 s under 30 s; 8 SQL / 2 checks | Pass | Large-tier current-source matrix at `43a3802`: 3 fresh-process cold + 3 warm builds, maximum 472.590 ms; all 48 source identities match. |
-| Prediction trial p95 ≤210 ms under 300 ms; 3 SQL / 2 checks / 1 GET | Pass | Large-tier current-source rerun at `43a3802`: six 100-sample trials pass, worst full-path p95 123.465 ms; all 64 source identities match. |
+| Ingestion ≤42 s; each leg under 60 s; 12 SQL | Pass | #258 requalification at `cad93c9`: 24 ingestion attempts, maximum pair 11.588 s. All 77 producer source hashes match the adopted checkpoint. |
+| Full-season features ≤84 s under 120 s; 8 SQL | Pass | Same #258 requalification: six feature attempts, maximum 4.813 s. No producer rerun in #173. |
+| Dataset ≤21 s under 30 s; 8 SQL / 2 checks | Pass | New large-tier matrix at `83bb28f`: 3 fresh-process cold + 3 warm builds, maximum 506.727 ms; all 48 source identities match `d661b02`. |
+| Prediction trial p95 ≤210 ms under 300 ms; 3 SQL / 2 checks / 1 GET | Pass | New large-tier matrix at `83bb28f`: six 100-sample trials pass, worst full-path p95 120.110 ms; all 64 source identities match `d661b02`. |
 
-Blocked means current qualification is incomplete, not that a numeric target
-was missed. The 21 s dataset claim was checked first. #138's fresh-process
+### Historical measurements that required renewal
+
+At the original `286f4d0` assessment, blocked meant qualification was incomplete,
+not that a numeric target was missed. The 21 s dataset claim was checked first.
+#138's fresh-process
 cold trials were 851.749 / 600.891 / 628.190 ms; warm trials were
 519.161 / 463.930 / 458.611 ms. #241's six candidate builds were
 467.146–504.940 ms, each 8 SQL / 2 checks, but its cold condition meant a new
 connection in the same Node process. That comparison is not the original
 fresh-process matrix.
 
-The #241 dataset source inventory has 27 files; seven differ now. The later
-`241_job_visibility.sql` change is comment-only, and `datasets.ts` still matches.
+At that original pin, #241's dataset inventory has 27 files; seven differ.
+The later `241_job_visibility.sql` change is comment-only, and `datasets.ts`
+still matches.
 Local ObjectStore adds bounded reads/page listing; ObjectStore later adds the
 verified-wire accessor registration. Harness, audit and compose changes are
 separate setup/environment drift. These byte changes are not evidence of a
 regression; neither do they establish current-source capacity.
 
 #242 measured six 100-sample trials at `4edb698`; the worst full-path p95 was
-170.547 ms and maximum startup 175.631 ms. Its 62-file inventory has seven
-changes. The handler, owner helper, domain math and proposal SQL match; the
-ObjectStore import graph changed, relevant to fresh-process startup. Ingest,
+170.547 ms and maximum startup 175.631 ms. Its 62-file inventory had seven
+changes at `286f4d0`. The handler, owner helper, domain math and proposal SQL
+matched; the ObjectStore import graph changed, relevant to fresh-process startup. Ingest,
 normalization, source transport, harness, auditor and compose changes are
 recorded separately. No historical receipt is relabelled as current proof.
 
@@ -133,18 +144,18 @@ The step 2 assessment below covers affected integrated code once.
 | C04–C07 | Exact original bytes through ObjectStore; atomic create-once; idempotent trusted jobs and real clocks; typed normalization and ambiguity/version/corruption refusal | #138, #163, #241, #251 | Pass for pinned probes. #241 adds missing completion boundaries; #251 production transport still refuses loopback. |
 | C08–C10 | Latest ≤16 prior eligible REG games, minimum 2; kickoff−1 h; exclude target/equal/future games in both modes; unavailable labels are not zero | #138, #163, #164, #241 | Pass for pinned event-time and population probes; historical availability remains unverified. |
 | C11–C12 | Corrections preserve old versions and permitted last-valid values; stale/superseded flags and conservative season lineage | #138, #241 | Pass for correction probes. Dataset stale now describes today's newest completed value, not a fallback at the requested time. |
-| C13–C16 | Immutable feature/label dataset pins, flag policy, exact and natural hashes; 2021 warm-up excluded; 8 SQL / 2 batched checks; dataset capacity | #138, #241 | Pinned behavior/work pass; step 3 fresh-process matrix passes at the approved checkpoint, maximum 472.590 ms. |
+| C13–C16 | Immutable feature/label dataset pins, flag policy, exact and natural hashes; 2021 warm-up excluded; 8 SQL / 2 batched checks; dataset capacity | #138, #241 | Pinned behavior/work pass; renewed step 3 fresh-process matrix passes at `d661b02`, maximum 506.727 ms. |
 | C17–C21 | Current rights and deletion races; upload before BEGIN; short writer address lock and metadata HEAD; readers without explicit coordination locks; delayed cleanup/pruning; scoped 2025 deletion | #138, #165, #166, #228, #229 | Pass for pinned behavior/work evidence. 1,948 features + 1,948 labels + 6 datasets invalidated; 5,517 earlier feature and label rows each survive unchanged without recomputation. |
 | C22–C24 | Immutable model/report pins; idempotent publication and bounded orphan recovery; two model-read queries and one GET per selected artifact | #165, #166, #231 | Pass for pinned publication, retry, lifecycle and work proofs. Normal-path and exceptional re-creation counts are distinguished. |
 | C25–C27 | Chronological folds; registered half-yard thresholds/Brier/log loss/calibration/integer RPS; seasons and n bands; preserve infinity; genuine market-only comparison | #164 | Pass for historical scoring proof: 2,504 retrospective/0 strict forecasts, 183 infinite-loss cases. Calibration correction changes 369 placements only. Current evaluation capacity is not newly qualified. |
 | C28–C30 | Governed predictor; selected-feature sample size; Q2 context and distinct receipts; evidence-mode refusal; one deadline, no partial/late delivery; owner-only disposal | #167, #168, #235 | Pass for pinned behavior proofs. Response excludes connection state; caller deadline only shortens 300 ms; owner helper applies disposition exactly once. |
 | C31–C33 | ≥3 cold and ≥3 warm trials; no no-op capacity substitution; ≥100 predictions/trial; fresh cold process/connection, pinned diversity, disclosed caches; startup percentile/sample rules | #168, #169, #242 | Producer qualification passes on matching sources; step 3 prediction matrix passes at the approved checkpoint. Retain #168's original evidence version. |
 | C34–C35 | Every attempt kept, failures censored, refusals not successes; ABBA for actual comparisons only; ingestion includes network | #138, #169, #241, #242, #251 | Pass for evidence policy. #169 owner amendment measures live GitHub transfer plus exact pinned loopback ingestion; changed upstream bytes are observations. |
-| C36–C37 | Bounded integrity verification and independent recompute from exact raw bytes | #170, #244 | Historical pass: 16 objects / 246,304,787 bytes scrubbed; two replays matched 103,468 normalized rows and 20 derived contexts. Current shared-source changes receive scoped assessment in step 2. |
+| C36–C37 | Bounded integrity verification and independent recompute from exact raw bytes | #170, #244, #258 | Historical scrub pass: 16 objects / 246,304,787 bytes. #258's two replays at `cad93c9` match 103,468 normalized rows and 20 contexts; replay source content identity matches the adopted checkpoint. No replay rerun here. |
 | C38–C40 | Source declarations and scoped schedule permission; public ShareAlike disposition; actual Neon configuration separate from defaults | #171, #197 | Declaration/notice record passes in its scope. New public participation-derived outputs and intended pipeline-role/driver qualification remain blocked. |
 | C41 | External adapter owner amendment: R2 replaces original GCS/Blaze gate | #172 | Pass for synthetic live R2 contract at recorded adapter blobs; current bounded methods and public/default-store use are distinct claims. No GCS prerequisite remains active. |
 | C42–C45 | Independent review, integrated CI, original scope/successor split, explicit full go/no-go without deployment or population implications | #138, #173 | Review history gaps retained; pinned CI exception disclosed; final integrated assessment/verdict pending. |
-| C46–C47 | Accepted terminal-UPDATE-to-COMMIT limitation and host/database cross-clock constraint | #231, #241, #258 | Visibility gap accepted. Cross-clock constraint remains at the approved checkpoint; #258 repaired it later on main, not yet adopted here. |
+| C46–C47 | Accepted terminal-UPDATE-to-COMMIT limitation and host/database cross-clock constraint | #231, #241, #258 | Visibility gap accepted. Cross-clock rule fixed by #258 at the adopted checkpoint; snapshot ordering is checked by tests, not a database constraint. |
 
 ## Source and review provenance
 
@@ -346,7 +357,7 @@ the output directory's file list, sizes and hashes in the dataset receipt, with
 the inventory boundary stated. The dataset continuation below completed in its
 own subsequently confirmed window.
 
-## Dataset qualification and completed step 3
+## Original dataset qualification at 286f4d0
 
 The owner confirmed a new quiet window for dataset only. Prediction's accepted
 `step-3-prediction-20261109T084110Z` qualification was retained without rerunning
@@ -395,8 +406,89 @@ the new compressed mirror retains detailed measurement records and metadata.
 No attempt was retried or replaced, and all six were kept. Lane-3 teardown
 completed at `2026-11-09T08:51:39Z`, with no remaining lane-3 containers or
 networks. The default lane was untouched, and ALT was given the all-clear.
-Both approved current-source capacity renewals are complete; stop for step 3
-commit approval before writing the final integrated verdict in step 4.
+Those two renewals qualified the original `286f4d0` checkpoint and were committed
+as `6e1daa6`. They remain history beside the adopted-checkpoint renewal below.
+
+## Adopted-checkpoint requalification at d661b02
+
+The owner approved committing the earlier nine-file evidence as `6e1daa6`,
+adopting `d661b02`, and repeating prediction then dataset in one quiet window.
+Merge `83bb28f` contains that checkpoint and only #173 documentation/evidence
+on top. The [new receipt](evidence/feature-store-173/step-3-requalification-20261109T091550Z.json)
+and [35-member private archive reference](evidence/feature-store-173/step-3-requalification-records-20261109T091550Z.reference.json)
+bind both completed matrices to `83bb28f`. All 64 prediction and 48 dataset
+source hashes/blob IDs match the committed source and `d661b02` exactly,
+including proposals 138 and 241. Earlier #173 receipts and bundles are unchanged.
+
+| Prediction trial | Full-path p95 (ms) | Cold startup p95 (ms) | Verdict |
+| --- | ---: | ---: | --- |
+| C1 | 120.110 | 91.628 | Pass |
+| W1 | 6.150 | — | Pass |
+| C2 | 119.867 | 92.429 | Pass |
+| W2 | 4.773 | — | Pass |
+| C3 | 119.591 | 92.406 | Pass |
+| W3 | 4.655 | — | Pass |
+
+All 600 samples succeeded with exactly 3 SQL / 2 checks / 1 GET, no request-path
+hashing, and the unchanged `trial-p95-v2` rule. Minimum trial deadline headroom
+is 59.96%. The maximum full path is 172.723 ms; maximum startup 151.342 ms,
+both within 300 ms. The pinned schedule covers 100 QBs, 32 teams, all 15
+season/history-band cells and every n=2–16, with a 1% maximum player share.
+The 300 cold samples have distinct processes. Rights-revocation and deletion
+controls refuse as expected; model-only work remains 2 SQL / 1 GET. The existing
+#242 auditor and compact projection recomputation pass.
+
+| Dataset round | Fresh-process cold (ms) | Warm (ms) | Work per build | Verdict |
+| --- | ---: | ---: | --- | --- |
+| 1 | 506.727 | 354.645 | 8 SQL / 2 batched checks | Pass |
+| 2 | 435.916 | 343.859 | 8 SQL / 2 batched checks | Pass |
+| 3 | 446.178 | 363.358 | 8 SQL / 2 batched checks | Pass |
+
+The six builds have at least 98.31% deadline headroom, 2,504 rows each and
+identical bytes within the matrix. The natural content hash remains
+`a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d`.
+Each build uses one point-in-time join, one object write, no per-row SQL and no
+raw-source reads; both rights/status checks allow the 16 profiles. Three cold
+PIDs and one warm PID are retained. The wrapper scopes the legacy issue/step
+and deletion-pass label to these builds only; deletion/rebuild probes were not
+rerun. Exact bytes, natural hash, coverage and no-lookahead checks pass.
+
+Lane-3 was unused before startup and ran with the large-tier 2 GiB mount.
+Admission free space was 2,099,044,352 bytes before prediction and 1,897,455,616
+before dataset, each above 637,534,208 bytes. Both receipts' observed settings
+are in the wrapper: PostgreSQL 18.6, `temp_file_limit=-1`, `work_mem=4MiB`,
+`shared_buffers=128MiB`, WAL max/min 1024/80 MiB and durability enabled. The
+settings observer's 15 s client timeout is separate from prediction's 300 ms.
+The original runner's hardcoded 512 MiB value remains identified as stale
+metadata. OS/file/database caches were unflushed and warmed by preparation;
+cold means a new application process and connection, not cold host storage.
+Warm work still checks current rights/status. No setting, target, budget or
+deadline changed.
+
+The disposable driver reserves three explicit, distinct new output directories
+before lane startup and rejects any existing path. It reads prediction's exact
+reported full path under the reserved prediction directory and dataset's exact
+receipt under its reserved directory. Six offline routing checks pass. The
+three post-teardown/pre-packaging inventories bind all 72 output files by name,
+size and SHA-256, excluding each inventory itself to avoid recursive digests.
+Packaging uses a separate ObjectStore root and preserves those files. Full raw
+fixture/dataset bytes stay in ObjectStore; the mirror contains measurements,
+metadata, driver diffs and lifecycle records. No sample was retried or replaced.
+
+For ingestion/features/replay, the owner directed reuse of
+[#258's requalification](evidence/feature-store-258/README.md) at `cad93c9`.
+All 77 producer pins match the adopted checkpoint; proposal 138 has SHA-256
+`50ea3a7b943d5b9b26766cee0d0930cec2a101979fffe448507f0d2babddc361`
+at both commits. Its 30 attempts passed: maximum ingestion pair 11.588 s
+(12 SQL), maximum feature job 4.813 s (8 SQL). Both replay receipt hashes and
+their source content identity verify; each records 103,468 normalized rows and
+20 contexts. These are source/receipt checks, not new producer/replay runs.
+The detailed producer archive remains outside Git under #197's distribution
+policy; this issue does not copy it into a new bundle.
+
+Lane-3 teardown was verified at `2026-11-09T09:15:50Z`: no lane-3 containers or
+networks remain. The default lane was untouched and ALT received the all-clear.
+Stop for approval of the new qualification commit before step 4's final verdict.
 
 ## Accepted exceptions and remaining limits
 
@@ -407,10 +499,12 @@ commit approval before writing the final integrated verdict in step 4.
   UPDATE before COMMIT. A cutoff in that window can change its answer after
   COMMIT; the measured 0.5 ms example remains a limitation.
 - **Cross-clock rule.** [#258](https://github.com/ven2dev/dfs-ev-demo/issues/258)
-  removed `captured_at <= ingested_at` later on main through PR #259. The rule
-  still exists at this approved checkpoint and compares a host timestamp with a
-  database timestamp. No clocks/timestamps were adjusted here. The newer main
-  has not been adopted or qualified by these receipts.
+  fixed `captured_at <= ingested_at` through PR #259, now adopted here. Host
+  capture remains an observation; snapshot ordering
+  (`job.recorded_at <= snapshot.ingested_at <= job.finished_at`) is checked by
+  tests, not by a database constraint. The owner foreign key remains enforced.
+  No clocks/timestamps were adjusted here. The accepted #231/#241 visibility
+  gap remains separate and unchanged.
 - **Scoring.** Preserve positive-infinity log loss, exclusions and empty strata.
   No accuracy/ROI threshold was registered. The empirical method is itself the
   naive baseline; no independent baseline was beaten. Market comparison is
@@ -444,7 +538,10 @@ commit approval before writing the final integrated verdict in step 4.
    `trial-p95-v2`, then the dataset's 3 fresh-process cold and 3 warm builds in
    a separately confirmed window. Settings, cache boundaries, source identities,
    output inventory, earlier stops and teardown evidence are retained. Lane-3
-   is down and ALT has the all-clear. Stop for step 3 commit approval.
+   is down and ALT has the all-clear. The original results are committed as
+   `6e1daa6`. After adopting `d661b02` through merge `83bb28f`, both matrices
+   passed again in one owner-confirmed window. Stop for approval of this new
+   qualification before step 4. The original receipts stay unchanged.
 4. Record the final go/no-go and review handoff, then stop for commit approval.
    Fresh consent after review is required before push.
 
