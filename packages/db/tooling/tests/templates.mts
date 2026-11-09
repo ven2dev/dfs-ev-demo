@@ -1,7 +1,7 @@
 import { randomBytes, createHash } from "node:crypto";
 import { constants } from "node:fs";
-import { mkdir, open, readdir, rm, lstat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { mkdir, open, readdir, readFile, rm, lstat, writeFile } from "node:fs/promises";
+import { basename, dirname, join, resolve } from "node:path";
 import { Client } from "pg";
 import { checkConnectedTarget, runScratchMigrations } from "../scripts/db-migrations/core.mjs";
 import { checkMigrationArtifacts } from "../scripts/db-migrations/files.mjs";
@@ -17,6 +17,7 @@ type Manifest = Readonly<{
   formatVersion: 1; runId: string; sourceDigest: string; target: Identity;
   templates: readonly TemplateReference[];
 }>;
+type Proposal = { name: string; bytes: Buffer };
 type Registry = { manifest: Manifest; directory: string; base: Base };
 const references = new WeakMap<TemplateReference, Registry>();
 const registries = new Map<string, Promise<Registry>>();
@@ -32,16 +33,36 @@ const comment = (manifest: Manifest, version: number) =>
   `dfs-ev-template:${manifest.runId}:${version}:${manifest.sourceDigest}`;
 
 let artifacts: ReturnType<typeof loadArtifacts> | undefined;
-async function loadArtifacts() {
+async function loadArtifacts(proposals: readonly Proposal[] = []) {
   const files = await checkMigrationArtifacts();
   const context = await prepareMigrationContext(files, await loadCatalogContracts(files));
   const sourceDigest = createHash("sha256").update(JSON.stringify({
     files: files.map(({ version, filename, sha256 }) => ({ version, filename, sha256 })),
     contracts: [context.contracts.ledger, ...context.contracts.migrations].map(({ catalogFingerprint }) => catalogFingerprint),
+    ...(proposals.length && { proposals: proposals.map(({ name, bytes }) =>
+      ({ name, sha256: createHash("sha256").update(bytes).digest("hex") })) }),
   })).digest("hex");
-  return { ...context, sourceDigest };
+  return { files: context.files as Array<{ version: number; filename: string; sha256: string; sql: string }>, contracts: context.contracts, sourceDigest };
 }
-const inputs = () => artifacts ??= loadArtifacts();
+const inputs = (proposals: readonly Proposal[] = []) =>
+  proposals.length ? loadArtifacts(proposals) : artifacts ??= loadArtifacts();
+
+const readProposals = (paths: readonly URL[]) => Promise.all(paths.map(async path =>
+  ({ name: basename(path.pathname), bytes: await readFile(path) })));
+
+async function applyProposals(client: Client, proposals: readonly Proposal[]) {
+  await client.query("BEGIN");
+  try {
+    for (const proposal of proposals) await client.query(proposal.bytes.toString("utf8"));
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  }
+}
+
+export const applyScratchProposals = async (client: Client, paths: readonly URL[]) =>
+  applyProposals(client, await readProposals(paths));
 
 // Pure validation happens before a manifest can grant access to any database.
 export function validateTemplateManifest(value: unknown, base: Base, sourceDigest: string, versionCount: number): Manifest {
@@ -77,22 +98,23 @@ async function readPrivateJson(path: string): Promise<unknown> {
   } finally { await file.close(); }
 }
 
-export async function getTemplateReference(environment: Environment, version?: number): Promise<TemplateReference> {
+export async function getTemplateReference(environment: Environment, version?: number, proposalPaths: readonly URL[] = []): Promise<TemplateReference> {
   assertNoApplicationCredentials(environment);
   const base = parseTestDatabaseUrl(environment.TEST_DATABASE_URL, environment.DB_TEST_LANE ?? "default");
   if (!environment.TEST_DATABASE_TEMPLATE_MANIFEST) throw new Error("DB template manifest required; run npm run test:db:local or test:db.");
   const path = resolve(environment.TEST_DATABASE_TEMPLATE_MANIFEST);
-  let registry = registries.get(path);
+  let registry = proposalPaths.length ? undefined : registries.get(path);
   if (!registry) {
     registry = (async () => {
       const directory = dirname(path);
       await privateDirectory(directory);
       await privateDirectory(join(directory, "clones"));
-      const { sourceDigest, files } = await inputs();
-      const manifest = validateTemplateManifest(await readPrivateJson(path), base, sourceDigest, files.length);
+      const { sourceDigest, files } = await inputs(await readProposals(proposalPaths));
+      const count = proposalPaths.length ? 1 : files.length;
+      const manifest = validateTemplateManifest(await readPrivateJson(path), base, sourceDigest, count);
       return { manifest, directory, base };
     })();
-    registries.set(path, registry);
+    if (!proposalPaths.length) registries.set(path, registry);
   }
   const context = await registry;
   if (JSON.stringify(identity(base)) !== JSON.stringify(context.manifest.target)) refuse();
@@ -125,13 +147,15 @@ export async function registerTemplateClone(admin: Client, reference: TemplateRe
   return { database, source: reference.database, release: () => rm(path, { force: true }) };
 }
 
-export async function createTemplateRun(environment: Environment, directory: string, signal?: AbortSignal) {
+export async function createTemplateRun(environment: Environment, directory: string, signal?: AbortSignal, proposalPaths: readonly URL[] = []) {
   assertNoApplicationCredentials(environment);
   const base = Object.freeze(parseTestDatabaseUrl(environment.TEST_DATABASE_URL, environment.DB_TEST_LANE ?? "default"));
   signal?.throwIfAborted();
   await privateDirectory(directory);
   if ((await readdir(directory)).length) throw new Error("DB template run requires an empty private directory.");
-  const { files, contracts, sourceDigest } = await inputs();
+  const proposals = await readProposals(proposalPaths);
+  const { files, contracts, sourceDigest } = await inputs(proposals);
+  const templateCount = proposals.length ? 1 : files.length;
   const cloneDirectory = join(directory, "clones");
   await mkdir(cloneDirectory, { mode: 0o700 });
   const manifestPath = join(directory, "templates.json");
@@ -193,7 +217,7 @@ export async function createTemplateRun(environment: Environment, directory: str
     await admin.connect();
     connected = true;
     await checkConnectedTarget(admin, base);
-    const builder = makeName();
+    const builder = proposals.length ? `dfs_ev_test_${runId}${sourceDigest.slice(0, 8)}` : makeName();
     owned.add(builder);
     await admin.query(`CREATE DATABASE "${builder}"`);
     // Associate an in-progress builder with its private run directory, before
@@ -201,13 +225,14 @@ export async function createTemplateRun(environment: Environment, directory: str
     const directoryDigest = createHash("sha256").update(resolve(directory)).digest("hex");
     await admin.query(`COMMENT ON DATABASE "${builder}" IS 'dfs-ev-template-builder:${runId}:${directoryDigest}'`);
     const expected = Object.freeze({ ...base, database: builder });
-    for (const file of files) {
+    const prefixes = proposals.length ? [files.length] : files.map(file => file.version);
+    for (const lastVersion of prefixes) {
       checkCancellation();
       const client = new Client(expected);
       try {
         await client.connect();
         await checkConnectedTarget(client, expected);
-        if (file.version === 1) {
+        if (!proposals.length && lastVersion === 1) {
           // Keep TS role-module loading out of the raw scratch/CLI path: those
           // commands intentionally have exact stderr contracts.
           const { ensureLegacyPredictiveRoles } = await import("./legacyRoles.ts");
@@ -215,28 +240,42 @@ export async function createTemplateRun(environment: Environment, directory: str
           await ensureLegacyPredictiveRoles(client);
           await ensureCorpusImporterRole(client);
         }
-        const result = await runScratchMigrations(client, { expected, files: files.slice(0, file.version),
+        const { executed }: { executed: number[] } = await runScratchMigrations(client, { expected, files: files.slice(0, lastVersion),
           assertTarget: assertOwned, verify: createCatalogVerifier(contracts) });
-        if (result.executed.length !== 1 || result.executed[0] !== file.version) throw new Error("DB template migration work budget exceeded.");
-        migrationVersions.push(...result.executed);
+        const expectedVersions = files.slice(migrationVersions.length, lastVersion).map(file => file.version);
+        if (executed.length !== expectedVersions.length ||
+            executed.some((version, index) => version !== expectedVersions[index])) {
+          throw new Error("DB template migration work budget exceeded.");
+        }
+        migrationVersions.push(...executed);
+        if (proposals.length) await applyProposals(client, proposals);
       } finally { await client.end(); }
       checkCancellation();
       // PostgreSQL copies a quiescent verified prefix. Sealing each snapshot
       // prevents a worker connection from mutating the shared fixture source.
-      const database = makeName();
-      owned.add(database);
-      await admin.query(`CREATE DATABASE "${database}" TEMPLATE "${builder}"`);
-      await admin.query(`COMMENT ON DATABASE "${database}" IS '${comment(markerManifest, file.version)}'`);
+      // The final proposal fixture has no migration prefixes. Seal its builder
+      // directly so the run retains just one source database.
+      const database = proposals.length ? builder : makeName();
+      if (!proposals.length) {
+        owned.add(database);
+        await admin.query(`CREATE DATABASE "${database}" TEMPLATE "${builder}"`);
+      }
+      // In a proposal manifest, version 1 identifies the single proposal template.
+      const version = templates.length + 1;
+      await admin.query(`COMMENT ON DATABASE "${database}" IS '${comment(markerManifest, version)}'`);
       await admin.query(`ALTER DATABASE "${database}" ALLOW_CONNECTIONS false`);
-      templates.push(Object.freeze({ database, version: file.version }));
+      templates.push(Object.freeze({ database, version }));
     }
-    await drop(builder);
-    owned.delete(builder);
-    const manifest = validateTemplateManifest(markerManifest, base, sourceDigest, files.length);
+    if (!proposals.length) {
+      await drop(builder);
+      owned.delete(builder);
+    }
+    const manifest = validateTemplateManifest(markerManifest, base, sourceDigest, templateCount);
     checkCancellation();
     await writeFile(manifestPath, JSON.stringify(manifest), { mode: 0o600, flag: "wx" });
     const stats = Object.freeze({ migrationVersions: Object.freeze([...migrationVersions]),
-      templateCount: templates.length, catalogVerifications: templates.length });
+      templateCount: templates.length, catalogVerifications: templates.length,
+      ...(proposals.length ? { sourceDigest, proposalCount: proposals.length } : {}) });
     return { manifestPath, stats, failureSignal: failure.signal, close };
   } catch (error) {
     try { await close(); } catch (cleanup) { throw new AggregateError([error, cleanup], "DB template build and cleanup failed."); }

@@ -144,6 +144,34 @@ async function runSuite(environment, filters, leaseSignal) {
   }
 }
 
+async function runFeatureStoreSuite(environment, signal) {
+  const { featureStoreProposals } = await import("../../services/pipeline/scripts/feature-store/fixture-proposals.ts");
+  const directory = await mkdtemp(join(tmpdir(), "dfs-ev-feature-template-"));
+  let templates;
+  let failure;
+  try {
+    const started = performance.now();
+    templates = await createTemplateRun(environment, directory, signal, featureStoreProposals);
+    console.log(JSON.stringify({ featureStoreTemplateSetup: { ...templates.stats, durationMs: performance.now() - started } }));
+    const executionSignal = AbortSignal.any([signal, templates.failureSignal]);
+    const result = await run(process.execPath, ["--disable-warning=MODULE_TYPELESS_PACKAGE_JSON", "--test",
+      "--test-concurrency=1", "services/pipeline/tests/feature-store/*.check.mts",
+      "services/pipeline/tests/feature-store/fixture-template.probe.mts"],
+    { ...environment, TEST_DATABASE_TEMPLATE_MANIFEST: templates.manifestPath }, executionSignal);
+    executionSignal.throwIfAborted();
+    return result;
+  } catch (error) {
+    failure = error;
+    throw error;
+  } finally {
+    try { await templates?.close(); }
+    catch (cleanup) {
+      if (failure) throw new AggregateError([failure, cleanup], "Feature-store suite and template cleanup failed.");
+      throw cleanup;
+    } finally { await rm(directory, { recursive: true, force: true }); }
+  }
+}
+
 async function main() {
   const [mode, ...filters] = process.argv.slice(2);
   assertNoApplicationCredentials(process.env);
@@ -160,16 +188,19 @@ async function main() {
     checkFixtureDisk(fixture);
     return 0;
   }
-  if (mode === "run") {
+  if (mode === "run" || mode === "feature-store") {
+    if (mode === "feature-store" && filters.length) throw new Error("Feature-store CI requires the full suite.");
     const lease = await startDatabaseTestRun(process.env);
     lease.failureSignal.addEventListener("abort", lostLock, { once: true });
     try {
       lease.failureSignal.throwIfAborted();
       checkFixtureDisk(fixture);
-      return await runSuite(process.env, filters, lease.failureSignal);
+      return mode === "feature-store"
+        ? await runFeatureStoreSuite(process.env, stop.signal)
+        : await runSuite(process.env, filters, lease.failureSignal);
     } finally { await lease.close(); }
   }
-  if (mode !== "local" && mode !== "repeat") throw new Error("Expected DB test mode: run, local, repeat, up, down, preflight, or url.");
+  if (mode !== "local" && mode !== "repeat") throw new Error("Expected DB test mode: run, feature-store, local, repeat, up, down, preflight, or url.");
   const repetitions = mode === "repeat" ? Number(filters.shift() ?? 20) : 1;
   if (!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 100 || (mode === "repeat" && filters.length)) {
     throw new Error("DB repetitions must be an integer from 1 to 100 with no test filters.");

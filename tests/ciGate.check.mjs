@@ -21,11 +21,13 @@ const validExecution = {
   DB_SELECTION_GUARD_RESULT: "success", DB_GUARD_RESULT: "success", DB_MODE: "affected",
   DB_LOCAL_SELECTED: "true", FEATURE_STORE_SELECTED: "true", DB_LIFECYCLE_RESULT: "success",
   DB_LOCAL_RESULT: "success", FEATURE_STORE_RESULT: "success", DB_CLEANUP_RESULT: "success",
+  FEATURE_PLAN_RESULT: "success", FEATURE_SELECTION_GUARD_RESULT: "success", FEATURE_MODE: "affected",
+  FEATURE_PLAN_DB_LOCAL: "true", FEATURE_PLAN_FEATURE_STORE: "true", FEATURE_CLEANUP_RESULT: "success",
 };
 
-function runGate(app, db, execution = {}) {
+function runGate(app, core, featureStore, execution = {}) {
   const result = spawnSync("bash", ["--noprofile", "--norc", "-e", "-o", "pipefail", "-c", script], {
-    env: { PATH: process.env.PATH, APP_RESULT: app, DB_RESULT: db, ...validExecution, ...execution },
+    env: { PATH: process.env.PATH, APP_RESULT: app, DB_CORE_RESULT: core, DB_FEATURE_JOB_RESULT: featureStore, ...validExecution, ...execution },
     encoding: "utf8",
     timeout: 5_000,
   });
@@ -41,49 +43,63 @@ test("CI is the sole aggregate check, always runs, and has no token permissions 
       .matchAll(/^    name: CI\s*$/gm)]);
   assert.equal(names.length, 1);
   assert.match(gate, /^    name: CI$/m);
-  assert.match(gate, /^    needs: \[app, db\]$/m);
+  assert.match(gate, /^    needs: \[app, db_core, db_feature_store\]$/m);
   assert.match(gate, /^    if: \$\{\{ always\(\) \}\}$/m);
   assert.match(gate, /^    permissions: \{\}$/m);
   assert.doesNotMatch(gate, /^\s+uses:/m);
   assert.equal([...gate.matchAll(/^      - name:/gm)].length, 1);
   assert.match(gate, /^        shell: bash$/m);
   assert.match(gate, /^          APP_RESULT: \$\{\{ needs\.app\.result \}\}$/m);
-  assert.match(gate, /^          DB_RESULT: \$\{\{ needs\.db\.result \}\}$/m);
+  assert.match(gate, /^          DB_FEATURE_JOB_RESULT: \$\{\{ needs\.db_feature_store\.result \}\}$/m);
+  assert.match(gate, /^          DB_CORE_RESULT: \$\{\{ needs\.db_core\.result \}\}$/m);
 });
 
-test("the actual gate script passes only success/success across all 16 GitHub job-result combinations", () => {
+test("the actual gate script requires success across all 64 GitHub job-result combinations", () => {
   const states = ["success", "failure", "cancelled", "skipped"];
   for (const app of states) {
-    for (const db of states) {
-      const result = runGate(app, db);
-      assert.equal(result.status, app === "success" && db === "success" ? 0 : 1,
-        `App checks=${app}, DB integration=${db}: ${result.stdout}${result.stderr}`);
+    for (const core of states) {
+      for (const featureStore of states) {
+        const result = runGate(app, core, featureStore);
+        assert.equal(result.status, [app, core, featureStore].every(state => state === "success") ? 0 : 1,
+          `App checks=${app}, core DB=${core}, feature-store DB=${featureStore}: ${result.stdout}${result.stderr}`);
+      }
     }
   }
 });
 
 test("missing or unexpected upstream results also fail the gate", () => {
   for (const state of ["", "unknown"]) {
-    assert.equal(runGate(state, "success").status, 1);
-    assert.equal(runGate("success", state).status, 1);
+    assert.equal(runGate(state, "success", "success").status, 1);
+    assert.equal(runGate("success", state, "success").status, 1);
+    assert.equal(runGate("success", "success", state).status, 1);
   }
 });
 
-test("feature-store PostgreSQL coverage runs sequentially on the standard fixture and cannot bypass the DB gate", () => {
-  const db = workflow.match(/^  db:\n((?:\n| {4}[^\n]*\n)+)/m)?.[1];
-  assert.ok(db, "Expected the DB integration job block.");
+const jobBlock = (name) => workflow.match(new RegExp(`^  ${name}:\\n((?:\\n| {4}[^\\n]*\\n)+)`, "m"))?.[1];
+
+test("database suites run on independent standard-fixture runners with their own cleanup", () => {
+  const core = jobBlock("db_core");
+  const db = jobBlock("db_feature_store");
+  assert.ok(core);
+  assert.ok(db);
   const feature = db.match(/^      - name: Verify feature-store PostgreSQL behavior on standard fixture\n((?: {8}[^\n]*\n)+)/m)?.[1];
   assert.ok(feature, "Expected an explicit feature-store PostgreSQL step.");
   assert.match(feature, /^        shell: bash$/m);
+  assert.match(feature, /^          FEATURE_STORE_DB_TIMING: "1"$/m);
   assert.match(feature, /^          TEST_DATABASE_URL: postgresql:\/\/dfs_ev_test:dfs_ev_test@127\.0\.0\.1:54329\/dfs_ev_test$/m);
-  assert.match(feature, /^        run: \|\n          docker compose --env-file \/dev\/null --project-name dfs-ev-demo-test -f compose\.test\.yml up -d --wait --wait-timeout 60\n          node scripts\/db\/test-db\.mjs preflight\n          npm run test:feature-store:db\n$/m);
+  assert.match(feature, /^        run: \|\n          docker compose --env-file \/dev\/null --project-name dfs-ev-demo-test -f compose\.test\.yml up -d --wait --wait-timeout 60\n          \/usr\/bin\/time -p node scripts\/db\/test-db\.mjs feature-store\n$/m);
   assert.match(feature, /^        if: \$\{\{ steps\.selection\.outputs\.feature_store == 'true' \}\}$/m);
   assert.doesNotMatch(feature, /(?:continue-on-error:|compose\.feature-store-spike)/);
-  assert.doesNotMatch(db, /^    (?:continue-on-error:|if:)/m);
-  assert.match(db, /^    timeout-minutes: 10$/m);
-  assert.ok(db.indexOf("run: npm run test:db:local") < db.indexOf(feature));
-  assert.ok(db.indexOf(feature) < db.indexOf("- name: Remove disposable PostgreSQL"));
-  assert.match(db, /- name: Remove disposable PostgreSQL\n        id: cleanup\n        if: \$\{\{ always\(\) \}\}\n        timeout-minutes: 2\n        run: npm run test:db:down/);
+  assert.doesNotMatch(core, /run: .*scripts\/db\/test-db\.mjs feature-store/);
+  assert.doesNotMatch(db, /run: npm run test:db:(?:local|lifecycle|guard)/);
+  assert.match(core, /run: npm run test:db:local/);
+  assert.match(core, /if: \$\{\{ steps\.selection\.outputs\.db_local == 'true' \|\| steps\.selection\.outputs\.feature_store == 'true' \}\}\n        run: npm run test:db:lifecycle/);
+  for (const job of [core, db]) {
+    assert.match(job, /^    runs-on: ubuntu-latest$/m);
+    assert.doesNotMatch(job, /^    (?:continue-on-error:|if:|needs:)/m);
+    assert.match(job, /^    timeout-minutes: 10$/m);
+    assert.match(job, /- name: Remove disposable PostgreSQL\n        id: cleanup\n        if: \$\{\{ always\(\) \}\}\n        timeout-minutes: 2\n        run: npm run test:db:down/);
+  }
 });
 
 test("the actual gate accepts intentional empty work only with explicit selection and skipped suites", () => {
@@ -91,12 +107,13 @@ test("the actual gate accepts intentional empty work only with explicit selectio
     for (const featureStore of ["true", "false"]) {
       const execution = {
         DB_LOCAL_SELECTED: dbLocal, FEATURE_STORE_SELECTED: featureStore,
+        FEATURE_PLAN_DB_LOCAL: dbLocal, FEATURE_PLAN_FEATURE_STORE: featureStore,
         DB_LOCAL_RESULT: dbLocal === "true" ? "success" : "skipped",
         FEATURE_STORE_RESULT: featureStore === "true" ? "success" : "skipped",
         DB_LIFECYCLE_RESULT: [dbLocal, featureStore].includes("true") ? "success" : "skipped",
       };
       for (const work of ["executed", "intentional-empty"]) {
-        const result = runGate("success", "success", { ...execution, APP_TEST_WORK: work });
+        const result = runGate("success", "success", "success", { ...execution, APP_TEST_WORK: work });
         assert.equal(result.status, 0, result.stdout + result.stderr);
       }
     }
@@ -110,8 +127,9 @@ test("the actual gate rejects selected skips, failures, cancellations and unexpe
       for (const localOutcome of outcomes) {
         for (const featureOutcome of outcomes) {
           for (const lifecycleOutcome of outcomes) {
-            const result = runGate("success", "success", {
+            const result = runGate("success", "success", "success", {
               DB_LOCAL_SELECTED: dbLocal, FEATURE_STORE_SELECTED: featureStore,
+              FEATURE_PLAN_DB_LOCAL: dbLocal, FEATURE_PLAN_FEATURE_STORE: featureStore,
               DB_LOCAL_RESULT: localOutcome, FEATURE_STORE_RESULT: featureOutcome,
               DB_LIFECYCLE_RESULT: lifecycleOutcome,
             });
@@ -129,47 +147,67 @@ test("the actual gate rejects selected skips, failures, cancellations and unexpe
 test("missing or malformed metadata, hidden failures and omitted cleanup fail even when jobs report success", () => {
   for (const name of Object.keys(validExecution)) {
     for (const value of ["", "unknown"]) {
-      assert.equal(runGate("success", "success", { [name]: value }).status, 1, `${name}=${value}`);
+      assert.equal(runGate("success", "success", "success", { [name]: value }).status, 1, `${name}=${value}`);
     }
     if (name.endsWith("_RESULT")) {
       for (const value of ["failure", "cancelled", "skipped"])
-        assert.equal(runGate("success", "success", { [name]: value }).status, 1, `${name}=${value}`);
+        assert.equal(runGate("success", "success", "success", { [name]: value }).status, 1, `${name}=${value}`);
     }
+  }
+});
+
+test("valid but contradictory database plans fail even when job and step outcomes match", () => {
+  for (const execution of [
+    { FEATURE_MODE: "full" },
+    { FEATURE_PLAN_DB_LOCAL: "false" },
+    { FEATURE_PLAN_FEATURE_STORE: "false", FEATURE_STORE_RESULT: "skipped" },
+  ]) {
+    const result = runGate("success", "success", "success", execution);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /disagree on suite selection/);
   }
 });
 
 test("main and integration checkpoints cannot substitute affected or empty work for full checks", () => {
-  assert.equal(runGate("success", "success", { FORCE_FULL: "1", APP_TEST_MODE: "full", DB_MODE: "full" }).status, 0);
-  assert.equal(runGate("success", "success", { FORCE_FULL: "1" }).status, 1);
+  assert.equal(runGate("success", "success", "success", { FORCE_FULL: "1", APP_TEST_MODE: "full", DB_MODE: "full", FEATURE_MODE: "full" }).status, 0);
+  assert.equal(runGate("success", "success", "success", { FORCE_FULL: "1" }).status, 1);
   for (const mode of ["affected", "full"]) {
-    assert.equal(runGate("success", "success", { FORCE_FULL: "1", APP_TEST_MODE: mode, DB_MODE: "affected" }).status, 1);
-    assert.equal(runGate("success", "success", { FORCE_FULL: "1", APP_TEST_MODE: "affected", DB_MODE: mode }).status, 1);
+    assert.equal(runGate("success", "success", "success", { FORCE_FULL: "1", APP_TEST_MODE: mode, DB_MODE: "affected" }).status, 1);
+    assert.equal(runGate("success", "success", "success", { FORCE_FULL: "1", APP_TEST_MODE: "affected", DB_MODE: mode, FEATURE_MODE: mode }).status, 1);
   }
-  assert.equal(runGate("success", "success", { APP_TEST_MODE: "full", APP_TEST_WORK: "intentional-empty" }).status, 1);
+  assert.equal(runGate("success", "success", "success", { APP_TEST_MODE: "full", APP_TEST_WORK: "intentional-empty" }).status, 1);
   for (const omitted of ["DB_LOCAL_SELECTED", "FEATURE_STORE_SELECTED"]) {
     const resultName = omitted === "DB_LOCAL_SELECTED" ? "DB_LOCAL_RESULT" : "FEATURE_STORE_RESULT";
-    assert.equal(runGate("success", "success", { DB_MODE: "full", [omitted]: "false", [resultName]: "skipped" }).status, 1);
+    const matchingPlan = omitted === "DB_LOCAL_SELECTED" ? "FEATURE_PLAN_DB_LOCAL" : "FEATURE_PLAN_FEATURE_STORE";
+    assert.equal(runGate("success", "success", "success", {
+      DB_MODE: "full", FEATURE_MODE: "full", [omitted]: "false", [matchingPlan]: "false", [resultName]: "skipped",
+    }).status, 1);
   }
 });
 
 test("aggregate metadata is wired to raw outcomes and the selection outputs of the actual executing steps", () => {
-  const jobs = Object.fromEntries(["app", "db"].map(name => [name,
-    workflow.match(new RegExp(`^  ${name}:\\n((?:\\n| {4}[^\\n]*\\n)+)`, "m"))[1]]));
+  const jobs = Object.fromEntries(["app", "db_core", "db_feature_store"].map(name => [name, jobBlock(name)]));
   const wiring = {
     APP_TEST_RESULT: ["app", "test_result", "steps.tests.outcome"],
     APP_TEST_MODE: ["app", "test_mode", "steps.tests.outputs.mode"],
     APP_TEST_WORK: ["app", "test_work", "steps.tests.outputs.work"],
     APP_MATRIX_RESULT: ["app", "matrix_result", "steps.matrix.outcome"],
-    DB_PLAN_RESULT: ["db", "plan_result", "steps.selection.outcome"],
-    DB_SELECTION_GUARD_RESULT: ["db", "selection_guard_result", "steps.selection_guard.outcome"],
-    DB_GUARD_RESULT: ["db", "guard_result", "steps.guard.outcome"],
-    DB_MODE: ["db", "mode", "steps.selection.outputs.mode"],
-    DB_LOCAL_SELECTED: ["db", "db_local", "steps.selection.outputs.db_local"],
-    FEATURE_STORE_SELECTED: ["db", "feature_store", "steps.selection.outputs.feature_store"],
-    DB_LIFECYCLE_RESULT: ["db", "lifecycle_result", "steps.lifecycle.outcome"],
-    DB_LOCAL_RESULT: ["db", "db_local_result", "steps.db_local.outcome"],
-    FEATURE_STORE_RESULT: ["db", "feature_store_result", "steps.feature_store.outcome"],
-    DB_CLEANUP_RESULT: ["db", "cleanup_result", "steps.cleanup.outcome"],
+    DB_PLAN_RESULT: ["db_core", "plan_result", "steps.selection.outcome"],
+    DB_SELECTION_GUARD_RESULT: ["db_core", "selection_guard_result", "steps.selection_guard.outcome"],
+    DB_GUARD_RESULT: ["db_core", "guard_result", "steps.guard.outcome"],
+    DB_MODE: ["db_core", "mode", "steps.selection.outputs.mode"],
+    DB_LOCAL_SELECTED: ["db_core", "db_local", "steps.selection.outputs.db_local"],
+    FEATURE_STORE_SELECTED: ["db_core", "feature_store", "steps.selection.outputs.feature_store"],
+    DB_LIFECYCLE_RESULT: ["db_core", "lifecycle_result", "steps.lifecycle.outcome"],
+    DB_LOCAL_RESULT: ["db_core", "db_local_result", "steps.db_local.outcome"],
+    FEATURE_STORE_RESULT: ["db_feature_store", "feature_store_result", "steps.feature_store.outcome"],
+    DB_CLEANUP_RESULT: ["db_core", "cleanup_result", "steps.cleanup.outcome"],
+    FEATURE_PLAN_RESULT: ["db_feature_store", "plan_result", "steps.selection.outcome"],
+    FEATURE_SELECTION_GUARD_RESULT: ["db_feature_store", "selection_guard_result", "steps.selection_guard.outcome"],
+    FEATURE_MODE: ["db_feature_store", "mode", "steps.selection.outputs.mode"],
+    FEATURE_PLAN_DB_LOCAL: ["db_feature_store", "db_local", "steps.selection.outputs.db_local"],
+    FEATURE_PLAN_FEATURE_STORE: ["db_feature_store", "feature_store", "steps.selection.outputs.feature_store"],
+    FEATURE_CLEANUP_RESULT: ["db_feature_store", "cleanup_result", "steps.cleanup.outcome"],
   };
   for (const [name, [job, output, source]] of Object.entries(wiring)) {
     assert.ok(gate.includes(`          ${name}: \${{ needs.${job}.outputs.${output} }}\n`), name);
@@ -178,12 +216,15 @@ test("aggregate metadata is wired to raw outcomes and the selection outputs of t
   assert.ok(gate.includes("          FORCE_FULL: ${{ env.TURBO_FORCE_FULL }}\n"));
   for (const [job, name, id] of [
     ["app", "Prove affected task selection on Node 24", "matrix"], ["app", "Test", "tests"],
-    ["db", "Plan affected database suites", "selection"], ["db", "Require explicit database selection", "selection_guard"],
-    ["db", "Check database target, bootstrap and report guards", "guard"],
-    ["db", "Verify startup recovery and failure cleanup", "lifecycle"],
-    ["db", "Verify migration artifacts, catalog contracts and PostgreSQL behavior", "db_local"],
-    ["db", "Verify feature-store PostgreSQL behavior on standard fixture", "feature_store"],
-    ["db", "Remove disposable PostgreSQL", "cleanup"],
+    ["db_core", "Plan affected database suites", "selection"], ["db_core", "Require explicit database selection", "selection_guard"],
+    ["db_core", "Check database target, bootstrap and report guards", "guard"],
+    ["db_core", "Verify startup recovery and failure cleanup", "lifecycle"],
+    ["db_core", "Verify migration artifacts, catalog contracts and PostgreSQL behavior", "db_local"],
+    ["db_feature_store", "Verify feature-store PostgreSQL behavior on standard fixture", "feature_store"],
+    ["db_core", "Remove disposable PostgreSQL", "cleanup"],
+    ["db_feature_store", "Plan affected database suites", "selection"],
+    ["db_feature_store", "Require explicit database selection", "selection_guard"],
+    ["db_feature_store", "Remove disposable PostgreSQL", "cleanup"],
   ]) assert.ok(jobs[job].includes(`      - name: ${name}\n        id: ${id}\n`), `${job}.${id}`);
   assert.doesNotMatch(workflow, /continue-on-error:/);
 });

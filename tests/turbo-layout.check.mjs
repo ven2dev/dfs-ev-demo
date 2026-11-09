@@ -50,8 +50,8 @@ test("affected runner validates history without reimplementing dependency discov
 
 test("affected adoption retains the aggregate CI gate and full-history upstream jobs", () => {
   const workflow = read(".github/workflows/ci.yml");
-  assert.equal([...workflow.matchAll(/fetch-depth: 0/g)].length, 2);
+  assert.equal([...workflow.matchAll(/fetch-depth: 0/g)].length, 3);
   assert.match(workflow, /^  ci:/m);
   assert.match(workflow, /name: CI/);
-  assert.match(workflow, /needs: \[app, db\]/);
+  assert.match(workflow, /needs: \[app, db_core, db_feature_store\]/);
 });

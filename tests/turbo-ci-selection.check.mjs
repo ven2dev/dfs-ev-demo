@@ -49,44 +49,59 @@ test("CI keeps full merge history, main/manual full checks, hosted matrix and un
   assert.match(workflow, /TURBO_BASE_SHA: \$\{\{ github\.event\.pull_request\.base\.sha \|\| github\.sha \}\}/);
   assert.match(workflow, /TURBO_HEAD_SHA: \$\{\{ github\.sha \}\}/);
   assert.match(workflow, /TURBO_FORCE_FULL: \$\{\{ github\.event_name != 'pull_request' && '1' \|\| '0' \}\}/);
-  assert.equal([...workflow.matchAll(/fetch-depth: 0/g)].length, 2);
+  assert.equal([...workflow.matchAll(/fetch-depth: 0/g)].length, 3);
   assert.match(workflow, /npm run test:turbo-layout\n          cat "\$TURBO_MATRIX_RECEIPT"/);
   assert.match(workflow, /if \[\[ "\$TURBO_FORCE_FULL" == "1" \]\]; then\n            npm test/);
   assert.match(workflow, /TURBO_ALLOW_EMPTY=1 npm run turbo:affected -- test/);
-  for (const name of ["app", "db"]) {
+  for (const name of ["app", "db_core", "db_feature_store"]) {
     const job = workflow.match(new RegExp(`^  ${name}:\\n((?:\\n| {4}[^\\n]*\\n)+)`, "m"))?.[1];
     assert.ok(job);
     assert.doesNotMatch(job, /^    (?:if:|continue-on-error:)/m);
   }
 });
 
-test("CI plans DB work before guarded execution and retains sequential fixture cleanup", () => {
+const databaseJobs = () => {
   const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
-  const db = workflow.match(/^  db:\n((?:\n| {4}[^\n]*\n)+)/m)?.[1];
-  assert.ok(db);
-  assert.match(db, /TURBO_PLAN_ONLY: "1"/);
-  assert.match(db, /npm run turbo:affected -- test:db:local test:feature-store:db\n          node scripts\/turbo\/ci-db-selection.mjs "\$TURBO_PLAN_FILE"/);
-  assert.match(db, /Missing or invalid database selection; refusing silent skips\./);
-  for (const key of ["db_local", "feature_store"]) assert.match(db, new RegExp(`steps\\.selection\\.outputs\\.${key} == 'true'`));
-  assert.ok(db.indexOf("Require explicit database selection") < db.indexOf("run: npm run test:db:lifecycle"));
-  assert.ok(db.indexOf("run: npm run test:db:local") < db.indexOf("npm run test:feature-store:db"));
-  assert.match(db, /if: \$\{\{ always\(\) \}\}\n        timeout-minutes: 2\n        run: npm run test:db:down/);
-  assert.doesNotMatch(db, /continue-on-error:|compose\.feature-store-spike/);
+  return ["db_core", "db_feature_store"].map(name => {
+    const job = workflow.match(new RegExp(`^  ${name}:\\n((?:\\n| {4}[^\\n]*\\n)+)`, "m"))?.[1];
+    assert.ok(job, name);
+    return job;
+  });
+};
+
+test("each DB job plans and validates selection before its guarded suite and cleans up", () => {
+  const suites = ["db_local", "feature_store"];
+  for (const [index, db] of databaseJobs().entries()) {
+    const suite = suites[index];
+    assert.match(db, /TURBO_PLAN_ONLY: "1"/);
+    assert.match(db, /npm run turbo:affected -- test:db:local test:feature-store:db\n          node scripts\/turbo\/ci-db-selection.mjs "\$TURBO_PLAN_FILE"/);
+    assert.match(db, /Missing or invalid database selection; refusing silent skips\./);
+    assert.ok(db.includes(`        id: ${suite}\n        if: \${{ steps.selection.outputs.${suite} == 'true' }}`));
+    const guard = db.indexOf("Require explicit database selection");
+    const execution = db.indexOf(`        id: ${suite}\n`);
+    const lifecycle = db.indexOf("run: npm run test:db:lifecycle");
+    const cleanup = db.indexOf("- name: Remove disposable PostgreSQL");
+    assert.ok(guard >= 0 && guard < execution && execution < cleanup);
+    if (suite === "db_local") assert.ok(guard < lifecycle && lifecycle < execution);
+    assert.match(db, /if: \$\{\{ always\(\) \}\}\n        timeout-minutes: 2\n        run: npm run test:db:down/);
+    assert.doesNotMatch(db, /continue-on-error:|compose\.feature-store-spike/);
+  }
 });
 
-test("the actual workflow selection guard refuses missing and unknown boolean outputs", () => {
-  const workflow = readFileSync(new URL("../.github/workflows/ci.yml", import.meta.url), "utf8");
-  const step = workflow.split("      - name: Require explicit database selection\n")[1].split("      - name:")[0];
-  const script = step.match(/^        run: \|\n((?: {10}[^\n]*\n)+)/m)[1].replace(/^ {10}/gm, "");
-  for (const dbLocal of ["true", "false", "", "unknown"]) {
-    for (const featureStore of ["true", "false", "", "unknown"]) {
-      const result = spawnSync("bash", ["--noprofile", "--norc", "-e", "-o", "pipefail", "-c", script], {
-        encoding: "utf8", timeout: 5_000,
-        env: { PATH: process.env.PATH, DB_LOCAL: dbLocal, FEATURE_STORE: featureStore },
-      });
-      assert.ifError(result.error);
-      const valid = [dbLocal, featureStore].every(value => ["true", "false"].includes(value));
-      assert.equal(result.status, valid ? 0 : 1, result.stdout + result.stderr);
+test("both workflow selection guards refuse missing and unknown boolean outputs", () => {
+  for (const db of databaseJobs()) {
+    const step = db.split("      - name: Require explicit database selection\n")[1].split("      - name:")[0];
+    const script = step.match(/^        run: \|\n((?: {10}[^\n]*\n)+)/m)[1].replace(/^ {10}/gm, "");
+    for (const dbLocal of ["true", "false", "", "unknown"]) {
+      for (const featureStore of ["true", "false", "", "unknown"]) {
+        const result = spawnSync("bash", ["--noprofile", "--norc", "-e", "-o", "pipefail", "-c", script], {
+          encoding: "utf8", timeout: 5_000,
+          env: { PATH: process.env.PATH, DB_LOCAL: dbLocal, FEATURE_STORE: featureStore },
+        });
+        assert.ifError(result.error);
+        const valid = [dbLocal, featureStore].every(value => ["true", "false"].includes(value));
+        assert.equal(result.status, valid ? 0 : 1, result.stdout + result.stderr);
+      }
     }
   }
 });
