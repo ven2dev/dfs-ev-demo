@@ -1,0 +1,15 @@
+{
+  "schema": "fs173-private-archive-reference-v1",
+  "originalArchivePath": "docs/evidence/feature-store-173/step-3-prediction-records-20261109T084110Z.tar.gz",
+  "sha256": "a9c6acac27d007d2fb5b15c8ea7744d9d99e07d2cc04a22a1b1779e273f919d1",
+  "byteSize": 325665,
+  "memberCount": 23,
+  "objectStore": {
+    "objectKey": "audits/a9c6acac27d007d2fb5b15c8ea7744d9d99e07d2cc04a22a1b1779e273f919d1",
+    "sha256": "a9c6acac27d007d2fb5b15c8ea7744d9d99e07d2cc04a22a1b1779e273f919d1",
+    "byteSize": 325665
+  },
+  "disposition": "Exact original bytes retained privately through ObjectStore; not included in public Git history.",
+  "reason": "#197 holds new participation-dependent public outputs pending an output/channel decision; owner approved private retention following #258.",
+  "receiptContract": "Original compact receipts, member hashes, measured values, verdicts and source identities are unchanged. Their storage.bundle.path identifies this original private archive, not an in-tree file."
+}

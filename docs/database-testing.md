@@ -126,7 +126,7 @@ remain deliberate; see the [dependency review guide](dependency-updates.md).
 | Tier | Data tmpfs | Required free space at admission | Workload |
 | --- | ---: | ---: | --- |
 | Standard | 512 MiB | 272 MiB | Migration and catalog suites, feature-store CI, focused integration checks, and repeats |
-| Large | 2 GiB | 608 MiB | Full-season materialization plans, producer capacity timing, #244 recompute replay, and #169 capacity matrices |
+| Large | 2 GiB | 608 MiB | Full-season materialization plans, producer capacity timing, #244 recompute replay, #169 capacity matrices, prediction-capacity matrices and fresh-process dataset matrices |
 
 The standard tier sets WAL max/min to 96/32 MiB, disables `fsync`,
 `synchronous_commit` and `full_page_writes`, and sets `temp_file_limit=128MB`.
@@ -135,6 +135,14 @@ It is disposable and should be recreated after a crash. `wal_level` stays at
 WAL can skip logging for some bulk operations and would change the workload
 behind the recorded WAL measurements. The 2 GiB tier retains the existing
 durability and WAL defaults used by #241.
+
+The prediction-capacity and dataset matrices prepare full-season fixtures, so
+they use the large tier even though the measured requests are small. #242 was
+measured before #247 introduced the standard tier's 128 MiB temporary-file
+limit; the large tier is closer to that original PostgreSQL environment.
+Record the selected tier, actual mount and PostgreSQL settings with each
+qualification receipt. This classification changes no workload target, work
+budget or deadline.
 
 `max_wal_size` is a soft checkpoint target. `temp_file_limit` applies per
 PostgreSQL process, so concurrent backends can allocate separate allowances.
