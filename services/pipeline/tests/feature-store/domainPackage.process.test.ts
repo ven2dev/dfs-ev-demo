@@ -1,17 +1,16 @@
-import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { runTestProcess } from "../support/runTestProcess.ts";
 import type { EVScore, PlayerPropDirection } from "@dfs-ev/domain";
 import { computeEV, type EVPipelineInput, type EVPipelineResult } from "@dfs-ev/domain/ev";
 
 describe("domain package consumer contract", () => {
-  it("runs the pipeline public-package contract in the regular Node test lane", () => {
+  it("runs the pipeline public-package contract in the regular Node test lane", async () => {
     for (const cwd of [new URL("../../../../", import.meta.url), new URL("../../", import.meta.url)]) {
-      const result = spawnSync(process.execPath, ["--test", fileURLToPath(new URL("../package-contract.check.mjs", import.meta.url)), fileURLToPath(new URL("../paths-contract.check.mjs", import.meta.url))], {
+      const result = await runTestProcess(process.execPath, ["--test", fileURLToPath(new URL("../package-contract.check.mjs", import.meta.url)), fileURLToPath(new URL("../paths-contract.check.mjs", import.meta.url))], {
         cwd: fileURLToPath(cwd),
-        env: { PATH: process.env.PATH, NODE_ENV: "test" }, encoding: "utf8", timeout: 15000,
+        env: { PATH: process.env.PATH, NODE_ENV: "test" }, timeoutMs: 15_000,
       });
-      expect(result.error).toBeUndefined();
       expect(result.status, result.stderr + result.stdout).toBe(0);
     }
   });
@@ -25,7 +24,7 @@ describe("domain package consumer contract", () => {
     expect(score).toEqual({ modelProb: .5, impliedProb: .5, edge: 0 });
   });
 
-  it("runs native Node 24 from the pipeline workspace through real source links and rejects private subpaths", () => {
+  it("runs native Node 24 from the pipeline workspace through real source links and rejects private subpaths", async () => {
     const script = `
       import assert from "node:assert/strict";
       import { realpath } from "node:fs/promises";
@@ -55,11 +54,10 @@ describe("domain package consumer contract", () => {
       assert.equal(refusal.work.statements, 0);
       console.log(JSON.stringify({ resolved, verdict: "pass" }));
     `;
-    const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], {
+    const result = await runTestProcess(process.execPath, ["--input-type=module", "-e", script], {
       cwd: fileURLToPath(new URL("../../", import.meta.url)),
-      env: { PATH: process.env.PATH, NODE_ENV: "test" }, encoding: "utf8", timeout: 10000,
+      env: { PATH: process.env.PATH, NODE_ENV: "test" }, timeoutMs: 10_000,
     });
-    expect(result.error).toBeUndefined();
     expect(result.status, result.stderr).toBe(0);
     expect(JSON.parse(result.stdout).verdict).toBe("pass");
   });
