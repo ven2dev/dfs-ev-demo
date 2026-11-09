@@ -1,5 +1,4 @@
 import { randomBytes } from "node:crypto";
-import { readFile } from "node:fs/promises";
 import { Client, type ClientConfig } from "pg";
 import { createCatalogVerifier, loadCatalogContracts } from "@dfs-ev/db-tooling/migrations/contracts";
 import { runScratchMigrations } from "@dfs-ev/db-tooling/migrations/core";
@@ -7,6 +6,8 @@ import { checkMigrationArtifacts } from "@dfs-ev/db-tooling/migrations/files";
 import { prepareMigrationContext } from "@dfs-ev/db-tooling/migrations/plans";
 import { createScratchHarness } from "@dfs-ev/db-tooling/test-support/scratch";
 import { assertReplayScratchTarget, parseTestDatabaseUrl } from "@dfs-ev/db-tooling/test-support/target";
+import { applyScratchProposals, getTemplateReference } from "@dfs-ev/db-tooling/test-support/templates";
+import { featureStoreProposals } from "./fixture-proposals.ts";
 
 const replayTargets = new WeakMap<Pick<Client, "query">, () => void>();
 
@@ -23,23 +24,22 @@ export const withFeatureStoreDatabase = async <T>(run: (context: {
   const started = performance.now();
   let callbackStarted: number | undefined;
   let callbackFinished: number | undefined;
+  const template = process.env.TEST_DATABASE_TEMPLATE_MANIFEST !== undefined
+    ? await getTemplateReference(process.env, undefined, featureStoreProposals)
+    : undefined;
   const harness = await createScratchHarness(process.env);
   const names: string[] = [];
   try {
     return await harness.withDatabase(async (admin: Client, config: ClientConfig) => {
       const clients: Client[] = [];
       try {
-        const files = await checkMigrationArtifacts();
-        const context = await prepareMigrationContext(files, await loadCatalogContracts(files));
-        await runScratchMigrations(admin, { expected: config, files: context.files, assertTarget: harness.assertTarget,
-          verify: createCatalogVerifier(context.contracts) });
-        await admin.query("BEGIN");
-        try {
-          await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/138_feature_store.sql")), "utf8")); await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/138_dataset_governance.sql")), "utf8"));
-          await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/163_effective_rights.sql")), "utf8"));
-          await admin.query(await readFile(new URL(import.meta.resolve("@dfs-ev/db/assets/241_job_visibility.sql")), "utf8"));
-          await admin.query("COMMIT");
-        } catch (error) { await admin.query("ROLLBACK"); throw error; }
+        if (!template) {
+          const files = await checkMigrationArtifacts();
+          const context = await prepareMigrationContext(files, await loadCatalogContracts(files));
+          await runScratchMigrations(admin, { expected: config, files: context.files, assertTarget: harness.assertTarget,
+            verify: createCatalogVerifier(context.contracts) });
+          await applyScratchProposals(admin, featureStoreProposals);
+        }
         const queryCounts = { writer: 0, reader: 0 };
         const loginConfig = async (role: "writer" | "reader") => {
           const name = "fs138_job_" + randomBytes(8).toString("hex");
@@ -79,7 +79,7 @@ export const withFeatureStoreDatabase = async <T>(run: (context: {
       } finally {
         await Promise.all(clients.map((client) => client.end()));
       }
-    });
+    }, template);
   } finally {
     const cleanup = new Client(parseTestDatabaseUrl(process.env.TEST_DATABASE_URL));
     try {

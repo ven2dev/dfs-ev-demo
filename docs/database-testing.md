@@ -326,9 +326,13 @@ migration/reference integrity, all named database cases and freshly rebuilt
 contract equality.
 
 The feature-store job starts its own standard fixture and runs preflight before
-the selected suite. The job logs setup, callback and cleanup timing from the
-shared feature-store harness, plus the suite command's total wall time. Those
-timings are informational. Each DB job has its own `always()` cleanup step.
+the selected suite. The guarded runner holds the lane lease, applies the
+migration chain and four default feature-store proposals once, and seals that
+database. Serial harness calls clone it through the private run manifest.
+Schema-specific checks still create a fresh fixture. The runner compares the
+fresh and cloned catalogs and grants, and refuses stale proposal input.
+It logs template build time, shared-harness setup, callback and cleanup times,
+and total command wall time as observations. Each DB job has its own `always()` cleanup step.
 Both use the same Compose file, image digest, health check, loopback port,
 throwaway credentials and tmpfs as the laptop command. CI uses disposable
 PostgreSQL without application credentials or external database access.

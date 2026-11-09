@@ -87,10 +87,10 @@ test("database suites run on independent standard-fixture runners with their own
   assert.match(feature, /^        shell: bash$/m);
   assert.match(feature, /^          FEATURE_STORE_DB_TIMING: "1"$/m);
   assert.match(feature, /^          TEST_DATABASE_URL: postgresql:\/\/dfs_ev_test:dfs_ev_test@127\.0\.0\.1:54329\/dfs_ev_test$/m);
-  assert.match(feature, /^        run: \|\n          docker compose --env-file \/dev\/null --project-name dfs-ev-demo-test -f compose\.test\.yml up -d --wait --wait-timeout 60\n          node scripts\/db\/test-db\.mjs preflight\n          \/usr\/bin\/time -p npm run test:feature-store:db\n$/m);
+  assert.match(feature, /^        run: \|\n          docker compose --env-file \/dev\/null --project-name dfs-ev-demo-test -f compose\.test\.yml up -d --wait --wait-timeout 60\n          \/usr\/bin\/time -p node scripts\/db\/test-db\.mjs feature-store\n$/m);
   assert.match(feature, /^        if: \$\{\{ steps\.selection\.outputs\.feature_store == 'true' \}\}$/m);
   assert.doesNotMatch(feature, /(?:continue-on-error:|compose\.feature-store-spike)/);
-  assert.doesNotMatch(core, /run: .*npm run test:feature-store:db/);
+  assert.doesNotMatch(core, /run: .*scripts\/db\/test-db\.mjs feature-store/);
   assert.doesNotMatch(db, /run: npm run test:db:(?:local|lifecycle|guard)/);
   assert.match(core, /run: npm run test:db:local/);
   assert.match(core, /if: \$\{\{ steps\.selection\.outputs\.db_local == 'true' \|\| steps\.selection\.outputs\.feature_store == 'true' \}\}\n        run: npm run test:db:lifecycle/);

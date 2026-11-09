@@ -27,3 +27,25 @@ The local harness setup accounted for 12% of suite time, with 82% inside test ca
 3. **Profile the slow checks and validate.** Break down #138 derived, removal queue, #229 recovery races and #241 producer work into fixture preparation, waits required by the assertions and measured SQL. Include candidate selection and dataset current-head if the first profiles leave a gap. Bulk-seed where repeated round trips dominate, starting with #138's 63 added quarterbacks. Keep natural rows, insertion dependencies, transaction and clock semantics, sizes, cases and assertions identical. Shorten a race check's wait only if the revised check demonstrates that the same race still occurs. If that is unclear, leave the wait in place and report it. Keep a slow-check change only when the median improves by at least three seconds over the same isolated check. Interleave at least three runs of each version on the same lane and tier and commit the evidence JSON. Run the full original inventories, disk sampling and aggregate tests, then measure at least three comparable full CI runs after push authorization. Complete this final validation after the last implementation checkpoint, regardless of checkpoint order.
 
 **LOE** 4–5 active hours, excluding hosted runs and owner review waits. Split the CI job change from template work if the estimate exceeds five hours. Start after roadmap approval and after the owner creates `feature/dfsEV-250-db-ci-critical-path`. Report before every commit, use no attribution trailers, and obtain fresh approval before each push.
+
+## Checkpoint 2 qualification
+
+The [first full hosted run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42557982456)
+passed with the DB jobs finishing 32 seconds after App checks. Shared
+feature-store harness setup took 31.1 seconds across 27 calls. This put both
+timing metrics above their targets and moved template reuse ahead of slow-check
+profiling.
+
+The guarded feature-store runner holds the existing lane lease through template
+and clone cleanup. It seals one migrated database after applying the ordered
+four-proposal chain. The manifest binds the source to the migration bytes,
+catalog contract fingerprints and proposal bytes. The CI parity probe compares
+fresh and cloned catalogs and grants. The schema-specific suite and the direct
+local feature-store command still support fresh fixtures.
+
+Local lane-2 standard qualification passed all 295 existing feature-store
+cases and the new parity probe. The template build took 0.63 seconds and the
+27 shared-harness setups took 7.19 seconds. Minimum sampled free space was
+273.7 MiB, or 53.5% of the 512 MiB fixture. These observations support local
+qualification. A hosted run is still required to evaluate both timing targets.
+See the [qualification receipt](evidence/ci-250/checkpoint-2-template-qualification.json).
