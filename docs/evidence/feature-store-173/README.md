@@ -235,10 +235,11 @@ committed as `0cdbe3a` after owner approval.
 
 ## Step 4: scoped final verdict
 
-The [written decision](../../feature-store-thin-slice-verdict.md#final-gono-go-at-d661b02)
-records **GO for bounded local retrospective research** on the pinned fixture
-at `d661b02`, and **NO-GO for public or hosted use**. All four capacity targets
-pass: #258 at `cad93c9` qualifies ingestion/features, and the renewed step 3
+The [written decision](../../feature-store-thin-slice-verdict.md#final-gono-go-at-5639790)
+records **GO for bounded local retrospective research** on the pinned fixture,
+and **NO-GO for public or hosted use**. The original Step 4 decision was at
+`d661b02`; the checkpoint update below carries it forward. All four capacity
+targets pass: #258 at `cad93c9` qualifies ingestion/features, and the renewed step 3
 receipt qualifies dataset/prediction. No workload or database was started for
 step 4, and no existing ledger, receipt or bundle was rewritten.
 
@@ -249,13 +250,41 @@ new participation-derived public outputs held and #256's qualified CC BY-SA
 notice review open. The intended hosted pipeline role/driver is unqualified;
 R2's live proof used synthetic data only. Review-provenance gaps and the
 accepted #231/#241 visibility gap remain. #258 fixed the cross-clock rule;
-snapshot ordering is checked by tests, not a database constraint. App and CI
-fail under the checkpoint's owner-accepted #260 timeout exception.
+snapshot ordering is checked by tests, not a database constraint. At that
+historical checkpoint, App and CI failed under the owner-accepted #260 timeout
+exception; the current checkpoint passes as recorded below.
 
 The PR draft and review handoff are prepared locally. Step 4 was committed
-after direct owner approval; independent review and fresh consent remain required
-before any push. No public release, deployment, migration freeze, UI integration
-or #54 completion follows.
+after direct owner approval. The rewrite was later reviewed as clean; final
+checkpoint review and fresh consent remain required before any push. No public
+release, deployment, migration freeze, UI integration or #54 completion follows.
+
+## Checkpoint update after #260
+
+[`checkpoint-ci-20261109T164429Z.json`](checkpoint-ci-20261109T164429Z.json)
+records adoption of `5639790517f5f66e38a40d6a1e6e00df3aec1580` after
+[#260 / PR #262](https://github.com/ven2dev/dfs-ev-demo/pull/262), merged into
+the branch as `c442929`. App checks, Core DB, Feature-store DB and aggregate
+CI all pass in the [main push run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42656760214).
+This removes the current CI exception; it does not change the failed historical
+runs or claim a #173 branch CI execution before push.
+
+The seven incoming changes are tests, Vitest configuration and one document.
+All 125 distinct measured source hashes and Git blob IDs match the previous
+checkpoint, current main and branch merge: 64 prediction, 48 dataset and 77
+producer pins, with overlap. The retained four capacity passes therefore carry
+forward by exact source identity. No lane, capacity timing or DB workload ran;
+old receipts retain their original measured commits and values. The new compact
+receipt binds the private source inventory and original receipt by hash and
+size. The raw CI metadata was retained/read back through private ObjectStore.
+
+Local Node 24.18.1 validation passes four focused #260 process checks and all
+24 CI-gate/layout checks. The receipt also records the first process-check
+attempt's sandbox-only `EPERM` on a loopback listener; it passed outside the
+sandbox with permission, without a source change. The publication-safe rewrite
+was reviewed as clean, and the #261 citations were committed as `a52f4b9`.
+The checkpoint update awaits final review and commit approval; no push or PR
+is authorized.
 
 ## Publication storage boundary
 

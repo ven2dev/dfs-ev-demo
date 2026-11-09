@@ -4,22 +4,26 @@ Original history: step 1 is `be53387`; step 2 is `43a3802`; the original step 3
 evidence is `6e1daa6`. The owner adopted `d661b02`, merged as `83bb28f`, and
 approved renewing both matrices. Their passing qualification is committed as
 `0cdbe3a`. Step 4 records the scoped final engineering verdict below and was
-committed after direct owner approval; independent review remains pending.
+committed after direct owner approval. The owner reviewed the publication-safe
+rewrite as clean; the later checkpoint update awaits final review.
 Lane-3 is down and ALT has the all-clear.
 
-Checkpoint: `d661b022780e243dff9e0f126351f43a9e3fc2da`, measured at
-`83bb28f329fcb8b457dff9eba2119dea8ca02b98`. The owner originally created
+Current checkpoint: `5639790517f5f66e38a40d6a1e6e00df3aec1580`, after
+[#260 / PR #262](https://github.com/ven2dev/dfs-ev-demo/pull/262). Capacity
+receipts retain checkpoint `d661b022780e243dff9e0f126351f43a9e3fc2da`, measured at
+`83bb28f329fcb8b457dff9eba2119dea8ca02b98`; all 125 distinct source identities
+still match the new checkpoint. The owner originally created
 `feature/dfsEV-173-thin-slice-verdict` from `286f4d0`; its qualifications remain
 unchanged as history. The
 [approved roadmap](https://github.com/ven2dev/dfs-ev-demo/issues/173#issuecomment-6734499691)
 authorizes documentation and the scoped reruns, with commit approval after each
 step and a confirmed quiet window before either rerun.
 
-## Final go/no-go at d661b02
+## Final go/no-go at 5639790
 
 **GO for bounded local retrospective research on the pinned fixture. NO-GO for
 public release or hosted operation.** This is a scoped engineering readiness
-decision, with the owner-accepted CI exception and review-provenance gaps below.
+decision, with green checkpoint CI and the review-provenance gaps below.
 It does not turn closed successor issues into an unconditional full #138 pass.
 
 | Use or claim | Decision | Basis and boundary |
@@ -35,8 +39,9 @@ and deterministic budgets. Ingestion and features cite #258's requalification
 at `cad93c9`; dataset and prediction cite the renewed step 3 matrix at `83bb28f`.
 The [capacity table](#capacity-verdict-at-the-current-checkpoint) and
 [requalification record](evidence/feature-store-173/step-3-requalification-20261109T091550Z.json)
-bind those results to `d661b02`. No new timing or database run was needed for
-this written decision.
+bind those results to `d661b02`. Exact source comparison carries them forward
+to `5639790`; the original measured SHAs and values are unchanged. No new
+timing or database run was needed for this written decision.
 
 The 183 positive-infinity log-loss cases, excluded/unavailable groups and empty
 strata remain part of the scoring record. Local research GO does not mean the
@@ -51,12 +56,13 @@ observation; snapshot ordering
 not a database constraint. The owner foreign key remains. The separate
 #231/#241 terminal-UPDATE-to-COMMIT visibility gap remains accepted.
 
-Two verification limits remain explicit:
+CI status and review limits remain explicit:
 
-- **CI exception:** at `d661b02`, App checks and aggregate CI fail on
-  `domainPackage.test.ts`'s 5 s timeout, tracked by
-  [#260](https://github.com/ven2dev/dfs-ev-demo/issues/260). Both DB jobs pass.
-  The owner accepts this exception for the checkpoint; it is not a green-CI claim.
+- **CI pass:** at `5639790`, App checks, both DB jobs and aggregate CI pass in
+  the [main push run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42656760214).
+  #260's merged fix removes the current timeout exception. The failed
+  `d661b02` run remains historical evidence; the green result is for main at
+  the new checkpoint, not an unrun #173 branch CI job.
 - **Review history:** the source/review table and immutable ledger preserve
   receipt-only reviews, missing exact final reviewed SHAs/ranges and
   owner-confirmed reviews without a supplied range. Merge, checksum verification
@@ -120,19 +126,30 @@ follows from a local go verdict.
 | `7d1883f` | Pass | Pass | Pass | Pass | Integrated runtime checkpoint after #169 |
 | `286f4d0` | Fail | Pass | Pass | Fail | Same runtime code; #197 adds only documentation, notices and an inventory |
 | `d661b02` | Fail | Pass | Pass | Fail | Adopted checkpoint after #258; same known 5 s test-timeout exception |
+| `5639790` | Pass | Pass | Pass | Pass | Current checkpoint after #260 / PR #262; main push run `42656760214` |
 
-The sole App failure at the pinned checkpoint was
+The sole App failure at the earlier pinned checkpoint was
 `services/pipeline/tests/feature-store/domainPackage.test.ts:8` reaching the
 5,000 ms test timeout. The adopted `d661b02` App log has the same sole failed
 test, and both DB jobs pass. The aggregate CI failed because App failed. This
-remains the checkpoint's owner-accepted CI exception, tracked in
+was the checkpoint's owner-accepted CI exception, tracked in
 [#260](https://github.com/ven2dev/dfs-ev-demo/issues/260); the
 earlier green checkpoint does not turn it into a pass. See the
 [original pinned CI run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42575488546)
 and [adopted checkpoint CI run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42589170484).
-If the timeout fix merges before this issue finishes, advance the checkpoint
-and reassess affected identities and checks. Do not inherit review across an
-affected code change.
+
+The owner then approved adopting main after the timeout fix merged. #260 / PR
+#262 landed as `5639790`; its main push run passes App checks, Core DB,
+Feature-store DB and CI. The branch merged it without conflicts as `c442929`.
+The seven incoming file changes are test/configuration/documentation only.
+All 125 distinct source SHA-256 hashes and Git blob IDs from the retained
+qualification still match `d661b02`, `5639790` and the branch merge: 64
+prediction pins, 48 dataset pins and 77 producer pins, with overlap. Existing
+receipts keep their original checkpoint and measured sources. No capacity
+rerun or inherited independent review is claimed. Four focused #260 process
+checks and 24 CI-gate/layout checks pass locally under Node 24.18.1.
+The append-only [checkpoint verification](evidence/feature-store-173/checkpoint-ci-20261109T164429Z.json)
+binds that CI run, all source comparisons and the local checks.
 
 After the original step 3 matrices finished, main advanced to `d661b02` through
 [#258 / PR #259](https://github.com/ven2dev/dfs-ev-demo/pull/259). This is the
@@ -153,8 +170,8 @@ that source; the earlier receipts retain their original identities and scope.
 | --- | --- | --- |
 | Ingestion ≤42 s; each leg under 60 s; 12 SQL | Pass | #258 requalification at `cad93c9`: 24 ingestion attempts, maximum pair 11.588 s. All 77 producer source hashes match the adopted checkpoint. |
 | Full-season features ≤84 s under 120 s; 8 SQL | Pass | Same #258 requalification: six feature attempts, maximum 4.813 s. No producer rerun in #173. |
-| Dataset ≤21 s under 30 s; 8 SQL / 2 checks | Pass | New large-tier matrix at `83bb28f`: 3 fresh-process cold + 3 warm builds, maximum 506.727 ms; all 48 source identities match `d661b02`. |
-| Prediction trial p95 ≤210 ms under 300 ms; 3 SQL / 2 checks / 1 GET | Pass | New large-tier matrix at `83bb28f`: six 100-sample trials pass, worst full-path p95 120.110 ms; all 64 source identities match `d661b02`. |
+| Dataset ≤21 s under 30 s; 8 SQL / 2 checks | Pass | Retained large-tier matrix at `83bb28f`: 3 fresh-process cold + 3 warm builds, maximum 506.727 ms; all 48 source identities match `5639790`. |
+| Prediction trial p95 ≤210 ms under 300 ms; 3 SQL / 2 checks / 1 GET | Pass | Retained large-tier matrix at `83bb28f`: six 100-sample trials pass, worst full-path p95 120.110 ms; all 64 source identities match `5639790`. |
 
 ### Historical measurements that required renewal
 
@@ -206,7 +223,7 @@ The step 2 assessment below covers affected integrated code once.
 | C36–C37 | Bounded integrity verification and independent recompute from exact raw bytes | #170, #244, #258 | Historical scrub pass: 16 objects / 246,304,787 bytes. #258's two replays at `cad93c9` match 103,468 normalized rows and 20 contexts; replay source content identity matches the adopted checkpoint. No replay rerun here. |
 | C38–C40 | Source declarations and scoped schedule permission; public ShareAlike disposition; actual Neon configuration separate from defaults | #171, #197, #256 | Declaration/notice record passes in its scope. New public participation-derived outputs and intended pipeline-role/driver qualification remain blocked; qualified notice-scope review remains open in #256. |
 | C41 | External adapter owner amendment: R2 replaces original GCS/Blaze gate | #172 | Pass for synthetic live R2 contract at recorded adapter blobs; current bounded methods and public/default-store use are distinct claims. No GCS prerequisite remains active. |
-| C42–C45 | Independent review, integrated CI, original scope/successor split, explicit full go/no-go without deployment or population implications | #138, #173, #260 | Written scoped verdict complete. Review-history gaps remain, final #173 independent review is pending, and App/CI fail under the accepted #260 exception. No unconditional integrated pass. |
+| C42–C45 | Independent review, integrated CI, original scope/successor split, explicit full go/no-go without deployment or population implications | #138, #173, #260 | Written scoped verdict complete. Main at `5639790` passes App, both DB jobs and CI after #260. Review-history gaps and final #173 checkpoint review remain pending. No unconditional integrated pass. |
 | C46–C47 | Accepted terminal-UPDATE-to-COMMIT limitation and host/database cross-clock constraint | #231, #241, #258 | Visibility gap accepted. Cross-clock rule fixed by #258 at the adopted checkpoint; snapshot ordering is checked by tests, not a database constraint. |
 
 ## Source and review provenance
@@ -612,9 +629,12 @@ final verdict is recorded above; all original measurement bytes are unchanged.
    passed again in one owner-confirmed window. Their qualification is committed
    as `0cdbe3a`. The original receipts stay unchanged.
 4. The final scoped verdict was committed after direct owner approval. The
-   PR draft and handoff await review. Independent review and fresh consent are
-   required
-   before push; the draft's issue-closing reference does not close #173 by hand.
+   owner reviewed the publication-safe rewrite as clean, with the #261
+   citations committed as `a52f4b9`. Main's #260 fix was merged as `c442929`;
+   the current checkpoint is `5639790` with green main CI. The updated verdict,
+   new checkpoint receipt, PR draft and handoff await final review. Fresh consent
+   is required before push; the draft's issue-closing reference does not close
+   #173 by hand.
 
 Remaining approved planning range: 3.5–5 active hours including the reruns,
 excluding owner and quiet-window waits. Report and propose a split before
@@ -635,5 +655,6 @@ at rewritten commit hashes. The local review handoff maps old to new commits.
 All five archives were scanned, including step 2 and JSON encoded inside
 strings; the [inventory](evidence/feature-store-173/publication-inventory.json)
 records the results. Only the three payload-containing archives were
-excluded. Step 4 had direct owner commit approval in this session; its
-independent review is still pending and the PR remains blocked until review.
+excluded. Step 4 had direct owner commit approval in this session, and the
+owner reviewed the rewrite as clean. Final checkpoint review remains pending;
+the PR stays blocked until then.
