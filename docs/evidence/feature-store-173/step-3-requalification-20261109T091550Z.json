@@ -1,0 +1,2484 @@
+{
+  "schema": "fs173-checkpoint-requalification-v1",
+  "issue": 173,
+  "step": 3,
+  "checkpoint": "d661b022780e243dff9e0f126351f43a9e3fc2da",
+  "sourceCommit": "83bb28f329fcb8b457dff9eba2119dea8ca02b98",
+  "verdict": "pass",
+  "startedAt": "2026-11-09T09:12:32.004Z",
+  "finishedAt": "2026-11-09T09:15:50.635233+00:00",
+  "runtime": "v24.18.1",
+  "prediction": {
+    "verification": {
+      "verdict": "pass",
+      "samples": 600,
+      "trials": 6,
+      "coverage": {
+        "players": {
+          "00-0019596": 1,
+          "00-0022924": 1,
+          "00-0022942": 1,
+          "00-0023459": 1,
+          "00-0026143": 1,
+          "00-0026158": 1,
+          "00-0026197": 1,
+          "00-0026300": 1,
+          "00-0026625": 1,
+          "00-0027688": 1,
+          "00-0028118": 1,
+          "00-0032156": 1,
+          "00-0032436": 1,
+          "00-0032792": 1,
+          "00-0034899": 1,
+          "00-0026498": 1,
+          "00-0027973": 1,
+          "00-0033275": 1,
+          "00-0026544": 1,
+          "00-0027939": 1,
+          "00-0028986": 1,
+          "00-0029263": 1,
+          "00-0032434": 1,
+          "00-0032950": 1,
+          "00-0033077": 1,
+          "00-0033958": 1,
+          "00-0034177": 1,
+          "00-0034955": 1,
+          "00-0038400": 1,
+          "00-0039732": 1,
+          "00-0033119": 1,
+          "00-0034577": 1,
+          "00-0027948": 1,
+          "00-0029604": 1,
+          "00-0029701": 1,
+          "00-0030520": 1,
+          "00-0030565": 1,
+          "00-0031237": 1,
+          "00-0031280": 1,
+          "00-0033537": 1,
+          "00-0033949": 1,
+          "00-0034438": 1,
+          "00-0035264": 1,
+          "00-0037175": 1,
+          "00-0037324": 1,
+          "00-0029567": 1,
+          "00-0031345": 1,
+          "00-0031503": 1,
+          "00-0031800": 1,
+          "00-0032268": 1,
+          "00-0033662": 1,
+          "00-0033869": 1,
+          "00-0033936": 1,
+          "00-0034796": 1,
+          "00-0035282": 1,
+          "00-0035289": 1,
+          "00-0035939": 1,
+          "00-0038391": 1,
+          "00-0038416": 1,
+          "00-0038550": 1,
+          "00-0034855": 1,
+          "00-0035146": 1,
+          "00-0036389": 1,
+          "00-0036898": 1,
+          "00-0033106": 1,
+          "00-0033319": 1,
+          "00-0033873": 1,
+          "00-0034401": 1,
+          "00-0034771": 1,
+          "00-0034857": 1,
+          "00-0034869": 1,
+          "00-0036879": 1,
+          "00-0036928": 1,
+          "00-0038998": 1,
+          "00-0039398": 1,
+          "00-0034343": 1,
+          "00-0035040": 1,
+          "00-0035100": 1,
+          "00-0035704": 1,
+          "00-0035710": 1,
+          "00-0035993": 1,
+          "00-0036212": 1,
+          "00-0036264": 1,
+          "00-0036355": 1,
+          "00-0036971": 1,
+          "00-0037077": 1,
+          "00-0038583": 1,
+          "00-0039851": 1,
+          "00-0040676": 1,
+          "00-0036226": 1,
+          "00-0036945": 1,
+          "00-0036972": 1,
+          "00-0038102": 1,
+          "00-0038579": 1,
+          "00-0039163": 1,
+          "00-0039376": 1,
+          "00-0035228": 1,
+          "00-0036197": 1,
+          "00-0036442": 1,
+          "00-0037012": 1
+        },
+        "teams": {
+          "TB": 3,
+          "PIT": 3,
+          "IND": 3,
+          "GB": 3,
+          "ATL": 3,
+          "NYJ": 3,
+          "KC": 3,
+          "BAL": 3,
+          "LV": 3,
+          "ARI": 4,
+          "NYG": 3,
+          "TEN": 3,
+          "WAS": 3,
+          "DET": 4,
+          "JAX": 3,
+          "LA": 2,
+          "NO": 4,
+          "CLE": 3,
+          "LAC": 3,
+          "CAR": 3,
+          "BUF": 3,
+          "SEA": 3,
+          "SF": 4,
+          "MIN": 3,
+          "DAL": 3,
+          "CHI": 3,
+          "MIA": 3,
+          "CIN": 4,
+          "PHI": 3,
+          "DEN": 3,
+          "NE": 3,
+          "HOU": 3
+        },
+        "cells": {
+          "2021/2-4": 7,
+          "2021/5-8": 7,
+          "2025/2-4": 6,
+          "2021/9-16": 7,
+          "2024/9-16": 7,
+          "2022/2-4": 7,
+          "2022/5-8": 7,
+          "2024/5-8": 6,
+          "2023/5-8": 7,
+          "2022/9-16": 6,
+          "2023/9-16": 6,
+          "2025/9-16": 7,
+          "2025/5-8": 6,
+          "2023/2-4": 7,
+          "2024/2-4": 7
+        },
+        "n": {
+          "2": 27,
+          "3": 4,
+          "4": 3,
+          "5": 15,
+          "6": 6,
+          "7": 8,
+          "8": 4,
+          "9": 8,
+          "10": 2,
+          "11": 1,
+          "12": 2,
+          "13": 2,
+          "14": 1,
+          "15": 1,
+          "16": 16
+        }
+      },
+      "work": {
+        "sql": 3,
+        "checks": 2,
+        "gets": 1,
+        "heads": 0,
+        "puts": 0,
+        "deletes": 0,
+        "lists": 0,
+        "hashes": 0
+      },
+      "worstP95Ms": 120.10962499999732,
+      "minimumHeadroom": 0.5996345833333423,
+      "allTrialsAtLeast30PercentHeadroom": true
+    },
+    "trials": [
+      {
+        "name": "C1",
+        "attempts": 100,
+        "available": 100,
+        "p95Ms": 120.10962499999732,
+        "headroom": 0.5996345833333423,
+        "maximumMs": 168.8187920000055,
+        "startupP95Ms": 91.627959000002,
+        "startupMaximumMs": 142.64533399999374,
+        "startupTail": [
+          {
+            "index": 85,
+            "pid": 50189,
+            "featureId": "096b25f0-169d-4a76-a6b7-6ac77c26aae8",
+            "startupMs": 142.64533399999374
+          },
+          {
+            "index": 0,
+            "pid": 50044,
+            "featureId": "7f4250ac-1f1f-4e85-91a3-3466e63c91ab",
+            "startupMs": 141.57683399998803
+          },
+          {
+            "index": 63,
+            "pid": 50148,
+            "featureId": "f66e086c-5fc4-4b6d-a1c4-ab4a7b430a60",
+            "startupMs": 110.43275000000084
+          },
+          {
+            "index": 88,
+            "pid": 50192,
+            "featureId": "70d2517e-7742-430b-b5c0-793bf13aae77",
+            "startupMs": 95.78408300000245
+          },
+          {
+            "index": 92,
+            "pid": 50201,
+            "featureId": "f4b00412-1f97-4134-8ff1-757815f9230d",
+            "startupMs": 94.72341600000479
+          }
+        ],
+        "meanSetupShare": 0.7780542342719152,
+        "pass": true
+      },
+      {
+        "name": "W1",
+        "attempts": 100,
+        "available": 100,
+        "p95Ms": 6.150499999988824,
+        "headroom": 0.9794983333333706,
+        "maximumMs": 21.970750000007683,
+        "startupP95Ms": 0,
+        "meanSetupShare": 0,
+        "pass": true
+      },
+      {
+        "name": "C2",
+        "attempts": 100,
+        "available": 100,
+        "p95Ms": 119.86720900000364,
+        "headroom": 0.6004426366666545,
+        "maximumMs": 172.7230830000044,
+        "startupP95Ms": 92.42945800000325,
+        "startupMaximumMs": 151.34216599999309,
+        "startupTail": [
+          {
+            "index": 0,
+            "pid": 50225,
+            "featureId": "7f4250ac-1f1f-4e85-91a3-3466e63c91ab",
+            "startupMs": 151.34216599999309
+          },
+          {
+            "index": 84,
+            "pid": 50369,
+            "featureId": "f202cb91-a3d5-4eba-bf1f-6d2786d2efc4",
+            "startupMs": 97.89533399999463
+          },
+          {
+            "index": 83,
+            "pid": 50363,
+            "featureId": "c9e76d99-5c99-42de-a7c0-486e0b9e7bac",
+            "startupMs": 95.39579199999629
+          },
+          {
+            "index": 48,
+            "pid": 50303,
+            "featureId": "f36ab231-07b5-4dbe-9571-6bc25fccfb88",
+            "startupMs": 93.49087599999677
+          },
+          {
+            "index": 35,
+            "pid": 50285,
+            "featureId": "6a5bb757-7445-465a-994a-4b6fa9e02c48",
+            "startupMs": 93.29429299999897
+          }
+        ],
+        "meanSetupShare": 0.780685863010232,
+        "pass": true
+      },
+      {
+        "name": "W2",
+        "attempts": 100,
+        "available": 100,
+        "p95Ms": 4.772583999991184,
+        "headroom": 0.984091386666696,
+        "maximumMs": 26.55008299999463,
+        "startupP95Ms": 0,
+        "meanSetupShare": 0,
+        "pass": true
+      },
+      {
+        "name": "C3",
+        "attempts": 100,
+        "available": 100,
+        "p95Ms": 119.59112500000629,
+        "headroom": 0.6013629166666457,
+        "maximumMs": 129.6316669999942,
+        "startupP95Ms": 92.40554099999665,
+        "startupMaximumMs": 99.4216249999944,
+        "startupTail": [
+          {
+            "index": 3,
+            "pid": 50406,
+            "featureId": "1ff73f6d-bde7-4217-925f-95a12a9882cf",
+            "startupMs": 99.4216249999944
+          },
+          {
+            "index": 80,
+            "pid": 50533,
+            "featureId": "5e298bbe-bc29-487b-91bc-68754b12c8ed",
+            "startupMs": 97.95970700002364
+          },
+          {
+            "index": 4,
+            "pid": 50407,
+            "featureId": "d3f0fe5b-c80e-42aa-b255-e9b97945d011",
+            "startupMs": 96.66504199999672
+          },
+          {
+            "index": 41,
+            "pid": 50470,
+            "featureId": "36974263-56eb-4559-8733-41f2842fb6b8",
+            "startupMs": 92.94966700000897
+          },
+          {
+            "index": 55,
+            "pid": 50491,
+            "featureId": "d670b359-7b0b-4ad1-bb4f-5bf09b19e7f3",
+            "startupMs": 92.89191700001012
+          }
+        ],
+        "meanSetupShare": 0.7760520242630617,
+        "pass": true
+      },
+      {
+        "name": "W3",
+        "attempts": 100,
+        "available": 100,
+        "p95Ms": 4.6550829999905545,
+        "headroom": 0.9844830566666981,
+        "maximumMs": 27.802917000022717,
+        "startupP95Ms": 0,
+        "meanSetupShare": 0,
+        "pass": true
+      }
+    ],
+    "sourceFilesVerified": 64,
+    "manifestSha256": "a7511b00b1736e6fddd94a5f7da76128461b9002fb404681b2923b9fa61044b9",
+    "fixture": {
+      "wireFiles": 16,
+      "rowCount": 2504,
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+      "strictRows": 0,
+      "inputs": [
+        {
+          "name": "games.csv.gz",
+          "expectedWireSha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+          "status": "ingested",
+          "jobId": "ed89a245-3a31-4dea-9aca-f644d59fd2fc",
+          "snapshotId": "2fb094c7-93f8-467d-93d1-4415eeb43e84",
+          "profileId": "nflverse.schedules.all.v1",
+          "objectKey": "raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+          "wireSha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+          "decodedSha256": "ac9f51116270f6dbe67aa842092801862a702a0764104ea79275a7e940bcd616",
+          "headerSha256": "6cdacf455895ebf361cdd8162b5655acfbfbc5598de01e47effb801282fdb779",
+          "wireBytes": 515250,
+          "decodedBytes": 2185203,
+          "rawRows": 7548,
+          "normalizedRows": 1359,
+          "diagnostics": {
+            "selectedRows": 1359,
+            "filteredRows": 6189,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 175.13570800000002,
+          "stagesMs": {
+            "download": 0.12320799999997689,
+            "validationAndNormalization": 109.35312500000009,
+            "objectWrite": 6.339707999999973,
+            "databasePublication": 59.3291670000001
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "pbp_participation_2021.csv",
+          "expectedWireSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+          "status": "ingested",
+          "jobId": "b0e78421-d261-4915-b3f7-15dd3eb3a029",
+          "snapshotId": "153f5749-c607-4ed3-8543-723a03240941",
+          "profileId": "nflverse.pbp_participation.2021.v1",
+          "objectKey": "raw/b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+          "wireSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+          "decodedSha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+          "headerSha256": "84bf2347f6d70d204ddb241c6607197eac0c9c60448cb70ec99e2f1a01ea0642",
+          "wireBytes": 22498246,
+          "decodedBytes": 22498246,
+          "rawRows": 50714,
+          "normalizedRows": 18309,
+          "diagnostics": {
+            "selectedRows": 18309,
+            "filteredRows": 2298,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 4189,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 869.150834,
+          "stagesMs": {
+            "download": 0.037042000000155895,
+            "validationAndNormalization": 622.0914169999999,
+            "objectWrite": 26.706125000000156,
+            "databasePublication": 220.32141599999977
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "pbp_participation_2022.csv",
+          "expectedWireSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+          "status": "ingested",
+          "jobId": "b613e7ac-a35b-4926-a468-45361132b2e8",
+          "snapshotId": "fc2cfcd2-6820-47b0-a380-21cdf7da57d7",
+          "profileId": "nflverse.pbp_participation.2022.v1",
+          "objectKey": "raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+          "wireSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+          "decodedSha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+          "headerSha256": "84bf2347f6d70d204ddb241c6607197eac0c9c60448cb70ec99e2f1a01ea0642",
+          "wireBytes": 22245804,
+          "decodedBytes": 22245804,
+          "rawRows": 50150,
+          "normalizedRows": 18193,
+          "diagnostics": {
+            "selectedRows": 18193,
+            "filteredRows": 2306,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 4100,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 889.5799579999998,
+          "stagesMs": {
+            "download": 0.04583300000012969,
+            "validationAndNormalization": 622.7703339999998,
+            "objectWrite": 24.70679199999995,
+            "databasePublication": 242.0595830000002
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "pbp_participation_2023.csv",
+          "expectedWireSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+          "status": "ingested",
+          "jobId": "876e61cc-cf0c-42df-aee1-c68faab0d8e3",
+          "snapshotId": "98e31bae-d6a0-4363-97ad-646c94f44855",
+          "profileId": "nflverse.pbp_participation.2023.v1",
+          "objectKey": "raw/ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+          "wireSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+          "decodedSha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+          "headerSha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+          "wireBytes": 49967956,
+          "decodedBytes": 49967956,
+          "rawRows": 46168,
+          "normalizedRows": 17670,
+          "diagnostics": {
+            "selectedRows": 17670,
+            "filteredRows": 2111,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 1406.646291,
+          "stagesMs": {
+            "download": 0.04241599999977552,
+            "validationAndNormalization": 1090.1819170000003,
+            "objectWrite": 48.82879200000025,
+            "databasePublication": 267.5981249999995
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "pbp_participation_2024.csv",
+          "expectedWireSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+          "status": "ingested",
+          "jobId": "8b9fce60-ed0e-4eff-ba8e-4c55b8cc1bf1",
+          "snapshotId": "f84dd276-115b-4ac4-8bb1-91909bb37314",
+          "profileId": "nflverse.pbp_participation.2024.v1",
+          "objectKey": "raw/b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+          "wireSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+          "decodedSha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+          "headerSha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+          "wireBytes": 49688308,
+          "decodedBytes": 49688308,
+          "rawRows": 45919,
+          "normalizedRows": 17564,
+          "diagnostics": {
+            "selectedRows": 17564,
+            "filteredRows": 2053,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 1,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 1363.496583,
+          "stagesMs": {
+            "download": 0.05274999999983265,
+            "validationAndNormalization": 1059.7813750000005,
+            "objectWrite": 42.026332999999795,
+            "databasePublication": 261.64300000000003
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "pbp_participation_2025.csv",
+          "expectedWireSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+          "status": "ingested",
+          "jobId": "f71e8b6f-1b47-4957-92f6-bb22e2a38986",
+          "snapshotId": "828e4cbf-197f-470b-afcb-6982d7597e4f",
+          "profileId": "nflverse.pbp_participation.2025.v1",
+          "objectKey": "raw/59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+          "wireSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+          "decodedSha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+          "headerSha256": "33f9669853e7347df80647f0a9a8bfbf55c904ed880f273ae10e49eb40d9cc31",
+          "wireBytes": 49094943,
+          "decodedBytes": 49094943,
+          "rawRows": 45184,
+          "normalizedRows": 17707,
+          "diagnostics": {
+            "selectedRows": 17707,
+            "filteredRows": 2135,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 1355.5139170000002,
+          "stagesMs": {
+            "download": 0.04475000000002183,
+            "validationAndNormalization": 1024.8870000000006,
+            "objectWrite": 43.81066699999974,
+            "databasePublication": 286.77408300000025
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "roster_weekly_2021.csv",
+          "expectedWireSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+          "status": "ingested",
+          "jobId": "630348f4-653f-4e80-aad5-a3844db08879",
+          "snapshotId": "00e305ec-d193-4bb6-a851-d598a2ce46b0",
+          "profileId": "nflverse.weekly_rosters.2021.v1",
+          "objectKey": "raw/88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+          "wireSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+          "decodedSha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+          "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+          "wireBytes": 15242660,
+          "decodedBytes": 15242660,
+          "rawRows": 46696,
+          "normalizedRows": 1916,
+          "diagnostics": {
+            "selectedRows": 1916,
+            "filteredRows": 44780,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 508.52387499999895,
+          "stagesMs": {
+            "download": 0.04012499999953434,
+            "validationAndNormalization": 426.3109170000007,
+            "objectWrite": 21.423625000001266,
+            "databasePublication": 60.75183299999844
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "roster_weekly_2022.csv",
+          "expectedWireSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+          "status": "ingested",
+          "jobId": "f3328a49-592e-429d-bdcd-552adca1dd55",
+          "snapshotId": "85df5cbf-65bf-40a1-9a29-380986014a41",
+          "profileId": "nflverse.weekly_rosters.2022.v1",
+          "objectKey": "raw/bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+          "wireSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+          "decodedSha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+          "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+          "wireBytes": 14790824,
+          "decodedBytes": 14790824,
+          "rawRows": 46163,
+          "normalizedRows": 1844,
+          "diagnostics": {
+            "selectedRows": 1844,
+            "filteredRows": 44319,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 480.30175000000054,
+          "stagesMs": {
+            "download": 0.032959000000118976,
+            "validationAndNormalization": 403.00954100000126,
+            "objectWrite": 18.534874999999374,
+            "databasePublication": 58.72649999999885
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "roster_weekly_2023.csv",
+          "expectedWireSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+          "status": "ingested",
+          "jobId": "2229839e-c3ba-4a42-9a76-52382370a4c1",
+          "snapshotId": "28f7eb7f-5b5e-43fa-a11e-d0da422536b0",
+          "profileId": "nflverse.weekly_rosters.2023.v1",
+          "objectKey": "raw/1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+          "wireSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+          "decodedSha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+          "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+          "wireBytes": 14612235,
+          "decodedBytes": 14612235,
+          "rawRows": 45655,
+          "normalizedRows": 1812,
+          "diagnostics": {
+            "selectedRows": 1812,
+            "filteredRows": 43843,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 493.177334,
+          "stagesMs": {
+            "download": 0.03049999999893771,
+            "validationAndNormalization": 407.64770900000076,
+            "objectWrite": 20.356416999999055,
+            "databasePublication": 65.14537399999972
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "roster_weekly_2024.csv.gz",
+          "expectedWireSha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+          "status": "ingested",
+          "jobId": "e1a87e00-5f7d-4737-861e-7e6e44b01dd9",
+          "snapshotId": "d7eeda10-907f-46b6-88c7-ee9148ec22b4",
+          "profileId": "nflverse.weekly_rosters.2024.v1",
+          "objectKey": "raw/330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+          "wireSha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+          "decodedSha256": "074ecaeb9325de943c11f7bbc941425626985090ef8386f90cd837fa5cb5d4b3",
+          "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+          "wireBytes": 699786,
+          "decodedBytes": 14926918,
+          "rawRows": 46579,
+          "normalizedRows": 1867,
+          "diagnostics": {
+            "selectedRows": 1867,
+            "filteredRows": 44712,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 485.77029200000106,
+          "stagesMs": {
+            "download": 0.031000000000858563,
+            "validationAndNormalization": 416.5360839999994,
+            "objectWrite": 6.437041000001045,
+            "databasePublication": 62.768458999998984
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "roster_weekly_2025.csv.gz",
+          "expectedWireSha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+          "status": "ingested",
+          "jobId": "f9169af1-3432-404e-81b7-d73ddde67267",
+          "snapshotId": "23fd6cb0-f8ee-4b62-b372-41b948ec32b1",
+          "profileId": "nflverse.weekly_rosters.2025.v1",
+          "objectKey": "raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+          "wireSha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+          "decodedSha256": "c2f7a1ffebe06058400af1989d1cd2900cc5c9659f084623708a06d4e28de35b",
+          "headerSha256": "070631d1a40b483972e9d4f4f46798ac798777695ef519f63fcf746e74fa468c",
+          "wireBytes": 708144,
+          "decodedBytes": 15385661,
+          "rawRows": 46849,
+          "normalizedRows": 1948,
+          "diagnostics": {
+            "selectedRows": 1948,
+            "filteredRows": 44901,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 533.8752080000013,
+          "stagesMs": {
+            "download": 0.023375000000669388,
+            "validationAndNormalization": 460.78491700000086,
+            "objectWrite": 6.975125000000844,
+            "databasePublication": 66.09349999999904
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "stats_player_week_2021.csv.gz",
+          "expectedWireSha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+          "status": "ingested",
+          "jobId": "bb670cd5-1636-4a56-9a36-18aec16a0329",
+          "snapshotId": "26735ea7-bf5f-45e0-b06a-407b48334005",
+          "profileId": "nflverse.stats_player.2021.v1",
+          "objectKey": "raw/1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+          "wireSha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+          "decodedSha256": "41915fb49238902ad1f129ebf0405b11a1e710454ae0fe8f7b3e4f9145875f48",
+          "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+          "wireBytes": 1254611,
+          "decodedBytes": 8477784,
+          "rawRows": 18969,
+          "normalizedRows": 655,
+          "diagnostics": {
+            "selectedRows": 655,
+            "filteredRows": 18314,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 456.6060410000009,
+          "stagesMs": {
+            "download": 0.022166000000652275,
+            "validationAndNormalization": 416.894624999999,
+            "objectWrite": 9.249125000000276,
+            "databasePublication": 30.440458999999464
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "stats_player_week_2022.csv.gz",
+          "expectedWireSha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+          "status": "ingested",
+          "jobId": "621c068d-3ab3-450b-8ad0-3245f7135df8",
+          "snapshotId": "d969d5f0-c1ef-4ba2-bd2a-f2243096d350",
+          "profileId": "nflverse.stats_player.2022.v1",
+          "objectKey": "raw/0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+          "wireSha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+          "decodedSha256": "ad426c3fe5bf1cc30c3f137fdfe96d054e19d400879ee4413129da49fa7b54be",
+          "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+          "wireBytes": 1241515,
+          "decodedBytes": 8408729,
+          "rawRows": 18831,
+          "normalizedRows": 633,
+          "diagnostics": {
+            "selectedRows": 633,
+            "filteredRows": 18198,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 445.16995900000074,
+          "stagesMs": {
+            "download": 0.019125000000713044,
+            "validationAndNormalization": 416.9303340000006,
+            "objectWrite": 9.318750000000364,
+            "databasePublication": 18.902165999999852
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "stats_player_week_2023.csv.gz",
+          "expectedWireSha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+          "status": "ingested",
+          "jobId": "066e7be1-292a-4e93-9468-4a1459441b3a",
+          "snapshotId": "ccb0d8bc-3875-49f1-817c-690b8696276f",
+          "profileId": "nflverse.stats_player.2023.v1",
+          "objectKey": "raw/6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+          "wireSha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+          "decodedSha256": "f19cb71a5de0dce7fd09376026237c9ee9d5a93fe13815a2ea3ec2d37204cb17",
+          "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+          "wireBytes": 1237909,
+          "decodedBytes": 8332874,
+          "rawRows": 18643,
+          "normalizedRows": 663,
+          "diagnostics": {
+            "selectedRows": 663,
+            "filteredRows": 17980,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 443.82083299999977,
+          "stagesMs": {
+            "download": 0.019500000000334694,
+            "validationAndNormalization": 402.70395800000006,
+            "objectWrite": 8.94695899999897,
+            "databasePublication": 32.15074900000036
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "stats_player_week_2024.csv.gz",
+          "expectedWireSha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+          "status": "ingested",
+          "jobId": "835bcf26-3df2-4f40-8584-553d950b1f89",
+          "snapshotId": "73fc67c1-79ad-4fea-92f1-db9b123582f1",
+          "profileId": "nflverse.stats_player.2024.v1",
+          "objectKey": "raw/61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+          "wireSha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+          "decodedSha256": "3ddc45a84f759aa348ce465ae001752c530575455717657cdfe1f8abfcdb4759",
+          "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+          "wireBytes": 1244175,
+          "decodedBytes": 8470040,
+          "rawRows": 18983,
+          "normalizedRows": 664,
+          "diagnostics": {
+            "selectedRows": 664,
+            "filteredRows": 18319,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 458.662875,
+          "stagesMs": {
+            "download": 0.019874999999956344,
+            "validationAndNormalization": 413.3585409999996,
+            "objectWrite": 7.083708000000115,
+            "databasePublication": 38.20112599999993
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        },
+        {
+          "name": "stats_player_week_2025.csv.gz",
+          "expectedWireSha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+          "status": "ingested",
+          "jobId": "cc4c5498-1b1a-4637-8387-fc25d2b2c768",
+          "snapshotId": "53fcef24-7082-49fb-98c1-2142b6f2315c",
+          "profileId": "nflverse.stats_player.2025.v1",
+          "objectKey": "raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+          "wireSha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+          "decodedSha256": "e5e0615b3d96a3eaebfaee91e55afb4a4e7fe0caf057454177bcd7d6ad4bcfc2",
+          "headerSha256": "d3b3c633d85281035f40d96b180cb4e6231d8ed54e836896c4a832c4e012f42e",
+          "wireBytes": 1262421,
+          "decodedBytes": 8656387,
+          "rawRows": 19422,
+          "normalizedRows": 664,
+          "diagnostics": {
+            "selectedRows": 664,
+            "filteredRows": 18758,
+            "duplicateRows": 0,
+            "conflictingRows": 0,
+            "missingOffenseRows": 0,
+            "invalidParticipationRows": 0,
+            "refusedRows": 0
+          },
+          "newObject": true,
+          "elapsedMs": 466.100375,
+          "stagesMs": {
+            "download": 0.01975000000129512,
+            "validationAndNormalization": 423.95395800000006,
+            "objectWrite": 8.133874999999534,
+            "databasePublication": 33.99341699999968
+          },
+          "work": {
+            "downloadRequests": 0,
+            "csvValidationPasses": 1,
+            "normalizationPasses": 1,
+            "bulkNormalizedInserts": 1
+          }
+        }
+      ]
+    },
+    "modelOnly": {
+      "sql": 2,
+      "gets": 1
+    },
+    "warmControls": {
+      "rightsRefusal": true,
+      "deletionRefusal": true,
+      "sameProcess": true
+    },
+    "sourceUnchanged": true,
+    "maximumSampleMs": 172.7230830000044,
+    "maximumStartupMs": 151.34216599999309,
+    "cache": {
+      "os": "unflushed; fixture preparation warms file cache",
+      "postgres": "running; unflushed and warmed by fixture preparation",
+      "application": "fresh process per cold sample; one dedicated process/connection per warm trial; no forecasts/artifacts/rights cached"
+    },
+    "environment": {
+      "tier": "large",
+      "lane": "lane-3",
+      "diskAdmission": {
+        "project": "dfs-ev-demo-test-lane-3",
+        "tier": "large",
+        "capacityBytes": 2147483648,
+        "requiredFreeBytes": 637534208,
+        "availableBytes": 2099044352,
+        "retainedWalBytes": 16777216
+      },
+      "mount": {
+        "/var/lib/postgresql": "rw,size=2g"
+      },
+      "postgresArguments": [
+        "postgres"
+      ],
+      "observedPostgres": {
+        "observedAt": "2026-11-09T09:12:30.752Z",
+        "lane": "lane-3",
+        "tier": "large",
+        "database": "dfs_ev_test",
+        "role": "dfs_ev_test",
+        "server_port": 5432,
+        "version": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+        "settings": [
+          {
+            "name": "TimeZone",
+            "setting": "UTC",
+            "unit": null,
+            "source": "configuration file",
+            "boot_val": "GMT",
+            "reset_val": "UTC"
+          },
+          {
+            "name": "block_size",
+            "setting": "8192",
+            "unit": null,
+            "source": "default",
+            "boot_val": "8192",
+            "reset_val": "8192"
+          },
+          {
+            "name": "checkpoint_completion_target",
+            "setting": "0.9",
+            "unit": null,
+            "source": "default",
+            "boot_val": "0.9",
+            "reset_val": "0.9"
+          },
+          {
+            "name": "checkpoint_timeout",
+            "setting": "300",
+            "unit": "s",
+            "source": "default",
+            "boot_val": "300",
+            "reset_val": "300"
+          },
+          {
+            "name": "effective_cache_size",
+            "setting": "524288",
+            "unit": "8kB",
+            "source": "default",
+            "boot_val": "524288",
+            "reset_val": "524288"
+          },
+          {
+            "name": "fsync",
+            "setting": "on",
+            "unit": null,
+            "source": "default",
+            "boot_val": "on",
+            "reset_val": "on"
+          },
+          {
+            "name": "full_page_writes",
+            "setting": "on",
+            "unit": null,
+            "source": "default",
+            "boot_val": "on",
+            "reset_val": "on"
+          },
+          {
+            "name": "idle_in_transaction_session_timeout",
+            "setting": "0",
+            "unit": "ms",
+            "source": "default",
+            "boot_val": "0",
+            "reset_val": "0"
+          },
+          {
+            "name": "jit",
+            "setting": "on",
+            "unit": null,
+            "source": "default",
+            "boot_val": "on",
+            "reset_val": "on"
+          },
+          {
+            "name": "lock_timeout",
+            "setting": "0",
+            "unit": "ms",
+            "source": "default",
+            "boot_val": "0",
+            "reset_val": "0"
+          },
+          {
+            "name": "maintenance_work_mem",
+            "setting": "65536",
+            "unit": "kB",
+            "source": "default",
+            "boot_val": "65536",
+            "reset_val": "65536"
+          },
+          {
+            "name": "max_parallel_workers_per_gather",
+            "setting": "2",
+            "unit": null,
+            "source": "default",
+            "boot_val": "2",
+            "reset_val": "2"
+          },
+          {
+            "name": "max_wal_size",
+            "setting": "1024",
+            "unit": "MB",
+            "source": "configuration file",
+            "boot_val": "1024",
+            "reset_val": "1024"
+          },
+          {
+            "name": "max_worker_processes",
+            "setting": "8",
+            "unit": null,
+            "source": "default",
+            "boot_val": "8",
+            "reset_val": "8"
+          },
+          {
+            "name": "min_wal_size",
+            "setting": "80",
+            "unit": "MB",
+            "source": "configuration file",
+            "boot_val": "80",
+            "reset_val": "80"
+          },
+          {
+            "name": "server_version",
+            "setting": "18.6",
+            "unit": null,
+            "source": "default",
+            "boot_val": "18.6",
+            "reset_val": "18.6"
+          },
+          {
+            "name": "shared_buffers",
+            "setting": "16384",
+            "unit": "8kB",
+            "source": "configuration file",
+            "boot_val": "16384",
+            "reset_val": "16384"
+          },
+          {
+            "name": "statement_timeout",
+            "setting": "15000",
+            "unit": "ms",
+            "source": "client",
+            "boot_val": "0",
+            "reset_val": "15000"
+          },
+          {
+            "name": "synchronous_commit",
+            "setting": "on",
+            "unit": null,
+            "source": "default",
+            "boot_val": "on",
+            "reset_val": "on"
+          },
+          {
+            "name": "temp_file_limit",
+            "setting": "-1",
+            "unit": "kB",
+            "source": "default",
+            "boot_val": "-1",
+            "reset_val": "-1"
+          },
+          {
+            "name": "track_commit_timestamp",
+            "setting": "off",
+            "unit": null,
+            "source": "default",
+            "boot_val": "off",
+            "reset_val": "off"
+          },
+          {
+            "name": "wal_level",
+            "setting": "replica",
+            "unit": null,
+            "source": "default",
+            "boot_val": "replica",
+            "reset_val": "replica"
+          },
+          {
+            "name": "work_mem",
+            "setting": "4096",
+            "unit": "kB",
+            "source": "default",
+            "boot_val": "4096",
+            "reset_val": "4096"
+          }
+        ]
+      },
+      "configurationHashes": {
+        "compose.test.yml": "c930cb6f2cc7c624e579ed9ca6cf93c88c1d37c2b435b2b5a83d30d97922ef70",
+        "compose.feature-store-spike.yml": "035f93c5e49def485c5ac0c632d11bf5234ba27234ee5f2637ba05ed98b383e8"
+      }
+    },
+    "legacyEnvironment": "Original runner fixtureConfig.postgresTmpfsBytes=512 MiB is stale hardcoded metadata; observed large-tier 2 GiB mount/settings are authoritative."
+  },
+  "dataset": {
+    "verification": {
+      "verdict": "pass",
+      "trials": 6,
+      "coldProcesses": 3,
+      "warmProcesses": 1,
+      "maximumMs": 506.72666699999536,
+      "minimumHeadroom": 0.9831091111000001,
+      "exactBytesAndNaturalHashVerified": true,
+      "rightsChecksPerTrial": 2
+    },
+    "trials": [
+      {
+        "round": 1,
+        "mode": "cold",
+        "measuredMs": 506.72666699999536,
+        "headroom": 0.9831091111000001,
+        "processId": 52142,
+        "work": {
+          "statements": 8,
+          "rightsQueries": 2,
+          "pointInTimeJoins": 1,
+          "perRowQueries": 0,
+          "objectWrites": 1,
+          "sourceByteReads": 0
+        },
+        "rowCount": 2504,
+        "fileSha256": "f100c31505e6f3906dd1c5ee9fd3694cf7a6302358799b2d62bd7856de7d7c5f",
+        "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+      },
+      {
+        "round": 1,
+        "mode": "warm",
+        "measuredMs": 354.64470900000015,
+        "headroom": 0.9881785097,
+        "processId": 51767,
+        "work": {
+          "statements": 8,
+          "rightsQueries": 2,
+          "pointInTimeJoins": 1,
+          "perRowQueries": 0,
+          "objectWrites": 1,
+          "sourceByteReads": 0
+        },
+        "rowCount": 2504,
+        "fileSha256": "f100c31505e6f3906dd1c5ee9fd3694cf7a6302358799b2d62bd7856de7d7c5f",
+        "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+      },
+      {
+        "round": 2,
+        "mode": "cold",
+        "measuredMs": 435.91624999999476,
+        "headroom": 0.9854694583333335,
+        "processId": 52148,
+        "work": {
+          "statements": 8,
+          "rightsQueries": 2,
+          "pointInTimeJoins": 1,
+          "perRowQueries": 0,
+          "objectWrites": 1,
+          "sourceByteReads": 0
+        },
+        "rowCount": 2504,
+        "fileSha256": "f100c31505e6f3906dd1c5ee9fd3694cf7a6302358799b2d62bd7856de7d7c5f",
+        "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+      },
+      {
+        "round": 2,
+        "mode": "warm",
+        "measuredMs": 343.85904099999607,
+        "headroom": 0.9885380319666668,
+        "processId": 51767,
+        "work": {
+          "statements": 8,
+          "rightsQueries": 2,
+          "pointInTimeJoins": 1,
+          "perRowQueries": 0,
+          "objectWrites": 1,
+          "sourceByteReads": 0
+        },
+        "rowCount": 2504,
+        "fileSha256": "f100c31505e6f3906dd1c5ee9fd3694cf7a6302358799b2d62bd7856de7d7c5f",
+        "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+      },
+      {
+        "round": 3,
+        "mode": "cold",
+        "measuredMs": 446.17758300000423,
+        "headroom": 0.9851274138999999,
+        "processId": 52154,
+        "work": {
+          "statements": 8,
+          "rightsQueries": 2,
+          "pointInTimeJoins": 1,
+          "perRowQueries": 0,
+          "objectWrites": 1,
+          "sourceByteReads": 0
+        },
+        "rowCount": 2504,
+        "fileSha256": "f100c31505e6f3906dd1c5ee9fd3694cf7a6302358799b2d62bd7856de7d7c5f",
+        "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+      },
+      {
+        "round": 3,
+        "mode": "warm",
+        "measuredMs": 363.35829199999716,
+        "headroom": 0.9878880569333335,
+        "processId": 51767,
+        "work": {
+          "statements": 8,
+          "rightsQueries": 2,
+          "pointInTimeJoins": 1,
+          "perRowQueries": 0,
+          "objectWrites": 1,
+          "sourceByteReads": 0
+        },
+        "rowCount": 2504,
+        "fileSha256": "f100c31505e6f3906dd1c5ee9fd3694cf7a6302358799b2d62bd7856de7d7c5f",
+        "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d"
+      }
+    ],
+    "sourceFilesVerified": 48,
+    "deadlineMs": 30000,
+    "targetMs": 21000,
+    "artifact": {
+      "objectKey": "datasets/f100c31505e6f3906dd1c5ee9fd3694cf7a6302358799b2d62bd7856de7d7c5f",
+      "fileSha256": "f100c31505e6f3906dd1c5ee9fd3694cf7a6302358799b2d62bd7856de7d7c5f",
+      "contentSha256": "a4de10aaefec7ec33d1c913fc255ee3527108f9d1f53e22afb79b82a9f9c607d",
+      "byteSize": 3527313,
+      "rowCount": 2504,
+      "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/173-step3-d661b02-dataset-20261109T0907Z/dataset-objects-IDs0Mp/"
+    },
+    "coverage": [
+      {
+        "season": 2022,
+        "rows": 595,
+        "strata": {
+          "2-4": 62,
+          "5-8": 67,
+          "9-16": 466
+        }
+      },
+      {
+        "season": 2023,
+        "rows": 632,
+        "strata": {
+          "2-4": 50,
+          "5-8": 81,
+          "9-16": 501
+        }
+      },
+      {
+        "season": 2024,
+        "rows": 644,
+        "strata": {
+          "2-4": 25,
+          "5-8": 51,
+          "9-16": 568
+        }
+      },
+      {
+        "season": 2025,
+        "rows": 633,
+        "strata": {
+          "2-4": 39,
+          "5-8": 34,
+          "9-16": 560
+        }
+      }
+    ],
+    "environment": {
+      "tier": "large",
+      "lane": "lane-3",
+      "diskAdmission": {
+        "project": "dfs-ev-demo-test-lane-3",
+        "tier": "large",
+        "capacityBytes": 2147483648,
+        "requiredFreeBytes": 637534208,
+        "availableBytes": 1897455616,
+        "retainedWalBytes": 218103808
+      },
+      "mount": {
+        "/var/lib/postgresql": "rw,size=2g"
+      },
+      "postgresArguments": [
+        "postgres"
+      ],
+      "observedPostgres": {
+        "observedAt": "2026-11-09T09:14:49.030Z",
+        "lane": "lane-3",
+        "tier": "large",
+        "database": "dfs_ev_test",
+        "role": "dfs_ev_test",
+        "server_port": 5432,
+        "version": "PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+        "settings": [
+          {
+            "name": "TimeZone",
+            "setting": "UTC",
+            "unit": null,
+            "source": "configuration file",
+            "boot_val": "GMT",
+            "reset_val": "UTC"
+          },
+          {
+            "name": "block_size",
+            "setting": "8192",
+            "unit": null,
+            "source": "default",
+            "boot_val": "8192",
+            "reset_val": "8192"
+          },
+          {
+            "name": "checkpoint_completion_target",
+            "setting": "0.9",
+            "unit": null,
+            "source": "default",
+            "boot_val": "0.9",
+            "reset_val": "0.9"
+          },
+          {
+            "name": "checkpoint_timeout",
+            "setting": "300",
+            "unit": "s",
+            "source": "default",
+            "boot_val": "300",
+            "reset_val": "300"
+          },
+          {
+            "name": "effective_cache_size",
+            "setting": "524288",
+            "unit": "8kB",
+            "source": "default",
+            "boot_val": "524288",
+            "reset_val": "524288"
+          },
+          {
+            "name": "fsync",
+            "setting": "on",
+            "unit": null,
+            "source": "default",
+            "boot_val": "on",
+            "reset_val": "on"
+          },
+          {
+            "name": "full_page_writes",
+            "setting": "on",
+            "unit": null,
+            "source": "default",
+            "boot_val": "on",
+            "reset_val": "on"
+          },
+          {
+            "name": "idle_in_transaction_session_timeout",
+            "setting": "0",
+            "unit": "ms",
+            "source": "default",
+            "boot_val": "0",
+            "reset_val": "0"
+          },
+          {
+            "name": "jit",
+            "setting": "on",
+            "unit": null,
+            "source": "default",
+            "boot_val": "on",
+            "reset_val": "on"
+          },
+          {
+            "name": "lock_timeout",
+            "setting": "0",
+            "unit": "ms",
+            "source": "default",
+            "boot_val": "0",
+            "reset_val": "0"
+          },
+          {
+            "name": "maintenance_work_mem",
+            "setting": "65536",
+            "unit": "kB",
+            "source": "default",
+            "boot_val": "65536",
+            "reset_val": "65536"
+          },
+          {
+            "name": "max_parallel_workers_per_gather",
+            "setting": "2",
+            "unit": null,
+            "source": "default",
+            "boot_val": "2",
+            "reset_val": "2"
+          },
+          {
+            "name": "max_wal_size",
+            "setting": "1024",
+            "unit": "MB",
+            "source": "configuration file",
+            "boot_val": "1024",
+            "reset_val": "1024"
+          },
+          {
+            "name": "max_worker_processes",
+            "setting": "8",
+            "unit": null,
+            "source": "default",
+            "boot_val": "8",
+            "reset_val": "8"
+          },
+          {
+            "name": "min_wal_size",
+            "setting": "80",
+            "unit": "MB",
+            "source": "configuration file",
+            "boot_val": "80",
+            "reset_val": "80"
+          },
+          {
+            "name": "server_version",
+            "setting": "18.6",
+            "unit": null,
+            "source": "default",
+            "boot_val": "18.6",
+            "reset_val": "18.6"
+          },
+          {
+            "name": "shared_buffers",
+            "setting": "16384",
+            "unit": "8kB",
+            "source": "configuration file",
+            "boot_val": "16384",
+            "reset_val": "16384"
+          },
+          {
+            "name": "statement_timeout",
+            "setting": "15000",
+            "unit": "ms",
+            "source": "client",
+            "boot_val": "0",
+            "reset_val": "15000"
+          },
+          {
+            "name": "synchronous_commit",
+            "setting": "on",
+            "unit": null,
+            "source": "default",
+            "boot_val": "on",
+            "reset_val": "on"
+          },
+          {
+            "name": "temp_file_limit",
+            "setting": "-1",
+            "unit": "kB",
+            "source": "default",
+            "boot_val": "-1",
+            "reset_val": "-1"
+          },
+          {
+            "name": "track_commit_timestamp",
+            "setting": "off",
+            "unit": null,
+            "source": "default",
+            "boot_val": "off",
+            "reset_val": "off"
+          },
+          {
+            "name": "wal_level",
+            "setting": "replica",
+            "unit": null,
+            "source": "default",
+            "boot_val": "replica",
+            "reset_val": "replica"
+          },
+          {
+            "name": "work_mem",
+            "setting": "4096",
+            "unit": "kB",
+            "source": "default",
+            "boot_val": "4096",
+            "reset_val": "4096"
+          }
+        ]
+      },
+      "configurationHashes": {
+        "compose.test.yml": "c930cb6f2cc7c624e579ed9ca6cf93c88c1d37c2b435b2b5a83d30d97922ef70",
+        "compose.feature-store-spike.yml": "035f93c5e49def485c5ac0c632d11bf5234ba27234ee5f2637ba05ed98b383e8"
+      }
+    },
+    "cache": "three alternating fresh-process cold and warm builds; cold includes Node startup, new restricted connection, ObjectStore open, full join/write/hash; OS/DB caches not flushed",
+    "legacyMetadata": "Legacy issue138/step5 and rights-deletion-pass label retained; only six builds are qualified here, historical deletion/rebuild probes omitted."
+  },
+  "reuse": {
+    "sourceCommit": "cad93c9a8409bd0a12b6e9eb38cc3ed22b59d054",
+    "sourceFilesVerified": 77,
+    "proposal138Sha256": "50ea3a7b943d5b9b26766cee0d0930cec2a101979fffe448507f0d2babddc361",
+    "producerAttempts": 30,
+    "maximumIngestionMs": 11587.840417,
+    "maximumFeaturesMs": 4812.899249999988,
+    "replays": 2,
+    "normalizedRows": 103468,
+    "contexts": 20,
+    "citations": [
+      {
+        "path": "docs/evidence/feature-store-258/benchmark-20261109T082351Z.json",
+        "sha256": "c1c1a4d84fa0d0511a755f0cfa41ba3a7f2ccd6246455e3fdcc10817fb94cb33",
+        "byteSize": 29120
+      },
+      {
+        "path": "docs/evidence/feature-store-258/checkpoint-3-qualification.json",
+        "sha256": "08a6cb8c6568bc3b7245ed21b8b4733633f7974f9433af3fea95bab028f5ca8d",
+        "byteSize": 1580
+      },
+      {
+        "path": "docs/evidence/feature-store-258/checkpoint-3-replay-1.json",
+        "sha256": "0dbc0e58b59026c1702253dd13b0de2a13011e6e2fefd11f429006ebb62d9720",
+        "byteSize": 23828
+      },
+      {
+        "path": "docs/evidence/feature-store-258/checkpoint-3-replay-2.json",
+        "sha256": "c1108f1aac2c11ae6588c476ad3fdaad843e59aad7e2b8062975410e713739e4",
+        "byteSize": 23827
+      }
+    ],
+    "scope": "Cited #258 requalification; receipt/source identity checks only here, no ingestion/features/replay rerun. Producer detailed archive stays outside Git under #197 policy."
+  },
+  "verification": {
+    "prediction": {
+      "verdict": "pass",
+      "samples": 600,
+      "trials": 6,
+      "coverage": {
+        "players": {
+          "00-0019596": 1,
+          "00-0022924": 1,
+          "00-0022942": 1,
+          "00-0023459": 1,
+          "00-0026143": 1,
+          "00-0026158": 1,
+          "00-0026197": 1,
+          "00-0026300": 1,
+          "00-0026625": 1,
+          "00-0027688": 1,
+          "00-0028118": 1,
+          "00-0032156": 1,
+          "00-0032436": 1,
+          "00-0032792": 1,
+          "00-0034899": 1,
+          "00-0026498": 1,
+          "00-0027973": 1,
+          "00-0033275": 1,
+          "00-0026544": 1,
+          "00-0027939": 1,
+          "00-0028986": 1,
+          "00-0029263": 1,
+          "00-0032434": 1,
+          "00-0032950": 1,
+          "00-0033077": 1,
+          "00-0033958": 1,
+          "00-0034177": 1,
+          "00-0034955": 1,
+          "00-0038400": 1,
+          "00-0039732": 1,
+          "00-0033119": 1,
+          "00-0034577": 1,
+          "00-0027948": 1,
+          "00-0029604": 1,
+          "00-0029701": 1,
+          "00-0030520": 1,
+          "00-0030565": 1,
+          "00-0031237": 1,
+          "00-0031280": 1,
+          "00-0033537": 1,
+          "00-0033949": 1,
+          "00-0034438": 1,
+          "00-0035264": 1,
+          "00-0037175": 1,
+          "00-0037324": 1,
+          "00-0029567": 1,
+          "00-0031345": 1,
+          "00-0031503": 1,
+          "00-0031800": 1,
+          "00-0032268": 1,
+          "00-0033662": 1,
+          "00-0033869": 1,
+          "00-0033936": 1,
+          "00-0034796": 1,
+          "00-0035282": 1,
+          "00-0035289": 1,
+          "00-0035939": 1,
+          "00-0038391": 1,
+          "00-0038416": 1,
+          "00-0038550": 1,
+          "00-0034855": 1,
+          "00-0035146": 1,
+          "00-0036389": 1,
+          "00-0036898": 1,
+          "00-0033106": 1,
+          "00-0033319": 1,
+          "00-0033873": 1,
+          "00-0034401": 1,
+          "00-0034771": 1,
+          "00-0034857": 1,
+          "00-0034869": 1,
+          "00-0036879": 1,
+          "00-0036928": 1,
+          "00-0038998": 1,
+          "00-0039398": 1,
+          "00-0034343": 1,
+          "00-0035040": 1,
+          "00-0035100": 1,
+          "00-0035704": 1,
+          "00-0035710": 1,
+          "00-0035993": 1,
+          "00-0036212": 1,
+          "00-0036264": 1,
+          "00-0036355": 1,
+          "00-0036971": 1,
+          "00-0037077": 1,
+          "00-0038583": 1,
+          "00-0039851": 1,
+          "00-0040676": 1,
+          "00-0036226": 1,
+          "00-0036945": 1,
+          "00-0036972": 1,
+          "00-0038102": 1,
+          "00-0038579": 1,
+          "00-0039163": 1,
+          "00-0039376": 1,
+          "00-0035228": 1,
+          "00-0036197": 1,
+          "00-0036442": 1,
+          "00-0037012": 1
+        },
+        "teams": {
+          "TB": 3,
+          "PIT": 3,
+          "IND": 3,
+          "GB": 3,
+          "ATL": 3,
+          "NYJ": 3,
+          "KC": 3,
+          "BAL": 3,
+          "LV": 3,
+          "ARI": 4,
+          "NYG": 3,
+          "TEN": 3,
+          "WAS": 3,
+          "DET": 4,
+          "JAX": 3,
+          "LA": 2,
+          "NO": 4,
+          "CLE": 3,
+          "LAC": 3,
+          "CAR": 3,
+          "BUF": 3,
+          "SEA": 3,
+          "SF": 4,
+          "MIN": 3,
+          "DAL": 3,
+          "CHI": 3,
+          "MIA": 3,
+          "CIN": 4,
+          "PHI": 3,
+          "DEN": 3,
+          "NE": 3,
+          "HOU": 3
+        },
+        "cells": {
+          "2021/2-4": 7,
+          "2021/5-8": 7,
+          "2025/2-4": 6,
+          "2021/9-16": 7,
+          "2024/9-16": 7,
+          "2022/2-4": 7,
+          "2022/5-8": 7,
+          "2024/5-8": 6,
+          "2023/5-8": 7,
+          "2022/9-16": 6,
+          "2023/9-16": 6,
+          "2025/9-16": 7,
+          "2025/5-8": 6,
+          "2023/2-4": 7,
+          "2024/2-4": 7
+        },
+        "n": {
+          "2": 27,
+          "3": 4,
+          "4": 3,
+          "5": 15,
+          "6": 6,
+          "7": 8,
+          "8": 4,
+          "9": 8,
+          "10": 2,
+          "11": 1,
+          "12": 2,
+          "13": 2,
+          "14": 1,
+          "15": 1,
+          "16": 16
+        }
+      },
+      "work": {
+        "sql": 3,
+        "checks": 2,
+        "gets": 1,
+        "heads": 0,
+        "puts": 0,
+        "deletes": 0,
+        "lists": 0,
+        "hashes": 0
+      },
+      "worstP95Ms": 120.10962499999732,
+      "minimumHeadroom": 0.5996345833333423,
+      "allTrialsAtLeast30PercentHeadroom": true
+    },
+    "dataset": {
+      "verdict": "pass",
+      "trials": 6,
+      "coldProcesses": 3,
+      "warmProcesses": 1,
+      "maximumMs": 506.72666699999536,
+      "minimumHeadroom": 0.9831091111000001,
+      "exactBytesAndNaturalHashVerified": true,
+      "rightsChecksPerTrial": 2
+    },
+    "outputFilesVerified": 72,
+    "predictionSources": 64,
+    "datasetSources": 48,
+    "routingChecks": 6
+  },
+  "outputs": [
+    {
+      "directory": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/173-step3-d661b02-run-20261109T0907Z",
+      "manifestSha256": "78550770c2fd141a5c17fb2afa1c72481210973e2b34d540d5cae42b352cb07a",
+      "manifestByteSize": 3424,
+      "scope": "All regular files after workload and teardown, before packaging; excludes this inventory itself",
+      "files": [
+        {
+          "path": "check-lane-2-unused.log",
+          "byteSize": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "check-lane-3-unused.log",
+          "byteSize": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "dataset-driver-support.py",
+          "byteSize": 13170,
+          "sha256": "cbb4b143d4674cf897954d693f7f853de400158c2016fa7149366bc41090a6c2"
+        },
+        {
+          "path": "dataset-environment.json",
+          "byteSize": 5217,
+          "sha256": "bba3c7547124d468ea8cd8c9a8789d61426f2f0cad882ad6bfe33cde5f912aef"
+        },
+        {
+          "path": "dataset-preflight.log",
+          "byteSize": 185,
+          "sha256": "e0ad39a395692685b71ec46d429fc4cf845465b7b0f602358601aaa54a652138"
+        },
+        {
+          "path": "dataset-qualification.log",
+          "byteSize": 2416,
+          "sha256": "d745708ed86d4fff7fa8eeefe0ac4d4f609186a226b34b3172956c0eae6c3599"
+        },
+        {
+          "path": "dataset-settings.log",
+          "byteSize": 4205,
+          "sha256": "1e4f9b08a591a9ad6b1bac68bba70207883bbe8efae2215dc8dce34f1437e2f1"
+        },
+        {
+          "path": "derive-url.log",
+          "byteSize": 65,
+          "sha256": "a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd"
+        },
+        {
+          "path": "lane-down.log",
+          "byteSize": 323,
+          "sha256": "806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d"
+        },
+        {
+          "path": "lane-inspect.log",
+          "byteSize": 10893,
+          "sha256": "979073b6dc4fa91e6bf0ac8e16331c8b5b247fb244a5c7ae30cf910a1291ec43"
+        },
+        {
+          "path": "lane-up.log",
+          "byteSize": 534,
+          "sha256": "14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84"
+        },
+        {
+          "path": "orchestration.json",
+          "byteSize": 20783,
+          "sha256": "7043a4e469584e6736ca717671f2a6c495ec0d7134a50494ebcb38fb9cf1307c"
+        },
+        {
+          "path": "orchestrator.py",
+          "byteSize": 10063,
+          "sha256": "b9ba5869fdffc2eaba0c3311eb9b67d2974cba4d232783ad5fc222474a42c6c2"
+        },
+        {
+          "path": "prediction-environment.json",
+          "byteSize": 5216,
+          "sha256": "803848294b49f073f35300b1015f76ceca4b08f2f982968c30bde35d980a6b1f"
+        },
+        {
+          "path": "prediction-preflight.log",
+          "byteSize": 184,
+          "sha256": "8798ce0bc74256effa580ec060f231ec3522bd62e1a9634ba51fd278154824ad"
+        },
+        {
+          "path": "prediction-qualification.log",
+          "byteSize": 7665,
+          "sha256": "9491ab15ffc68ec79432d144599b1b308f062932e8b0d3a184ed83fee0752355"
+        },
+        {
+          "path": "prediction-settings.log",
+          "byteSize": 4205,
+          "sha256": "9ec88e6777718131afed4358b97dbb8df2a445f633a4a6b787c03dee0365578c"
+        },
+        {
+          "path": "settings-observer.mts",
+          "byteSize": 1713,
+          "sha256": "01b965de26fe7383d7932ea8879648e68ab3c20989840cc37d5552118212fb63"
+        },
+        {
+          "path": "verify-lane-containers.log",
+          "byteSize": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        {
+          "path": "verify-lane-networks.log",
+          "byteSize": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      ]
+    },
+    {
+      "directory": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/173-step3-d661b02-prediction-20261109T0907Z",
+      "manifestSha256": "a7bb363fe817378ab8aacde4d37b2a4898c3b003eaa86b9fdae64f434708957c",
+      "manifestByteSize": 7012,
+      "scope": "All regular files after workload and teardown, before packaging; excludes this inventory itself",
+      "files": [
+        {
+          "path": "qualification-XgIsmI/full-samples.json",
+          "byteSize": 4714275,
+          "sha256": "c1bdcc9be0ba9e6c01d088e1b612c03c78a8afce9680a589fce3f2049e220a49"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/audits/027259fab942400b86910496f8efae9dd254ae60063fe79f75c311e738add8f5",
+          "byteSize": 9290168,
+          "sha256": "027259fab942400b86910496f8efae9dd254ae60063fe79f75c311e738add8f5"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/audits/35ad16a10e7cc8ae1ce57fb9571b12c1437096f0b2fa29c3b741a4d1aca35bf7",
+          "byteSize": 36899,
+          "sha256": "35ad16a10e7cc8ae1ce57fb9571b12c1437096f0b2fa29c3b741a4d1aca35bf7"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/audits/3beb5ead636111a2531b68c6430bf2461b00b3315deedc8e04fe12204d8b386e",
+          "byteSize": 388473,
+          "sha256": "3beb5ead636111a2531b68c6430bf2461b00b3315deedc8e04fe12204d8b386e"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/audits/7101adebaabf3276bfae4edb5593b8280a1c118a479d2fdeda9b0d88b06ad397",
+          "byteSize": 20330974,
+          "sha256": "7101adebaabf3276bfae4edb5593b8280a1c118a479d2fdeda9b0d88b06ad397"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/audits/7c3260e8492bb7ba0a12d1281bb98531637acb88a240d9efa8e5f6ee13a2ea02",
+          "byteSize": 306543,
+          "sha256": "7c3260e8492bb7ba0a12d1281bb98531637acb88a240d9efa8e5f6ee13a2ea02"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/audits/c1bdcc9be0ba9e6c01d088e1b612c03c78a8afce9680a589fce3f2049e220a49",
+          "byteSize": 4714275,
+          "sha256": "c1bdcc9be0ba9e6c01d088e1b612c03c78a8afce9680a589fce3f2049e220a49"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/audits/f1f19386796814eef62358880118fd4ae93ecd09924fc901b87af7c8c77c3f00",
+          "byteSize": 51362238,
+          "sha256": "f1f19386796814eef62358880118fd4ae93ecd09924fc901b87af7c8c77c3f00"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/datasets/0595aa2fa55f779f23d773c9c7350f2dc3147a0a07ab91a887b530b4f751a34a",
+          "byteSize": 2926,
+          "sha256": "0595aa2fa55f779f23d773c9c7350f2dc3147a0a07ab91a887b530b4f751a34a"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/datasets/4b37728ef4b132950e8c5eebaf428fd542fbf934f6186a49068e4e380bb3d898",
+          "byteSize": 3527908,
+          "sha256": "4b37728ef4b132950e8c5eebaf428fd542fbf934f6186a49068e4e380bb3d898"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/models/46d40c271dbbf775ec704da55872b16fdfcaf119e6321e6db681cada440fec3a",
+          "byteSize": 3318,
+          "sha256": "46d40c271dbbf775ec704da55872b16fdfcaf119e6321e6db681cada440fec3a"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+          "byteSize": 1241515,
+          "sha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+          "byteSize": 14612235,
+          "sha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+          "byteSize": 1254611,
+          "sha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+          "byteSize": 699786,
+          "sha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+          "byteSize": 22245804,
+          "sha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+          "byteSize": 49094943,
+          "sha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+          "byteSize": 1244175,
+          "sha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+          "byteSize": 1237909,
+          "sha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+          "byteSize": 15242660,
+          "sha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+          "byteSize": 515250,
+          "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+          "byteSize": 49967956,
+          "sha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+          "byteSize": 49688308,
+          "sha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+          "byteSize": 22498246,
+          "sha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+          "byteSize": 14790824,
+          "sha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+          "byteSize": 1262421,
+          "sha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b"
+        },
+        {
+          "path": "qualification-XgIsmI/objects/raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+          "byteSize": 708144,
+          "sha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec"
+        },
+        {
+          "path": "qualification-XgIsmI/receipt.json",
+          "byteSize": 615545,
+          "sha256": "d75c348627142ec8203614130105821bdd16ff2269f86fe454cce9ab52aac3ec"
+        },
+        {
+          "path": "qualification-XgIsmI/request-list.json",
+          "byteSize": 52776,
+          "sha256": "a7511b00b1736e6fddd94a5f7da76128461b9002fb404681b2923b9fa61044b9"
+        }
+      ]
+    },
+    {
+      "directory": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/173-step3-d661b02-dataset-20261109T0907Z",
+      "manifestSha256": "83c0e8aecfd6560f790b44ee6efbf125ff533bad8b7bd9c486b7aa71a7878c04",
+      "manifestByteSize": 5210,
+      "scope": "All regular files after workload and teardown, before packaging; excludes this inventory itself",
+      "files": [
+        {
+          "path": "dataset-diagnostics/dataset-2026-11-09T09-14-49.161Z.json",
+          "byteSize": 138327,
+          "sha256": "2f5d6d8af8bd98845c884d489333da6946ae956df9eca6fc1d5c98ce96493919"
+        },
+        {
+          "path": "dataset-driver-original.ts",
+          "byteSize": 15336,
+          "sha256": "991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a"
+        },
+        {
+          "path": "dataset-driver.diff",
+          "byteSize": 13616,
+          "sha256": "7e97e2fd35c640bea3d89b13e445ea8ca296aa1144b0b2397263fb231a33c42c"
+        },
+        {
+          "path": "dataset-driver.mts",
+          "byteSize": 12561,
+          "sha256": "692c877602c0c30152f1dcb79ac7f99506036d74c9f8fc882401c1409ed1f8ba"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/datasets/f100c31505e6f3906dd1c5ee9fd3694cf7a6302358799b2d62bd7856de7d7c5f",
+          "byteSize": 3527313,
+          "sha256": "f100c31505e6f3906dd1c5ee9fd3694cf7a6302358799b2d62bd7856de7d7c5f"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a",
+          "byteSize": 1241515,
+          "sha256": "0f064dede2896107868d784ede7a92cbe239852f7274c12c4589bcfd5e129b4a"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3",
+          "byteSize": 14612235,
+          "sha256": "1433f1f239784dde7fcb35349d211a9b83abfc0156337b72ec4f923abf715bd3"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a",
+          "byteSize": 1254611,
+          "sha256": "1b6eff730fb10a61ad7681c293000d6653fb583259d771d40d8d025fe8fca36a"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72",
+          "byteSize": 699786,
+          "sha256": "330b9e00241091958d1667e6df02f57d4a7049530865aacbb7859b4db114cd72"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4",
+          "byteSize": 22245804,
+          "sha256": "37eae0a8c388d0974c6df9a1f9a1d01f09f63a21440d3b03d7f208c1438c51e4"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac",
+          "byteSize": 49094943,
+          "sha256": "59069adfee7b0f464befba8a5e8be331e523633cc6a7ab403d37bcbcdfbe66ac"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d",
+          "byteSize": 1244175,
+          "sha256": "61fc9a44706522218a4448001706e3fec65ebbb97c1d9c5746ceef364989125d"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113",
+          "byteSize": 1237909,
+          "sha256": "6c2258cf5d90cb918dfca093b20dba2e062b1eca54f5d2d348f15a0045d86113"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7",
+          "byteSize": 15242660,
+          "sha256": "88adfe0fba5cbedd260d7928ad373476d4fb168d0213cb52ef1163ed5d3056b7"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd",
+          "byteSize": 515250,
+          "sha256": "962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9",
+          "byteSize": 49967956,
+          "sha256": "ad01aeb4045ee19a4f086ff38b52b14c8f427d3401e529c3078a4545921650a9"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9",
+          "byteSize": 49688308,
+          "sha256": "b1f436a98b2a7759eb4ed1181e072a35c2666f9aeb356a49c943d28d6be6b0b9"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785",
+          "byteSize": 22498246,
+          "sha256": "b58e79cd91ea078396c91f9c06452da0b9d650fa42203ee580e1df06e306e785"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312",
+          "byteSize": 14790824,
+          "sha256": "bd6a50de334473c10f8058afa948fd0c6adc8a8b081da41c500cc0aa069c5312"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b",
+          "byteSize": 1262421,
+          "sha256": "c7401e321bdb369443f3280b9acd74ba6e16d82e710383bf1c01acabfebeac0b"
+        },
+        {
+          "path": "dataset-objects-IDs0Mp/raw/f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec",
+          "byteSize": 708144,
+          "sha256": "f3fbe6bb1b56a0f51c4b6d5793f8bc3b46da2d54c070572144b8771912eeaaec"
+        },
+        {
+          "path": "dataset-receipt.json",
+          "byteSize": 23916,
+          "sha256": "4308c3398c7edaae4782a19b0ddb196f04c7a8d64f1c22597f394303f0acde70"
+        },
+        {
+          "path": "driver-adaptation.json",
+          "byteSize": 984,
+          "sha256": "611a4fc89bb30de63fb143317f5d49ae4ce77a47437dcb22422ccd398b533ad1"
+        }
+      ]
+    }
+  ],
+  "retention": "All samples and trials retained; no retries or replacement. Prior #173 qualifications stay unchanged as earlier-checkpoint history. Raw fixture/dataset bytes remain in ObjectStore; mirror contains measurements and metadata only.",
+  "teardown": {
+    "verified": true,
+    "completedAt": "2026-11-09T09:15:50.635233+00:00",
+    "remainingContainers": 0,
+    "remainingNetworks": 0,
+    "allClearGiven": true
+  },
+  "storage": {
+    "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/173-step3-d661b02-evidence-20261109T0907Z",
+    "bundle": {
+      "path": "step-3-requalification-records-20261109T091550Z.tar.gz",
+      "objectKey": "audits/5804fab749f8bc88676092821e1a413a5130d012baa83c7a73df341204211b98",
+      "sha256": "5804fab749f8bc88676092821e1a413a5130d012baa83c7a73df341204211b98",
+      "byteSize": 366041
+    },
+    "members": [
+      {
+        "member": "prediction/full-samples.json",
+        "objectKey": "audits/c1bdcc9be0ba9e6c01d088e1b612c03c78a8afce9680a589fce3f2049e220a49",
+        "sha256": "c1bdcc9be0ba9e6c01d088e1b612c03c78a8afce9680a589fce3f2049e220a49",
+        "byteSize": 4714275
+      },
+      {
+        "member": "prediction/receipt.json",
+        "objectKey": "audits/d75c348627142ec8203614130105821bdd16ff2269f86fe454cce9ab52aac3ec",
+        "sha256": "d75c348627142ec8203614130105821bdd16ff2269f86fe454cce9ab52aac3ec",
+        "byteSize": 615545
+      },
+      {
+        "member": "prediction/request-list.json",
+        "objectKey": "audits/a7511b00b1736e6fddd94a5f7da76128461b9002fb404681b2923b9fa61044b9",
+        "sha256": "a7511b00b1736e6fddd94a5f7da76128461b9002fb404681b2923b9fa61044b9",
+        "byteSize": 52776
+      },
+      {
+        "member": "dataset/full-record.json",
+        "objectKey": "audits/2f5d6d8af8bd98845c884d489333da6946ae956df9eca6fc1d5c98ce96493919",
+        "sha256": "2f5d6d8af8bd98845c884d489333da6946ae956df9eca6fc1d5c98ce96493919",
+        "byteSize": 138327
+      },
+      {
+        "member": "dataset/receipt.json",
+        "objectKey": "audits/4308c3398c7edaae4782a19b0ddb196f04c7a8d64f1c22597f394303f0acde70",
+        "sha256": "4308c3398c7edaae4782a19b0ddb196f04c7a8d64f1c22597f394303f0acde70",
+        "byteSize": 23916
+      },
+      {
+        "member": "verification.json",
+        "objectKey": "audits/871f2230d7f85d31868aacf139fc233c697d157c1131a7ae426d7c5531990047",
+        "sha256": "871f2230d7f85d31868aacf139fc233c697d157c1131a7ae426d7c5531990047",
+        "byteSize": 76922
+      },
+      {
+        "member": "routing-checks.json",
+        "objectKey": "audits/587ccb144bc4398e6cd1a2f7098f6e2697b95344ffb3e56bdd30837f667ad0b8",
+        "sha256": "587ccb144bc4398e6cd1a2f7098f6e2697b95344ffb3e56bdd30837f667ad0b8",
+        "byteSize": 347
+      },
+      {
+        "member": "run/output-files.json",
+        "objectKey": "audits/78550770c2fd141a5c17fb2afa1c72481210973e2b34d540d5cae42b352cb07a",
+        "sha256": "78550770c2fd141a5c17fb2afa1c72481210973e2b34d540d5cae42b352cb07a",
+        "byteSize": 3424
+      },
+      {
+        "member": "run/check-lane-2-unused.log",
+        "objectKey": "audits/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "byteSize": 0
+      },
+      {
+        "member": "run/check-lane-3-unused.log",
+        "objectKey": "audits/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "byteSize": 0
+      },
+      {
+        "member": "run/dataset-driver-support.py",
+        "objectKey": "audits/cbb4b143d4674cf897954d693f7f853de400158c2016fa7149366bc41090a6c2",
+        "sha256": "cbb4b143d4674cf897954d693f7f853de400158c2016fa7149366bc41090a6c2",
+        "byteSize": 13170
+      },
+      {
+        "member": "run/dataset-environment.json",
+        "objectKey": "audits/bba3c7547124d468ea8cd8c9a8789d61426f2f0cad882ad6bfe33cde5f912aef",
+        "sha256": "bba3c7547124d468ea8cd8c9a8789d61426f2f0cad882ad6bfe33cde5f912aef",
+        "byteSize": 5217
+      },
+      {
+        "member": "run/dataset-preflight.log",
+        "objectKey": "audits/e0ad39a395692685b71ec46d429fc4cf845465b7b0f602358601aaa54a652138",
+        "sha256": "e0ad39a395692685b71ec46d429fc4cf845465b7b0f602358601aaa54a652138",
+        "byteSize": 185
+      },
+      {
+        "member": "run/dataset-qualification.log",
+        "objectKey": "audits/d745708ed86d4fff7fa8eeefe0ac4d4f609186a226b34b3172956c0eae6c3599",
+        "sha256": "d745708ed86d4fff7fa8eeefe0ac4d4f609186a226b34b3172956c0eae6c3599",
+        "byteSize": 2416
+      },
+      {
+        "member": "run/dataset-settings.log",
+        "objectKey": "audits/1e4f9b08a591a9ad6b1bac68bba70207883bbe8efae2215dc8dce34f1437e2f1",
+        "sha256": "1e4f9b08a591a9ad6b1bac68bba70207883bbe8efae2215dc8dce34f1437e2f1",
+        "byteSize": 4205
+      },
+      {
+        "member": "run/derive-url.log",
+        "objectKey": "audits/a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+        "sha256": "a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+        "byteSize": 65
+      },
+      {
+        "member": "run/lane-down.log",
+        "objectKey": "audits/806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d",
+        "sha256": "806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d",
+        "byteSize": 323
+      },
+      {
+        "member": "run/lane-inspect.log",
+        "objectKey": "audits/979073b6dc4fa91e6bf0ac8e16331c8b5b247fb244a5c7ae30cf910a1291ec43",
+        "sha256": "979073b6dc4fa91e6bf0ac8e16331c8b5b247fb244a5c7ae30cf910a1291ec43",
+        "byteSize": 10893
+      },
+      {
+        "member": "run/lane-up.log",
+        "objectKey": "audits/14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84",
+        "sha256": "14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84",
+        "byteSize": 534
+      },
+      {
+        "member": "run/orchestration.json",
+        "objectKey": "audits/7043a4e469584e6736ca717671f2a6c495ec0d7134a50494ebcb38fb9cf1307c",
+        "sha256": "7043a4e469584e6736ca717671f2a6c495ec0d7134a50494ebcb38fb9cf1307c",
+        "byteSize": 20783
+      },
+      {
+        "member": "run/orchestrator.py",
+        "objectKey": "audits/b9ba5869fdffc2eaba0c3311eb9b67d2974cba4d232783ad5fc222474a42c6c2",
+        "sha256": "b9ba5869fdffc2eaba0c3311eb9b67d2974cba4d232783ad5fc222474a42c6c2",
+        "byteSize": 10063
+      },
+      {
+        "member": "run/prediction-environment.json",
+        "objectKey": "audits/803848294b49f073f35300b1015f76ceca4b08f2f982968c30bde35d980a6b1f",
+        "sha256": "803848294b49f073f35300b1015f76ceca4b08f2f982968c30bde35d980a6b1f",
+        "byteSize": 5216
+      },
+      {
+        "member": "run/prediction-preflight.log",
+        "objectKey": "audits/8798ce0bc74256effa580ec060f231ec3522bd62e1a9634ba51fd278154824ad",
+        "sha256": "8798ce0bc74256effa580ec060f231ec3522bd62e1a9634ba51fd278154824ad",
+        "byteSize": 184
+      },
+      {
+        "member": "run/prediction-qualification.log",
+        "objectKey": "audits/9491ab15ffc68ec79432d144599b1b308f062932e8b0d3a184ed83fee0752355",
+        "sha256": "9491ab15ffc68ec79432d144599b1b308f062932e8b0d3a184ed83fee0752355",
+        "byteSize": 7665
+      },
+      {
+        "member": "run/prediction-settings.log",
+        "objectKey": "audits/9ec88e6777718131afed4358b97dbb8df2a445f633a4a6b787c03dee0365578c",
+        "sha256": "9ec88e6777718131afed4358b97dbb8df2a445f633a4a6b787c03dee0365578c",
+        "byteSize": 4205
+      },
+      {
+        "member": "run/settings-observer.mts",
+        "objectKey": "audits/01b965de26fe7383d7932ea8879648e68ab3c20989840cc37d5552118212fb63",
+        "sha256": "01b965de26fe7383d7932ea8879648e68ab3c20989840cc37d5552118212fb63",
+        "byteSize": 1713
+      },
+      {
+        "member": "run/verify-lane-containers.log",
+        "objectKey": "audits/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "byteSize": 0
+      },
+      {
+        "member": "run/verify-lane-networks.log",
+        "objectKey": "audits/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "byteSize": 0
+      },
+      {
+        "member": "prediction-output/output-files.json",
+        "objectKey": "audits/a7bb363fe817378ab8aacde4d37b2a4898c3b003eaa86b9fdae64f434708957c",
+        "sha256": "a7bb363fe817378ab8aacde4d37b2a4898c3b003eaa86b9fdae64f434708957c",
+        "byteSize": 7012
+      },
+      {
+        "member": "dataset-output/output-files.json",
+        "objectKey": "audits/83c0e8aecfd6560f790b44ee6efbf125ff533bad8b7bd9c486b7aa71a7878c04",
+        "sha256": "83c0e8aecfd6560f790b44ee6efbf125ff533bad8b7bd9c486b7aa71a7878c04",
+        "byteSize": 5210
+      },
+      {
+        "member": "dataset-output/dataset-driver-original.ts",
+        "objectKey": "audits/991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a",
+        "sha256": "991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a",
+        "byteSize": 15336
+      },
+      {
+        "member": "dataset-output/dataset-driver.diff",
+        "objectKey": "audits/7e97e2fd35c640bea3d89b13e445ea8ca296aa1144b0b2397263fb231a33c42c",
+        "sha256": "7e97e2fd35c640bea3d89b13e445ea8ca296aa1144b0b2397263fb231a33c42c",
+        "byteSize": 13616
+      },
+      {
+        "member": "dataset-output/dataset-driver.mts",
+        "objectKey": "audits/692c877602c0c30152f1dcb79ac7f99506036d74c9f8fc882401c1409ed1f8ba",
+        "sha256": "692c877602c0c30152f1dcb79ac7f99506036d74c9f8fc882401c1409ed1f8ba",
+        "byteSize": 12561
+      },
+      {
+        "member": "dataset-output/driver-adaptation.json",
+        "objectKey": "audits/611a4fc89bb30de63fb143317f5d49ae4ce77a47437dcb22422ccd398b533ad1",
+        "sha256": "611a4fc89bb30de63fb143317f5d49ae4ce77a47437dcb22422ccd398b533ad1",
+        "byteSize": 984
+      },
+      {
+        "member": "scripts/package-checkpoint.mts",
+        "objectKey": "audits/20eee5936d2488edb67d8608dfabb4e84009e2ec27c318aac01b5b1ba3d2412a",
+        "sha256": "20eee5936d2488edb67d8608dfabb4e84009e2ec27c318aac01b5b1ba3d2412a",
+        "byteSize": 16725
+      }
+    ]
+  }
+}

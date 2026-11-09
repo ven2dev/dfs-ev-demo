@@ -1,0 +1,224 @@
+{
+  "schema": "fs173-stopped-qualification-v1",
+  "issue": 173,
+  "step": 3,
+  "checkpoint": "286f4d05d5d1eb34ec085a1a772f7e21afb40a27",
+  "sourceCommit": "43a3802ab745944d077e1198170e701b291249ee",
+  "startedAt": "2026-11-09T08:09:53.282Z",
+  "finishedAt": "2026-11-09T08:11:07.408534+00:00",
+  "runtime": "v24.18.1",
+  "verdict": "blocked-environment-resource-failure",
+  "runnerVerdict": "fail",
+  "error": "error: temporary file size exceeds \"temp_file_limit\" (131072kB)",
+  "boundary": "Prediction fixture preparation; all 16 files ingested; final logged derived cohort was retrospective 2024 labels. Exact failing SQL is not retained by the existing runner.",
+  "prediction": {
+    "attemptedQualificationRuns": 1,
+    "measuredSamples": 0,
+    "completedTrials": 0,
+    "startupGate": {
+      "rule": "trial-p95",
+      "p95Ms": 210,
+      "sampleDeadlineMs": 300,
+      "tailSamples": 5
+    },
+    "sourceFilesVerified": 64,
+    "sourceUnchanged": true
+  },
+  "dataset": {
+    "started": false,
+    "measuredSamples": 0,
+    "reason": "Prediction-first stop policy; no later workload after failure",
+    "disposableDriverExecuted": false
+  },
+  "environment": {
+    "lane": "lane-3",
+    "tier": "standard",
+    "project": "dfs-ev-demo-test-lane-3",
+    "port": 54349,
+    "tmpfs": {
+      "/var/lib/postgresql": "rw,size=512m"
+    },
+    "postgresArguments": [
+      "postgres",
+      "-c",
+      "max_wal_size=96MB",
+      "-c",
+      "min_wal_size=32MB",
+      "-c",
+      "fsync=off",
+      "-c",
+      "synchronous_commit=off",
+      "-c",
+      "full_page_writes=off",
+      "-c",
+      "temp_file_limit=128MB"
+    ],
+    "preflight": {
+      "project": "dfs-ev-demo-test-lane-3",
+      "tier": "standard",
+      "capacityBytes": 536870912,
+      "requiredFreeBytes": 285212672,
+      "availableBytes": 488431616,
+      "retainedWalBytes": 16777216
+    },
+    "cache": {
+      "os": "unflushed; fixture preparation warms file cache",
+      "postgres": "running; unflushed and warmed by fixture preparation",
+      "application": "fresh process per cold sample; one dedicated process/connection per warm trial; no forecasts/artifacts/rights cached"
+    },
+    "quietWindow": "Explicit owner confirmation: window is quiet; Codex ALT holding"
+  },
+  "setupObservation": "A separate sandbox-denied lifecycle attempt preceded the run. It could not access Docker and started no workload; its logs are retained. Approved elevated access used a new output directory.",
+  "action": "Stopped immediately; no qualification retry, sample replacement, dataset run or setting/target/budget change. Need owner decision before another attempt.",
+  "teardown": {
+    "verified": true,
+    "completedAt": "2026-11-09T08:11:07.408534+00:00",
+    "remainingContainers": 0,
+    "remainingNetworks": 0,
+    "defaultLane": "not touched",
+    "allClear": "Quiet window ended after lane-3 teardown; ALT may resume"
+  },
+  "storage": {
+    "storageRoot": "/Users/vernonneilly/Documents/VN2DEV/dfs-ev-demo-164/codex-briefs/173-step3-20261109T080936Z/evidence-objects",
+    "bundle": {
+      "path": "step-3-stopped-records-20261109T081107Z.tar.gz",
+      "objectKey": "audits/c49b179a1cd841a8010d9ff55f4050616a9f57bad23b786d1a1c980cdddcf3ba",
+      "sha256": "c49b179a1cd841a8010d9ff55f4050616a9f57bad23b786d1a1c980cdddcf3ba",
+      "byteSize": 28251
+    },
+    "members": [
+      {
+        "member": "prediction/full-samples.json",
+        "objectKey": "audits/79e530eb348d1a81be936f5e74bd720fb4d9c403918c0c6503283ef894ca5f59",
+        "sha256": "79e530eb348d1a81be936f5e74bd720fb4d9c403918c0c6503283ef894ca5f59",
+        "byteSize": 22912
+      },
+      {
+        "member": "prediction/receipt.json",
+        "objectKey": "audits/95c8ad0ec993610c0d77f132b3fdcb0a7bebef808a3cacd6a12773e3df882247",
+        "sha256": "95c8ad0ec993610c0d77f132b3fdcb0a7bebef808a3cacd6a12773e3df882247",
+        "byteSize": 23320
+      },
+      {
+        "member": "source-verification.json",
+        "objectKey": "audits/902c083e85e50778db433e94a359e2ee5054dc4e62f067ed09c37d48459ffc1a",
+        "sha256": "902c083e85e50778db433e94a359e2ee5054dc4e62f067ed09c37d48459ffc1a",
+        "byteSize": 14610
+      },
+      {
+        "member": "run/dataset-driver-original.ts",
+        "objectKey": "audits/991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a",
+        "sha256": "991cd6e8f9e1c245fcefd2462e78689635816825dedc2348fd4060d55609f87a",
+        "byteSize": 15336
+      },
+      {
+        "member": "run/dataset-driver.diff",
+        "objectKey": "audits/abfc1fd2c3d8a7081c9acceb6f78cf48813d43e3661a007472613a9a7f236e53",
+        "sha256": "abfc1fd2c3d8a7081c9acceb6f78cf48813d43e3661a007472613a9a7f236e53",
+        "byteSize": 13540
+      },
+      {
+        "member": "run/dataset-driver.mts",
+        "objectKey": "audits/0c9de52a55903ea1acea91c47bf0223a0d73384be3bad492bcac5cc619404d8d",
+        "sha256": "0c9de52a55903ea1acea91c47bf0223a0d73384be3bad492bcac5cc619404d8d",
+        "byteSize": 12485
+      },
+      {
+        "member": "run/derive-url.log",
+        "objectKey": "audits/a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+        "sha256": "a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+        "byteSize": 65
+      },
+      {
+        "member": "run/driver-adaptation.json",
+        "objectKey": "audits/db0b2330599cb7fb76ecdc0bc5d02ea9c0a587d5f3561f75f52e307e773c17a9",
+        "sha256": "db0b2330599cb7fb76ecdc0bc5d02ea9c0a587d5f3561f75f52e307e773c17a9",
+        "byteSize": 1255
+      },
+      {
+        "member": "run/lane-down.log",
+        "objectKey": "audits/806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d",
+        "sha256": "806996c82dda6e07d80fdd657ddadfde2ee682bb195b4d8c74cc13b3a1f3ee3d",
+        "byteSize": 323
+      },
+      {
+        "member": "run/lane-inspect.log",
+        "objectKey": "audits/42f41fa22250c8ed1de186736432ad29ffa1b1e0b241dfd7181a448ac4ac508f",
+        "sha256": "42f41fa22250c8ed1de186736432ad29ffa1b1e0b241dfd7181a448ac4ac508f",
+        "byteSize": 11482
+      },
+      {
+        "member": "run/lane-up.log",
+        "objectKey": "audits/14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84",
+        "sha256": "14cc47f76286f926a7316ebd19077ef0cce1296ca28020983e5117b5a0037d84",
+        "byteSize": 534
+      },
+      {
+        "member": "run/orchestration.json",
+        "objectKey": "audits/b0fae400d068b485c24963f986508b06867daf1d8d12309f5cbf45d73b46feeb",
+        "sha256": "b0fae400d068b485c24963f986508b06867daf1d8d12309f5cbf45d73b46feeb",
+        "byteSize": 4403
+      },
+      {
+        "member": "run/prediction-preflight.log",
+        "objectKey": "audits/2e7e8392ccea71add6afc25dc579326d89b60cd00355b41666271a27571d585a",
+        "sha256": "2e7e8392ccea71add6afc25dc579326d89b60cd00355b41666271a27571d585a",
+        "byteSize": 185
+      },
+      {
+        "member": "run/prediction-qualification.log",
+        "objectKey": "audits/bad343dcab9bd3d4a8f4256476df059917c917294a91cf198bec3ae02b17605a",
+        "sha256": "bad343dcab9bd3d4a8f4256476df059917c917294a91cf198bec3ae02b17605a",
+        "byteSize": 2549
+      },
+      {
+        "member": "run/verify-lane-containers.log",
+        "objectKey": "audits/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "byteSize": 0
+      },
+      {
+        "member": "run/verify-lane-networks.log",
+        "objectKey": "audits/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "byteSize": 0
+      },
+      {
+        "member": "sandbox-denied/orchestration.json",
+        "objectKey": "audits/391644796f540b0202ca66b0f55df60e58e71d5b043421f27434514c444b5959",
+        "sha256": "391644796f540b0202ca66b0f55df60e58e71d5b043421f27434514c444b5959",
+        "byteSize": 1845
+      },
+      {
+        "member": "sandbox-denied/derive-url.log",
+        "objectKey": "audits/a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+        "sha256": "a79fb4d1db28e89319e8f1ccc1cb9cc836035ec0dcb33af9e21aaebe703221bd",
+        "byteSize": 65
+      },
+      {
+        "member": "sandbox-denied/lane-up.log",
+        "objectKey": "audits/a56e89ee47aaa1a0b4f55a46b78f1e42ee81e4a11a2a1b5bb880d60864f67ce4",
+        "sha256": "a56e89ee47aaa1a0b4f55a46b78f1e42ee81e4a11a2a1b5bb880d60864f67ce4",
+        "byteSize": 419
+      },
+      {
+        "member": "sandbox-denied/lane-down.log",
+        "objectKey": "audits/eb2195de39e409231cba499e7f9890d0c3c57694b9bfc2a3b2cf20b382afe469",
+        "sha256": "eb2195de39e409231cba499e7f9890d0c3c57694b9bfc2a3b2cf20b382afe469",
+        "byteSize": 114
+      },
+      {
+        "member": "scripts/prepare-step3.py",
+        "objectKey": "audits/d082b729b837ef7b34728878f5f5aeaa525c25570496f3c5b484c0174e336d08",
+        "sha256": "d082b729b837ef7b34728878f5f5aeaa525c25570496f3c5b484c0174e336d08",
+        "byteSize": 4506
+      },
+      {
+        "member": "scripts/run-step3.py",
+        "objectKey": "audits/f5933466115793f7a8c456635db191b76deef0e9c9ea5369ca2a4289def38a75",
+        "sha256": "f5933466115793f7a8c456635db191b76deef0e9c9ea5369ca2a4289def38a75",
+        "byteSize": 4531
+      }
+    ]
+  }
+}
