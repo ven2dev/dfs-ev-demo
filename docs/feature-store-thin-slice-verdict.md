@@ -1,7 +1,8 @@
 # Thin-slice readiness verdict (#173)
 
-Step 1: evidence reconciliation, pending commit approval. The final integrated
-assessment, the two approved reruns and the final owner verdict are pending.
+Step 1 is committed as `be53387`. Step 2's integrated assessment and offline
+validation are complete, pending commit approval. The two approved reruns and
+the final owner verdict are pending.
 This document does not claim that the full thin slice passed.
 
 Checkpoint: `286f4d05d5d1eb34ec085a1a772f7e21afb40a27`. The owner created
@@ -110,7 +111,7 @@ The [machine ledger](evidence/feature-store-173/step-1-ledger.json) expands thes
 groups into individual requirements with evidence paths, exact receipt hashes,
 final PR heads, measured identities and review provenance. A pass below has the
 stated historical or implementation scope; it is not a renewed timing claim.
-Step 2 will assess affected integrated code once.
+The step 2 assessment below covers affected integrated code once.
 
 | Ledger IDs | Criterion/amendment | Final issues | Disposition and principal evidence |
 | --- | --- | --- | --- |
@@ -157,6 +158,71 @@ following short forms aid reading.
 | #251 / PR #252 | `00ced71` | Shared transfer/loopback refusal tests | Owner confirms `4ce685a..00ced71` |
 | #197 / PR #257 | `af5c828` | Approved data notices and output/channel hold dispositions | #197 closes its decision/documentation scope; product enforcement belongs to #53 |
 
+## Integrated assessment and offline validation (step 2)
+
+The [assessment receipt](evidence/feature-store-173/step-2-assessment-20261109T075101Z.json)
+records the scope, findings and checks at `be53387`, whose runtime matches the
+pinned checkpoint. The detailed record binds 23 assessed source files by SHA-256
+and Git blob ID. This is the implementing agent's integration assessment, not
+an independent review or a fresh database/capacity qualification.
+
+**Premise.** The integrated code follows the approved set-based dataflow,
+immutable ObjectStore boundaries and functional prediction core. No new
+blocking runtime correctness or wrong-pattern finding was identified. The
+following conclusions remain bounded by source inspection and the named checks.
+
+| Area | Assessment | Qualification limit |
+| --- | --- | --- |
+| Prediction | Query-only borrowed client; one same-process deadline through serialization; selected-feature sample size; Q2 context and both receipts; private refusal and interruption latch; owner-only disposal. | Existing behavior receipts retain their scope; current-source capacity awaits the approved rerun. |
+| Dataset and job visibility | Set-based cutoff-qualified pins, current completed-job freshness, two batched rights/status boundaries, upload before BEGIN and metadata-only publication. Shared relational visibility helper and intentionally repeated join CASE remain in place. | Fresh-process dataset capacity is pending; terminal UPDATE-to-COMMIT gap remains accepted. |
+| Verified wire, scrub and replay | Registration retains the same dedicated ArrayBuffer without a second payload copy. Released/replaced allocations are refused. Scrub remains bounded; replay shares normalization and strengthens its dirty-input guard. | Four focused tests cover the changed allocation/identity contracts. No scrub or replay database rerun is claimed. |
+| Scoring | Domain math matches final #164 head; corrected report bytes and logical hashes verify. | Historical 2,504 retrospective/zero strict folds remain historical proof; no fresh report latency or predictive-superiority claim. |
+| R2 | Preserve the recorded synthetic live contract at its tested adapter blobs. | Later bounded read/list methods have local/mock qualification; their live behavior, hosted capacity and default-store adoption remain unqualified. |
+
+Under Node `24.18.1`, seven offline audits passed for #166, #231, #167, #168,
+#241, #242 and #169: **319 retained records**. These verify archive bytes and
+receipt projections, not independent execution of every recorded DB assertion.
+The **24 offline evidence tests** also passed, including recomputed capacity
+statistics, work/schedule checks and tamper controls. **Four focused integration
+tests** passed for verified-wire reuse/release/registration and the replay
+repository-identity guard. No full suite was run in this step.
+
+Additional offline checks verified:
+
+- All **52 original #138 archive files**, including retained failures, match
+  their index's hashes, sizes and line counts at `1383b5c`.
+- #170's machine receipt matches its wrapper hash, records 16 verified objects /
+  246,304,787 bytes and equal initial/final state hashes.
+- Both #244 replay receipts match their wrapper hashes. Each records 103,468
+  normalized rows and 20 derived contexts; the natural-key/value and derived
+  parity records agree across runs, with unchanged boundary state hashes.
+- #164's three calibration-correction receipt references match. The correction
+  proof, verifier and two report artifacts verify through local ObjectStore;
+  the reports' logical hashes and 2,504/zero fold counts also match. Reading
+  retained proof bytes does not independently rerun the calibration verifier.
+
+The disposable archive checker initially counted newline delimiters rather
+than logical lines and rejected a one-line file without a trailing newline.
+Its digest and size matched. Correcting that checker to count logical lines
+made all 52 index entries agree; this was not a benchmark retry. The observation
+is retained in the assessment.
+
+**Rerun containment.** The legacy dataset driver hardcodes a #138 evidence path
+and continues after a numeric-only sample failure. Do not run it directly: that
+would risk overwriting history and violating the approved stop policy. Step 3
+will use an isolated disposable copy with output redirection and a fail-fast
+check immediately after saving each sample, before starting another. Retain
+the original/adapted driver hashes and diff. Preserve its timed build/worker
+path, fixture, targets, counts and cache boundary. Prediction uses an explicit
+new output directory and `trial-p95-v2`. These are qualification-harness
+constraints, not new serving-path repairs.
+
+Remote main was still `286f4d0` at this assessment. The accepted CI timeout
+exception and the requirement to advance the pin if its separate fix merges
+remain in force. No lane, DB query, hosted access or capacity timing ran in
+step 2. Dataset and prediction capacity stay **blocked** pending the approved
+reruns; public/hosted/strict-history limits remain unchanged.
+
 ## Accepted exceptions and remaining limits
 
 - **Temporal evidence.** Retrospective corrections and postseason participation
@@ -194,9 +260,9 @@ following short forms aid reading.
 
 ## Remaining sequence and estimate
 
-1. Commit this evidence/review ledger only after owner approval.
-2. Assess affected integrated code once and validate evidence offline; reconcile
-   the checkpoint and separate CI timeout. Stop for commit approval.
+1. Evidence/review ledger committed as `be53387` after owner approval.
+2. Integrated assessment and offline validation complete; stop for commit
+   approval of its documentation, receipt and durable evidence mirror.
 3. In one owner-confirmed quiet window, prediction first: reuse #242's six
    100-sample trials with `trial-p95-v2`, then 3 fresh-process cold and 3 warm
    dataset builds. Use Node 24 and lane-3 standard tier, derive its URL through
