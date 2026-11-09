@@ -100,6 +100,8 @@ One 2025 row lacks a positive offense-player match: Russell Wilson
 (`00-0029263`), `2025_01_NYG_WAS`, NYG, 37 attempts / 168 passing yards. It remains
 unresolved, not an inferred absence or zero. The exact evidence is in the JSON.
 
+[Participation evidence notice](evidence/feature-store-138/NOTICE.participation.md).
+
 The 2021 and 2022 participation files contain 4,388 and 4,292 rows respectively
 with missing offense-player lists, including postseason rows. These counts do not
 classify the plays as eligible or prove missing offensive plays. Positive presence

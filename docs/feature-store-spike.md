@@ -295,6 +295,8 @@ player `00-0029008`. That play is excluded from positive evidence. It produces
 no additional QB coverage gap; a supplemental ObjectStore inspection records
 the exact location and reproducible recipe.
 
+[Participation evidence notice](evidence/feature-store-138/NOTICE.participation.md).
+
 The schedule release changed after the initial inventory: `games.csv.gz` grew
 from 515,248 to 515,250 bytes. Both ingestion runs pinned current release digest
 `962ea33bc96c7b5d298c28b5d8d8b64309ee2ddb450806bf3634fd10c0386dbd`.

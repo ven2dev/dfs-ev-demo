@@ -1,0 +1,241 @@
+{
+  "baseCommit": "977718b0ac381e1a2aa892733278cdafe761932b",
+  "trackedPathsScanned": 846,
+  "compressedPathsScanned": 28,
+  "compressedMembersScanned": 276,
+  "payloadMatches": [
+    {
+      "path": "docs/evidence/feature-store-138/source-inventory.json",
+      "sha256": "8b5444545354f3cfb16473ca88ddf1cc4f59fe19c54ee6f6c282e12f63c289b9",
+      "introducedBy": "df9643f5576ac9fa044281591894a1f187b57c87",
+      "rowCounts": {
+        "otherRowLevelValues": 1
+      },
+      "rowsBySeason": {
+        "otherRowLevelValues": {
+          "2025": 1
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-3-checkpoint.json",
+      "sha256": "bddb19a80e93896fab4eac2f08e37743bd7a426170435bf79e446db8412e4d50",
+      "introducedBy": "df9643f5576ac9fa044281591894a1f187b57c87",
+      "rowCounts": {
+        "otherRowLevelValues": 1,
+        "sourcePlayDiagnostics": 1
+      },
+      "rowsBySeason": {
+        "otherRowLevelValues": {
+          "2025": 1
+        },
+        "sourcePlayDiagnostics": {
+          "2024": 1
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-3-participation-anomaly.json",
+      "sha256": "8f7e6ea7b6cea2d57a4f698a0a8b6d24026cee5f2589ed281023ee7a9bb42c2a",
+      "introducedBy": "df9643f5576ac9fa044281591894a1f187b57c87",
+      "rowCounts": {
+        "sourcePlayDiagnostics": 1
+      },
+      "rowsBySeason": {
+        "sourcePlayDiagnostics": {
+          "2024": 1
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-3-real-ingestion-initial.json",
+      "sha256": "d383c8bf3210d9be52f03b93627a457a0384a38ee8e0a92531a7649e3c3d2db3",
+      "introducedBy": "df9643f5576ac9fa044281591894a1f187b57c87",
+      "rowCounts": {
+        "otherRowLevelValues": 1
+      },
+      "rowsBySeason": {
+        "otherRowLevelValues": {
+          "2025": 1
+        }
+      }
+    },
+    {
+      "path": "docs/evidence/feature-store-138/step-3-real-ingestion.json",
+      "sha256": "a08d54d2c8a53eb550a900a81ad32ce70d7fc9e44683fea7dcfd2f310e743db9",
+      "introducedBy": "df9643f5576ac9fa044281591894a1f187b57c87",
+      "rowCounts": {
+        "otherRowLevelValues": 1
+      },
+      "rowsBySeason": {
+        "otherRowLevelValues": {
+          "2025": 1
+        }
+      }
+    },
+    {
+      "path": "docs/feature-store-spike-sources.md",
+      "sha256": "19bb4e222427a789083da479240d8c4d9db2def4b14eddd097fa6a0c7cb21ef6",
+      "introducedBy": "df9643f5576ac9fa044281591894a1f187b57c87",
+      "rowCounts": {
+        "otherRowLevelValues": 1
+      },
+      "rowsBySeason": {
+        "otherRowLevelValues": {
+          "2025": 1
+        }
+      }
+    },
+    {
+      "path": "docs/feature-store-spike.md",
+      "sha256": "e90de05324fc4ff16819915cb652c33385717c2fae5f910660a1fbbf4786b747",
+      "introducedBy": "df9643f5576ac9fa044281591894a1f187b57c87",
+      "rowCounts": {
+        "otherRowLevelValues": 1,
+        "sourcePlayDiagnostics": 1
+      },
+      "rowsBySeason": {
+        "otherRowLevelValues": {
+          "2025": 1
+        },
+        "sourcePlayDiagnostics": {
+          "2024": 1
+        }
+      }
+    },
+    {
+      "path": "services/pipeline/tests/feature-store/fixtures/job-visibility-work-v1.json.gz",
+      "sha256": "eff4457e5f5064634d2cee03e70d1d17ccfb97303362f15caa3fba14520af8fe",
+      "introducedBy": "865b6a14001406eadd2623e062f1701729ce7f69",
+      "rowCounts": {
+        "otherRowLevelValues": 3279,
+        "normalizedParticipation": 89443,
+        "materializedFeatures": 18762,
+        "materializedLabels": 18762
+      },
+      "rowsBySeason": {
+        "normalizedParticipation": {
+          "2021": 18309,
+          "2022": 18193,
+          "2023": 17670,
+          "2024": 17564,
+          "2025": 17707
+        },
+        "materializedFeatures": {
+          "2021": 3832,
+          "2022": 3676,
+          "2023": 3624,
+          "2024": 3734,
+          "2025": 3896
+        },
+        "materializedLabels": {
+          "2021": 3832,
+          "2022": 3676,
+          "2023": 3624,
+          "2024": 3734,
+          "2025": 3896
+        },
+        "otherRowLevelValues": {
+          "2021": 655,
+          "2022": 633,
+          "2023": 663,
+          "2024": 664,
+          "2025": 664
+        }
+      }
+    }
+  ],
+  "independentlySourcedRowExamples": [
+    {
+      "path": "docs/predictive-feature-contract.md",
+      "sha256": "6e94a6d2dee1ac61f698a44b1da3ee34ff4b48da9d2aa232a279d49c67387863",
+      "introducedBy": "4dcf57a40bcd055ce81c7a22402626a7af9ff477",
+      "rowsBySeason": {
+        "2025": 3
+      },
+      "basis": "Separate player stats and calculated rates in a predictive-source contract example. The example cites the weekly player-stat feed."
+    }
+  ],
+  "featureStore241Archives": [
+    {
+      "path": "docs/evidence/feature-store-241/cleanup-restored-full-records-20261108T045912Z.tar.gz",
+      "sha256": "0edbfc9c2e0df3f29996dcd4cabf39aec070bd0e23cd9ce69379aec8ed4ae69c",
+      "introducedBy": "4cf0bb4acf3a8bdb3d27d71d86225ab1ceb366fe",
+      "memberCount": 8,
+      "matchedRowCount": 0,
+      "matchedRowSeasons": []
+    },
+    {
+      "path": "docs/evidence/feature-store-241/cleanup-stopped-full-records-20261108T045418Z.tar.gz",
+      "sha256": "9bc02d2f9c6b556ce80703ea922342eb47b6612e065c72708a6299fa18402a65",
+      "introducedBy": "4cf0bb4acf3a8bdb3d27d71d86225ab1ceb366fe",
+      "memberCount": 8,
+      "matchedRowCount": 0,
+      "matchedRowSeasons": []
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-1-full-records-20261107T214813Z.tar.gz",
+      "sha256": "f1c676c1ffc4c0dadd41d85832ed65b86c3fdf216c0f7319ea0673fd67aedf59",
+      "introducedBy": "53970ca3432f1b4d3ed06029bf431af433d222d7",
+      "memberCount": 3,
+      "matchedRowCount": 0,
+      "matchedRowSeasons": []
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-2-resumed-full-records-20261107T221412Z.tar.gz",
+      "sha256": "00f7df282c94d70eedfeb47faa48c601ec3ea4d593561815a4b62ebbb3195c86",
+      "introducedBy": "865b6a14001406eadd2623e062f1701729ce7f69",
+      "memberCount": 15,
+      "matchedRowCount": 0,
+      "matchedRowSeasons": []
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-2-stopped-full-records-20261107T2208Z.tar.gz",
+      "sha256": "35c6954bf8d0dc40fc825488348368fa147188547c25b39e171bee59627614bf",
+      "introducedBy": "865b6a14001406eadd2623e062f1701729ce7f69",
+      "memberCount": 6,
+      "matchedRowCount": 0,
+      "matchedRowSeasons": []
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-3-resumed-full-records-20261107T225754Z.tar.gz",
+      "sha256": "4f9f27537817b644ccb6321c60a2e6c3bac49072964b01ff5996255af13d595c",
+      "introducedBy": "441aaf96941e31f7a7f67a5edce906c79cc74ed1",
+      "memberCount": 25,
+      "matchedRowCount": 0,
+      "matchedRowSeasons": []
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-3-stopped-full-records-20261107T223140Z.tar.gz",
+      "sha256": "9dbcdbec78efe318d71c905c28da3d2a730f62c062e6c9223e3b3ba4e2ce5d03",
+      "introducedBy": "441aaf96941e31f7a7f67a5edce906c79cc74ed1",
+      "memberCount": 16,
+      "matchedRowCount": 0,
+      "matchedRowSeasons": []
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-4-audit-full-records-20261108T011318Z.tar.gz",
+      "sha256": "6adb4c65aab6fae9ceda9e58865e12741b633dcfeea08143d460f1ec6d2caced",
+      "introducedBy": "e78e1753955baf16cacd2b9fe8229af5391c3a5c",
+      "memberCount": 12,
+      "matchedRowCount": 0,
+      "matchedRowSeasons": []
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-4-cap-checkpoint-full-records-20261108T001101Z.tar.gz",
+      "sha256": "d4dedf954d5d0f5d94d4cd15db7d3b145a1f9d368e9d69be20b77ed1d7fb6e5b",
+      "introducedBy": "e78e1753955baf16cacd2b9fe8229af5391c3a5c",
+      "memberCount": 9,
+      "matchedRowCount": 0,
+      "matchedRowSeasons": []
+    },
+    {
+      "path": "docs/evidence/feature-store-241/step-4-final-full-records-20261108T011159Z.tar.gz",
+      "sha256": "cc2e6c9f11445bc94e623a5e838aa5e9a907e42806b5830530eed8e6adf7bb0d",
+      "introducedBy": "e78e1753955baf16cacd2b9fe8229af5391c3a5c",
+      "memberCount": 34,
+      "matchedRowCount": 0,
+      "matchedRowSeasons": []
+    }
+  ]
+}
