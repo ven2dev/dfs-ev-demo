@@ -274,6 +274,12 @@ These archives contain full forecast responses and/or sampled dataset rows,
 not just timing metadata. The original commits and exact bytes remain in a
 local-only backup and private ObjectStore. Do not push the backup tag.
 
+Main already contains the same forecast payload class in #168/#242 archives.
+[#261](https://github.com/ven2dev/dfs-ev-demo/issues/261) tracks the inventory and
+owner disposition of those published payloads. This rewrite covers only #173's
+unpublished history; it does not resolve that separate exposure or authorize
+public distribution.
+
 The [publication inventory](publication-inventory.json) records the scan of all
 5 archives / 123 members, including 1,206 JSON-encoded strings. Step 2
 and the stopped-run archive have no row-payload matches and remain in-tree.

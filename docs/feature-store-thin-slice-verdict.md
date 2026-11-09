@@ -27,7 +27,7 @@ It does not turn closed successor issues into an unconditional full #138 pass.
 | Existing private local research: reproduce the pinned retrospective dataset, scoring and governed predictions | **GO, limited** | Integrated assessment, retained behavior evidence and all four capacity targets pass within their stated fixture/source scope. Use the existing rights checks and trusted owner/restricted-reader model. This grants no new distribution permission. |
 | Strict historical forecasting or a claim of pregame predictive availability | **NO-GO / blocked** | All 2,504 evaluated forecasts are retrospective; strict forecasts are zero. `historical-availability-unverified` remains visible. Correct event-time cutoffs do not prove when corrected historical inputs were actually available. |
 | Population-complete evaluation | **NO-GO / blocked** | Identity and participation gaps remain. This fixture does not establish [#54](https://github.com/ven2dev/dfs-ev-demo/issues/54) completeness. |
-| New participation-derived public API/UI responses, downloads, models, reports or evidence | **NO-GO / blocked** | #171's declarations have limited scope; #197 holds new affected public outputs for output/channel decisions and #53 enforcement. [#256](https://github.com/ven2dev/dfs-ev-demo/issues/256) remains open for qualified CC BY-SA notice-scope review. Existing notices are not blanket clearance. |
+| New participation-derived public API/UI responses, downloads, models, reports or evidence | **NO-GO / blocked** | #171's declarations have limited scope; #197 holds new affected public outputs for output/channel decisions and #53 enforcement. [#256](https://github.com/ven2dev/dfs-ev-demo/issues/256) remains open for qualified CC BY-SA notice-scope review. [#261](https://github.com/ven2dev/dfs-ev-demo/issues/261) tracks forecast payloads already published in main's #168/#242 archives. Existing notices are not blanket clearance. |
 | Hosted pipeline, database or object-store operation | **NO-GO / blocked** | The intended pipeline role and driver have not been qualified. R2's live contract used synthetic data only; newer bounded methods, default-store adoption and hosted latency remain unqualified. Local timing does not establish hosted or concurrent capacity. |
 
 The capacity decision is **PASS for all four targets**, with unchanged deadlines
@@ -578,6 +578,10 @@ final verdict is recorded above; all original measurement bytes are unchanged.
   artifacts remain held for output-specific decisions and #53 enforcement.
   [#256](https://github.com/ven2dev/dfs-ev-demo/issues/256) remains open for
   qualified review of the combined fixture/excerpt CC BY-SA notice scope.
+  Main already contains the same forecast payload class in #168/#242 archives;
+  [#261](https://github.com/ven2dev/dfs-ev-demo/issues/261) tracks their inventory
+  and owner disposition. #173's private retention does not resolve that
+  published evidence.
   Notices do not clear public model release or change the application license.
 - **Hosted operations.** Console-role Neon timeout observations do not qualify
   the actual pipeline role/driver. Synthetic R2 proof does not establish hosted
