@@ -316,6 +316,11 @@ It is validation evidence, not a passing integration run.
 
 ## CI enforcement
 
+The local `npm run test:feature-store:db` command uses fresh migrations for its
+scratch fixtures. For the CI-equivalent template run, start the standard
+fixture, set `TEST_DATABASE_URL` for that lane and run
+`node scripts/db/test-db.mjs feature-store`.
+
 On PRs to `main`, pushes to `main` and manual checkpoints, `App checks`,
 `DB integration / Core` and `DB integration / Feature store` run independently
 on Linux. Each DB job computes and validates the same affected-selection plan

@@ -260,6 +260,7 @@ export async function createTemplateRun(environment: Environment, directory: str
         owned.add(database);
         await admin.query(`CREATE DATABASE "${database}" TEMPLATE "${builder}"`);
       }
+      // In a proposal manifest, version 1 identifies the single proposal template.
       const version = templates.length + 1;
       await admin.query(`COMMENT ON DATABASE "${database}" IS '${comment(markerManifest, version)}'`);
       await admin.query(`ALTER DATABASE "${database}" ALLOW_CONNECTIONS false`);

@@ -1,0 +1,287 @@
+{
+  "issue": 250,
+  "pullRequest": 254,
+  "candidateCommit": "c35dc7a4384510322341e6211cfad94a4c5fc7e7",
+  "generatedAt": "2026-11-09T04:33:21.680Z",
+  "baseline": {
+    "url": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/42458405318",
+    "appSeconds": 168,
+    "dbSeconds": 302,
+    "ciSecondsFromFirstJob": 307
+  },
+  "method": {
+    "comparison": "Three sequential full pull-request workflow attempts on the same candidate, including two entire workflow reruns.",
+    "elapsed": "Time from the earliest upstream job start through successful completion of the aggregate CI job. The DB finish delta includes differences in runner startup.",
+    "setup": "Measured setup includes the template build and shared-harness setup. A conservative upper bound subtracts shared-harness callback and cleanup time and 24 individually timed test bodies in six non-database evidence files. Each file runs serially. The bound leaves preflight, the fresh schema check, the parity probe and any remaining unclassified work in setup.",
+    "disk": "Full-workload disk sampling is local on lane-2 standard. The hosted jobs verify preflight but do not sample peak disk usage."
+  },
+  "localDisk": {
+    "featureStore": {
+      "tests": 296,
+      "pass": 296,
+      "fail": 0,
+      "skipped": 0,
+      "duration_ms": 123100.385
+    },
+    "identicalFeatureStoreCaseNames": 296,
+    "lifecycleChecksPassed": 1,
+    "core": {
+      "nodeRequiredCases": 74,
+      "leaseRequiredCases": 13,
+      "readinessRequiredCases": 4,
+      "corpusRequiredCases": 8,
+      "result": "verified"
+    },
+    "minimumFreeBytes": 276893696,
+    "diskSamples": 124,
+    "laneTeardownVerified": true,
+    "scratchDatabasesAndTestLoginsRemaining": 0,
+    "freeFractionAtLowestSample": 0.5157546997070312
+  },
+  "trials": [
+    {
+      "attempt": 1,
+      "url": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/42561502275/attempts/1",
+      "conclusion": "success",
+      "runnerImage": "ubuntu-26.04",
+      "baseSha": "9ef323eb98cf89b260a1135d7d91bd70a39ac3f1",
+      "testedMergeSha": "53372de2923be05ddac549819b386a0f52e8394a",
+      "jobs": {
+        "App checks": 177,
+        "DB integration / Core": 121,
+        "DB integration / Feature store": 180,
+        "CI": 3
+      },
+      "featureStoreStepSeconds": 153,
+      "slowCallbacks": [
+        {
+          "file": "derived.check.mts",
+          "callbackMs": 29562.166558999998
+        },
+        {
+          "file": "job-visibility-producer-work.check.mts",
+          "callbackMs": 12917.682976
+        },
+        {
+          "file": "mandatory-recovery-selection.check.mts",
+          "callbackMs": 9688.913107
+        },
+        {
+          "file": "removal-queue.check.mts",
+          "callbackMs": 8052.054163
+        }
+      ],
+      "dbFinishAfterAppSeconds": 4,
+      "dbMinusAppJobDurationSeconds": 3,
+      "ciSecondsFromFirstJob": 186,
+      "improvementFromBaselineSeconds": 121,
+      "template": {
+        "migrationVersions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "templateCount": 1,
+        "catalogVerifications": 1,
+        "sourceDigest": "364e776dba9821d0633a1b9c858d11ec629b01b4cae96f31729cb52041670146",
+        "proposalCount": 4,
+        "durationMs": 889.2434639999999
+      },
+      "sharedHarnessSamples": 27,
+      "sharedHarnessTotalsMs": {
+        "setupMs": 8952.13074,
+        "callbackMs": 110343.70092699998,
+        "cleanupMs": 1008.9398769999974
+      },
+      "suiteCommandSeconds": 132.82,
+      "featureStoreTestsPassed": 296,
+      "measuredSetupSeconds": 9.841374204,
+      "unclassifiedBeforeIndependentTestsSeconds": 21.467359196000018,
+      "independentTestsExcludedFromSetupBound": {
+        "cases": 24,
+        "totalMs": 1986.6606060000001
+      },
+      "setupUpperBoundSeconds": 19.480698590000017,
+      "setupTarget": "pass",
+      "dbFinishWithin30SecondsForAttempt": true
+    },
+    {
+      "attempt": 2,
+      "url": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/42561502275/attempts/2",
+      "conclusion": "success",
+      "runnerImage": "ubuntu-26.04",
+      "baseSha": "9ef323eb98cf89b260a1135d7d91bd70a39ac3f1",
+      "testedMergeSha": "53372de2923be05ddac549819b386a0f52e8394a",
+      "jobs": {
+        "App checks": 118,
+        "DB integration / Core": 136,
+        "DB integration / Feature store": 203,
+        "CI": 3
+      },
+      "featureStoreStepSeconds": 168,
+      "slowCallbacks": [
+        {
+          "file": "derived.check.mts",
+          "callbackMs": 43300.701793
+        },
+        {
+          "file": "job-visibility-producer-work.check.mts",
+          "callbackMs": 19273.077002
+        },
+        {
+          "file": "mandatory-recovery-selection.check.mts",
+          "callbackMs": 13436.055627000002
+        },
+        {
+          "file": "job-visibility-work.check.mts",
+          "callbackMs": 7418.276254
+        }
+      ],
+      "dbFinishAfterAppSeconds": 86,
+      "dbMinusAppJobDurationSeconds": 85,
+      "ciSecondsFromFirstJob": 209,
+      "improvementFromBaselineSeconds": 98,
+      "template": {
+        "migrationVersions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "templateCount": 1,
+        "catalogVerifications": 1,
+        "sourceDigest": "364e776dba9821d0633a1b9c858d11ec629b01b4cae96f31729cb52041670146",
+        "proposalCount": 4,
+        "durationMs": 1140.988993
+      },
+      "sharedHarnessSamples": 27,
+      "sharedHarnessTotalsMs": {
+        "setupMs": 11481.210951999998,
+        "callbackMs": 130757.30642599998,
+        "cleanupMs": 1279.5007690000011
+      },
+      "suiteCommandSeconds": 159.14,
+      "featureStoreTestsPassed": 296,
+      "measuredSetupSeconds": 12.622199944999997,
+      "unclassifiedBeforeIndependentTestsSeconds": 27.10319280500002,
+      "independentTestsExcludedFromSetupBound": {
+        "cases": 24,
+        "totalMs": 2412.147493
+      },
+      "setupUpperBoundSeconds": 24.69104531200002,
+      "setupTarget": "pass",
+      "dbFinishWithin30SecondsForAttempt": false
+    },
+    {
+      "attempt": 3,
+      "url": "https://github.com/ven2dev/dfs-ev-demo/actions/runs/42561502275/attempts/3",
+      "conclusion": "success",
+      "runnerImage": "ubuntu-26.04",
+      "baseSha": "9ef323eb98cf89b260a1135d7d91bd70a39ac3f1",
+      "testedMergeSha": "53372de2923be05ddac549819b386a0f52e8394a",
+      "jobs": {
+        "App checks": 183,
+        "DB integration / Core": 110,
+        "DB integration / Feature store": 175,
+        "CI": 3
+      },
+      "featureStoreStepSeconds": 142,
+      "slowCallbacks": [
+        {
+          "file": "derived.check.mts",
+          "callbackMs": 33903.062561
+        },
+        {
+          "file": "job-visibility-producer-work.check.mts",
+          "callbackMs": 13960.26605
+        },
+        {
+          "file": "mandatory-recovery-selection.check.mts",
+          "callbackMs": 9051.845761
+        },
+        {
+          "file": "job-visibility-work.check.mts",
+          "callbackMs": 5950.515762999999
+        }
+      ],
+      "dbFinishAfterAppSeconds": -8,
+      "dbMinusAppJobDurationSeconds": -8,
+      "ciSecondsFromFirstJob": 188,
+      "improvementFromBaselineSeconds": 119,
+      "template": {
+        "migrationVersions": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11
+        ],
+        "templateCount": 1,
+        "catalogVerifications": 1,
+        "sourceDigest": "364e776dba9821d0633a1b9c858d11ec629b01b4cae96f31729cb52041670146",
+        "proposalCount": 4,
+        "durationMs": 875.212401
+      },
+      "sharedHarnessSamples": 27,
+      "sharedHarnessTotalsMs": {
+        "setupMs": 9914.391004000001,
+        "callbackMs": 103580.84404200003,
+        "cleanupMs": 956.5322859999997
+      },
+      "suiteCommandSeconds": 127.74,
+      "featureStoreTestsPassed": 296,
+      "measuredSetupSeconds": 10.789603405000001,
+      "unclassifiedBeforeIndependentTestsSeconds": 23.202623671999973,
+      "independentTestsExcludedFromSetupBound": {
+        "cases": 24,
+        "totalMs": 2088.9220060000002
+      },
+      "setupUpperBoundSeconds": 21.113701665999972,
+      "setupTarget": "pass",
+      "dbFinishWithin30SecondsForAttempt": true
+    }
+  ],
+  "timingPolicy": {
+    "ownerAcceptedTimingResult": true,
+    "comparableFullRuns": 3,
+    "medianDbFinishWithinAppChecksSeconds": 30,
+    "maximumTimeToPassingCiSecondsPerRun": 210,
+    "maximumFeatureStoreSetupSecondsPerRun": 25
+  },
+  "timingEvaluation": {
+    "medianDbFinishAfterAppChecksSeconds": 4,
+    "maximumTimeToPassingCiSeconds": 209,
+    "maximumFeatureStoreSetupUpperBoundSeconds": 24.69104531200002
+  },
+  "appChecksOutlier": {
+    "attempt": 2,
+    "elapsedSeconds": 118,
+    "otherObservedAppChecksRangeSeconds": [
+      168,
+      183
+    ]
+  },
+  "originalPerRunTimingVerdict": "review-needed",
+  "verdict": "pass"
+}

@@ -6,7 +6,7 @@ Roadmap approved. Checkpoint 1 starts from `origin/main` at `9ef323e`.
 
 - **Pattern.** Run the core DB and feature-store suites as independent CI jobs on separate runners and disposable PostgreSQL servers. Measure the hosted setup and test phases with the split. If those measurements justify template reuse, build a clean, sealed feature-store template once per selected run and use a private database clone per test fixture. Reuse the existing guarded scratch and template lifecycle. Retain fresh migration paths for tests that exercise migrations or need a different schema.
 - **Alternatives.** Raising feature-store concurrency on a shared 512 MiB server would contend for disk, WAL and cleanup. A migrated container cache would add cross-run invalidation and provenance. Bigger runners would add cost while leaving repeat migrations in place. Sampling or moving tests would reduce PR coverage.
-- **Targets.** On full runs, the DB critical path must finish within 30 seconds of App checks. Aim for at most 25 seconds of feature-store setup, measured separately from test bodies. Retain every test in the current baseline and all assertions, budgets and buffer ceilings. Require at least 25% sampled disk headroom on the standard 512 MiB fixture. Report at least three comparable full GitHub CI runs, including aggregate wall time and job durations. If either target misses, take the result to the owner before changing it.
+- **Targets.** Across three comparable full hosted runs, the median DB finish must be within 30 seconds of App checks. Each run must reach a passing CI check within 210 seconds. Feature-store setup is capped at 25 seconds, measured separately from test bodies. Retain every test in the current baseline and all assertions, budgets and buffer ceilings. Require at least 25% sampled disk headroom on the standard 512 MiB fixture. Report at least three comparable full GitHub CI runs, including aggregate wall time and job durations. Bring any timing miss to the owner before changing a target.
 - **Requirement reasons.** A content fingerprint and catalog verification prevent a clone from hiding stale schema. Sealing and registering clones under the existing lane lease prevent mutation or accidental cleanup by another process. The aggregate check must account for each job's affected-selection decision, suite and cleanup result so skips, cancellation and missing outputs cannot silently pass. Preserve the current CI check name.
 - **Assumptions.** GitHub-hosted Ubuntu, PostgreSQL 18.6 and #247's loopback-only standard fixture. Per-file feature-store execution stays serial within its job. Independent jobs can duplicate runner setup, so measure aggregate wait time and total runner time separately. Use only lane-2 standard for local DB work and keep #169 timing windows clear.
 
@@ -32,9 +32,8 @@ The local harness setup accounted for 12% of suite time, with 82% inside test ca
 
 The [first full hosted run](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42557982456)
 passed with the DB jobs finishing 32 seconds after App checks. Shared
-feature-store harness setup took 31.1 seconds across 27 calls. This put both
-timing metrics above their targets and moved template reuse ahead of slow-check
-profiling.
+feature-store harness setup took 31.1 seconds across 27 calls. Both metrics exceeded the original single-run targets, so template reuse moved
+ahead of slow-check profiling.
 
 The guarded feature-store runner holds the existing lane lease through template
 and clone cleanup. It seals one migrated database after applying the ordered
@@ -76,5 +75,28 @@ The measured check includes harness setup and cleanup. Only these two
 changes cleared the three-second gate. The real storage adapter, SQL,
 assertions, workload sizes and lock-ordering waits are unchanged. The
 [profile and validation receipt](evidence/ci-250/checkpoint-3-slow-checks.json)
-records the trials and the local full-suite check. Final hosted qualification
-still needs three comparable runs.
+records the trials and the local full-suite check.
+
+## Final hosted qualification
+
+Draft PR #254 ran three complete Ubuntu 26.04 workflow attempts on candidate
+`c35dc7a` and the same GitHub merge checkout. App checks, both DB suites and
+the aggregate CI gate passed every attempt. Each feature-store run passed all
+296 checks. The aggregate confirmed full selection and both cleanups.
+
+| Attempt | App checks | Core DB | Feature-store DB | DB finish relative to App | Setup upper bound | Time to passing CI |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| [1](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42561502275/attempts/1) | 177 s | 121 s | 180 s | +4 s | 19.48 s | 186 s |
+| [2](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42561502275/attempts/2) | 118 s | 136 s | 203 s | +86 s | 24.69 s | 209 s |
+| [3](https://github.com/ven2dev/dfs-ev-demo/actions/runs/42561502275/attempts/3) | 183 s | 110 s | 175 s | −8 s | 21.11 s | 188 s |
+
+The owner accepted the timing results and adopted the median DB finish and
+210-second CI targets. The median DB finish was 4 seconds after App checks,
+within the 30-second target. All three runs reached passing CI within 210
+seconds and stayed within the 25-second setup cap. Time to passing CI improved
+by 98 to 121 seconds from the 307-second baseline.
+
+Attempt 2 remains visible as a per-run outlier. App checks took 118 seconds
+versus 168–183 seconds in the other observed runs, and the DB finished 86
+seconds after App checks. The [hosted qualification receipt](evidence/ci-250/final-hosted-qualification.json)
+records the original measurements, checkout identity and setup accounting.
