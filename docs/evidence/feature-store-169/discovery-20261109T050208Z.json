@@ -1,0 +1,309 @@
+{
+  "kind": "producer-capacity-discovery-history",
+  "issue": 169,
+  "schemaVersion": 2,
+  "qualification": "historical-not-qualification",
+  "finalQualification": {
+    "receipt": "benchmark-20261109T050208Z.json",
+    "source": "55d512b15c3e340c128d8b4195783faa00e29385"
+  },
+  "observations": [
+    {
+      "run": "run-20261108T160326Z",
+      "status": "stopped",
+      "reason": "Schedule advertised-size drift; body cancelled before hash, zero producer SQL. Retained censored attempt; no capacity pass."
+    },
+    {
+      "run": "paired-20261109T031030Z",
+      "status": "stopped",
+      "reason": "23514 captured_at <= ingested_at constraint with approximately 30 s host/database skew. Failed pinned path used 10 SQL, not a successful 12-SQL sample."
+    },
+    {
+      "run": "paired-20261109T034004Z",
+      "status": "stopped",
+      "completedIngestion": 20,
+      "reason": "Unapproved exact clock-overlap assertion stopped the run. The owner withdrew this assertion and approved only unstarted IDs in a separate record. Original failed overall status is unchanged."
+    },
+    {
+      "run": "resumed-20261109T034805Z",
+      "status": "spike-pass-not-final-qualification",
+      "newSamples": 10,
+      "retainedPreviousSamples": 20,
+      "reason": "Six feature trials, then remaining four participation trials. No completed sample replaced."
+    },
+    {
+      "observation": "HEAD check",
+      "checked": 16,
+      "advertisedSizeDrift": 1,
+      "reason": "Schedule alone drifted; equal size does not establish equal bytes. Original pins remain unchanged."
+    },
+    {
+      "observation": "download locks",
+      "reason": "Disposable paired transfer samples observed idle backends, no open transaction or locks and zero producer SQL during live and loopback downloads. Sampling is not a continuous proof; publication locks are outside this observation."
+    },
+    {
+      "observation": "spike warm slowdown",
+      "reason": "About 57% slower in all three spike pairs. Final per-SQL/checkpointer/WAL/autovacuum diagnostics do not reproduce that pattern or establish its cause."
+    }
+  ],
+  "limitations": [
+    "Discovery sources are disposable prototypes, not the committed-source qualification.",
+    "Mutable GitHub bytes are observed separately; pinned ingestion is loopback transport even when saved provenance names GitHub.",
+    "OS/Docker/DNS/CDN caches are uncontrolled; tmpfs restart is not a physical cold-cache claim.",
+    "All retained original reports/journals/sources are exact bytes; no raw source inputs are included."
+  ],
+  "records": [
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/run-20261108T160326Z/lifecycle.jsonl",
+      "sha256": "776ec5c33abc08347be64d1e5a2db66f8dc982f0c858b0b255c4b71f514d51c3",
+      "byteSize": 863,
+      "objectKey": "audits/776ec5c33abc08347be64d1e5a2db66f8dc982f0c858b0b255c4b71f514d51c3"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/run-20261108T160326Z/observations.jsonl",
+      "sha256": "02cdd57420e48f097eb88b3530f87455f5f471097c6e4b373e8b635be19384f3",
+      "byteSize": 6394,
+      "objectKey": "audits/02cdd57420e48f097eb88b3530f87455f5f471097c6e4b373e8b635be19384f3"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/run-20261108T160326Z/report.json",
+      "sha256": "551b4bc53246236bb67a0842c4a7b5dacff7e023f05f35c6790b842137ddcc77",
+      "byteSize": 19681,
+      "objectKey": "audits/551b4bc53246236bb67a0842c4a7b5dacff7e023f05f35c6790b842137ddcc77"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/run-20261108T160326Z/started.jsonl",
+      "sha256": "8154ea6677d5033262cdee14cf3664f3bf7fafb0d8f2345a42d36f76dc3622f5",
+      "byteSize": 73,
+      "objectKey": "audits/8154ea6677d5033262cdee14cf3664f3bf7fafb0d8f2345a42d36f76dc3622f5"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/run-20261108T160326Z/stopped-receipt.json",
+      "sha256": "d2993c187c61c7ddd7852200b0497d3363aafce8156dff668b8e9a01263830ad",
+      "byteSize": 1439,
+      "objectKey": "audits/d2993c187c61c7ddd7852200b0497d3363aafce8156dff668b8e9a01263830ad"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T031030Z/lifecycle.jsonl",
+      "sha256": "36d81e5e5068e7afb2f3099a428105365304f4c73343410e4fab84e42205e336",
+      "byteSize": 941,
+      "objectKey": "audits/36d81e5e5068e7afb2f3099a428105365304f4c73343410e4fab84e42205e336"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T031030Z/observations.jsonl",
+      "sha256": "de8e58d6cd7e7f08e996fe1b67a027664c1c17a00b47e1dc56653b271424195f",
+      "byteSize": 9881,
+      "objectKey": "audits/de8e58d6cd7e7f08e996fe1b67a027664c1c17a00b47e1dc56653b271424195f"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T031030Z/report.json",
+      "sha256": "5c3df9de11206c2f82576692f91a803ece3611f61c73a60fa708b06c21e0ab89",
+      "byteSize": 43472,
+      "objectKey": "audits/5c3df9de11206c2f82576692f91a803ece3611f61c73a60fa708b06c21e0ab89"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T031030Z/source-paired-cold.mts",
+      "sha256": "27b65c553924b392818e5e9aa1acece442e6a5c788ca2ab9a66ab817f2875872",
+      "byteSize": 2290,
+      "objectKey": "audits/27b65c553924b392818e5e9aa1acece442e6a5c788ca2ab9a66ab817f2875872"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T031030Z/source-paired-probe.mts",
+      "sha256": "35e57318124c701b8f275f521a8772efb20a6fb26cc3bc6a9761d89a76b4c4ad",
+      "byteSize": 24752,
+      "objectKey": "audits/35e57318124c701b8f275f521a8772efb20a6fb26cc3bc6a9761d89a76b4c4ad"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T031030Z/source-paired-work.mts",
+      "sha256": "fc27024d17ce067038c71ec5f5221b35db4f3a36db0cf178e80b126ad0992f69",
+      "byteSize": 2489,
+      "objectKey": "audits/fc27024d17ce067038c71ec5f5221b35db4f3a36db0cf178e80b126ad0992f69"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T031030Z/started.jsonl",
+      "sha256": "3ea38436ef83367431e2bde4b5bb99ada840eeaa70ade74b24c63c61d376800a",
+      "byteSize": 179,
+      "objectKey": "audits/3ea38436ef83367431e2bde4b5bb99ada840eeaa70ade74b24c63c61d376800a"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T034004Z/lifecycle.jsonl",
+      "sha256": "27da80df177bb422df9bf6459c61e7cb686e7e2164e1746a4a85a85ae89a86c8",
+      "byteSize": 14053,
+      "objectKey": "audits/27da80df177bb422df9bf6459c61e7cb686e7e2164e1746a4a85a85ae89a86c8"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T034004Z/observations.jsonl",
+      "sha256": "595c59a49c232d7d1471edeaa0af1a8b3700b8d8c45fdc58ee78a2d636f748a8",
+      "byteSize": 404667,
+      "objectKey": "audits/595c59a49c232d7d1471edeaa0af1a8b3700b8d8c45fdc58ee78a2d636f748a8"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T034004Z/report.json",
+      "sha256": "fdcc09a24ffb0b94cdfbcd7d05b28b8cc674ba20df82bb5a124931d82d3d3900",
+      "byteSize": 1425602,
+      "objectKey": "audits/fdcc09a24ffb0b94cdfbcd7d05b28b8cc674ba20df82bb5a124931d82d3d3900"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T034004Z/source-169-clock-observation.mts",
+      "sha256": "0e0bed4c8b8d9c2f789460467a7a59fbcf138aff4f46c324ca10eea488de1285",
+      "byteSize": 1726,
+      "objectKey": "audits/0e0bed4c8b8d9c2f789460467a7a59fbcf138aff4f46c324ca10eea488de1285"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T034004Z/source-paired-cold.mts",
+      "sha256": "27b65c553924b392818e5e9aa1acece442e6a5c788ca2ab9a66ab817f2875872",
+      "byteSize": 2290,
+      "objectKey": "audits/27b65c553924b392818e5e9aa1acece442e6a5c788ca2ab9a66ab817f2875872"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T034004Z/source-paired-probe.mts",
+      "sha256": "371e959deaefb76792ea0facc375e5b2464fd5e379f1424c946a309ee080d8df",
+      "byteSize": 25601,
+      "objectKey": "audits/371e959deaefb76792ea0facc375e5b2464fd5e379f1424c946a309ee080d8df"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T034004Z/source-paired-work.mts",
+      "sha256": "e2cee2dafb3d5229d54c38b6e6a22227bd758b135cf2ae96c4f883e7a50849df",
+      "byteSize": 3365,
+      "objectKey": "audits/e2cee2dafb3d5229d54c38b6e6a22227bd758b135cf2ae96c4f883e7a50849df"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/paired-20261109T034004Z/started.jsonl",
+      "sha256": "c1713dd4ae2f711881fd8429b532569dc2f45847873e76d48681fef8fe964e5d",
+      "byteSize": 3960,
+      "objectKey": "audits/c1713dd4ae2f711881fd8429b532569dc2f45847873e76d48681fef8fe964e5d"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/resumed-20261109T034805Z/lifecycle.jsonl",
+      "sha256": "4cc3e2cb342c662637524ccc7ccc18168247a5c5ce68526e16eef39f6cb44cf2",
+      "byteSize": 34245,
+      "objectKey": "audits/4cc3e2cb342c662637524ccc7ccc18168247a5c5ce68526e16eef39f6cb44cf2"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/resumed-20261109T034805Z/observations.jsonl",
+      "sha256": "9ff0e97478ec54f8f1f9598f962a666d319c6322d1316fd9bb07611e6cb06ab6",
+      "byteSize": 1371105,
+      "objectKey": "audits/9ff0e97478ec54f8f1f9598f962a666d319c6322d1316fd9bb07611e6cb06ab6"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/resumed-20261109T034805Z/report.json",
+      "sha256": "23cbf4bf3acb623344b70f3ee4f722b4d080126758b323140ee333f8aa123a0a",
+      "byteSize": 3077294,
+      "objectKey": "audits/23cbf4bf3acb623344b70f3ee4f722b4d080126758b323140ee333f8aa123a0a"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/resumed-20261109T034805Z/source-169-clock-observation.mts",
+      "sha256": "45de830aac25541b2dbe738e3285158efc5c330adcc6a2b81ee91d9eaf2ad221",
+      "byteSize": 3000,
+      "objectKey": "audits/45de830aac25541b2dbe738e3285158efc5c330adcc6a2b81ee91d9eaf2ad221"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/resumed-20261109T034805Z/source-paired-cold.mts",
+      "sha256": "27b65c553924b392818e5e9aa1acece442e6a5c788ca2ab9a66ab817f2875872",
+      "byteSize": 2290,
+      "objectKey": "audits/27b65c553924b392818e5e9aa1acece442e6a5c788ca2ab9a66ab817f2875872"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/resumed-20261109T034805Z/source-paired-resume.mts",
+      "sha256": "f20344d3252633ff50f744e1449d847483d6fde1c37f08894300c1e02628fbe2",
+      "byteSize": 28260,
+      "objectKey": "audits/f20344d3252633ff50f744e1449d847483d6fde1c37f08894300c1e02628fbe2"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/resumed-20261109T034805Z/source-paired-work.mts",
+      "sha256": "e2cee2dafb3d5229d54c38b6e6a22227bd758b135cf2ae96c4f883e7a50849df",
+      "byteSize": 3365,
+      "objectKey": "audits/e2cee2dafb3d5229d54c38b6e6a22227bd758b135cf2ae96c4f883e7a50849df"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#spike/resumed-20261109T034805Z/started.jsonl",
+      "sha256": "b4ad617125ef3fb77334db93d47da8ab9abac16f51213f0ed90e02f4c52399d9",
+      "byteSize": 1914,
+      "objectKey": "audits/b4ad617125ef3fb77334db93d47da8ab9abac16f51213f0ed90e02f4c52399d9"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-size-observation-20261108T161147Z.json",
+      "sha256": "e42b55eab1ee2466fafa0138f01f4d47c48f592109456a8cf4320928c04909da",
+      "byteSize": 18324,
+      "objectKey": "audits/e42b55eab1ee2466fafa0138f01f4d47c48f592109456a8cf4320928c04909da"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-size-check.mjs",
+      "sha256": "40763ce5bbab519665b0750da75fc70eb156936c9d1388040cb5316cda44651d",
+      "byteSize": 4254,
+      "objectKey": "audits/40763ce5bbab519665b0750da75fc70eb156936c9d1388040cb5316cda44651d"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-spike-combined-verification-20261109T034805Z.json",
+      "sha256": "a751c9d39ffdf2068974765e5caeb32f2844d07421b828322260fcb7c6c1b63c",
+      "byteSize": 3297,
+      "objectKey": "audits/a751c9d39ffdf2068974765e5caeb32f2844d07421b828322260fcb7c6c1b63c"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-verify-combined-spike.mts",
+      "sha256": "f14a27f98b865bcaab60048c4461e11dde7ab5e070d50cf980e1def68e600691",
+      "byteSize": 6936,
+      "objectKey": "audits/f14a27f98b865bcaab60048c4461e11dde7ab5e070d50cf980e1def68e600691"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-resume-controls-20261109T034753Z.json",
+      "sha256": "11e7982878b72eac6dceaaaa0a32e2b48a2d51de40c6b29589dfc9aaa4f4ac5b",
+      "byteSize": 1468,
+      "objectKey": "audits/11e7982878b72eac6dceaaaa0a32e2b48a2d51de40c6b29589dfc9aaa4f4ac5b"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-resume-controls.mts",
+      "sha256": "a0d33782986438d3138d0321fe7f49a64f7d76c57616f44f8b62ff023902d9ec",
+      "byteSize": 2781,
+      "objectKey": "audits/a0d33782986438d3138d0321fe7f49a64f7d76c57616f44f8b62ff023902d9ec"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-spike-checkpoint.md",
+      "sha256": "8a29bf73d03c65963b03eededa12e38b7254eb204dfe54ca3d431aabf6c9935d",
+      "byteSize": 3688,
+      "objectKey": "audits/8a29bf73d03c65963b03eededa12e38b7254eb204dfe54ca3d431aabf6c9935d"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-spike-checkpoint-20261109T031030Z.md",
+      "sha256": "f6198390649ebecf863a7a3d8c23742a7afd06658d1aa0bb24a340372d4f0074",
+      "byteSize": 3545,
+      "objectKey": "audits/f6198390649ebecf863a7a3d8c23742a7afd06658d1aa0bb24a340372d4f0074"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-spike-checkpoint-20261109T034004Z.md",
+      "sha256": "8aadeeda0178ee5dea0175c0f8d88bb7eea753dbad534943054c96f09f0584cd",
+      "byteSize": 4502,
+      "objectKey": "audits/8aadeeda0178ee5dea0175c0f8d88bb7eea753dbad534943054c96f09f0584cd"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-resume-readiness-20261109.md",
+      "sha256": "b357926d8be6bf40c231cb36ad1de1028e8bd7d75375c617c0a2e89731ea9d68",
+      "byteSize": 3154,
+      "objectKey": "audits/b357926d8be6bf40c231cb36ad1de1028e8bd7d75375c617c0a2e89731ea9d68"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-self-hosting-correction.md",
+      "sha256": "0ea551e742211143ef3fff887e04f33ded6ec4eddb877b52042a34c04fa0857a",
+      "byteSize": 474,
+      "objectKey": "audits/0ea551e742211143ef3fff887e04f33ded6ec4eddb877b52042a34c04fa0857a"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/169-roadmap-measured.md",
+      "sha256": "873fd3f756d1b247c4bca6e78c725d102ecad488062d1070c5ac81930bdcf53b",
+      "byteSize": 13413,
+      "objectKey": "audits/873fd3f756d1b247c4bca6e78c725d102ecad488062d1070c5ac81930bdcf53b"
+    },
+    {
+      "path": "discovery-20261109T050208Z.tar.gz#notes/clock-skew-diagnosis-20261109T031030Z.json",
+      "sha256": "f0e43c569488027ebc35839e9b866fd47ade73eb1098db425d26e6678459b8a5",
+      "byteSize": 6253,
+      "objectKey": "audits/f0e43c569488027ebc35839e9b866fd47ade73eb1098db425d26e6678459b8a5"
+    }
+  ],
+  "fullRecord": {
+    "path": "discovery-20261109T050208Z.tar.gz#discovery-history.json",
+    "sha256": "5e6934f030b85a29e74deb99aaa08b2c0bb4f606c411a4e123a8aaa7a4c2b18e",
+    "byteSize": 15370,
+    "retention": "Uncompressed record retained in the committed full-records.tar.gz bundle. A rerun creates a new sample hash."
+  }
+}
