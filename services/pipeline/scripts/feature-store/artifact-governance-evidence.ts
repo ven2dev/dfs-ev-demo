@@ -9,6 +9,7 @@ import type { ReadCounters } from "../../tests/feature-store/artifact-read-work.
 import type { PredictionRequest } from "@dfs-ev/pipeline/feature-store/predict";
 import { compactCapacityBenchmark } from "./prediction-capacity-evidence.ts";
 import { visibilityProjection } from "./job-visibility-evidence.ts";
+import { compactProducerBenchmark } from "./producer-capacity-evidence.ts";
 
 type Sample = { phase: string; shape: string; arm: string; block: number; position: number; read: number;
   q1Ms: number; q2Ms: number; sumMs: number; endToEndMs: number; verdict: string;
@@ -402,7 +403,8 @@ const verifyRecordBytes = (record: RecordReference, bytes: Buffer) => {
   if (record.byteSize !== undefined) assert.equal(bytes.byteLength, record.byteSize, "full-record-byte-size-mismatch");
 };
 export const verifyEvidenceReceipt = (receipt: ReturnType<typeof compactBenchmark> | ReturnType<typeof compactBehavior>
-  | ReturnType<typeof compactCompositeBenchmark> | ReturnType<typeof compactPredictionBenchmark> | ReturnType<typeof compactCapacityBenchmark>, bytes: Buffer) => {
+  | ReturnType<typeof compactCompositeBenchmark> | ReturnType<typeof compactPredictionBenchmark> | ReturnType<typeof compactCapacityBenchmark>
+  | ReturnType<typeof compactProducerBenchmark>, bytes: Buffer) => {
   verifyRecordBytes(receipt.fullRecord, bytes);
   // The disposable prototype used a different sample shape. Preserve its
   // original summary/probe projection rather than claiming final qualification.
@@ -417,7 +419,8 @@ export const verifyEvidenceReceipt = (receipt: ReturnType<typeof compactBenchmar
     return;
   }
   const full = JSON.parse(bytes.toString());
-  const expected = full.kind === "point-in-time-completion-benchmark" ? compactBehavior(bytes, receipt.fullRecord.path)
+  const expected = full.kind === "producer-capacity-benchmark" ? compactProducerBenchmark(bytes, receipt.fullRecord.path)
+    : full.kind === "point-in-time-completion-benchmark" ? compactBehavior(bytes, receipt.fullRecord.path)
     : full.kind === "prediction-capacity-benchmark" ? compactCapacityBenchmark(bytes, receipt.fullRecord.path)
     : full.kind === "local-prediction-benchmark" ? compactPredictionBenchmark(bytes, receipt.fullRecord.path)
     : full.kind === "composite-authorization-benchmark" ? compactCompositeBenchmark(bytes, receipt.fullRecord.path)

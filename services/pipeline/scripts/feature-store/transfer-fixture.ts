@@ -54,5 +54,7 @@ export const openTransferFixture = async (
     server.close(error => error ? reject(error) : resolve());
     server.closeAllConnections();
   });
-  return { origin, download, close };
+  // Script evidence can identify the measured transport without changing the
+  // original asset URL retained by ingestion as provenance.
+  return { origin, mappings: mappings.map(m => ({ ...m })), download, close };
 };
