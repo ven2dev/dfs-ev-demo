@@ -19,6 +19,10 @@ export const assertFeatureStoreReplayTarget = (client: Pick<Client, "query">, wr
 export const withFeatureStoreDatabase = async <T>(run: (context: {
   admin: Client; writer: Client; reader: Client; openWriter: () => Promise<Client>; createWriterConfig: () => Promise<ClientConfig>; createReaderConfig: () => Promise<ClientConfig>; queryCounts: { writer: number; reader: number };
 }) => Promise<T>): Promise<T> => {
+  const timingEnabled = process.env.FEATURE_STORE_DB_TIMING === "1";
+  const started = performance.now();
+  let callbackStarted: number | undefined;
+  let callbackFinished: number | undefined;
   const harness = await createScratchHarness(process.env);
   const names: string[] = [];
   try {
@@ -64,9 +68,11 @@ export const withFeatureStoreDatabase = async <T>(run: (context: {
         replayTargets.set(admin, verifyReplayTarget);
         replayTargets.set(writer, verifyReplayTarget);
         try {
+          callbackStarted = performance.now();
           return await run({ admin, writer, reader, openWriter: () => login("writer"),
             createWriterConfig: () => loginConfig("writer"), createReaderConfig: () => loginConfig("reader"), queryCounts });
         } finally {
+          callbackFinished = performance.now();
           replayTargets.delete(writer);
           replayTargets.delete(admin);
         }
@@ -79,6 +85,17 @@ export const withFeatureStoreDatabase = async <T>(run: (context: {
     try {
       await cleanup.connect();
       for (const name of names) await cleanup.query(`DROP ROLE ${name}`);
-    } finally { await cleanup.end(); await harness.close(); }
+    } finally {
+      await cleanup.end();
+      await harness.close();
+      if (timingEnabled && callbackStarted !== undefined && callbackFinished !== undefined) {
+        console.log("feature-store-db-timing", JSON.stringify({
+          file: process.argv[1],
+          setupMs: callbackStarted - started,
+          callbackMs: callbackFinished - callbackStarted,
+          cleanupMs: performance.now() - callbackFinished,
+        }));
+      }
+    }
   }
 };

@@ -118,8 +118,8 @@ jobs:
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=critical
 
-  db:
-    name: DB integration
+  db_core:
+    name: DB integration / Core
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -131,7 +131,6 @@ jobs:
       feature_store: ${{ steps.selection.outputs.feature_store }}
       lifecycle_result: ${{ steps.lifecycle.outcome }}
       db_local_result: ${{ steps.db_local.outcome }}
-      feature_store_result: ${{ steps.feature_store.outcome }}
       cleanup_result: ${{ steps.cleanup.outcome }}
 
     steps:
@@ -188,16 +187,76 @@ jobs:
         if: ${{ steps.selection.outputs.db_local == 'true' }}
         run: npm run test:db:local
 
+      - name: Remove disposable PostgreSQL
+        id: cleanup
+        if: ${{ always() }}
+        timeout-minutes: 2
+        run: npm run test:db:down
+
+  db_feature_store:
+    name: DB integration / Feature store
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      plan_result: ${{ steps.selection.outcome }}
+      selection_guard_result: ${{ steps.selection_guard.outcome }}
+      mode: ${{ steps.selection.outputs.mode }}
+      db_local: ${{ steps.selection.outputs.db_local }}
+      feature_store: ${{ steps.selection.outputs.feature_store }}
+      feature_store_result: ${{ steps.feature_store.outcome }}
+      cleanup_result: ${{ steps.cleanup.outcome }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Plan affected database suites
+        id: selection
+        env:
+          TURBO_PLAN_ONLY: "1"
+          TURBO_ALLOW_EMPTY: "1"
+          TURBO_PLAN_FILE: ${{ runner.temp }}/turbo-db-plan.json
+        run: |
+          npm run turbo:affected -- test:db:local test:feature-store:db
+          node scripts/turbo/ci-db-selection.mjs "$TURBO_PLAN_FILE"
+
+      - name: Require explicit database selection
+        id: selection_guard
+        shell: bash
+        env:
+          DB_LOCAL: ${{ steps.selection.outputs.db_local }}
+          FEATURE_STORE: ${{ steps.selection.outputs.feature_store }}
+        run: |
+          for selected in "$DB_LOCAL" "$FEATURE_STORE"; do
+            if [[ "$selected" != "true" && "$selected" != "false" ]]; then
+              echo "Missing or invalid database selection; refusing silent skips."
+              exit 1
+            fi
+          done
+
       - name: Verify feature-store PostgreSQL behavior on standard fixture
         id: feature_store
         if: ${{ steps.selection.outputs.feature_store == 'true' }}
         shell: bash
         env:
+          FEATURE_STORE_DB_TIMING: "1"
           TEST_DATABASE_URL: postgresql://dfs_ev_test:dfs_ev_test@127.0.0.1:54329/dfs_ev_test
         run: |
           docker compose --env-file /dev/null --project-name dfs-ev-demo-test -f compose.test.yml up -d --wait --wait-timeout 60
           node scripts/db/test-db.mjs preflight
-          npm run test:feature-store:db
+          /usr/bin/time -p npm run test:feature-store:db
 
       - name: Remove disposable PostgreSQL
         id: cleanup
@@ -206,9 +265,9 @@ jobs:
         run: npm run test:db:down
 
   ci:
-    # Preserve the required check name; neither upstream job may bypass it.
+    # Preserve the required check name; no upstream job may bypass it.
     name: CI
-    needs: [app, db]
+    needs: [app, db_core, db_feature_store]
     if: ${{ always() }}
     permissions: {}
     runs-on: ubuntu-latest
@@ -219,26 +278,33 @@ jobs:
         shell: bash
         env:
           APP_RESULT: ${{ needs.app.result }}
-          DB_RESULT: ${{ needs.db.result }}
+          DB_CORE_RESULT: ${{ needs.db_core.result }}
+          DB_FEATURE_JOB_RESULT: ${{ needs.db_feature_store.result }}
           FORCE_FULL: ${{ env.TURBO_FORCE_FULL }}
           APP_TEST_RESULT: ${{ needs.app.outputs.test_result }}
           APP_TEST_MODE: ${{ needs.app.outputs.test_mode }}
           APP_TEST_WORK: ${{ needs.app.outputs.test_work }}
           APP_MATRIX_RESULT: ${{ needs.app.outputs.matrix_result }}
-          DB_PLAN_RESULT: ${{ needs.db.outputs.plan_result }}
-          DB_SELECTION_GUARD_RESULT: ${{ needs.db.outputs.selection_guard_result }}
-          DB_GUARD_RESULT: ${{ needs.db.outputs.guard_result }}
-          DB_MODE: ${{ needs.db.outputs.mode }}
-          DB_LOCAL_SELECTED: ${{ needs.db.outputs.db_local }}
-          FEATURE_STORE_SELECTED: ${{ needs.db.outputs.feature_store }}
-          DB_LIFECYCLE_RESULT: ${{ needs.db.outputs.lifecycle_result }}
-          DB_LOCAL_RESULT: ${{ needs.db.outputs.db_local_result }}
-          FEATURE_STORE_RESULT: ${{ needs.db.outputs.feature_store_result }}
-          DB_CLEANUP_RESULT: ${{ needs.db.outputs.cleanup_result }}
+          DB_PLAN_RESULT: ${{ needs.db_core.outputs.plan_result }}
+          DB_SELECTION_GUARD_RESULT: ${{ needs.db_core.outputs.selection_guard_result }}
+          DB_GUARD_RESULT: ${{ needs.db_core.outputs.guard_result }}
+          DB_MODE: ${{ needs.db_core.outputs.mode }}
+          DB_LOCAL_SELECTED: ${{ needs.db_core.outputs.db_local }}
+          FEATURE_STORE_SELECTED: ${{ needs.db_core.outputs.feature_store }}
+          DB_LIFECYCLE_RESULT: ${{ needs.db_core.outputs.lifecycle_result }}
+          DB_LOCAL_RESULT: ${{ needs.db_core.outputs.db_local_result }}
+          FEATURE_STORE_RESULT: ${{ needs.db_feature_store.outputs.feature_store_result }}
+          DB_CLEANUP_RESULT: ${{ needs.db_core.outputs.cleanup_result }}
+          FEATURE_PLAN_RESULT: ${{ needs.db_feature_store.outputs.plan_result }}
+          FEATURE_SELECTION_GUARD_RESULT: ${{ needs.db_feature_store.outputs.selection_guard_result }}
+          FEATURE_MODE: ${{ needs.db_feature_store.outputs.mode }}
+          FEATURE_PLAN_DB_LOCAL: ${{ needs.db_feature_store.outputs.db_local }}
+          FEATURE_PLAN_FEATURE_STORE: ${{ needs.db_feature_store.outputs.feature_store }}
+          FEATURE_CLEANUP_RESULT: ${{ needs.db_feature_store.outputs.cleanup_result }}
         run: |
-          echo "App checks: $APP_RESULT; DB integration: $DB_RESULT"
-          if [[ "$APP_RESULT" != "success" || "$DB_RESULT" != "success" ]]; then
-            echo "CI requires both App checks and DB integration to succeed."
+          echo "App checks: $APP_RESULT; DB core: $DB_CORE_RESULT; DB feature store: $DB_FEATURE_JOB_RESULT"
+          if [[ "$APP_RESULT" != "success" || "$DB_CORE_RESULT" != "success" || "$DB_FEATURE_JOB_RESULT" != "success" ]]; then
+            echo "CI requires App checks and both DB jobs to succeed."
             exit 1
           fi
           refuse() { echo "$1"; exit 1; }
@@ -248,9 +314,12 @@ jobs:
             fi
           }
           # Raw outcomes retain failures even if continue-on-error is introduced.
-          for outcome in "$APP_TEST_RESULT" "$APP_MATRIX_RESULT" "$DB_PLAN_RESULT" "$DB_SELECTION_GUARD_RESULT" "$DB_GUARD_RESULT" "$DB_CLEANUP_RESULT"; do
+          for outcome in "$APP_TEST_RESULT" "$APP_MATRIX_RESULT" "$DB_PLAN_RESULT" "$DB_SELECTION_GUARD_RESULT" "$DB_GUARD_RESULT" "$DB_CLEANUP_RESULT" "$FEATURE_PLAN_RESULT" "$FEATURE_SELECTION_GUARD_RESULT" "$FEATURE_CLEANUP_RESULT"; do
             require_outcome "Mandatory execution" "$outcome" "success"
           done
+          if [[ "$DB_MODE" != "$FEATURE_MODE" || "$DB_LOCAL_SELECTED" != "$FEATURE_PLAN_DB_LOCAL" || "$FEATURE_STORE_SELECTED" != "$FEATURE_PLAN_FEATURE_STORE" ]]; then
+            refuse "Database jobs disagree on suite selection."
+          fi
           for mode in "$APP_TEST_MODE" "$DB_MODE"; do
             if [[ "$mode" != "full" && "$mode" != "affected" ]]; then
               refuse "Missing or invalid selection mode."
@@ -273,7 +342,7 @@ jobs:
             esac
           }
           require_selected "Ordinary DB suite" "$DB_LOCAL_SELECTED" "$DB_LOCAL_RESULT"
-          require_selected "Feature-store DB suite" "$FEATURE_STORE_SELECTED" "$FEATURE_STORE_RESULT"
+          require_selected "Feature-store DB suite" "$FEATURE_PLAN_FEATURE_STORE" "$FEATURE_STORE_RESULT"
           if [[ "$DB_MODE" == "full" && ( "$DB_LOCAL_SELECTED" != "true" || "$FEATURE_STORE_SELECTED" != "true" ) ]]; then
             refuse "Full database selection cannot omit a suite."
           fi

@@ -1,0 +1,303 @@
+{
+  "base": "9ef323eb98cf89b260a1135d7d91bd70a39ac3f1",
+  "lane": "lane-2",
+  "tier": "standard",
+  "concurrency": 1,
+  "final": {
+    "type": "test:summary",
+    "durationMs": 139287.097208,
+    "counts": {
+      "tests": 295,
+      "failed": 0,
+      "passed": 295,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0,
+      "topLevel": 53,
+      "suites": 0
+    },
+    "success": true
+  },
+  "fileCount": 34,
+  "filesWithHarnessSamples": 27,
+  "totals": {
+    "harnessCalls": 27,
+    "setupMs": 17319.553502999996,
+    "callbackMs": 113661.45654200003,
+    "cleanupMs": 934.018206000003
+  },
+  "files": [
+    {
+      "file": "derived.check.mts",
+      "wallMs": 28791.4815,
+      "harnessCalls": 1,
+      "setupMs": 586.644292,
+      "callbackMs": 28173.74025,
+      "cleanupMs": 26.056040999999823
+    },
+    {
+      "file": "removal-queue.check.mts",
+      "wallMs": 16539.691375,
+      "harnessCalls": 1,
+      "setupMs": 620.112667,
+      "callbackMs": 15878.361916999998,
+      "cleanupMs": 25.338166000001365
+    },
+    {
+      "file": "mandatory-recovery-races.check.mts",
+      "wallMs": 12388.206875,
+      "harnessCalls": 1,
+      "setupMs": 630.838875,
+      "callbackMs": 11666.782,
+      "cleanupMs": 27.655958000001192
+    },
+    {
+      "file": "job-visibility-producer-work.check.mts",
+      "wallMs": 10919.484916,
+      "harnessCalls": 1,
+      "setupMs": 670.5165000000001,
+      "callbackMs": 10212.228,
+      "cleanupMs": 30.71400000000176
+    },
+    {
+      "file": "prediction-handler.check.mts",
+      "wallMs": 6499.709792,
+      "harnessCalls": 1,
+      "setupMs": 624.0883749999999,
+      "callbackMs": 5550.822042000001,
+      "cleanupMs": 155.3925419999996
+    },
+    {
+      "file": "mandatory-recovery-selection.check.mts",
+      "wallMs": 6126.752833,
+      "harnessCalls": 1,
+      "setupMs": 638.518333,
+      "callbackMs": 5455.299875,
+      "cleanupMs": 27.29304200000024
+    },
+    {
+      "file": "mandatory-recovery-pages.check.mts",
+      "wallMs": 5951.089625,
+      "harnessCalls": 1,
+      "setupMs": 657.562916,
+      "callbackMs": 5250.939792,
+      "cleanupMs": 23.313083000000006
+    },
+    {
+      "file": "datasets.check.mts",
+      "wallMs": 5620.019958,
+      "harnessCalls": 1,
+      "setupMs": 625.8363750000001,
+      "callbackMs": 4947.492249999999,
+      "cleanupMs": 27.073167000000467
+    },
+    {
+      "file": "composite-authorization.check.mts",
+      "wallMs": 5362.103417,
+      "harnessCalls": 1,
+      "setupMs": 601.1269580000001,
+      "callbackMs": 4723.132542,
+      "cleanupMs": 26.9737499999992
+    },
+    {
+      "file": "job-visibility-work.check.mts",
+      "wallMs": 4724.667208,
+      "harnessCalls": 1,
+      "setupMs": 593.8271249999999,
+      "callbackMs": 4100.267625,
+      "cleanupMs": 24.78937499999938
+    },
+    {
+      "file": "artifact-cleaner.check.mts",
+      "wallMs": 4357.349667,
+      "harnessCalls": 1,
+      "setupMs": 655.5372090000001,
+      "callbackMs": 3656.4485000000004,
+      "cleanupMs": 24.66608300000007
+    },
+    {
+      "file": "model-publication.check.mts",
+      "wallMs": 3442.773041,
+      "harnessCalls": 1,
+      "setupMs": 641.4445840000001,
+      "callbackMs": 2758.2469579999997,
+      "cleanupMs": 33.3620420000002
+    },
+    {
+      "file": "prediction-owner.check.mts",
+      "wallMs": 3370.16025,
+      "harnessCalls": 1,
+      "setupMs": 645.272084,
+      "callbackMs": 2615.289625,
+      "cleanupMs": 33.2027079999998
+    },
+    {
+      "file": "model-artifacts.check.mts",
+      "wallMs": 2952.627458,
+      "harnessCalls": 1,
+      "setupMs": 611.657083,
+      "callbackMs": 2300.3208750000003,
+      "cleanupMs": 28.331166999999823
+    },
+    {
+      "file": "artifact-governance.check.mts",
+      "wallMs": 2405.17425,
+      "harnessCalls": 1,
+      "setupMs": 627.507334,
+      "callbackMs": 1741.413958,
+      "cleanupMs": 24.50025000000005
+    },
+    {
+      "file": "model-orphans.check.mts",
+      "wallMs": 2258.725,
+      "harnessCalls": 1,
+      "setupMs": 627.627875,
+      "callbackMs": 1589.529709,
+      "cleanupMs": 26.304833000000144
+    },
+    {
+      "file": "empirical-adapter.check.mts",
+      "wallMs": 1270.895083,
+      "harnessCalls": 1,
+      "setupMs": 610.410375,
+      "callbackMs": 519.9354999999999,
+      "cleanupMs": 124.347125
+    },
+    {
+      "file": "job-visibility-dataset.check.mts",
+      "wallMs": 1207.572417,
+      "harnessCalls": 1,
+      "setupMs": 708.179167,
+      "callbackMs": 459.69975,
+      "cleanupMs": 27.185917000000018
+    },
+    {
+      "file": "model-context.check.mts",
+      "wallMs": 1170.738583,
+      "harnessCalls": 1,
+      "setupMs": 889.189291,
+      "callbackMs": 253.55391700000007,
+      "cleanupMs": 23.668332999999848
+    },
+    {
+      "file": "model-manifests.check.mts",
+      "wallMs": 1090.393125,
+      "harnessCalls": 1,
+      "setupMs": 618.218042,
+      "callbackMs": 441.28675,
+      "cleanupMs": 25.298083000000133
+    },
+    {
+      "file": "mandatory-recovery.check.mts",
+      "wallMs": 1029.371375,
+      "harnessCalls": 1,
+      "setupMs": 652.269375,
+      "callbackMs": 335.97120799999993,
+      "cleanupMs": 23.459833000000117
+    },
+    {
+      "file": "job-visibility-producer.check.mts",
+      "wallMs": 1026.955625,
+      "harnessCalls": 1,
+      "setupMs": 606.1369589999999,
+      "callbackMs": 394.8671660000001,
+      "cleanupMs": 21.524958999999853
+    },
+    {
+      "file": "schema.check.mts",
+      "wallMs": 980.706791,
+      "harnessCalls": 0,
+      "setupMs": 0,
+      "callbackMs": 0,
+      "cleanupMs": 0
+    },
+    {
+      "file": "integrity-scrub.check.mts",
+      "wallMs": 931.867542,
+      "harnessCalls": 1,
+      "setupMs": 746.74375,
+      "callbackMs": 142.80758300000002,
+      "cleanupMs": 29.809374999999932
+    },
+    {
+      "file": "ingest.check.mts",
+      "wallMs": 876.26725,
+      "harnessCalls": 1,
+      "setupMs": 617.2747089999999,
+      "callbackMs": 219.05825000000004,
+      "cleanupMs": 25.063999999999965
+    },
+    {
+      "file": "transfer-fixture.check.mts",
+      "wallMs": 787.812334,
+      "harnessCalls": 1,
+      "setupMs": 618.6652079999999,
+      "callbackMs": 87.173,
+      "cleanupMs": 26.462375000000065
+    },
+    {
+      "file": "job-visibility.check.mts",
+      "wallMs": 782.475292,
+      "harnessCalls": 1,
+      "setupMs": 593.959084,
+      "callbackMs": 162.35783300000003,
+      "cleanupMs": 21.89783299999999
+    },
+    {
+      "file": "rights.check.mts",
+      "wallMs": 649.120042,
+      "harnessCalls": 1,
+      "setupMs": 600.388958,
+      "callbackMs": 24.429666999999995,
+      "cleanupMs": 20.334165999999982
+    },
+    {
+      "file": "prediction-capacity-evidence.check.mts",
+      "wallMs": 534.327667,
+      "harnessCalls": 0,
+      "setupMs": 0,
+      "callbackMs": 0,
+      "cleanupMs": 0
+    },
+    {
+      "file": "composite-evidence.check.mts",
+      "wallMs": 440.547917,
+      "harnessCalls": 0,
+      "setupMs": 0,
+      "callbackMs": 0,
+      "cleanupMs": 0
+    },
+    {
+      "file": "prediction-owner-evidence.check.mts",
+      "wallMs": 223.508875,
+      "harnessCalls": 0,
+      "setupMs": 0,
+      "callbackMs": 0,
+      "cleanupMs": 0
+    },
+    {
+      "file": "artifact-evidence.check.mts",
+      "wallMs": 169.464291,
+      "harnessCalls": 0,
+      "setupMs": 0,
+      "callbackMs": 0,
+      "cleanupMs": 0
+    },
+    {
+      "file": "prediction-benchmark.check.mts",
+      "wallMs": 130.674875,
+      "harnessCalls": 0,
+      "setupMs": 0,
+      "callbackMs": 0,
+      "cleanupMs": 0
+    },
+    {
+      "file": "prediction-evidence.check.mts",
+      "wallMs": 42.760125,
+      "harnessCalls": 0,
+      "setupMs": 0,
+      "callbackMs": 0,
+      "cleanupMs": 0
+    }
+  ]
+}
