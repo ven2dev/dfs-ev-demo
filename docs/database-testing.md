@@ -55,6 +55,23 @@ Compose project. Coordinate ownership within a lane, including manual starts
 and stops. Separate servers still share host CPU and memory. Keep heavy work
 out of another lane's benchmark window.
 
+## App test timeouts
+
+The browser and Node Vitest configs each run unit and process projects.
+Unit tests keep the 5 s default, including small temporary-directory tests.
+The dot in `*.process.test.ts` selects the 60 s process class for tests that
+start real children or are slow by design. Existing `*-process.test.ts`
+files use mocked children and stay in the unit class.
+
+Give asynchronous child processes deadlines below the test limit and leave
+time for serial phases and cleanup. On timeout, the shared test helper stops
+the POSIX process group and reports captured output. The repeated stale-lock
+case retains 120 s because three serial worker batches each allow 35 s. The
+live R2 contract runs only through the opt-in `npm run test:r2:live` command
+or its explicit environment flag. The offline ObjectStore tests use the
+unit class. These timeouts apply to App checks. The PostgreSQL suites use
+their own harness limits.
+
 ## Environment boundary
 
 No real application credentials are needed. The relay worktree's `.env.local`
