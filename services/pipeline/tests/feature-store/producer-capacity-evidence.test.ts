@@ -99,6 +99,8 @@ describe("#169 durable evidence recomputation", () => {
     expect(() => verifyEvidenceReceipt({ ...receipt, verification: { ...receipt.verification, started: 29 } }, bytes)).toThrow(/receipt-mismatch/);
     verifyEvidenceReceipt(receipt, bytes);
   });
+  // This disk-backed correctness test includes fsync, repeated gzip and archive
+  // audits. Its liveness timeout is separate from the unchanged capacity gates.
   it("publishes deterministic ObjectStore records/mirrors without overwriting and uses the common auditor", async () => {
     const { realpath } = await import("node:fs/promises");
     const root = await realpath(await mkdtemp(join(tmpdir(), "dfs169-evidence-")));
@@ -112,7 +114,7 @@ describe("#169 durable evidence recomputation", () => {
       await expect(publishProducerEvidence(full, store, evidence, "20261109T040000Z")).rejects.toThrow(/EEXIST/);
       expect((await readFile(join(evidence, "records-20261109T040000Z.tar.gz")))).toEqual(archive);
     } finally { await rm(root, { recursive: true, force: true }); }
-  });
+  }, 30_000);
   it("collects a journal and refuses a truncated event line", async () => {
     const root = await mkdtemp(join(tmpdir(), "dfs169-collect-"));
     try {

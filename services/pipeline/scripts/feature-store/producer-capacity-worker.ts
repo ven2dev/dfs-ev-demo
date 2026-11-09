@@ -13,8 +13,9 @@ export type ProducerWorkerOptions = { config: ClientConfig; sourceRoot: string; 
 export const createProducerWorker = async (options: ProducerWorkerOptions, notify: (q: StatementTime) => void) => {
   assertNoApplicationCredentials(process.env);
   const c = options.config;
-  if (process.env.DB_TEST_LANE !== "lane-3" || !["127.0.0.1", "::1"].includes(String(c.host)) ||
-      c.port !== getTestDatabaseLane("lane-3").port || !/^dfs_ev_test_[a-f0-9]+$/.test(String(c.database)) ||
+  const lane = getTestDatabaseLane(process.env.DB_TEST_LANE);
+  if (!["127.0.0.1", "::1"].includes(String(c.host)) ||
+      c.port !== lane.port || !/^dfs_ev_test_[a-f0-9]+$/.test(String(c.database)) ||
       !/^fs138_job_[a-f0-9]+$/.test(String(c.user)) || c.password !== "fs138_throwaway" || c.ssl !== false || c.connectionString)
     throw new Error("producer-worker-target-refused");
   const client = new Client(c);
